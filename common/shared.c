@@ -39,6 +39,7 @@ int accept_passive_host_checks = TRUE;
 int enable_event_handlers = TRUE;
 int obsess_over_services = FALSE;
 int obsess_over_hosts = FALSE;
+unsigned long next_downtime_id = 0;
 
 char *config_file_dir = NULL;
 
