@@ -1281,6 +1281,7 @@ void free_downtime_data(void) {
 	scheduled_downtime *next_downtime = NULL;
 
 	fanout_destroy(dt_fanout, NULL);
+	dt_fanout = NULL;
 
 	/* free memory for the scheduled_downtime list */
 	for(this_downtime = scheduled_downtime_list; this_downtime != NULL; this_downtime = next_downtime) {
