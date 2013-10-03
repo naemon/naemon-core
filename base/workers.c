@@ -944,6 +944,10 @@ int init_workers(int desired_workers)
 			/* min 4 workers, as it's tested and known to work */
 			if(desired_workers < 4)
 				desired_workers = 4;
+			else if (desired_workers > 48) {
+				/* don't go crazy in NASA's network (1024 cores) */
+				desired_workers = 48;
+			}
 		}
 	}
 	wproc_num_workers_desired = desired_workers;
