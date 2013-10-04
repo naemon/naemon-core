@@ -388,7 +388,7 @@ int process_external_command1(char *cmd) {
 		return CMD_ERROR_INTERNAL_ERROR;
 
 	/* get the command arguments */
-	if((temp_ptr = my_strtok(NULL, "\n")) == NULL)
+	if((temp_ptr = my_strtok(NULL, "")) == NULL)
 		args = (char *)strdup("");
 	else
 		args = (char *)strdup(temp_ptr);
@@ -1921,7 +1921,7 @@ int cmd_add_comment(int cmd, time_t entry_time, char *args) {
 		return ERROR;
 
 	/* get the comment */
-	if((comment_data = my_strtok(NULL, "\n")) == NULL)
+	if((comment_data = my_strtok(NULL, "")) == NULL)
 		return ERROR;
 
 	/* add the comment */
@@ -2022,7 +2022,7 @@ int cmd_delay_notification(int cmd, char *args) {
 		}
 
 	/* get the time that we should delay until... */
-	if((temp_ptr = my_strtok(NULL, "\n")) == NULL)
+	if((temp_ptr = my_strtok(NULL, "")) == NULL)
 		return ERROR;
 	delay_time = strtoul(temp_ptr, NULL, 10);
 
@@ -2070,7 +2070,7 @@ int cmd_schedule_check(int cmd, char *args) {
 		}
 
 	/* get the next check time */
-	if((temp_ptr = my_strtok(NULL, "\n")) == NULL)
+	if((temp_ptr = my_strtok(NULL, "")) == NULL)
 		return ERROR;
 	delay_time = strtoul(temp_ptr, NULL, 10);
 
@@ -2112,7 +2112,7 @@ int cmd_schedule_host_service_checks(int cmd, char *args, int force) {
 		return ERROR;
 
 	/* get the next check time */
-	if((temp_ptr = my_strtok(NULL, "\n")) == NULL)
+	if((temp_ptr = my_strtok(NULL, "")) == NULL)
 		return ERROR;
 	delay_time = strtoul(temp_ptr, NULL, 10);
 
@@ -2135,7 +2135,7 @@ int cmd_signal_process(int cmd, char *args) {
 	char *temp_ptr = NULL;
 
 	/* get the time to schedule the event */
-	if((temp_ptr = my_strtok(args, "\n")) == NULL)
+	if((temp_ptr = my_strtok(args, "")) == NULL)
 		scheduled_time = 0L;
 	else
 		scheduled_time = strtoul(temp_ptr, NULL, 10);
@@ -2179,7 +2179,7 @@ int cmd_process_service_check_result(int cmd, time_t check_time, char *args) {
 	return_code = atoi(temp_ptr);
 
 	/* get the plugin output (may be empty) */
-	if((temp_ptr = my_strtok(NULL, "\n")) == NULL)
+	if((temp_ptr = my_strtok(NULL, "")) == NULL)
 		output = (char *)strdup("");
 	else
 		output = (char *)strdup(temp_ptr);
@@ -2276,7 +2276,7 @@ int cmd_process_host_check_result(int cmd, time_t check_time, char *args) {
 	return_code = atoi(temp_ptr);
 
 	/* get the plugin output (may be empty) */
-	if((temp_ptr = my_strtok(NULL, "\n")) == NULL)
+	if((temp_ptr = my_strtok(NULL, "")) == NULL)
 		output = (char *)strdup("");
 	else
 		output = (char *)strdup(temp_ptr);
@@ -2399,7 +2399,7 @@ int cmd_acknowledge_problem(int cmd, char *args) {
 	ack_author = (char *)strdup(temp_ptr);
 
 	/* get the acknowledgement data */
-	if((temp_ptr = my_strtok(NULL, "\n")) == NULL) {
+	if((temp_ptr = my_strtok(NULL, "")) == NULL) {
 		my_free(ack_author);
 		return ERROR;
 		}
@@ -2666,7 +2666,7 @@ int cmd_delete_downtime(int cmd, char *args) {
 	char *temp_ptr = NULL;
 
 	/* get the id of the downtime to delete */
-	if((temp_ptr = my_strtok(args, "\n")) == NULL)
+	if((temp_ptr = my_strtok(args, "")) == NULL)
 		return ERROR;
 	downtime_id = strtoul(temp_ptr, NULL, 10);
 
@@ -2822,7 +2822,7 @@ int cmd_delete_downtime_by_start_time_comment(int cmd, char *args) {
 		}
 
 	/* Get comment - not sure if this should be also tokenised by ; */
-	temp_ptr = my_strtok(NULL, "\n");
+	temp_ptr = my_strtok(NULL, "");
 	if(temp_ptr != NULL && *temp_ptr != '\0') {
 		downtime_comment = temp_ptr;
 		}
@@ -3160,7 +3160,7 @@ int cmd_change_object_char_var(int cmd, char *args) {
 		case CMD_CHANGE_GLOBAL_HOST_EVENT_HANDLER:
 		case CMD_CHANGE_GLOBAL_SVC_EVENT_HANDLER:
 
-			if((charval = my_strtok(args, "\n")) == NULL)
+			if((charval = my_strtok(args, "")) == NULL)
 				return ERROR;
 
 			break;
@@ -3178,7 +3178,7 @@ int cmd_change_object_char_var(int cmd, char *args) {
 			if((temp_host = find_host(host_name)) == NULL)
 				return ERROR;
 
-			if((charval = my_strtok(NULL, "\n")) == NULL)
+			if((charval = my_strtok(NULL, "")) == NULL)
 				return ERROR;
 
 			break;
@@ -3200,7 +3200,7 @@ int cmd_change_object_char_var(int cmd, char *args) {
 			if((temp_service = find_service(host_name, svc_description)) == NULL)
 				return ERROR;
 
-			if((charval = my_strtok(NULL, "\n")) == NULL)
+			if((charval = my_strtok(NULL, "")) == NULL)
 				return ERROR;
 
 			break;
@@ -3217,7 +3217,7 @@ int cmd_change_object_char_var(int cmd, char *args) {
 			if((temp_contact = find_contact(contact_name)) == NULL)
 				return ERROR;
 
-			if((charval = my_strtok(NULL, "\n")) == NULL)
+			if((charval = my_strtok(NULL, "")) == NULL)
 				return ERROR;
 
 			break;
@@ -3614,7 +3614,7 @@ int cmd_process_external_commands_from_file(int cmd, char *args) {
 		return ERROR;
 
 	/* find the deletion option */
-	if((temp_ptr = my_strtok(NULL, "\n")) == NULL) {
+	if((temp_ptr = my_strtok(NULL, "")) == NULL) {
 		my_free(fname);
 		return ERROR;
 		}
