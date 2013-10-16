@@ -165,6 +165,7 @@ static int downtime_add(scheduled_downtime *dt)
 			scheduled_downtime_list->prev = dt;
 		}
 		dt->next = scheduled_downtime_list;
+		dt->prev = NULL;
 		scheduled_downtime_list = dt;
 		}
 	else {
@@ -174,8 +175,9 @@ static int downtime_add(scheduled_downtime *dt)
 		for(cur = scheduled_downtime_list; cur; cur = cur->next) {
 			if(downtime_compar(&dt, &cur) < 0) {
 				dt->prev = cur->prev;
+				if (cur->prev)
+					cur->prev->next = dt;
 				dt->next = cur;
-				cur->prev->next = dt;
 				cur->prev = dt;
 				break;
 				}
@@ -193,8 +195,11 @@ static int downtime_add(scheduled_downtime *dt)
 static void downtime_remove(scheduled_downtime *dt)
 {
 	fanout_remove(dt_fanout, dt->downtime_id);
-	if(scheduled_downtime_list == dt)
+	if(scheduled_downtime_list == dt) {
 		scheduled_downtime_list = dt->next;
+		if (scheduled_downtime_list)
+			scheduled_downtime_list->prev = NULL;
+	}
 	else {
 		dt->prev->next = dt->next;
 		if (dt->next)
@@ -1221,9 +1226,11 @@ int sort_downtime(void) {
 
 	qsort((void *)array, i, sizeof(*array), downtime_compar);
 	scheduled_downtime_list = temp_downtime = array[0];
+	temp_downtime->prev = NULL;
 	for(i = 1; i < unsorted_downtimes; i++) {
 		temp_downtime->next = array[i];
 		temp_downtime = temp_downtime->next;
+		temp_downtime->prev = array[i-1];
 		}
 	temp_downtime->next = NULL;
 	my_free(array);
