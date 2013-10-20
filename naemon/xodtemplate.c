@@ -5773,18 +5773,6 @@ int xodtemplate_recombobulate_contactgroups(void)
 	for (temp_contactgroup = xodtemplate_contactgroup_list; temp_contactgroup; temp_contactgroup = temp_contactgroup->next) {
 		objectlist *next, *list, *accept = NULL;
 
-		if (temp_contactgroup->members == NULL)
-			continue;
-
-		/*
-		 * If the contactgroup has no accept or reject list and no group
-		 * members we don't need the bitmaps for it. bitmap_isset()
-		 * will return 0 when passed a NULL map, so we can safely use
-		 * that to add any items from the object list later
-		 */
-		if (temp_contactgroup->members == NULL && temp_contactgroup->contactgroup_members == NULL)
-			continue;
-
 		if (!(temp_contactgroup->member_map = bitmap_create(xodcount.contacts))) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not create contactgroup bitmap\n");
 			return ERROR;
