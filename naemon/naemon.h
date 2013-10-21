@@ -524,7 +524,7 @@ void handle_service_flap_detection_disabled(service *);		/* handles the details 
 int check_host_check_viability(host *, int, int *, time_t *);
 int adjust_host_check_attempt(host *, int);
 int determine_host_reachability(host *);
-int process_host_check_result(host *, int, char *, int, int, int, unsigned long);
+int process_host_check_result(host *, int, char *, int, int, int, unsigned long, int *);
 int perform_on_demand_host_check(host *, int *, int, int, unsigned long);
 int execute_sync_host_check(host *);
 int run_scheduled_host_check(host *, int, double);
@@ -540,7 +540,7 @@ int handle_async_service_check_result(service *, check_result *);
 
 
 /**** Event Handler Functions ****/
-int handle_host_state(host *);               			/* top level host state handler */
+int handle_host_state(host *, int *);               			/* top level host state handler */
 
 
 /**** Common Check Fucntions *****/
