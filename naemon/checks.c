@@ -303,7 +303,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	int first_host_check_initiated = FALSE;
 	int route_result = HOST_UP;
 	time_t current_time = 0L;
-	int state_was_logged = FALSE;
+	int alert_recorded = FALSE;
 	char *old_plugin_output = NULL;
 	char *temp_plugin_output = NULL;
 	char *temp_ptr = NULL;
@@ -634,7 +634,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 			/* log the service recovery */
 			log_service_event(temp_service);
-			state_was_logged = TRUE;
+			alert_recorded = TRUE;
 
 			/* 10/04/07 check to see if the service and/or associate host is flapping */
 			/* this should be done before a notification is sent out to ensure the host didn't just start flapping */
@@ -659,7 +659,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 			/* log the soft recovery */
 			log_service_event(temp_service);
-			state_was_logged = TRUE;
+			alert_recorded = TRUE;
 
 			/* run the service event handler to handle the soft state change */
 			handle_service_event(temp_service);
@@ -800,7 +800,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 				/* log the problem as a hard state if the host just went down */
 				if (hard_state_change == TRUE) {
 					log_service_event(temp_service);
-					state_was_logged = TRUE;
+					alert_recorded = TRUE;
 
 					/* run the service event handler to handle the hard state */
 					handle_service_event(temp_service);
@@ -817,7 +817,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 				/* log the service check retry */
 				log_service_event(temp_service);
-				state_was_logged = TRUE;
+				alert_recorded = TRUE;
 
 				/* run the service event handler to handle the soft state */
 				handle_service_event(temp_service);
@@ -867,13 +867,13 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 				/* log the service problem (even if host is not up, which is new in 0.0.5) */
 				log_service_event(temp_service);
-				state_was_logged = TRUE;
+				alert_recorded = TRUE;
 			}
 
 			/* else log the problem (again) if this service is flagged as being volatile */
 			else if (temp_service->is_volatile == TRUE) {
 				log_service_event(temp_service);
-				state_was_logged = TRUE;
+				alert_recorded = TRUE;
 			}
 
 			/* check for start of flexible (non-fixed) scheduled downtime if we just had a hard error */
@@ -942,16 +942,18 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	}
 
 	/* if we're stalking this state type and state was not already logged AND the plugin output changed since last check, log it now.. */
-	if (temp_service->state_type == HARD_STATE && state_change == FALSE && state_was_logged == FALSE && compare_strings(old_plugin_output, temp_service->plugin_output)) {
+	if (temp_service->state_type == HARD_STATE && state_change == FALSE && alert_recorded == FALSE && compare_strings(old_plugin_output, temp_service->plugin_output)) {
 
-		if (should_stalk(temp_service))
+		if (should_stalk(temp_service)) {
 			log_service_event(temp_service);
+			alert_recorded = TRUE;
+		}
 
 	}
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
-	broker_service_check(NEBTYPE_SERVICECHECK_PROCESSED, NEBFLAG_NONE, NEBATTR_NONE, temp_service, temp_service->check_type, queued_check_result->start_time, queued_check_result->finish_time, NULL, temp_service->latency, temp_service->execution_time, service_check_timeout, queued_check_result->early_timeout, queued_check_result->return_code, NULL, NULL, queued_check_result);
+	broker_service_check(NEBTYPE_SERVICECHECK_PROCESSED, NEBFLAG_NONE, (alert_recorded ? NEBATTR_CHECK_ALERT : NEBATTR_NONE), temp_service, temp_service->check_type, queued_check_result->start_time, queued_check_result->finish_time, NULL, temp_service->latency, temp_service->execution_time, service_check_timeout, queued_check_result->early_timeout, queued_check_result->return_code, NULL, NULL, queued_check_result);
 #endif
 
 	/* set the checked flag */
@@ -2080,6 +2082,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 	char *temp_ptr = NULL;
 	struct timeval start_time_hires;
 	struct timeval end_time_hires;
+	int alert_recorded = FALSE;
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "handle_async_host_check_result(%s ...)\n", temp_host ? temp_host->name : "(NULL host!)");
 
@@ -2267,7 +2270,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 	/******************* PROCESS THE CHECK RESULTS ******************/
 
 	/* process the host check result */
-	process_host_check_result(temp_host, result, old_plugin_output, CHECK_OPTION_NONE, reschedule_check, TRUE, cached_host_check_horizon);
+	process_host_check_result(temp_host, result, old_plugin_output, CHECK_OPTION_NONE, reschedule_check, TRUE, cached_host_check_horizon, &alert_recorded);
 
 	/* free memory */
 	my_free(old_plugin_output);
@@ -2282,7 +2285,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
-	broker_host_check(NEBTYPE_HOSTCHECK_PROCESSED, NEBFLAG_NONE, NEBATTR_NONE, temp_host, temp_host->check_type, temp_host->current_state, temp_host->state_type, start_time_hires, end_time_hires, temp_host->check_command, temp_host->latency, temp_host->execution_time, host_check_timeout, queued_check_result->early_timeout, queued_check_result->return_code, NULL, temp_host->plugin_output, temp_host->long_plugin_output, temp_host->perf_data, NULL, queued_check_result);
+	broker_host_check(NEBTYPE_HOSTCHECK_PROCESSED, NEBFLAG_NONE, (alert_recorded ? NEBATTR_CHECK_ALERT : NEBATTR_NONE), temp_host, temp_host->check_type, temp_host->current_state, temp_host->state_type, start_time_hires, end_time_hires, temp_host->check_command, temp_host->latency, temp_host->execution_time, host_check_timeout, queued_check_result->early_timeout, queued_check_result->return_code, NULL, temp_host->plugin_output, temp_host->long_plugin_output, temp_host->perf_data, NULL, queued_check_result);
 #endif
 
 	return OK;
@@ -2290,7 +2293,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 
 
 /* processes the result of a synchronous or asynchronous host check */
-int process_host_check_result(host *hst, int new_state, char *old_plugin_output, int check_options, int reschedule_check, int use_cached_result, unsigned long check_timestamp_horizon)
+int process_host_check_result(host *hst, int new_state, char *old_plugin_output, int check_options, int reschedule_check, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded)
 {
 	hostsmember *temp_hostsmember = NULL;
 	host *child_host = NULL;
@@ -2543,7 +2546,7 @@ int process_host_check_result(host *hst, int new_state, char *old_plugin_output,
 	log_debug_info(DEBUGL_CHECKS, 1, "Pre-handle_host_state() Host: %s, Attempt=%d/%d, Type=%s, Final State=%d (%s)\n", hst->name, hst->current_attempt, hst->max_attempts, (hst->state_type == HARD_STATE) ? "HARD" : "SOFT", hst->current_state, host_state_name(hst->current_state));
 
 	/* handle the host state */
-	handle_host_state(hst);
+	handle_host_state(hst, alert_recorded);
 
 	log_debug_info(DEBUGL_CHECKS, 1, "Post-handle_host_state() Host: %s, Attempt=%d/%d, Type=%s, Final State=%d (%s)\n", hst->name, hst->current_attempt, hst->max_attempts, (hst->state_type == HARD_STATE) ? "HARD" : "SOFT", hst->current_state, host_state_name(hst->current_state));
 
@@ -2553,6 +2556,7 @@ int process_host_check_result(host *hst, int new_state, char *old_plugin_output,
 	/* if the plugin output differs from previous check and no state change, log the current state/output if state stalking is enabled */
 	if (hst->last_state == hst->current_state && should_stalk(hst) && compare_strings(old_plugin_output, hst->plugin_output)) {
 		log_host_event(hst);
+		*alert_recorded = TRUE;
 	}
 
 	/* check to see if the associated host is flapping */
@@ -2747,7 +2751,7 @@ int determine_host_reachability(host *hst)
 /******************************************************************/
 
 /* top level host state handler - occurs after every host check (soft/hard and active/passive) */
-int handle_host_state(host *hst)
+int handle_host_state(host *hst, int *alert_recorded)
 {
 	int state_change = FALSE;
 	int hard_state_change = FALSE;
@@ -2846,8 +2850,10 @@ int handle_host_state(host *hst)
 		}
 
 		/* write the host state change to the main log file */
-		if (hst->state_type == HARD_STATE || (hst->state_type == SOFT_STATE && log_host_retries == TRUE))
+		if (hst->state_type == HARD_STATE || (hst->state_type == SOFT_STATE && log_host_retries == TRUE)) {
 			log_host_event(hst);
+			*alert_recorded = TRUE;
+		}
 
 		/* check for start of flexible (non-fixed) scheduled downtime */
 		/* It can start on soft states */
@@ -2879,8 +2885,10 @@ int handle_host_state(host *hst)
 			host_notification(hst, NOTIFICATION_NORMAL, NULL, NULL, NOTIFICATION_OPTION_NONE);
 
 		/* if we're in a soft state and we should log host retries, do so now... */
-		if (hst->state_type == SOFT_STATE && log_host_retries == TRUE)
+		if (hst->state_type == SOFT_STATE && log_host_retries == TRUE) {
 			log_host_event(hst);
+			*alert_recorded = TRUE;
+		}
 	}
 
 	return OK;
