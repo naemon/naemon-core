@@ -32,7 +32,8 @@
 #include "../include/nebmods.h"
 #include "../include/nebmodules.h"
 #include "../include/workers.h"
-
+#include <assert.h>
+#define SECS_PER_DAY 86400
 /* global varaiables only used by the daemon */
 char *nagios_binary_path = NULL;
 char *config_file = NULL;
@@ -940,7 +941,12 @@ static timerange* _get_matching_timerange(time_t test_time, timeperiod *tperiod)
 			/* time falls inside the range of days
 			 * end time < start_time when range covers end-of-$unit
 			 * (fe. end-of-month) */
-			if((midnight + 84800 >= start_time && (midnight <= end_time || start_time > end_time)) || (midnight <= end_time && start_time > end_time)) {
+
+			/* (unnecessary (pre 2038)) overflow protection, this is
+			 * necessary to avoid having to compile with
+			  -fwrapv or -fno-strict-overflow */
+			assert(!(midnight > (INT_MAX - SECS_PER_DAY)));
+			if(((midnight + SECS_PER_DAY >= start_time && (midnight <= end_time || start_time > end_time)) || (midnight <= end_time && start_time > end_time))) {
 #ifdef TEST_TIMEPERIODS_A
 				printf("(MATCH)\n");
 #endif
