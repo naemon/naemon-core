@@ -351,11 +351,12 @@ int log_service_states(int type, time_t *timestamp) {
 int rotate_log_file(time_t rotation_time) {
 	char *temp_buffer = NULL;
 	char method_string[16] = "";
-	char *log_archive = NULL;
+	char *log_archive = NULL, *log_archive_short = NULL;
 	struct tm *t, tm_s;
 	int rename_result = 0;
 	int stat_result = -1;
-	struct stat log_file_stat;
+	int existing = 1;
+	struct stat log_file_stat, log_archive_stat;
 
 	if(log_rotation_method == LOG_ROTATION_NONE) {
 		return OK;
@@ -383,6 +384,19 @@ int rotate_log_file(time_t rotation_time) {
 
 	/* get the archived filename to use */
 	asprintf(&log_archive, "%s%snagios-%02d-%02d-%d-%02d.log", log_archive_path, (log_archive_path[strlen(log_archive_path) - 1] == '/') ? "" : "/", t->tm_mon + 1, t->tm_mday, t->tm_year + 1900, t->tm_hour);
+
+	log_archive_short = log_archive;
+	while (!stat(log_archive, &log_archive_stat) && existing < 50) {
+		if (log_archive_short != log_archive)
+			my_free(log_archive);
+		asprintf(&log_archive, "%s.%d", log_archive_short, existing++);
+		}
+	if (log_archive_short != log_archive)
+		my_free(log_archive_short);
+
+	/* 50 files already, this hour? Sounds like a bug, bail */
+	if (existing >= 50)
+		return ERROR;
 
 	/* rotate the log file */
 	rename_result = my_rename(log_file, log_archive);
