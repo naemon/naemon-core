@@ -1064,7 +1064,7 @@ int event_execution_loop(void) {
 		last_event = temp_event;
 
 		gettimeofday(&now, NULL);
-		poll_time_ms = tv_delta_msec(&now, event_runtime) - 25;
+		poll_time_ms = tv_delta_msec(&now, event_runtime);
 		if (poll_time_ms < 0)
 			poll_time_ms = 0;
 		else if(poll_time_ms >= 1500)
@@ -1092,9 +1092,8 @@ int event_execution_loop(void) {
 			continue;
 			}
 
-		/* 100 milliseconds allowance for firing off events early */
 		gettimeofday(&now, NULL);
-		if (tv_delta_msec(&now, event_runtime) > 100)
+		if (tv_delta_msec(&now, event_runtime) >= 0)
 			continue;
 
 		/* move on if we shouldn't run this event */
