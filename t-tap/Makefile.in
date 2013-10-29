@@ -14,6 +14,7 @@ CFLAGS=@CFLAGS@ @DEFS@ -DNSCORE -I../include -I../tap/src -I..
 
 TESTS = test_macros
 TESTS += test_timeperiods
+TESTS += test_checks
 
 XSD_OBJS = $(SRC_CGI)/statusdata-cgi.o $(SRC_CGI)/xstatusdata-cgi.o
 XSD_OBJS += $(SRC_CGI)/objects-cgi.o $(SRC_CGI)/xobjects-cgi.o
@@ -26,9 +27,13 @@ TP_OBJS += ../common/shared.o
 
 CFG_OBJS = $(TP_OBJS)
 CFG_OBJS += $(SRC_BASE)/comments-base.o $(SRC_BASE)/xcomments-base.o
-CFG_OBJS += $(SRC_BASE)/downtime-base.o $(SRC_BASE)/xdowntime-base.o
+CFG_OBJS += $(SRC_BASE)/downtime-base.o
 CFG_OBJS += $(SRC_BASE)/retention-base.o $(SRC_BASE)/xretention-base.o
 
+
+$(SRC_BASE)/%:
+	make -C $(SRC_BASE)
+CHECKS_DEPS = $(SRC_BASE)/netutils.o $(SRC_BASE)/nebmods.o $(SRC_BASE)/commands.o $(SRC_BASE)/broker.o $(SRC_BASE)/query-handler.o $(SRC_BASE)/utils.o $(SRC_BASE)/events.o $(SRC_BASE)/notifications.o $(SRC_BASE)/checks.o $(SRC_BASE)/flapping.o $(SRC_BASE)/sehandlers.o $(SRC_BASE)/logging.o $(SRC_BASE)/workers.o $(SRC_BASE)/statusdata-base.o $(SRC_BASE)/xstatusdata-base.o $(SRC_BASE)/perfdata-base.o $(SRC_BASE)/xperfdata-base.o
 
 LDFLAGS=@LDFLAGS@
 LIBS=@LIBS@ ../lib/libnagios.a
@@ -73,8 +78,8 @@ test_logging: test_logging.o $(SRC_BASE)/logging.o $(TAPOBJ)
 test_events: test_events.o $(SRC_BASE)/events.o $(TAPOBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(MATHLIBS) $(LIBS)
 
-test_checks: test_checks.o $(SRC_BASE)/checks.o $(TAPOBJ)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(MATHLIBS) $(LIBS)
+test_checks: test_checks.o $(CHECKS_DEPS) $(CFG_OBJS) $(TAPOBJ)
+	$(CC) $(CFLAGS) -o $@ $^ $(BROKER_LDFLAGS) $(LDFLAGS) $(MATHLIBS) $(BROKERLIBS) $(LIBS)
 
 test_commands: test_commands.o $(SRC_COMMON)/shared.o $(TAPOBJ)
 	$(CC) $(CFLAGS) -o $@ $^
