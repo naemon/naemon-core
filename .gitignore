@@ -1,0 +1,11 @@
+*.o
+*.la
+*.lo
+*.gcda
+*.gcno
+*.gcov
+*.a
+*.so
+gmon.out
+core.[1-9]*
+*.pre-indent
