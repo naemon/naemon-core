@@ -1,0 +1,15 @@
+
+.outages { }
+
+.itemTotalsTitle { text-align: center; }
+
+.dataTitle {  text-align: center;  font-weight: bold;  font-size: 12pt; }
+TABLE.data {  font-size: 10pt;  background-color: white;  padding: 2px; border-collapse:separate;}
+TH.data {  font-size: 10pt;   text-align: left;  background-color: #999797;   }
+.dataOdd {  font-size: 10pt;  background-color: #DBDBDB; }
+.dataEven {  font-size: 10pt;  background-color: #C4C2C2; }
+
+.hostUP {  font-size: 10pt;  text-align: left;  background-color: #33FF00;  font-weight: bold; }
+.hostDOWN {  font-size: 10pt;  text-align: left;  background-color: #F83838;  font-weight: bold; }
+.hostUNREACHABLE {  font-size: 10pt;  text-align: left;  background-color: #F83838;  font-weight: bold; }
+

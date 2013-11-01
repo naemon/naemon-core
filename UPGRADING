@@ -1,0 +1,19 @@
+Upgrading to Nagios 3.x
+-----------------------
+
+The HTML documentation covers what you need to know in order
+to upgrade from Nagios 2.x  You can find the documentation in
+the following subdirectory:
+
+	html/docs
+
+Make sure to read the following sections:
+
+- "What's New" (whatsnew.html)
+- "Upgrading Nagios" (upgrading.html)
+
+
+
+
+
+

@@ -1,0 +1,96 @@
+
+.extinfo { }
+
+DIV.dataTitle { text-align: center;  font-weight: bold;  font-size: 12pt; }
+DIV.data { text-align: center;  font-size: 12pt; }
+
+DIV.perfTypeTitle { text-align: right;  font-weight: bold;  font-size: 10pt; }
+/*
+TABLE.data { font-size: 10pt;  background-color: white;  padding: 2px; border-collapse:separate;}
+TH.data { font-size: 10pt;  text-align: left;  background-color: #999797;  }
+*/
+
+.dataOdd { font-size: 10pt;  background-color: #DBDBDB; }
+.dataEven { font-size: 10pt;  background-color: #C4C2C2; }
+
+
+.commandTitle { text-align: center;  font-weight: bold;  font-size: 12pt; }
+
+TABLE.command { font-size: 10pt;  background-color: #DBDBDB; padding: 3px; }
+.command { font-size: 10pt; padding: 2px; }
+
+.commentTitle { text-align: center;  font-weight: bold;  font-size: 12pt; }
+DIV.commentNav { font-size: 10pt;  text-align: center; }
+A.commentNav { font-size: 10pt; }
+
+TABLE.comment { font-size: 10pt;  background-color: white;  padding: 2px; border-collapse:separate;}
+TH.comment { font-size: 10pt;  text-align: left;  background-color: #999797; }
+.commentOdd { font-size: 9pt;  background-color: #DBDBDB; }
+.commentEven { font-size: 9pt;  background-color: #C4C2C2; }
+DIV.comment,A.comment { font-size: 10pt;  background-color: white;  text-align: center; }
+
+.downtimeTitle { text-align: center;  font-weight: bold;  font-size: 12pt; }
+DIV.downtimeNav { font-size: 10pt;  text-align: center; }
+A.downtimeNav { font-size: 10pt; }
+
+TABLE.downtime { font-size: 10pt;  background-color: white;  padding: 2px; border-collapse:separate;}
+TH.downtime { font-size: 10pt;   text-align: left;  background-color: #999797; }
+.downtimeOdd { font-size: 9pt;  background-color: #DBDBDB; }
+.downtimeEven { font-size: 9pt;  background-color: #C4C2C2; }
+
+.notificationsENABLED { font-size: 10pt;  text-align: left;  background-color: #33FF00;  font-weight: bold; }
+.notificationsDISABLED { font-size: 10pt;  text-align: left;  background-color: #F83838;  font-weight: bold; }
+
+.checksENABLED { font-size: 10pt;  text-align: left;  background-color: #33FF00;  font-weight: bold; }
+.checksDISABLED { font-size: 10pt;  text-align: left;  background-color: #F83838;  font-weight: bold; }
+
+.eventhandlersENABLED { font-size: 10pt;  text-align: left;  background-color: #33FF00;  font-weight: bold; }
+.eventhandlersDISABLED { font-size: 10pt;  text-align: left;  background-color: #F83838;  font-weight: bold; }
+
+.flapdetectionENABLED { font-size: 10pt;  text-align: left;  background-color: #33FF00;  font-weight: bold; }
+.flapdetectionDISABLED { font-size: 10pt;  text-align: left;  background-color: #F83838;  font-weight: bold; }
+
+.notflapping { font-size: 10pt;  text-align: left;  background-color: #33FF00;  font-weight: bold; float: left; }
+.flapping { font-size: 10pt;  text-align: left;  background-color: #F83838;  font-weight: bold; float: left; }
+
+.downtimeACTIVE { font-size: 10pt;  text-align: left;  background-color: #F83838;  font-weight: bold; float: left; }
+.downtimeINACTIVE { font-size: 10pt;  text-align: left;  background-color: #33FF00;  font-weight: bold; float: left; }
+
+.processOK { font-size: 10pt;  background-color: #33FF00;  font-weight: bold; }
+.processUNKNOWN { font-size: 10pt;  background-color: #FF9900;  font-weight: bold; }
+.processWARNING { font-size: 10pt;  background-color: #FFFF00;  font-weight: bold; }
+.processCRITICAL { font-size: 10pt;  background-color: #F83838;  font-weight: bold; }
+
+.modeACTIVE { font-size: 10pt;  background-color: #33FF00;  font-weight: bold; }
+.modeSTANDBY { font-size: 10pt;  background-color: #FFFF00;  font-weight: bold; }
+
+.hostUP { font-size: 10pt;  text-align: left;  background-color: #33FF00;  font-weight: bold; float: left; }
+.hostDOWN { font-size: 10pt;  text-align: left;  background-color: #F83838;  font-weight: bold; float: left; }
+.hostUNREACHABLE { font-size: 10pt;  text-align: left;  background-color: #F83838;  font-weight: bold; float: left; }
+
+.serviceOK { font-size: 10pt;  text-align: left;  background-color: #33FF00;  font-weight: bold; float: left; }
+.serviceWARNING { font-size: 10pt;  text-align: left;  background-color: #FFFF00;  font-weight: bold; float: left; }
+.serviceUNKNOWN { font-size: 10pt;  text-align: left;  background-color: #FF9900;  font-weight: bold; float: left; }
+.serviceCRITICAL { font-size: 10pt;  text-align: left;  background-color: #F83838;  font-weight: bold; float: left; }
+
+.commandPanel { background-color: white; }
+.commentPanel { background-color: white; }
+
+.stateInfoPanel { background-color: white; }
+.stateStatisticsPanel { background-color: white; }
+.stateInfoTable1 { font-size: 10pt;  background-color: #DBDBDB; }
+.stateInfoTable2 { font-size: 10pt;  background-color: #C4C2C2; }
+
+.dataVar { font-size: 10pt; }
+.dataVal { font-size: 10pt; }
+
+.queueTitle { text-align: center;  font-weight: bold;  font-size: 12pt; }
+
+TABLE.queue { font-size: 10pt;  background-color: white;  padding: 2px; border-collapse:separate;}
+TH.queue { font-size: 10pt;  text-align: left;  background-color: #999797; }
+.queueOdd { font-size: 9pt;  background-color: #DBDBDB; }
+.queueEven { font-size: 9pt;  background-color: #C4C2C2; }
+.queueENABLED { font-size: 9pt;  background-color: #33FF00; }
+.queueDISABLED { font-size: 9pt;  background-color: #F83838; }
+
+

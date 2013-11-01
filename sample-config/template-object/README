@@ -1,0 +1,16 @@
+================================
+SAMPLE OBJECT CONFIG FILE README
+================================
+
+This directory contains sample object definition config files.
+Sample config files have a .cfg extension.  Ignore any files with
+a .in extension, as they are templates used to generate the sample
+config files.
+
+Please note that you can keep all of your object definitions in a
+single file if you wish.  You may also split them up into multiple
+config files, as is done here.  
+
+Read the 'Quickstart Installation Guide' in the HTML documentation
+for instructions on how to install and use these sample config files.
+

@@ -1,0 +1,40 @@
+
+.summary {  }
+
+.reportRange {  text-align: center;  font-weight: bold;  font-size: 10pt; }
+.reportDuration {  text-align: center; }
+.reportTime {  text-align: center; }
+
+.reportDataEven {  background-color: #B4B5CC;  padding: 2px; }
+.reportDataOdd {  background-color: #CDCEE9;  padding: 2px; }
+
+.dataTitle {  text-align: center;  font-weight: bold;  font-size: 12pt; }
+.dataSubTitle {  text-align: center;  font-weight: bold;  font-size: 10pt; }
+
+TABLE.data {  font-size: 10pt;  background-color: white;  padding: 2px; border-collapse:separate;}
+TH.data {  font-size: 10pt; text-align: left;  background-color: #999797;  }
+.dataOdd {  font-size: 9pt;  background-color: #DBDBDB; }
+.dataEven {  font-size: 9pt;  background-color: #C4C2C2; }
+
+.hostUP {  font-size: 9pt;  text-align: left;  background-color: #33FF00; }
+.hostDOWN {  font-size: 9pt;  text-align: left;  background-color: #F83838; }
+.hostUNREACHABLE {  font-size: 9pt;  text-align: left;  background-color: #F83838; }
+
+.serviceOK {  font-size: 9pt;  text-align: left;  background-color: #33FF00; }
+.serviceWARNING {  font-size: 9pt;  text-align: left;  background-color: #FFFF00; }
+.serviceUNKNOWN {  font-size: 9pt;  text-align: left;  background-color: #FF9900; }
+.serviceCRITICAL {  font-size: 9pt;  text-align: left;  background-color: #F83838; }
+
+
+.helpfulHint {  text-align: left;  font-style: italic;  text-align: center; }
+
+.dateSelectTitle {  text-align: center;  font-weight: bold;  font-size: 12pt; }
+.dateSelectSubTitle {  text-align: left;  font-weight: bold;  font-size: 10pt; }
+.dateSelectItem {  text-align: left; }
+
+.reportSelectTip {  text-align: left;  font-style: italic; }
+
+.reportSelectTitle {  text-align: center;  font-weight: bold;  font-size: 12pt; }
+.reportSelectSubTitle {  text-align: right;  font-size: 10pt; }
+.reportSelectItem {  text-align: left; }
+

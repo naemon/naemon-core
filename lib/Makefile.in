@@ -1,0 +1,75 @@
+CC = @CC@
+COV_CFLAGS = -ggdb3 -O0 -ftest-coverage -fprofile-arcs -pg
+LDFLAGS =
+CFLAGS ?= @CFLAGS@
+ALL_CFLAGS = $(CFLAGS) @DEFS@
+LIBNAME = libnagios.a
+
+all: $(LIBNAME)
+
+SNPRINTF_O=@SNPRINTF_O@
+TESTED_SRC_C := squeue.c kvvec.c iocache.c iobroker.c bitmap.c dkhash.c runcmd.c
+TESTED_SRC_C += nsutils.c fanout.c
+SRC_C := $(TESTED_SRC_C) pqueue.c worker.c skiplist.c nsock.c
+SRC_C += nspath.c
+SRC_O := $(patsubst %.c,%.o,$(SRC_C)) $(SNPRINTF_O)
+TESTS := $(patsubst %.c,test-%,$(TESTED_SRC_C))
+
+test: $(TESTS)
+	@for t in $(TESTS); do echo $$t:; ./$$t || exit 1; echo; done
+
+test-squeue: pqueue.o test-squeue.o t-utils.o
+	$(CC) $(ALL_CFLAGS) $(LDFLAGS) $^ -o $@
+
+%.o: %.c %.h Makefile lnag-utils.h
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
+
+test-%.o: test-%.c %.c %.h Makefile
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
+
+test-%: t-utils.o test-%.o
+	$(CC) $(ALL_CFLAGS) $^ -o $@
+
+$(LIBNAME): $(SRC_O)
+	$(AR) cr $@ $^
+
+wproc: wproc.o $(LIBNAME)
+	$(CC) $(ALL_CFLAGS) $(ALL_LDFLAGS) $^ -o $@
+
+coverage:
+	@$(MAKE) -s --no-print-directory clean
+	@$(MAKE) --no-print-directory cov-build
+	@$(MAKE) --no-print-directory cov-report
+
+cov-build:
+	$(MAKE) CFLAGS='$(COV_CFLAGS)' LDFLAGS='$(COV_CFLAGS)' test
+
+cov-report:
+	@{ for f in $(TESTS) pqueue; do \
+		gcov -b -p $$f.c >/dev/null; \
+	done; }
+
+	@rm -f *.h.gcov test-*.c.gcov
+	@echo "--- untested functions:" | tee -a untested
+	@grep '^function .* called 0' *.c.gcov \
+	| sed -e 's/function \([^ ]*\) called 0.*/\1/' \
+	| sed -e 's/\.c\.gcov:/\.c:/' | tee -a untested
+
+
+distclean: clean
+	rm -f Makefile
+
+clean: clean-test clean-coverage
+	rm -f core.* *.o *~ wproc *.a
+
+clean-test: clean-coverage
+	rm -f $(TESTS)
+
+clean-coverage:
+	rm -f untested *.gcov *.gcda *.gcno gmon.out
+
+.PHONY: clean clean-test clean-coverage coverage
+
+# stop make from removing intermediary files, as ours aren't really
+# intermediary
+.SECONDARY:

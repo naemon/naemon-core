@@ -1,0 +1,24 @@
+
+.notifications { }
+
+.dataTitle {  text-align: center;  font-weight: bold;  font-size: 12pt; }
+
+
+TABLE.notifications {  font-size: 10pt;  background-color: white;  padding: 5px; border-collapse:separate; }
+TH.notifications {  font-size: 10pt;  text-align: left;  background-color: #999797;   }
+.notificationsOdd {  background-color: #DBDBDB; }
+.notificationsEven {  background-color: #C4C2C2; }
+
+.notificationsOK {  background-color: #33FF00; }
+.notificationsUNKNOWN {  background-color: #FF9900; }
+.notificationsWARNING {  background-color: #FFFF00; }
+.notificationsCRITICAL {  background-color: #F83838; }
+.notificationsACKNOWLEDGEMENT {  background-color: #AAAAAA; }
+.notificationsCUSTOM {  background-color: #778899; }
+
+.notificationsHOSTUP {  background-color: #33FF00; }
+.notificationsHOSTDOWN {  background-color: #F83838; }
+.notificationsHOSTUNREACHABLE {  background-color: #F83838; }
+.notificationsHOSTACKNOWLEDGEMENT {  background-color: #AAAAAA; }
+.notificationsHOSTCUSTOM {  background-color: #778899; }
+

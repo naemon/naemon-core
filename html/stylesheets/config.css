@@ -1,0 +1,14 @@
+
+.config { }
+
+.dataTitle {  text-align: center;  font-weight: bold;  font-size: 12pt; }
+
+TABLE.data {  background-color: white;  padding: 2px; border-collapse:separate;}
+TH.data {  background-color: white;  text-align: left;  background-color: #999797;  }
+.dataOdd {  background-color: #DBDBDB; }
+.dataEven {  background-color: #C4C2C2; }
+
+.reportSelectTitle {  text-align: center;  font-weight: bold;  font-size: 12pt; }
+.reportSelectSubTitle {  text-align: left;  font-weight: bold;  font-size: 10pt; }
+.reportSelectItem {  text-align: left; }
+

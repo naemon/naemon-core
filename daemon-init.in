@@ -1,0 +1,148 @@
+#!/bin/sh
+
+# Nagios	Startup script for the Nagios monitoring daemon
+#
+# chkconfig:	- 85 15
+# description:	Nagios is a service monitoring system
+# processname: nagios
+# config: /etc/nagios/nagios.cfg
+# pidfile: /var/nagios/nagios.pid
+#
+### BEGIN INIT INFO
+# Provides:		nagios
+# Required-Start:	$local_fs $syslog $network
+# Required-Stop:	$local_fs $syslog $network
+# Short-Description:	start and stop Nagios monitoring server
+# Description:		Nagios is is a service monitoring system
+### END INIT INFO
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+prefix="@prefix@"
+exec_prefix="@exec_prefix@"
+exec="@bindir@/nagios"
+prog="nagios"
+config="@sysconfdir@/nagios.cfg"
+pidfile="@lockfile@"
+user="nagios"
+group="nagios"
+checkconfig="false"
+ramdiskdir="/var/nagios/ramcache"
+
+test -e /etc/sysconfig/$prog && . /etc/sysconfig/$prog
+
+lockfile=/var/lock/subsys/$prog
+USE_RAMDISK=${USE_RAMDISK:-0}
+
+if test "$USE_RAMDISK" -ne 0 && test "$RAMDISK_SIZE"X != "X"; then
+	ramdisk=`mount |grep "$ramdiskdir type tmpfs"`
+	if [ "$ramdisk"X == "X" ]; then
+		mkdir -p -m 0755 $ramdiskdir
+		mount -t tmpfs -o size=${RAMDISK_SIZE}m tmpfs $ramdiskdir
+		mkdir -p -m 0755 $ramdiskdir/checkresults
+		chown -R $user:$group $ramdiskdir
+	fi
+fi
+
+check_config() {
+	TMPFILE=$(mktemp /tmp/.configtest.XXXXXXXX)
+	/sbin/service nagios configtest > "$TMPFILE"
+	WARN=`grep ^"Total Warnings:" "$TMPFILE" |awk -F: '{print \$2}' |sed s/' '//g`
+	ERR=`grep ^"Total Errors:" "$TMPFILE" |awk -F: '{print \$2}' |sed s/' '//g`
+
+	if test "$WARN" = "0" && test "${ERR}" = "0"; then
+		echo "OK - Configuration check verified" > /var/run/nagios.configtest
+		chmod 0644 /var/run/nagios.configtest
+		/bin/rm "$TMPFILE"
+	return 0
+	else
+		# We'll write out the errors to a file we can have a
+		# script watching for
+		echo "WARNING: Errors in config files - see log for details: $TMPFILE" > /var/run/nagios.configtest
+		egrep -i "(^warning|^error)" "$TMPFILE" >> /var/run/nagios.configtest
+		chmod 0644 /var/run/nagios.configtest
+		cat "$TMPFILE"
+	exit 8
+	fi
+}
+
+start() {
+	test -x $exec || exit 5
+	test -f $config || exit 6
+	if test "$checkconfig" == "false"; then
+		check_config
+	fi
+	echo -n $"Starting $prog: "
+	# We need to _make sure_ the precache is there and verified
+	# Raise priority to make it run better
+	daemon --user=$user $exec -ud $config
+	retval=$?
+	echo
+	test $retval -eq 0 && touch $lockfile
+	return $retval
+}
+
+stop() {
+	echo -n $"Stopping $prog: "
+	killproc -p ${pidfile} -d 10 $exec
+	retval=$?
+	echo
+	test $retval -eq 0 && rm -f $lockfile
+	return $retval
+}
+
+
+restart() {
+	check_config
+	checkconfig="true"
+	stop
+	start
+}
+
+reload() {
+	echo -n $"Reloading $prog: "
+	killproc -p ${pidfile} $exec -HUP
+	RETVAL=$?
+	echo
+}
+
+force_reload() {
+	restart
+}
+
+case "$1" in
+	start)
+		status $prog && exit 0
+		$1
+		;;
+	stop)
+		status $prog|| exit 0
+		$1
+		;;
+	restart)
+		$1
+		;;
+	reload)
+		status $prog || exit 7
+		$1
+		;;
+	force-reload)
+		force_reload
+		;;
+	status)
+		status $prog
+		;;
+	condrestart|try-restart)
+		status $prog|| exit 0
+		restart
+		;;
+	configtest)
+		$nice runuser -s /bin/bash - $user -c "$corelimit >/dev/null 2>&1 ; $exec -vp $config"
+		RETVAL=$?
+		;;
+	*)
+		echo $"Usage: $0 {start|stop|status|restart|condrestart|try-restart|reload|force-reload|configtest}"
+		exit 2
+esac
+exit $?

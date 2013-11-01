@@ -1,3 +1,16 @@
+pkg
+subst
+pkginfo
+Prototype
+nagios.SPARC.pkg.tar.gz
+autom4te.cache
+
+config.log
+config.status
+daemon-init
+Makefile
+.deps/
+.libs/
 *.o
 *.la
 *.lo
@@ -8,4 +21,5 @@
 *.so
 gmon.out
 core.[1-9]*
+/Documentation
 *.pre-indent

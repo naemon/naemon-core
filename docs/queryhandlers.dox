@@ -1,0 +1,130 @@
+/** @page qh Query Handler
+
+A brief intro to the Nagios query handler system
+
+[TOC]
+
+@section purpose Purpose
+The purpose of the query handler is to provide Nagios Core and its
+eventbroker modules with the ability to communicate directly with
+the outside world through a well-defined API, as well as allowing
+external apps a way to help out with various Nagios tasks.
+
+@section caveats Caveats
+The query handlers run in the main thread. Nagios doesn't provide any
+parallellism here and main Nagios will be blocked while a query is
+running. As such, it's a very good idea to make ones queryhandlers
+complete in as little time as possible.
+
+@section qh_registering Registering a query handler
+This is really for module authors only.
+
+To register a query handler, you *must* have a function like the one
+below:
+the following arguments:
+@code
+int lala_query_handler(int sd, char *query, unsigned int query_len)
+@endcode
+
+The parameters don't have to have those exact names, and the function
+certainly doesn't have to be called "lala_query_handler()". We're not
+quite that childish (well, we are, but we like to pretend we're not).
+They will suffice for this explanation, however.
+@li sd - The socket you should respond to.
+@li query - The query, minus the address and the magic byte.
+@li query_len - Length of the query, in bytes.
+
+The call to register it with Nagios so you get all queries directed
+to the 'lala' address is then:
+@code
+qh_register_handler("lala", "The LaLa query handler", 0,
+lala_query_handler);
+@endcode
+
+The second argument is a description, which will be printed when
+someone sends a help request.
+@note It's a good idea to handle queries such as "help" and take
+them to mean "print me some text telling me at least the basics
+of how to use this query handler".
+
+@section syntax Syntax
+The query language is remarkably simple (although each handler may
+implement its own parsers that handle and do pretty much whatever
+they want). The first byte is magic. If it's an at-sign, we expect
+the queryer to persist and issue more queries after the first one.
+If it's a hash-sign, the query handler will disconnect the client
+as soon as it regains control from whatever handler registered for
+the particular address. Each particular handler has some control
+over this behaviour though, and can use specific return codes to
+denote that it will take over the socket from the query handler.
+If no at-sign and no hash-sign is present at the first byte, the
+-1'th byte will be considered an at-sign, and the connection will
+consequently be considered persistent.
+
+@subsection qh_examples Example queries
+Subscribe for real-time push-events for servicechecks from the NERD radio:
+@verbatim
+@nerd subscribe servicechecks\0
+@endverbatim
+
+One-shot query the core query handler for current load-control options:
+@verbatim
+#core loadctl\0
+@endverbatim
+
+Get Nagios to say hi to you:
+@verbatim
+#echo Greetings, Exalted One
+@endverbatim
+
+Ask the help handler to list registered handlers:
+@verbatim
+#help list
+@endverbatim
+
+
+@section icqh In-core query handlers
+There are a few in-core query handlers.
+
+@subsection help The help service
+The help query handler is quite possibly the most important one. It
+can be used to list registered handlers (with short descriptions),
+and can be used to get help about registered handlers (assuming
+they've implemented it, that is). It should be noted that the ones
+that *have* implemented it can also be queried directly for their
+help output, like so:
+@verbatim
+@core help
+@endverbatim
+
+
+@subsection echo The echo service
+As I'm sure you've already guessed, the echo service just prints the
+inbound data right back at you. While that's not exactly nobel prize
+winning material, it's actually pretty nifty to figure out how fast
+Nagios can parse its inbound data, which in turn shows how fast it can
+handle its inbound checkresults, which puts an upper cap on how many
+checks Nagios can handle at any given time (although short bursts that
+exceed that limit are ok and will be handled just fine).
+
+It can be addressed as such:
+@verbatim
+@echo foo bar baz said the bunny\0
+@endverbatim
+
+@subsection nerd Nagios Event Radio Dispatcher
+The nerd radio is subscribed in fuller detail at @see nerd, but its
+worth knowing that it's a core part of Nagios 4 and that it will
+always be available.
+
+@subsection wproc Worker process manager
+The worker process manager lets you register workers that can help out
+with running checks, send notifications, run eventhandlers or whatever.
+
+In order to register a worker that only handles checks supposed to be
+run by the plugins check_foo and check_bar (irrespective of where in
+the paths they are), you'd do something like this:
+@verbatim
+@wproc register name=foobar;plugin=check_foo;plugin=check_bar\0
+@endverbatim
+*/

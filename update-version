@@ -1,0 +1,68 @@
+#!/bin/sh
+
+# Get date (two formats)
+if [ -n "$2" ]; then
+    LONGDATE=`date -d "$2" "+%B %d, %Y"`
+    SHORTDATE=`date -d "$2" "+%m-%d-%Y"`
+else
+    LONGDATE=`date "+%B %d, %Y"`
+    SHORTDATE=`date "+%m-%d-%Y"`
+fi
+
+# Current version number
+CURRENTVERSION=4.0.1
+
+# Last date
+LASTDATE=10-15-2013
+
+if [ "x$1" = "x" ]
+then
+	echo "Usage: $0 <version number | \"newdate\"> [revision date]"
+	echo ""
+	echo "Run this script with the name of the new version (i.e \"2.0b1\") to"
+	echo "update version number and modification date in files."
+	echo "Use the \"newdate\" argument if you want to keep the current version"
+	echo "number and just update the modification date."
+	echo ""
+	echo "Current version=$CURRENTVERSION"
+	echo "Current Modification date=$LASTDATE"
+	echo ""
+	exit 1
+fi
+
+# Keep track of last version, as it is needed to update quickstart guide pages
+lastversion=$CURRENTVERSION
+
+# What's the new version number (if any)?
+newversion=$1
+if [ "x$newversion" = "xnewdate" ]
+then
+    # No new version number, just a new version date
+    newversion=$CURRENTVERSION
+fi
+
+# Update version number and release date in main PHP page
+perl -i -p -e "s/>Version .*</>Version $newversion</;" html/main.php
+perl -i -p -e "s/releasedate\">.*<\//releasedate\">$LONGDATE<\//;" html/main.php
+perl -i -p -e "s/\?version=.*&product=/\?version=$newversion&product=/;" html/main.php
+perl -i -p -e "s/$this_version=\".*\";/$this_version=\"$newversion\";/;" html/main.php
+
+# Update version number and release date in common code
+perl -i -p -e "s/PROGRAM_VERSION \".*\"/PROGRAM_VERSION \"$newversion\"/;" include/common.h
+perl -i -p -e "s/MODIFICATION_DATE \".*\"/MODIFICATION_DATE \"$SHORTDATE\"/;" include/common.h
+
+# Update version number and release date in configure script and configure.in
+perl -i -p -e "s/PKG_VERSION=.*/PKG_VERSION=\"$newversion\"/;" configure
+perl -i -p -e "s/PKG_REL_DATE=.*\"/PKG_REL_DATE=\"$SHORTDATE\"/;" configure
+perl -i -p -e "s/PKG_VERSION=.*/PKG_VERSION=\"$newversion\"/;" configure.in
+perl -i -p -e "s/PKG_REL_DATE=.*\"/PKG_REL_DATE=\"$SHORTDATE\"/;" configure.in
+
+# Update RPM spec file with version number
+perl -i -p -e "s/Version: .*/Version: $newversion/;" nagios.spec
+
+# Update the doxygen docs
+perl -i -p -e "s/^PROJECT_NUMBER = .*/PROJECT_NUMBER = $newversion/;" doxy.conf
+
+# Update this file with version number and last date
+perl -i -p -e "s/^CURRENTVERSION=.*/CURRENTVERSION=$newversion/;" update-version
+perl -i -p -e "s/^LASTDATE=.*/LASTDATE=$SHORTDATE/;" update-version

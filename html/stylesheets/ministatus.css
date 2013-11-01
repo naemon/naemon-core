@@ -1,0 +1,69 @@
+
+.status {}
+
+.filter {  background-color: #DBDBDB; }
+.filterTitle {  font-size: 10pt;  font-weight: bold;  background-color: #DBDBDB; }
+.filterName {  background-color: #DBDBDB; }
+.filterValue {  background-color: #DBDBDB; }
+
+.statusTitle {  text-align: center;  font-weight: bold;  font-size: 12pt; }
+.statusSort { }
+
+TABLE.status {  background-color: white;  padding: 2px; }
+TH.status {  font-size: 10pt;  text-align: left;  background-color: #999797;  }
+DIV.status {  font-size: 10pt;  text-align: center; }
+.statusOdd {  background-color: #DBDBDB; }
+.statusEven {  background-color: #C4C2C2; }
+
+.statusPENDING {  background-color: #ACACAC; }
+.statusOK {  background-color: #33FF00; }
+.statusRECOVERY {  background-color: #33FF00; }
+.statusUNKNOWN {  background-color: #FF9900; }
+.statusWARNING {  background-color: #FFFF00; }
+.statusCRITICAL {  background-color: #F83838; }
+
+.statusHOSTPENDING {  background-color: #ACACAC; }
+.statusHOSTUP {  background-color: #33FF00; }
+.statusHOSTDOWN {  background-color: #F83838; }
+.statusHOSTUNREACHABLE {  background-color: #F83838; }
+
+.statusBGUNKNOWN {  background-color: #FFDA9F; }
+.statusBGWARNING {  background-color: #FEFFC1; }
+.statusBGCRITICAL {  background-color: #FFBBBB; }
+.statusBGDOWN {  background-color: #FFBBBB; }
+.statusBGUNREACHABLE {  background-color: #FFBBBB; }
+
+DIV.serviceTotals {  text-align: center;  font-weight: bold;  font-size: 10pt; }
+TABLE.serviceTotals {  font-size: 10pt;  background-color: white;  padding: 2px; }
+TH.serviceTotals,A.serviceTotals {  font-size: 10pt;  text-align: center;  background-color: #999797;  }
+TD.serviceTotals {  text-align: center;  background-color: #e9e9e9; }
+
+.serviceTotalsOK {  text-align: center;  background-color: #33FF00; }
+.serviceTotalsWARNING {  text-align: center;  background-color: #FFFF00;  font-weight: bold; }
+.serviceTotalsUNKNOWN {  text-align: center;  background-color: #FF9900;  font-weight: bold; }
+.serviceTotalsCRITICAL {  text-align: center;  background-color: #F83838;  font-weight: bold; }
+.serviceTotalsPENDING {  text-align: center;  background-color: #ACACAC; }
+.serviceTotalsPROBLEMS {  text-align: center;  background-color: orange;  font-weight: bold; }
+
+
+DIV.hostTotals {  text-align: center;  font-weight: bold;  font-size: 10pt; }
+TABLE.hostTotals {  font-size: 10pt;  background-color: white;  padding: 2px; }
+TH.hostTotals,A.hostTotals {  font-size: 10pt;   text-align: center;  background-color: #999797;  }
+TD.hostTotals {  text-align: center;  background-color: #e9e9e9; }
+
+.hostTotalsUP {  text-align: center;  background-color: #33FF00; }
+.hostTotalsDOWN {  text-align: center;  background-color: #F83838;  font-weight: bold; }
+.hostTotalsUNREACHABLE {  text-align: center;  background-color: #F83838;  font-weight: bold; }
+.hostTotalsPENDING {  text-align: center;  background-color: #ACACAC; }
+.hostTotalsPROBLEMS {  text-align: center;  background-color: orange;  font-weight: bold; }
+
+.miniStatusPENDING {  background-color: #ACACAC;  text-align: center; }
+.miniStatusOK {  background-color: #33FF00;  text-align: center; }
+.miniStatusUNKNOWN {  background-color: #FF9900;  text-align: center; }
+.miniStatusWARNING {  background-color: #FFFF00;  text-align: center; }
+.miniStatusCRITICAL {  background-color: #F83838;  text-align: center; }
+
+.miniStatusUP {  background-color: #33FF00;  text-align: center; }
+.miniStatusDOWN {  background-color: #F83838;  text-align: center; }
+.miniStatusUNREACHABLE {  background-color: #F83838;  text-align: center; }
+
