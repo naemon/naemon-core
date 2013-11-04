@@ -239,7 +239,6 @@ timed_event *event_list_high_tail = NULL;
 
 /* Dummy functions */
 void logit(int data_type, int display, const char *fmt, ...) {}
-int my_sendall(int s, char *buf, int *len, int timeout) {}
 int write_to_log(char *buffer, unsigned long data_type, time_t *timestamp) {}
 int log_debug_info(int level, int verbosity, const char *fmt, ...) {
 	va_list ap;
@@ -258,8 +257,6 @@ int neb_add_module(char *filename, char *args, int should_be_loaded) {}
 void broker_system_command(int type, int flags, int attr, struct timeval start_time, struct timeval end_time, double exectime, int timeout, int early_timeout, int retcode, char *cmd, char *output, struct timeval *timestamp) {}
 
 int schedule_new_event(int event_type, int high_priority, time_t run_time, int recurring, unsigned long event_interval, void *timing_func, int compensate_for_time_change, void *event_data, void *event_args, int event_options) {}
-int my_tcp_connect(char *host_name, int port, int *sd, int timeout) {}
-int my_recvall(int s, char *buf, int *len, int timeout) {}
 int neb_free_module_list(void) {}
 void remove_event(timed_event *event, timed_event **event_list, timed_event **event_list_tail) {}
 void check_for_service_flapping(service *svc, int update, int allow_flapstart_notification) {}

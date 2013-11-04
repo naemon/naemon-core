@@ -153,11 +153,6 @@ int xrddefault_save_state_information(void) {
 	fprintf(fp, "info {\n");
 	fprintf(fp, "created=%lu\n", current_time);
 	fprintf(fp, "version=%s\n", PROGRAM_VERSION);
-	fprintf(fp, "last_update_check=%lu\n", last_update_check);
-	fprintf(fp, "update_available=%d\n", update_available);
-	fprintf(fp, "update_uid=%lu\n", update_uid);
-	fprintf(fp, "last_version=%s\n", (last_program_version == NULL) ? "" : last_program_version);
-	fprintf(fp, "new_version=%s\n", (new_program_version == NULL) ? "" : new_program_version);
 	fprintf(fp, "}\n");
 
 	/* save program state information */
@@ -853,24 +848,11 @@ int xrddefault_read_state_information(void) {
 							scheduling_info_is_ok = FALSE;
 						last_program_stop = creation_time;
 						}
-					else if(!strcmp(var, "version")) {
-						/* initialize last version in case we're reading a pre-3.1.0 retention file */
-						if(last_program_version == NULL)
-							last_program_version = (char *)strdup(val);
-						}
-					else if(!strcmp(var, "last_update_check"))
-						last_update_check = strtoul(val, NULL, 10);
-					else if(!strcmp(var, "update_available"))
-						update_available = atoi(val);
-					else if(!strcmp(var, "update_uid"))
-						update_uid = strtoul(val, NULL, 10);
-					else if(!strcmp(var, "last_version")) {
-						if(last_program_version)
-							my_free(last_program_version);
-						last_program_version = (char *)strdup(val);
-						}
-					else if(!strcmp(var, "new_version"))
-						new_program_version = (char *)strdup(val);
+					else if(!strcmp(var, "version")) {}
+					else if(!strcmp(var, "last_update_check")) {}
+					else if(!strcmp(var, "update_available")) {}
+					else if(!strcmp(var, "last_version")) {}
+					else if(!strcmp(var, "new_version")) {}
 					break;
 
 				case XRDDEFAULT_PROGRAMSTATUS_DATA:
