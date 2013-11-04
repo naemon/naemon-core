@@ -1293,11 +1293,7 @@ int handle_timed_event(timed_event *event) {
 			break;
 
 		case EVENT_CHECK_PROGRAM_UPDATE:
-
-			log_debug_info(DEBUGL_EVENTS, 0, "** Check For Program Update. Latency: %.3fs\n", latency);
-
-			/* check for new versions of Nagios */
-			check_for_nagios_updates(FALSE, TRUE);
+		/* this doesn't do anything anymore */
 			break;
 
 		case EVENT_USER_FUNCTION:

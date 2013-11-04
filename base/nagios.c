@@ -763,10 +763,6 @@ int main(int argc, char **argv) {
 			init_check_stats();
 			timing_point("check stats initialized\n");
 
-			/* check for updates */
-			check_for_nagios_updates(FALSE, TRUE);
-			timing_point("Update check concluded\n");
-
 			/* update all status data (with retained information) */
 			update_all_status_data();
 			timing_point("Status data updated\n");

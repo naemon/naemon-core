@@ -1090,10 +1090,9 @@ int read_main_config_file(char *main_config_file) {
 			obsoleted_warning(variable, "All commands are always processed upon arrival");
 
 		else if(!strcmp(variable, "check_for_updates"))
-			check_for_updates = (atoi(value) > 0) ? TRUE : FALSE;
-
+			obsoleted_warning(variable, "Update checks allow spying and have been removed");
 		else if(!strcmp(variable, "bare_update_check"))
-			bare_update_check = (atoi(value) > 0) ? TRUE : FALSE;
+			obsoleted_warning(variable, "Update checks allow spying and have been removed");
 
 		/* BEGIN status data variables */
 		else if(!strcmp(variable, "status_file"))

@@ -27,7 +27,6 @@
 #include "../include/comments.h"
 #include "../include/macros.h"
 #include "../include/nagios.h"
-#include "../include/netutils.h"
 #include "../include/broker.h"
 #include "../include/nebmods.h"
 #include "../include/nebmodules.h"
@@ -111,14 +110,6 @@ int auto_reschedule_checks = DEFAULT_AUTO_RESCHEDULE_CHECKS;
 int auto_rescheduling_window = DEFAULT_AUTO_RESCHEDULING_WINDOW;
 
 int additional_freshness_latency = DEFAULT_ADDITIONAL_FRESHNESS_LATENCY;
-
-int check_for_updates = DEFAULT_CHECK_FOR_UPDATES;
-int bare_update_check = DEFAULT_BARE_UPDATE_CHECK;
-time_t last_update_check = 0L;
-unsigned long update_uid = 0L;
-int update_available = FALSE;
-char *last_program_version = NULL;
-char *new_program_version = NULL;
 
 time_t last_program_stop = 0L;
 
@@ -2734,229 +2725,6 @@ int generate_check_stats(void) {
 	}
 
 
-
-
-/******************************************************************/
-/************************ UPDATE FUNCTIONS ************************/
-/******************************************************************/
-
-/* check for new releases of Nagios */
-int check_for_nagios_updates(int force, int reschedule) {
-	time_t current_time;
-	int result = OK;
-	int api_result = OK;
-	int do_check = TRUE;
-	time_t next_check = 0L;
-	unsigned int rand_seed = 0;
-	int randnum = 0;
-
-	time(&current_time);
-
-	/*
-	printf("NOW: %s",ctime(&current_time));
-	printf("LAST CHECK: %s",ctime(&last_update_check));
-	*/
-
-	/* seed the random generator */
-	rand_seed = (unsigned int)(current_time + nagios_pid);
-	srand(rand_seed);
-
-	/* generate a (probably) unique ID for this nagios install */
-	/* the server api currently sees thousands of nagios installs behind single ip addresses, so this help determine if there are really thousands of servers out there, or if some nagios installs are misbehaving */
-	if(update_uid == 0L)
-		update_uid = current_time;
-
-	/* update chekcs are disabled */
-	if(check_for_updates == FALSE)
-		do_check = FALSE;
-	/* we checked for updates recently, so don't do it again */
-	if((current_time - last_update_check) < MINIMUM_UPDATE_CHECK_INTERVAL)
-		do_check = FALSE;
-	/* the check is being forced */
-	if(force == TRUE)
-		do_check = TRUE;
-
-	/* do a check */
-	if(do_check == TRUE) {
-
-		/*printf("RUNNING QUERY...\n");*/
-
-		/* query api */
-		api_result = query_update_api();
-		}
-
-	/* should we reschedule the update check? */
-	if(reschedule == TRUE) {
-
-		/*printf("RESCHEDULING...\n");*/
-
-		randnum = rand();
-		/*
-		printf("RAND: %d\n",randnum);
-		printf("RANDMAX: %d\n",RAND_MAX);
-		printf("UCIW: %d\n",UPDATE_CHECK_INTERVAL_WOBBLE);
-		printf("MULT: %f\n",(float)randnum/RAND_MAX);
-		*/
-
-
-
-		/* we didn't do an update, so calculate next possible update time */
-		if(do_check == FALSE) {
-			next_check = last_update_check + BASE_UPDATE_CHECK_INTERVAL;
-			next_check = next_check + (unsigned long)(((float)randnum / RAND_MAX) * UPDATE_CHECK_INTERVAL_WOBBLE);
-			}
-
-		/* we tried to check for an update */
-		else {
-
-			/* api query was okay */
-			if(api_result == OK) {
-				next_check = current_time + BASE_UPDATE_CHECK_INTERVAL;
-				next_check += (unsigned long)(((float)randnum / RAND_MAX) * UPDATE_CHECK_INTERVAL_WOBBLE);
-				}
-
-			/* query resulted in an error - retry at a shorter interval */
-			else {
-				next_check = current_time + BASE_UPDATE_CHECK_RETRY_INTERVAL;
-				next_check += (unsigned long)(((float)randnum / RAND_MAX) * UPDATE_CHECK_RETRY_INTERVAL_WOBBLE);
-				}
-			}
-
-		/* make sure next check isn't in the past - if it is, schedule a check in 1 minute */
-		if(next_check < current_time)
-			next_check = current_time + 60;
-
-		/*printf("NEXT CHECK: %s",ctime(&next_check));*/
-
-		/* schedule the next update event */
-		schedule_new_event(EVENT_CHECK_PROGRAM_UPDATE, TRUE, next_check, FALSE, BASE_UPDATE_CHECK_INTERVAL, NULL, TRUE, NULL, NULL, 0);
-		}
-
-	return result;
-	}
-
-
-
-/* checks for updates at api.nagios.org */
-int query_update_api(void) {
-	const char *api_server = "api.nagios.org";
-	const char *api_path = "/versioncheck/";
-	char *api_query = NULL;
-	char *api_query_opts = NULL;
-	char *buf = NULL;
-	char recv_buf[1024];
-	int report_install = FALSE;
-	char *ptr = NULL;
-	int current_line = 0;
-	int buf_index = 0;
-	int in_header = TRUE;
-	char *var = NULL;
-	char *val = NULL;
-	int sd = 0;
-	int send_len = 0;
-	int recv_len = 0;
-	int update_check_succeeded = FALSE;
-
-	/* report a new install, upgrade, or rollback */
-	/* Nagios monitors the world and we monitor Nagios taking over the world. :-) */
-	if(last_update_check == (time_t)0L)
-		report_install = TRUE;
-	if(last_program_version == NULL || strcmp(PROGRAM_VERSION, last_program_version))
-		report_install = TRUE;
-	if(report_install == TRUE) {
-		asprintf(&api_query_opts, "&firstcheck=1");
-		if(last_program_version != NULL) {
-			char *qopts2 = NULL;
-			asprintf(&qopts2, "%s&last_version=%s", api_query_opts, last_program_version);
-			my_free(api_query_opts);
-			api_query_opts = qopts2;
-			}
-		}
-
-	/* generate the query */
-	asprintf(&api_query, "v=1&product=nagios&tinycheck=1&stableonly=1&uid=%lu", update_uid);
-	if(bare_update_check == FALSE) {
-		char *api_query2 = NULL;
-		asprintf(&api_query2, "%s&version=%s%s", api_query, PROGRAM_VERSION, (api_query_opts == NULL) ? "" : api_query_opts);
-		my_free(api_query);
-		api_query = api_query2;
-		}
-
-	/* generate the HTTP request */
-	asprintf(&buf,
-	         "POST %s HTTP/1.0\r\nUser-Agent: Nagios/%s\r\n"
-	         "Connection: close\r\nHost: %s\r\n"
-	         "Content-Type: application/x-www-form-urlencoded\r\n"
-	         "Content-Length: %zd\r\n\r\n%s",
-	         api_path, PROGRAM_VERSION, api_server,
-	         strlen(api_query), api_query);
-
-	my_tcp_connect(api_server, 80, &sd, 2);
-	if(sd > 0) {
-		/* send request */
-		send_len = strlen(buf);
-		my_sendall(sd, buf, &send_len, 2);
-
-		/* get response */
-		recv_len = sizeof(recv_buf);
-		my_recvall(sd, recv_buf, &recv_len, 2);
-		recv_buf[sizeof(recv_buf) - 1] = '\x0';
-
-		/* close connection */
-		close(sd);
-
-		/* parse the result */
-		in_header = TRUE;
-		while((ptr = get_next_string_from_buf(recv_buf, &buf_index, sizeof(recv_buf)))) {
-
-			strip(ptr);
-			current_line++;
-
-			if(!strcmp(ptr, "")) {
-				in_header = FALSE;
-				continue;
-				}
-			if(in_header == TRUE)
-				continue;
-
-			var = strtok(ptr, "=");
-			val = strtok(NULL, "\n");
-
-			if(!strcmp(var, "UPDATE_AVAILABLE")) {
-				update_available = atoi(val);
-				/* we were successful */
-				update_check_succeeded = TRUE;
-				}
-			else if(!strcmp(var, "UPDATE_VERSION")) {
-				if(new_program_version)
-					my_free(new_program_version);
-				new_program_version = strdup(val);
-				}
-			else if(!strcmp(var, "UPDATE_RELEASEDATE")) {
-				}
-			}
-		}
-
-	/* cleanup */
-	my_free(buf);
-	my_free(api_query);
-	my_free(api_query_opts);
-
-	/* we were successful! */
-	if(update_check_succeeded == TRUE) {
-
-		time(&last_update_check);
-		if(last_program_version)
-			free(last_program_version);
-		last_program_version = (char *)strdup(PROGRAM_VERSION);
-		}
-
-	return OK;
-	}
-
-
-
-
 /******************************************************************/
 /************************* MISC FUNCTIONS *************************/
 /******************************************************************/
@@ -3048,10 +2816,6 @@ void free_memory(nagios_macros *mac) {
 	/* free nagios user and group */
 	my_free(nagios_user);
 	my_free(nagios_group);
-
-	/* free version strings */
-	my_free(last_program_version);
-	my_free(new_program_version);
 
 	/* free file/path variables */
 	my_free(debug_file);

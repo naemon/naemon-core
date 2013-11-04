@@ -33,7 +33,7 @@ CFG_OBJS += $(SRC_BASE)/retention-base.o $(SRC_BASE)/xretention-base.o
 
 $(SRC_BASE)/%:
 	make -C $(SRC_BASE)
-CHECKS_DEPS = $(SRC_BASE)/netutils.o $(SRC_BASE)/nebmods.o $(SRC_BASE)/commands.o $(SRC_BASE)/broker.o $(SRC_BASE)/query-handler.o $(SRC_BASE)/utils.o $(SRC_BASE)/events.o $(SRC_BASE)/notifications.o $(SRC_BASE)/checks.o $(SRC_BASE)/flapping.o $(SRC_BASE)/sehandlers.o $(SRC_BASE)/logging.o $(SRC_BASE)/workers.o $(SRC_BASE)/statusdata-base.o $(SRC_BASE)/xstatusdata-base.o $(SRC_BASE)/perfdata-base.o $(SRC_BASE)/xperfdata-base.o
+CHECKS_DEPS = $(SRC_BASE)/nebmods.o $(SRC_BASE)/commands.o $(SRC_BASE)/broker.o $(SRC_BASE)/query-handler.o $(SRC_BASE)/utils.o $(SRC_BASE)/events.o $(SRC_BASE)/notifications.o $(SRC_BASE)/checks.o $(SRC_BASE)/flapping.o $(SRC_BASE)/sehandlers.o $(SRC_BASE)/logging.o $(SRC_BASE)/workers.o $(SRC_BASE)/statusdata-base.o $(SRC_BASE)/xstatusdata-base.o $(SRC_BASE)/perfdata-base.o $(SRC_BASE)/xperfdata-base.o
 
 LDFLAGS=@LDFLAGS@
 LIBS=@LIBS@ ../lib/libnagios.a
