@@ -1,26 +1,3 @@
-/*****************************************************************************
- *
- * COMMENTS.H - Header file for comment functions
- *
- *
- * License:
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *****************************************************************************/
-
-
 #ifndef _COMMENTS_H
 #define _COMMENTS_H
 #include "common.h"
@@ -28,20 +5,16 @@
 
 
 /**************************** COMMENT SOURCES ******************************/
-
 #define COMMENTSOURCE_INTERNAL  0
 #define COMMENTSOURCE_EXTERNAL  1
 
 
-
 /***************************** COMMENT TYPES *******************************/
-
 #define HOST_COMMENT			1
 #define SERVICE_COMMENT			2
 
 
 /****************************** ENTRY TYPES ********************************/
-
 #define USER_COMMENT                    1
 #define DOWNTIME_COMMENT                2
 #define FLAPPING_COMMENT                3
@@ -49,7 +22,6 @@
 
 
 /*************************** CHAINED HASH LIMITS ***************************/
-
 #define COMMENT_HASHSLOTS      1024
 
 
