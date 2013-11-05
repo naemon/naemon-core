@@ -1,7 +1,10 @@
 # Setup some basic values for startup
 
-# Do you want to use the ramdisk
+# Do you want to use the ramdisk, this can speed up processing checkresults
 USE_RAMDISK=0
+
+# Where do you want the ramdisk mounted
+RAMDISK_MOUNTPOINT="/var/nagios/ramcache"
 
 # How big (in MB) should the ramdisk be
 RAMDISK_SIZE=256
