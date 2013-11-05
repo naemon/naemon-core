@@ -1,25 +1,3 @@
-/*****************************************************************************
- *
- * STATUSDATA.H - Header for external status data routines
- *
- *
- * License:
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *****************************************************************************/
-
 #ifndef _STATUSDATA_H
 #define _STATUSDATA_H
 
@@ -36,14 +14,12 @@
 
 
 
-	/*************************** CHAINED HASH LIMITS ***************************/
-
+/*************************** CHAINED HASH LIMITS ***************************/
 #define SERVICESTATUS_HASHSLOTS      1024
 #define HOSTSTATUS_HASHSLOTS         1024
 
 
-	/**************************** DATA STRUCTURES ******************************/
-
+/**************************** DATA STRUCTURES ******************************/
 NAGIOS_BEGIN_DECL
 
 /* HOST STATUS structure */
@@ -141,7 +117,6 @@ typedef struct servicestatus_struct {
 
 
 /*************************** SERVICE STATES ***************************/
-
 #define SERVICE_PENDING			1
 #define SERVICE_OK			2
 #define SERVICE_WARNING			4
@@ -149,9 +124,7 @@ typedef struct servicestatus_struct {
 #define SERVICE_CRITICAL		16
 
 
-
 /**************************** HOST STATES ****************************/
-
 #define HOST_PENDING			1
 #define SD_HOST_UP				2
 #define SD_HOST_DOWN			4
@@ -170,7 +143,6 @@ typedef struct servicestatus_struct {
 
 
 /**************************** FUNCTIONS ******************************/
-
 int read_status_data(const char *, int);                /* reads all status data */
 int add_host_status(hoststatus *);                      /* adds a host status entry to the list in memory */
 int add_service_status(servicestatus *);                /* adds a service status entry to the list in memory */

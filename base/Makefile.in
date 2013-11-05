@@ -1,9 +1,3 @@
-############################
-# Makefile for naemon
-#
-############################
-
-
 # Source code directories
 SRC_COMMON=../common
 SRC_INCLUDE=../include

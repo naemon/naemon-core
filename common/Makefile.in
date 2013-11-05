@@ -1,8 +1,3 @@
-############################
-# Makefile for Nagios
-#
-############################
-
 # Source code directories
 SRC_BASE=../common
 SRC_CGI=../cgi

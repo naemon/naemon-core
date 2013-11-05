@@ -1,26 +1,3 @@
-/*****************************************************************************
- *
- * OBJECTS.H - Header file for object addition/search functions
- *
- *
- * License:
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *****************************************************************************/
-
-
 #ifndef _OBJECTS_H
 #define _OBJECTS_H
 
@@ -30,21 +7,18 @@ NAGIOS_BEGIN_DECL
 
 
 /*************** CURRENT OBJECT REVISION **************/
-
 #define CURRENT_OBJECT_STRUCTURE_VERSION        402     /* increment when changes are made to data structures... */
 /* Nagios 3 starts at 300, Nagios 4 at 400, etc. */
 
 
 
 /***************** OBJECT SIZE LIMITS *****************/
-
 #define MAX_STATE_HISTORY_ENTRIES		21	/* max number of old states to keep track of for flap detection */
 #define MAX_CONTACT_ADDRESSES                   6       /* max number of custom addresses a contact can have */
 
 
 
 /***************** SKIP LISTS ****************/
-
 #define NUM_OBJECT_SKIPLISTS                   12
 #define NUM_HASHED_OBJECT_TYPES                8
 

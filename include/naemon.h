@@ -732,4 +732,3 @@ char *get_program_modification_date(void);
 
 NAGIOS_END_DECL
 #endif
-

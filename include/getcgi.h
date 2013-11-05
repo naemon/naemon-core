@@ -1,10 +1,3 @@
-/******************************************************
- *
- * GETCGI.H -  Nagios CGI Input Routine Include File
- *
- *
- *****************************************************/
-
 #include "lib/lnae-utils.h"
 NAGIOS_BEGIN_DECL
 

@@ -1,23 +1,3 @@
-/************************************************************************
- *
- * CGIUTILS.H - Header file for common CGI functions
- *
- * License:
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- ************************************************************************/
-
 #ifndef _CGIUTILS_H
 #define _CGIUTILS_H
 #include "lib/libnaemon.h"
@@ -27,13 +7,11 @@
 
 NAGIOS_BEGIN_DECL
 
-	/**************************** CGI REFRESH RATE ******************************/
-
+/**************************** CGI REFRESH RATE ******************************/
 #define DEFAULT_REFRESH_RATE	60	/* 60 second refresh rate for CGIs */
 
 
-	/******************************* CGI NAMES **********************************/
-
+/******************************* CGI NAMES **********************************/
 #define STATUS_CGI		"status.cgi"
 #define STATUSMAP_CGI		"statusmap.cgi"
 #define STATUSWORLD_CGI	        "statuswrl.cgi"
@@ -54,9 +32,7 @@ NAGIOS_BEGIN_DECL
 #define MINISTATUS_CGI          "ministatus.cgi"
 #define SUMMARY_CGI	        "summary.cgi"
 
-
-	/**************************** STYLE SHEET NAMES ******************************/
-
+/**************************** STYLE SHEET NAMES ******************************/
 #define COMMON_CSS		"common.css"
 
 #define SHOWLOG_CSS		"showlog.css"
@@ -76,11 +52,10 @@ NAGIOS_BEGIN_DECL
 #define MINISTATUS_CSS          "ministatus.css"
 #define SUMMARY_CSS             "summary.css"
 
-	/********************************* JAVASCRIPT INCLUDES **********************/
+/********************************* JAVASCRIPT INCLUDES **********************/
 #define JQUERY_JS		"jquery-1.7.1.min.js"
 
-	/********************************* ICONS ************************************/
-
+/********************************* ICONS ************************************/
 #define STATUS_ICON_WIDTH		20
 #define STATUS_ICON_HEIGHT		20
 
@@ -183,8 +158,7 @@ NAGIOS_BEGIN_DECL
 #define PREVIOUS_PAGE_ICON		"b_prev2.png"
 
 
-	/********************* EXTENDED INFO CGI DISPLAY TYPES  *********************/
-
+/********************* EXTENDED INFO CGI DISPLAY TYPES  *********************/
 #define DISPLAY_PROCESS_INFO		0
 #define DISPLAY_HOST_INFO		1
 #define DISPLAY_SERVICE_INFO		2
@@ -196,16 +170,14 @@ NAGIOS_BEGIN_DECL
 #define DISPLAY_SERVICEGROUP_INFO       8
 
 
-	/************************ COMMAND CGI COMMAND MODES *************************/
-
+/************************ COMMAND CGI COMMAND MODES *************************/
 #define CMDMODE_NONE            0
 #define CMDMODE_REQUEST         1
 #define CMDMODE_COMMIT          2
 
 
 
-	/******************** HOST AND SERVICE NOTIFICATION TYPES ******************/
-
+/******************** HOST AND SERVICE NOTIFICATION TYPES ******************/
 #define NOTIFICATION_ALL		0	/* all service and host notifications */
 #define NOTIFICATION_SERVICE_ALL	1	/* all types of service notifications */
 #define NOTIFICATION_HOST_ALL		2	/* all types of host notifications */
@@ -224,8 +196,7 @@ NAGIOS_BEGIN_DECL
 #define NOTIFICATION_HOST_CUSTOM        16384
 
 
-	/********************** HOST AND SERVICE ALERT TYPES **********************/
-
+/********************** HOST AND SERVICE ALERT TYPES **********************/
 #define HISTORY_ALL			0	/* all service and host alert */
 #define HISTORY_SERVICE_ALL		1	/* all types of service alerts */
 #define HISTORY_HOST_ALL		2	/* all types of host alerts */
@@ -238,15 +209,13 @@ NAGIOS_BEGIN_DECL
 #define HISTORY_HOST_RECOVERY		256
 
 
-	/****************************** SORT TYPES  *******************************/
-
+/****************************** SORT TYPES  *******************************/
 #define SORT_NONE			0
 #define SORT_ASCENDING			1
 #define SORT_DESCENDING			2
 
 
-	/***************************** SORT OPTIONS  ******************************/
-
+/***************************** SORT OPTIONS  ******************************/
 #define SORT_NOTHING			0
 #define SORT_HOSTNAME			1
 #define SORT_SERVICENAME		2
@@ -259,8 +228,7 @@ NAGIOS_BEGIN_DECL
 #define SORT_HOSTURGENCY                9
 
 
-	/****************** HOST AND SERVICE FILTER PROPERTIES  *******************/
-
+/****************** HOST AND SERVICE FILTER PROPERTIES  *******************/
 #define HOST_SCHEDULED_DOWNTIME		1
 #define HOST_NO_SCHEDULED_DOWNTIME	2
 #define HOST_STATE_ACKNOWLEDGED		4
@@ -305,15 +273,12 @@ NAGIOS_BEGIN_DECL
 #define SERVICE_SOFT_STATE		524288
 
 
-	/****************************** SSI TYPES  ********************************/
-
+/****************************** SSI TYPES  ********************************/
 #define SSI_HEADER                      0
 #define SSI_FOOTER                      1
 
 
-
-	/************************ CONTEXT-SENSITIVE HELP  *************************/
-
+/************************ CONTEXT-SENSITIVE HELP  *************************/
 #define CONTEXTHELP_STATUS_DETAIL	"A1"
 #define CONTEXTHELP_STATUS_HGOVERVIEW	"A2"
 #define CONTEXTHELP_STATUS_HGSUMMARY	"A3"
@@ -401,15 +366,11 @@ NAGIOS_BEGIN_DECL
 #define CONTEXTHELP_SUMMARY_SERVICEGROUP_ALERT_TOTALS "N8"
 
 
-	/************************** LIFO RETURN CODES  ****************************/
-
+/************************** LIFO RETURN CODES  ****************************/
 #define LIFO_OK			0
 #define LIFO_ERROR_MEMORY	1
 #define LIFO_ERROR_FILE		2
 #define LIFO_ERROR_DATA		3
-
-
-
 
 
 /*************************** DATA STRUCTURES  *****************************/
