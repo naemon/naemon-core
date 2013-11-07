@@ -1,15 +1,15 @@
 /*
- * This file holds all nagios<->libnagios integration stuff, so that
- * libnagios itself is usable as a standalone library for addon
+ * This file holds all naemon<->libnaemon integration stuff, so that
+ * libnaemon itself is usable as a standalone library for addon
  * writers to use as they see fit.
  *
- * This means apis inside libnagios can be tested without compiling
- * all of Nagios into it, and that they can remain general-purpose
+ * This means apis inside libnaemon can be tested without compiling
+ * all of Naemon into it, and that they can remain general-purpose
  * code that can be reused for other things later.
  */
 #include "../include/config.h"
 #include <string.h>
-#include "../include/nagios.h"
+#include "../include/naemon.h"
 #include "../include/workers.h"
 
 /* perfect hash function for wproc response codes */
@@ -906,7 +906,7 @@ static int wproc_query_handler(int sd, char *buf, unsigned int len)
 
 static int spawn_core_worker(void)
 {
-	char *argvec[] = {nagios_binary_path, "--worker", qh_socket_path ? qh_socket_path : DEFAULT_QUERY_SOCKET, NULL};
+	char *argvec[] = {naemon_binary_path, "--worker", qh_socket_path ? qh_socket_path : DEFAULT_QUERY_SOCKET, NULL};
 	int ret;
 
 	if ((ret = spawn_helper(argvec)) < 0)

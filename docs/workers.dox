@@ -11,12 +11,12 @@ affect the core process, and parallel because we use multiple
 workers. Ideally between 1.5 and 3 per CPU core available to us.
 
 Workers are free-standing processes, kept small, and with no
-knowledge about Nagios' object structure or logic. The reason for
+knowledge about Naemon's object structure or logic. The reason for
 this is that small processes can achieve a lot more fork()s per
 second than large processes (800/sec for a 300MB process against
 13900/sec for a 1MB process). While workers can (and do) grow a
 little bit in memory usage when it's running many checks in
-parallel, they will still be a lot smaller than the primar Nagios
+parallel, they will still be a lot smaller than the primary Naemon
 daemon, and the memory they occupy should be released once the
 checks they're running are done.
 
@@ -41,10 +41,10 @@ protocol and just use lower case letters and underscores.
 @note Keys are case sensitive. JOB_ID is *not* the same as job_id.
 
 @subsection apis API's
-Worker processes communicate with Nagios using libnagios API's
+Worker processes communicate with Naemon using libnaemon API's
 exclusively. Since you're looking at a subpage of the documentation
 for that documentation right now, I'll just assume you've found it.
-Although using the libnagios api's when writing a worker is
+Although using the libnaemon api's when writing a worker is
 completely optional, it's highly recommended.
 
 The key API's to use are:
@@ -136,7 +136,7 @@ static int nagios_core_worker(const char *path)
 }
 @endcode
 
-The "enter_worker()" part actually refers to a libnagios function that
+The "enter_worker()" part actually refers to a libnaemon function that
 lives in worker.c. The set_loadctl_defaults() call can be ignored.
 It's primarily intended to give sane defaults about how many jobs we
 can run, so we (in theory) can tell Nagios that we're swamped in case

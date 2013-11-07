@@ -62,9 +62,9 @@ DDATAHDRS=
 DDATADEPS=$(DDATALIBS)
 
 # Common CGI functions (includes object and status functions)
-CGILIBS=$(SRC_COMMON)/shared.o getcgi.o cgiutils.o cgiauth.o macros-cgi.o $(SNPRINTF_O) $(ODATALIBS) $(SDATALIBS) $(SRC_LIB)/libnagios.a
+CGILIBS=$(SRC_COMMON)/shared.o getcgi.o cgiutils.o cgiauth.o macros-cgi.o $(SNPRINTF_O) $(ODATALIBS) $(SDATALIBS) $(SRC_LIB)/libnaemon.a
 CGIHDRS=$(SRC_INCLUDE)/config.h $(SRC_INCLUDE)/common.h $(SRC_INCLUDE)/locations.h
-CGIDEPS=$(CGILIBS) $(ODATADEPS) $(SDATADEPS) $(SRC_LIB)/libnagios.a
+CGIDEPS=$(CGILIBS) $(ODATADEPS) $(SDATADEPS) $(SRC_LIB)/libnaemon.a
 
 
 MATHLIBS=-lm
@@ -78,7 +78,7 @@ $(CGILIBS): $(CGIHDRS)
 
 ######## REQUIRED LIBRARIES ##########
 
-$(SRC_LIB)/libnagios.a:
+$(SRC_LIB)/libnaemon.a:
 	$(MAKE) -C $(SRC_LIB)
 
 macros-cgi.o: $(SRC_COMMON)/macros.c $(SRC_INCLUDE)/macros.h
@@ -193,4 +193,4 @@ strip-post-install:
 	done
 
 
-.PHONY: libnagios
+.PHONY: libnaemon

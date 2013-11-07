@@ -20,7 +20,7 @@
 
 #ifndef _CGIUTILS_H
 #define _CGIUTILS_H
-#include "lib/libnagios.h"
+#include "lib/libnaemon.h"
 #include "logging.h"
 #include "objects.h"
 #include "cgiauth.h"

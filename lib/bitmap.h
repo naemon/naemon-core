@@ -1,5 +1,5 @@
-#ifndef LIBNAGIOS_bitmap_h__
-#define LIBNAGIOS_bitmap_h__
+#ifndef LIBNAEMON_bitmap_h__
+#define LIBNAEMON_bitmap_h__
 
 /**
  * @file bitmap.h
@@ -153,4 +153,4 @@ extern bitmap *bitmap_symdiff(const bitmap *a, const bitmap *b);
  */
 extern int bitmap_cmp(const bitmap *a, const bitmap *b);
 /** @} */
-#endif /* LIBNAGIOS_bitmap_h__ */
+#endif /* LIBNAEMON_bitmap_h__ */

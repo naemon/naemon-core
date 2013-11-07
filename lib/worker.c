@@ -6,7 +6,7 @@
 #include <errno.h>
 #include <string.h>
 #include <time.h>
-#include "libnagios.h"
+#include "libnaemon.h"
 
 #define MSG_DELIM "\1\0\0" /**< message limiter */
 #define MSG_DELIM_LEN (sizeof(MSG_DELIM)) /**< message delimiter length */

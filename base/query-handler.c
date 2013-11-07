@@ -1,6 +1,6 @@
 #include "include/config.h"
 #include "include/nagios.h"
-#include "lib/libnagios.h"
+#include "lib/libnaemon.h"
 #include "lib/nsock.h"
 #include <unistd.h>
 #include <stdlib.h>

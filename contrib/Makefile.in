@@ -60,17 +60,17 @@ install:
 ##############################################################################
 # rules and dependencies for actual target programs
 
-$(SRC_LIB)/libnagios.a:
-	make -C $(SRC_LIB) libnagios.a
+$(SRC_LIB)/libnaemon.a:
+	make -C $(SRC_LIB) libnaemon.a
 
-daemonchk.cgi: daemonchk.o $(CGI_O) $(CGI_H) $(COMMON_H) $(SRC_LIB)/libnagios.a
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(CGI_O) $(SRC_LIB)/libnagios.a
+daemonchk.cgi: daemonchk.o $(CGI_O) $(CGI_H) $(COMMON_H) $(SRC_LIB)/libnaemon.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(CGI_O) $(SRC_LIB)/libnaemon.a
 
 daemonchk.o: daemonchk.c
 	$(CC) $(CFLAGS) -c -o $@ $< -I$(SRC_INCLUDE)
 
 nagios-worker: nagios-worker.c
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LIBS) $(SRC_LIB)/libnagios.a
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LIBS) $(SRC_LIB)/libnaemon.a
 
 ##############################################################################
 # dependencies

@@ -1,5 +1,5 @@
-#ifndef LIBNAGIOS_dkhash_h__
-#define LIBNAGIOS_dkhash_h__
+#ifndef LIBNAEMON_dkhash_h__
+#define LIBNAEMON_dkhash_h__
 #include <errno.h>
 
 /**
@@ -131,4 +131,4 @@ extern unsigned int dkhash_num_entries_removed(dkhash_table *t);
  */
 extern unsigned int dkhash_table_size(dkhash_table *t);
 /** @} */
-#endif /* LIBNAGIOS_dkhash_h__ */
+#endif /* LIBNAEMON_dkhash_h__ */

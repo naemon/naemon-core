@@ -1,8 +1,4 @@
-###############################
-# Makefile for Nagios
-#
-###############################
-
+default: all
 
 # Source code directories
 SRC_BASE=@srcdir@/base
@@ -30,7 +26,7 @@ BINDIR=@bindir@
 CGIDIR=@sbindir@
 LIBEXECDIR=@libexecdir@
 LIBDIR=@libdir@
-INCLUDEDIR=@includedir@/nagios
+INCLUDEDIR=@includedir@/naemon
 HTMLDIR=@datadir@
 datarootdir=@datarootdir@
 INSTALL=@INSTALL@
@@ -52,7 +48,7 @@ CP=@CP@
 
 none:
 		@echo "Please supply a command line argument (i.e. 'make all').  Other targets are:"
-		@echo "   nagios cgis contrib modules workers"
+		@echo "   naemon contrib modules workers"
 		@echo "   clean"
 		@echo "   install install-base install-cgis install-html install-exfoliation install-config install-init install-commandmode fullinstall"
 #		@echo "   uninstall"
@@ -141,10 +137,10 @@ all:
 	@echo "Enjoy."
 	@echo ""
 
-$(SRC_LIB)/libnagios.a:
+$(SRC_LIB)/libnaemon.a:
 	cd $(SRC_LIB) && $(MAKE)
 
-nagios:
+naemon:
 	cd $(SRC_BASE) && $(MAKE)
 
 config:
@@ -346,9 +342,9 @@ install-headers:
 	$(INSTALL) -m 644 lib/*.h $(DESTDIR)$(INCLUDEDIR)/lib
 	rm -f $(DESTDIR)$(INCLUDEDIR)/nagios/config.h
 
-install-lib: $(SRC_LIB)/libnagios.a
+install-lib: $(SRC_LIB)/libnaemon.a
 	$(INSTALL) -d -m 755 $(DESTDIR)$(LIBDIR)
-	$(INSTALL) -m 644 $(SRC_LIB)/libnagios.a $(DESTDIR)$(LIBDIR)
+	$(INSTALL) -m 644 $(SRC_LIB)/libnaemon.a $(DESTDIR)$(LIBDIR)
 
 dox:
 	@rm -rf Documentation

@@ -1,37 +1,3 @@
-/*****************************************************************************
- *
- * NAGIOS.C - Core Program Code For Nagios
- *
- * Program: Nagios Core
- * License: GPL
- *
- * First Written:   01-28-1999 (start of development)
- *
- * Description:
- *
- * Nagios is a network monitoring tool that will check hosts and services
- * that you specify.  It has the ability to notify contacts via email, pager,
- * or other user-defined methods when a service or host goes down and
- * recovers.  Service and host monitoring is done through the use of external
- * plugins which can be developed independently of Nagios.
- *
- * License:
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- *
- *****************************************************************************/
-
 #include "../include/config.h"
 #include "../include/common.h"
 #include "../include/objects.h"
@@ -39,18 +5,13 @@
 #include "../include/downtime.h"
 #include "../include/statusdata.h"
 #include "../include/macros.h"
-#include "../include/nagios.h"
+#include "../include/naemon.h"
 #include "../include/sretention.h"
 #include "../include/perfdata.h"
 #include "../include/broker.h"
 #include "../include/nebmods.h"
 #include "../include/nebmodules.h"
 #include "../include/workers.h"
-
-/*#define DEBUG_MEMORY 1*/
-#ifdef DEBUG_MEMORY
-#include <mcheck.h>
-#endif
 
 static int is_worker;
 
@@ -307,9 +268,6 @@ int main(int argc, char **argv) {
 
 		}
 
-#ifdef DEBUG_MEMORY
-	mtrace();
-#endif
 	/* if we're a worker we can skip everything below */
 	if(worker_socket) {
 		exit(nagios_core_worker(worker_socket));
@@ -535,12 +493,12 @@ int main(int argc, char **argv) {
 		 * If not, we needn't bother, as we're using execvp()
 		 */
 		if (strchr(argv[0], '/'))
-			nagios_binary_path = nspath_absolute(argv[0], NULL);
+			naemon_binary_path = nspath_absolute(argv[0], NULL);
 		else
-			nagios_binary_path = strdup(argv[0]);
+			naemon_binary_path = strdup(argv[0]);
 
-		if (!nagios_binary_path) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to allocate memory for nagios_binary_path\n");
+		if (!naemon_binary_path) {
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to allocate memory for naemon_binary_path\n");
 			exit(EXIT_FAILURE);
 			}
 
@@ -587,8 +545,8 @@ int main(int argc, char **argv) {
 				exit(ERROR);
 				}
 
-			if (test_path_access(nagios_binary_path, X_OK)) {
-				logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: failed to access() %s: %s\n", nagios_binary_path, strerror(errno));
+			if (test_path_access(naemon_binary_path, X_OK)) {
+				logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: failed to access() %s: %s\n", naemon_binary_path, strerror(errno));
 				logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Spawning workers will be impossible. Aborting.\n");
 				exit(EXIT_FAILURE);
 				}
@@ -860,7 +818,7 @@ int main(int argc, char **argv) {
 		my_free(lock_file);
 		my_free(config_file);
 		my_free(config_file_dir);
-		my_free(nagios_binary_path);
+		my_free(naemon_binary_path);
 		}
 
 	return OK;

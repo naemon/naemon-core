@@ -1,5 +1,5 @@
 ############################
-# Makefile for Nagios
+# Makefile for naemon
 #
 ############################
 
@@ -95,7 +95,7 @@ DDATADEPS=$(DDATALIBS)
 OBJS=$(BROKER_O) $(SRC_COMMON)/shared.o nerd.o query-handler.o workers.o checks.o config.o commands.o events.o flapping.o logging.o macros-base.o notifications.o sehandlers.o utils.o $(RDATALIBS) $(CDATALIBS) $(ODATALIBS) $(SDATALIBS) $(PDATALIBS) $(DDATALIBS) $(BASEEXTRALIBS)
 OBJDEPS=$(ODATADEPS) $(ODATADEPS) $(RDATADEPS) $(CDATADEPS) $(SDATADEPS) $(PDATADEPS) $(DDATADEPS) $(BROKER_H)
 
-all: nagios nagiostats
+all: naemon naemonstats
 
 
 ######## REQUIRED FILES ##########
@@ -145,24 +145,24 @@ workers.o: workers.c wpres-phash.h
 wpres-phash.h: wpres.gperf
 	gperf -S 1 -t -H wpres_key_phash -N wpres_get_key $< > $@
 
-########## NAGIOS ##########
+########## naemon ##########
 
-libnagios:
+libnaemon:
 	$(MAKE) -C $(SRC_LIB)
 
-nagios.o: nagios.c $(SRC_INCLUDE)/nagios.h $(SRC_INCLUDE)/locations.h
-	$(CC) $(CFLAGS) -c -o $@ nagios.c
+naemon.o: naemon.c $(SRC_INCLUDE)/naemon.h $(SRC_INCLUDE)/locations.h
+	$(CC) $(CFLAGS) -c -o $@ naemon.c
 
-nagios: nagios.o $(OBJS) $(OBJDEPS) libnagios
-	$(CC) $(CFLAGS) -o $@ $< $(OBJS) $(BROKER_LDFLAGS) $(LDFLAGS) $(MATHLIBS) $(SOCKETLIBS) $(BROKERLIBS) $(LIBS) $(SRC_LIB)/libnagios.a
+naemon: naemon.o $(OBJS) $(OBJDEPS) libnaemon
+	$(CC) $(CFLAGS) -o $@ $< $(OBJS) $(BROKER_LDFLAGS) $(LDFLAGS) $(MATHLIBS) $(SOCKETLIBS) $(BROKERLIBS) $(LIBS) $(SRC_LIB)/libnaemon.a
 
-nagiostats: nagiostats.c $(SRC_INCLUDE)/locations.h libnagios
-	$(CC) $(CFLAGS) -o $@ nagiostats.c $(LDFLAGS) $(MATHLIBS) $(LIBS) $(SRC_LIB)/libnagios.a
+naemonstats: naemonstats.c $(SRC_INCLUDE)/locations.h libnaemon
+	$(CC) $(CFLAGS) -o $@ naemonstats.c $(LDFLAGS) $(MATHLIBS) $(LIBS) $(SRC_LIB)/libnaemon.a
 
 $(OBJS): $(SRC_INCLUDE)/locations.h
 
 clean:
-	rm -f nagios nagiostats core *.o gmon.out
+	rm -f naemon naemonstats core *.o gmon.out
 	rm -f *~ *.*~
 
 distclean: clean
@@ -181,11 +181,11 @@ install-unstripped:
 
 install-basic:
 	$(INSTALL) -m 775 $(INSTALL_OPTS) -d $(DESTDIR)$(BINDIR)
-	$(INSTALL) -m 774 $(INSTALL_OPTS) @nagios_name@ $(DESTDIR)$(BINDIR)
-	$(INSTALL) -m 774 $(INSTALL_OPTS) @nagiostats_name@ $(DESTDIR)$(BINDIR)
+	$(INSTALL) -m 774 $(INSTALL_OPTS) @naemon_name@ $(DESTDIR)$(BINDIR)
+	$(INSTALL) -m 774 $(INSTALL_OPTS) @naemonstats_name@ $(DESTDIR)$(BINDIR)
 
 strip-post-install:
-	$(STRIP) $(DESTDIR)$(BINDIR)/@nagios_name@
-	$(STRIP) $(DESTDIR)$(BINDIR)/@nagiostats_name@
+	$(STRIP) $(DESTDIR)$(BINDIR)/@naemon_name@
+	$(STRIP) $(DESTDIR)$(BINDIR)/@naemonstats_name@
 
-.PHONY: libnagios
+.PHONY: libnaemon

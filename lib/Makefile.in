@@ -3,7 +3,7 @@ COV_CFLAGS = -ggdb3 -O0 -ftest-coverage -fprofile-arcs -pg
 LDFLAGS =
 CFLAGS ?= @CFLAGS@
 ALL_CFLAGS = $(CFLAGS) @DEFS@
-LIBNAME = libnagios.a
+LIBNAME = libnaemon.a
 
 all: $(LIBNAME)
 

@@ -1,5 +1,5 @@
-#ifndef LIBNAGIOS_squeue_h__
-#define LIBNAGIOS_squeue_h__
+#ifndef LIBNAEMON_squeue_h__
+#define LIBNAEMON_squeue_h__
 #include <sys/time.h>
 #include <time.h>
 #include "pqueue.h"

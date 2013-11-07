@@ -1,5 +1,5 @@
-#ifndef LIBNAGIOS_kvvec_h__
-#define LIBNAGIOS_kvvec_h__
+#ifndef LIBNAEMON_kvvec_h__
+#define LIBNAEMON_kvvec_h__
 
 /**
  * @file kvvec.h
