@@ -1,6 +1,6 @@
-#ifndef LIBNAGIOS_fanout_h__
-#define LIBNAGIOS_fanout_h__
-#include "lnag-utils.h"
+#ifndef LIBNAEMON_fanout_h__
+#define LIBNAEMON_fanout_h__
+#include "lnae-utils.h"
 
 /**
  * @file fanout.h

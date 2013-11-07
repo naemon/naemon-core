@@ -19,9 +19,9 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ************************************************************************/
 
-#ifndef LIBNAGIOS_skiplist_h__
-#define LIBNAGIOS_skiplist_h__
-#include "lnag-utils.h"
+#ifndef LIBNAEMON_skiplist_h__
+#define LIBNAEMON_skiplist_h__
+#include "lnae-utils.h"
 
 /**
  * @file skiplist.h

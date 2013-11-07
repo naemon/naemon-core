@@ -1,5 +1,5 @@
-#ifndef LIBNAGIOS_nspath_h__
-#define LIBNAGIOS_nspath_h__
+#ifndef LIBNAEMON_nspath_h__
+#define LIBNAEMON_nspath_h__
 #ifndef _GNU_SOURCE
 # ifndef NODOXY
 #  define _GNU_SOURCE 1

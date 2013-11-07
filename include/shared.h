@@ -2,7 +2,7 @@
 #define INCLUDE__shared_h__
 
 #include <time.h>
-#include "lib/libnagios.h"
+#include "lib/libnaemon.h"
 
 NAGIOS_BEGIN_DECL
 

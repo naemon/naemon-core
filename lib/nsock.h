@@ -1,5 +1,5 @@
-#ifndef LIBNAGIOS_nsock_h__
-#define LIBNAGIOS_nsock_h__
+#ifndef LIBNAEMON_nsock_h__
+#define LIBNAEMON_nsock_h__
 #include <errno.h>
 
 /**
@@ -73,4 +73,4 @@ extern int nsock_printf(int sd, const char *fmt, ...)
 	__attribute__((__format__(__printf__, 2, 3)));
 
 /** @} */
-#endif /* LIBNAGIOS_nsock_h__ */
+#endif /* LIBNAEMON_nsock_h__ */

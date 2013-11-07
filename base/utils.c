@@ -34,7 +34,7 @@
 #include <assert.h>
 #define SECS_PER_DAY 86400
 /* global varaiables only used by the daemon */
-char *nagios_binary_path = NULL;
+char *naemon_binary_path = NULL;
 char *config_file = NULL;
 char *command_file = NULL;
 char *temp_file = NULL;

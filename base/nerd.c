@@ -1,5 +1,5 @@
 /*
- * Nagios Event Radio Dispatcher
+ * Naemon Event Radio Dispatcher
  *
  * This is a subscriber service which initiates a unix domain socket,
  * listens to it and lets other programs connect to it and subscribe
@@ -11,10 +11,11 @@
 
 #define _GNU_SOURCE 1
 #include <stdio.h>
+#include <string.h>
 #include "include/config.h"
 #include <sys/types.h>
 #include <sys/socket.h>
-#include "lib/libnagios.h"
+#include "lib/libnaemon.h"
 #include "include/common.h"
 #include "include/objects.h"
 #include "include/broker.h"

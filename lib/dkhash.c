@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "dkhash.h"
-#include "lnag-utils.h"
+#include "lnae-utils.h"
 
 #define dkhash_func(k) hash((unsigned char *)k)
 #define dkhash_func2(k1, k2) (dkhash_func(k1) ^ dkhash_func(k2))

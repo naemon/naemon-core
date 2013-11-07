@@ -9,7 +9,7 @@
 #include <stdarg.h>
 #include <fcntl.h>
 #include "snprintf.h"
-#include "lnag-utils.h"
+#include "lnae-utils.h"
 #include "nsock.h"
 
 const char *nsock_strerror(int code)

@@ -14,8 +14,8 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-#ifndef LIBNAGIOS_pqueue_h__
-#define LIBNAGIOS_pqueue_h__
+#ifndef LIBNAEMON_pqueue_h__
+#define LIBNAEMON_pqueue_h__
 #include <stdio.h>
 
 /**

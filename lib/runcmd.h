@@ -1,5 +1,5 @@
-#ifndef LIBNAGIOS_runcmd_h__
-#define LIBNAGIOS_runcmd_h__
+#ifndef LIBNAEMON_runcmd_h__
+#define LIBNAEMON_runcmd_h__
 #include <signal.h>
 
 /**
