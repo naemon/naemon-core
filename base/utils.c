@@ -1814,6 +1814,12 @@ int drop_privileges(char *user, char *group) {
 		result = ERROR;
 	}
 
+#ifdef HAVE_SYS_PRCTL_H
+	/* on Linux the dumpable flag is cleared by system calls that manipulate process UIDs and GIDs */
+	if (daemon_dumps_core == TRUE)
+		prctl(PR_SET_DUMPABLE, 1);
+#endif
+
 	return result;
 	}
 

@@ -318,6 +318,10 @@
 #endif
 #endif
 
+#undef HAVE_SYS_PRCTL_H
+#ifdef HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
 
 /* moved to end to prevent AIX compiler warnings */
 #ifndef RTLD_GLOBAL
