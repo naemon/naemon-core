@@ -385,7 +385,7 @@ static void kill_job(child_process *cp, int reason)
 				tv.tv_sec += 5;
 				wlog("Failed to reap child with pid %d. Next attempt @ %lu.%lu", cp->ei->pid, tv.tv_sec, tv.tv_usec);
 			} else {
-				tv.tv_usec = 250000;
+				tv.tv_usec += 250000;
 				if (tv.tv_usec > 1000000) {
 					tv.tv_usec -= 1000000;
 					tv.tv_sec += 1;
