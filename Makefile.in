@@ -199,6 +199,7 @@ distclean: clean
 	rm -f Makefile subst
 	rm -f config.log config.status config.cache
 	rm -f tags
+	rm -rf autom4te.cache
 
 devclean: distclean
 
