@@ -22,7 +22,7 @@
 Summary: Open Source host, service and network monitoring program
 Name: naemon
 Version: 4.0.1
-Release: 2%{?dist}
+Release: 1%{?dist}
 License: GPL
 Group: Applications/System
 URL: http://www.naemon.org/
@@ -97,7 +97,6 @@ CFLAGS="%{mycflags} %{myXcflags}" LDFLAGS="$CFLAGS" %configure \
     --with-mail="/bin/mail" \
     --with-naemon-user="naemon" \
     --with-naemon-group="naemon" \
-    --with-perlcache \
     --with-template-objects \
     --with-template-extinfo \
     --enable-event-broker
