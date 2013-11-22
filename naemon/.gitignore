@@ -1,0 +1,4 @@
+*.o
+naemon
+naemonstats
+wpres-phash.h

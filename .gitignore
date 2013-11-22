@@ -5,7 +5,10 @@ pkginfo
 Prototype
 nagios.SPARC.pkg.tar.gz
 autom4te.cache
-/configure
+configure
+config.guess
+config.sub
+Makefile.in
 config.log
 config.status
 daemon-init
@@ -24,3 +27,11 @@ gmon.out
 core.[1-9]*
 /Documentation
 *.pre-indent
+/config.h
+/config.h.in
+depcomp
+aclocal.m4
+/compile
+/stamp-h1
+/missing
+/stamp-h1

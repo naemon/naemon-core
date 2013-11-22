@@ -1,0 +1,8 @@
+See "git shortlog -ns" for a nice summary of recent contributors.
+
+For the (really) full history, this repository has to be grafted
+on top of a clone of Nagios, and specifically on top of commit
+64d84ba9133be4edc7565da3f94f1e49c1dfee52.
+
+See commit b6980492fe023aa997f09d421eacb3a23b26ffd2 for a list of
+contributors up to that date.
