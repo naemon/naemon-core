@@ -6,7 +6,7 @@ AC_INIT([naemon], [4.0-beta5], [naemon-dev@monitoring-lists.org])
 AC_CONFIG_SRCDIR([naemon/naemon.c])
 AM_INIT_AUTOMAKE
 
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([config.h naemon/lib/snprintf.h])
 AC_PREFIX_DEFAULT(/usr/local/naemon)
 
 # Checks for programs.
