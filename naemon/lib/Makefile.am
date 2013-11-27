@@ -1,5 +1,5 @@
 noinst_LIBRARIES = libnaemon.a
-INCLUDES = -I$(top_builddir)
+AM_CPPFLAGS = -I$(top_builddir)
 libnaemon_a_SOURCES = bitmap.c bitmap.h dkhash.c dkhash.h \
 	fanout.c fanout.h iobroker.c iobroker.h iocache.c iocache.h \
 	kvvec.c kvvec.h libnagios.h lnag-utils.h nsock.c nsock.h \
