@@ -6,3 +6,8 @@ libnaemon_a_SOURCES = bitmap.c bitmap.h dkhash.c dkhash.h \
 	nspath.c nspath.h nsutils.c nsutils.h pqueue.c pqueue.h \
 	runcmd.c runcmd.h skiplist.c skiplist.h snprintf.c \
 	snprintf.h squeue.c squeue.h worker.c worker.h
+
+TESTS = test-bitmap test-dkhash test-fanout test-iobroker test-iocache \
+	test-kvvec test-nsutils test-runcmd test-squeue
+
+$(TESTS): libnaemon.a t-utils.c t-utils.h
