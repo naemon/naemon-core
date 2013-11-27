@@ -1,5 +1,5 @@
 SUBDIRS = lib
-INCLUDES = -I$(top_builddir)
+AM_CPPFLAGS = -I$(top_builddir)
 BUILT_SOURCES = wpres-phash.h
 
 wpres-phash.h: wpres.gperf
