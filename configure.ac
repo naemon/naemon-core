@@ -35,7 +35,7 @@ CFLAGS="${CFLAGS} -Wall -Wno-unused-result -fPIC -D_GNU_SOURCE"
 # Checks for libraries.
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h ctype.h dirent.h dlfcn.h fcntl.h getopt.h grp.h inttypes.h libgen.h limits.h])
+AC_CHECK_HEADERS([ctype.h dirent.h dlfcn.h fcntl.h getopt.h grp.h inttypes.h libgen.h limits.h])
 AC_CHECK_HEADERS([locale.h malloc.h memory.h netdb.h netinet/in.h pwd.h regex.h stdarg.h])
 AC_CHECK_HEADERS([stdbool.h stdint.h stdlib.h string.h strings.h syslog.h])
 AC_CHECK_HEADERS([sys/mman.h sys/resource.h sys/socket.h sys/stat.h sys/time.h])
