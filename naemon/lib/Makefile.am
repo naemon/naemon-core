@@ -1,3 +1,4 @@
+test: check
 noinst_LIBRARIES = libnaemon.a
 AM_CPPFLAGS = -I$(top_builddir)
 libnaemon_a_SOURCES = bitmap.c bitmap.h dkhash.c dkhash.h \
