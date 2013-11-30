@@ -17,7 +17,7 @@ AM_PROG_CC_C_O
 AM_MISSING_PROG([GPERF], [gperf])
 
 # Add some crap here so we can check which compiler flags are supported
-CFLAGS="${CFLAGS} -Wall -Wno-unused-result -fPIC -D_GNU_SOURCE"
+CFLAGS="${CFLAGS} -Wall -fPIC -D_GNU_SOURCE"
 #CC_ADD_FLAG([-fPIC])
 #CC_ADD_FLAG([-ggdb3])
 #CC_ADD_FLAG([-pipe])
