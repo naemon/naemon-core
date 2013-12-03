@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 		char *out = calloc(1, BUF_SIZE);
 		for (i = 0; cases[i].input != NULL; i++) {
 			memset(out, 0, BUF_SIZE);
-			int pfd[2] = {-1, -1}, pfderr[2] = {-1, -1};
+			int pfd[2] = { -1, -1}, pfderr[2] = { -1, -1};
 			int fd;
 			char *cmd;
 			asprintf(&cmd, "/bin/echo -n %s", cases[i].input);

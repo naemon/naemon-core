@@ -36,12 +36,13 @@
 #include "tap.h"
 
 void logit(int data_type, int display, const char *fmt, ...) {}
-int log_debug_info(int level, int verbosity, const char *fmt, ...) {
+int log_debug_info(int level, int verbosity, const char *fmt, ...)
+{
 	va_list ap;
 	va_start(ap, fmt);
 	/* vprintf( fmt, ap ); */
 	va_end(ap);
-	}
+}
 
 char *temp_path;
 int date_format;
@@ -76,31 +77,34 @@ char *test_comment = NULL;
 int deleted = 1;
 scheduled_downtime *find_host_downtime_by_name(char *hostname) {}
 scheduled_downtime *find_host_service_downtime_by_name(char *hostname, char *service_description) {}
-int delete_downtime_by_start_time_comment(time_t start_time, char *comment) {
+int delete_downtime_by_start_time_comment(time_t start_time, char *comment)
+{
 	test_start_time = start_time;
 	test_comment = comment;
 	return deleted;
-	}
+}
 
-int delete_downtime_by_hostname_service_description_start_time_comment(char *hostname, char *service_description, time_t start_time, char *comment) {
+int delete_downtime_by_hostname_service_description_start_time_comment(char *hostname, char *service_description, time_t start_time, char *comment)
+{
 	test_hostname = hostname;
 	test_servicename = service_description;
 	test_start_time = start_time;
 	test_comment = comment;
 	return deleted;
-	}
+}
 
-void reset_vars() {
+void reset_vars()
+{
 	test_start_time = 0L;
 	test_hostname = NULL;
 	test_servicename = NULL;
 	test_comment = NULL;
-	}
+}
 
 hostgroup *temp_hostgroup = NULL;
 
-int
-main() {
+int main()
+{
 	time_t now = 0L;
 
 	plan_tests(62);
@@ -200,8 +204,6 @@ main() {
 	ok(test_servicename == NULL, "servicename right") || diag("servicename=%s", test_servicename);
 	ok(strcmp(test_comment, "comment") == 0, "comment right") || diag("comment=%s", test_comment);
 
-
-
 	return exit_status();
-	}
+}
 

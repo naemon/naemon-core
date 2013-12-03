@@ -36,70 +36,69 @@
 /*****************************************************************************/
 /*                             Dummy functions                               */
 /*****************************************************************************/
-void logit(int data_type, int display, const char *fmt, ...) {
-}
-int my_sendall(int s, char *buf, int *len, int timeout) {
+void logit(int data_type, int display, const char *fmt, ...) {}
+int my_sendall(int s, char *buf, int *len, int timeout)
+{
 	return 0;
 }
-void free_comment_data(void) {
-}
-
-int log_debug_info(int level, int verbosity, const char *fmt, ...) {
+void free_comment_data(void) {}
+int log_debug_info(int level, int verbosity, const char *fmt, ...)
+{
 	return 0;
 }
-
-int neb_free_callback_list(void) {
+int neb_free_callback_list(void)
+{
 	return 0;
 }
-
-int neb_deinit_modules(void) {
+int neb_deinit_modules(void)
+{
 	return 0;
 }
-void broker_program_state(int type, int flags, int attr,
-		struct timeval *timestamp) {
-}
-int neb_unload_all_modules(int flags, int reason) {
+void broker_program_state(int type, int flags, int attr, struct timeval *timestamp) {}
+int neb_unload_all_modules(int flags, int reason)
+{
 	return 0;
 }
-int neb_add_module(char *filename, char *args, int should_be_loaded) {
+int neb_add_module(char *filename, char *args, int should_be_loaded)
+{
 	return 0;
 }
 void broker_system_command(int type, int flags, int attr,
-		struct timeval start_time, struct timeval end_time, double exectime,
-		int timeout, int early_timeout, int retcode, char *cmd, char *output,
-		struct timeval *timestamp) {
-}
+                           struct timeval start_time, struct timeval end_time, double exectime,
+                           int timeout, int early_timeout, int retcode, char *cmd, char *output,
+                           struct timeval *timestamp)
+{}
 
 timed_event *schedule_new_event(int event_type, int high_priority,
-		time_t run_time, int recurring, unsigned long event_interval,
-		void *timing_func, int compensate_for_time_change, void *event_data,
-		void *event_args, int event_options) {
+                                time_t run_time, int recurring, unsigned long event_interval,
+                                void *timing_func, int compensate_for_time_change, void *event_data,
+                                void *event_args, int event_options)
+{
 	return NULL ;
 }
-int my_tcp_connect(char *host_name, int port, int *sd, int timeout) {
+int neb_free_module_list(void)
+{
 	return 0;
 }
-int my_recvall(int s, char *buf, int *len, int timeout) {
+int close_command_file(void)
+{
 	return 0;
 }
-int neb_free_module_list(void) {
+int close_log_file(void)
+{
 	return 0;
 }
-int close_command_file(void) {
+int fix_log_file_owner(uid_t uid, gid_t gid)
+{
 	return 0;
 }
-int close_log_file(void) {
-	return 0;
-}
-int fix_log_file_owner(uid_t uid, gid_t gid) {
-	return 0;
-}
-int handle_async_service_check_result(service *temp_service,
-		check_result *queued_check_result) {
+int handle_async_service_check_result(service *temp_service, check_result *queued_check_result)
+{
 	return 0;
 }
 int handle_async_host_check_result(host *temp_host,
-		check_result *queued_check_result) {
+                                   check_result *queued_check_result)
+{
 	return 0;
 }
 
@@ -108,14 +107,16 @@ int handle_async_host_check_result(host *temp_host,
 /*****************************************************************************/
 
 host test_host = { .name = "name'&%", .address = "address'&%", .notes_url =
-		"notes_url'&%($HOSTNOTES$)", .notes = "notes'&%($HOSTACTIONURL$)",
-		.action_url = "action_url'&%", .plugin_output = "name'&%" };
+                       "notes_url'&%($HOSTNOTES$)", .notes = "notes'&%($HOSTACTIONURL$)",
+                   .action_url = "action_url'&%", .plugin_output = "name'&%"
+                 };
 
 /*****************************************************************************/
 /*                             Helper functions                              */
 /*****************************************************************************/
 
-void init_environment() {
+void init_environment()
+{
 	char *p;
 
 	my_free(illegal_output_chars);
@@ -127,7 +128,8 @@ void init_environment() {
 	}
 }
 
-nagios_macros *setup_macro_object(void) {
+nagios_macros *setup_macro_object(void)
+{
 	nagios_macros *mac = (nagios_macros *) calloc(1, sizeof(nagios_macros));
 	grab_host_macros_r(mac, &test_host);
 	return mac;
@@ -146,59 +148,61 @@ nagios_macros *setup_macro_object(void) {
 /*                             Tests                                         */
 /*****************************************************************************/
 
-void test_escaping(nagios_macros *mac) {
+void test_escaping(nagios_macros *mac)
+{
 	char *output;
 
 	/* Nothing should be changed... options == 0 */
-	RUN_MACRO_TEST( "$HOSTNAME$ '&%", "name'&% '&%", 0);
+	RUN_MACRO_TEST("$HOSTNAME$ '&%", "name'&% '&%", 0);
 
 	/* Nothing should be changed... HOSTNAME doesn't accept STRIP_ILLEGAL_MACRO_CHARS */
-	RUN_MACRO_TEST( "$HOSTNAME$ '&%", "name'&% '&%", STRIP_ILLEGAL_MACRO_CHARS);
+	RUN_MACRO_TEST("$HOSTNAME$ '&%", "name'&% '&%", STRIP_ILLEGAL_MACRO_CHARS);
 
 	/* ' and & should be stripped from the macro, according to
 	 * init_environment(), but not from the initial string
 	 */
-	RUN_MACRO_TEST( "$HOSTOUTPUT$ '&%", "name% '&%", STRIP_ILLEGAL_MACRO_CHARS);
+	RUN_MACRO_TEST("$HOSTOUTPUT$ '&%", "name% '&%", STRIP_ILLEGAL_MACRO_CHARS);
 
 	/* ESCAPE_MACRO_CHARS doesn't seem to do anything... exist always in pair
 	 * with STRIP_ILLEGAL_MACRO_CHARS
 	 */
-	RUN_MACRO_TEST( "$HOSTOUTPUT$ '&%", "name'&% '&%", ESCAPE_MACRO_CHARS);
-	RUN_MACRO_TEST( "$HOSTOUTPUT$ '&%", "name% '&%",
-			STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS);
+	RUN_MACRO_TEST("$HOSTOUTPUT$ '&%", "name'&% '&%", ESCAPE_MACRO_CHARS);
+	RUN_MACRO_TEST("$HOSTOUTPUT$ '&%", "name% '&%",
+	               STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS);
 
 	/* $HOSTNAME$ should be url-encoded, but not the tailing chars */
-	RUN_MACRO_TEST( "$HOSTNAME$ '&%", "name%27%26%25 '&%",
-			URL_ENCODE_MACRO_CHARS);
+	RUN_MACRO_TEST("$HOSTNAME$ '&%", "name%27%26%25 '&%",
+	               URL_ENCODE_MACRO_CHARS);
 
 	/* The notes in the notesurl should be url-encoded, no more encoding should
 	 * exist
 	 */
-	RUN_MACRO_TEST( "$HOSTNOTESURL$ '&%",
-			"notes_url'&%(notes%27%26%25%28action_url%27%26%25%29) '&%", 0);
+	RUN_MACRO_TEST("$HOSTNOTESURL$ '&%",
+	               "notes_url'&%(notes%27%26%25%28action_url%27%26%25%29) '&%", 0);
 
 	/* '& in the source string shouldn't be removed, because HOSTNOTESURL
 	 * doesn't accept STRIP_ILLEGAL_MACRO_CHARS, as in the url. the macros
 	 * included in the string should be url-encoded, and therefore not contain &
 	 * and '
 	 */
-	RUN_MACRO_TEST( "$HOSTNOTESURL$ '&%",
-			"notes_url'&%(notes%27%26%25%28action_url%27%26%25%29) '&%",
-			STRIP_ILLEGAL_MACRO_CHARS);
+	RUN_MACRO_TEST("$HOSTNOTESURL$ '&%",
+	               "notes_url'&%(notes%27%26%25%28action_url%27%26%25%29) '&%",
+	               STRIP_ILLEGAL_MACRO_CHARS);
 
 	/* This should double-encode some chars ($HOSTNOTESURL$ should contain
 	 * url-encoded chars, and should itself be url-encoded
 	 */
-	RUN_MACRO_TEST( "$HOSTNOTESURL$ '&%",
-			"notes_url%27%26%25%28notes%2527%2526%2525%2528action_url%2527%2526%2525%2529%29 '&%",
-			URL_ENCODE_MACRO_CHARS);
+	RUN_MACRO_TEST("$HOSTNOTESURL$ '&%",
+	               "notes_url%27%26%25%28notes%2527%2526%2525%2528action_url%2527%2526%2525%2529%29 '&%",
+	               URL_ENCODE_MACRO_CHARS);
 }
 
 /*****************************************************************************/
 /*                             Main function                                 */
 /*****************************************************************************/
 
-int main(void) {
+int main(void)
+{
 	nagios_macros *mac;
 
 	plan_tests(9);
@@ -213,5 +217,6 @@ int main(void) {
 
 	cleanup();
 	free(mac);
+
 	return exit_status();
 }

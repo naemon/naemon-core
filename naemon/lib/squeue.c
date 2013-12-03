@@ -43,7 +43,7 @@ static pqueue_pri_t evt_compute_pri(struct timeval *tv)
 	pqueue_pri_t ret;
 
 	/* keep weird compilers on 32-bit systems from doing wrong */
-	if(sizeof(pqueue_pri_t) < 8) {
+	if (sizeof(pqueue_pri_t) < 8) {
 		ret = tv->tv_sec;
 		ret += !!tv->tv_usec;
 	} else {

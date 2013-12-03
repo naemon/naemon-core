@@ -44,5 +44,4 @@ int is_authorized_for_configuration_information(authdata *);
 int is_authorized_for_read_only(authdata *);
 
 NAGIOS_END_DECL
-
 #endif

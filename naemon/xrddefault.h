@@ -16,5 +16,4 @@ int xrddefault_initialize_retention_data(const char *);
 int xrddefault_cleanup_retention_data(void);
 int xrddefault_save_state_information(void);        /* saves all host and service state information */
 int xrddefault_read_state_information(void);        /* reads in initial host and service state information */
-
 #endif

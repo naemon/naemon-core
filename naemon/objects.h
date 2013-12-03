@@ -11,11 +11,9 @@ NAGIOS_BEGIN_DECL
 /* Nagios 3 starts at 300, Nagios 4 at 400, etc. */
 
 
-
 /***************** OBJECT SIZE LIMITS *****************/
 #define MAX_STATE_HISTORY_ENTRIES		21	/* max number of old states to keep track of for flap detection */
 #define MAX_CONTACT_ADDRESSES                   6       /* max number of custom addresses a contact can have */
-
 
 
 /***************** SKIP LISTS ****************/
@@ -79,7 +77,7 @@ NAGIOS_BEGIN_DECL
 
 /****************** DATA STRUCTURES *******************/
 
-/* @todo Remove typedef's of non-opaque types in Nagios 5 */
+/* @todo Remove typedef's of non-opaque types in next major release */
 typedef struct host host;
 typedef struct service service;
 typedef struct contact contact;
@@ -97,14 +95,14 @@ typedef struct timed_event {
 	int event_options;
 	unsigned int priority; /* 0 is auto, 1 is highest. n+1 < n */
 	struct squeue_event *sq_event;
-	} timed_event;
+} timed_event;
 
 
 /* NOTIFY_LIST structure */
 typedef struct notify_list {
 	struct contact *contact;
 	struct notify_list *next;
-	} notification;
+} notification;
 
 
 /*
@@ -143,7 +141,7 @@ typedef struct check_result {
 	struct rusage rusage;			/* resource usage by this check */
 	struct check_engine *engine;	/* where did we get this check from? */
 	void *source;					/* engine handles this */
-	} check_result;
+} check_result;
 
 
 /* SCHED_INFO structure */
@@ -170,7 +168,7 @@ typedef struct sched_info {
 	time_t last_service_check;
 	time_t first_host_check;
 	time_t last_host_check;
-	} sched_info;
+} sched_info;
 
 
 /* DBUF structure - dynamic string storage */
@@ -179,7 +177,7 @@ typedef struct dbuf {
 	unsigned long used_size;
 	unsigned long allocated_size;
 	unsigned long chunk_size;
-	} dbuf;
+} dbuf;
 
 
 #define CHECK_STATS_BUCKETS                  15
@@ -191,7 +189,7 @@ typedef struct check_stats {
 	int overflow_bucket;
 	int minute_stats[3];
 	time_t last_update;
-	} check_stats;
+} check_stats;
 
 
 
@@ -199,7 +197,7 @@ typedef struct check_stats {
 typedef struct objectlist {
 	void      *object_ptr;
 	struct objectlist *next;
-	} objectlist;
+} objectlist;
 
 
 /* TIMERANGE structure */
@@ -207,7 +205,7 @@ typedef struct timerange {
 	unsigned long range_start;
 	unsigned long range_end;
 	struct timerange *next;
-	} timerange;
+} timerange;
 
 
 /* DATERANGE structure */
@@ -226,7 +224,7 @@ typedef struct daterange {
 	int skip_interval;
 	struct timerange *times;
 	struct daterange *next;
-	} daterange;
+} daterange;
 
 
 /* TIMEPERIODEXCLUSION structure */
@@ -234,7 +232,7 @@ typedef struct timeperiodexclusion {
 	char  *timeperiod_name;
 	struct timeperiod *timeperiod_ptr;
 	struct timeperiodexclusion *next;
-	} timeperiodexclusion;
+} timeperiodexclusion;
 
 
 /* TIMEPERIOD structure */
@@ -246,7 +244,7 @@ typedef struct timeperiod {
 	struct daterange *exceptions[DATERANGE_TYPES];
 	struct timeperiodexclusion *exclusions;
 	struct timeperiod *next;
-	} timeperiod;
+} timeperiod;
 
 
 /* CONTACTSMEMBER structure */
@@ -254,7 +252,7 @@ typedef struct contactsmember {
 	char    *contact_name;
 	struct contact *contact_ptr;
 	struct contactsmember *next;
-	} contactsmember;
+} contactsmember;
 
 
 /* CONTACTGROUP structure */
@@ -264,7 +262,7 @@ typedef struct contactgroup {
 	char    *alias;
 	struct contactsmember *members;
 	struct contactgroup *next;
-	} contactgroup;
+} contactgroup;
 
 
 /* CONTACTGROUPSMEMBER structure */
@@ -272,7 +270,7 @@ typedef struct contactgroupsmember {
 	char    *group_name;
 	struct contactgroup *group_ptr;
 	struct contactgroupsmember *next;
-	} contactgroupsmember;
+} contactgroupsmember;
 
 
 /* CUSTOMVARIABLESMEMBER structure */
@@ -281,7 +279,7 @@ typedef struct customvariablesmember {
 	char    *variable_value;
 	int     has_been_modified;
 	struct customvariablesmember *next;
-	} customvariablesmember;
+} customvariablesmember;
 
 
 /* COMMAND structure */
@@ -290,7 +288,7 @@ typedef struct command {
 	char    *name;
 	char    *command_line;
 	struct command *next;
-	} command;
+} command;
 
 
 /* COMMANDSMEMBER structure */
@@ -298,7 +296,7 @@ typedef struct commandsmember {
 	char	*command;
 	struct command *command_ptr;
 	struct	commandsmember *next;
-	} commandsmember;
+} commandsmember;
 
 
 /* CONTACT structure */
@@ -334,7 +332,7 @@ struct contact {
 	struct timeperiod *service_notification_period_ptr;
 	struct objectlist *contactgroups_ptr;
 	struct	contact *next;
-	};
+};
 
 
 /* SERVICESMEMBER structure */
@@ -343,7 +341,7 @@ typedef struct servicesmember {
 	char    *service_description;
 	struct service *service_ptr;
 	struct servicesmember *next;
-	} servicesmember;
+} servicesmember;
 
 
 /* HOSTSMEMBER structure */
@@ -351,7 +349,7 @@ typedef struct hostsmember {
 	char    *host_name;
 	struct host    *host_ptr;
 	struct hostsmember *next;
-	} hostsmember;
+} hostsmember;
 
 
 /* HOSTGROUP structure */
@@ -364,7 +362,7 @@ typedef struct hostgroup {
 	char    *notes_url;
 	char    *action_url;
 	struct	hostgroup *next;
-	} hostgroup;
+} hostgroup;
 
 
 /* HOST structure */
@@ -491,7 +489,7 @@ struct host {
 	struct objectlist *escalation_list;
 	struct  host *next;
 	struct timed_event *next_check_event;
-	};
+};
 
 
 /* SERVICEGROUP structure */
@@ -504,7 +502,7 @@ typedef struct servicegroup {
 	char    *notes_url;
 	char    *action_url;
 	struct	servicegroup *next;
-	} servicegroup;
+} servicegroup;
 
 
 /* SERVICE structure */
@@ -614,7 +612,7 @@ struct service {
 	struct objectlist *escalation_list;
 	struct service *next;
 	struct timed_event *next_check_event;
-	};
+};
 
 
 /* SERVICE ESCALATION structure */
@@ -631,8 +629,7 @@ typedef struct serviceescalation {
 	struct contactsmember *contacts;
 	struct service *service_ptr;
 	struct timeperiod *escalation_period_ptr;
-	} serviceescalation;
-
+} serviceescalation;
 
 /* SERVICE DEPENDENCY structure */
 typedef struct servicedependency {
@@ -648,7 +645,7 @@ typedef struct servicedependency {
 	struct service *master_service_ptr;
 	struct service *dependent_service_ptr;
 	struct timeperiod *dependency_period_ptr;
-	} servicedependency;
+} servicedependency;
 
 
 /* HOST ESCALATION structure */
@@ -664,7 +661,7 @@ typedef struct hostescalation {
 	struct contactsmember *contacts;
 	struct host    *host_ptr;
 	struct timeperiod *escalation_period_ptr;
-	} hostescalation;
+} hostescalation;
 
 
 /* HOST DEPENDENCY structure */
@@ -679,7 +676,7 @@ typedef struct hostdependency {
 	struct host    *master_host_ptr;
 	struct host    *dependent_host_ptr;
 	struct timeperiod *dependency_period_ptr;
-	} hostdependency;
+} hostdependency;
 
 extern struct command *command_list;
 extern struct timeperiod *timeperiod_list;
@@ -750,8 +747,6 @@ struct contactgroupsmember *add_contactgroup_to_hostescalation(hostescalation *,
 
 struct contactsmember *add_contact_to_object(contactsmember **, char *);                                       /* adds a contact to an object */
 struct customvariablesmember *add_custom_variable_to_object(customvariablesmember **, char *, char *);         /* adds a custom variable to an object */
-
-
 struct servicesmember *add_service_link_to_host(host *, service *);
 
 
@@ -821,7 +816,6 @@ int fcache_objects(char *cache_file);
 
 /**** Object Cleanup Functions ****/
 int free_object_data(void);                             /* frees all allocated memory for the object definitions */
-
 
 NAGIOS_END_DECL
 #endif

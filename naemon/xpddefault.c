@@ -25,7 +25,8 @@ static int     service_perfdata_fd = -1;
 /******************************************************************/
 
 /* initializes performance data */
-int xpddefault_initialize_performance_data(const char *cfgfile) {
+int xpddefault_initialize_performance_data(const char *cfgfile)
+{
 	char *buffer = NULL;
 	char *temp_buffer = NULL;
 	char *temp_command_name = NULL;
@@ -43,9 +44,9 @@ int xpddefault_initialize_performance_data(const char *cfgfile) {
 	service_perfdata_file_processing_command_ptr = NULL;
 
 	/* make sure we have some templates defined */
-	if(host_perfdata_file_template == NULL)
+	if (host_perfdata_file_template == NULL)
 		host_perfdata_file_template = (char *)strdup(DEFAULT_HOST_PERFDATA_FILE_TEMPLATE);
-	if(service_perfdata_file_template == NULL)
+	if (service_perfdata_file_template == NULL)
 		service_perfdata_file_template = (char *)strdup(DEFAULT_SERVICE_PERFDATA_FILE_TEMPLATE);
 
 	/* process special chars in templates */
@@ -57,116 +58,116 @@ int xpddefault_initialize_performance_data(const char *cfgfile) {
 	xpddefault_open_service_perfdata_file();
 
 	/* verify that performance data commands are valid */
-	if(host_perfdata_command != NULL) {
+	if (host_perfdata_command != NULL) {
 
 		temp_buffer = (char *)strdup(host_perfdata_command);
 
 		/* get the command name, leave any arguments behind */
 		temp_command_name = my_strtok(temp_buffer, "!");
 
-		if((temp_command = find_command(temp_command_name)) == NULL) {
+		if ((temp_command = find_command(temp_command_name)) == NULL) {
 
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Host performance command '%s' was not found - host performance data will not be processed!\n", temp_command_name);
 
 			my_free(host_perfdata_command);
-			}
+		}
 
 		my_free(temp_buffer);
 
 		/* save the command pointer for later */
 		host_perfdata_command_ptr = temp_command;
-		}
-	if(service_perfdata_command != NULL) {
+	}
+	if (service_perfdata_command != NULL) {
 
 		temp_buffer = (char *)strdup(service_perfdata_command);
 
 		/* get the command name, leave any arguments behind */
 		temp_command_name = my_strtok(temp_buffer, "!");
 
-		if((temp_command = find_command(temp_command_name)) == NULL) {
+		if ((temp_command = find_command(temp_command_name)) == NULL) {
 
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Service performance command '%s' was not found - service performance data will not be processed!\n", temp_command_name);
 
 			my_free(service_perfdata_command);
-			}
+		}
 
 		/* free memory */
 		my_free(temp_buffer);
 
 		/* save the command pointer for later */
 		service_perfdata_command_ptr = temp_command;
-		}
-	if(host_perfdata_file_processing_command != NULL) {
+	}
+	if (host_perfdata_file_processing_command != NULL) {
 
 		temp_buffer = (char *)strdup(host_perfdata_file_processing_command);
 
 		/* get the command name, leave any arguments behind */
 		temp_command_name = my_strtok(temp_buffer, "!");
 
-		if((temp_command = find_command(temp_command_name)) == NULL) {
+		if ((temp_command = find_command(temp_command_name)) == NULL) {
 
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Host performance file processing command '%s' was not found - host performance data file will not be processed!\n", temp_command_name);
 
 			my_free(host_perfdata_file_processing_command);
-			}
+		}
 
 		/* free memory */
 		my_free(temp_buffer);
 
 		/* save the command pointer for later */
 		host_perfdata_file_processing_command_ptr = temp_command;
-		}
-	if(service_perfdata_file_processing_command != NULL) {
+	}
+	if (service_perfdata_file_processing_command != NULL) {
 
 		temp_buffer = (char *)strdup(service_perfdata_file_processing_command);
 
 		/* get the command name, leave any arguments behind */
 		temp_command_name = my_strtok(temp_buffer, "!");
 
-		if((temp_command = find_command(temp_command_name)) == NULL) {
+		if ((temp_command = find_command(temp_command_name)) == NULL) {
 
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Service performance file processing command '%s' was not found - service performance data file will not be processed!\n", temp_command_name);
 
 			my_free(service_perfdata_file_processing_command);
-			}
+		}
 
 		/* save the command pointer for later */
 		service_perfdata_file_processing_command_ptr = temp_command;
-		}
+	}
 
 	/* periodically process the host perfdata file */
-	if(host_perfdata_file_processing_interval > 0 && host_perfdata_file_processing_command != NULL)
+	if (host_perfdata_file_processing_interval > 0 && host_perfdata_file_processing_command != NULL)
 		schedule_new_event(EVENT_USER_FUNCTION, TRUE, current_time + host_perfdata_file_processing_interval, TRUE, host_perfdata_file_processing_interval, NULL, TRUE, (void *)xpddefault_process_host_perfdata_file, NULL, 0);
 
 	/* periodically process the service perfdata file */
-	if(service_perfdata_file_processing_interval > 0 && service_perfdata_file_processing_command != NULL)
+	if (service_perfdata_file_processing_interval > 0 && service_perfdata_file_processing_command != NULL)
 		schedule_new_event(EVENT_USER_FUNCTION, TRUE, current_time + service_perfdata_file_processing_interval, TRUE, service_perfdata_file_processing_interval, NULL, TRUE, (void *)xpddefault_process_service_perfdata_file, NULL, 0);
 
 	/* save the host perf data file macro */
 	my_free(mac->x[MACRO_HOSTPERFDATAFILE]);
-	if(host_perfdata_file != NULL) {
-		if((mac->x[MACRO_HOSTPERFDATAFILE] = (char *)strdup(host_perfdata_file)))
+	if (host_perfdata_file != NULL) {
+		if ((mac->x[MACRO_HOSTPERFDATAFILE] = (char *)strdup(host_perfdata_file)))
 			strip(mac->x[MACRO_HOSTPERFDATAFILE]);
-		}
+	}
 
 	/* save the service perf data file macro */
 	my_free(mac->x[MACRO_SERVICEPERFDATAFILE]);
-	if(service_perfdata_file != NULL) {
-		if((mac->x[MACRO_SERVICEPERFDATAFILE] = (char *)strdup(service_perfdata_file)))
+	if (service_perfdata_file != NULL) {
+		if ((mac->x[MACRO_SERVICEPERFDATAFILE] = (char *)strdup(service_perfdata_file)))
 			strip(mac->x[MACRO_SERVICEPERFDATAFILE]);
-		}
+	}
 
 	/* free memory */
 	my_free(temp_buffer);
 	my_free(buffer);
 
 	return OK;
-	}
-
+}
 
 
 /* cleans up performance data */
-int xpddefault_cleanup_performance_data(void) {
+int xpddefault_cleanup_performance_data(void)
+{
 
 	/* free memory */
 	my_free(host_perfdata_command);
@@ -183,17 +184,16 @@ int xpddefault_cleanup_performance_data(void) {
 	xpddefault_close_service_perfdata_file();
 
 	return OK;
-	}
-
+}
 
 
 /******************************************************************/
 /****************** PERFORMANCE DATA FUNCTIONS ********************/
 /******************************************************************/
 
-
 /* updates service performance data */
-int xpddefault_update_service_performance_data(service *svc) {
+int xpddefault_update_service_performance_data(service *svc)
+{
 	nagios_macros mac;
 	host *hst;
 
@@ -203,12 +203,12 @@ int xpddefault_update_service_performance_data(service *svc) {
 	 * on distributed setups, empty perfdata results are required, so
 	 * only drop out if demanded via configs.
 	*/
-	if(service_perfdata_process_empty_results==FALSE){
-	        if(!svc || !svc->perf_data || !*svc->perf_data) {
-		       return OK;
+	if (service_perfdata_process_empty_results == FALSE) {
+		if (!svc || !svc->perf_data || !*svc->perf_data) {
+			return OK;
 		}
-	        if((!service_perfdata_fp || !service_perfdata_file_template) && !service_perfdata_command) {
-		       return OK;
+		if ((!service_perfdata_fp || !service_perfdata_file_template) && !service_perfdata_command) {
+			return OK;
 		}
 
 	}
@@ -234,11 +234,12 @@ int xpddefault_update_service_performance_data(service *svc) {
 	clear_volatile_macros_r(&mac);
 
 	return OK;
-	}
+}
 
 
 /* updates host performance data */
-int xpddefault_update_host_performance_data(host *hst) {
+int xpddefault_update_host_performance_data(host *hst)
+{
 	nagios_macros mac;
 
 
@@ -248,14 +249,14 @@ int xpddefault_update_host_performance_data(host *hst) {
 	 * on distributed setups, empty perfdata results are required, so
 	 * only drop out if demanded via configs.
 	 */
-	if(host_perfdata_process_empty_results==FALSE){
-		if(!hst || !hst->perf_data || !*hst->perf_data) {
+	if (host_perfdata_process_empty_results == FALSE) {
+		if (!hst || !hst->perf_data || !*hst->perf_data) {
 			return OK;
-			}
-		if((!host_perfdata_fp || !host_perfdata_file_template) && !host_perfdata_command) {
-			return OK;
-			}
 		}
+		if ((!host_perfdata_fp || !host_perfdata_file_template) && !host_perfdata_command) {
+			return OK;
+		}
+	}
 
 	/* set up macros and get to work */
 	memset(&mac, 0, sizeof(mac));
@@ -274,18 +275,16 @@ int xpddefault_update_host_performance_data(host *hst) {
 	clear_volatile_macros_r(&mac);
 
 	return OK;
-	}
-
-
+}
 
 
 /******************************************************************/
 /************** PERFORMANCE DATA COMMAND FUNCTIONS ****************/
 /******************************************************************/
 
-
 /* runs the service performance data command */
-int xpddefault_run_service_performance_data_command(nagios_macros *mac, service *svc) {
+int xpddefault_run_service_performance_data_command(nagios_macros *mac, service *svc)
+{
 	char *raw_command_line = NULL;
 	char *processed_command_line = NULL;
 	int result = OK;
@@ -293,16 +292,16 @@ int xpddefault_run_service_performance_data_command(nagios_macros *mac, service 
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "run_service_performance_data_command()\n");
 
-	if(svc == NULL)
+	if (svc == NULL)
 		return ERROR;
 
 	/* we don't have a command */
-	if(service_perfdata_command == NULL)
+	if (service_perfdata_command == NULL)
 		return OK;
 
 	/* get the raw command line */
 	get_raw_command_line_r(mac, service_perfdata_command_ptr, service_perfdata_command, &raw_command_line, macro_options);
-	if(raw_command_line == NULL)
+	if (raw_command_line == NULL)
 		return ERROR;
 
 	log_debug_info(DEBUGL_PERFDATA, 2, "Raw service performance data command line: %s\n", raw_command_line);
@@ -310,7 +309,7 @@ int xpddefault_run_service_performance_data_command(nagios_macros *mac, service 
 	/* process any macros in the raw command line */
 	process_macros_r(mac, raw_command_line, &processed_command_line, macro_options);
 	my_free(raw_command_line);
-	if(processed_command_line == NULL)
+	if (processed_command_line == NULL)
 		return ERROR;
 
 	log_debug_info(DEBUGL_PERFDATA, 2, "Processed service performance data command line: %s\n", processed_command_line);
@@ -322,11 +321,12 @@ int xpddefault_run_service_performance_data_command(nagios_macros *mac, service 
 	my_free(processed_command_line);
 
 	return result;
-	}
+}
 
 
 /* runs the host performance data command */
-int xpddefault_run_host_performance_data_command(nagios_macros *mac, host *hst) {
+int xpddefault_run_host_performance_data_command(nagios_macros *mac, host *hst)
+{
 	char *raw_command_line = NULL;
 	char *processed_command_line = NULL;
 	int result = OK;
@@ -334,16 +334,16 @@ int xpddefault_run_host_performance_data_command(nagios_macros *mac, host *hst) 
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "run_host_performance_data_command()\n");
 
-	if(hst == NULL)
+	if (hst == NULL)
 		return ERROR;
 
 	/* we don't have a command */
-	if(host_perfdata_command == NULL)
+	if (host_perfdata_command == NULL)
 		return OK;
 
 	/* get the raw command line */
 	get_raw_command_line_r(mac, host_perfdata_command_ptr, host_perfdata_command, &raw_command_line, macro_options);
-	if(raw_command_line == NULL)
+	if (raw_command_line == NULL)
 		return ERROR;
 
 	log_debug_info(DEBUGL_PERFDATA, 2, "Raw host performance data command line: %s\n", raw_command_line);
@@ -363,8 +363,7 @@ int xpddefault_run_host_performance_data_command(nagios_macros *mac, host *hst) 
 	my_free(processed_command_line);
 
 	return result;
-	}
-
+}
 
 
 /******************************************************************/
@@ -372,138 +371,138 @@ int xpddefault_run_host_performance_data_command(nagios_macros *mac, host *hst) 
 /******************************************************************/
 
 /* open the host performance data file for writing */
-int xpddefault_open_host_perfdata_file(void) {
+int xpddefault_open_host_perfdata_file(void)
+{
 
-	if(host_perfdata_file != NULL) {
+	if (host_perfdata_file != NULL) {
 
-		if(host_perfdata_file_pipe == TRUE) {
+		if (host_perfdata_file_pipe == TRUE) {
 			/* must open read-write to avoid failure if the other end isn't ready yet */
 			host_perfdata_fd = open(host_perfdata_file, O_NONBLOCK | O_RDWR | O_CREAT, 0644);
 			host_perfdata_fp = fdopen(host_perfdata_fd, "w");
-			}
-		else
+		} else
 			host_perfdata_fp = fopen(host_perfdata_file, (host_perfdata_file_append == TRUE) ? "a" : "w");
 
-		if(host_perfdata_fp == NULL) {
+		if (host_perfdata_fp == NULL) {
 
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: File '%s' could not be opened - host performance data will not be written to file!\n", host_perfdata_file);
 
 			return ERROR;
-			}
 		}
+	}
 
 	return OK;
-	}
+}
 
 
 /* open the service performance data file for writing */
-int xpddefault_open_service_perfdata_file(void) {
+int xpddefault_open_service_perfdata_file(void)
+{
 
-	if(service_perfdata_file != NULL) {
-		if(service_perfdata_file_pipe == TRUE) {
+	if (service_perfdata_file != NULL) {
+		if (service_perfdata_file_pipe == TRUE) {
 			/* must open read-write to avoid failure if the other end isn't ready yet */
 			service_perfdata_fd = open(service_perfdata_file, O_NONBLOCK | O_RDWR);
 			service_perfdata_fp = fdopen(service_perfdata_fd, "w");
-			}
-		else
+		} else
 			service_perfdata_fp = fopen(service_perfdata_file, (service_perfdata_file_append == TRUE) ? "a" : "w");
 
-		if(service_perfdata_fp == NULL) {
+		if (service_perfdata_fp == NULL) {
 
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: File '%s' could not be opened - service performance data will not be written to file!\n", service_perfdata_file);
 
 			return ERROR;
-			}
 		}
+	}
 
 	return OK;
-	}
+}
 
 
 /* close the host performance data file */
-int xpddefault_close_host_perfdata_file(void) {
+int xpddefault_close_host_perfdata_file(void)
+{
 
-	if(host_perfdata_fp != NULL)
+	if (host_perfdata_fp != NULL)
 		fclose(host_perfdata_fp);
-	if(host_perfdata_fd >= 0) {
+	if (host_perfdata_fd >= 0) {
 		close(host_perfdata_fd);
 		host_perfdata_fd = -1;
-		}
+	}
 
 	return OK;
-	}
+}
 
 
 /* close the service performance data file */
-int xpddefault_close_service_perfdata_file(void) {
+int xpddefault_close_service_perfdata_file(void)
+{
 
-	if(service_perfdata_fp != NULL)
+	if (service_perfdata_fp != NULL)
 		fclose(service_perfdata_fp);
-	if(service_perfdata_fd >= 0) {
+	if (service_perfdata_fd >= 0) {
 		close(service_perfdata_fd);
 		service_perfdata_fd = -1;
-		}
+	}
 
 	return OK;
-	}
+}
 
 
 /* processes delimiter characters in templates */
-int xpddefault_preprocess_file_templates(char *template) {
+int xpddefault_preprocess_file_templates(char *template)
+{
 	char *tempbuf;
 	unsigned int x, y;
 
-	if(template == NULL)
+	if (template == NULL)
 		return OK;
 
 	/* allocate temporary buffer */
 	tempbuf = (char *)malloc(strlen(template) + 1);
-	if(tempbuf == NULL)
+	if (tempbuf == NULL)
 		return ERROR;
 	strcpy(tempbuf, "");
 
-	for(x = 0, y = 0; x < strlen(template); x++, y++) {
-		if(template[x] == '\\') {
-			if(template[x + 1] == 't') {
+	for (x = 0, y = 0; x < strlen(template); x++, y++) {
+		if (template[x] == '\\') {
+			if (template[x + 1] == 't') {
 				tempbuf[y] = '\t';
 				x++;
-				}
-			else if(template[x + 1] == 'r') {
+			} else if (template[x + 1] == 'r') {
 				tempbuf[y] = '\r';
 				x++;
-				}
-			else if(template[x + 1] == 'n') {
+			} else if (template[x + 1] == 'n') {
 				tempbuf[y] = '\n';
 				x++;
-				}
-			else
+			} else
 				tempbuf[y] = template[x];
-			}
-		else
+		} else
 			tempbuf[y] = template[x];
-		}
+	}
 	tempbuf[y] = '\x0';
 
 	strcpy(template, tempbuf);
 	my_free(tempbuf);
 
 	return OK;
-	}
+}
 
 
 /* updates service performance data file */
-int xpddefault_update_service_performance_data_file(nagios_macros *mac, service *svc) {
+int xpddefault_update_service_performance_data_file(nagios_macros *mac, service *svc)
+{
 	char *raw_output = NULL;
 	char *processed_output = NULL;
 	int result = OK;
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "update_service_performance_data_file()\n");
 
-	if(svc == NULL)
+	if (svc == NULL)
 		return ERROR;
 
 	/* we don't have a file to write to*/
-	if(service_perfdata_fp == NULL || service_perfdata_file_template == NULL)
+	if (service_perfdata_fp == NULL || service_perfdata_file_template == NULL)
 		return OK;
 
 	/* get the raw line to write */
@@ -513,7 +512,7 @@ int xpddefault_update_service_performance_data_file(nagios_macros *mac, service 
 
 	/* process any macros in the raw output line */
 	process_macros_r(mac, raw_output, &processed_output, 0);
-	if(processed_output == NULL)
+	if (processed_output == NULL)
 		return ERROR;
 
 	log_debug_info(DEBUGL_PERFDATA, 2, "Processed service performance data file output: %s\n", processed_output);
@@ -528,22 +527,23 @@ int xpddefault_update_service_performance_data_file(nagios_macros *mac, service 
 	my_free(processed_output);
 
 	return result;
-	}
+}
 
 
 /* updates host performance data file */
-int xpddefault_update_host_performance_data_file(nagios_macros *mac, host *hst) {
+int xpddefault_update_host_performance_data_file(nagios_macros *mac, host *hst)
+{
 	char *raw_output = NULL;
 	char *processed_output = NULL;
 	int result = OK;
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "update_host_performance_data_file()\n");
 
-	if(hst == NULL)
+	if (hst == NULL)
 		return ERROR;
 
 	/* we don't have a host perfdata file */
-	if(host_perfdata_fp == NULL || host_perfdata_file_template == NULL)
+	if (host_perfdata_fp == NULL || host_perfdata_file_template == NULL)
 		return OK;
 
 	/* get the raw output */
@@ -553,7 +553,7 @@ int xpddefault_update_host_performance_data_file(nagios_macros *mac, host *hst) 
 
 	/* process any macros in the raw output */
 	process_macros_r(mac, raw_output, &processed_output, 0);
-	if(processed_output == NULL)
+	if (processed_output == NULL)
 		return ERROR;
 
 	log_debug_info(DEBUGL_PERFDATA, 2, "Processed host performance data file output: %s\n", processed_output);
@@ -568,11 +568,12 @@ int xpddefault_update_host_performance_data_file(nagios_macros *mac, host *hst) 
 	my_free(processed_output);
 
 	return result;
-	}
+}
 
 
 /* periodically process the host perf data file */
-int xpddefault_process_host_perfdata_file(void) {
+int xpddefault_process_host_perfdata_file(void)
+{
 	char *raw_command_line = NULL;
 	char *processed_command_line = NULL;
 	int early_timeout = FALSE;
@@ -584,7 +585,7 @@ int xpddefault_process_host_perfdata_file(void) {
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "process_host_perfdata_file()\n");
 
 	/* we don't have a command */
-	if(host_perfdata_file_processing_command == NULL)
+	if (host_perfdata_file_processing_command == NULL)
 		return OK;
 
 	/* init macros */
@@ -592,20 +593,20 @@ int xpddefault_process_host_perfdata_file(void) {
 
 	/* get the raw command line */
 	get_raw_command_line_r(&mac, host_perfdata_file_processing_command_ptr, host_perfdata_file_processing_command, &raw_command_line, macro_options);
-	if(raw_command_line == NULL) {
+	if (raw_command_line == NULL) {
 		clear_volatile_macros_r(&mac);
 		return ERROR;
-		}
+	}
 
 	log_debug_info(DEBUGL_PERFDATA, 2, "Raw host performance data file processing command line: %s\n", raw_command_line);
 
 	/* process any macros in the raw command line */
 	process_macros_r(&mac, raw_command_line, &processed_command_line, macro_options);
 	my_free(raw_command_line);
-	if(processed_command_line == NULL) {
+	if (processed_command_line == NULL) {
 		clear_volatile_macros_r(&mac);
 		return ERROR;
-		}
+	}
 
 	log_debug_info(DEBUGL_PERFDATA, 2, "Processed host performance data file processing command line: %s\n", processed_command_line);
 
@@ -620,7 +621,7 @@ int xpddefault_process_host_perfdata_file(void) {
 	xpddefault_open_host_perfdata_file();
 
 	/* check to see if the command timed out */
-	if(early_timeout == TRUE)
+	if (early_timeout == TRUE)
 		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Host performance data file processing command '%s' timed out after %d seconds\n", processed_command_line, perfdata_timeout);
 
 
@@ -628,11 +629,12 @@ int xpddefault_process_host_perfdata_file(void) {
 	my_free(processed_command_line);
 
 	return result;
-	}
+}
 
 
 /* periodically process the service perf data file */
-int xpddefault_process_service_perfdata_file(void) {
+int xpddefault_process_service_perfdata_file(void)
+{
 	char *raw_command_line = NULL;
 	char *processed_command_line = NULL;
 	int early_timeout = FALSE;
@@ -644,7 +646,7 @@ int xpddefault_process_service_perfdata_file(void) {
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "process_service_perfdata_file()\n");
 
 	/* we don't have a command */
-	if(service_perfdata_file_processing_command == NULL)
+	if (service_perfdata_file_processing_command == NULL)
 		return OK;
 
 	/* init macros */
@@ -652,20 +654,20 @@ int xpddefault_process_service_perfdata_file(void) {
 
 	/* get the raw command line */
 	get_raw_command_line_r(&mac, service_perfdata_file_processing_command_ptr, service_perfdata_file_processing_command, &raw_command_line, macro_options);
-	if(raw_command_line == NULL) {
+	if (raw_command_line == NULL) {
 		clear_volatile_macros_r(&mac);
 		return ERROR;
-		}
+	}
 
 	log_debug_info(DEBUGL_PERFDATA, 2, "Raw service performance data file processing command line: %s\n", raw_command_line);
 
 	/* process any macros in the raw command line */
 	process_macros_r(&mac, raw_command_line, &processed_command_line, macro_options);
 	my_free(raw_command_line);
-	if(processed_command_line == NULL) {
+	if (processed_command_line == NULL) {
 		clear_volatile_macros_r(&mac);
 		return ERROR;
-		}
+	}
 
 	log_debug_info(DEBUGL_PERFDATA, 2, "Processed service performance data file processing command line: %s\n", processed_command_line);
 
@@ -681,11 +683,11 @@ int xpddefault_process_service_perfdata_file(void) {
 	clear_volatile_macros_r(&mac);
 
 	/* check to see if the command timed out */
-	if(early_timeout == TRUE)
+	if (early_timeout == TRUE)
 		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Service performance data file processing command '%s' timed out after %d seconds\n", processed_command_line, perfdata_timeout);
 
 	/* free memory */
 	my_free(processed_command_line);
 
 	return result;
-	}
+}

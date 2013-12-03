@@ -31,12 +31,13 @@
 #include "tap.h"
 
 void logit(int data_type, int display, const char *fmt, ...) {}
-int log_debug_info(int level, int verbosity, const char *fmt, ...) {
+int log_debug_info(int level, int verbosity, const char *fmt, ...)
+{
 	va_list ap;
 	va_start(ap, fmt);
 	/* vprintf( fmt, ap ); */
 	va_end(ap);
-	}
+}
 
 timed_event *event_list_high = NULL;
 timed_event *event_list_high_tail = NULL;
@@ -45,8 +46,8 @@ unsigned long next_downtime_id = 1L;
 
 extern scheduled_downtime *scheduled_downtime_list;
 
-int
-main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 	time_t now = 0L;
 	time_t temp_start_time = 1234567890L;
 	time_t temp_end_time = 2134567890L;
@@ -76,7 +77,7 @@ main(int argc, char **argv) {
 	schedule_downtime(SERVICE_DOWNTIME, "host4", "svc", temp_start_time, "user", "uniq comment", temp_start_time,  temp_end_time, 0, 0, 0, &downtime_id);
 	ok(downtime_id == 8L, "Got host4::svc downtime: %lu", downtime_id);
 
-	for(temp_downtime = scheduled_downtime_list, i = 0; temp_downtime != NULL; temp_downtime = temp_downtime->next, i++) {}
+	for (temp_downtime = scheduled_downtime_list, i = 0; temp_downtime != NULL; temp_downtime = temp_downtime->next, i++) {}
 	ok(i == 8, "Got 8 downtimes: %d", i);
 
 	i = delete_downtime_by_hostname_service_description_start_time_comment(NULL, NULL, 0, NULL);
@@ -88,7 +89,7 @@ main(int argc, char **argv) {
 	i = delete_downtime_by_hostname_service_description_start_time_comment(NULL, NULL, temp_start_time, "test comment");
 	ok(i == 2, "Deleted 2 downtimes");
 
-	for(temp_downtime = scheduled_downtime_list, i = 0; temp_downtime != NULL; temp_downtime = temp_downtime->next, i++) {}
+	for (temp_downtime = scheduled_downtime_list, i = 0; temp_downtime != NULL; temp_downtime = temp_downtime->next, i++) {}
 	ok(i == 6, "Got 6 downtimes left: %d", i);
 
 	i = delete_downtime_by_hostname_service_description_start_time_comment(NULL, NULL, temp_start_time + 200, "test comment");
@@ -100,16 +101,16 @@ main(int argc, char **argv) {
 	i = delete_downtime_by_hostname_service_description_start_time_comment(NULL, NULL, 0, "uniq comment");
 	ok(i == 1, "Deleted 1 by unique comment: %d", i);
 
-	for(temp_downtime = scheduled_downtime_list, i = 0; temp_downtime != NULL; temp_downtime = temp_downtime->next, i++) {
+	for (temp_downtime = scheduled_downtime_list, i = 0; temp_downtime != NULL; temp_downtime = temp_downtime->next, i++) {
 		diag("downtime id: %d", temp_downtime->downtime_id);
-		}
+	}
 	ok(i == 3, "Got 3 downtimes left: %d", i);
 
 	unschedule_downtime(HOST_DOWNTIME, 3);
 	unschedule_downtime(SERVICE_DOWNTIME, 5);
 	unschedule_downtime(SERVICE_DOWNTIME, 6);
 
-	for(temp_downtime = scheduled_downtime_list, i = 0; temp_downtime != NULL; temp_downtime = temp_downtime->next, i++) {}
+	for (temp_downtime = scheduled_downtime_list, i = 0; temp_downtime != NULL; temp_downtime = temp_downtime->next, i++) {}
 	ok(i == 0, "No downtimes left");
 
 
@@ -159,9 +160,9 @@ main(int argc, char **argv) {
 	i = delete_downtime_by_hostname_service_description_start_time_comment("host4", NULL, 0, "svc comment");
 	ok(i == 0, "Deleted 0") || diag("Actually deleted: %d", i);
 
-	for(temp_downtime = scheduled_downtime_list, i = 0; temp_downtime != NULL; temp_downtime = temp_downtime->next, i++) {
+	for (temp_downtime = scheduled_downtime_list, i = 0; temp_downtime != NULL; temp_downtime = temp_downtime->next, i++) {
 		diag("downtime id: %d", temp_downtime->downtime_id);
-		}
+	}
 	ok(i == 4, "Got 4 downtimes left: %d", i);
 
 	unschedule_downtime(HOST_DOWNTIME, 9);
@@ -169,11 +170,8 @@ main(int argc, char **argv) {
 	unschedule_downtime(SERVICE_DOWNTIME, 15);
 	unschedule_downtime(SERVICE_DOWNTIME, 16);
 
-	for(temp_downtime = scheduled_downtime_list, i = 0; temp_downtime != NULL; temp_downtime = temp_downtime->next, i++) {}
+	for (temp_downtime = scheduled_downtime_list, i = 0; temp_downtime != NULL; temp_downtime = temp_downtime->next, i++) {}
 	ok(i == 0, "No downtimes left") || diag("Left: %d", i);
 
-
-
 	return exit_status();
-	}
-
+}

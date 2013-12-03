@@ -33,9 +33,8 @@ struct nagios_macros {
 	customvariablesmember *custom_host_vars;
 	customvariablesmember *custom_service_vars;
 	customvariablesmember *custom_contact_vars;
-	};
+};
 typedef struct nagios_macros nagios_macros;
-
 
 
 #define MACRO_HOSTNAME				0
@@ -197,15 +196,12 @@ typedef struct nagios_macros nagios_macros;
 
 
 /************* MACRO CLEANING OPTIONS *****************/
-
 #define STRIP_ILLEGAL_MACRO_CHARS       1
 #define ESCAPE_MACRO_CHARS              2
 #define URL_ENCODE_MACRO_CHARS		4
 
 
-
 /****************** MACRO FUNCTIONS ******************/
-
 nagios_macros *get_global_macros(void);
 
 /*
@@ -225,7 +221,6 @@ char *clean_macro_chars(char *, int);
  * These functions updates **macros with the values from
  * their respective object type.
  */
-
 int grab_service_macros(service *);
 int grab_host_macros(host *);
 int grab_servicegroup_macros(servicegroup *);

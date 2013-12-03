@@ -235,23 +235,23 @@ bitmap *bitmap_intersect(const bitmap *a, const bitmap *b)
 
 bitmap *bitmap_union(const bitmap *a, const bitmap *b)
 {
-	if(!a)
+	if (!a)
 		return bitmap_copy(b);
-	if(!b)
+	if (!b)
 		return bitmap_copy(a);
 	do {
 		BITMAP_MATH(a, b) {
 			bm->vector[i] = a->vector[i] | b->vector[i];
 		}
 		return bm;
-	} while(0);
+	} while (0);
 }
 
 bitmap *bitmap_unite(bitmap *res, const bitmap *addme)
 {
 	unsigned int i;
 
-	if(!addme || !res)
+	if (!addme || !res)
 		return res;
 
 	if (bitmap_size(addme) > bitmap_size(res)) {

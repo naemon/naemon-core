@@ -245,9 +245,9 @@ int finish_job(child_process *cp, int reason)
 
 	if (running_jobs != squeue_size(sq)) {
 		wlog("running_jobs(%d) != squeue_size(sq) (%d)\n",
-			 running_jobs, squeue_size(sq));
+		     running_jobs, squeue_size(sq));
 		wlog("started: %d; running: %d; finished: %d\n",
-			 started, running_jobs, started - running_jobs);
+		     started, running_jobs, started - running_jobs);
 	}
 
 	cp->ei->runtime = tv_delta_f(&cp->ei->start, &cp->ei->stop);
@@ -484,8 +484,7 @@ static void reap_jobs(void)
 			if (cp->ei->state != ESTALE)
 				finish_job(cp, cp->ei->state);
 			destroy_job(cp);
-		}
-		else if (!pid || (pid < 0 && errno == ECHILD)) {
+		} else if (!pid || (pid < 0 && errno == ECHILD)) {
 			reapable = 0;
 		}
 	} while (reapable);
@@ -493,7 +492,7 @@ static void reap_jobs(void)
 
 int start_cmd(child_process *cp)
 {
-	int pfd[2] = {-1, -1}, pfderr[2] = {-1, -1};
+	int pfd[2] = { -1, -1}, pfderr[2] = { -1, -1};
 
 	cp->outstd.fd = runcmd_open(cp->cmd, pfd, pfderr, NULL);
 	if (cp->outstd.fd < 0) {
@@ -665,7 +664,7 @@ int set_socket_options(int sd, int bufsize)
 	return worker_set_sockopts(sd, bufsize);
 }
 
-void enter_worker(int sd, int (*cb)(child_process*))
+void enter_worker(int sd, int (*cb)(child_process *))
 {
 	/* created with socketpair(), usually */
 	master_sd = sd;
