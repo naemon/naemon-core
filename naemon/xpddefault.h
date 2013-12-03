@@ -3,7 +3,6 @@
 
 #include "objects.h"
 
-
 int xpddefault_initialize_performance_data(const char *);
 int xpddefault_cleanup_performance_data(void);
 

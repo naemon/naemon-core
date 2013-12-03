@@ -176,7 +176,8 @@ static int read_config_file(void);
 static int read_status_file(void);
 
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 	int result;
 	int error = FALSE;
 	int display_license = FALSE;
@@ -186,16 +187,16 @@ int main(int argc, char **argv) {
 #ifdef HAVE_GETOPT_H
 	int option_index = 0;
 	static struct option long_options[] = {
-			{"help", no_argument, NULL, 'h'},
-			{"version", no_argument, NULL, 'V'},
-			{"license", no_argument, NULL, 'L'},
-			{"config", required_argument, NULL, 'c'},
-			{"statsfile", required_argument, NULL, 's'},
-			{"mrtg", no_argument, NULL, 'm'},
-			{"data", required_argument, NULL, 'd'},
-			{"delimiter", required_argument, NULL, 'D'},
-			{NULL, 0, NULL, 0}
-		};
+		{"help", no_argument, NULL, 'h'},
+		{"version", no_argument, NULL, 'V'},
+		{"license", no_argument, NULL, 'L'},
+		{"config", required_argument, NULL, 'c'},
+		{"statsfile", required_argument, NULL, 's'},
+		{"mrtg", no_argument, NULL, 'm'},
+		{"data", required_argument, NULL, 'd'},
+		{"delimiter", required_argument, NULL, 'D'},
+		{NULL, 0, NULL, 0}
+	};
 #define getopt(argc, argv, OPTSTR) getopt_long(argc, argv, OPTSTR, long_options, &option_index)
 #endif
 
@@ -203,57 +204,57 @@ int main(int argc, char **argv) {
 	main_config_file = strdup(DEFAULT_CONFIG_FILE);
 
 	/* get all command line arguments */
-	while(1) {
+	while (1) {
 
 		c = getopt(argc, argv, "+hVLc:ms:d:D:");
 
-		if(c == -1 || c == EOF)
+		if (c == -1 || c == EOF)
 			break;
 
-		switch(c) {
+		switch (c) {
 
-			case '?':
-			case 'h':
-				display_help = TRUE;
-				break;
-			case 'V':
-				display_license = TRUE;
-				break;
-			case 'L':
-				display_license = TRUE;
-				break;
-			case 'c':
-				if(main_config_file)
-					free(main_config_file);
-				main_config_file = strdup(optarg);
-				break;
-			case 's':
-				status_file = strdup(optarg);
-				break;
-			case 'm':
-				mrtg_mode = TRUE;
-				break;
-			case 'd':
-				mrtg_variables = strdup(optarg);
-				break;
-			case 'D':
-				mrtg_delimiter = strdup(optarg);
-				break;
+		case '?':
+		case 'h':
+			display_help = TRUE;
+			break;
+		case 'V':
+			display_license = TRUE;
+			break;
+		case 'L':
+			display_license = TRUE;
+			break;
+		case 'c':
+			if (main_config_file)
+				free(main_config_file);
+			main_config_file = strdup(optarg);
+			break;
+		case 's':
+			status_file = strdup(optarg);
+			break;
+		case 'm':
+			mrtg_mode = TRUE;
+			break;
+		case 'd':
+			mrtg_variables = strdup(optarg);
+			break;
+		case 'D':
+			mrtg_delimiter = strdup(optarg);
+			break;
 
-			default:
-				break;
-			}
+		default:
+			break;
 		}
+	}
 
-	if(mrtg_mode == FALSE) {
+	if (mrtg_mode == FALSE) {
 		printf("\nNagios Stats %s\n", PROGRAM_VERSION);
 		printf("Copyright (c) 2003-2008 Ethan Galstad (www.nagios.org)\n");
 		printf("Last Modified: %s\n", PROGRAM_MODIFICATION_DATE);
 		printf("License: GPL\n\n");
-		}
+	}
 
 	/* just display the license */
-	if(display_license == TRUE) {
+	if (display_license == TRUE) {
 
 		printf("This program is free software; you can redistribute it and/or modify\n");
 		printf("it under the terms of the GNU General Public License version 2 as\n");
@@ -267,10 +268,10 @@ int main(int argc, char **argv) {
 		printf("Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.\n\n");
 
 		exit(OK);
-		}
+	}
 
 	/* if there are no command line options (or if we encountered an error), print usage */
-	if(error == TRUE || display_help == TRUE) {
+	if (error == TRUE || display_help == TRUE) {
 
 		printf("Usage: %s [options]\n", argv[0]);
 		printf("\n");
@@ -358,41 +359,42 @@ int main(int argc, char **argv) {
 		printf("\n");
 
 		exit(ERROR);
-		}
+	}
 
 	/* if we got no -s option, we must read the main config file */
 	if (status_file == NULL) {
 		/* read main config file */
 		result = read_config_file();
-		if(result == ERROR && mrtg_mode == FALSE) {
+		if (result == ERROR && mrtg_mode == FALSE) {
 			printf("Error processing config file '%s'\n", main_config_file);
 			return ERROR;
-			}
 		}
+	}
 
 	/* read status file */
 	result = read_status_file();
-	if(result == ERROR && mrtg_mode == FALSE) {
+	if (result == ERROR && mrtg_mode == FALSE) {
 		printf("Error reading status file '%s': %s\n", status_file, strerror(errno));
 		return ERROR;
-		}
+	}
 
 	/* display stats */
-	if(mrtg_mode == FALSE)
+	if (mrtg_mode == FALSE)
 		display_stats();
 	else
 		display_mrtg_values();
 
 	/* Opsera patch - return based on error, because mrtg_mode was always returning OK */
-	if(result == ERROR)
+	if (result == ERROR)
 		return ERROR;
 	else
 		return OK;
-	}
+}
 
 
 
-static int display_mrtg_values(void) {
+static int display_mrtg_values(void)
+{
 	char *temp_ptr;
 	time_t current_time;
 	unsigned long time_difference;
@@ -403,318 +405,315 @@ static int display_mrtg_values(void) {
 
 	time(&current_time);
 
-	if(mrtg_variables == NULL)
+	if (mrtg_variables == NULL)
 		return OK;
 
 	/* process all variables */
-	for(temp_ptr = strtok(mrtg_variables, ","); temp_ptr != NULL; temp_ptr = strtok(NULL, ",")) {
+	for (temp_ptr = strtok(mrtg_variables, ","); temp_ptr != NULL; temp_ptr = strtok(NULL, ",")) {
 
-		if(!strcmp(temp_ptr, "PROGRUNTIME")) {
+		if (!strcmp(temp_ptr, "PROGRUNTIME")) {
 			time_difference = (current_time - program_start);
 			get_time_breakdown(time_difference, &days, &hours, &minutes, &seconds);
 			printf("%dd %dh %dm %ds%s", days, hours, minutes, seconds, mrtg_delimiter);
-			}
-		else if(!strcmp(temp_ptr, "PROGRUNTIMETT")) {
+		} else if (!strcmp(temp_ptr, "PROGRUNTIMETT")) {
 			time_difference = (current_time - program_start);
 			printf("%lu%s", time_difference, mrtg_delimiter);
-			}
-		else if(!strcmp(temp_ptr, "STATUSFILEAGE")) {
+		} else if (!strcmp(temp_ptr, "STATUSFILEAGE")) {
 			time_difference = (current_time - status_creation_date);
 			get_time_breakdown(time_difference, &days, &hours, &minutes, &seconds);
 			printf("%dd %dh %dm %ds%s", days, hours, minutes, seconds, mrtg_delimiter);
-			}
-		else if(!strcmp(temp_ptr, "STATUSFILEAGETT")) {
+		} else if (!strcmp(temp_ptr, "STATUSFILEAGETT")) {
 			time_difference = (current_time - status_creation_date);
 			printf("%lu%s", time_difference, mrtg_delimiter);
-			}
-		else if(!strcmp(temp_ptr, "NAGIOSVERSION"))
+		} else if (!strcmp(temp_ptr, "NAGIOSVERSION"))
 			printf("%s%s", status_version, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NAGIOSPID"))
+		else if (!strcmp(temp_ptr, "NAGIOSPID"))
 			printf("%d%s", nagios_pid, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NAGIOSVERPID"))
+		else if (!strcmp(temp_ptr, "NAGIOSVERPID"))
 			printf("Nagios %s (pid=%d)%s", status_version, nagios_pid, mrtg_delimiter);
 
 
-		else if(!strcmp(temp_ptr, "NUMSERVICES"))
+		else if (!strcmp(temp_ptr, "NUMSERVICES"))
 			printf("%d%s", status_service_entries, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMHOSTS"))
+		else if (!strcmp(temp_ptr, "NUMHOSTS"))
 			printf("%d%s", status_host_entries, mrtg_delimiter);
 
 		/* active service check latency */
-		else if(!strcmp(temp_ptr, "MINACTSVCLAT"))
+		else if (!strcmp(temp_ptr, "MINACTSVCLAT"))
 			printf("%d%s", (int)(min_active_service_latency * 1000), mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "MAXACTSVCLAT"))
+		else if (!strcmp(temp_ptr, "MAXACTSVCLAT"))
 			printf("%d%s", (int)(max_active_service_latency * 1000), mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "AVGACTSVCLAT"))
+		else if (!strcmp(temp_ptr, "AVGACTSVCLAT"))
 			printf("%d%s", (int)(average_active_service_latency * 1000), mrtg_delimiter);
 
 		/* active service check execution time */
-		else if(!strcmp(temp_ptr, "MINACTSVCEXT"))
+		else if (!strcmp(temp_ptr, "MINACTSVCEXT"))
 			printf("%d%s", (int)(min_active_service_execution_time * 1000), mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "MAXACTSVCEXT"))
+		else if (!strcmp(temp_ptr, "MAXACTSVCEXT"))
 			printf("%d%s", (int)(max_active_service_execution_time * 1000), mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "AVGACTSVCEXT"))
+		else if (!strcmp(temp_ptr, "AVGACTSVCEXT"))
 			printf("%d%s", (int)(average_active_service_execution_time * 1000), mrtg_delimiter);
 
 		/* active service check percent state change */
-		else if(!strcmp(temp_ptr, "MINACTSVCPSC"))
+		else if (!strcmp(temp_ptr, "MINACTSVCPSC"))
 			printf("%d%s", (int)min_active_service_state_change, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "MAXACTSVCPSC"))
+		else if (!strcmp(temp_ptr, "MAXACTSVCPSC"))
 			printf("%d%s", (int)max_active_service_state_change, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "AVGACTSVCPSC"))
+		else if (!strcmp(temp_ptr, "AVGACTSVCPSC"))
 			printf("%d%s", (int)average_active_service_state_change, mrtg_delimiter);
 
 		/* passive service check latency */
-		else if(!strcmp(temp_ptr, "MINPSVSVCLAT"))
+		else if (!strcmp(temp_ptr, "MINPSVSVCLAT"))
 			printf("%d%s", (int)(min_passive_service_latency * 1000), mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "MAXPSVSVCLAT"))
+		else if (!strcmp(temp_ptr, "MAXPSVSVCLAT"))
 			printf("%d%s", (int)(max_passive_service_latency * 1000), mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "AVGPSVSVCLAT"))
+		else if (!strcmp(temp_ptr, "AVGPSVSVCLAT"))
 			printf("%d%s", (int)(average_passive_service_latency * 1000), mrtg_delimiter);
 
 		/* passive service check percent state change */
-		else if(!strcmp(temp_ptr, "MINPSVSVCPSC"))
+		else if (!strcmp(temp_ptr, "MINPSVSVCPSC"))
 			printf("%d%s", (int)min_passive_service_state_change, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "MAXPSVSVCPSC"))
+		else if (!strcmp(temp_ptr, "MAXPSVSVCPSC"))
 			printf("%d%s", (int)max_passive_service_state_change, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "AVGPSVSVCPSC"))
+		else if (!strcmp(temp_ptr, "AVGPSVSVCPSC"))
 			printf("%d%s", (int)average_passive_service_state_change, mrtg_delimiter);
 
 		/* service check percent state change */
-		else if(!strcmp(temp_ptr, "MINSVCPSC"))
+		else if (!strcmp(temp_ptr, "MINSVCPSC"))
 			printf("%d%s", (int)min_service_state_change, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "MAXSVCPSC"))
+		else if (!strcmp(temp_ptr, "MAXSVCPSC"))
 			printf("%d%s", (int)max_service_state_change, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "AVGSVCPSC"))
+		else if (!strcmp(temp_ptr, "AVGSVCPSC"))
 			printf("%d%s", (int)average_service_state_change, mrtg_delimiter);
 
 		/* active host check latency */
-		else if(!strcmp(temp_ptr, "MINACTHSTLAT"))
+		else if (!strcmp(temp_ptr, "MINACTHSTLAT"))
 			printf("%d%s", (int)(min_active_host_latency * 1000), mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "MAXACTHSTLAT"))
+		else if (!strcmp(temp_ptr, "MAXACTHSTLAT"))
 			printf("%d%s", (int)(max_active_host_latency * 1000), mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "AVGACTHSTLAT"))
+		else if (!strcmp(temp_ptr, "AVGACTHSTLAT"))
 			printf("%d%s", (int)(average_active_host_latency * 1000), mrtg_delimiter);
 
 		/* active host check execution time */
-		else if(!strcmp(temp_ptr, "MINACTHSTEXT"))
+		else if (!strcmp(temp_ptr, "MINACTHSTEXT"))
 			printf("%d%s", (int)(min_active_host_execution_time * 1000), mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "MAXACTHSTEXT"))
+		else if (!strcmp(temp_ptr, "MAXACTHSTEXT"))
 			printf("%d%s", (int)(max_active_host_execution_time * 1000), mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "AVGACTHSTEXT"))
+		else if (!strcmp(temp_ptr, "AVGACTHSTEXT"))
 			printf("%d%s", (int)(average_active_host_execution_time * 1000), mrtg_delimiter);
 
 		/* active host check percent state change */
-		else if(!strcmp(temp_ptr, "MINACTHSTPSC"))
+		else if (!strcmp(temp_ptr, "MINACTHSTPSC"))
 			printf("%d%s", (int)min_active_host_state_change, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "MAXACTHSTPSC"))
+		else if (!strcmp(temp_ptr, "MAXACTHSTPSC"))
 			printf("%d%s", (int)max_active_host_state_change, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "AVGACTHSTPSC"))
+		else if (!strcmp(temp_ptr, "AVGACTHSTPSC"))
 			printf("%d%s", (int)average_active_host_state_change, mrtg_delimiter);
 
 		/* passive host check latency */
-		else if(!strcmp(temp_ptr, "MINPSVHSTLAT"))
+		else if (!strcmp(temp_ptr, "MINPSVHSTLAT"))
 			printf("%d%s", (int)(min_passive_host_latency * 1000), mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "MAXPSVHSTLAT"))
+		else if (!strcmp(temp_ptr, "MAXPSVHSTLAT"))
 			printf("%d%s", (int)(max_passive_host_latency * 1000), mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "AVGPSVHSTLAT"))
+		else if (!strcmp(temp_ptr, "AVGPSVHSTLAT"))
 			printf("%d%s", (int)(average_passive_host_latency * 1000), mrtg_delimiter);
 
 		/* passive host check percent state change */
-		else if(!strcmp(temp_ptr, "MINPSVHSTPSC"))
+		else if (!strcmp(temp_ptr, "MINPSVHSTPSC"))
 			printf("%d%s", (int)min_passive_host_state_change, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "MAXPSVHSTPSC"))
+		else if (!strcmp(temp_ptr, "MAXPSVHSTPSC"))
 			printf("%d%s", (int)max_passive_host_state_change, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "AVGPSVHSTPSC"))
+		else if (!strcmp(temp_ptr, "AVGPSVHSTPSC"))
 			printf("%d%s", (int)average_passive_host_state_change, mrtg_delimiter);
 
 		/* host check percent state change */
-		else if(!strcmp(temp_ptr, "MINHSTPSC"))
+		else if (!strcmp(temp_ptr, "MINHSTPSC"))
 			printf("%d%s", (int)min_host_state_change, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "MAXHSTPSC"))
+		else if (!strcmp(temp_ptr, "MAXHSTPSC"))
 			printf("%d%s", (int)max_host_state_change, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "AVGHSTPSC"))
+		else if (!strcmp(temp_ptr, "AVGHSTPSC"))
 			printf("%d%s", (int)average_host_state_change, mrtg_delimiter);
 
 		/* active host checks over time */
-		else if(!strcmp(temp_ptr, "NUMHSTACTCHK1M"))
+		else if (!strcmp(temp_ptr, "NUMHSTACTCHK1M"))
 			printf("%d%s", active_hosts_checked_last_1min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMHSTACTCHK5M"))
+		else if (!strcmp(temp_ptr, "NUMHSTACTCHK5M"))
 			printf("%d%s", active_hosts_checked_last_5min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMHSTACTCHK15M"))
+		else if (!strcmp(temp_ptr, "NUMHSTACTCHK15M"))
 			printf("%d%s", active_hosts_checked_last_15min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMHSTACTCHK60M"))
+		else if (!strcmp(temp_ptr, "NUMHSTACTCHK60M"))
 			printf("%d%s", active_hosts_checked_last_1hour, mrtg_delimiter);
 
 		/* passive host checks over time */
-		else if(!strcmp(temp_ptr, "NUMHSTPSVCHK1M"))
+		else if (!strcmp(temp_ptr, "NUMHSTPSVCHK1M"))
 			printf("%d%s", passive_hosts_checked_last_1min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMHSTPSVCHK5M"))
+		else if (!strcmp(temp_ptr, "NUMHSTPSVCHK5M"))
 			printf("%d%s", passive_hosts_checked_last_5min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMHSTPSVCHK15M"))
+		else if (!strcmp(temp_ptr, "NUMHSTPSVCHK15M"))
 			printf("%d%s", passive_hosts_checked_last_15min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMHSTPSVCHK60M"))
+		else if (!strcmp(temp_ptr, "NUMHSTPSVCHK60M"))
 			printf("%d%s", passive_hosts_checked_last_1hour, mrtg_delimiter);
 
 		/* active service checks over time */
-		else if(!strcmp(temp_ptr, "NUMSVCACTCHK1M"))
+		else if (!strcmp(temp_ptr, "NUMSVCACTCHK1M"))
 			printf("%d%s", active_services_checked_last_1min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSVCACTCHK5M"))
+		else if (!strcmp(temp_ptr, "NUMSVCACTCHK5M"))
 			printf("%d%s", active_services_checked_last_5min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSVCACTCHK15M"))
+		else if (!strcmp(temp_ptr, "NUMSVCACTCHK15M"))
 			printf("%d%s", active_services_checked_last_15min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSVCACTCHK60M"))
+		else if (!strcmp(temp_ptr, "NUMSVCACTCHK60M"))
 			printf("%d%s", active_services_checked_last_1hour, mrtg_delimiter);
 
 		/* passive service checks over time */
-		else if(!strcmp(temp_ptr, "NUMSVCPSVCHK1M"))
+		else if (!strcmp(temp_ptr, "NUMSVCPSVCHK1M"))
 			printf("%d%s", passive_services_checked_last_1min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSVCPSVCHK5M"))
+		else if (!strcmp(temp_ptr, "NUMSVCPSVCHK5M"))
 			printf("%d%s", passive_services_checked_last_5min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSVCPSVCHK15M"))
+		else if (!strcmp(temp_ptr, "NUMSVCPSVCHK15M"))
 			printf("%d%s", passive_services_checked_last_15min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSVCPSVCHK60M"))
+		else if (!strcmp(temp_ptr, "NUMSVCPSVCHK60M"))
 			printf("%d%s", passive_services_checked_last_1hour, mrtg_delimiter);
 
 		/* host check statistics */
-		else if(!strcmp(temp_ptr, "NUMACTHSTCHECKS1M"))
+		else if (!strcmp(temp_ptr, "NUMACTHSTCHECKS1M"))
 			printf("%d%s", active_host_checks_last_1min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMACTHSTCHECKS5M"))
+		else if (!strcmp(temp_ptr, "NUMACTHSTCHECKS5M"))
 			printf("%d%s", active_host_checks_last_5min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMACTHSTCHECKS15M"))
+		else if (!strcmp(temp_ptr, "NUMACTHSTCHECKS15M"))
 			printf("%d%s", active_host_checks_last_15min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMOACTHSTCHECKS1M"))
+		else if (!strcmp(temp_ptr, "NUMOACTHSTCHECKS1M"))
 			printf("%d%s", active_ondemand_host_checks_last_1min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMOACTHSTCHECKS5M"))
+		else if (!strcmp(temp_ptr, "NUMOACTHSTCHECKS5M"))
 			printf("%d%s", active_ondemand_host_checks_last_5min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMOACTHSTCHECKS15M"))
+		else if (!strcmp(temp_ptr, "NUMOACTHSTCHECKS15M"))
 			printf("%d%s", active_ondemand_host_checks_last_15min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSACTHSTCHECKS1M"))
+		else if (!strcmp(temp_ptr, "NUMSACTHSTCHECKS1M"))
 			printf("%d%s", active_scheduled_host_checks_last_1min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSACTHSTCHECKS5M"))
+		else if (!strcmp(temp_ptr, "NUMSACTHSTCHECKS5M"))
 			printf("%d%s", active_scheduled_host_checks_last_5min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSACTHSTCHECKS15M"))
+		else if (!strcmp(temp_ptr, "NUMSACTHSTCHECKS15M"))
 			printf("%d%s", active_scheduled_host_checks_last_15min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMPARHSTCHECKS1M"))
+		else if (!strcmp(temp_ptr, "NUMPARHSTCHECKS1M"))
 			printf("%d%s", parallel_host_checks_last_1min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMPARHSTCHECKS5M"))
+		else if (!strcmp(temp_ptr, "NUMPARHSTCHECKS5M"))
 			printf("%d%s", parallel_host_checks_last_5min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMPARHSTCHECKS15M"))
+		else if (!strcmp(temp_ptr, "NUMPARHSTCHECKS15M"))
 			printf("%d%s", parallel_host_checks_last_15min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSERHSTCHECKS1M"))
+		else if (!strcmp(temp_ptr, "NUMSERHSTCHECKS1M"))
 			printf("%d%s", serial_host_checks_last_1min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSERHSTCHECKS5M"))
+		else if (!strcmp(temp_ptr, "NUMSERHSTCHECKS5M"))
 			printf("%d%s", serial_host_checks_last_5min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSERHSTCHECKS15M"))
+		else if (!strcmp(temp_ptr, "NUMSERHSTCHECKS15M"))
 			printf("%d%s", serial_host_checks_last_15min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMPSVHSTCHECKS1M"))
+		else if (!strcmp(temp_ptr, "NUMPSVHSTCHECKS1M"))
 			printf("%d%s", passive_host_checks_last_1min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMPSVHSTCHECKS5M"))
+		else if (!strcmp(temp_ptr, "NUMPSVHSTCHECKS5M"))
 			printf("%d%s", passive_host_checks_last_5min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMPSVHSTCHECKS15M"))
+		else if (!strcmp(temp_ptr, "NUMPSVHSTCHECKS15M"))
 			printf("%d%s", passive_host_checks_last_15min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMCACHEDHSTCHECKS1M"))
+		else if (!strcmp(temp_ptr, "NUMCACHEDHSTCHECKS1M"))
 			printf("%d%s", active_cached_host_checks_last_1min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMCACHEDHSTCHECKS5M"))
+		else if (!strcmp(temp_ptr, "NUMCACHEDHSTCHECKS5M"))
 			printf("%d%s", active_cached_host_checks_last_5min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMCACHEDHSTCHECKS15M"))
+		else if (!strcmp(temp_ptr, "NUMCACHEDHSTCHECKS15M"))
 			printf("%d%s", active_cached_host_checks_last_15min, mrtg_delimiter);
 
 		/* service check statistics */
-		else if(!strcmp(temp_ptr, "NUMACTSVCCHECKS1M"))
+		else if (!strcmp(temp_ptr, "NUMACTSVCCHECKS1M"))
 			printf("%d%s", active_service_checks_last_1min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMACTSVCCHECKS5M"))
+		else if (!strcmp(temp_ptr, "NUMACTSVCCHECKS5M"))
 			printf("%d%s", active_service_checks_last_5min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMACTSVCCHECKS15M"))
+		else if (!strcmp(temp_ptr, "NUMACTSVCCHECKS15M"))
 			printf("%d%s", active_service_checks_last_15min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMOACTSVCCHECKS1M"))
+		else if (!strcmp(temp_ptr, "NUMOACTSVCCHECKS1M"))
 			printf("%d%s", active_ondemand_service_checks_last_1min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMOACTSVCCHECKS5M"))
+		else if (!strcmp(temp_ptr, "NUMOACTSVCCHECKS5M"))
 			printf("%d%s", active_ondemand_service_checks_last_5min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMOACTSVCCHECKS15M"))
+		else if (!strcmp(temp_ptr, "NUMOACTSVCCHECKS15M"))
 			printf("%d%s", active_ondemand_service_checks_last_15min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSACTSVCCHECKS1M"))
+		else if (!strcmp(temp_ptr, "NUMSACTSVCCHECKS1M"))
 			printf("%d%s", active_scheduled_service_checks_last_1min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSACTSVCCHECKS5M"))
+		else if (!strcmp(temp_ptr, "NUMSACTSVCCHECKS5M"))
 			printf("%d%s", active_scheduled_service_checks_last_5min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSACTSVCCHECKS15M"))
+		else if (!strcmp(temp_ptr, "NUMSACTSVCCHECKS15M"))
 			printf("%d%s", active_scheduled_service_checks_last_15min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMPSVSVCCHECKS1M"))
+		else if (!strcmp(temp_ptr, "NUMPSVSVCCHECKS1M"))
 			printf("%d%s", passive_service_checks_last_1min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMPSVSVCCHECKS5M"))
+		else if (!strcmp(temp_ptr, "NUMPSVSVCCHECKS5M"))
 			printf("%d%s", passive_service_checks_last_5min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMPSVSVCCHECKS15M"))
+		else if (!strcmp(temp_ptr, "NUMPSVSVCCHECKS15M"))
 			printf("%d%s", passive_service_checks_last_15min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMCACHEDSVCCHECKS1M"))
+		else if (!strcmp(temp_ptr, "NUMCACHEDSVCCHECKS1M"))
 			printf("%d%s", active_cached_service_checks_last_1min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMCACHEDSVCCHECKS5M"))
+		else if (!strcmp(temp_ptr, "NUMCACHEDSVCCHECKS5M"))
 			printf("%d%s", active_cached_service_checks_last_5min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMCACHEDSVCCHECKS15M"))
+		else if (!strcmp(temp_ptr, "NUMCACHEDSVCCHECKS15M"))
 			printf("%d%s", active_cached_service_checks_last_15min, mrtg_delimiter);
 
 		/* external command stats */
-		else if(!strcmp(temp_ptr, "NUMEXTCMDS1M"))
+		else if (!strcmp(temp_ptr, "NUMEXTCMDS1M"))
 			printf("%d%s", external_commands_last_1min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMEXTCMDS5M"))
+		else if (!strcmp(temp_ptr, "NUMEXTCMDS5M"))
 			printf("%d%s", external_commands_last_5min, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMEXTCMDS15M"))
+		else if (!strcmp(temp_ptr, "NUMEXTCMDS15M"))
 			printf("%d%s", external_commands_last_15min, mrtg_delimiter);
 
 		/* service states */
-		else if(!strcmp(temp_ptr, "NUMSVCOK"))
+		else if (!strcmp(temp_ptr, "NUMSVCOK"))
 			printf("%d%s", services_ok, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSVCWARN"))
+		else if (!strcmp(temp_ptr, "NUMSVCWARN"))
 			printf("%d%s", services_warning, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSVCUNKN"))
+		else if (!strcmp(temp_ptr, "NUMSVCUNKN"))
 			printf("%d%s", services_unknown, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSVCCRIT"))
+		else if (!strcmp(temp_ptr, "NUMSVCCRIT"))
 			printf("%d%s", services_critical, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSVCPROB"))
+		else if (!strcmp(temp_ptr, "NUMSVCPROB"))
 			printf("%d%s", services_warning + services_unknown + services_critical, mrtg_delimiter);
 
 		/* misc service info */
-		else if(!strcmp(temp_ptr, "NUMSVCCHECKED"))
+		else if (!strcmp(temp_ptr, "NUMSVCCHECKED"))
 			printf("%d%s", services_checked, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSVCSCHEDULED"))
+		else if (!strcmp(temp_ptr, "NUMSVCSCHEDULED"))
 			printf("%d%s", services_scheduled, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSVCFLAPPING"))
+		else if (!strcmp(temp_ptr, "NUMSVCFLAPPING"))
 			printf("%d%s", services_flapping, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMSVCDOWNTIME"))
+		else if (!strcmp(temp_ptr, "NUMSVCDOWNTIME"))
 			printf("%d%s", services_in_downtime, mrtg_delimiter);
 
 		/* host states */
-		else if(!strcmp(temp_ptr, "NUMHSTUP"))
+		else if (!strcmp(temp_ptr, "NUMHSTUP"))
 			printf("%d%s", hosts_up, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMHSTDOWN"))
+		else if (!strcmp(temp_ptr, "NUMHSTDOWN"))
 			printf("%d%s", hosts_down, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMHSTUNR"))
+		else if (!strcmp(temp_ptr, "NUMHSTUNR"))
 			printf("%d%s", hosts_unreachable, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMHSTPROB"))
+		else if (!strcmp(temp_ptr, "NUMHSTPROB"))
 			printf("%d%s", hosts_down + hosts_unreachable, mrtg_delimiter);
 
 		/* misc host info */
-		else if(!strcmp(temp_ptr, "NUMHSTCHECKED"))
+		else if (!strcmp(temp_ptr, "NUMHSTCHECKED"))
 			printf("%d%s", hosts_checked, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMHSTSCHEDULED"))
+		else if (!strcmp(temp_ptr, "NUMHSTSCHEDULED"))
 			printf("%d%s", hosts_scheduled, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMHSTFLAPPING"))
+		else if (!strcmp(temp_ptr, "NUMHSTFLAPPING"))
 			printf("%d%s", hosts_flapping, mrtg_delimiter);
-		else if(!strcmp(temp_ptr, "NUMHSTDOWNTIME"))
+		else if (!strcmp(temp_ptr, "NUMHSTDOWNTIME"))
 			printf("%d%s", hosts_in_downtime, mrtg_delimiter);
 
 		else
 			printf("%s%s", temp_ptr, mrtg_delimiter);
-		}
+	}
 
 	/* add a newline if necessary */
-	if(strcmp(mrtg_delimiter, "\n"))
+	if (strcmp(mrtg_delimiter, "\n"))
 		printf("\n");
 
 	return OK;
-	}
+}
 
 
-static int display_stats(void) {
+static int display_stats(void)
+{
 	time_t current_time;
 	unsigned long time_difference;
 	int days;
@@ -802,10 +801,11 @@ static int display_stats(void) {
 	*/
 
 	return OK;
-	}
+}
 
 
-static int read_config_file(void) {
+static int read_config_file(void)
+{
 	char temp_buffer[MAX_INPUT_BUFFER];
 	FILE *fp;
 	char *var;
@@ -816,41 +816,42 @@ static int read_config_file(void) {
 
 	main_cfg_dir = nspath_absolute(main_config_file, NULL);
 	if ((slash = strrchr(main_cfg_dir, '/')))
-		*slash = 0;
+		* slash = 0;
 
 	fp = fopen(main_config_file, "r");
-	if(fp == NULL)
+	if (fp == NULL)
 		return ERROR;
 
 	/* read all lines from the main nagios config file */
-	while(fgets(temp_buffer, sizeof(temp_buffer) - 1, fp)) {
+	while (fgets(temp_buffer, sizeof(temp_buffer) - 1, fp)) {
 
 		strip(temp_buffer);
 
 		/* skip blank lines and comments */
-		if(temp_buffer[0] == '#' || temp_buffer[0] == '\x0')
+		if (temp_buffer[0] == '#' || temp_buffer[0] == '\x0')
 			continue;
 
 		var = strtok(temp_buffer, "=");
 		val = strtok(NULL, "\n");
-		if(val == NULL)
+		if (val == NULL)
 			continue;
 
-		if(!strcmp(var, "status_file") || !strcmp(var, "status_log") || !strcmp(var, "xsddefault_status_log")) {
-			if(status_file)
+		if (!strcmp(var, "status_file") || !strcmp(var, "status_log") || !strcmp(var, "xsddefault_status_log")) {
+			if (status_file)
 				free(status_file);
 			status_file = nspath_absolute(val, main_cfg_dir);
-			}
-
 		}
+
+	}
 
 	fclose(fp);
 
 	return OK;
-	}
+}
 
 
-static int read_status_file(void) {
+static int read_status_file(void)
+{
 	char temp_buffer[MAX_INPUT_BUFFER];
 	FILE *fp = NULL;
 	int data_type = STATUS_NO_DATA;
@@ -875,263 +876,259 @@ static int read_status_file(void) {
 	time(&current_time);
 
 	fp = fopen(status_file, "r");
-	if(fp == NULL)
+	if (fp == NULL)
 		return ERROR;
 
 	/* read all lines in the status file */
-	while(fgets(temp_buffer, sizeof(temp_buffer) - 1, fp)) {
+	while (fgets(temp_buffer, sizeof(temp_buffer) - 1, fp)) {
 
 		/* skip blank lines and comments */
-		if(temp_buffer[0] == '#' || temp_buffer[0] == '\x0')
+		if (temp_buffer[0] == '#' || temp_buffer[0] == '\x0')
 			continue;
 
 		strip(temp_buffer);
 
 		/* start of definition */
-		if(!strcmp(temp_buffer, "servicestatus {")) {
+		if (!strcmp(temp_buffer, "servicestatus {")) {
 			data_type = STATUS_SERVICE_DATA;
 			status_service_entries++;
-			}
-		else if(!strcmp(temp_buffer, "hoststatus {")) {
+		} else if (!strcmp(temp_buffer, "hoststatus {")) {
 			data_type = STATUS_HOST_DATA;
 			status_host_entries++;
-			}
-		else if(!strcmp(temp_buffer, "info {"))
+		} else if (!strcmp(temp_buffer, "info {"))
 			data_type = STATUS_INFO_DATA;
-		else if(!strcmp(temp_buffer, "programstatus {"))
+		else if (!strcmp(temp_buffer, "programstatus {"))
 			data_type = STATUS_PROGRAM_DATA;
 
 
 		/* end of definition */
-		else if(!strcmp(temp_buffer, "}")) {
+		else if (!strcmp(temp_buffer, "}")) {
 
-			switch(data_type) {
+			switch (data_type) {
 
-				case STATUS_INFO_DATA:
+			case STATUS_INFO_DATA:
+				break;
+
+			case STATUS_PROGRAM_DATA:
+				/* 02-15-2008 exclude cached host checks from total (they were ondemand checks that never actually executed) */
+				active_host_checks_last_1min = active_scheduled_host_checks_last_1min + active_ondemand_host_checks_last_1min;
+				active_host_checks_last_5min = active_scheduled_host_checks_last_5min + active_ondemand_host_checks_last_5min;
+				active_host_checks_last_15min = active_scheduled_host_checks_last_15min + active_ondemand_host_checks_last_15min;
+
+				/* 02-15-2008 exclude cached service checks from total (they were ondemand checks that never actually executed) */
+				active_service_checks_last_1min = active_scheduled_service_checks_last_1min + active_ondemand_service_checks_last_1min;
+				active_service_checks_last_5min = active_scheduled_service_checks_last_5min + active_ondemand_service_checks_last_5min;
+				active_service_checks_last_15min = active_scheduled_service_checks_last_15min + active_ondemand_service_checks_last_15min;
+				break;
+
+			case STATUS_HOST_DATA:
+				average_host_state_change = (((average_host_state_change * ((double)status_host_entries - 1.0)) + state_change) / (double)status_host_entries);
+				if (have_min_host_state_change == FALSE || min_host_state_change > state_change) {
+					have_min_host_state_change = TRUE;
+					min_host_state_change = state_change;
+				}
+				if (have_max_host_state_change == FALSE || max_host_state_change < state_change) {
+					have_max_host_state_change = TRUE;
+					max_host_state_change = state_change;
+				}
+				if (check_type == CHECK_TYPE_ACTIVE) {
+					active_host_checks++;
+					average_active_host_latency = (((average_active_host_latency * ((double)active_host_checks - 1.0)) + latency) / (double)active_host_checks);
+					if (have_min_active_host_latency == FALSE || min_active_host_latency > latency) {
+						have_min_active_host_latency = TRUE;
+						min_active_host_latency = latency;
+					}
+					if (have_max_active_host_latency == FALSE || max_active_host_latency < latency) {
+						have_max_active_host_latency = TRUE;
+						max_active_host_latency = latency;
+					}
+					average_active_host_execution_time = (((average_active_host_execution_time * ((double)active_host_checks - 1.0)) + execution_time) / (double)active_host_checks);
+					if (have_min_active_host_execution_time == FALSE || min_active_host_execution_time > execution_time) {
+						have_min_active_host_execution_time = TRUE;
+						min_active_host_execution_time = execution_time;
+					}
+					if (have_max_active_host_execution_time == FALSE || max_active_host_execution_time < execution_time) {
+						have_max_active_host_execution_time = TRUE;
+						max_active_host_execution_time = execution_time;
+					}
+					average_active_host_state_change = (((average_active_host_state_change * ((double)active_host_checks - 1.0)) + state_change) / (double)active_host_checks);
+					if (have_min_active_host_state_change == FALSE || min_active_host_state_change > state_change) {
+						have_min_active_host_state_change = TRUE;
+						min_active_host_state_change = state_change;
+					}
+					if (have_max_active_host_state_change == FALSE || max_active_host_state_change < state_change) {
+						have_max_active_host_state_change = TRUE;
+						max_active_host_state_change = state_change;
+					}
+					time_difference = current_time - last_check;
+					if (time_difference <= 3600)
+						active_hosts_checked_last_1hour++;
+					if (time_difference <= 900)
+						active_hosts_checked_last_15min++;
+					if (time_difference <= 300)
+						active_hosts_checked_last_5min++;
+					if (time_difference <= 60)
+						active_hosts_checked_last_1min++;
+				} else {
+					passive_host_checks++;
+					average_passive_host_latency = (((average_passive_host_latency * ((double)passive_host_checks - 1.0)) + latency) / (double)passive_host_checks);
+					if (have_min_passive_host_latency == FALSE || min_passive_host_latency > latency) {
+						have_min_passive_host_latency = TRUE;
+						min_passive_host_latency = latency;
+					}
+					if (have_max_passive_host_latency == FALSE || max_passive_host_latency < latency) {
+						have_max_passive_host_latency = TRUE;
+						max_passive_host_latency = latency;
+					}
+					average_passive_host_state_change = (((average_passive_host_state_change * ((double)passive_host_checks - 1.0)) + state_change) / (double)passive_host_checks);
+					if (have_min_passive_host_state_change == FALSE || min_passive_host_state_change > state_change) {
+						have_min_passive_host_state_change = TRUE;
+						min_passive_host_state_change = state_change;
+					}
+					if (have_max_passive_host_state_change == FALSE || max_passive_host_state_change < state_change) {
+						have_max_passive_host_state_change = TRUE;
+						max_passive_host_state_change = state_change;
+					}
+					time_difference = current_time - last_check;
+					if (time_difference <= 3600)
+						passive_hosts_checked_last_1hour++;
+					if (time_difference <= 900)
+						passive_hosts_checked_last_15min++;
+					if (time_difference <= 300)
+						passive_hosts_checked_last_5min++;
+					if (time_difference <= 60)
+						passive_hosts_checked_last_1min++;
+				}
+				switch (current_state) {
+				case HOST_UP:
+					hosts_up++;
 					break;
-
-				case STATUS_PROGRAM_DATA:
-					/* 02-15-2008 exclude cached host checks from total (they were ondemand checks that never actually executed) */
-					active_host_checks_last_1min = active_scheduled_host_checks_last_1min + active_ondemand_host_checks_last_1min;
-					active_host_checks_last_5min = active_scheduled_host_checks_last_5min + active_ondemand_host_checks_last_5min;
-					active_host_checks_last_15min = active_scheduled_host_checks_last_15min + active_ondemand_host_checks_last_15min;
-
-					/* 02-15-2008 exclude cached service checks from total (they were ondemand checks that never actually executed) */
-					active_service_checks_last_1min = active_scheduled_service_checks_last_1min + active_ondemand_service_checks_last_1min;
-					active_service_checks_last_5min = active_scheduled_service_checks_last_5min + active_ondemand_service_checks_last_5min;
-					active_service_checks_last_15min = active_scheduled_service_checks_last_15min + active_ondemand_service_checks_last_15min;
+				case HOST_DOWN:
+					hosts_down++;
 					break;
-
-				case STATUS_HOST_DATA:
-					average_host_state_change = (((average_host_state_change * ((double)status_host_entries - 1.0)) + state_change) / (double)status_host_entries);
-					if(have_min_host_state_change == FALSE || min_host_state_change > state_change) {
-						have_min_host_state_change = TRUE;
-						min_host_state_change = state_change;
-						}
-					if(have_max_host_state_change == FALSE || max_host_state_change < state_change) {
-						have_max_host_state_change = TRUE;
-						max_host_state_change = state_change;
-						}
-					if(check_type == CHECK_TYPE_ACTIVE) {
-						active_host_checks++;
-						average_active_host_latency = (((average_active_host_latency * ((double)active_host_checks - 1.0)) + latency) / (double)active_host_checks);
-						if(have_min_active_host_latency == FALSE || min_active_host_latency > latency) {
-							have_min_active_host_latency = TRUE;
-							min_active_host_latency = latency;
-							}
-						if(have_max_active_host_latency == FALSE || max_active_host_latency < latency) {
-							have_max_active_host_latency = TRUE;
-							max_active_host_latency = latency;
-							}
-						average_active_host_execution_time = (((average_active_host_execution_time * ((double)active_host_checks - 1.0)) + execution_time) / (double)active_host_checks);
-						if(have_min_active_host_execution_time == FALSE || min_active_host_execution_time > execution_time) {
-							have_min_active_host_execution_time = TRUE;
-							min_active_host_execution_time = execution_time;
-							}
-						if(have_max_active_host_execution_time == FALSE || max_active_host_execution_time < execution_time) {
-							have_max_active_host_execution_time = TRUE;
-							max_active_host_execution_time = execution_time;
-							}
-						average_active_host_state_change = (((average_active_host_state_change * ((double)active_host_checks - 1.0)) + state_change) / (double)active_host_checks);
-						if(have_min_active_host_state_change == FALSE || min_active_host_state_change > state_change) {
-							have_min_active_host_state_change = TRUE;
-							min_active_host_state_change = state_change;
-							}
-						if(have_max_active_host_state_change == FALSE || max_active_host_state_change < state_change) {
-							have_max_active_host_state_change = TRUE;
-							max_active_host_state_change = state_change;
-							}
-						time_difference = current_time - last_check;
-						if(time_difference <= 3600)
-							active_hosts_checked_last_1hour++;
-						if(time_difference <= 900)
-							active_hosts_checked_last_15min++;
-						if(time_difference <= 300)
-							active_hosts_checked_last_5min++;
-						if(time_difference <= 60)
-							active_hosts_checked_last_1min++;
-						}
-					else {
-						passive_host_checks++;
-						average_passive_host_latency = (((average_passive_host_latency * ((double)passive_host_checks - 1.0)) + latency) / (double)passive_host_checks);
-						if(have_min_passive_host_latency == FALSE || min_passive_host_latency > latency) {
-							have_min_passive_host_latency = TRUE;
-							min_passive_host_latency = latency;
-							}
-						if(have_max_passive_host_latency == FALSE || max_passive_host_latency < latency) {
-							have_max_passive_host_latency = TRUE;
-							max_passive_host_latency = latency;
-							}
-						average_passive_host_state_change = (((average_passive_host_state_change * ((double)passive_host_checks - 1.0)) + state_change) / (double)passive_host_checks);
-						if(have_min_passive_host_state_change == FALSE || min_passive_host_state_change > state_change) {
-							have_min_passive_host_state_change = TRUE;
-							min_passive_host_state_change = state_change;
-							}
-						if(have_max_passive_host_state_change == FALSE || max_passive_host_state_change < state_change) {
-							have_max_passive_host_state_change = TRUE;
-							max_passive_host_state_change = state_change;
-							}
-						time_difference = current_time - last_check;
-						if(time_difference <= 3600)
-							passive_hosts_checked_last_1hour++;
-						if(time_difference <= 900)
-							passive_hosts_checked_last_15min++;
-						if(time_difference <= 300)
-							passive_hosts_checked_last_5min++;
-						if(time_difference <= 60)
-							passive_hosts_checked_last_1min++;
-						}
-					switch(current_state) {
-						case HOST_UP:
-							hosts_up++;
-							break;
-						case HOST_DOWN:
-							hosts_down++;
-							break;
-						case HOST_UNREACHABLE:
-							hosts_unreachable++;
-							break;
-						default:
-							break;
-						}
-					if(is_flapping == TRUE)
-						hosts_flapping++;
-					if(downtime_depth > 0)
-						hosts_in_downtime++;
-					if(has_been_checked == TRUE)
-						hosts_checked++;
-					if(should_be_scheduled == TRUE)
-						hosts_scheduled++;
+				case HOST_UNREACHABLE:
+					hosts_unreachable++;
 					break;
-
-				case STATUS_SERVICE_DATA:
-					average_service_state_change = (((average_service_state_change * ((double)status_service_entries - 1.0)) + state_change) / (double)status_service_entries);
-					if(have_min_service_state_change == FALSE || min_service_state_change > state_change) {
-						have_min_service_state_change = TRUE;
-						min_service_state_change = state_change;
-						}
-					if(have_max_service_state_change == FALSE || max_service_state_change < state_change) {
-						have_max_service_state_change = TRUE;
-						max_service_state_change = state_change;
-						}
-					if(check_type == CHECK_TYPE_ACTIVE) {
-						active_service_checks++;
-						average_active_service_latency = (((average_active_service_latency * ((double)active_service_checks - 1.0)) + latency) / (double)active_service_checks);
-						if(have_min_active_service_latency == FALSE || min_active_service_latency > latency) {
-							have_min_active_service_latency = TRUE;
-							min_active_service_latency = latency;
-							}
-						if(have_max_active_service_latency == FALSE || max_active_service_latency < latency) {
-							have_max_active_service_latency = TRUE;
-							max_active_service_latency = latency;
-							}
-						average_active_service_execution_time = (((average_active_service_execution_time * ((double)active_service_checks - 1.0)) + execution_time) / (double)active_service_checks);
-						if(have_min_active_service_execution_time == FALSE || min_active_service_execution_time > execution_time) {
-							have_min_active_service_execution_time = TRUE;
-							min_active_service_execution_time = execution_time;
-							}
-						if(have_max_active_service_execution_time == FALSE || max_active_service_execution_time < execution_time) {
-							have_max_active_service_execution_time = TRUE;
-							max_active_service_execution_time = execution_time;
-							}
-						average_active_service_state_change = (((average_active_service_state_change * ((double)active_service_checks - 1.0)) + state_change) / (double)active_service_checks);
-						if(have_min_active_service_state_change == FALSE || min_active_service_state_change > state_change) {
-							have_min_active_service_state_change = TRUE;
-							min_active_service_state_change = state_change;
-							}
-						if(have_max_active_service_state_change == FALSE || max_active_service_state_change < state_change) {
-							have_max_active_service_state_change = TRUE;
-							max_active_service_state_change = state_change;
-							}
-						time_difference = current_time - last_check;
-						if(time_difference <= 3600)
-							active_services_checked_last_1hour++;
-						if(time_difference <= 900)
-							active_services_checked_last_15min++;
-						if(time_difference <= 300)
-							active_services_checked_last_5min++;
-						if(time_difference <= 60)
-							active_services_checked_last_1min++;
-						}
-					else {
-						passive_service_checks++;
-						average_passive_service_latency = (((average_passive_service_latency * ((double)passive_service_checks - 1.0)) + latency) / (double)passive_service_checks);
-						if(have_min_passive_service_latency == FALSE || min_passive_service_latency > latency) {
-							have_min_passive_service_latency = TRUE;
-							min_passive_service_latency = latency;
-							}
-						if(have_max_passive_service_latency == FALSE || max_passive_service_latency < latency) {
-							have_max_passive_service_latency = TRUE;
-							max_passive_service_latency = latency;
-							}
-						average_passive_service_state_change = (((average_passive_service_state_change * ((double)passive_service_checks - 1.0)) + state_change) / (double)passive_service_checks);
-						if(have_min_passive_service_state_change == FALSE || min_passive_service_state_change > state_change) {
-							have_min_passive_service_state_change = TRUE;
-							min_passive_service_state_change = state_change;
-							}
-						if(have_max_passive_service_state_change == FALSE || max_passive_service_state_change < state_change) {
-							have_max_passive_service_state_change = TRUE;
-							max_passive_service_state_change = state_change;
-							}
-						time_difference = current_time - last_check;
-						if(time_difference <= 3600)
-							passive_services_checked_last_1hour++;
-						if(time_difference <= 900)
-							passive_services_checked_last_15min++;
-						if(time_difference <= 300)
-							passive_services_checked_last_5min++;
-						if(time_difference <= 60)
-							passive_services_checked_last_1min++;
-						}
-					switch(current_state) {
-						case STATE_OK:
-							services_ok++;
-							break;
-						case STATE_WARNING:
-							services_warning++;
-							break;
-						case STATE_UNKNOWN:
-							services_unknown++;
-							break;
-						case STATE_CRITICAL:
-							services_critical++;
-							break;
-						default:
-							break;
-						}
-					if(is_flapping == TRUE)
-						services_flapping++;
-					if(downtime_depth > 0)
-						services_in_downtime++;
-					if(has_been_checked == TRUE)
-						services_checked++;
-					if(should_be_scheduled == TRUE)
-						services_scheduled++;
-					break;
-
 				default:
 					break;
 				}
+				if (is_flapping == TRUE)
+					hosts_flapping++;
+				if (downtime_depth > 0)
+					hosts_in_downtime++;
+				if (has_been_checked == TRUE)
+					hosts_checked++;
+				if (should_be_scheduled == TRUE)
+					hosts_scheduled++;
+				break;
+
+			case STATUS_SERVICE_DATA:
+				average_service_state_change = (((average_service_state_change * ((double)status_service_entries - 1.0)) + state_change) / (double)status_service_entries);
+				if (have_min_service_state_change == FALSE || min_service_state_change > state_change) {
+					have_min_service_state_change = TRUE;
+					min_service_state_change = state_change;
+				}
+				if (have_max_service_state_change == FALSE || max_service_state_change < state_change) {
+					have_max_service_state_change = TRUE;
+					max_service_state_change = state_change;
+				}
+				if (check_type == CHECK_TYPE_ACTIVE) {
+					active_service_checks++;
+					average_active_service_latency = (((average_active_service_latency * ((double)active_service_checks - 1.0)) + latency) / (double)active_service_checks);
+					if (have_min_active_service_latency == FALSE || min_active_service_latency > latency) {
+						have_min_active_service_latency = TRUE;
+						min_active_service_latency = latency;
+					}
+					if (have_max_active_service_latency == FALSE || max_active_service_latency < latency) {
+						have_max_active_service_latency = TRUE;
+						max_active_service_latency = latency;
+					}
+					average_active_service_execution_time = (((average_active_service_execution_time * ((double)active_service_checks - 1.0)) + execution_time) / (double)active_service_checks);
+					if (have_min_active_service_execution_time == FALSE || min_active_service_execution_time > execution_time) {
+						have_min_active_service_execution_time = TRUE;
+						min_active_service_execution_time = execution_time;
+					}
+					if (have_max_active_service_execution_time == FALSE || max_active_service_execution_time < execution_time) {
+						have_max_active_service_execution_time = TRUE;
+						max_active_service_execution_time = execution_time;
+					}
+					average_active_service_state_change = (((average_active_service_state_change * ((double)active_service_checks - 1.0)) + state_change) / (double)active_service_checks);
+					if (have_min_active_service_state_change == FALSE || min_active_service_state_change > state_change) {
+						have_min_active_service_state_change = TRUE;
+						min_active_service_state_change = state_change;
+					}
+					if (have_max_active_service_state_change == FALSE || max_active_service_state_change < state_change) {
+						have_max_active_service_state_change = TRUE;
+						max_active_service_state_change = state_change;
+					}
+					time_difference = current_time - last_check;
+					if (time_difference <= 3600)
+						active_services_checked_last_1hour++;
+					if (time_difference <= 900)
+						active_services_checked_last_15min++;
+					if (time_difference <= 300)
+						active_services_checked_last_5min++;
+					if (time_difference <= 60)
+						active_services_checked_last_1min++;
+				} else {
+					passive_service_checks++;
+					average_passive_service_latency = (((average_passive_service_latency * ((double)passive_service_checks - 1.0)) + latency) / (double)passive_service_checks);
+					if (have_min_passive_service_latency == FALSE || min_passive_service_latency > latency) {
+						have_min_passive_service_latency = TRUE;
+						min_passive_service_latency = latency;
+					}
+					if (have_max_passive_service_latency == FALSE || max_passive_service_latency < latency) {
+						have_max_passive_service_latency = TRUE;
+						max_passive_service_latency = latency;
+					}
+					average_passive_service_state_change = (((average_passive_service_state_change * ((double)passive_service_checks - 1.0)) + state_change) / (double)passive_service_checks);
+					if (have_min_passive_service_state_change == FALSE || min_passive_service_state_change > state_change) {
+						have_min_passive_service_state_change = TRUE;
+						min_passive_service_state_change = state_change;
+					}
+					if (have_max_passive_service_state_change == FALSE || max_passive_service_state_change < state_change) {
+						have_max_passive_service_state_change = TRUE;
+						max_passive_service_state_change = state_change;
+					}
+					time_difference = current_time - last_check;
+					if (time_difference <= 3600)
+						passive_services_checked_last_1hour++;
+					if (time_difference <= 900)
+						passive_services_checked_last_15min++;
+					if (time_difference <= 300)
+						passive_services_checked_last_5min++;
+					if (time_difference <= 60)
+						passive_services_checked_last_1min++;
+				}
+				switch (current_state) {
+				case STATE_OK:
+					services_ok++;
+					break;
+				case STATE_WARNING:
+					services_warning++;
+					break;
+				case STATE_UNKNOWN:
+					services_unknown++;
+					break;
+				case STATE_CRITICAL:
+					services_critical++;
+					break;
+				default:
+					break;
+				}
+				if (is_flapping == TRUE)
+					services_flapping++;
+				if (downtime_depth > 0)
+					services_in_downtime++;
+				if (has_been_checked == TRUE)
+					services_checked++;
+				if (should_be_scheduled == TRUE)
+					services_scheduled++;
+				break;
+
+			default:
+				break;
+			}
 
 			data_type = STATUS_NO_DATA;
 
@@ -1145,219 +1142,211 @@ static int read_status_file(void) {
 			last_check = (time_t)0;
 			has_been_checked = FALSE;
 			should_be_scheduled = FALSE;
-			}
+		}
 
 
 		/* inside definition */
-		else if(data_type != STATUS_NO_DATA) {
+		else if (data_type != STATUS_NO_DATA) {
 
 			var = strtok(temp_buffer, "=");
 			val = strtok(NULL, "\n");
-			if(val == NULL)
+			if (val == NULL)
 				continue;
 
-			switch(data_type) {
+			switch (data_type) {
 
-				case STATUS_INFO_DATA:
-					if(!strcmp(var, "created"))
-						status_creation_date = strtoul(val, NULL, 10);
-					else if(!strcmp(var, "version"))
-						status_version = strdup(val);
-					break;
+			case STATUS_INFO_DATA:
+				if (!strcmp(var, "created"))
+					status_creation_date = strtoul(val, NULL, 10);
+				else if (!strcmp(var, "version"))
+					status_version = strdup(val);
+				break;
 
-				case STATUS_PROGRAM_DATA:
-					if(!strcmp(var, "program_start"))
-						program_start = strtoul(val, NULL, 10);
-					else if(!strcmp(var, "nagios_pid"))
-						nagios_pid = strtoul(val, NULL, 10);
-					else if(!strcmp(var, "active_scheduled_host_check_stats")) {
-						if((temp_ptr = strtok(val, ",")))
-							active_scheduled_host_checks_last_1min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							active_scheduled_host_checks_last_5min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							active_scheduled_host_checks_last_15min = atoi(temp_ptr);
-						}
-					else if(!strcmp(var, "active_ondemand_host_check_stats")) {
-						if((temp_ptr = strtok(val, ",")))
-							active_ondemand_host_checks_last_1min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							active_ondemand_host_checks_last_5min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							active_ondemand_host_checks_last_15min = atoi(temp_ptr);
-						}
-					else if(!strcmp(var, "cached_host_check_stats")) {
-						if((temp_ptr = strtok(val, ",")))
-							active_cached_host_checks_last_1min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							active_cached_host_checks_last_5min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							active_cached_host_checks_last_15min = atoi(temp_ptr);
-						}
-					else if(!strcmp(var, "passive_host_check_stats")) {
-						if((temp_ptr = strtok(val, ",")))
-							passive_host_checks_last_1min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							passive_host_checks_last_5min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							passive_host_checks_last_15min = atoi(temp_ptr);
-						}
-					else if(!strcmp(var, "active_scheduled_service_check_stats")) {
-						if((temp_ptr = strtok(val, ",")))
-							active_scheduled_service_checks_last_1min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							active_scheduled_service_checks_last_5min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							active_scheduled_service_checks_last_15min = atoi(temp_ptr);
-						}
-					else if(!strcmp(var, "active_ondemand_service_check_stats")) {
-						if((temp_ptr = strtok(val, ",")))
-							active_ondemand_service_checks_last_1min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							active_ondemand_service_checks_last_5min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							active_ondemand_service_checks_last_15min = atoi(temp_ptr);
-						}
-					else if(!strcmp(var, "cached_service_check_stats")) {
-						if((temp_ptr = strtok(val, ",")))
-							active_cached_service_checks_last_1min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							active_cached_service_checks_last_5min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							active_cached_service_checks_last_15min = atoi(temp_ptr);
-						}
-					else if(!strcmp(var, "passive_service_check_stats")) {
-						if((temp_ptr = strtok(val, ",")))
-							passive_service_checks_last_1min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							passive_service_checks_last_5min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							passive_service_checks_last_15min = atoi(temp_ptr);
-						}
-					else if(!strcmp(var, "external_command_stats")) {
-						if((temp_ptr = strtok(val, ",")))
-							external_commands_last_1min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							external_commands_last_5min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							external_commands_last_15min = atoi(temp_ptr);
-						}
-					else if(!strcmp(var, "parallel_host_check_stats")) {
-						if((temp_ptr = strtok(val, ",")))
-							parallel_host_checks_last_1min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							parallel_host_checks_last_5min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							parallel_host_checks_last_15min = atoi(temp_ptr);
-						}
-					else if(!strcmp(var, "serial_host_check_stats")) {
-						if((temp_ptr = strtok(val, ",")))
-							serial_host_checks_last_1min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							serial_host_checks_last_5min = atoi(temp_ptr);
-						if((temp_ptr = strtok(NULL, ",")))
-							serial_host_checks_last_15min = atoi(temp_ptr);
-						}
-					break;
-
-				case STATUS_HOST_DATA:
-					if(!strcmp(var, "check_execution_time"))
-						execution_time = strtod(val, NULL);
-					else if(!strcmp(var, "check_latency"))
-						latency = strtod(val, NULL);
-					else if(!strcmp(var, "percent_state_change"))
-						state_change = strtod(val, NULL);
-					else if(!strcmp(var, "check_type"))
-						check_type = atoi(val);
-					else if(!strcmp(var, "current_state"))
-						current_state = atoi(val);
-					else if(!strcmp(var, "is_flapping"))
-						is_flapping = (atoi(val) > 0) ? TRUE : FALSE;
-					else if(!strcmp(var, "scheduled_downtime_depth"))
-						downtime_depth = atoi(val);
-					else if(!strcmp(var, "last_check"))
-						last_check = strtoul(val, NULL, 10);
-					else if(!strcmp(var, "has_been_checked"))
-						has_been_checked = (atoi(val) > 0) ? TRUE : FALSE;
-					else if(!strcmp(var, "should_be_scheduled"))
-						should_be_scheduled = (atoi(val) > 0) ? TRUE : FALSE;
-					break;
-
-				case STATUS_SERVICE_DATA:
-					if(!strcmp(var, "check_execution_time"))
-						execution_time = strtod(val, NULL);
-					else if(!strcmp(var, "check_latency"))
-						latency = strtod(val, NULL);
-					else if(!strcmp(var, "percent_state_change"))
-						state_change = strtod(val, NULL);
-					else if(!strcmp(var, "check_type"))
-						check_type = atoi(val);
-					else if(!strcmp(var, "current_state"))
-						current_state = atoi(val);
-					else if(!strcmp(var, "is_flapping"))
-						is_flapping = (atoi(val) > 0) ? TRUE : FALSE;
-					else if(!strcmp(var, "scheduled_downtime_depth"))
-						downtime_depth = atoi(val);
-					else if(!strcmp(var, "last_check"))
-						last_check = strtoul(val, NULL, 10);
-					else if(!strcmp(var, "has_been_checked"))
-						has_been_checked = (atoi(val) > 0) ? TRUE : FALSE;
-					else if(!strcmp(var, "should_be_scheduled"))
-						should_be_scheduled = (atoi(val) > 0) ? TRUE : FALSE;
-					break;
-
-				default:
-					break;
+			case STATUS_PROGRAM_DATA:
+				if (!strcmp(var, "program_start"))
+					program_start = strtoul(val, NULL, 10);
+				else if (!strcmp(var, "nagios_pid"))
+					nagios_pid = strtoul(val, NULL, 10);
+				else if (!strcmp(var, "active_scheduled_host_check_stats")) {
+					if ((temp_ptr = strtok(val, ",")))
+						active_scheduled_host_checks_last_1min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						active_scheduled_host_checks_last_5min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						active_scheduled_host_checks_last_15min = atoi(temp_ptr);
+				} else if (!strcmp(var, "active_ondemand_host_check_stats")) {
+					if ((temp_ptr = strtok(val, ",")))
+						active_ondemand_host_checks_last_1min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						active_ondemand_host_checks_last_5min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						active_ondemand_host_checks_last_15min = atoi(temp_ptr);
+				} else if (!strcmp(var, "cached_host_check_stats")) {
+					if ((temp_ptr = strtok(val, ",")))
+						active_cached_host_checks_last_1min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						active_cached_host_checks_last_5min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						active_cached_host_checks_last_15min = atoi(temp_ptr);
+				} else if (!strcmp(var, "passive_host_check_stats")) {
+					if ((temp_ptr = strtok(val, ",")))
+						passive_host_checks_last_1min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						passive_host_checks_last_5min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						passive_host_checks_last_15min = atoi(temp_ptr);
+				} else if (!strcmp(var, "active_scheduled_service_check_stats")) {
+					if ((temp_ptr = strtok(val, ",")))
+						active_scheduled_service_checks_last_1min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						active_scheduled_service_checks_last_5min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						active_scheduled_service_checks_last_15min = atoi(temp_ptr);
+				} else if (!strcmp(var, "active_ondemand_service_check_stats")) {
+					if ((temp_ptr = strtok(val, ",")))
+						active_ondemand_service_checks_last_1min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						active_ondemand_service_checks_last_5min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						active_ondemand_service_checks_last_15min = atoi(temp_ptr);
+				} else if (!strcmp(var, "cached_service_check_stats")) {
+					if ((temp_ptr = strtok(val, ",")))
+						active_cached_service_checks_last_1min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						active_cached_service_checks_last_5min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						active_cached_service_checks_last_15min = atoi(temp_ptr);
+				} else if (!strcmp(var, "passive_service_check_stats")) {
+					if ((temp_ptr = strtok(val, ",")))
+						passive_service_checks_last_1min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						passive_service_checks_last_5min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						passive_service_checks_last_15min = atoi(temp_ptr);
+				} else if (!strcmp(var, "external_command_stats")) {
+					if ((temp_ptr = strtok(val, ",")))
+						external_commands_last_1min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						external_commands_last_5min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						external_commands_last_15min = atoi(temp_ptr);
+				} else if (!strcmp(var, "parallel_host_check_stats")) {
+					if ((temp_ptr = strtok(val, ",")))
+						parallel_host_checks_last_1min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						parallel_host_checks_last_5min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						parallel_host_checks_last_15min = atoi(temp_ptr);
+				} else if (!strcmp(var, "serial_host_check_stats")) {
+					if ((temp_ptr = strtok(val, ",")))
+						serial_host_checks_last_1min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						serial_host_checks_last_5min = atoi(temp_ptr);
+					if ((temp_ptr = strtok(NULL, ",")))
+						serial_host_checks_last_15min = atoi(temp_ptr);
 				}
+				break;
 
+			case STATUS_HOST_DATA:
+				if (!strcmp(var, "check_execution_time"))
+					execution_time = strtod(val, NULL);
+				else if (!strcmp(var, "check_latency"))
+					latency = strtod(val, NULL);
+				else if (!strcmp(var, "percent_state_change"))
+					state_change = strtod(val, NULL);
+				else if (!strcmp(var, "check_type"))
+					check_type = atoi(val);
+				else if (!strcmp(var, "current_state"))
+					current_state = atoi(val);
+				else if (!strcmp(var, "is_flapping"))
+					is_flapping = (atoi(val) > 0) ? TRUE : FALSE;
+				else if (!strcmp(var, "scheduled_downtime_depth"))
+					downtime_depth = atoi(val);
+				else if (!strcmp(var, "last_check"))
+					last_check = strtoul(val, NULL, 10);
+				else if (!strcmp(var, "has_been_checked"))
+					has_been_checked = (atoi(val) > 0) ? TRUE : FALSE;
+				else if (!strcmp(var, "should_be_scheduled"))
+					should_be_scheduled = (atoi(val) > 0) ? TRUE : FALSE;
+				break;
+
+			case STATUS_SERVICE_DATA:
+				if (!strcmp(var, "check_execution_time"))
+					execution_time = strtod(val, NULL);
+				else if (!strcmp(var, "check_latency"))
+					latency = strtod(val, NULL);
+				else if (!strcmp(var, "percent_state_change"))
+					state_change = strtod(val, NULL);
+				else if (!strcmp(var, "check_type"))
+					check_type = atoi(val);
+				else if (!strcmp(var, "current_state"))
+					current_state = atoi(val);
+				else if (!strcmp(var, "is_flapping"))
+					is_flapping = (atoi(val) > 0) ? TRUE : FALSE;
+				else if (!strcmp(var, "scheduled_downtime_depth"))
+					downtime_depth = atoi(val);
+				else if (!strcmp(var, "last_check"))
+					last_check = strtoul(val, NULL, 10);
+				else if (!strcmp(var, "has_been_checked"))
+					has_been_checked = (atoi(val) > 0) ? TRUE : FALSE;
+				else if (!strcmp(var, "should_be_scheduled"))
+					should_be_scheduled = (atoi(val) > 0) ? TRUE : FALSE;
+				break;
+
+			default:
+				break;
 			}
+
 		}
+	}
 
 	fclose(fp);
 
 	return OK;
-	}
+}
 
 
 /* strip newline, carriage return, and tab characters from beginning and end of a string */
-void strip(char *buffer) {
+void strip(char *buffer)
+{
 	register int x;
 	register int y;
 	register int z;
 
-	if(buffer == NULL || buffer[0] == '\x0')
+	if (buffer == NULL || buffer[0] == '\x0')
 		return;
 
 	/* strip end of string */
 	y = (int)strlen(buffer);
-	for(x = y - 1; x >= 0; x--) {
-		if(buffer[x] == ' ' || buffer[x] == '\n' || buffer[x] == '\r' || buffer[x] == '\t' || buffer[x] == 13)
+	for (x = y - 1; x >= 0; x--) {
+		if (buffer[x] == ' ' || buffer[x] == '\n' || buffer[x] == '\r' || buffer[x] == '\t' || buffer[x] == 13)
 			buffer[x] = '\x0';
 		else
 			break;
-		}
+	}
 
 	/* strip beginning of string (by shifting) */
 	y = (int)strlen(buffer);
-	for(x = 0; x < y; x++) {
-		if(buffer[x] == ' ' || buffer[x] == '\n' || buffer[x] == '\r' || buffer[x] == '\t' || buffer[x] == 13)
+	for (x = 0; x < y; x++) {
+		if (buffer[x] == ' ' || buffer[x] == '\n' || buffer[x] == '\r' || buffer[x] == '\t' || buffer[x] == 13)
 			continue;
 		else
 			break;
-		}
-	if(x > 0) {
-		for(z = x; z < y; z++)
+	}
+	if (x > 0) {
+		for (z = x; z < y; z++)
 			buffer[z - x] = buffer[z];
 		buffer[y - x] = '\x0';
-		}
+	}
 
 	return;
-	}
+}
 
 
 
 /* get days, hours, minutes, and seconds from a raw time_t format or total seconds */
-void get_time_breakdown(unsigned long raw_time, int *days, int *hours, int *minutes, int *seconds) {
+void get_time_breakdown(unsigned long raw_time, int *days, int *hours, int *minutes, int *seconds)
+{
 	unsigned long temp_time;
 	int temp_days;
 	int temp_hours;
@@ -1380,4 +1369,4 @@ void get_time_breakdown(unsigned long raw_time, int *days, int *hours, int *minu
 	*seconds = temp_seconds;
 
 	return;
-	}
+}

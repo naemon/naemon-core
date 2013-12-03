@@ -40,7 +40,7 @@ static char *pcomp_construct(struct pcomp *pcomp, int comps)
 	char *path;
 
 	for (i = 0; i < comps; i++) {
-		if(pcomp[i].flags & PCOMP_IGNORE)
+		if (pcomp[i].flags & PCOMP_IGNORE)
 			continue;
 		plen += pcomp[i].len + 1;
 	}
@@ -48,7 +48,7 @@ static char *pcomp_construct(struct pcomp *pcomp, int comps)
 	path = malloc(plen + 2);
 
 	for (i = 0; i < comps; i++) {
-		if(pcomp[i].flags & PCOMP_IGNORE)
+		if (pcomp[i].flags & PCOMP_IGNORE)
 			continue;
 		memcpy(path + offset, pcomp[i].str, pcomp[i].len);
 		offset += pcomp[i].len;
@@ -99,7 +99,7 @@ char *nspath_normalize(const char *orig_path)
 			if ((*orig_path == '/' || depth) && p[1] == '.' && p[2] == 0) {
 				/* dot-dot-slash negates the previous non-negated component */
 				pcomp[i].flags |= PCOMP_IGNORE;
-				for(m = 0; depth && m <= i; m++) {
+				for (m = 0; depth && m <= i; m++) {
 					if (pcomp[i - m].flags & PCOMP_IGNORE) {
 						continue;
 					}

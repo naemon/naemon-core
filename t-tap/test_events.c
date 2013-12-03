@@ -89,11 +89,12 @@ service  *service_list;
 
 int check_for_expired_comment(unsigned long temp_long) {}
 void broker_timed_event(int int1, int int2, int int3, timed_event *timed_event1, struct timeval *timeval1) {}
-int perform_scheduled_host_check(host *temp_host, int int1, double double1) {
+int perform_scheduled_host_check(host *temp_host, int int1, double double1)
+{
 	time_t now = 0L;
 	time(&now);
 	temp_host->last_check = now;
-	}
+}
 int check_for_expired_downtime(void) {}
 int reap_check_results(void) {}
 void check_host_result_freshness() {}
@@ -107,13 +108,14 @@ void check_service_result_freshness() {}
 int check_time_against_period(time_t time_t1, timeperiod *timeperiod) {}
 time_t get_next_log_rotation_time(void) {}
 void check_for_orphaned_services() {}
-int run_scheduled_service_check(service *service1, int int1, double double1) {
+int run_scheduled_service_check(service *service1, int int1, double double1)
+{
 	currently_running_service_checks++;
 	time_t now = 0L;
 	time(&now);
 	service1->last_check = now;
 	/* printf("Currently running service checks: %d\n", currently_running_service_checks); */
-	}
+}
 int handle_scheduled_downtime_by_id(unsigned long long1) {}
 int rotate_log_file(time_t time_t1) {}
 time_t get_next_host_notification_time(host *temp_host, time_t time_t1) {}
@@ -121,24 +123,26 @@ void get_next_valid_time(time_t time_t1, time_t *time_t2, timeperiod *temp_timep
 void logit(int int1, int int2, const char *fmt, ...) {}
 
 int c = 0;
-int update_program_status(int aggregated_dump) {
+int update_program_status(int aggregated_dump)
+{
 	c++;
 	/* printf ("# In the update_program_status hook: %d\n", c); */
 
 	/* Set this to break out of event_execution_loop */
-	if(c > 10) {
+	if (c > 10) {
 		sigshutdown = TRUE;
 		c = 0;
-		}
 	}
+}
 int update_service_status(service *svc, int aggregated_dump) {}
 int update_all_status_data(void) {}
-int log_debug_info(int level, int verbosity, const char *fmt, ...) {
+int log_debug_info(int level, int verbosity, const char *fmt, ...)
+{
 	va_list ap;
 	va_start(ap, fmt);
 	/* vprintf( fmt, ap ); */
 	va_end(ap);
-	}
+}
 int update_host_status(host *hst, int aggregated_dump) {}
 
 /* Test variables */
@@ -146,7 +150,8 @@ service *svc1 = NULL, *svc2 = NULL, *svc3 = NULL;
 host *host1 = NULL;
 
 void
-setup_events(time_t time) {
+setup_events(time_t time)
+{
 	timed_event *new_event = NULL;
 
 	/* First service is a normal one */
@@ -194,14 +199,15 @@ setup_events(time_t time) {
 	new_event->timing_func = NULL;
 	new_event->compensate_for_time_change = TRUE;
 	reschedule_event(new_event, &event_list_low, &event_list_low_tail);
-	}
+}
 
 void
-setup_events_with_host(time_t time) {
+setup_events_with_host(time_t time)
+{
 	timed_event *new_event = NULL;
 
 	/* First service is a normal one */
-	if(svc3 == NULL)
+	if (svc3 == NULL)
 		svc3 = (service *)malloc(sizeof(service));
 	svc3->host_name = strdup("Host0");
 	svc3->description = strdup("Normal service");
@@ -224,7 +230,7 @@ setup_events_with_host(time_t time) {
 	new_event->compensate_for_time_change = TRUE;
 	reschedule_event(new_event, &event_list_low, &event_list_low_tail);
 
-	if(host1 == NULL)
+	if (host1 == NULL)
 		host1 = (host *)malloc(sizeof(host));
 	host1->name = strdup("Host1");
 	host1->address = strdup("127.0.0.1");
@@ -247,10 +253,11 @@ setup_events_with_host(time_t time) {
 	new_event->timing_func = NULL;
 	new_event->compensate_for_time_change = TRUE;
 	reschedule_event(new_event, &event_list_low, &event_list_low_tail);
-	}
+}
 
 int
-main(int argc, char **argv) {
+main(int argc, char **argv)
+{
 	time_t now = 0L;
 
 	plan_tests(10);
@@ -294,9 +301,9 @@ main(int argc, char **argv) {
 	 * correctly checks the host
 	*/
 	timed_event *temp_event = NULL;
-	while((temp_event = event_list_low) != NULL) {
+	while ((temp_event = event_list_low) != NULL) {
 		remove_event(temp_event, &event_list_low, &event_list_low_tail);
-		}
+	}
 
 	sigshutdown = FALSE;
 	currently_running_service_checks = 0;
@@ -312,5 +319,4 @@ main(int argc, char **argv) {
 	ok(svc3->next_check == now + 300, "svc3 rescheduled ahead - normal interval");
 
 	return exit_status();
-	}
-
+}

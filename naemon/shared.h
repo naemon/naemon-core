@@ -15,7 +15,7 @@ typedef struct mmapfile_struct {
 	unsigned long current_position;
 	unsigned long current_line;
 	void *mmap_buf;
-	} mmapfile;
+} mmapfile;
 
 /* official count of first-class objects */
 struct object_count {
@@ -31,7 +31,7 @@ struct object_count {
 	unsigned int contactgroups;
 	unsigned int hostgroups;
 	unsigned int servicegroups;
-	};
+};
 
 extern struct object_count num_objects;
 

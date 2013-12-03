@@ -52,7 +52,7 @@ typedef struct nebmodule_struct {
 	void            *deinit_func;
 #endif
 	struct nebmodule_struct *next;
-	} nebmodule;
+} nebmodule;
 
 
 /***** MODULE FUNCTIONS *****/

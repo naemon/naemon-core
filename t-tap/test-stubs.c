@@ -71,9 +71,10 @@ int handle_scheduled_downtime_by_id(unsigned long long1) {}
 #ifndef TEST_LOGGING
 int log_host_event(host *hst) {}
 int log_service_event_flag = 0;
-int log_service_event(service *svc) {
+int log_service_event(service *svc)
+{
 	log_service_event_flag++;
-	}
+}
 int rotate_log_file(time_t time_t1) {}
 void logit(int int1, int int2, const char *fmt, ...) {}
 #endif
@@ -119,10 +120,10 @@ int update_service_status(service *svc, int aggregated_dump) {}
 int update_all_status_data(void) {}
 char    *check_result_path = NULL;
 int process_check_result_queue(char *dirname) {}
-service * find_service(char *host_name, char *svc_desc) {}
+service *find_service(char *host_name, char *svc_desc) {}
 int delete_check_result_file(char *fname) {}
 int free_check_result(check_result *info) {}
-host * find_host(char *name) {}
+host *find_host(char *name) {}
 int             max_check_reaper_time = DEFAULT_MAX_REAPER_TIME;
 check_result *read_check_result(void) {}
 int broker_service_check(int type, int flags, int attr, service *svc, int check_type, struct timeval start_time, struct timeval end_time, char *cmd, double latency, double exectime, int timeout, int early_timeout, int retcode, char *cmdline, struct timeval *timestamp) {}
@@ -171,10 +172,11 @@ void reschedule_event(timed_event *event, timed_event **event_list, timed_event 
 int process_passive_service_check(time_t check_time, char *host_name, char *svc_description, int return_code, char *output) {}
 int             soft_state_dependencies = FALSE;
 int             additional_freshness_latency = DEFAULT_ADDITIONAL_FRESHNESS_LATENCY;
-hostdependency *get_first_hostdependency_by_dependent_host(char *host_name, void **ptr) {
+hostdependency *get_first_hostdependency_by_dependent_host(char *host_name, void **ptr)
+{
 	/* Return NULL so check_host_dependencies returns back */
 	return NULL;
-	}
+}
 hostdependency *get_next_hostdependency_by_dependent_host(char *host_name, void **ptr) {}
 int             currently_running_host_checks = 0;
 int my_system_r(nagios_macros *mac, char *cmd, int timeout, int *early_timeout, double *exectime, char **output, int max_output_length) {}
@@ -182,6 +184,4 @@ int             accept_passive_host_checks = TRUE;
 int             passive_host_checks_are_soft = DEFAULT_PASSIVE_HOST_CHECKS_SOFT;
 int             translate_passive_host_checks = DEFAULT_TRANSLATE_PASSIVE_HOST_CHECKS;
 int             enable_predictive_host_dependency_checks = DEFAULT_ENABLE_PREDICTIVE_HOST_DEPENDENCY_CHECKS;
-
-
 #endif

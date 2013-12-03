@@ -41,7 +41,7 @@ typedef struct xodtemplate_customvariablesmember_struct {
 	char    *variable_name;
 	char    *variable_value;
 	struct xodtemplate_customvariablesmember_struct *next;
-	} xodtemplate_customvariablesmember;
+} xodtemplate_customvariablesmember;
 
 
 /* DATERANGE structure */
@@ -60,7 +60,7 @@ typedef struct xodtemplate_daterange_struct {
 	int skip_interval;
 	char *timeranges;
 	struct xodtemplate_daterange_struct *next;
-	} xodtemplate_daterange;
+} xodtemplate_daterange;
 
 
 /* TIMEPERIOD TEMPLATE STRUCTURE */
@@ -79,7 +79,7 @@ typedef struct xodtemplate_timeperiod_struct {
 	unsigned has_been_resolved : 1;
 	unsigned register_object : 1;
 	struct xodtemplate_timeperiod_struct *next;
-	} xodtemplate_timeperiod;
+} xodtemplate_timeperiod;
 
 
 /* COMMAND TEMPLATE STRUCTURE */

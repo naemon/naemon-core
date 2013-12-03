@@ -91,7 +91,7 @@ const char *runcmd_strerror(int code)
 /* yield the pid belonging to a particular file descriptor */
 pid_t runcmd_pid(int fd)
 {
-	if(!pids || fd >= maxfd || fd < 0)
+	if (!pids || fd >= maxfd || fd < 0)
 		return 0;
 
 	return pids[fd];
@@ -299,8 +299,8 @@ void runcmd_init(void)
 		maxfd = rlim.rlim_cur;
 	}
 #elif !defined(OPEN_MAX) && !defined(IOV_MAX) && defined(_SC_OPEN_MAX)
-	if(!maxfd) {
-		if((maxfd = sysconf(_SC_OPEN_MAX)) < 0) {
+	if (!maxfd) {
+		if ((maxfd = sysconf(_SC_OPEN_MAX)) < 0) {
 			/* possibly log or emit a warning here, since there's no
 			 * guarantee that our guess at maxfd will be adequate */
 			maxfd = 256;
@@ -323,7 +323,7 @@ int runcmd_open(const char *cmd, int *pfd, int *pfderr, char **env)
 
 	int i = 0;
 
-	if(!pids)
+	if (!pids)
 		runcmd_init();
 
 	/* if no command was passed, return with no error */
@@ -390,23 +390,23 @@ int runcmd_open(const char *cmd, int *pfd, int *pfderr, char **env)
 		/* make sure all our children are killable by our parent */
 		setpgid(getpid(), getpid());
 
-		close (pfd[0]);
+		close(pfd[0]);
 		if (pfd[1] != STDOUT_FILENO) {
-			dup2 (pfd[1], STDOUT_FILENO);
-			close (pfd[1]);
+			dup2(pfd[1], STDOUT_FILENO);
+			close(pfd[1]);
 		}
-		close (pfderr[0]);
+		close(pfderr[0]);
 		if (pfderr[1] != STDERR_FILENO) {
-			dup2 (pfderr[1], STDERR_FILENO);
-			close (pfderr[1]);
+			dup2(pfderr[1], STDERR_FILENO);
+			close(pfderr[1]);
 		}
 
 		/* close all descriptors in pids[]
 		 * This is executed in a separate address space (pure child),
 		 * so we don't have to worry about async safety */
 		for (i = 0; i < maxfd; i++)
-			if(pids[i] > 0)
-				close (i);
+			if (pids[i] > 0)
+				close(i);
 
 		i = execvp(argv[0], argv);
 		fprintf(stderr, "execvp(%s, ...) failed. errno is %d: %s\n", argv[0], errno, strerror(errno));
@@ -414,7 +414,7 @@ int runcmd_open(const char *cmd, int *pfd, int *pfderr, char **env)
 			free(argv[0]);
 		else
 			free(argv[2]);
-		_exit (errno);
+		_exit(errno);
 	}
 
 	/* parent picks up execution here */
@@ -444,7 +444,7 @@ int runcmd_close(int fd)
 	pid_t pid;
 
 	/* make sure this fd was opened by runcmd_open() */
-	if(fd < 0 || fd > maxfd || !pids || (pid = pids[fd]) == 0)
+	if (fd < 0 || fd > maxfd || !pids || (pid = pids[fd]) == 0)
 		return RUNCMD_EINVAL;
 
 	pids[fd] = 0;
@@ -467,25 +467,24 @@ int runcmd_try_close(int fd, int *status, int sig)
 	int result;
 
 	/* make sure this fd was opened by popen() */
-	if(fd < 0 || fd > maxfd || !pids || !pids[fd])
+	if (fd < 0 || fd > maxfd || !pids || !pids[fd])
 		return RUNCMD_EINVAL;
 
 	pid = pids[fd];
-	while((result = waitpid(pid, status, WNOHANG)) != pid) {
-		if(!result) return 0;
-		if(result == -1) {
-			switch(errno) {
+	while ((result = waitpid(pid, status, WNOHANG)) != pid) {
+		if (!result) return 0;
+		if (result == -1) {
+			switch (errno) {
 			case EINTR:
 				continue;
 			case EINVAL:
 				return -1;
 			case ECHILD:
-				if(sig) {
+				if (sig) {
 					result = kill(pid, sig);
 					sig = 0;
 					continue;
-				}
-				else return -1;
+				} else return -1;
 			} /* switch */
 		}
 	}

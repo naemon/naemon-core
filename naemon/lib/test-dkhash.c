@@ -155,7 +155,7 @@ int main(int argc, char **argv)
 	ret = r2 ? r2 : ret;
 
 	t_reset();
-	for(x = 0; x < 10; x++) {
+	for (x = 0; x < 10; x++) {
 		sprintf(tmp, "string %d", x);
 		strs[x] = strdup(tmp);
 	}
@@ -163,10 +163,10 @@ int main(int argc, char **argv)
 	t_start("dkhash single bucket add remove forward");
 
 	t = dkhash_create(1);
-	for(x = 0; x < 10; x++) {
+	for (x = 0; x < 10; x++) {
 		dkhash_insert(t, strs[x], NULL, strs[x]);
 	}
-	for(x = 0; x < 10; x++) {
+	for (x = 0; x < 10; x++) {
 		p1 = strs[x];
 		p2 = dkhash_remove(t, p1, NULL);
 		test(p1 == p2, "remove should return a value");
@@ -178,10 +178,10 @@ int main(int argc, char **argv)
 	t_start("dkhash single bucket add remove backward");
 
 	t = dkhash_create(1);
-	for(x = 0; x < 10; x++) {
+	for (x = 0; x < 10; x++) {
 		dkhash_insert(t, strs[x], NULL, strs[x]);
 	}
-	for(x = 9; x; x--) {
+	for (x = 9; x; x--) {
 		p1 = strs[x];
 		p2 = dkhash_remove(t, p1, NULL);
 		test(p1 == p2, "remove should return a value");

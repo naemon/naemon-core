@@ -1,20 +1,3 @@
-/*****************************************************************************
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*
-*
-*****************************************************************************/
 #define NSCORE 1
 #include "config.h"
 #include "comments.h"
@@ -26,6 +9,7 @@
 #include "broker.h"
 #include "perfdata.h"
 #include "tap.h"
+
 int date_format;
 
 /* Test specific functions + variables */
@@ -35,7 +19,8 @@ int found_log_rechecking_host_when_service_wobbles = 0;
 int found_log_run_async_host_check = 0;
 check_result *tmp_check_result;
 
-void setup_check_result() {
+void setup_check_result()
+{
 	struct timeval start_time, finish_time;
 	start_time.tv_sec = 1234567890L;
 	start_time.tv_usec = 0L;
@@ -53,10 +38,10 @@ void setup_check_result() {
 	tmp_check_result->latency = 0.6969;
 	tmp_check_result->start_time = start_time;
 	tmp_check_result->finish_time = finish_time;
-	}
+}
 
-void
-setup_objects(time_t time) {
+void setup_objects(time_t time)
+{
 	enable_predictive_service_dependency_checks = FALSE;
 
 	host1 = (host *)calloc(1, sizeof(host));
@@ -102,10 +87,10 @@ setup_objects(time_t time) {
 	svc2->retry_interval = 1;
 	svc2->check_interval = 5;
 
-	}
+}
 
-int
-main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 	time_t now = 0L;
 
 
@@ -362,5 +347,4 @@ main(int argc, char **argv) {
 
 
 	return exit_status();
-	}
-
+}

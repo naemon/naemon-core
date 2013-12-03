@@ -95,7 +95,7 @@ static void wproc_logdump_buffer(int level, int show, const char *prefix, char *
 		return;
 	for (ptr = buf; ptr && *ptr; ptr = eol ? eol + 1 : NULL) {
 		if ((eol = strchr(ptr, '\n')))
-			*eol = 0;
+			* eol = 0;
 		logit(level, show, "%s line %.02d: %s\n", prefix, line++, ptr);
 		if (eol)
 			*eol = '\n';
@@ -139,18 +139,16 @@ int wproc_can_spawn(struct load_control *lc)
 		if (lc->load[0] > lc->backoff_limit) {
 			old = lc->jobs_limit;
 			lc->jobs_limit -= lc->backoff_change;
-		}
-		else if (lc->load[0] < lc->rampup_limit) {
+		} else if (lc->load[0] < lc->rampup_limit) {
 			old = lc->jobs_limit;
 			lc->jobs_limit += lc->rampup_change;
 		}
 
 		if (lc->jobs_limit > lc->jobs_max) {
 			lc->jobs_limit = lc->jobs_max;
-		}
-		else if (lc->jobs_limit < lc->jobs_min) {
+		} else if (lc->jobs_limit < lc->jobs_min) {
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Tried to set jobs_limit to %u, below jobs_min (%u)\n",
-				  lc->jobs_limit, lc->jobs_min);
+			      lc->jobs_limit, lc->jobs_min);
 			lc->jobs_limit = lc->jobs_min;
 		}
 
@@ -594,7 +592,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 	static struct kvvec kvv = KVVEC_INITIALIZER;
 	struct wproc_worker *wp = (struct wproc_worker *)arg;
 
-	if(iocache_capacity(wp->ioc) == 0) {
+	if (iocache_capacity(wp->ioc) == 0) {
 		logit(NSLOG_RUNTIME_WARNING, TRUE, "wproc: iocache_capacity() is 0 for worker %s.\n", wp->name);
 	}
 
@@ -602,7 +600,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 
 	if (ret < 0) {
 		logit(NSLOG_RUNTIME_WARNING, TRUE, "wproc: iocache_read() from %s returned %d: %s\n",
-			  wp->name, ret, strerror(errno));
+		      wp->name, ret, strerror(errno));
 		return 0;
 	} else if (ret == 0) {
 		logit(NSLOG_INFO_MESSAGE, TRUE, "wproc: Socket to worker %s broken, removing", wp->name);
@@ -633,8 +631,8 @@ static int handle_worker_result(int sd, int events, void *arg)
 		/* for everything else we need to actually parse */
 		if (buf2kvvec_prealloc(&kvv, buf, size, '=', '\0', KVVEC_ASSIGN) <= 0) {
 			logit(NSLOG_RUNTIME_ERROR, TRUE,
-				  "wproc: Failed to parse key/value vector from worker response with len %lu. First kv=%s",
-				  size, buf ? buf : "(NULL)");
+			      "wproc: Failed to parse key/value vector from worker response with len %lu. First kv=%s",
+			      size, buf ? buf : "(NULL)");
 			continue;
 		}
 
@@ -647,12 +645,12 @@ static int handle_worker_result(int sd, int events, void *arg)
 		job = get_job(wp, wpres.job_id);
 		if (!job) {
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "wproc: Job with id '%d' doesn't exist on %s.\n",
-				  wpres.job_id, wp->name);
+			      wpres.job_id, wp->name);
 			continue;
 		}
 		if (wpres.type != job->type) {
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "wproc: %s claims job %d is type %d, but we think it's type %d\n",
-				  wp->name, job->id, wpres.type, job->type);
+			      wp->name, job->id, wpres.type, job->type);
 			break;
 		}
 		oj = (wproc_object_job *)job->arg;
@@ -667,14 +665,12 @@ static int handle_worker_result(int sd, int events, void *arg)
 		}
 		if (wpres.early_timeout) {
 			asprintf(&error_reason, "timed out after %.2fs", tv_delta_f(&wpres.start, &wpres.stop));
-		}
-		else if (WIFSIGNALED(wpres.wait_status)) {
+		} else if (WIFSIGNALED(wpres.wait_status)) {
 			asprintf(&error_reason, "died by signal %d%s after %.2f seconds",
 			         WTERMSIG(wpres.wait_status),
 			         WCOREDUMP(wpres.wait_status) ? " (core dumped)" : "",
 			         tv_delta_f(&wpres.start, &wpres.stop));
-		}
-		else if (job->type != WPJOB_CHECK && WEXITSTATUS(wpres.wait_status) != 0) {
+		} else if (job->type != WPJOB_CHECK && WEXITSTATUS(wpres.wait_status) != 0) {
 			asprintf(&error_reason, "is a non-check helper but exited with return code %d",
 			         WEXITSTATUS(wpres.wait_status));
 		}
@@ -707,55 +703,55 @@ static int handle_worker_result(int sd, int events, void *arg)
 			if (wpres.early_timeout) {
 				if (oj->service_description) {
 					logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Notifying contact '%s' of service '%s' on host '%s' by command '%s' timed out after %.2f seconds\n",
-						  oj->contact_name, oj->service_description,
-						  oj->host_name, job->command,
-						  tv2float(&wpres.runtime));
+					      oj->contact_name, oj->service_description,
+					      oj->host_name, job->command,
+					      tv2float(&wpres.runtime));
 				} else {
 					logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Notifying contact '%s' of host '%s' by command '%s' timed out after %.2f seconds\n",
-						  oj->contact_name, oj->host_name,
-						  job->command, tv2float(&wpres.runtime));
+					      oj->contact_name, oj->host_name,
+					      job->command, tv2float(&wpres.runtime));
 				}
 			}
 			break;
 		case WPJOB_OCSP:
 			if (wpres.early_timeout) {
 				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: OCSP command '%s' for service '%s' on host '%s' timed out after %.2f seconds\n",
-					  job->command, oj->service_description, oj->host_name,
-					  tv2float(&wpres.runtime));
+				      job->command, oj->service_description, oj->host_name,
+				      tv2float(&wpres.runtime));
 			}
 			break;
 		case WPJOB_OCHP:
 			if (wpres.early_timeout) {
 				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: OCHP command '%s' for host '%s' timed out after %.2f seconds\n",
-					  job->command, oj->host_name, tv2float(&wpres.runtime));
+				      job->command, oj->host_name, tv2float(&wpres.runtime));
 			}
 			break;
 		case WPJOB_GLOBAL_SVC_EVTHANDLER:
 			if (wpres.early_timeout) {
 				logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, TRUE,
-					  "Warning: Global service event handler command '%s' timed out after %.2f seconds\n",
-					  job->command, tv2float(&wpres.runtime));
+				      "Warning: Global service event handler command '%s' timed out after %.2f seconds\n",
+				      job->command, tv2float(&wpres.runtime));
 			}
 			break;
 		case WPJOB_SVC_EVTHANDLER:
 			if (wpres.early_timeout) {
 				logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, TRUE,
-					  "Warning: Service event handler command '%s' timed out after %.2f seconds\n",
-					  job->command, tv2float(&wpres.runtime));
+				      "Warning: Service event handler command '%s' timed out after %.2f seconds\n",
+				      job->command, tv2float(&wpres.runtime));
 			}
 			break;
 		case WPJOB_GLOBAL_HOST_EVTHANDLER:
 			if (wpres.early_timeout) {
 				logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, TRUE,
-					  "Warning: Global host event handler command '%s' timed out after %.2f seconds\n",
-					  job->command, tv2float(&wpres.runtime));
+				      "Warning: Global host event handler command '%s' timed out after %.2f seconds\n",
+				      job->command, tv2float(&wpres.runtime));
 			}
 			break;
 		case WPJOB_HOST_EVTHANDLER:
 			if (wpres.early_timeout) {
 				logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, TRUE,
-					  "Warning: Host event handler command '%s' timed out after %.2f seconds\n",
-					  job->command, tv2float(&wpres.runtime));
+				      "Warning: Host event handler command '%s' timed out after %.2f seconds\n",
+				      job->command, tv2float(&wpres.runtime));
 			}
 			break;
 
@@ -812,30 +808,26 @@ static int register_worker(int sd, char *buf, unsigned int len)
 	iobroker_unregister(nagios_iobs, sd);
 	iobroker_register(nagios_iobs, sd, worker, handle_worker_result);
 
-	for(i = 0; i < info->kv_pairs; i++) {
+	for (i = 0; i < info->kv_pairs; i++) {
 		struct key_value *kv = &info->kv[i];
 		if (!strcmp(kv->key, "name")) {
 			worker->name = strdup(kv->value);
-		}
-		else if (!strcmp(kv->key, "pid")) {
+		} else if (!strcmp(kv->key, "pid")) {
 			worker->pid = atoi(kv->value);
-		}
-		else if (!strcmp(kv->key, "max_jobs")) {
+		} else if (!strcmp(kv->key, "max_jobs")) {
 			worker->max_jobs = atoi(kv->value);
-		}
-		else if (!strcmp(kv->key, "plugin")) {
+		} else if (!strcmp(kv->key, "plugin")) {
 			struct wproc_list *command_handlers;
 			is_global = 0;
 			if (!(command_handlers = dkhash_get(specialized_workers, kv->value, NULL))) {
 				command_handlers = calloc(1, sizeof(struct wproc_list));
-				command_handlers->wps = calloc(1, sizeof(struct wproc_worker**));
+				command_handlers->wps = calloc(1, sizeof(struct wproc_worker **));
 				command_handlers->len = 1;
 				command_handlers->wps[0] = worker;
 				dkhash_insert(specialized_workers, strdup(kv->value), NULL, command_handlers);
-			}
-			else {
+			} else {
 				command_handlers->len++;
-				command_handlers->wps = realloc(command_handlers->wps, command_handlers->len * sizeof(struct wproc_worker**));
+				command_handlers->wps = realloc(command_handlers->wps, command_handlers->len * sizeof(struct wproc_worker **));
 				command_handlers->wps[command_handlers->len - 1] = worker;
 			}
 			worker->wp_list = command_handlers;
@@ -873,16 +865,16 @@ static int wproc_query_handler(int sd, char *buf, unsigned int len)
 
 	if (!*buf || !strcmp(buf, "help")) {
 		nsock_printf_nul(sd, "Control worker processes.\n"
-			"Valid commands:\n"
-			"  wpstats              Print general job information\n"
-			"  register <options>   Register a new worker\n"
-			"                       <options> can be name, pid, max_jobs and/or plugin.\n"
-			"                       There can be many plugin args.");
+		                 "Valid commands:\n"
+		                 "  wpstats              Print general job information\n"
+		                 "  register <options>   Register a new worker\n"
+		                 "                       <options> can be name, pid, max_jobs and/or plugin.\n"
+		                 "                       There can be many plugin args.");
 		return 0;
 	}
 
 	if ((space = memchr(buf, ' ', len)) != NULL)
-		*space = 0;
+		* space = 0;
 
 	rbuf = space ? space + 1 : buf;
 	len -= (unsigned long)rbuf - (unsigned long)buf;
@@ -895,8 +887,8 @@ static int wproc_query_handler(int sd, char *buf, unsigned int len)
 		for (i = 0; i < workers.len; i++) {
 			struct wproc_worker *wp = workers.wps[i];
 			nsock_printf(sd, "name=%s;pid=%d;jobs_running=%u;jobs_started=%u\n",
-						 wp->name, wp->pid,
-						 wp->jobs_running, wp->jobs_started);
+			             wp->name, wp->pid,
+			             wp->jobs_running, wp->jobs_started);
 		}
 		return 0;
 	}
@@ -927,7 +919,7 @@ int init_workers(int desired_workers)
 	 * so other workers can join us whenever they're ready
 	 */
 	specialized_workers = dkhash_create(512);
-	if(!qh_register_handler("wproc", "Worker process management and info", 0, wproc_query_handler))
+	if (!qh_register_handler("wproc", "Worker process management and info", 0, wproc_query_handler))
 		logit(NSLOG_INFO_MESSAGE, TRUE, "wproc: Successfully registered manager as @wproc with query handler\n");
 	else
 		logit(NSLOG_RUNTIME_ERROR, TRUE, "wproc: Failed to register manager with query handler\n");
@@ -936,13 +928,13 @@ int init_workers(int desired_workers)
 	if (desired_workers <= 0) {
 		int cpus = online_cpus();
 
-		if(desired_workers < 0) {
+		if (desired_workers < 0) {
 			desired_workers = cpus - desired_workers;
 		}
-		if(desired_workers <= 0) {
+		if (desired_workers <= 0) {
 			desired_workers = cpus * 1.5;
 			/* min 4 workers, as it's tested and known to work */
-			if(desired_workers < 4)
+			if (desired_workers < 4)
 				desired_workers = 4;
 			else if (desired_workers > 48) {
 				/* don't go crazy in NASA's network (1024 cores) */
@@ -1000,7 +992,7 @@ static int wproc_run_job(struct wproc_job *job, nagios_macros *mac)
 	ret = write(wp->sd, kvvb->buf, kvvb->bufsize);
 	if (ret != (int)kvvb->bufsize) {
 		logit(NSLOG_RUNTIME_ERROR, TRUE, "wproc: '%s' seems to be choked. ret = %d; bufsize = %lu: errno = %d (%s)\n",
-			  wp->name, ret, kvvb->bufsize, errno, strerror(errno));
+		      wp->name, ret, kvvb->bufsize, errno, strerror(errno));
 		destroy_job(job);
 		result = ERROR;
 	} else {
@@ -1092,8 +1084,8 @@ int wproc_run(int jtype, char *cmd, int timeout, nagios_macros *mac)
 }
 
 int wproc_run_callback(char *cmd, int timeout,
-		void (*cb)(struct wproc_result *, void *, int), void *data,
-		nagios_macros *mac)
+                       void (*cb)(struct wproc_result *, void *, int), void *data,
+                       nagios_macros *mac)
 {
 	struct wproc_job *job;
 	struct wproc_callback_job *cj;

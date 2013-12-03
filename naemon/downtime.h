@@ -36,7 +36,7 @@ typedef struct scheduled_downtime {
 	struct timed_event *start_event, *stop_event;
 #endif
 	struct scheduled_downtime *prev;
-	} scheduled_downtime;
+} scheduled_downtime;
 
 extern struct scheduled_downtime *scheduled_downtime_list;
 

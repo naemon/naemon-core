@@ -14,12 +14,10 @@ typedef struct nebcallback_struct {
 	void            *module_handle;
 	int             priority;
 	struct nebcallback_struct *next;
-	} nebcallback;
-
+} nebcallback;
 
 
 /***** MODULE FUNCTIONS *****/
-
 int neb_init_modules(void);
 int neb_deinit_modules(void);
 int neb_load_all_modules(void);

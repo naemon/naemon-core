@@ -45,7 +45,7 @@ typedef struct comment {
 	char 	*comment_data;
 	struct 	comment *next;
 	struct 	comment *nexthash;
-	} comment;
+} comment;
 
 extern struct comment *comment_list;
 
@@ -86,5 +86,4 @@ int add_comment_to_hashlist(struct comment *);
 void free_comment_data(void);                                             /* frees memory allocated to the comment list */
 
 NAGIOS_BEGIN_DECL
-
 #endif

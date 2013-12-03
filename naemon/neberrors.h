@@ -10,10 +10,8 @@
 #define NEB_FALSE                   0
 
 
-
 /***** GENERIC ERRORS *****/
 #define NEBERROR_NOMEM              100     /* memory could not be allocated */
-
 
 
 /***** CALLBACK ERRORS *****/
@@ -27,14 +25,11 @@
 #define NEBERROR_CALLBACKCANCEL     207     /* module wants to cancel callbacks to other modules */
 
 
-
 /***** MODULE ERRORS *****/
 #define NEBERROR_NOMODULE           300     /* no module was specified */
 
 
-
 /***** MODULE INFO ERRORS *****/
 #define NEBERROR_MODINFOBOUNDS      400     /* module info index was out of bounds */
-
 
 #endif
