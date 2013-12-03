@@ -31,20 +31,7 @@
 #include <sys/types.h>
 #include <regex.h>
 #include <libgen.h> /* for 'dirname()' */
-
-
-/**** CORE OR CGI SPECIFIC HEADER FILES ****/
-
-#ifdef NSCORE
 #include "nagios.h"
-#endif
-
-#ifdef NSCGI
-#include "cgiutils.h"
-#endif
-
-/**** DATA INPUT-SPECIFIC HEADER FILES ****/
-
 #include "xodtemplate.h"
 
 #define XOD_NEW   0 /* not seen */
@@ -102,15 +89,6 @@ static struct object_count xodcount;
 static bitmap *host_map = NULL, *contact_map = NULL;
 static bitmap *service_map = NULL, *parent_map = NULL;
 
-/* These variables are defined in base/utils.c, but as CGIs do not need these
-   we just fake the values for this file */
-#ifdef NSCGI
-#define use_precached_objects TRUE
-#define use_regexp_matches FALSE
-#define use_true_regexp_matching FALSE
-#define test_scheduling FALSE
-#endif
-
 /*
  * simple inheritance macros. o = object, t = template, v = variable
  * Note that these can be used for inter-object inheritance as well,
@@ -155,7 +133,6 @@ static const char *xodtemplate_config_file_name(int cfgfile)
 /************* TOP-LEVEL CONFIG DATA INPUT FUNCTION ***************/
 /******************************************************************/
 
-#ifndef NSCGI
 static void xodtemplate_free_template_skiplists(void)
 {
 	int x = 0;
@@ -164,12 +141,11 @@ static void xodtemplate_free_template_skiplists(void)
 		skiplist_free(&xobject_template_skiplists[x]);
 	}
 }
-#endif
+
 
 /* process all config files - both core and CGIs pass in name of main config file */
 int xodtemplate_read_config_data(const char *main_config_file, int options)
 {
-#ifdef NSCORE
 	char *cfgfile = NULL;
 	char *config_base_dir = NULL;
 	char *input = NULL;
@@ -177,15 +153,12 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 	char *val = NULL;
 	double runtime[11];
 	mmapfile *thefile = NULL;
-#endif
 	struct timeval tv[12];
 	int result = OK;
 
 
 	if (main_config_file == NULL) {
-#ifdef NSCORE
 		printf("Error: No main config file passed to object routines!\n");
-#endif
 		return ERROR;
 	}
 
@@ -217,19 +190,13 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 	xodtemplate_current_config_file = 0;
 	xodtemplate_config_files = (char **)malloc(256 * sizeof(char **));
 	if (xodtemplate_config_files == NULL) {
-#ifdef NSCORE
 		printf("Unable to allocate memory!\n");
-#endif
 		return ERROR;
 	}
 
 	/* are the objects we're reading already pre-sorted? */
-	presorted_objects = FALSE;
-#ifdef NSCORE
 	presorted_objects = (use_precached_objects == TRUE) ? TRUE : FALSE;
-#endif
 
-#ifdef NSCORE
 	if (test_scheduling == TRUE)
 		gettimeofday(&tv[0], NULL);
 
@@ -329,15 +296,8 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 
 	if (test_scheduling == TRUE)
 		gettimeofday(&tv[1], NULL);
-#endif
 
-#ifdef NSCGI
-	/* CGIs process only one file - the cached objects file */
-	result = xodtemplate_process_config_file(object_cache_file, options);
-#endif
 	timing_point("Done parsing config files\n");
-
-#ifdef NSCORE
 
 	/* only perform intensive operations if we're not using the precached object file */
 	if (use_precached_objects == FALSE) {
@@ -356,7 +316,6 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 		/* cleanup some additive inheritance stuff... */
 		xodtemplate_clean_additive_strings();
 	}
-#endif
 
 	/* do the meat and potatoes stuff... */
 	host_map = bitmap_create(xodcount.hosts);
@@ -378,7 +337,6 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 		gettimeofday(&tv[4], NULL);
 	timing_point("Done recombobulating hostgroups\n");
 
-#ifndef NSCGI
 	if (use_precached_objects == FALSE) {
 		if (result == OK)
 			result = xodtemplate_duplicate_services();
@@ -386,7 +344,6 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 			gettimeofday(&tv[5], NULL);
 		timing_point("Created %u services (dupes possible)\n", xodcount.services);
 	}
-#endif
 
 	/* now we have an accurate service count */
 	service_map = bitmap_create(xodcount.services);
@@ -401,7 +358,6 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 		gettimeofday(&tv[6], NULL);
 	timing_point("Done recombobulating servicegroups\n");
 
-#ifndef NSCGI
 	if (use_precached_objects == FALSE) {
 		if (result == OK)
 			result = xodtemplate_duplicate_objects();
@@ -415,7 +371,6 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 		if (test_scheduling == TRUE)
 			gettimeofday(&tv[8], NULL);
 	}
-#endif
 
 	if (test_scheduling == TRUE)
 		gettimeofday(&tv[9], NULL);
@@ -429,7 +384,6 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 
 	/* cleanup */
 	xodtemplate_free_memory();
-#ifdef NSCORE
 	if (test_scheduling == TRUE) {
 		gettimeofday(&tv[11], NULL);
 
@@ -481,7 +435,6 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 		printf("\n");
 		printf("\n\n");
 	}
-#endif
 
 	bitmap_destroy(contact_map);
 	bitmap_destroy(host_map);
@@ -501,10 +454,8 @@ int xodtemplate_process_config_dir(char *dirname, int options)
 	register int x = 0;
 	struct stat stat_buf;
 
-#ifdef NSCORE
 	if (verify_config >= 2)
 		printf("Processing object config directory '%s'...\n", dirname);
-#endif
 
 	/* open the directory for reading */
 	dirp = opendir(dirname);
@@ -584,10 +535,8 @@ int xodtemplate_process_config_file(char *filename, int options)
 	char *ptr = NULL;
 
 
-#ifdef NSCORE
 	if (verify_config >= 2)
 		printf("Processing object config file '%s'...\n", filename);
-#endif
 
 	/* save config file name */
 	xodtemplate_config_files[xodtemplate_current_config_file++] = (char *)strdup(filename);
@@ -800,6 +749,7 @@ int xodtemplate_process_config_file(char *filename, int options)
 		} \
 	} while (0)
 
+
 /* starts a new object definition */
 int xodtemplate_begin_object_definition(char *input, int options, int cfgfile, int start_line)
 {
@@ -915,10 +865,8 @@ int xodtemplate_begin_object_definition(char *input, int options, int cfgfile, i
 	}
 
 
-
 	/* add a new (blank) object */
 	switch (xodtemplate_current_object_type) {
-
 	case XODTEMPLATE_TIMEPERIOD:
 		xod_begin_def(timeperiod);
 		break;
@@ -951,7 +899,6 @@ int xodtemplate_begin_object_definition(char *input, int options, int cfgfile, i
 
 	case XODTEMPLATE_CONTACT:
 		xod_begin_def(contact);
-
 		new_contact->minimum_value = 1;
 		new_contact->host_notifications_enabled = TRUE;
 		new_contact->service_notifications_enabled = TRUE;
@@ -962,7 +909,6 @@ int xodtemplate_begin_object_definition(char *input, int options, int cfgfile, i
 
 	case XODTEMPLATE_HOST:
 		xod_begin_def(host);
-
 		new_host->hourly_value = 1;
 		new_host->check_interval = 5.0;
 		new_host->retry_interval = 1.0;
@@ -984,7 +930,6 @@ int xodtemplate_begin_object_definition(char *input, int options, int cfgfile, i
 
 	case XODTEMPLATE_SERVICE:
 		xod_begin_def(service);
-
 		new_service->hourly_value = 1;
 		new_service->initial_state = STATE_OK;
 		new_service->max_check_attempts = -2;
@@ -1019,7 +964,6 @@ int xodtemplate_begin_object_definition(char *input, int options, int cfgfile, i
 
 	case XODTEMPLATE_HOSTEXTINFO:
 		xod_begin_def(hostextinfo);
-
 		new_hostextinfo->x_2d = -1;
 		new_hostextinfo->y_2d = -1;
 		break;
@@ -1085,12 +1029,8 @@ int xodtemplate_add_object_property(char *input, int options)
 
 
 	/* should some object definitions be added to skiplists immediately? */
-#ifdef NSCORE
 	if (use_precached_objects == TRUE)
 		force_skiplists = TRUE;
-#else
-	force_skiplists = TRUE;
-#endif
 
 	/* check to see if we should process this type of object */
 	switch (xodtemplate_current_object_type) {
@@ -3552,11 +3492,9 @@ int xodtemplate_parse_timeperiod_directive(xodtemplate_timeperiod *tperiod, char
 	else
 		result = ERROR;
 
-#ifdef NSCORE
 	if (result == ERROR) {
 		printf("Error: Could not parse timeperiod directive '%s'!\n", input);
 	}
-#endif
 
 	/* free memory */
 	my_free(input);
@@ -3643,8 +3581,6 @@ int xodtemplate_get_weekday_from_string(char *str, int *weekday)
 /******************************************************************/
 /***************** OBJECT DUPLICATION FUNCTIONS *******************/
 /******************************************************************/
-
-#ifdef NSCORE
 
 /* duplicates service definitions */
 int xodtemplate_duplicate_services(void)
@@ -4405,8 +4341,6 @@ int xodtemplate_inherit_object_properties(void)
 	return OK;
 }
 
-#endif
-
 
 /******************************************************************/
 /***************** OBJECT RESOLUTION FUNCTIONS ********************/
@@ -4446,7 +4380,6 @@ static int xodtemplate_register_and_destroy_serviceescalation(void *se_)
 }
 
 
-#ifndef NSCGI
 static int xodtemplate_register_and_destroy_hostdependency(void *hd_)
 {
 	xodtemplate_hostdependency *temp_hostdependency = (xodtemplate_hostdependency *)hd_;
@@ -5754,8 +5687,6 @@ int xodtemplate_resolve_serviceextinfo(xodtemplate_serviceextinfo *this_servicee
 }
 
 
-#endif
-
 /******************************************************************/
 /*************** OBJECT RECOMBOBULATION FUNCTIONS *****************/
 /******************************************************************/
@@ -6334,8 +6265,6 @@ int xodtemplate_recombobulate_servicegroups(void)
 /******************* OBJECT SEARCH FUNCTIONS **********************/
 /******************************************************************/
 
-#ifdef NSCORE
-
 /* finds a specific timeperiod object */
 xodtemplate_timeperiod *xodtemplate_find_timeperiod(char *name)
 {
@@ -6362,8 +6291,6 @@ xodtemplate_command *xodtemplate_find_command(char *name)
 
 	return skiplist_find_first(xobject_template_skiplists[COMMAND_SKIPLIST], &temp_command, NULL);
 }
-
-#endif
 
 
 /* finds a specific contactgroup object */
@@ -6852,13 +6779,8 @@ int xodtemplate_register_objects(void)
 		}
 		for (sd = xodtemplate_servicedependency_list; sd; sd = next_sd) {
 			next_sd = sd->next;
-#ifdef NSCGI
-			if (xodtemplate_register_servicedependency(sd) == ERROR)
-				return ERROR;
-#else
 			if (xodtemplate_register_and_destroy_servicedependency(sd) == ERROR)
 				return ERROR;
-#endif
 		}
 		bitmap_destroy(parent_map);
 		parent_map = NULL;
@@ -6875,13 +6797,8 @@ int xodtemplate_register_objects(void)
 
 	for (hd = xodtemplate_hostdependency_list; hd; hd = next_hd) {
 		next_hd = hd->next;
-#ifdef NSCGI
-		if (xodtemplate_register_hostdependency(hd) == ERROR)
-			return ERROR;
-#else
 		if (xodtemplate_register_and_destroy_hostdependency(hd) == ERROR)
 			return ERROR;
-#endif
 	}
 	timing_point("%u unique / %u total hostdependencies registered\n",
 	             num_objects.hostdependencies, xodcount.hostdependencies);
@@ -7601,8 +7518,6 @@ int xodtemplate_register_hostescalation(xodtemplate_hostescalation *this_hostesc
 /*********************** MERGE FUNCTIONS **************************/
 /******************************************************************/
 
-#ifdef NSCORE
-
 /* merges a service extinfo definition */
 int xodtemplate_merge_service_extinfo_object(xodtemplate_service *this_service, xodtemplate_serviceextinfo *this_serviceextinfo)
 {
@@ -7661,8 +7576,6 @@ int xodtemplate_merge_host_extinfo_object(xodtemplate_host *this_host, xodtempla
 
 	return OK;
 }
-
-#endif
 
 
 /******************************************************************/
@@ -8718,8 +8631,6 @@ int xodtemplate_expand_contacts(objectlist **ret, bitmap *reject_map, char *cont
 }
 
 
-#ifdef NSCORE
-
 /*
  * expands a comma-delimited list of hostgroups and/or hosts to
  * an objectlist of hosts. This cannot be called until hostgroups
@@ -8783,7 +8694,6 @@ objectlist *xodtemplate_expand_hostgroups_and_hosts(char *hostgroups, char *host
 	return ret;
 }
 
-#endif
 
 /*
  * expands hostgroups.
@@ -9173,12 +9083,10 @@ int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, char *hos
 	char *service_names = NULL;
 	char *temp_ptr = NULL;
 	xodtemplate_service *temp_service = NULL;
-#ifndef NSCGI
 	regex_t preg;
 	regex_t preg2;
 	int use_regexp_host = FALSE;
 	int use_regexp_service = FALSE;
-#endif
 	int found_match = TRUE;
 	int reject_item = FALSE;
 
@@ -9224,7 +9132,6 @@ int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, char *hos
 	if (host_name == NULL || services == NULL)
 		return OK;
 
-#ifndef NSCGI
 	/* should we use regular expression matching for the host name? */
 	if (use_regexp_matches == TRUE && (use_true_regexp_matching == TRUE || strstr(host_name, "*") || strstr(host_name, "?") || strstr(host_name, "+") || strstr(host_name, "\\.")))
 		use_regexp_host = TRUE;
@@ -9234,13 +9141,10 @@ int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, char *hos
 		if (regcomp(&preg2, host_name, REG_EXTENDED))
 			return ERROR;
 	}
-#endif
 
 	if ((service_names = (char *)strdup(services)) == NULL) {
-#ifndef NSCGI
 		if (use_regexp_host == TRUE)
 			regfree(&preg2);
-#endif
 		return ERROR;
 	}
 
@@ -9253,7 +9157,6 @@ int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, char *hos
 		/* strip trailing spaces */
 		strip(temp_ptr);
 
-#ifndef NSCGI
 		/* should we use regular expression matching for the service description? */
 		if (use_regexp_matches == TRUE && (use_true_regexp_matching == TRUE || strstr(temp_ptr, "*") || strstr(temp_ptr, "?") || strstr(temp_ptr, "+") || strstr(temp_ptr, "\\.")))
 			use_regexp_service = TRUE;
@@ -9344,7 +9247,6 @@ int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, char *hos
 				temp_ptr++;
 			}
 
-#endif
 			/* find the service */
 			if ((temp_service = xodtemplate_find_real_service(host_name, temp_ptr)) != NULL) {
 
@@ -9355,20 +9257,18 @@ int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, char *hos
 				else
 					add_object_to_objectlist(list, temp_service);
 			}
-#ifndef NSCGI
 		}
-#endif
 		/* we didn't find a match */
 		if (found_match == FALSE && reject_item == FALSE) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not find a service matching host name '%s' and description '%s' (config file '%s', starting on line %d)\n", host_name, temp_ptr, xodtemplate_config_file_name(_config_file), _start_line);
 			break;
 		}
 	}
-#ifndef NSCGI
+
 	if (use_regexp_host == TRUE)
 		regfree(&preg2);
 	my_free(service_names);
-#endif
+
 	if (found_match == FALSE && reject_item == FALSE)
 		return ERROR;
 
@@ -9900,7 +9800,6 @@ int xodtemplate_get_servicegroup_names(xodtemplate_memberlist **list, xodtemplat
 	return OK;
 }
 
-#ifndef NSCGI
 
 /******************************************************************/
 /****************** ADDITIVE INHERITANCE STUFF ********************/
@@ -10072,4 +9971,3 @@ int xodtemplate_clean_additive_strings(void)
 
 	return OK;
 }
-#endif

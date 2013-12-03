@@ -49,7 +49,6 @@ typedef struct comment {
 
 extern struct comment *comment_list;
 
-#ifndef NSCGI
 int initialize_comment_data(void);                                /* initializes comment data */
 int add_new_comment(int, int, char *, char *, time_t, char *, char *, int, int, int, time_t, unsigned long *); /* adds a new host or service comment */
 int add_new_host_comment(int, char *, time_t, char *, char *, int, int, int, time_t, unsigned long *);    /* adds a new host comment */
@@ -64,7 +63,6 @@ int delete_all_service_comments(char *, char *);                    /* deletes a
 int delete_service_acknowledgement_comments(struct service *);             /* deletes all non-persistent ack comments for a specific service */
 
 int check_for_expired_comment(unsigned long);                       /* expires a comment */
-#endif
 
 struct comment *find_comment(unsigned long, int);                            /* finds a specific comment */
 struct comment *find_service_comment(unsigned long);                         /* finds a specific service comment */

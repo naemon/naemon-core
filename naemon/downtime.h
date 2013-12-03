@@ -3,9 +3,7 @@
 
 #include "common.h"
 #include "objects.h"
-#ifndef NSCGI
 #include "nagios.h"
-#endif
 
 NAGIOS_BEGIN_DECL
 
@@ -26,22 +24,17 @@ typedef struct scheduled_downtime {
 	int	start_notification_sent;
 	char *author;
 	char *comment;
-#ifndef NSCGI
 	unsigned long comment_id;
 	int start_flex_downtime;
 	int incremented_pending_downtime;
-#endif
 	struct scheduled_downtime *next;
-#ifndef NSCGI
 	struct timed_event *start_event, *stop_event;
-#endif
 	struct scheduled_downtime *prev;
 } scheduled_downtime;
 
 extern struct scheduled_downtime *scheduled_downtime_list;
 
 
-#ifndef NSCGI
 int initialize_downtime_data(void);        /* initializes scheduled downtime data */
 int cleanup_downtime_data(void);           /* cleans up scheduled downtime data */
 
@@ -64,7 +57,6 @@ int check_pending_flex_host_downtime(struct host *);
 int check_pending_flex_service_downtime(struct service *);
 
 int check_for_expired_downtime(void);
-#endif
 
 int add_host_downtime(char *, time_t, char *, char *, time_t, time_t, time_t, int, unsigned long, unsigned long, unsigned long, int, int);
 int add_service_downtime(char *, char *, time_t, char *, char *, time_t, time_t, time_t, int, unsigned long, unsigned long, unsigned long, int, int);

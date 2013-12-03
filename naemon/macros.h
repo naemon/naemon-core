@@ -5,21 +5,19 @@
 #include "objects.h"
 
 
-
 /****************** LENGTH LIMITATIONS ****************/
-#define MAX_COMMAND_ARGUMENTS			32	/* maximum number of $ARGx$ macros */
+#define MAX_COMMAND_ARGUMENTS			32	/* max $ARGx$ macros */
 
 
 /****************** MACRO DEFINITIONS *****************/
 #define MACRO_ENV_VAR_PREFIX			"NAGIOS_"
-
-#define MAX_USER_MACROS				256	/* maximum number of $USERx$ macros */
-
+#define MAX_USER_MACROS				256	/* max $USERx$ macros */
 #define MACRO_X_COUNT				156	/* size of macro_x[] array */
 
 NAGIOS_BEGIN_DECL
 
-struct nagios_macros {
+struct nagios_macros
+{
 	char *x[MACRO_X_COUNT];
 	char *argv[MAX_COMMAND_ARGUMENTS];
 	char *contactaddress[MAX_CONTACT_ADDRESSES];
@@ -289,8 +287,6 @@ int clear_contact_macros_r(nagios_macros *mac);
 int clear_contactgroup_macros_r(nagios_macros *mac);
 int clear_summary_macros_r(nagios_macros *mac);
 
-
-#ifndef NSCGI
 int set_all_macro_environment_vars(int);
 int set_macrox_environment_vars(int);
 int set_argv_macro_environment_vars(int);
@@ -304,8 +300,6 @@ int set_macrox_environment_vars_r(nagios_macros *mac, int);
 int set_argv_macro_environment_vars_r(nagios_macros *mac, int);
 int set_custom_macro_environment_vars_r(nagios_macros *mac, int);
 int set_contact_address_environment_vars_r(nagios_macros *mac, int);
-
-#endif
 
 NAGIOS_END_DECL
 #endif

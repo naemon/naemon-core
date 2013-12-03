@@ -320,14 +320,11 @@ struct contact {
 	int     retain_status_information;
 	int     retain_nonstatus_information;
 	struct customvariablesmember *custom_variables;
-#ifndef NSCGI
 	time_t  last_host_notification;
 	time_t  last_service_notification;
 	unsigned long modified_attributes;
 	unsigned long modified_host_attributes;
 	unsigned long modified_service_attributes;
-#endif
-
 	struct timeperiod *host_notification_period_ptr;
 	struct timeperiod *service_notification_period_ptr;
 	struct objectlist *contactgroups_ptr;
@@ -410,13 +407,6 @@ struct host {
 	char    *icon_image;
 	char    *icon_image_alt;
 	char    *statusmap_image; /* used by lots of graphing tools */
-/* #ifdef NSCGI */
-	/*
-	 * these are kept in ancillary storage for the daemon and
-	 * thrown out as soon as we've created the object cache.
-	 * The CGI's still attach them though, since they are the
-	 * only users of this utter crap.
-	 */
 	char    *vrml_image;
 	int     have_2d_coords;
 	int     x_2d;
@@ -426,9 +416,7 @@ struct host {
 	double  y_3d;
 	double  z_3d;
 	int     should_be_drawn;
-/* #endif */
 	customvariablesmember *custom_variables;
-#ifndef NSCGI
 	int     problem_has_been_acknowledged;
 	int     acknowledgement_type;
 	int     check_type;
@@ -477,8 +465,6 @@ struct host {
 	int     total_services;
 	unsigned long total_service_check_interval;
 	unsigned long modified_attributes;
-#endif
-
 	struct command *event_handler_ptr;
 	struct command *check_command_ptr;
 	struct timeperiod *check_period_ptr;
@@ -551,7 +537,6 @@ struct service {
 	char    *icon_image;
 	char    *icon_image_alt;
 	struct customvariablesmember *custom_variables;
-#ifndef NSCGI
 	int     problem_has_been_acknowledged;
 	int     acknowledgement_type;
 	int     host_problem_at_last_check;
@@ -598,8 +583,6 @@ struct service {
 	unsigned long flapping_comment_id;
 	double  percent_state_change;
 	unsigned long modified_attributes;
-#endif
-
 	struct host *host_ptr;
 	struct command *event_handler_ptr;
 	char *event_handler_args;
@@ -793,7 +776,6 @@ int number_of_immediate_child_hosts(struct host *);		                /* counts t
 int number_of_total_child_hosts(struct host *);				/* counts the number of total child hosts for a particular host */
 int number_of_immediate_parent_hosts(struct host *);				/* counts the number of immediate parents hosts for a particular host */
 
-#ifndef NSCGI
 void fcache_contactlist(FILE *fp, const char *prefix, struct contactsmember *list);
 void fcache_contactgrouplist(FILE *fp, const char *prefix, struct contactgroupsmember *list);
 void fcache_hostlist(FILE *fp, const char *prefix, struct hostsmember *list);
@@ -811,7 +793,6 @@ void fcache_serviceescalation(FILE *fp, struct serviceescalation *temp_servicees
 void fcache_hostdependency(FILE *fp, struct hostdependency *temp_hostdependency);
 void fcache_hostescalation(FILE *fp, struct hostescalation *temp_hostescalation);
 int fcache_objects(char *cache_file);
-#endif
 
 
 /**** Object Cleanup Functions ****/

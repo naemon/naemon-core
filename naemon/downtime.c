@@ -3,13 +3,8 @@
 #include "comments.h"
 #include "downtime.h"
 #include "statusdata.h"
-
-#ifdef NSCGI
-#include "cgiutils.h"
-#else
 #include "nagios.h"
 #include "broker.h"
-#endif
 
 
 scheduled_downtime *scheduled_downtime_list = NULL;
@@ -187,7 +182,6 @@ static void downtime_remove(scheduled_downtime *dt)
 }
 
 
-#ifdef NSCORE
 /******************************************************************/
 /**************** INITIALIZATION/CLEANUP FUNCTIONS ****************/
 /******************************************************************/
@@ -540,7 +534,6 @@ int handle_scheduled_downtime(scheduled_downtime *temp_downtime)
 #ifdef USE_EVENT_BROKER
 	int attr = 0;
 #endif
-
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "handle_scheduled_downtime()\n");
 
@@ -1048,7 +1041,6 @@ int delete_downtime_by_hostname_service_description_start_time_comment(char *hos
 
 	return deleted;
 }
-#endif
 
 
 /******************************************************************/
@@ -1132,10 +1124,8 @@ int add_downtime(int downtime_type, char *host_name, char *svc_description, time
 	new_downtime->downtime_id = downtime_id;
 	new_downtime->is_in_effect = is_in_effect;
 	new_downtime->start_notification_sent = start_notification_sent;
-#ifdef NSCORE
 	new_downtime->start_event = (timed_event *)0;
 	new_downtime->stop_event = (timed_event *)0;
-#endif
 	result = downtime_add(new_downtime);
 	if (result) {
 		if (new_downtime->type == SERVICE_DOWNTIME) {
@@ -1157,11 +1147,9 @@ int add_downtime(int downtime_type, char *host_name, char *svc_description, time
 		return ERROR;
 	}
 
-#ifdef NSCORE
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
 	broker_downtime_data(NEBTYPE_DOWNTIME_LOAD, NEBFLAG_NONE, NEBATTR_NONE, downtime_type, host_name, svc_description, entry_time, author, comment_data, start_time, end_time, fixed, triggered_by, duration, downtime_id, NULL);
-#endif
 #endif
 
 	return OK;
