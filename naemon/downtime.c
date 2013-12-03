@@ -499,19 +499,6 @@ int register_downtime(int type, unsigned long downtime_id)
 		temp_downtime->stop_event = schedule_new_event(EVENT_EXPIRE_DOWNTIME, TRUE, (temp_downtime->end_time + 1), FALSE, 0, NULL, FALSE, NULL, NULL, 0);
 	}
 
-#ifdef PROBABLY_NOT_NEEDED
-	/*** FLEXIBLE DOWNTIME SANITY CHECK - ADDED 02/17/2008 ****/
-
-	/* if host/service is in a non-OK/UP state right now, see if we should start flexible time immediately */
-	/* this is new logic added in 3.0rc3 */
-	if (temp_downtime->fixed == FALSE) {
-		if (temp_downtime->type == HOST_DOWNTIME)
-			check_pending_flex_host_downtime(hst);
-		else
-			check_pending_flex_service_downtime(svc);
-	}
-#endif
-
 	return OK;
 }
 
