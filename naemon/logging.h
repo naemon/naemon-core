@@ -70,7 +70,6 @@ __attribute__((__format__(__printf__, 3, 4)));
 int log_debug_info(int, int, const char *, ...)
 __attribute__((__format__(__printf__, 3, 4)));
 
-#ifndef NSCGI
 int write_to_all_logs(char *, unsigned long);           /* writes a string to main log file and syslog facility */
 int write_to_log(char *, unsigned long, time_t *);       	/* write a string to the main log file */
 int write_to_syslog(char *, unsigned long);             	/* write a string to the syslog facility */
@@ -84,7 +83,6 @@ int open_debug_log(void);
 int close_debug_log(void);
 int close_log_file(void);
 int fix_log_file_owner(uid_t uid, gid_t gid);
-#endif /* !NSCGI */
 
 NAGIOS_END_DECL
 #endif

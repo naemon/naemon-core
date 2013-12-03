@@ -2,13 +2,7 @@
 #include "common.h"
 #include "objects.h"
 #include "xodtemplate.h"
-
-#ifdef NSCGI
-#include "cgiutils.h"
-#else
 #include "nagios.h"
-#endif
-
 
 
 /*
@@ -41,7 +35,6 @@ serviceescalation **serviceescalation_ary = NULL;
 hostdependency **hostdependency_ary = NULL;
 servicedependency **servicedependency_ary = NULL;
 
-#ifndef NSCGI
 int __nagios_object_structure_version = CURRENT_OBJECT_STRUCTURE_VERSION;
 
 struct flag_map {
@@ -145,7 +138,6 @@ static int cmp_hostesc(const void *a_, const void *b_)
 	const hostescalation *b = *(const hostescalation **)b_;
 	return a->host_ptr->id - b->host_ptr->id;
 }
-#endif
 
 
 static void post_process_object_config(void)
@@ -181,8 +173,6 @@ static void post_process_object_config(void)
 	}
 	timing_point("Done post-processing host dependencies\n");
 
-#ifndef NSCGI
-	/* cgi's always get their objects in sorted order */
 	if (servicedependency_ary)
 		qsort(servicedependency_ary, num_objects.servicedependencies, sizeof(servicedependency *), cmp_sdep);
 	if (hostdependency_ary)
@@ -192,7 +182,6 @@ static void post_process_object_config(void)
 	if (serviceescalation_ary)
 		qsort(serviceescalation_ary, num_objects.serviceescalations, sizeof(serviceescalation *), cmp_serviceesc);
 	timing_point("Done post-sorting slave objects\n");
-#endif
 
 	timeperiod_list = timeperiod_ary ? *timeperiod_ary : NULL;
 	command_list = command_ary ? *command_ary : NULL;
@@ -205,6 +194,7 @@ static void post_process_object_config(void)
 	hostescalation_list = hostescalation_ary ? *hostescalation_ary : NULL;
 	serviceescalation_list = serviceescalation_ary ? *serviceescalation_ary : NULL;
 }
+
 
 /* simple state-name helpers, nifty to have all over the place */
 const char *service_state_name(int state)
@@ -673,7 +663,6 @@ host *add_host(char *name, char *display_name, char *alias, char *address, char 
 	new_host->obsess = (obsess > 0) ? TRUE : FALSE;
 	new_host->retain_status_information = (retain_status_information > 0) ? TRUE : FALSE;
 	new_host->retain_nonstatus_information = (retain_nonstatus_information > 0) ? TRUE : FALSE;
-#ifdef NSCORE
 	new_host->current_state = initial_state;
 	new_host->last_state = initial_state;
 	new_host->last_hard_state = initial_state;
@@ -684,7 +673,6 @@ host *add_host(char *name, char *display_name, char *alias, char *address, char 
 	new_host->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
 	new_host->notifications_enabled = (notifications_enabled > 0) ? TRUE : FALSE;
 	new_host->check_options = CHECK_OPTION_NONE;
-#endif
 
 	/* add new host to hash table */
 	if (result == OK) {
@@ -821,9 +809,7 @@ servicesmember *add_service_link_to_host(host *hst, service *service_ptr)
 	new_servicesmember->host_name = service_ptr->host_name;
 	new_servicesmember->service_description = service_ptr->description;
 	new_servicesmember->service_ptr = service_ptr;
-#ifndef NSCGI
 	hst->total_services++;
-#endif
 
 	/* add the child entry to the host definition */
 	new_servicesmember->next = hst->services;
@@ -966,13 +952,11 @@ hostsmember *add_host_to_hostgroup(hostgroup *temp_hostgroup, char *host_name)
 	prepend_object_to_objectlist(&h->hostgroups_ptr, (void *)temp_hostgroup);
 
 	/* add the new member to the member list, sorted by host name */
-#ifndef NSCGI
 	if (use_large_installation_tweaks == TRUE) {
 		new_member->next = temp_hostgroup->members;
 		temp_hostgroup->members = new_member;
 		return new_member;
 	}
-#endif
 	last_member = temp_hostgroup->members;
 	for (temp_member = temp_hostgroup->members; temp_member != NULL; temp_member = temp_member->next) {
 		if (strcmp(new_member->host_name, temp_member->host_name) < 0) {
@@ -1085,13 +1069,11 @@ servicesmember *add_service_to_servicegroup(servicegroup *temp_servicegroup, cha
 	 * service description, unless we're a large installation, in
 	 * which case insertion-sorting will take far too long
 	 */
-#ifndef NSCGI
 	if (use_large_installation_tweaks == TRUE) {
 		new_member->next = temp_servicegroup->members;
 		temp_servicegroup->members = new_member;
 		return new_member;
 	}
-#endif
 	last_member = temp_servicegroup->members;
 	for (temp_member = temp_servicegroup->members; temp_member != NULL; temp_member = temp_member->next) {
 
@@ -1487,7 +1469,6 @@ service *add_service(char *host_name, char *description, char *display_name, cha
 	new_service->retain_nonstatus_information = (retain_nonstatus_information > 0) ? TRUE : FALSE;
 	new_service->notifications_enabled = (notifications_enabled > 0) ? TRUE : FALSE;
 	new_service->obsess = (obsess > 0) ? TRUE : FALSE;
-#ifdef NSCORE
 	new_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
 	new_service->check_type = CHECK_TYPE_ACTIVE;
 	new_service->current_attempt = (initial_state == STATE_OK) ? 1 : max_attempts;
@@ -1497,7 +1478,6 @@ service *add_service(char *host_name, char *description, char *display_name, cha
 	new_service->state_type = HARD_STATE;
 	new_service->should_be_scheduled = TRUE;
 	new_service->check_options = CHECK_OPTION_NONE;
-#endif
 
 	/* add new service to hash table */
 	if (result == OK) {
@@ -1519,11 +1499,9 @@ service *add_service(char *host_name, char *description, char *display_name, cha
 
 	/* handle errors */
 	if (result == ERROR) {
-#ifdef NSCORE
 		my_free(new_service->perf_data);
 		my_free(new_service->plugin_output);
 		my_free(new_service->long_plugin_output);
-#endif
 		my_free(new_service->event_handler);
 		my_free(new_service->check_command);
 		my_free(new_service->description);
@@ -2130,58 +2108,8 @@ int is_host_immediate_parent_of_host(host *child_host, host *parent_host)
 	return FALSE;
 }
 
-#ifdef NSCGI
-int hostsmember_elements(hostsmember *list)
-{
-	int elems = 0;
-	for (; list; list = list->next)
-		elems++;
-	return elems;
-}
-
-/* returns a count of the immediate children for a given host */
-/* NOTE: This function is only used by the CGIS */
-int number_of_immediate_child_hosts(host *hst)
-{
-	int children = 0;
-	host *temp_host = NULL;
-
-	if (hst == NULL) {
-		for (temp_host = host_list; temp_host != NULL;
-		     temp_host = temp_host->next) {
-			if (is_host_immediate_child_of_host(hst, temp_host) == TRUE)
-				children++;
-		}
-		return children;
-	} else {
-		return hostsmember_elements(hst->child_hosts);
-	}
-}
-
-
-/* get the number of immediate parent hosts for a given host */
-/* NOTE: This function is only used by the CGIS */
-int number_of_immediate_parent_hosts(host *hst)
-{
-	int parents = 0;
-	host *temp_host = NULL;
-
-	if (hst == NULL) {
-		for (temp_host = host_list; temp_host != NULL;
-		     temp_host = temp_host->next) {
-			if (is_host_immediate_parent_of_host(hst, temp_host) == TRUE) {
-				parents++;
-			}
-		}
-		return parents;
-	} else {
-		return hostsmember_elements(hst->parent_hosts);
-	}
-}
-#endif
-
 /*  tests whether a host is a member of a particular hostgroup */
-/* NOTE: This function is only used by the CGIS */
+/* NOTE: This function is only used by external modules */
 int is_host_member_of_hostgroup(hostgroup *group, host *hst)
 {
 	hostsmember *temp_hostsmember = NULL;
@@ -2199,7 +2127,7 @@ int is_host_member_of_hostgroup(hostgroup *group, host *hst)
 
 
 /*  tests whether a host is a member of a particular servicegroup */
-/* NOTE: This function is only used by the CGIS */
+/* NOTE: This function is only used by external modules (mod_gearman, f.e) */
 int is_host_member_of_servicegroup(servicegroup *group, host *hst)
 {
 	servicesmember *temp_servicesmember = NULL;
@@ -2217,7 +2145,7 @@ int is_host_member_of_servicegroup(servicegroup *group, host *hst)
 
 
 /*  tests whether a service is a member of a particular servicegroup */
-/* NOTE: This function is only used by the CGIS */
+/* NOTE: This function is only used by external modules (mod_gearman, f.e) */
 int is_service_member_of_servicegroup(servicegroup *group, service *svc)
 {
 	servicesmember *temp_servicesmember = NULL;
@@ -2236,10 +2164,7 @@ int is_service_member_of_servicegroup(servicegroup *group, service *svc)
 
 /*
  * tests whether a contact is a member of a particular contactgroup.
- * The mk-livestatus eventbroker module uses this, so it must hang
- * around until 4.0 to prevent api breakage.
- * The cgi's stopped using it quite long ago though, so we need only
- * compile it if we're building the core
+ * This function is used by external modules, such as Livestatus
  */
 int is_contact_member_of_contactgroup(contactgroup *group, contact *cntct)
 {
@@ -2519,11 +2444,9 @@ int free_object_data(void)
 		if (this_host->address != this_host->name)
 			my_free(this_host->address);
 		my_free(this_host->name);
-#ifdef NSCORE
 		my_free(this_host->plugin_output);
 		my_free(this_host->long_plugin_output);
 		my_free(this_host->perf_data);
-#endif
 		free_objectlist(&this_host->hostgroups_ptr);
 		free_objectlist(&this_host->notify_deps);
 		free_objectlist(&this_host->exec_deps);
@@ -2699,15 +2622,11 @@ int free_object_data(void)
 			my_free(this_service->display_name);
 		my_free(this_service->description);
 		my_free(this_service->check_command);
-#ifdef NSCORE
 		my_free(this_service->plugin_output);
 		my_free(this_service->long_plugin_output);
 		my_free(this_service->perf_data);
-
 		my_free(this_service->event_handler_args);
 		my_free(this_service->check_command_args);
-#endif
-
 		free_objectlist(&this_service->servicegroups_ptr);
 		free_objectlist(&this_service->notify_deps);
 		free_objectlist(&this_service->exec_deps);
@@ -2815,7 +2734,6 @@ int free_object_data(void)
 /*********************** CACHE FUNCTIONS **************************/
 /******************************************************************/
 
-#ifndef NSCGI
 static const char *timerange2str(const timerange *tr)
 {
 	static char str[12];
@@ -3376,4 +3294,3 @@ int fcache_objects(char *cache_file)
 
 	return OK;
 }
-#endif

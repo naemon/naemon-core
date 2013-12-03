@@ -764,7 +764,6 @@ xodtemplate_customvariablesmember *xodtemplate_add_custom_variable_to_object(xod
 int xodtemplate_register_objects(void);
 int xodtemplate_free_memory(void);
 
-#ifdef NSCORE
 int xodtemplate_duplicate_objects(void);
 int xodtemplate_duplicate_services(void);
 
@@ -781,13 +780,11 @@ int xodtemplate_duplicate_hostdependency(xodtemplate_hostdependency *, char *, c
 int xodtemplate_duplicate_servicedependency(xodtemplate_servicedependency *, char *, char *, char *, char *);
 int xodtemplate_duplicate_hostextinfo(xodtemplate_hostextinfo *, char *);
 int xodtemplate_duplicate_serviceextinfo(xodtemplate_serviceextinfo *, char *);
-#endif
 
 int xodtemplate_recombobulate_contactgroups(void);
 int xodtemplate_recombobulate_hostgroups(void);
 int xodtemplate_recombobulate_servicegroups(void);
 
-#ifdef NSCORE
 int xodtemplate_resolve_timeperiod(xodtemplate_timeperiod *);
 int xodtemplate_resolve_command(xodtemplate_command *);
 int xodtemplate_resolve_contactgroup(xodtemplate_contactgroup *);
@@ -806,7 +803,6 @@ int xodtemplate_resolve_serviceextinfo(xodtemplate_serviceextinfo *);
 int xodtemplate_merge_extinfo_ojects(void);
 int xodtemplate_merge_host_extinfo_object(xodtemplate_host *, xodtemplate_hostextinfo *);
 int xodtemplate_merge_service_extinfo_object(xodtemplate_service *, xodtemplate_serviceextinfo *);
-#endif
 
 xodtemplate_timeperiod *xodtemplate_find_timeperiod(char *);
 xodtemplate_command *xodtemplate_find_command(char *);
@@ -878,5 +874,4 @@ int xodtemplate_skiplist_compare_hostdependency(void *a, void *b);
 int xodtemplate_skiplist_compare_servicedependency(void *a, void *b);
 int xodtemplate_skiplist_compare_hostescalation(void *a, void *b);
 int xodtemplate_skiplist_compare_serviceescalation(void *a, void *b);
-
 #endif
