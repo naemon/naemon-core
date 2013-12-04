@@ -42,7 +42,6 @@ static double flapping_pct(int *history, int idx, int len)
 /* detects service flapping */
 void check_for_service_flapping(service *svc, int update, int allow_flapstart_notification)
 {
-	int update_history = TRUE;
 	int is_flapping = FALSE;
 	double low_threshold = 0.0;
 	double high_threshold = 0.0;
@@ -59,54 +58,42 @@ void check_for_service_flapping(service *svc, int update, int allow_flapstart_no
 	if (svc->state_type == SOFT_STATE && svc->current_state != STATE_OK)
 		return;
 
+	/*
+	 * if we shouldn't update the state history with this state, flapping
+	 * state won't change and we can just as well return early
+	 */
+	if (!update)
+		return;
+
 	/* what threshold values should we use (global or service-specific)? */
 	low_threshold = (svc->low_flap_threshold <= 0.0) ? low_service_flap_threshold : svc->low_flap_threshold;
 	high_threshold = (svc->high_flap_threshold <= 0.0) ? high_service_flap_threshold : svc->high_flap_threshold;
 
-	update_history = update;
+	/* record the current state in the state history */
+	svc->state_history[svc->state_history_index] = svc->current_state;
 
-	/* should we update state history for this state? */
-	if (update_history == TRUE) {
-
-		if (!should_flap_detect(svc))
-			update_history = FALSE;
-
-	}
-
-	/* record current service state */
-	if (update_history == TRUE) {
-
-		/* record the current state in the state history */
-		svc->state_history[svc->state_history_index] = svc->current_state;
-
-		/* increment state history index to next available slot */
-		svc->state_history_index++;
-		if (svc->state_history_index >= MAX_STATE_HISTORY_ENTRIES)
-			svc->state_history_index = 0;
-	}
+	/* increment state history index to next available slot */
+	svc->state_history_index++;
+	if (svc->state_history_index >= MAX_STATE_HISTORY_ENTRIES)
+		svc->state_history_index = 0;
 
 	svc->percent_state_change = flapping_pct(svc->state_history, svc->state_history_index,
 		                                     MAX_STATE_HISTORY_ENTRIES);
 
 	log_debug_info(DEBUGL_FLAPPING, 2, "LFT=%.2f, HFT=%.2f, CPC=%.2f, PSC=%.2f%%\n", low_threshold, high_threshold, svc->percent_state_change, svc->percent_state_change);
 
-
-	/* don't do anything if we don't have flap detection enabled on a program-wide basis */
+	/* bail out now if flap detection is disabled */
 	if (enable_flap_detection == FALSE)
 		return;
-
-	/* don't do anything if we don't have flap detection enabled for this service */
 	if (svc->flap_detection_enabled == FALSE)
 		return;
-
-	/* are we flapping, undecided, or what?... */
 
 	/* we're undecided, so don't change the current flap state */
 	if (svc->percent_state_change > low_threshold && svc->percent_state_change < high_threshold)
 		return;
 
 	/* we're below the lower bound, so we're not flapping */
-	else if (svc->percent_state_change <= low_threshold)
+	if (svc->percent_state_change <= low_threshold)
 		is_flapping = FALSE;
 
 	/* else we're above the upper bound, so we are flapping */
@@ -128,7 +115,6 @@ void check_for_service_flapping(service *svc, int update, int allow_flapstart_no
 /* detects host flapping */
 void check_for_host_flapping(host *hst, int update, int actual_check, int allow_flapstart_notification)
 {
-	int update_history = TRUE;
 	int is_flapping = FALSE;
 	unsigned long wait_threshold = 0L;
 	time_t current_time = 0L;
@@ -150,63 +136,51 @@ void check_for_host_flapping(host *hst, int update, int actual_check, int allow_
 	else
 		wait_threshold = (hst->total_service_check_interval * interval_length) / hst->total_services;
 
-	update_history = update;
+	/* update history on actual checks and when enough time has passed */
+	if (current_time - hst->last_state_history_update > wait_threshold)
+		update = TRUE;
+	if (actual_check == TRUE)
+		update = TRUE;
 
-	/* should we update state history for this state? */
-	if (update_history == TRUE) {
-
-		if (!(hst->flap_detection_options & (1 << hst->current_state)))
-			update_history = FALSE;
-
-	}
-
-	/* if we didn't have an actual check, only update if we've waited long enough */
-	if (update_history == TRUE && actual_check == FALSE && (current_time - hst->last_state_history_update) < wait_threshold) {
-
-		update_history = FALSE;
-
-	}
+	/*
+	 * return early if we shouldn't update state history, as flapping
+	 * state won't change and we won't send notifications regardless
+	 */
+	if (!update)
+		return;
 
 	/* what thresholds should we use (global or host-specific)? */
 	low_threshold = (hst->low_flap_threshold <= 0.0) ? low_host_flap_threshold : hst->low_flap_threshold;
 	high_threshold = (hst->high_flap_threshold <= 0.0) ? high_host_flap_threshold : hst->high_flap_threshold;
 
-	/* record current host state */
-	if (update_history == TRUE) {
+	/* update the last record time */
+	hst->last_state_history_update = current_time;
 
-		/* update the last record time */
-		hst->last_state_history_update = current_time;
+	/* record the current state in the state history */
+	hst->state_history[hst->state_history_index] = hst->current_state;
 
-		/* record the current state in the state history */
-		hst->state_history[hst->state_history_index] = hst->current_state;
-
-		/* increment state history index to next available slot */
-		hst->state_history_index++;
-		if (hst->state_history_index >= MAX_STATE_HISTORY_ENTRIES)
-			hst->state_history_index = 0;
-	}
+	/* increment state history index to next available slot */
+	hst->state_history_index++;
+	if (hst->state_history_index >= MAX_STATE_HISTORY_ENTRIES)
+		hst->state_history_index = 0;
 
 	hst->percent_state_change = flapping_pct(hst->state_history, hst->state_history_index,
 	                                         MAX_STATE_HISTORY_ENTRIES);
 
 	log_debug_info(DEBUGL_FLAPPING, 2, "LFT=%.2f, HFT=%.2f, CPC=%.2f, PSC=%.2f%%\n", low_threshold, high_threshold, hst->percent_state_change, hst->percent_state_change);
 
-	/* don't do anything if we don't have flap detection enabled on a program-wide basis */
+	/* bail early if flap detection is disabled */
 	if (enable_flap_detection == FALSE)
 		return;
-
-	/* don't do anything if we don't have flap detection enabled for this host */
 	if (hst->flap_detection_enabled == FALSE)
 		return;
-
-	/* are we flapping, undecided, or what?... */
 
 	/* we're undecided, so don't change the current flap state */
 	if (hst->percent_state_change > low_threshold && hst->percent_state_change < high_threshold)
 		return;
 
 	/* we're below the lower bound, so we're not flapping */
-	else if (hst->percent_state_change <= low_threshold)
+	if (hst->percent_state_change <= low_threshold)
 		is_flapping = FALSE;
 
 	/* else we're above the upper bound, so we are flapping */
