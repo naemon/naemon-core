@@ -11,23 +11,41 @@
 /******************** FLAP DETECTION FUNCTIONS ********************/
 /******************************************************************/
 
+static double flapping_pct(int *history, int idx, int len)
+{
+	double low_curve_value = 0.75;
+	double high_curve_value = 1.25;
+	double curved_changes = 0.0, curved_percent_change;
+	int last = 0, x, y;
+
+	last = history[idx];
+	y = idx < len ? idx : 0;
+
+	/* calculate overall and curved percent state changes */
+	for (x = 1; x < MAX_STATE_HISTORY_ENTRIES; x++) {
+		if (last != history[y])
+			curved_changes += (((double)(x - 1) * (high_curve_value - low_curve_value)) / ((double)(MAX_STATE_HISTORY_ENTRIES - 2))) + low_curve_value;
+
+		last = history[y];
+
+		y++;
+		if (y >= MAX_STATE_HISTORY_ENTRIES)
+			y = 0;
+	}
+
+	/* calculate overall percent change in state */
+	curved_percent_change = (double)(((double)curved_changes * 100.0) / (double)(MAX_STATE_HISTORY_ENTRIES - 1));
+
+	return curved_percent_change;
+}
+
 /* detects service flapping */
 void check_for_service_flapping(service *svc, int update, int allow_flapstart_notification)
 {
 	int update_history = TRUE;
 	int is_flapping = FALSE;
-	register int x = 0;
-	register int y = 0;
-	int last_state_history_value = STATE_OK;
-	double curved_changes = 0.0;
-	double curved_percent_change = 0.0;
 	double low_threshold = 0.0;
 	double high_threshold = 0.0;
-	double low_curve_value = 0.75;
-	double high_curve_value = 1.25;
-
-	/* large install tweaks skips all flap detection logic - including state change calculation */
-
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_for_service_flapping()\n");
 
@@ -67,33 +85,10 @@ void check_for_service_flapping(service *svc, int update, int allow_flapstart_no
 			svc->state_history_index = 0;
 	}
 
-	/* calculate overall and curved percent state changes */
-	for (x = 0, y = svc->state_history_index; x < MAX_STATE_HISTORY_ENTRIES; x++) {
+	svc->percent_state_change = flapping_pct(svc->state_history, svc->state_history_index,
+		                                     MAX_STATE_HISTORY_ENTRIES);
 
-		if (x == 0) {
-			last_state_history_value = svc->state_history[y];
-			y++;
-			if (y >= MAX_STATE_HISTORY_ENTRIES)
-				y = 0;
-			continue;
-		}
-
-		if (last_state_history_value != svc->state_history[y])
-			curved_changes += (((double)(x - 1) * (high_curve_value - low_curve_value)) / ((double)(MAX_STATE_HISTORY_ENTRIES - 2))) + low_curve_value;
-
-		last_state_history_value = svc->state_history[y];
-
-		y++;
-		if (y >= MAX_STATE_HISTORY_ENTRIES)
-			y = 0;
-	}
-
-	/* calculate overall percent change in state */
-	curved_percent_change = (double)(((double)curved_changes * 100.0) / (double)(MAX_STATE_HISTORY_ENTRIES - 1));
-
-	svc->percent_state_change = curved_percent_change;
-
-	log_debug_info(DEBUGL_FLAPPING, 2, "LFT=%.2f, HFT=%.2f, CPC=%.2f, PSC=%.2f%%\n", low_threshold, high_threshold, curved_percent_change, curved_percent_change);
+	log_debug_info(DEBUGL_FLAPPING, 2, "LFT=%.2f, HFT=%.2f, CPC=%.2f, PSC=%.2f%%\n", low_threshold, high_threshold, svc->percent_state_change, svc->percent_state_change);
 
 
 	/* don't do anything if we don't have flap detection enabled on a program-wide basis */
@@ -107,28 +102,26 @@ void check_for_service_flapping(service *svc, int update, int allow_flapstart_no
 	/* are we flapping, undecided, or what?... */
 
 	/* we're undecided, so don't change the current flap state */
-	if (curved_percent_change > low_threshold && curved_percent_change < high_threshold)
+	if (svc->percent_state_change > low_threshold && svc->percent_state_change < high_threshold)
 		return;
 
 	/* we're below the lower bound, so we're not flapping */
-	else if (curved_percent_change <= low_threshold)
+	else if (svc->percent_state_change <= low_threshold)
 		is_flapping = FALSE;
 
 	/* else we're above the upper bound, so we are flapping */
-	else if (curved_percent_change >= high_threshold)
+	else if (svc->percent_state_change >= high_threshold)
 		is_flapping = TRUE;
 
-	log_debug_info(DEBUGL_FLAPPING, 1, "Service %s flapping (%.2f%% state change).\n", (is_flapping == TRUE) ? "is" : "is not", curved_percent_change);
+	log_debug_info(DEBUGL_FLAPPING, 1, "Service %s flapping (%.2f%% state change).\n", (is_flapping == TRUE) ? "is" : "is not", svc->percent_state_change);
 
 	/* did the service just start flapping? */
 	if (is_flapping == TRUE && svc->is_flapping == FALSE)
-		set_service_flap(svc, curved_percent_change, high_threshold, low_threshold, allow_flapstart_notification);
+		set_service_flap(svc, svc->percent_state_change, high_threshold, low_threshold, allow_flapstart_notification);
 
 	/* did the service just stop flapping? */
 	else if (is_flapping == FALSE && svc->is_flapping == TRUE)
-		clear_service_flap(svc, curved_percent_change, high_threshold, low_threshold);
-
-	return;
+		clear_service_flap(svc, svc->percent_state_change, high_threshold, low_threshold);
 }
 
 
@@ -137,17 +130,10 @@ void check_for_host_flapping(host *hst, int update, int actual_check, int allow_
 {
 	int update_history = TRUE;
 	int is_flapping = FALSE;
-	register int x = 0;
-	register int y = 0;
-	int last_state_history_value = HOST_UP;
 	unsigned long wait_threshold = 0L;
-	double curved_changes = 0.0;
-	double curved_percent_change = 0.0;
 	time_t current_time = 0L;
 	double low_threshold = 0.0;
 	double high_threshold = 0.0;
-	double low_curve_value = 0.75;
-	double high_curve_value = 1.25;
 
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_for_host_flapping()\n");
@@ -201,34 +187,10 @@ void check_for_host_flapping(host *hst, int update, int actual_check, int allow_
 			hst->state_history_index = 0;
 	}
 
-	/* calculate overall changes in state */
-	for (x = 0, y = hst->state_history_index; x < MAX_STATE_HISTORY_ENTRIES; x++) {
+	hst->percent_state_change = flapping_pct(hst->state_history, hst->state_history_index,
+	                                         MAX_STATE_HISTORY_ENTRIES);
 
-		if (x == 0) {
-			last_state_history_value = hst->state_history[y];
-			y++;
-			if (y >= MAX_STATE_HISTORY_ENTRIES)
-				y = 0;
-			continue;
-		}
-
-		if (last_state_history_value != hst->state_history[y])
-			curved_changes += (((double)(x - 1) * (high_curve_value - low_curve_value)) / ((double)(MAX_STATE_HISTORY_ENTRIES - 2))) + low_curve_value;
-
-		last_state_history_value = hst->state_history[y];
-
-		y++;
-		if (y >= MAX_STATE_HISTORY_ENTRIES)
-			y = 0;
-	}
-
-	/* calculate overall percent change in state */
-	curved_percent_change = (double)(((double)curved_changes * 100.0) / (double)(MAX_STATE_HISTORY_ENTRIES - 1));
-
-	hst->percent_state_change = curved_percent_change;
-
-	log_debug_info(DEBUGL_FLAPPING, 2, "LFT=%.2f, HFT=%.2f, CPC=%.2f, PSC=%.2f%%\n", low_threshold, high_threshold, curved_percent_change, curved_percent_change);
-
+	log_debug_info(DEBUGL_FLAPPING, 2, "LFT=%.2f, HFT=%.2f, CPC=%.2f, PSC=%.2f%%\n", low_threshold, high_threshold, hst->percent_state_change, hst->percent_state_change);
 
 	/* don't do anything if we don't have flap detection enabled on a program-wide basis */
 	if (enable_flap_detection == FALSE)
@@ -241,28 +203,26 @@ void check_for_host_flapping(host *hst, int update, int actual_check, int allow_
 	/* are we flapping, undecided, or what?... */
 
 	/* we're undecided, so don't change the current flap state */
-	if (curved_percent_change > low_threshold && curved_percent_change < high_threshold)
+	if (hst->percent_state_change > low_threshold && hst->percent_state_change < high_threshold)
 		return;
 
 	/* we're below the lower bound, so we're not flapping */
-	else if (curved_percent_change <= low_threshold)
+	else if (hst->percent_state_change <= low_threshold)
 		is_flapping = FALSE;
 
 	/* else we're above the upper bound, so we are flapping */
-	else if (curved_percent_change >= high_threshold)
+	else if (hst->percent_state_change >= high_threshold)
 		is_flapping = TRUE;
 
-	log_debug_info(DEBUGL_FLAPPING, 1, "Host %s flapping (%.2f%% state change).\n", (is_flapping == TRUE) ? "is" : "is not", curved_percent_change);
+	log_debug_info(DEBUGL_FLAPPING, 1, "Host %s flapping (%.2f%% state change).\n", (is_flapping == TRUE) ? "is" : "is not", hst->percent_state_change);
 
 	/* did the host just start flapping? */
 	if (is_flapping == TRUE && hst->is_flapping == FALSE)
-		set_host_flap(hst, curved_percent_change, high_threshold, low_threshold, allow_flapstart_notification);
+		set_host_flap(hst, hst->percent_state_change, high_threshold, low_threshold, allow_flapstart_notification);
 
 	/* did the host just stop flapping? */
 	else if (is_flapping == FALSE && hst->is_flapping == TRUE)
-		clear_host_flap(hst, curved_percent_change, high_threshold, low_threshold);
-
-	return;
+		clear_host_flap(hst, hst->percent_state_change, high_threshold, low_threshold);
 }
 
 
