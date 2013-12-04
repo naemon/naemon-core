@@ -49,7 +49,7 @@ void check_for_service_flapping(service *svc, int update, int allow_flapstart_no
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_for_service_flapping()\n");
 
-	if (svc == NULL)
+	if (svc == NULL || !should_flap_detect(svc))
 		return;
 
 	log_debug_info(DEBUGL_FLAPPING, 1, "Checking service '%s' on host '%s' for flapping...\n", svc->description, svc->host_name);
@@ -135,10 +135,9 @@ void check_for_host_flapping(host *hst, int update, int actual_check, int allow_
 	double low_threshold = 0.0;
 	double high_threshold = 0.0;
 
-
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_for_host_flapping()\n");
 
-	if (hst == NULL)
+	if (hst == NULL || !should_flap_detect(hst))
 		return;
 
 	log_debug_info(DEBUGL_FLAPPING, 1, "Checking host '%s' for flapping...\n", hst->name);
