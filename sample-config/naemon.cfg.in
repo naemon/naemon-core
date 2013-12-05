@@ -1,6 +1,6 @@
 ##############################################################################
 #
-# NAGIOS.CFG - Sample Main Config File for Nagios @VERSION@
+# naemon.cfg - Sample Main Config File for Naemon @VERSION@
 #
 # Read the documentation for more information on this configuration
 # file.  I've provided some comments here, but things may not be so
@@ -12,10 +12,10 @@
 
 # LOG FILE
 # This is the main log file where service and host events are logged
-# for historical purposes.  This should be the first option specified 
+# for historical purposes.  This should be the first option specified
 # in the config file!!!
 
-log_file=@localstatedir@/nagios.log
+log_file=@localstatedir@/naemon.log
 
 
 
@@ -26,42 +26,26 @@ log_file=@localstatedir@/nagios.log
 # if you wish (as shown below), or keep them all in a single config file.
 
 # You can specify individual object config files as shown below:
-cfg_file=@sysconfdir@/objects/commands.cfg
-cfg_file=@sysconfdir@/objects/contacts.cfg
-cfg_file=@sysconfdir@/objects/timeperiods.cfg
-cfg_file=@sysconfdir@/objects/templates.cfg
-
-# Definitions for monitoring the local (Linux) host
-cfg_file=@sysconfdir@/objects/localhost.cfg
-
-# Definitions for monitoring a Windows machine
-#cfg_file=@sysconfdir@/objects/windows.cfg
-
-# Definitions for monitoring a router/switch
-#cfg_file=@sysconfdir@/objects/switch.cfg
-
-# Definitions for monitoring a network printer
-#cfg_file=@sysconfdir@/objects/printer.cfg
+#cfg_file=@sysconfdir@/objects/commands.cfg
+#cfg_file=@sysconfdir@/objects/contacts.cfg
+#cfg_file=@sysconfdir@/objects/timeperiods.cfg
+#cfg_file=@sysconfdir@/objects/templates.cfg
 
 
-# You can also tell Nagios to process all config files (with a .cfg
+# You can also tell naemon to process all config files (with a .cfg
 # extension) in a particular directory by using the cfg_dir
 # directive as shown below:
-
-#cfg_dir=@sysconfdir@/servers
-#cfg_dir=@sysconfdir@/printers
-#cfg_dir=@sysconfdir@/switches
-#cfg_dir=@sysconfdir@/routers
+cfg_dir=@sysconfdir@/conf.d
 
 
 
 
 # OBJECT CACHE FILE
 # This option determines where object definitions are cached when
-# Nagios starts/restarts.  The CGIs read object definitions from 
+# naemon starts/restarts.  The CGIs read object definitions from
 # this cache file (rather than looking at the object config files
 # directly) in order to prevent inconsistencies that can occur
-# when the config files are modified after Nagios starts.
+# when the config files are modified after naemon starts.
 
 object_cache_file=@localstatedir@/objects.cache
 
@@ -69,14 +53,14 @@ object_cache_file=@localstatedir@/objects.cache
 
 # PRE-CACHED OBJECT FILE
 # This options determines the location of the precached object file.
-# If you run Nagios with the -p command line option, it will preprocess
+# If you run naemon with the -p command line option, it will preprocess
 # your object configuration file(s) and write the cached config to this
-# file.  You can then start Nagios with the -u option to have it read
+# file.  You can then start naemon with the -u option to have it read
 # object definitions from this precached file, rather than the standard
 # object configuration files (see the cfg_file and cfg_dir options above).
-# Using a precached object file can speed up the time needed to (re)start 
-# the Nagios process if you've got a large and/or complex configuration.
-# Read the documentation section on optimizing Nagios to find our more
+# Using a precached object file can speed up the time needed to (re)start
+# the naemon process if you've got a large and/or complex configuration.
+# Read the documentation section on optimizing naemon to find our more
 # about how this feature works.
 
 precached_object_file=@localstatedir@/objects.precache
@@ -99,7 +83,7 @@ resource_file=@sysconfdir@/resource.cfg
 # STATUS FILE
 # This is where the current status of all monitored services and
 # hosts is stored.  Its contents are read and processed by the CGIs.
-# The contents of the status file are deleted every time Nagios
+# The contents of the status file are deleted every time naemon
 #  restarts.
 
 status_file=@localstatedir@/status.dat
@@ -108,33 +92,33 @@ status_file=@localstatedir@/status.dat
 
 # STATUS FILE UPDATE INTERVAL
 # This option determines the frequency (in seconds) that
-# Nagios will periodically dump program, host, and 
+# naemon will periodically dump program, host, and
 # service status data.
 
 status_update_interval=10
 
 
 
-# NAGIOS USER
-# This determines the effective user that Nagios should run as.  
+# NAEMON USER
+# This determines the effective user that Naemon should run as.
 # You can either supply a username or a UID.
 
-nagios_user=@nagios_user@
+nagios_user=@naemon_user@
 
 
 
-# NAGIOS GROUP
-# This determines the effective group that Nagios should run as.  
+# NAEMON GROUP
+# This determines the effective group that Naemon should run as.
 # You can either supply a group name or a GID.
 
-nagios_group=@nagios_grp@
+nagios_group=@naemon_grp@
 
 
 
 # EXTERNAL COMMAND OPTION
-# This option allows you to specify whether or not Nagios should check
+# This option allows you to specify whether or not Naemon should check
 # for external commands (in the command file defined below).  By default
-# Nagios will *not* check for external commands, just to be on the
+# Naemon will *not* check for external commands, just to be on the
 # cautious side.  If you want to be able to use the CGI command interface
 # you will have to enable this.
 # Values: 0 = disable commands, 1 = enable commands
@@ -144,26 +128,26 @@ check_external_commands=1
 
 
 # EXTERNAL COMMAND FILE
-# This is the file that Nagios checks for external command requests.
+# This is the file that Naemon checks for external command requests.
 # It is also where the command CGI will write commands that are submitted
 # by users, so it must be writeable by the user that the web server
-# is running as (usually 'nobody').  Permissions should be set at the 
+# is running as (usually 'nobody').  Permissions should be set at the
 # directory level instead of on the file, as the file is deleted every
 # time its contents are processed.
 
-command_file=@localstatedir@/rw/nagios.cmd
+command_file=@localstatedir@/naemon.cmd
 
 
 
 # QUERY HANDLER INTERFACE
 # This is the socket that is created for the Query Handler interface
 
-#query_socket=@localstatedir@/rw/nagios.qh
+#query_socket=@localstatedir@/naemon.qh
 
 
 
 # LOCK FILE
-# This is the lockfile that Nagios will use to store its PID number
+# This is the lockfile that Naemon will use to store its PID number
 # in when it is running in daemon mode.
 
 lock_file=@lockfile@
@@ -171,17 +155,17 @@ lock_file=@lockfile@
 
 
 # TEMP FILE
-# This is a temporary file that is used as scratch space when Nagios
+# This is a temporary file that is used as scratch space when Naemon
 # updates the status log, cleans the comment file, etc.  This file
-# is created, used, and deleted throughout the time that Nagios is
+# is created, used, and deleted throughout the time that Naemon is
 # running.
 
-temp_file=@localstatedir@/nagios.tmp
+temp_file=@localstatedir@/naemon.tmp
 
 
 
 # TEMP PATH
-# This is path where Nagios can create temp files for service and
+# This is path where Naemon can create temp files for service and
 # host check results, etc.
 
 temp_path=@TMPDIR@
@@ -200,7 +184,7 @@ event_broker_options=-1
 
 # EVENT BROKER MODULE(S)
 # This directive is used to specify an event broker module that should
-# by loaded by Nagios at startup.  Use multiple directives if you want
+# by loaded by Naemon at startup.  Use multiple directives if you want
 # to load more than one module.  Arguments that should be passed to
 # the module at startup are seperated from the module path by a space.
 #
@@ -208,13 +192,13 @@ event_broker_options=-1
 # WARNING !!! WARNING !!! WARNING !!! WARNING !!! WARNING !!! WARNING
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #
-# Do NOT overwrite modules while they are being used by Nagios or Nagios
+# Do NOT overwrite modules while they are being used by Naemon or Naemon
 # will crash in a fiery display of SEGFAULT glory.  This is a bug/limitation
-# either in dlopen(), the kernel, and/or the filesystem.  And maybe Nagios...
+# either in dlopen(), the kernel, and/or the filesystem.  And maybe Naemon...
 #
 # The correct/safe way of updating a module is by using one of these methods:
-#    1. Shutdown Nagios, replace the module file, restart Nagios
-#    2. Delete the original module file, move the new module file into place, restart Nagios
+#    1. Shutdown Naemon, replace the module file, restart Naemon
+#    2. Delete the original module file, move the new module file into place, restart Naemon
 #
 # Example:
 #
@@ -226,20 +210,20 @@ event_broker_options=-1
 
 
 # LOG ROTATION METHOD
-# This is the log rotation method that Nagios should use to rotate
+# This is the log rotation method that Naemon should use to rotate
 # the main log file. Values are as follows..
-#	n	= None - don't rotate the log
-#	h	= Hourly rotation (top of the hour)
-#	d	= Daily rotation (midnight every day)
-#	w	= Weekly rotation (midnight on Saturday evening)
-#	m	= Monthly rotation (midnight last day of month)
+#    n    = None - don't rotate the log
+#    h    = Hourly rotation (top of the hour)
+#    d    = Daily rotation (midnight every day)
+#    w    = Weekly rotation (midnight on Saturday evening)
+#    m    = Monthly rotation (midnight last day of month)
 
 log_rotation_method=d
 
 
 
 # LOG ARCHIVE PATH
-# This is the directory where archived (rotated) log files should be 
+# This is the directory where archived (rotated) log files should be
 # placed (assuming you've chosen to do log rotation).
 
 log_archive_path=@localstatedir@/archives
@@ -248,7 +232,7 @@ log_archive_path=@localstatedir@/archives
 
 # LOGGING OPTIONS
 # If you want messages logged to the syslog facility, as well as the
-# Nagios log file set this option to 1.  If not, set it to 0.
+# Naemon log file set this option to 1.  If not, set it to 0.
 
 use_syslog=1
 
@@ -288,7 +272,7 @@ log_event_handlers=1
 
 
 # INITIAL STATES LOGGING OPTION
-# If you want Nagios to log all initial host and service states to
+# If you want Naemon to log all initial host and service states to
 # the main log file (the first time the service or host is checked)
 # you can enable this option by setting this value to 1.  If you
 # are not using an external application that does long term state
@@ -300,7 +284,7 @@ log_initial_states=0
 
 
 # CURRENT STATES LOGGING OPTION
-# If you don't want Nagios to log all current host and service states
+# If you don't want Naemon to log all current host and service states
 # after log has been rotated to the main log file, you can disable this
 # option by setting this value to 0. Default value is 1.
 
@@ -309,7 +293,7 @@ log_current_states=1
 
 
 # EXTERNAL COMMANDS LOGGING OPTION
-# If you don't want Nagios to log external commands, set this value
+# If you don't want Naemon to log external commands, set this value
 # to 0.  If external commands should be logged, set this value to 1.
 # Note: This option does not include logging of passive service
 # checks - see the option below for controlling whether or not
@@ -320,7 +304,7 @@ log_external_commands=1
 
 
 # PASSIVE CHECKS LOGGING OPTION
-# If you don't want Nagios to log passive host and service checks, set
+# If you don't want Naemon to log passive host and service checks, set
 # this value to 0.  If passive checks should be logged, set
 # this value to 1.
 
@@ -343,7 +327,7 @@ log_passive_checks=1
 
 
 # SERVICE INTER-CHECK DELAY METHOD
-# This is the method that Nagios should use when initially
+# This is the method that Naemon should use when initially
 # "spreading out" service checks when it starts monitoring.  The
 # default is to use smart delay calculation, which will try to
 # space all service checks out evenly to minimize CPU load.
@@ -351,10 +335,10 @@ log_passive_checks=1
 # at the same time (with no delay between them)!  This is not a
 # good thing for production, but is useful when testing the
 # parallelization functionality.
-#	n	= None - don't use any delay between checks
-#	d	= Use a "dumb" delay of 1 second between checks
-#	s	= Use "smart" inter-check delay calculation
-#       x.xx    = Use an inter-check delay of x.xx seconds
+#    n    = None - don't use any delay between checks
+#    d    = Use a "dumb" delay of 1 second between checks
+#    s    = Use "smart" inter-check delay calculation
+# x.xx    = Use an inter-check delay of x.xx seconds
 
 service_inter_check_delay_method=s
 
@@ -374,7 +358,7 @@ max_service_check_spread=30
 # Interleaving the service checks allows for a more even
 # distribution of service checks and reduced load on remote
 # hosts.  Setting this value to 1 is equivalent to how versions
-# of Nagios previous to 0.0.5 did service checks.  Set this
+# of Naemon previous to 0.0.5 did service checks.  Set this
 # value to s (smart) for automatic calculation of the interleave
 # factor unless you have a specific reason to change it.
 #       s       = Use "smart" interleave factor calculation
@@ -386,16 +370,16 @@ service_interleave_factor=s
 
 
 # HOST INTER-CHECK DELAY METHOD
-# This is the method that Nagios should use when initially
+# This is the method that Naemon should use when initially
 # "spreading out" host checks when it starts monitoring.  The
 # default is to use smart delay calculation, which will try to
 # space all host checks out evenly to minimize CPU load.
 # Using the dumb setting will cause all checks to be scheduled
 # at the same time (with no delay between them)!
-#	n	= None - don't use any delay between checks
-#	d	= Use a "dumb" delay of 1 second between checks
-#	s	= Use "smart" inter-check delay calculation
-#       x.xx    = Use an inter-check delay of x.xx seconds
+#    n    = None - don't use any delay between checks
+#    d    = Use a "dumb" delay of 1 second between checks
+#    s    = Use "smart" inter-check delay calculation
+# x.xx    = Use an inter-check delay of x.xx seconds
 
 host_inter_check_delay_method=s
 
@@ -411,7 +395,7 @@ max_host_check_spread=30
 
 
 # MAXIMUM CONCURRENT SERVICE CHECKS
-# This option allows you to specify the maximum number of 
+# This option allows you to specify the maximum number of
 # service checks that can be run in parallel at any given time.
 # Specifying a value of 1 for this variable essentially prevents
 # any service checks from being parallelized.  A value of 0
@@ -423,7 +407,7 @@ max_concurrent_checks=0
 
 
 # HOST AND SERVICE CHECK REAPER FREQUENCY
-# This is the frequency (in seconds!) that Nagios will process
+# This is the frequency (in seconds!) that Naemon will process
 # the results of host and service checks.
 
 check_result_reaper_frequency=10
@@ -433,8 +417,8 @@ check_result_reaper_frequency=10
 
 # MAX CHECK RESULT REAPER TIME
 # This is the max amount of time (in seconds) that  a single
-# check result reaper event will be allowed to run before 
-# returning control back to Nagios so it can perform other
+# check result reaper event will be allowed to run before
+# returning control back to Naemon so it can perform other
 # duties.
 
 max_check_result_reaper_time=30
@@ -443,11 +427,11 @@ max_check_result_reaper_time=30
 
 
 # CHECK RESULT PATH
-# This is directory where Nagios stores the results of host and
+# This is directory where Naemon stores the results of host and
 # service checks that have not yet been processed.
 #
-# Note: Make sure that only one instance of Nagios has access
-# to this directory!  
+# Note: Make sure that only one instance of Naemon has access
+# to this directory!
 
 check_result_path=@CHECKRESULTDIR@
 
@@ -456,7 +440,7 @@ check_result_path=@CHECKRESULTDIR@
 
 # MAX CHECK RESULT FILE AGE
 # This option determines the maximum age (in seconds) which check
-# result files are considered to be valid.  Files older than this 
+# result files are considered to be valid.  Files older than this
 # threshold will be mercilessly deleted without further processing.
 
 max_check_result_file_age=3600
@@ -471,7 +455,7 @@ max_check_result_file_age=3600
 # recently that the timeframe specified by this value) can immensely
 # improve performance in regards to the host check logic.
 # Too high of a value for this option may result in inaccurate host
-# states being used by Nagios, while a lower value may result in a
+# states being used by Naemon, while a lower value may result in a
 # performance hit for host checks.  Use a value of 0 to disable host
 # check caching.
 
@@ -492,7 +476,7 @@ cached_service_check_horizon=15
 
 
 # ENABLE PREDICTIVE HOST DEPENDENCY CHECKS
-# This option determines whether or not Nagios will attempt to execute
+# This option determines whether or not Naemon will attempt to execute
 # checks of hosts when it predicts that future dependency logic test
 # may be needed.  These predictive checks can help ensure that your
 # host dependency logic works well.
@@ -505,7 +489,7 @@ enable_predictive_host_dependency_checks=1
 
 
 # ENABLE PREDICTIVE SERVICE DEPENDENCY CHECKS
-# This option determines whether or not Nagios will attempt to execute
+# This option determines whether or not Naemon will attempt to execute
 # checks of service when it predicts that future dependency logic test
 # may be needed.  These predictive checks can help ensure that your
 # service dependency logic works well.
@@ -518,21 +502,21 @@ enable_predictive_service_dependency_checks=1
 
 
 # SOFT STATE DEPENDENCIES
-# This option determines whether or not Nagios will use soft state 
-# information when checking host and service dependencies. Normally 
-# Nagios will only use the latest hard host or service state when 
+# This option determines whether or not Naemon will use soft state
+# information when checking host and service dependencies. Normally
+# Naemon will only use the latest hard host or service state when
 # checking dependencies. If you want it to use the latest state (regardless
-# of whether its a soft or hard state type), enable this option. 
+# of whether its a soft or hard state type), enable this option.
 # Values:
-#  0 = Don't use soft state dependencies (default) 
-#  1 = Use soft state dependencies 
+#  0 = Don't use soft state dependencies (default)
+#  1 = Use soft state dependencies
 
 soft_state_dependencies=0
 
 
 
 # TIME CHANGE ADJUSTMENT THRESHOLDS
-# These options determine when Nagios will react to detected changes
+# These options determine when Naemon will react to detected changes
 # in system time (either forward or backwards).
 
 #time_change_threshold=900
@@ -540,10 +524,10 @@ soft_state_dependencies=0
 
 
 # AUTO-RESCHEDULING OPTION
-# This option determines whether or not Nagios will attempt to
+# This option determines whether or not Naemon will attempt to
 # automatically reschedule active host and service checks to
 # "smooth" them out over time.  This can help balance the load on
-# the monitoring server.  
+# the monitoring server.
 # WARNING: THIS IS AN EXPERIMENTAL FEATURE - IT CAN DEGRADE
 # PERFORMANCE, RATHER THAN INCREASE IT, IF USED IMPROPERLY
 
@@ -552,7 +536,7 @@ auto_reschedule_checks=0
 
 
 # AUTO-RESCHEDULING INTERVAL
-# This option determines how often (in seconds) Nagios will
+# This option determines how often (in seconds) Naemon will
 # attempt to automatically reschedule checks.  This option only
 # has an effect if the auto_reschedule_checks option is enabled.
 # Default is 30 seconds.
@@ -565,7 +549,7 @@ auto_rescheduling_interval=30
 
 # AUTO-RESCHEDULING WINDOW
 # This option determines the "window" of time (in seconds) that
-# Nagios will look at when automatically rescheduling checks.
+# Naemon will look at when automatically rescheduling checks.
 # Only host and service checks that occur in the next X seconds
 # (determined by this variable) will be rescheduled. This option
 # only has an effect if the auto_reschedule_checks option is
@@ -578,7 +562,7 @@ auto_rescheduling_window=180
 
 
 # TIMEOUT VALUES
-# These options control how much time Nagios will allow various
+# These options control how much time Naemon will allow various
 # types of commands to execute before killing them off.  Options
 # are available for controlling maximum time allotted for
 # service checks, host checks, event handlers, notifications, the
@@ -595,12 +579,12 @@ perfdata_timeout=5
 
 
 # RETAIN STATE INFORMATION
-# This setting determines whether or not Nagios will save state
+# This setting determines whether or not Naemon will save state
 # information for services and hosts before it shuts down.  Upon
-# startup Nagios will reload all saved service and host state
-# information before starting to monitor.  This is useful for 
+# startup Naemon will reload all saved service and host state
+# information before starting to monitor.  This is useful for
 # maintaining long-term data on state statistics, etc, but will
-# slow Nagios down a bit when it (re)starts.  Since its only
+# slow Naemon down a bit when it (re)starts.  Since its only
 # a one-time penalty, I think its well worth the additional
 # startup delay.
 
@@ -609,10 +593,10 @@ retain_state_information=1
 
 
 # STATE RETENTION FILE
-# This is the file that Nagios should use to store host and
-# service state information before it shuts down.  The state 
+# This is the file that Naemon should use to store host and
+# service state information before it shuts down.  The state
 # information in this file is also read immediately prior to
-# starting to monitor the network when Nagios is restarted.
+# starting to monitor the network when Naemon is restarted.
 # This file is used only if the retain_state_information
 # variable is set to 1.
 
@@ -621,9 +605,9 @@ state_retention_file=@localstatedir@/retention.dat
 
 
 # RETENTION DATA UPDATE INTERVAL
-# This setting determines how often (in minutes) that Nagios
+# This setting determines how often (in minutes) that Naemon
 # will automatically save retention data during normal operation.
-# If you set this value to 0, Nagios will not save retention
+# If you set this value to 0, Naemon will not save retention
 # data at regular interval, but it will still save retention
 # data before shutting down or restarting.  If you have disabled
 # state retention, this option has no effect.
@@ -633,7 +617,7 @@ retention_update_interval=60
 
 
 # USE RETAINED PROGRAM STATE
-# This setting determines whether or not Nagios will set 
+# This setting determines whether or not Naemon will set
 # program status variables based on the values saved in the
 # retention file.  If you want to use retained program status
 # information, set this value to 1.  If not, set this value
@@ -644,7 +628,7 @@ use_retained_program_state=1
 
 
 # USE RETAINED SCHEDULING INFO
-# This setting determines whether or not Nagios will retain
+# This setting determines whether or not Naemon will retain
 # the scheduling info (next check time) for hosts and services
 # based on the values saved in the retention file.  If you
 # If you want to use retained scheduling info, set this
@@ -656,11 +640,11 @@ use_retained_scheduling_info=1
 
 # RETAINED ATTRIBUTE MASKS (ADVANCED FEATURE)
 # The following variables are used to specify specific host and
-# service attributes that should *not* be retained by Nagios during
+# service attributes that should *not* be retained by Naemon during
 # program restarts.
 #
 # The values of the masks are bitwise ANDs of values specified
-# by the "MODATTR_" definitions found in include/common.h.  
+# by the "MODATTR_" definitions found in include/common.h.
 # For example, if you do not want the current enabled/disabled state
 # of flap detection and event handlers for hosts to be retained, you
 # would use a value of 24 for the host attribute mask...
@@ -698,31 +682,6 @@ interval_length=60
 
 
 
-# CHECK FOR UPDATES
-# This option determines whether Nagios will automatically check to
-# see if new updates (releases) are available.  It is recommend that you
-# enable this option to ensure that you stay on top of the latest critical
-# patches to Nagios.  Nagios is critical to you - make sure you keep it in
-# good shape.  Nagios will check once a day for new updates. Data collected
-# by Nagios Enterprises from the update check is processed in accordance 
-# with our privacy policy - see http://api.nagios.org for details.
-
-check_for_updates=1
-
-
-
-# BARE UPDATE CHECK
-# This option deterines what data Nagios will send to api.nagios.org when
-# it checks for updates.  By default, Nagios will send information on the 
-# current version of Nagios you have installed, as well as an indicator as
-# to whether this was a new installation or not.  Nagios Enterprises uses
-# this data to determine the number of users running specific version of 
-# Nagios.  Enable this option if you do not want this information to be sent.
-
-bare_update_check=0
-
-
-
 # AGGRESSIVE HOST CHECKING OPTION
 # If you don't want to turn on aggressive host checking features, set
 # this value to 0 (the default).  Otherwise set this value to 1 to
@@ -735,9 +694,9 @@ use_aggressive_host_checking=0
 
 
 # SERVICE CHECK EXECUTION OPTION
-# This determines whether or not Nagios will actively execute
-# service checks when it initially starts.  If this option is 
-# disabled, checks are not actively made, but Nagios can still
+# This determines whether or not Naemon will actively execute
+# service checks when it initially starts.  If this option is
+# disabled, checks are not actively made, but Naemon can still
 # receive and process passive check results that come in.  Unless
 # you're implementing redundant hosts or have a special need for
 # disabling the execution of service checks, leave this enabled!
@@ -748,7 +707,7 @@ execute_service_checks=1
 
 
 # PASSIVE SERVICE CHECK ACCEPTANCE OPTION
-# This determines whether or not Nagios will accept passive
+# This determines whether or not Naemon will accept passive
 # service checks results when it initially (re)starts.
 # Values: 1 = accept passive checks, 0 = reject passive checks
 
@@ -757,9 +716,9 @@ accept_passive_service_checks=1
 
 
 # HOST CHECK EXECUTION OPTION
-# This determines whether or not Nagios will actively execute
-# host checks when it initially starts.  If this option is 
-# disabled, checks are not actively made, but Nagios can still
+# This determines whether or not Naemon will actively execute
+# host checks when it initially starts.  If this option is
+# disabled, checks are not actively made, but Naemon can still
 # receive and process passive check results that come in.  Unless
 # you're implementing redundant hosts or have a special need for
 # disabling the execution of host checks, leave this enabled!
@@ -770,7 +729,7 @@ execute_host_checks=1
 
 
 # PASSIVE HOST CHECK ACCEPTANCE OPTION
-# This determines whether or not Nagios will accept passive
+# This determines whether or not Naemon will accept passive
 # host checks results when it initially (re)starts.
 # Values: 1 = accept passive checks, 0 = reject passive checks
 
@@ -779,7 +738,7 @@ accept_passive_host_checks=1
 
 
 # NOTIFICATIONS OPTION
-# This determines whether or not Nagios will sent out any host or
+# This determines whether or not Naemon will sent out any host or
 # service notifications when it is initially (re)started.
 # Values: 1 = enable notifications, 0 = disable notifications
 
@@ -788,7 +747,7 @@ enable_notifications=1
 
 
 # EVENT HANDLER USE OPTION
-# This determines whether or not Nagios will run any host or
+# This determines whether or not Naemon will run any host or
 # service event handlers when it is initially (re)started.  Unless
 # you're implementing redundant hosts, leave this option enabled.
 # Values: 1 = enable event handlers, 0 = disable event handlers
@@ -798,7 +757,7 @@ enable_event_handlers=1
 
 
 # PROCESS PERFORMANCE DATA OPTION
-# This determines whether or not Nagios will process performance
+# This determines whether or not Naemon will process performance
 # data returned from service and host checks.  If this option is
 # enabled, host performance data will be processed using the
 # host_perfdata_command (defined below) and service performance
@@ -815,7 +774,7 @@ process_performance_data=0
 # These commands are run after every host and service check is
 # performed.  These commands are executed only if the
 # enable_performance_data option (above) is set to 1.  The command
-# argument is the short name of a command definition that you 
+# argument is the short name of a command definition that you
 # define in your host configuration file.  Read the HTML docs for
 # more information on performance data.
 
@@ -893,7 +852,7 @@ process_performance_data=0
 
 
 # OBSESS OVER SERVICE CHECKS OPTION
-# This determines whether or not Nagios will obsess over service
+# This determines whether or not Naemon will obsess over service
 # checks and run the ocsp_command defined below.  Unless you're
 # planning on implementing distributed monitoring, do not enable
 # this option.  Read the HTML docs for more information on
@@ -906,8 +865,8 @@ obsess_over_services=0
 
 # OBSESSIVE COMPULSIVE SERVICE PROCESSOR COMMAND
 # This is the command that is run for every service check that is
-# processed by Nagios.  This command is executed only if the
-# obsess_over_services option (above) is set to 1.  The command 
+# processed by Naemon.  This command is executed only if the
+# obsess_over_services option (above) is set to 1.  The command
 # argument is the short name of a command definition that you
 # define in your host configuration file. Read the HTML docs for
 # more information on implementing distributed monitoring.
@@ -917,7 +876,7 @@ obsess_over_services=0
 
 
 # OBSESS OVER HOST CHECKS OPTION
-# This determines whether or not Nagios will obsess over host
+# This determines whether or not Naemon will obsess over host
 # checks and run the ochp_command defined below.  Unless you're
 # planning on implementing distributed monitoring, do not enable
 # this option.  Read the HTML docs for more information on
@@ -930,8 +889,8 @@ obsess_over_hosts=0
 
 # OBSESSIVE COMPULSIVE HOST PROCESSOR COMMAND
 # This is the command that is run for every host check that is
-# processed by Nagios.  This command is executed only if the
-# obsess_over_hosts option (above) is set to 1.  The command 
+# processed by Naemon.  This command is executed only if the
+# obsess_over_hosts option (above) is set to 1.  The command
 # argument is the short name of a command definition that you
 # define in your host configuration file. Read the HTML docs for
 # more information on implementing distributed monitoring.
@@ -941,15 +900,15 @@ obsess_over_hosts=0
 
 
 # TRANSLATE PASSIVE HOST CHECKS OPTION
-# This determines whether or not Nagios will translate
+# This determines whether or not Naemon will translate
 # DOWN/UNREACHABLE passive host check results into their proper
-# state for this instance of Nagios.  This option is useful
+# state for this instance of Naemon.  This option is useful
 # if you have distributed or failover monitoring setup.  In
-# these cases your other Nagios servers probably have a different
+# these cases your other Naemon servers probably have a different
 # "view" of the network, with regards to the parent/child relationship
 # of hosts.  If a distributed monitoring server thinks a host
 # is DOWN, it may actually be UNREACHABLE from the point of
-# this Nagios instance.  Enabling this option will tell Nagios
+# this Naemon instance.  Enabling this option will tell Naemon
 # to translate any DOWN or UNREACHABLE host states it receives
 # passively into the correct state from the view of this server.
 # Values: 1 = perform translation, 0 = do not translate (default)
@@ -959,7 +918,7 @@ translate_passive_host_checks=0
 
 
 # PASSIVE HOST CHECKS ARE SOFT OPTION
-# This determines whether or not Nagios will treat passive host
+# This determines whether or not Naemon will treat passive host
 # checks as being HARD or SOFT.  By default, a passive host check
 # result will put a host into a HARD state type.  This can be changed
 # by enabling this option.
@@ -970,9 +929,9 @@ passive_host_checks_are_soft=0
 
 
 # ORPHANED HOST/SERVICE CHECK OPTIONS
-# These options determine whether or not Nagios will periodically 
+# These options determine whether or not Naemon will periodically
 # check for orphaned host service checks.  Since service checks are
-# not rescheduled until the results of their previous execution 
+# not rescheduled until the results of their previous execution
 # instance are processed, there exists a possibility that some
 # checks may never get rescheduled.  A similar situation exists for
 # host checks, although the exact scheduling details differ a bit
@@ -988,7 +947,7 @@ check_for_orphaned_hosts=1
 
 
 # SERVICE FRESHNESS CHECK OPTION
-# This option determines whether or not Nagios will periodically
+# This option determines whether or not Naemon will periodically
 # check the "freshness" of service results.  Enabling this option
 # is useful for ensuring passive checks are received in a timely
 # manner.
@@ -999,7 +958,7 @@ check_service_freshness=1
 
 
 # SERVICE FRESHNESS CHECK INTERVAL
-# This setting determines how often (in seconds) Nagios will
+# This setting determines how often (in seconds) Naemon will
 # check the "freshness" of service check results.  If you have
 # disabled service freshness checking, this option has no effect.
 
@@ -1008,7 +967,7 @@ service_freshness_check_interval=60
 
 
 # SERVICE CHECK TIMEOUT STATE
-# This setting determines the state Nagios will report when a
+# This setting determines the state Naemon will report when a
 # service check times out - that is does not respond within
 # service_check_timeout seconds.  This can be useful if a
 # machine is running at too high a load and you do not want
@@ -1024,7 +983,7 @@ service_check_timeout_state=c
 
 
 # HOST FRESHNESS CHECK OPTION
-# This option determines whether or not Nagios will periodically
+# This option determines whether or not Naemon will periodically
 # check the "freshness" of host results.  Enabling this option
 # is useful for ensuring passive checks are received in a timely
 # manner.
@@ -1035,7 +994,7 @@ check_host_freshness=0
 
 
 # HOST FRESHNESS CHECK INTERVAL
-# This setting determines how often (in seconds) Nagios will
+# This setting determines how often (in seconds) Naemon will
 # check the "freshness" of host check results.  If you have
 # disabled host freshness checking, this option has no effect.
 
@@ -1045,7 +1004,7 @@ host_freshness_check_interval=60
 
 
 # ADDITIONAL FRESHNESS THRESHOLD LATENCY
-# This setting determines the number of seconds that Nagios
+# This setting determines the number of seconds that Naemon
 # will add to any host and service freshness thresholds that
 # it calculates (those not explicitly specified by the user).
 
@@ -1055,10 +1014,10 @@ additional_freshness_latency=15
 
 
 # FLAP DETECTION OPTION
-# This option determines whether or not Nagios will try
-# and detect hosts and services that are "flapping".  
+# This option determines whether or not Naemon will try
+# and detect hosts and services that are "flapping".
 # Flapping occurs when a host or service changes between
-# states too frequently.  When Nagios detects that a 
+# states too frequently.  When Naemon detects that a
 # host or service is flapping, it will temporarily suppress
 # notifications for that host/service until it stops
 # flapping.  Flap detection is very experimental, so read
@@ -1085,10 +1044,10 @@ high_host_flap_threshold=20.0
 # DATE FORMAT OPTION
 # This option determines how short dates are displayed. Valid options
 # include:
-#	us		(MM-DD-YYYY HH:MM:SS)
-#	euro    	(DD-MM-YYYY HH:MM:SS)
-#	iso8601		(YYYY-MM-DD HH:MM:SS)
-#	strict-iso8601	(YYYY-MM-DDTHH:MM:SS)
+#    us             (MM-DD-YYYY HH:MM:SS)
+#    euro           (DD-MM-YYYY HH:MM:SS)
+#    iso8601        (YYYY-MM-DD HH:MM:SS)
+#    strict-iso8601 (YYYY-MM-DDTHH:MM:SS)
 #
 
 date_format=us
@@ -1098,17 +1057,8 @@ date_format=us
 
 # TIMEZONE OFFSET
 # This option is used to override the default timezone that this
-# instance of Nagios runs in.  If not specified, Nagios will use
+# instance of Naemon runs in.  If not specified, Naemon will use
 # the system configured timezone.
-#
-# NOTE: In order to display the correct timezone in the CGIs, you
-# will also need to alter the Apache directives for the CGI path 
-# to include your timezone.  Example:
-#
-#   <Directory "/usr/local/nagios/sbin/">
-#      SetEnv TZ "Australia/Brisbane"
-#      ...
-#   </Directory>
 
 #use_timezone=US/Mountain
 #use_timezone=Australia/Brisbane
@@ -1130,14 +1080,14 @@ illegal_object_name_chars=`~!$%^&*|'"<>?,()=
 # handlers, etc.  This DOES NOT affect macros used in service or
 # host check commands.
 # The following macros are stripped of the characters you specify:
-#	$HOSTOUTPUT$
-#	$HOSTPERFDATA$
-#	$HOSTACKAUTHOR$
-#	$HOSTACKCOMMENT$
-#	$SERVICEOUTPUT$
-#	$SERVICEPERFDATA$
-#	$SERVICEACKAUTHOR$
-#	$SERVICEACKCOMMENT$
+#    $HOSTOUTPUT$
+#    $HOSTPERFDATA$
+#    $HOSTACKAUTHOR$
+#    $HOSTACKCOMMENT$
+#    $SERVICEOUTPUT$
+#    $SERVICEPERFDATA$
+#    $SERVICEACKAUTHOR$
+#    $SERVICEACKCOMMENT$
 
 illegal_macro_output_chars=`~$&|'"<>
 
@@ -1155,7 +1105,7 @@ use_regexp_matching=0
 
 
 # "TRUE" REGULAR EXPRESSION MATCHING
-# This option controls whether or not "true" regular expression 
+# This option controls whether or not "true" regular expression
 # matching takes place in the object config files.  This option
 # only has an effect if regular expression matching is enabled
 # (see above).  If this option is DISABLED, regular expression
@@ -1170,17 +1120,17 @@ use_true_regexp_matching=0
 
 # ADMINISTRATOR EMAIL/PAGER ADDRESSES
 # The email and pager address of a global administrator (likely you).
-# Nagios never uses these values itself, but you can access them by
+# Naemon never uses these values itself, but you can access them by
 # using the $ADMINEMAIL$ and $ADMINPAGER$ macros in your notification
 # commands.
 
-admin_email=@nagios_user@@localhost
-admin_pager=page@nagios_user@@localhost
+admin_email=@naemon_user@@localhost
+admin_pager=page@naemon_user@@localhost
 
 
 
 # DAEMON CORE DUMP OPTION
-# This option determines whether or not Nagios is allowed to create
+# This option determines whether or not Naemon is allowed to create
 # a core dump when it runs as a daemon.  Note that it is generally
 # considered bad form to allow this, but it may be useful for
 # debugging purposes.  Enabling this option doesn't guarantee that
@@ -1193,8 +1143,8 @@ daemon_dumps_core=0
 
 
 # LARGE INSTALLATION TWEAKS OPTION
-# This option determines whether or not Nagios will take some shortcuts
-# which can save on memory and CPU usage in large Nagios installations.
+# This option determines whether or not Naemon will take some shortcuts
+# which can save on memory and CPU usage in large Naemon installations.
 # Read the documentation for more information on the benefits/tradeoffs
 # of enabling this option.
 # Values: 1 - Enabled tweaks
@@ -1205,7 +1155,7 @@ use_large_installation_tweaks=0
 
 
 # ENABLE ENVIRONMENT MACROS
-# This option determines whether or not Nagios will make all standard
+# This option determines whether or not Naemon will make all standard
 # macros available as environment variables when host/service checks
 # and system commands (event handlers, notifications, etc.) are
 # executed.
@@ -1222,7 +1172,7 @@ enable_environment_macros=0
 
 
 # CHILD PROCESS MEMORY OPTION
-# This option determines whether or not Nagios will free memory in
+# This option determines whether or not Naemon will free memory in
 # child processes (processed used to execute system commands and host/
 # service checks).  If you specify a value here, it will override
 # program defaults.
@@ -1234,7 +1184,7 @@ enable_environment_macros=0
 
 
 # CHILD PROCESS FORKING BEHAVIOR
-# This option determines how Nagios will fork child processes
+# This option determines how Naemon will fork child processes
 # (used to execute system commands and host/service checks).  Normally
 # child processes are fork()ed twice, which provides a very high level
 # of isolation from problems.  Fork()ing once is probably enough and will
@@ -1252,21 +1202,21 @@ enable_environment_macros=0
 # This option determines how much (if any) debugging information will
 # be written to the debug file.  OR values together to log multiple
 # types of information.
-# Values: 
-#          -1 = Everything
-#          0 = Nothing
-#	   1 = Functions
-#          2 = Configuration
-#          4 = Process information
-#	   8 = Scheduled events
-#          16 = Host/service checks
-#          32 = Notifications
-#          64 = Event broker
-#          128 = External commands
-#          256 = Commands
-#          512 = Scheduled downtime
-#          1024 = Comments
-#          2048 = Macros
+# Values:
+#      -1 = Everything
+#       0 = Nothing
+#       1 = Functions
+#       2 = Configuration
+#       4 = Process information
+#       8 = Scheduled events
+#      16 = Host/service checks
+#      32 = Notifications
+#      64 = Event broker
+#     128 = External commands
+#     256 = Commands
+#     512 = Scheduled downtime
+#    1024 = Comments
+#    2048 = Macros
 
 debug_level=0
 
@@ -1283,9 +1233,9 @@ debug_verbosity=1
 
 
 # DEBUG FILE
-# This option determines where Nagios should write debugging information.
+# This option determines where Naemon should write debugging information.
 
-debug_file=@localstatedir@/nagios.debug
+debug_file=@localstatedir@/naemon.debug
 
 
 
@@ -1294,7 +1244,7 @@ debug_file=@localstatedir@/nagios.debug
 # the file grows larger than this size, it will be renamed with a .old
 # extension.  If a file already exists with a .old extension it will
 # automatically be deleted.  This helps ensure your disk space usage doesn't
-# get out of control when debugging Nagios.
+# get out of control when debugging Naemon.
 
 max_debug_file_size=1000000
 

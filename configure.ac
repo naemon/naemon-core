@@ -91,9 +91,72 @@ AC_FUNC_WAIT3
 AC_CHECK_FUNCS([dup2 floor ftruncate munmap pow putenv realpath \
 	regcomp select setenv strncasecmp strrchr tzset])
 
+# Determine the system init.d directory
+AC_ARG_WITH([init-dir],
+[AS_HELP_STRING([--with-init-dir],
+[specify the system init script directory @<:@default="${sysconfdir}/init.d"@:>@])],
+[], [with_init_dir="${sysconfdir}/init.d"])
+initrddir="$with_init_dir"
+AC_SUBST(initrddir)
+
+# Determine the temp directory
+AC_ARG_WITH([temp-dir],
+[AS_HELP_STRING([--with-temp-dir],
+[specify the temp directory @<:@default="/var/cache/naemon"@:>@])],
+[], [with_temp_dir="/var/cache/naemon"])
+TMPDIR="$with_temp_dir"
+AC_SUBST(TMPDIR)
+
+# Determine the check results directory
+AC_ARG_WITH([checkresult-dir],
+[AS_HELP_STRING([--with-checkresult-dir],
+[specify the checkresults directory @<:@default="${localstatedir}/naemon/spool/checkresults"@:>@])],
+[], [with_checkresult_dir="${localstatedir}/naemon/spool/checkresults"])
+CHECKRESULTDIR="$with_checkresult_dir"
+AC_SUBST(CHECKRESULTDIR)
+
+# Determine the naemon user
+AC_ARG_WITH([naemon-user],
+[AS_HELP_STRING([--with-naemon-user],
+[specify the naemon user @<:@default="naemon"@:>@])],
+[], [with_naemon_user="naemon"])
+naemon_user="$with_naemon_user"
+AC_SUBST(naemon_user)
+
+# Determine the naemon user
+AC_ARG_WITH([naemon-group],
+[AS_HELP_STRING([--with-naemon-group],
+[specify the naemon group @<:@default="naemon"@:>@])],
+[], [with_naemon_group="naemon"])
+naemon_grp="$with_naemon_group"
+AC_SUBST(naemon_grp)
+
+# Determine the lockfile
+AC_ARG_WITH([with-lockfile],
+[AS_HELP_STRING([--with-lockfile],
+[specify the naemon lockfile @<:@default="/var/naemon/naemon.pid"@:>@])],
+[], [with_lockfile="/var/naemon/naemon.pid"])
+lockfile="$with_lockfile"
+AC_SUBST(lockfile)
+
+
 AC_CONFIG_FILES([Makefile
+                 daemon-init
                  naemon/Makefile
+                 naemon/defaults.h
                  naemon/lib/Makefile
+                 sample-config/naemon.cfg
+                 sample-config/resource.cfg
+                 sample-config/conf.d/commands.cfg
+                 sample-config/conf.d/printer.cfg
+                 sample-config/conf.d/switch.cfg
+                 sample-config/conf.d/timeperiods.cfg
+                 sample-config/conf.d/localhost.cfg
+                 sample-config/conf.d/contacts.cfg
+                 sample-config/conf.d/windows.cfg
+                 sample-config/conf.d/templates/services.cfg
+                 sample-config/conf.d/templates/hosts.cfg
+                 sample-config/conf.d/templates/contacts.cfg
                  ])
 #AC_CONFIG_SUBDIRS([])
 AC_OUTPUT

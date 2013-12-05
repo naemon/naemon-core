@@ -1,0 +1,41 @@
+###############################################################################
+#
+# SERVICE TEMPLATES
+#
+###############################################################################
+###############################################################################
+# Generic service definition template - This is NOT a real service, just a template!
+define service {
+  name                           generic-service                     ; The 'name' of this service template
+  active_checks_enabled          1                                   ; Active service checks are enabled
+  check_freshness                0                                   ; Default is to NOT check service 'freshness'
+  check_interval                 10                                  ; Check the service every 10 minutes under normal conditions
+  check_period                   24x7                                ; The service can be checked at any time of the day
+  contact_groups                 admins                              ; Notifications get sent out to everyone in the 'admins' group
+  event_handler_enabled          1                                   ; Service event handler is enabled
+  flap_detection_enabled         1                                   ; Flap detection is enabled
+  is_volatile                    0                                   ; The service is not volatile
+  max_check_attempts             3                                   ; Re-check the service up to 3 times in order to determine its final (hard) state
+  notification_interval          60                                  ; Re-notify about service problems every hour
+  notification_options           w,u,c,r                             ; Send notifications about warning, unknown, critical, and recovery events
+  notification_period            24x7                                ; Notifications can be sent out at any time
+  notifications_enabled          1                                   ; Service notifications are enabled
+  obsess_over_service            1                                   ; We should obsess over this service (if necessary)
+  parallelize_check              1                                   ; Active service checks should be parallelized (disabling this can lead to major performance problems)
+  passive_checks_enabled         1                                   ; Passive service checks are enabled/accepted
+  process_perf_data              1                                   ; Process performance data
+  register                       0                                   ; DONT REGISTER THIS DEFINITION - ITS NOT A REAL SERVICE, JUST A TEMPLATE!
+  retain_nonstatus_information   1                                   ; Retain non-status information across program restarts
+  retain_status_information      1                                   ; Retain status information across program restarts
+  retry_interval                 2                                   ; Re-check the service every two minutes until a hard state can be determined
+}
+
+# Local service definition template - This is NOT a real service, just a template!
+define service {
+  name                           local-service                       ; The name of this service template
+  use                            generic-service                     ; Inherit default values from the generic-service definition
+  check_interval                 5                                   ; Check the service every 5 minutes under normal conditions
+  max_check_attempts             4                                   ; Re-check the service up to 4 times in order to determine its final (hard) state
+  register                       0                                   ; DONT REGISTER THIS DEFINITION - ITS NOT A REAL SERVICE, JUST A TEMPLATE!
+  retry_interval                 1                                   ; Re-check the service every minute until a hard state can be determined
+}
