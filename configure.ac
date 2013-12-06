@@ -102,16 +102,16 @@ AC_SUBST(initrddir)
 # Determine the temp directory
 AC_ARG_WITH([temp-dir],
 [AS_HELP_STRING([--with-temp-dir],
-[specify the temp directory @<:@default="/var/cache/naemon"@:>@])],
-[], [with_temp_dir="/var/cache/naemon"])
+[specify the temp directory @<:@default="${localstatedir}/cache/naemon"@:>@])],
+[], [with_temp_dir="${localstatedir}/cache/naemon"])
 TMPDIR="$with_temp_dir"
 AC_SUBST(TMPDIR)
 
 # Determine the check results directory
 AC_ARG_WITH([checkresult-dir],
 [AS_HELP_STRING([--with-checkresult-dir],
-[specify the checkresults directory @<:@default="${localstatedir}/naemon/spool/checkresults"@:>@])],
-[], [with_checkresult_dir="${localstatedir}/naemon/spool/checkresults"])
+[specify the checkresults directory @<:@default="${localstatedir}/cache/naemon/checkresults"@:>@])],
+[], [with_checkresult_dir="${localstatedir}/cache/naemon/checkresults"])
 CHECKRESULTDIR="$with_checkresult_dir"
 AC_SUBST(CHECKRESULTDIR)
 
@@ -132,10 +132,10 @@ naemon_grp="$with_naemon_group"
 AC_SUBST(naemon_grp)
 
 # Determine the lockfile
-AC_ARG_WITH([with-lockfile],
+AC_ARG_WITH([lockfile],
 [AS_HELP_STRING([--with-lockfile],
-[specify the naemon lockfile @<:@default="/var/naemon/naemon.pid"@:>@])],
-[], [with_lockfile="/var/naemon/naemon.pid"])
+[specify the naemon lockfile @<:@default="/var/cache/naemon/naemon.pid"@:>@])],
+[], [with_lockfile="/var/cache/naemon/naemon.pid"])
 lockfile="$with_lockfile"
 AC_SUBST(lockfile)
 
