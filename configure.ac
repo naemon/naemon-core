@@ -139,7 +139,7 @@ AC_ARG_WITH([lockfile],
 lockfile="$with_lockfile"
 AC_SUBST(lockfile)
 
-
+AC_SUBST(libdir)
 AC_CONFIG_FILES([Makefile
                  daemon-init
                  naemon/Makefile
