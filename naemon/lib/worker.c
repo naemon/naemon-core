@@ -364,42 +364,38 @@ static void kill_job(child_process *cp, int reason)
 	 */
 	do {
 		ret = waitpid(cp->ei->pid, &status, WNOHANG);
-		if (ret < 0 && errno == EINTR)
-			continue;
-
 		if (ret == cp->ei->pid || (ret < 0 && errno == ECHILD)) {
 			reaped = 1;
-			break;
 		}
-		if (!ret) {
-			struct timeval tv;
+	} while (ret && !reaped);
 
-			gettimeofday(&tv, NULL);
-			/*
-			 * stale process (signal may not have been delivered, or
-			 * the child can be stuck in uninterruptible sleep). We
-			 * can't hang around forever, so just reschedule a new
-			 * reap attempt later.
-			 */
-			if (reason == ESTALE) {
-				tv.tv_sec += 5;
-				wlog("Failed to reap child with pid %d. Next attempt @ %lu.%lu", cp->ei->pid, tv.tv_sec, tv.tv_usec);
-			} else {
-				tv.tv_sec += 1;
-				cp->ei->state = ESTALE;
-				finish_job(cp, reason);
-			}
-			squeue_remove(sq, cp->ei->sq_event);
-			cp->ei->sq_event = squeue_add_tv(sq, &tv, cp);
-			return;
+	if (!ret) {
+		struct timeval tv;
+
+		gettimeofday(&tv, NULL);
+		/*
+		 * stale process (signal may not have been delivered, or
+		 * the child can be stuck in uninterruptible sleep). We
+		 * can't hang around forever, so just reschedule a new
+		 * reap attempt later.
+		 */
+		if (reason == ESTALE) {
+			tv.tv_sec += 5;
+			wlog("Failed to reap child with pid %d. Next attempt @ %lu.%lu", cp->ei->pid, tv.tv_sec, tv.tv_usec);
+		} else {
+			tv.tv_sec += 1;
+			cp->ei->state = ESTALE;
+			finish_job(cp, reason);
 		}
-	} while (!reaped);
-
-	if (cp->ei->state != ESTALE)
-		finish_job(cp, reason);
-	else
-		wlog("job %d (pid=%d): Dormant child reaped", cp->id, cp->ei->pid);
-	destroy_job(cp);
+		squeue_remove(sq, cp->ei->sq_event);
+		cp->ei->sq_event = squeue_add_tv(sq, &tv, cp);
+	} else {
+		if (cp->ei->state != ESTALE)
+			finish_job(cp, reason);
+		else
+			wlog("job %d (pid=%d): Dormant child reaped", cp->id, cp->ei->pid);
+		destroy_job(cp);
+	}
 }
 
 static void gather_output(child_process *cp, iobuf *io, int final)
