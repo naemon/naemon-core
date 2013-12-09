@@ -1091,21 +1091,21 @@ int add_downtime(int downtime_type, char *host_name, char *svc_description, time
 		               "Unable to allocate memory for new downtime's host name\n");
 		result = ERROR;
 	}
-	if (downtime_type == SERVICE_DOWNTIME) {
+	else if (downtime_type == SERVICE_DOWNTIME) {
 		if ((new_downtime->service_description = (char *)strdup(svc_description)) == NULL) {
 			log_debug_info(DEBUGL_DOWNTIME, 1,
 			               "Unable to allocate memory for new downtime's service description\n");
 			result = ERROR;
 		}
 	}
-	if (author) {
+	if (!result && author) {
 		if ((new_downtime->author = (char *)strdup(author)) == NULL) {
 			log_debug_info(DEBUGL_DOWNTIME, 1,
 			               "Unable to allocate memory for new downtime's author\n");
 			result = ERROR;
 		}
 	}
-	if (comment_data) {
+	if (!result && comment_data) {
 		if ((new_downtime->comment = (char *)strdup(comment_data)) == NULL) {
 			log_debug_info(DEBUGL_DOWNTIME, 1,
 			               "Unable to allocate memory for new downtime's comment\n");
@@ -1126,15 +1126,17 @@ int add_downtime(int downtime_type, char *host_name, char *svc_description, time
 	new_downtime->start_notification_sent = start_notification_sent;
 	new_downtime->start_event = (timed_event *)0;
 	new_downtime->stop_event = (timed_event *)0;
-	result = downtime_add(new_downtime);
-	if (result) {
-		if (new_downtime->type == SERVICE_DOWNTIME) {
-			log_debug_info(DEBUGL_DOWNTIME, 0, "Failed to add downtime for service '%s' on host '%s': %s\n",
-			               new_downtime->service_description, new_downtime->host_name, dt_strerror(result));
-		} else {
-			log_debug_info(DEBUGL_DOWNTIME, 0, "Failed to add downtime for host '%s': %s\n", new_downtime->host_name, dt_strerror(result));
+	if (result != ERROR) {
+		result = downtime_add(new_downtime);
+		if (result) {
+			if (new_downtime->type == SERVICE_DOWNTIME) {
+				log_debug_info(DEBUGL_DOWNTIME, 0, "Failed to add downtime for service '%s' on host '%s': %s\n",
+							   new_downtime->service_description, new_downtime->host_name, dt_strerror(result));
+			} else {
+				log_debug_info(DEBUGL_DOWNTIME, 0, "Failed to add downtime for host '%s': %s\n", new_downtime->host_name, dt_strerror(result));
+			}
+			result = ERROR;
 		}
-		result = ERROR;
 	}
 
 	/* handle errors */
