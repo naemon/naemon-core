@@ -46,18 +46,7 @@ int online_cpus(void)
 
 int tv_delta_msec(const struct timeval *start, const struct timeval *stop)
 {
-	int msecs;
-	unsigned long usecs = 0;
-
-	msecs = (stop->tv_sec - start->tv_sec) * 1000;
-	if (stop->tv_usec < start->tv_usec) {
-		msecs -= 1000;
-		usecs += 1000000;
-	}
-	usecs += stop->tv_usec - start->tv_usec;
-	msecs += (usecs / 1000);
-
-	return msecs;
+	return (stop->tv_sec - start->tv_sec) * 1000 + (stop->tv_usec - start->tv_usec) / 1000;
 }
 
 float tv_delta_f(const struct timeval *start, const struct timeval *stop)
