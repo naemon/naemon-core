@@ -8,6 +8,8 @@ wpres-phash.h: wpres.gperf
 		--lookup-function-name=wpres_get_key \
 	$< > $@
 
+CLEANFILES = wpres-phash.h
+
 bin_PROGRAMS = naemon
 naemon_SOURCES = \
 	broker.c broker.h \
