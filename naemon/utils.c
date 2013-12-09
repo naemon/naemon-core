@@ -17,6 +17,9 @@
 #include <pwd.h>
 #include <dirent.h>
 #include <math.h>
+#ifdef HAVE_SYS_PRCTL_H
+# include <sys/prctl.h>
+#endif
 
 #define SECS_PER_DAY 86400
 /* global varaiables only used by the daemon */
@@ -1799,6 +1802,12 @@ int drop_privileges(char *user, char *group)
 		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Could not set effective UID=%d", (int)uid);
 		result = ERROR;
 	}
+
+#ifdef HAVE_SYS_PRCTL_H
+	/* on Linux the dumpable flag is cleared by system calls that manipulate process UIDs and GIDs */
+	if (daemon_dumps_core == TRUE)
+		prctl(PR_SET_DUMPABLE, 1);
+#endif
 
 	return result;
 }
