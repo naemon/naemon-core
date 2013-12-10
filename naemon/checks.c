@@ -2044,11 +2044,19 @@ int run_async_host_check(host *hst, int check_options, double latency, int sched
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
-	broker_host_check(NEBTYPE_HOSTCHECK_INITIATE, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, host_check_timeout, FALSE, 0, processed_command, NULL, NULL, NULL, NULL, cr);
-#endif
+	neb_result = broker_host_check(NEBTYPE_HOSTCHECK_INITIATE, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, host_check_timeout, FALSE, 0, processed_command, NULL, NULL, NULL, NULL, cr);
 
 	/* reset latency (permanent value for this check will get set later) */
 	hst->latency = old_latency;
+
+	/* neb module wants to override the service check - perhaps it will check the service itself */
+	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
+		clear_volatile_macros_r(&mac);
+		free_check_result(cr);
+		my_free(processed_command);
+		return OK;
+	}
+#endif
 
 	runchk_result = wproc_run_check(cr, processed_command, &mac);
 	if (runchk_result == ERROR) {
