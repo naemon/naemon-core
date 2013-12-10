@@ -23,14 +23,13 @@
 # Source function library.
 if [ -e /etc/rc.d/init.d/functions ]; then
   . /etc/rc.d/init.d/functions
-else
+fi
 status() {
   [ ! -e $pidfile ] && return 1;
   PID=`cat $pidfile`;
   kill -0 $PID
   return $?
 }
-fi
 
 prefix="@prefix@"
 exec_prefix="@exec_prefix@"
@@ -60,7 +59,7 @@ fi
 
 check_config() {
     TMPFILE=$(mktemp /tmp/.configtest.XXXXXXXX)
-    /sbin/service naemon configtest > "$TMPFILE"
+    $0 configtest > "$TMPFILE"
     WARN=`grep ^"Total Warnings:" "$TMPFILE" |awk -F: '{print \$2}' |sed s/' '//g`
     ERR=`grep ^"Total Errors:" "$TMPFILE" |awk -F: '{print \$2}' |sed s/' '//g`
 
@@ -83,7 +82,7 @@ check_config() {
 start() {
     test -x $exec || exit 5
     test -f $config || exit 6
-    if test "$checkconfig" == "false"; then
+    if [ "$checkconfig" = "false" ]; then
         check_config
     fi
     echo -n $"Starting $prog: "
@@ -96,13 +95,15 @@ start() {
     fi
     retval=$?
     echo
-    test $retval -eq 0 && touch $lockfile
+    if [ -d /var/lock/subsys ]; then
+      test $retval -eq 0 && touch $lockfile
+    fi
     return $retval
 }
 
 stop() {
     echo -n $"Stopping $prog: "
-    killproc -p ${pidfile} $exec
+    pkill -u ${user} -f ${exec}
     retval=$?
     echo
     test $retval -eq 0 && rm -f $lockfile
@@ -119,7 +120,7 @@ restart() {
 
 reload() {
     echo -n $"Reloading $prog: "
-    killproc -p ${pidfile} $exec -HUP
+    pkill -u ${user} -f ${exec} -HUP
     RETVAL=$?
     echo
 }
@@ -148,17 +149,24 @@ case "$1" in
         force_reload
         ;;
     status)
-        status $prog
+        if status $prog; then
+          PID=`cat $pidfile`;
+          echo "naemon (pid $PID) is running..."
+          exit 0
+        else
+          echo "naemon is stopped"
+          exit 1
+        fi
         ;;
     condrestart|try-restart)
         status $prog|| exit 0
         restart
         ;;
-    configtest)
+    configtest|check|checkconfig)
         if type runuser >/dev/null 2>&1; then
           $nice runuser -s /bin/bash - $user -c "$corelimit >/dev/null 2>&1 ; $exec -vp $config"
         else
-          /bin/su - $user -c "$corelimit >/dev/null 2>&1 ; $exec -vp $config"
+          /bin/su - -s /bin/sh $user -c "$corelimit >/dev/null 2>&1 ; $exec -vp $config"
         fi
         RETVAL=$?
         ;;
