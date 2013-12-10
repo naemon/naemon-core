@@ -3025,14 +3025,14 @@ void fcache_host(FILE *fp, host *temp_host)
 	fprintf(fp, "\tlow_flap_threshold\t%f\n", temp_host->low_flap_threshold);
 	fprintf(fp, "\thigh_flap_threshold\t%f\n", temp_host->high_flap_threshold);
 	fprintf(fp, "\tflap_detection_enabled\t%d\n", temp_host->flap_detection_enabled);
-	fprintf(fp, "\tflap_detection_options\t%s\n", opts2str(temp_host->flap_detection_options, host_flag_map, 'u'));
+	fprintf(fp, "\tflap_detection_options\t%s\n", opts2str(temp_host->flap_detection_options, host_flag_map, 'o'));
 	fprintf(fp, "\tfreshness_threshold\t%d\n", temp_host->freshness_threshold);
 	fprintf(fp, "\tcheck_freshness\t%d\n", temp_host->check_freshness);
 	fprintf(fp, "\tnotification_options\t%s\n", opts2str(temp_host->notification_options, host_flag_map, 'r'));
 	fprintf(fp, "\tnotifications_enabled\t%d\n", temp_host->notifications_enabled);
 	fprintf(fp, "\tnotification_interval\t%f\n", temp_host->notification_interval);
 	fprintf(fp, "\tfirst_notification_delay\t%f\n", temp_host->first_notification_delay);
-	fprintf(fp, "\tstalking_options\t%s\n", opts2str(temp_host->stalking_options, host_flag_map, 'u'));
+	fprintf(fp, "\tstalking_options\t%s\n", opts2str(temp_host->stalking_options, host_flag_map, 'o'));
 	fprintf(fp, "\tprocess_perf_data\t%d\n", temp_host->process_performance_data);
 	if (temp_host->icon_image)
 		fprintf(fp, "\ticon_image\t%s\n", temp_host->icon_image);
