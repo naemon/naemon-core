@@ -5,7 +5,7 @@ EXTRA_DIST = naemon.spec contrib
 test: check
 
 distclean-local:
-	rm -rf configure Makefile.in aclocal.m4 autom4te.cache config.* *.gz
+	rm -rf configure Makefile.in aclocal.m4 autom4te.cache config.* *.gz compile depcomp missing
 
 install-rc:
 	$(install_sh_PROGRAM) -m 644 daemon-init    $(DESTDIR)$(initrddir)/naemon
@@ -25,3 +25,7 @@ install-sample-config:
 	$(install_sh_PROGRAM) -m 644 sample-config/conf.d/templates/services.cfg  $(DESTDIR)$(sysconfdir)/conf.d/templates
 	$(install_sh_PROGRAM) -m 644 sample-config/conf.d/templates/hosts.cfg     $(DESTDIR)$(sysconfdir)/conf.d/templates
 	$(install_sh_PROGRAM) -m 644 sample-config/conf.d/templates/contacts.cfg  $(DESTDIR)$(sysconfdir)/conf.d/templates
+
+install-data-local:
+	mkdir -p $(DESTDIR)/var/cache/naemon/checkresults
+	mkdir -p $(DESTDIR)/var/lib/naemon
