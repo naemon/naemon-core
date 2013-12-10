@@ -54,3 +54,6 @@ naemon_LDFLAGS=-rdynamic
 #naemonworker_SOURCES=
 #naemonworker_LDADD=$(top_builddir)/naemon/worker/libnaemon_worker.a \
 #	$(top_builddir)/naemon/lib/libnaemon.a
+
+distclean-local:
+	rm -rf Makefile.in
