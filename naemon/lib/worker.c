@@ -697,17 +697,17 @@ void enter_worker(int sd, int (*cb)(child_process *))
 		/* check for timed out jobs */
 		while (running_jobs) {
 			child_process *cp;
-			struct timeval now, tmo;
+			struct timeval now;
+			const struct timeval *tmo;
 
 			/* stop when scheduling queue is empty */
 			cp = (child_process *)squeue_peek(sq);
 			if (!cp)
 				break;
 
-			tmo.tv_usec = cp->ei->start.tv_usec;
-			tmo.tv_sec = cp->ei->start.tv_sec + cp->timeout;
+			tmo = squeue_event_runtime(cp->ei->sq_event);
 			gettimeofday(&now, NULL);
-			poll_time = tv_delta_msec(&now, &tmo);
+			poll_time = tv_delta_msec(&now, tmo);
 			/*
 			 * A little extra takes care of rounding errors and
 			 * ensures we never kill a job before it times out.
