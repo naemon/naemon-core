@@ -1,5 +1,5 @@
 SUBDIRS = lib
-AM_CPPFLAGS = -I$(top_builddir)
+AM_CPPFLAGS += -I$(top_builddir)
 BUILT_SOURCES = wpres-phash.h
 
 wpres-phash.h: wpres.gperf
@@ -44,13 +44,10 @@ naemon_SOURCES = \
 	xpddefault.c xpddefault.h \
 	xrddefault.c xrddefault.h \
 	xsddefault.c xsddefault.h
-
-naemon_CFLAGS=-DNSCORE -DPREFIX='"$(prefix)"'
-
+naemon_CPPFLAGS=$(AM_CPPFLAGS) -DPREFIX='"$(prefix)"'
 naemon_LDADD=\
 	lib/libnaemon.a \
 	-lm -ldl
-
 naemon_LDFLAGS=-rdynamic
 
 #naemonworker_SOURCES=
