@@ -108,7 +108,8 @@ int handle_async_host_check_result(host *temp_host,
 
 host test_host = { .name = "name'&%", .address = "address'&%", .notes_url =
                        "notes_url'&%($HOSTNOTES$)", .notes = "notes'&%($HOSTACTIONURL$)",
-                   .action_url = "action_url'&%", .plugin_output = "name'&%"
+                   .action_url = "action_url'&%", .plugin_output = "name'&%",
+                   .check_command = "check_command!3!\"Some output\""
                  };
 
 /*****************************************************************************/
@@ -120,7 +121,7 @@ void init_environment()
 	char *p;
 
 	my_free(illegal_output_chars);
-	illegal_output_chars = strdup("'&"); /* For this tests, remove ' and & */
+	illegal_output_chars = strdup("'&\""); /* For this tests, remove ', " and & */
 
 	/* This is a part of preflight check, which we can't run */
 	for (p = illegal_output_chars; *p; p++) {
@@ -154,6 +155,10 @@ void test_escaping(nagios_macros *mac)
 
 	/* Nothing should be changed... options == 0 */
 	RUN_MACRO_TEST("$HOSTNAME$ '&%", "name'&% '&%", 0);
+
+	/* Able to escape illegal macro chars in HOSTCHECKCOMMAND */
+	RUN_MACRO_TEST("$HOSTCHECKCOMMAND$ '&%", "check_command!3!Some output '&%", STRIP_ILLEGAL_MACRO_CHARS);
+	RUN_MACRO_TEST("$HOSTCHECKCOMMAND$ '&%", "check_command!3!\"Some output\" '&%", 0);
 
 	/* Nothing should be changed... HOSTNAME doesn't accept STRIP_ILLEGAL_MACRO_CHARS */
 	RUN_MACRO_TEST("$HOSTNAME$ '&%", "name'&% '&%", STRIP_ILLEGAL_MACRO_CHARS);
@@ -205,7 +210,7 @@ int main(void)
 {
 	nagios_macros *mac;
 
-	plan_tests(9);
+	plan_tests(11);
 
 	reset_variables();
 	init_environment();
