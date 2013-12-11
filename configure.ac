@@ -12,7 +12,6 @@ AC_PREFIX_DEFAULT(/usr/local/naemon)
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_MAKE_SET
-AC_PROG_RANLIB
 AM_PROG_CC_C_O
 AM_MISSING_PROG([GPERF], [gperf])
 
@@ -51,6 +50,7 @@ AC_TYPE_SIZE_T
 AC_STRUCT_TIMEZONE
 AC_HEADER_STDBOOL
 
+LT_INIT
 
 dnl Check for asprintf() and friends...
 AC_CACHE_CHECK([for va_copy],ac_cv_HAVE_VA_COPY,[

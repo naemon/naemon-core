@@ -46,7 +46,7 @@ naemon_SOURCES = \
 	xsddefault.c xsddefault.h
 naemon_CPPFLAGS=$(AM_CPPFLAGS) -DPREFIX='"$(prefix)"'
 naemon_LDADD=\
-	lib/libnaemon.a \
+	lib/libnaemon.la \
 	-lm -ldl
 naemon_LDFLAGS=-rdynamic
 
