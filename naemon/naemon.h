@@ -726,6 +726,7 @@ void disable_contact_service_notifications(contact *);  /* disables service noti
 
 int launch_command_file_worker(void);
 int shutdown_command_file_worker(void);
+int disconnect_command_file_worker(void);
 
 char *get_program_version(void);
 char *get_program_modification_date(void);
