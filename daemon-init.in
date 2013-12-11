@@ -88,10 +88,10 @@ start() {
     echo -n $"Starting $prog: "
     # We need to _make sure_ the precache is there and verified
     # Raise priority to make it run better
-    if type daemon >/dev/null 2>&1; then
-        daemon --user=$user $exec -ud $config
-    else
+    if type start-stop-daemon >/dev/null 2>&1; then
         start-stop-daemon --start --user $user --name $prog --pidfile $pidfile --exec $exec -- -ud $config
+    else
+        daemon --user=$user $exec -ud $config
     fi
     retval=$?
     echo
