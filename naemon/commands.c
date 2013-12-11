@@ -99,6 +99,9 @@ int close_command_file(void)
 	return OK;
 }
 
+int disconnect_command_file_worker(void) {
+	iobroker_unregister(nagios_iobs, command_worker.sd);
+}
 
 /* shutdown command file worker thread */
 int shutdown_command_file_worker(void)
@@ -217,10 +220,14 @@ int launch_command_file_worker(void)
 
 	/*
 	 * if we're restarting, we may well already have a command
-	 * file worker process attached. Keep it if that's so.
+	 * file worker process running, but disconnected. Reconnect if so.
 	 */
 	if (command_worker.pid && kill(command_worker.pid, 0) == 0 &&
 	    iobroker_is_registered(nagios_iobs, command_worker.sd)) {
+	if (command_worker.pid && kill(command_worker.pid, 0) == 0) {
+		if (!iobroker_is_registered(nagios_iobs, command_worker.sd)) {
+			iobroker_register(nagios_iobs, command_worker.sd, NULL, command_input_handler);
+		}
 		return 0;
 	}
 

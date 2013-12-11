@@ -778,6 +778,8 @@ int main(int argc, char **argv)
 				broker_program_state(NEBTYPE_PROCESS_RESTART, NEBFLAG_USER_INITIATED, NEBATTR_RESTART_NORMAL, NULL);
 #endif
 
+			disconnect_command_file_worker();
+
 			/* save service and host state information */
 			save_state_information(FALSE);
 			cleanup_retention_data();
