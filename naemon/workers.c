@@ -86,7 +86,7 @@ static const char *wpjob_type_name(unsigned int type)
 	return "UNKNOWN";
 }
 
-static void wproc_logdump_buffer(int level, int show, const char *prefix, char *buf)
+static void wproc_logdump_buffer(int debuglevel, int verbosity, const char *prefix, char *buf)
 {
 	char *ptr, *eol;
 	unsigned int line = 1;
@@ -97,6 +97,7 @@ static void wproc_logdump_buffer(int level, int show, const char *prefix, char *
 		if ((eol = strchr(ptr, '\n')))
 			* eol = 0;
 		logit(level, show, "%s line %.02d: %s\n", prefix, line++, ptr);
+		log_debug_info(debuglevel, verbosity, "%s line %.02d: %s\n", prefix, line++, ptr);
 		if (eol)
 			*eol = '\n';
 		else
@@ -675,23 +676,23 @@ static int handle_worker_result(int sd, int events, void *arg)
 			         WEXITSTATUS(wpres.wait_status));
 		}
 		if (error_reason) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "wproc: %s job %d from worker %s %s",
+			log_debug_info(DEBUGL_IPC, DEBUGV_BASIC, "wproc: %s job %d from worker %s %s",
 			      wpjob_type_name(job->type), job->id, wp->name, error_reason);
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "wproc:   command: %s\n", job->command);
+			log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   command: %s\n", job->command);
 			if (job->type != WPJOB_CHECK && oj) {
-				logit(NSLOG_RUNTIME_ERROR, TRUE, "wproc:   host=%s; service=%s; contact=%s\n",
+				log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   host=%s; service=%s; contact=%s\n",
 				      oj->host_name ? oj->host_name : "(none)",
 				      oj->service_description ? oj->service_description : "(none)",
 				      oj->contact_name ? oj->contact_name : "(none)");
 			} else if (oj) {
 				struct check_result *cr = (struct check_result *)job->arg;
-				logit(NSLOG_RUNTIME_ERROR, TRUE, "wproc:   host=%s; service=%s;\n",
+				log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   host=%s; service=%s;\n",
 				      cr->host_name, cr->service_description);
 			}
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "wproc:   early_timeout=%d; exited_ok=%d; wait_status=%d; error_code=%d;\n",
+			log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   early_timeout=%d; exited_ok=%d; wait_status=%d; error_code=%d;\n",
 			      wpres.early_timeout, wpres.exited_ok, wpres.wait_status, wpres.error_code);
-			wproc_logdump_buffer(NSLOG_RUNTIME_ERROR, TRUE, "wproc:   stderr", wpres.outerr);
-			wproc_logdump_buffer(NSLOG_RUNTIME_ERROR, TRUE, "wproc:   stdout", wpres.outstd);
+			wproc_logdump_buffer(DEBUGL_IPC, DEBUGV_MOST, "wproc:   stderr", wpres.outerr);
+			wproc_logdump_buffer(DEBUGL_IPC, DEBUGV_MOST, "wproc:   stdout", wpres.outstd);
 		}
 		my_free(error_reason);
 

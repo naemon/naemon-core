@@ -721,7 +721,6 @@ void enter_worker(int sd, int (*cb)(child_process *))
 				kill_job(cp, ESTALE);
 			} else {
 				/* this job timed out, so kill it */
-				wlog("job %d (pid=%d) timed out. Killing it", cp->id, cp->ei->pid);
 				kill_job(cp, ETIME);
 			}
 		}
