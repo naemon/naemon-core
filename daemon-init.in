@@ -6,7 +6,7 @@
 # description:  Naemon is a service monitoring system
 # processname:  naemon
 # config:       /etc/naemon/naemon.cfg
-# pidfile:      /var/naemon/naemon.pid
+# pidfile:      /var/cache/naemon/naemon.pid
 #
 ### BEGIN INIT INFO
 # Provides:          naemon
@@ -24,6 +24,7 @@
 if [ -e /etc/rc.d/init.d/functions ]; then
   . /etc/rc.d/init.d/functions
 fi
+
 status() {
   [ ! -e $pidfile ] && return 1;
   PID=`cat $pidfile`;
@@ -44,18 +45,6 @@ checkconfig="false"
 test -e /etc/sysconfig/$prog && . /etc/sysconfig/$prog
 
 lockfile=/var/lock/subsys/$prog
-USE_RAMDISK=${USE_RAMDISK:-0}
-ramdiskdir=${RAMDISK_MOUNTPOINT:-/var/naemon/ramcache}
-
-if test "$USE_RAMDISK" -ne 0 && test "$RAMDISK_SIZE"X != "X"; then
-    ramdisk=`mount |grep "$ramdiskdir type tmpfs"`
-    if [ "$ramdisk"X == "X" ]; then
-        mkdir -p -m 0755 $ramdiskdir
-        mount -t tmpfs -o size=${RAMDISK_SIZE}m tmpfs $ramdiskdir
-        mkdir -p -m 0755 $ramdiskdir/checkresults
-        chown -R $user:$group $ramdiskdir
-    fi
-fi
 
 check_config() {
     TMPFILE=$(mktemp /tmp/.configtest.XXXXXXXX)
@@ -89,9 +78,9 @@ start() {
     # We need to _make sure_ the precache is there and verified
     # Raise priority to make it run better
     if type start-stop-daemon >/dev/null 2>&1; then
-        start-stop-daemon --start --user $user --name $prog --pidfile $pidfile --exec $exec -- -ud $config
+        start-stop-daemon --start --user $user --name $prog --pidfile $pidfile --exec $exec -- -d $config
     else
-        daemon --user=$user $exec -ud $config
+        daemon --user=$user $exec -d $config
     fi
     retval=$?
     echo
