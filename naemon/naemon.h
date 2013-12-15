@@ -446,7 +446,7 @@ extern int qh_register_handler(const char *name, const char *description, unsign
 extern const char *qh_strerror(int code);
 
 /**** Configuration Functions ****/
-int read_main_config_file(char *);                     		/* reads the main config file (nagios.cfg) */
+int read_main_config_file(char *);                     		/* reads the main config file (naemon.cfg) */
 int read_resource_file(char *);					/* processes macros in resource file */
 int read_all_object_data(char *);				/* reads all object config data */
 
