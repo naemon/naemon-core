@@ -397,7 +397,7 @@ int main(int argc, char **argv)
 		if (result != OK) {
 			printf("   Error processing object config files!\n\n");
 			/* if the config filename looks fishy, warn the user */
-			if (!strstr(config_file, "nagios.cfg")) {
+			if (!strstr(config_file, "naemon.cfg")) {
 				printf("\n***> The name of the main configuration file looks suspicious...\n");
 				printf("\n");
 				printf("     Make sure you are specifying the name of the MAIN configuration file on\n");
