@@ -17,6 +17,7 @@
 #include <pwd.h>
 #include <dirent.h>
 #include <math.h>
+#include <poll.h>
 
 #define SECS_PER_DAY 86400
 /* global varaiables only used by the daemon */
