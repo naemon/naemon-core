@@ -96,7 +96,6 @@ static void wproc_logdump_buffer(int debuglevel, int verbosity, const char *pref
 	for (ptr = buf; ptr && *ptr; ptr = eol ? eol + 1 : NULL) {
 		if ((eol = strchr(ptr, '\n')))
 			* eol = 0;
-		logit(level, show, "%s line %.02d: %s\n", prefix, line++, ptr);
 		log_debug_info(debuglevel, verbosity, "%s line %.02d: %s\n", prefix, line++, ptr);
 		if (eol)
 			*eol = '\n';
