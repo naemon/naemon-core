@@ -29,3 +29,4 @@ install-sample-config:
 install-data-local:
 	mkdir -p $(DESTDIR)/var/cache/naemon/checkresults
 	mkdir -p $(DESTDIR)/var/lib/naemon
+	mkdir -p $(DESTDIR)/var/log/naemon

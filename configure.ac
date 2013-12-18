@@ -140,6 +140,14 @@ AC_ARG_WITH([lockfile],
 lockfile="$with_lockfile"
 AC_SUBST(lockfile)
 
+# Determine the logpath
+AC_ARG_WITH([logdir],
+[AS_HELP_STRING([--with-logdir],
+[specify the naemon log directory @<:@default="/var/log/naemon"@:>@])],
+[], [with_logdir="/var/log/naemon"])
+logdir="$with_logdir"
+AC_SUBST(logdir)
+
 AC_SUBST(libdir)
 AC_CONFIG_FILES([Makefile
                  daemon-init

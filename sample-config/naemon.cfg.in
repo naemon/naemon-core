@@ -15,7 +15,7 @@
 # for historical purposes.  This should be the first option specified
 # in the config file!!!
 
-log_file=@localstatedir@/naemon.log
+log_file=@logdir@/naemon.log
 
 
 
@@ -227,7 +227,7 @@ log_rotation_method=d
 # This is the directory where archived (rotated) log files should be
 # placed (assuming you've chosen to do log rotation).
 
-log_archive_path=@localstatedir@/archives
+log_archive_path=@logdir@/archives
 
 
 
@@ -235,7 +235,7 @@ log_archive_path=@localstatedir@/archives
 # If you want messages logged to the syslog facility, as well as the
 # Naemon log file set this option to 1.  If not, set it to 0.
 
-use_syslog=1
+use_syslog=0
 
 
 
