@@ -92,7 +92,8 @@ start() {
 
 stop() {
     echo -n $"Stopping $prog: "
-    pkill -u ${user} -f ${exec}
+    pkill -u ${user} -f ${exec} || \
+    pkill -u ${user} -f $(basename $exec) # ex.: sles uses basename only
     retval=$?
     echo
     test $retval -eq 0 && rm -f $lockfile
