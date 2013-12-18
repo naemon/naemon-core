@@ -2389,7 +2389,7 @@ int cmd_acknowledge_problem(int cmd, char *args)
 	/* get the type */
 	if ((temp_ptr = my_strtok(NULL, ";")) == NULL)
 		return ERROR;
-	type = atoi(temp_ptr);
+	type = (atoi(temp_ptr) > 0) ? TRUE : FALSE;
 
 	/* get the notification option */
 	if ((temp_ptr = my_strtok(NULL, ";")) == NULL)
@@ -4122,7 +4122,7 @@ void acknowledge_host_problem(host *hst, char *ack_author, char *ack_data, int t
 	hst->problem_has_been_acknowledged = TRUE;
 
 	/* set the acknowledgement type */
-	hst->acknowledgement_type = (type == ACKNOWLEDGEMENT_STICKY) ? ACKNOWLEDGEMENT_STICKY : ACKNOWLEDGEMENT_NORMAL;
+	hst->acknowledgement_type = type ? ACKNOWLEDGEMENT_STICKY : ACKNOWLEDGEMENT_NORMAL;
 
 	/* update the status log with the host info */
 	update_host_status(hst, FALSE);
@@ -4157,7 +4157,7 @@ void acknowledge_service_problem(service *svc, char *ack_author, char *ack_data,
 	svc->problem_has_been_acknowledged = TRUE;
 
 	/* set the acknowledgement type */
-	svc->acknowledgement_type = (type == ACKNOWLEDGEMENT_STICKY) ? ACKNOWLEDGEMENT_STICKY : ACKNOWLEDGEMENT_NORMAL;
+	svc->acknowledgement_type = type ? ACKNOWLEDGEMENT_STICKY : ACKNOWLEDGEMENT_NORMAL;
 
 	/* update the status log with the service info */
 	update_service_status(svc, FALSE);
