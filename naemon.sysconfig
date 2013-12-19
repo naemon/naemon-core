@@ -1,4 +1,0 @@
-# Setup some basic values for startup
-
-# Should the process be niced
-NICELEVEL=-15
