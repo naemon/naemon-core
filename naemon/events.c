@@ -8,6 +8,10 @@
 #include "sretention.h"
 #include "workers.h"
 #include "lib/squeue.h"
+#include "events.h"
+#include "utils.h"
+#include "checks.h"
+#include "notifications.h"
 #include <math.h>
 
 /* the event we're currently processing */

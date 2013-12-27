@@ -1,3 +1,4 @@
+#include "flapping.h"
 #include "config.h"
 #include "common.h"
 #include "objects.h"
@@ -5,6 +6,7 @@
 #include "statusdata.h"
 #include "nagios.h"
 #include "broker.h"
+#include "notifications.h"
 
 
 /******************************************************************/

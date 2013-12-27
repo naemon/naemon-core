@@ -2,6 +2,9 @@
 #include "nagios.h"
 #include "lib/libnaemon.h"
 #include "lib/nsock.h"
+#include "query-handler.h"
+#include "events.h"
+#include "utils.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
