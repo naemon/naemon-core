@@ -9,6 +9,9 @@
 #include "nebmods.h"
 #include "nebmodules.h"
 #include "workers.h"
+#include "utils.h"
+#include "commands.h"
+#include "checks.h"
 #include <assert.h>
 #include <limits.h>
 #include <sys/types.h>
@@ -190,9 +193,6 @@ char    *service_perfdata_file_processing_command = NULL;
 int     host_perfdata_process_empty_results = DEFAULT_HOST_PERFDATA_PROCESS_EMPTY_RESULTS;
 int     service_perfdata_process_empty_results = DEFAULT_SERVICE_PERFDATA_PROCESS_EMPTY_RESULTS;
 /*** end perfdata variables */
-
-/* Filename variables used by handle_sigxfsz */
-extern char *status_file;
 
 static long long check_file_size(char *, unsigned long, struct rlimit);
 

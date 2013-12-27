@@ -12,6 +12,12 @@
 #include "nebmods.h"
 #include "nebmodules.h"
 #include "workers.h"
+#include "nerd.h"
+#include "query-handler.h"
+#include "configuration.h"
+#include "commands.h"
+#include "events.h"
+#include "utils.h"
 #include <getopt.h>
 
 static int is_worker;

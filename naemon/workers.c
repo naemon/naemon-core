@@ -11,6 +11,8 @@
 #include <string.h>
 #include "naemon.h"
 #include "workers.h"
+#include "query-handler.h"
+#include "utils.h"
 
 /* perfect hash function for wproc response codes */
 #include "wpres-phash.h"

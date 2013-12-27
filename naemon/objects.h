@@ -687,6 +687,13 @@ extern struct servicedependency **servicedependency_ary;
 
 /********************* FUNCTIONS **********************/
 
+
+/* silly helpers useful pretty much all over the place */
+extern const char *service_state_name(int state);
+extern const char *host_state_name(int state);
+extern const char *state_type_name(int state_type);
+extern const char *check_type_name(int check_type);
+
 /**** Top-level input functions ****/
 int read_object_config_data(const char *, int);     /* reads all external configuration data of specific types */
 

@@ -5,6 +5,8 @@
 #include "statusdata.h"
 #include "nagios.h"
 #include "broker.h"
+#include "events.h"
+#include "notifications.h"
 
 
 scheduled_downtime *scheduled_downtime_list = NULL;

@@ -1,3 +1,4 @@
+#include "sehandlers.h"
 #include "config.h"
 #include "comments.h"
 #include "common.h"
@@ -8,6 +9,7 @@
 #include "perfdata.h"
 #include "broker.h"
 #include "workers.h"
+#include "utils.h"
 
 #ifdef USE_EVENT_BROKER
 #include "neberrors.h"

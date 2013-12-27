@@ -1,3 +1,4 @@
+#include "checks.h"
 #include "config.h"
 #include "comments.h"
 #include "common.h"
@@ -8,6 +9,11 @@
 #include "broker.h"
 #include "perfdata.h"
 #include "workers.h"
+#include "utils.h"
+#include "events.h"
+#include "flapping.h"
+#include "sehandlers.h"
+#include "notifications.h"
 
 /*#define DEBUG_CHECKS*/
 /*#define DEBUG_HOST_CHECKS 1*/

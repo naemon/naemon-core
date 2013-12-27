@@ -7,6 +7,7 @@
 #include "macros.h"
 #include "xsddefault.h"
 #include "nagios.h"
+#include "utils.h"
 
 time_t program_start;
 int daemon_mode;
