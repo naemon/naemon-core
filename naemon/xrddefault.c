@@ -8,7 +8,9 @@
 #include "comments.h"
 #include "downtime.h"
 #include "xrddefault.h"
-
+#include "utils.h"
+#include "flapping.h"
+#include "notifications.h"
 
 /******************************************************************/
 /********************* INIT/CLEANUP FUNCTIONS *********************/

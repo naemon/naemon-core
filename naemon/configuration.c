@@ -6,6 +6,8 @@
 #include "broker.h"
 #include "nebmods.h"
 #include "nebmodules.h"
+#include "utils.h"
+#include "configuration.h"
 #include <sys/types.h>
 #include <dirent.h>
 

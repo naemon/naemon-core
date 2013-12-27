@@ -5,6 +5,7 @@
 #include "xcddefault.h"
 #include "nagios.h"
 #include "broker.h"
+#include "events.h"
 
 comment     *comment_list = NULL;
 int	    defer_comment_sorting = 0;

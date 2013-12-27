@@ -1,3 +1,4 @@
+#include "notifications.h"
 #include "config.h"
 #include "common.h"
 #include "objects.h"
@@ -7,6 +8,8 @@
 #include "broker.h"
 #include "neberrors.h"
 #include "workers.h"
+#include "utils.h"
+#include "checks.h"
 
 /*** silly helpers ****/
 static contact *find_contact_by_name_or_alias(const char *name)

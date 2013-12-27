@@ -5,6 +5,8 @@
 #include "nagios.h"
 #include "workers.h"
 #include "xpddefault.h"
+#include "events.h"
+#include "utils.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

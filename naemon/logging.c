@@ -4,6 +4,7 @@
 #include "macros.h"
 #include "nagios.h"
 #include "broker.h"
+#include "utils.h"
 #include <fcntl.h>
 #include <syslog.h>
 #include <stdarg.h>
