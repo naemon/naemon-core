@@ -48,7 +48,7 @@ naemon_CPPFLAGS=$(AM_CPPFLAGS) -DPREFIX='"$(prefix)"'
 naemon_LDADD=\
 	lib/libnaemon.la \
 	-lm -ldl
-naemon_LDFLAGS=-rdynamic
+naemon_LDFLAGS=-rdynamic -static
 
 #naemonworker_SOURCES=
 #naemonworker_LDADD=$(top_builddir)/naemon/worker/libnaemon_worker.a \
