@@ -72,8 +72,8 @@ else
 fi
 
 AC_DEFINE(NAEMON_PROCESS_NAME, "Naemon Process", [Process name for naemon])
-AC_DEFINE(DEFAULT_NAGIOS_USER, "naemon", [Default user name to run naemon as])
-AC_DEFINE(DEFAULT_NAGIOS_GROUP, "naemon", [Default group name to run naemon as])
+AC_DEFINE(DEFAULT_NAEMON_USER, "naemon", [Default user name to run naemon as])
+AC_DEFINE(DEFAULT_NAEMON_GROUP, "naemon", [Default group name to run naemon as])
 AC_DEFINE(USE_EVENT_BROKER, 1, [Use event brokers])
 
 # Checks for library functions.

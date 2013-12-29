@@ -280,14 +280,14 @@ int read_main_config_file(char *main_config_file)
 			ochp_command = (char *)strdup(value);
 		}
 
-		else if (!strcmp(variable, "nagios_user")) {
-			my_free(nagios_user);
-			nagios_user = (char *)strdup(value);
+		else if (!strcmp(variable, "nagios_user") || !strcmp(variable, "naemon_user")) {
+			my_free(naemon_user);
+			naemon_user = (char *)strdup(value);
 		}
 
-		else if (!strcmp(variable, "nagios_group")) {
-			my_free(nagios_group);
-			nagios_group = (char *)strdup(value);
+		else if (!strcmp(variable, "nagios_group") || !strcmp(variable, "naemon_group")) {
+			my_free(naemon_group);
+			naemon_group = (char *)strdup(value);
 		}
 
 		else if (!strcmp(variable, "admin_email")) {

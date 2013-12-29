@@ -686,15 +686,15 @@ void display_scheduling_info(void)
 		suggestions++;
 	}
 	if (loadctl.nofile_limit * 0.4 < minimum_concurrent_checks) {
-		printf("* Increase the \"open files\" ulimit for user '%s'\n", nagios_user);
+		printf("* Increase the \"open files\" ulimit for user '%s'\n", naemon_user);
 		printf(" - You can do this by adding\n      %s hard nofiles %d\n   to /etc/security/limits.conf\n",
-		       nagios_user, rup2pof2(minimum_concurrent_checks * 2));
+		       naemon_user, rup2pof2(minimum_concurrent_checks * 2));
 		suggestions++;
 	}
 	if (loadctl.nproc_limit * 0.75 < minimum_concurrent_checks) {
-		printf("* Increase the \"max user processes\" ulimit for user '%s'\n", nagios_user);
+		printf("* Increase the \"max user processes\" ulimit for user '%s'\n", naemon_user);
 		printf(" - You can do this by adding\n      %s hard nproc %d\n   to /etc/security/limits.conf\n",
-		       nagios_user, rup2pof2(minimum_concurrent_checks));
+		       naemon_user, rup2pof2(minimum_concurrent_checks));
 		suggestions++;
 	}
 

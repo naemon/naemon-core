@@ -32,8 +32,8 @@ char *lock_file = NULL;
 int num_check_workers = 0; /* auto-decide */
 char *qh_socket_path = NULL; /* disabled */
 
-char *nagios_user = NULL;
-char *nagios_group = NULL;
+char *naemon_user = NULL;
+char *naemon_group = NULL;
 
 char *ocsp_command = NULL;
 char *ochp_command = NULL;
@@ -1683,7 +1683,7 @@ int daemon_init(void)
 	if (fcntl(lockfile, F_SETLK, &lock) < 0) {
 		if (errno == EACCES || errno == EAGAIN) {
 			fcntl(lockfile, F_GETLK, &lock);
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Lockfile '%s' looks like its already held by another instance of Nagios (PID %d).  Bailing out...", lock_file, (int)lock.l_pid);
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Lockfile '%s' looks like its already held by another instance of Naemon (PID %d).  Bailing out...", lock_file, (int)lock.l_pid);
 		} else
 			logit(NSLOG_RUNTIME_ERROR, TRUE, "Cannot lock lockfile '%s': %s. Bailing out...", lock_file, strerror(errno));
 
@@ -2824,9 +2824,9 @@ void free_memory(nagios_macros *mac)
 	my_free(illegal_object_chars);
 	my_free(illegal_output_chars);
 
-	/* free nagios user and group */
-	my_free(nagios_user);
-	my_free(nagios_group);
+	/* free naemon user and group */
+	my_free(naemon_user);
+	my_free(naemon_group);
 
 	/* free file/path variables */
 	my_free(debug_file);
@@ -2894,8 +2894,8 @@ int reset_variables(void)
 	object_cache_file = (char *)strdup(DEFAULT_OBJECT_CACHE_FILE);
 	object_precache_file = (char *)strdup(DEFAULT_PRECACHED_OBJECT_FILE);
 
-	nagios_user = (char *)strdup(DEFAULT_NAGIOS_USER);
-	nagios_group = (char *)strdup(DEFAULT_NAGIOS_GROUP);
+	naemon_user = (char *)strdup(DEFAULT_NAEMON_USER);
+	naemon_group = (char *)strdup(DEFAULT_NAEMON_GROUP);
 
 	use_regexp_matches = FALSE;
 	use_true_regexp_matching = FALSE;

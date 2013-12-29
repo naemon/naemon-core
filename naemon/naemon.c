@@ -378,7 +378,7 @@ int main(int argc, char **argv)
 			printf("   Read main config file okay...\n");
 
 		/* drop privileges */
-		if ((result = drop_privileges(nagios_user, nagios_group)) == ERROR) {
+		if ((result = drop_privileges(naemon_user, naemon_group)) == ERROR) {
 			printf("   Failed to drop privileges.  Aborting.");
 			exit(EXIT_FAILURE);
 		}
@@ -538,7 +538,7 @@ int main(int argc, char **argv)
 			asprintf(&mac->x[MACRO_PROCESSSTARTTIME], "%lu", (unsigned long)program_start);
 
 			/* drop privileges */
-			if (drop_privileges(nagios_user, nagios_group) == ERROR) {
+			if (drop_privileges(naemon_user, naemon_group) == ERROR) {
 
 				logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_CONFIG_ERROR, TRUE, "Failed to drop privileges.  Aborting.");
 
