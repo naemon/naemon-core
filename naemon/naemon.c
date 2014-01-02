@@ -626,6 +626,19 @@ int main(int argc, char **argv)
 			/* now that workers have arrived we can set the defaults */
 			set_loadctl_defaults();
 
+			/* read in all object config data */
+			if (result == OK)
+				result = read_all_object_data(config_file);
+
+			/*
+			 * the queue has to be initialized befor loading the neb modules
+			 * to give them the chance to register user events.
+			 * (initializing event queue requires number of objects, so do
+			 * this after parsing the objects)
+			 */
+			init_event_queue();
+			timing_point("Event queue initialized\n");
+
 #ifdef USE_EVENT_BROKER
 			/* load modules */
 			if (neb_load_all_modules() != OK) {
@@ -641,10 +654,6 @@ int main(int argc, char **argv)
 			broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE, NULL);
 			timing_point("First callback made\n");
 #endif
-
-			/* read in all object config data */
-			if (result == OK)
-				result = read_all_object_data(config_file);
 
 			/* there was a problem reading the config files */
 			if (result != OK)
@@ -680,10 +689,6 @@ int main(int argc, char **argv)
 			/* write the objects.cache file */
 			fcache_objects(object_cache_file);
 			timing_point("Objects cached\n");
-
-			init_event_queue();
-			timing_point("Event queue initialized\n");
-
 
 #ifdef USE_EVENT_BROKER
 			/* send program data to broker */
