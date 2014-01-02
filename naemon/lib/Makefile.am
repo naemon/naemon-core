@@ -15,7 +15,7 @@ libnaemon_la_SOURCES = $(pkginclude_HEADERS) \
 TESTS = test-bitmap test-dkhash test-fanout test-iobroker test-iocache \
 	test-kvvec test-nsutils test-runcmd test-squeue
 
-$(TESTS): libnaemon.a t-utils.c t-utils.h
+$(TESTS): .libs/libnaemon.a t-utils.c t-utils.h
 
 distclean-local:
 	rm -rf Makefile.in
