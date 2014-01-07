@@ -15,8 +15,7 @@ reward if you like.
 
 The easiest way is probably to fork this project on github, and then
 send pull requests to the original project. You can also send patches
-to ageric79@gmail.com (although we'll be getting a mailing-list set
-up for it "as soon as we can be bothered").
+to <naemon-dev@monitoring-lists.org>.
 
 #### Commit messages ####
 Commit messages MUST contain a Signed-off-by line and have a proper
