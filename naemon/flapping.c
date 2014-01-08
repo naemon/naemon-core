@@ -137,7 +137,7 @@ void check_for_host_flapping(host *hst, int update, int actual_check, int allow_
 		wait_threshold = (hst->total_service_check_interval * interval_length) / hst->total_services;
 
 	/* update history on actual checks and when enough time has passed */
-	if (current_time - hst->last_state_history_update > wait_threshold)
+	if (current_time - hst->last_state_history_update > (time_t)wait_threshold)
 		update = TRUE;
 	if (actual_check == TRUE)
 		update = TRUE;
