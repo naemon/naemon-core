@@ -6,6 +6,7 @@ wpres-phash.h: wpres.gperf
 	$(GPERF) --switch=1 --struct-type \
 		--hash-function-name=wpres_key_phash \
 		--lookup-function-name=wpres_get_key \
+		--language=ANSI-C \
 	$< > $@
 
 CLEANFILES = wpres-phash.h
