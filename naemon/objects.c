@@ -1623,7 +1623,7 @@ serviceescalation *add_serviceescalation(char *host_name, char *description, int
 	if (!new_serviceescalation)
 		return NULL;
 
-	if (add_object_to_objectlist(&svc->escalation_list, new_serviceescalation) != OK) {
+	if (prepend_object_to_objectlist(&svc->escalation_list, new_serviceescalation) != OK) {
 		logit(NSLOG_CONFIG_ERROR, TRUE, "Could not add escalation to service '%s' on host '%s'\n",
 		      svc->host_name, svc->description);
 		return NULL;
@@ -1816,7 +1816,7 @@ hostescalation *add_hostescalation(char *host_name, int first_notification, int 
 	new_hostescalation = calloc(1, sizeof(*new_hostescalation));
 
 	/* add the escalation to its host */
-	if (add_object_to_objectlist(&h->escalation_list, new_hostescalation) != OK) {
+	if (prepend_object_to_objectlist(&h->escalation_list, new_hostescalation) != OK) {
 		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not add hostescalation to host '%s'\n", host_name);
 		free(new_hostescalation);
 		return NULL;

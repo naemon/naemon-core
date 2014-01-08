@@ -5793,7 +5793,7 @@ int xodtemplate_recombobulate_contactgroups(void)
 					logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not find member group '%s' specified in contactgroup '%s' (config file '%s', starting on line %d)\n", ptr, temp_contactgroup->contactgroup_name, xodtemplate_config_file_name(temp_contactgroup->_config_file), temp_contactgroup->_start_line);
 					return ERROR;
 				}
-				add_object_to_objectlist(&temp_contactgroup->group_list, cg);
+				prepend_object_to_objectlist(&temp_contactgroup->group_list, cg);
 			}
 			my_free(temp_contactgroup->contactgroup_members);
 		}
@@ -5971,7 +5971,7 @@ int xodtemplate_recombobulate_hostgroups(void)
 				logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not find member group '%s' specified in hostgroup '%s' (config file '%s', starting on line %d)\n", ptr, temp_hostgroup->hostgroup_name, xodtemplate_config_file_name(temp_hostgroup->_config_file), temp_hostgroup->_start_line);
 				return ERROR;
 			}
-			add_object_to_objectlist(&temp_hostgroup->group_list, hg);
+			prepend_object_to_objectlist(&temp_hostgroup->group_list, hg);
 		}
 
 		/* move on if we have no members */
@@ -6150,7 +6150,7 @@ int xodtemplate_recombobulate_servicegroups(void)
 					return ERROR;
 
 				}
-				add_object_to_objectlist(&temp_servicegroup->group_list, sg);
+				prepend_object_to_objectlist(&temp_servicegroup->group_list, sg);
 				if (!next_ptr)
 					break;
 			}
@@ -8549,7 +8549,7 @@ int xodtemplate_expand_contacts(objectlist **ret, bitmap *reject_map, char *cont
 					continue;
 
 				/* add contact to list */
-				add_object_to_objectlist(ret, temp_contact);
+				prepend_object_to_objectlist(ret, temp_contact);
 			}
 
 			/* free memory allocated to compiled regexp */
@@ -8574,7 +8574,7 @@ int xodtemplate_expand_contacts(objectlist **ret, bitmap *reject_map, char *cont
 						continue;
 
 					/* add contact to list */
-					add_object_to_objectlist(ret, temp_contact);
+					prepend_object_to_objectlist(ret, temp_contact);
 				}
 			}
 
@@ -8597,7 +8597,7 @@ int xodtemplate_expand_contacts(objectlist **ret, bitmap *reject_map, char *cont
 					if (reject_item) {
 						bitmap_set(reject_map, temp_contact->id);
 					} else {
-						add_object_to_objectlist(ret, temp_contact);
+						prepend_object_to_objectlist(ret, temp_contact);
 					}
 				}
 			}
@@ -8674,7 +8674,7 @@ objectlist *xodtemplate_expand_hostgroups_and_hosts(char *hostgroups, char *host
 			xodtemplate_host *h = (xodtemplate_host *)hlist->object_ptr;
 			if (bitmap_isset(reject, h->id))
 				continue;
-			add_object_to_objectlist(&ret, h);
+			prepend_object_to_objectlist(&ret, h);
 		}
 	}
 	bitmap_destroy(reject);
@@ -8749,7 +8749,7 @@ int xodtemplate_expand_hostgroups(objectlist **list, bitmap *reject_map, char *h
 				if (temp_hostgroup->register_object == FALSE)
 					continue;
 
-				add_object_to_objectlist(list, temp_hostgroup);
+				prepend_object_to_objectlist(list, temp_hostgroup);
 			}
 
 			/* free memory allocated to compiled regexp */
@@ -8771,7 +8771,7 @@ int xodtemplate_expand_hostgroups(objectlist **list, bitmap *reject_map, char *h
 						continue;
 
 					/* add hostgroup to list */
-					add_object_to_objectlist(list, temp_hostgroup);
+					prepend_object_to_objectlist(list, temp_hostgroup);
 				}
 			}
 
@@ -8793,7 +8793,7 @@ int xodtemplate_expand_hostgroups(objectlist **list, bitmap *reject_map, char *h
 						bitmap_unite(reject_map, temp_hostgroup->member_map);
 					} else {
 						/* add hostgroup members to proper list */
-						add_object_to_objectlist(list, temp_hostgroup);
+						prepend_object_to_objectlist(list, temp_hostgroup);
 					}
 				}
 			}
@@ -8866,7 +8866,7 @@ int xodtemplate_expand_hosts(objectlist **list, bitmap *reject_map, char *hosts,
 					continue;
 
 				/* add host to list */
-				add_object_to_objectlist(list, temp_host);
+				prepend_object_to_objectlist(list, temp_host);
 			}
 
 			/* free memory allocated to compiled regexp */
@@ -8891,7 +8891,7 @@ int xodtemplate_expand_hosts(objectlist **list, bitmap *reject_map, char *hosts,
 						continue;
 
 					/* add host to list */
-					add_object_to_objectlist(list, temp_host);
+					prepend_object_to_objectlist(list, temp_host);
 				}
 			}
 
@@ -8912,7 +8912,7 @@ int xodtemplate_expand_hosts(objectlist **list, bitmap *reject_map, char *hosts,
 
 					/* add host to list */
 					if (!reject_item) {
-						add_object_to_objectlist(list, temp_host);
+						prepend_object_to_objectlist(list, temp_host);
 					} else {
 						bitmap_set(reject_map, temp_host->id);
 					}
@@ -8999,7 +8999,7 @@ int xodtemplate_expand_servicegroups(objectlist **list, bitmap *reject, char *se
 					continue;
 
 				/* add servicegroup to list */
-				add_object_to_objectlist(list, temp_servicegroup);
+				prepend_object_to_objectlist(list, temp_servicegroup);
 			}
 
 			/* free memory allocated to compiled regexp */
@@ -9043,7 +9043,7 @@ int xodtemplate_expand_servicegroups(objectlist **list, bitmap *reject, char *se
 					if (reject_item)
 						bitmap_unite(reject, temp_servicegroup->member_map);
 					else
-						add_object_to_objectlist(list, temp_servicegroup);
+						prepend_object_to_objectlist(list, temp_servicegroup);
 				}
 			}
 		}
@@ -9195,7 +9195,7 @@ int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, char *hos
 					continue;
 
 				/* add service to the list */
-				add_object_to_objectlist(list, temp_service);
+				prepend_object_to_objectlist(list, temp_service);
 			}
 
 			/* free memory allocated to compiled regexp */
@@ -9222,7 +9222,7 @@ int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, char *hos
 					continue;
 
 				/* add service to the list */
-				add_object_to_objectlist(list, temp_service);
+				prepend_object_to_objectlist(list, temp_service);
 			}
 		}
 
@@ -9243,7 +9243,7 @@ int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, char *hos
 				if (reject_item == TRUE)
 					bitmap_set(reject_map, temp_service->id);
 				else
-					add_object_to_objectlist(list, temp_service);
+					prepend_object_to_objectlist(list, temp_service);
 			}
 		}
 		/* we didn't find a match */
