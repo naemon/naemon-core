@@ -77,7 +77,7 @@ static void wlog(const char *fmt, ...)
 	va_start(ap, fmt);
 	len = vsnprintf(&lmsg[len], sizeof(lmsg) - 7, fmt, ap);
 	va_end(ap);
-	if (len < 0 || len >= (int)sizeof(lmsg))
+	if (len < 0 || len + 7 >= (int)sizeof(lmsg))
 		return;
 
 	len += 4; /* log= */
