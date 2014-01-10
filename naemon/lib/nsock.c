@@ -89,17 +89,17 @@ int nsock_unix(const char *path, unsigned int flags)
 	return sock;
 }
 
-static inline int nsock_vprintf(int sd, const char *fmt, va_list ap, int plus)
+static inline int nsock_vdprintf(int sd, const char *fmt, va_list ap, int plus)
 {
-	char buf[4096];
-	int len;
+	char *buf = NULL;
+	int len, ret;
 
-	/* -2 to accommodate vsnprintf()'s which don't include nul on overflow */
-	len = vsnprintf(buf, sizeof(buf) - 2, fmt, ap);
+	len = vasprintf(&buf, fmt, ap);
 	if (len < 0)
 		return len;
-	buf[len] = 0;
-	return write(sd, buf, len + plus); /* possibly include nul byte */
+	ret = write(sd, buf, len + plus);
+	free(buf);
+	return ret;
 }
 
 int nsock_printf_nul(int sd, const char *fmt, ...)
@@ -108,7 +108,7 @@ int nsock_printf_nul(int sd, const char *fmt, ...)
 	int ret;
 
 	va_start(ap, fmt);
-	ret = nsock_vprintf(sd, fmt, ap, 1);
+	ret = nsock_vdprintf(sd, fmt, ap, 1);
 	va_end(ap);
 	return ret;
 }
@@ -119,7 +119,7 @@ int nsock_printf(int sd, const char *fmt, ...)
 	int ret;
 
 	va_start(ap, fmt);
-	ret = nsock_vprintf(sd, fmt, ap, 0);
+	ret = nsock_vdprintf(sd, fmt, ap, 0);
 	va_end(ap);
 	return ret;
 }
