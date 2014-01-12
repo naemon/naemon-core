@@ -7,6 +7,7 @@
  * all of Naemon into it, and that they can remain general-purpose
  * code that can be reused for other things later.
  */
+#include "workers.h"
 #include "config.h"
 #include <string.h>
 #include "workers.h"
@@ -77,7 +78,6 @@ unsigned int wproc_num_workers_spawned = 0;
 static const char *wpjob_type_name(unsigned int type)
 {
 	switch (type) {
-	case WPJOB_CHECK: return "CHECK";
 	case WPJOB_NOTIFY: return "NOTIFY";
 	case WPJOB_OCSP: return "OCSP";
 	case WPJOB_OCHP: return "OCHP";
@@ -275,10 +275,6 @@ static void destroy_job(struct wproc_job *job)
 		return;
 
 	switch (job->type) {
-	case WPJOB_CHECK:
-		free_check_result(job->arg);
-		free(job->arg);
-		break;
 	case WPJOB_NOTIFY:
 	case WPJOB_OCSP:
 	case WPJOB_OCHP:
@@ -437,41 +433,6 @@ static int str2timeval(char *str, struct timeval *tv)
 		tv->tv_usec = strtoul(ptr2, &ptr, 10);
 	}
 	return 0;
-}
-
-static int handle_worker_check(wproc_result *wpres, struct wproc_worker *wp, struct wproc_job *job)
-{
-	int result = ERROR;
-	check_result *cr = (check_result *)job->arg;
-
-	memcpy(&cr->rusage, &wpres->rusage, sizeof(wpres->rusage));
-	cr->start_time.tv_sec = wpres->start.tv_sec;
-	cr->start_time.tv_usec = wpres->start.tv_usec;
-	cr->finish_time.tv_sec = wpres->stop.tv_sec;
-	cr->finish_time.tv_usec = wpres->stop.tv_usec;
-	if (WIFEXITED(wpres->wait_status)) {
-		cr->return_code = WEXITSTATUS(wpres->wait_status);
-	} else {
-		cr->return_code = STATE_UNKNOWN;
-	}
-
-	if (wpres->outstd && *wpres->outstd) {
-		cr->output = strdup(wpres->outstd);
-	} else if (wpres->outerr) {
-		asprintf(&cr->output, "(No output on stdout) stderr: %s", wpres->outerr);
-	} else {
-		cr->output = NULL;
-	}
-
-	cr->early_timeout = wpres->early_timeout;
-	cr->exited_ok = wpres->exited_ok;
-	cr->engine = NULL;
-	cr->source = wp->name;
-
-	process_check_result(cr);
-	free_check_result(cr);
-
-	return result;
 }
 
 /*
@@ -648,6 +609,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 		wpres.job_id = -1;
 		wpres.type = -1;
 		wpres.response = &kvv;
+		wpres.source = wp->name;
 		parse_worker_result(&wpres, &kvv);
 
 		job = get_job(wp, wpres.job_id);
@@ -678,15 +640,12 @@ static int handle_worker_result(int sd, int events, void *arg)
 			         WTERMSIG(wpres.wait_status),
 			         WCOREDUMP(wpres.wait_status) ? " (core dumped)" : "",
 			         tv_delta_f(&wpres.start, &wpres.stop));
-		} else if (job->type != WPJOB_CHECK && WEXITSTATUS(wpres.wait_status) != 0) {
-			asprintf(&error_reason, "is a non-check helper but exited with return code %d",
-			         WEXITSTATUS(wpres.wait_status));
 		}
 		if (error_reason) {
 			log_debug_info(DEBUGL_IPC, DEBUGV_BASIC, "wproc: %s job %d from worker %s %s",
 			      wpjob_type_name(job->type), job->id, wp->name, error_reason);
 			log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   command: %s\n", job->command);
-			if (job->type != WPJOB_CHECK && oj) {
+			if (oj) {
 				log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   host=%s; service=%s; contact=%s\n",
 				      oj->host_name ? oj->host_name : "(none)",
 				      oj->service_description ? oj->service_description : "(none)",
@@ -704,9 +663,6 @@ static int handle_worker_result(int sd, int events, void *arg)
 		my_free(error_reason);
 
 		switch (job->type) {
-		case WPJOB_CHECK:
-			ret = handle_worker_check(&wpres, wp, job);
-			break;
 		case WPJOB_NOTIFY:
 			if (wpres.early_timeout) {
 				if (oj->service_description) {
@@ -1070,20 +1026,6 @@ int wproc_run_host_job(int jtype, int timeout, host *hst, char *cmd, nagios_macr
 
 	job = create_job(jtype, oj, timeout, cmd);
 
-	return wproc_run_job(job, mac);
-}
-
-int wproc_run_check(check_result *cr, char *cmd, nagios_macros *mac)
-{
-	struct wproc_job *job;
-	int timeout;
-
-	if (cr->service_description)
-		timeout = service_check_timeout;
-	else
-		timeout = host_check_timeout;
-
-	job = create_job(WPJOB_CHECK, cr, timeout, cmd);
 	return wproc_run_job(job, mac);
 }
 
