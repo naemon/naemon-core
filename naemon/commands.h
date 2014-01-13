@@ -1,6 +1,8 @@
 #ifndef _COMMANDS_H
 #define _COMMANDS_H
 
+NAGIOS_BEGIN_DECL
+
 int open_command_file(void);					/* creates the external command file as a named pipe (FIFO) and opens it for reading */
 int close_command_file(void);					/* closes and deletes the external command file (FIFO) */
 
@@ -99,5 +101,7 @@ void disable_contact_service_notifications(contact *);  /* disables service noti
 int launch_command_file_worker(void);
 int shutdown_command_file_worker(void);
 int disconnect_command_file_worker(void);
+
+NAGIOS_END_DECL
 
 #endif

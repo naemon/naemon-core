@@ -66,6 +66,8 @@
 #define ILF_USER			0	/* user-specified interleave factor */
 #define ILF_SMART			1	/* smart interleave */
 
+NAGIOS_BEGIN_DECL
+
 int dump_event_stats(int sd);
 void init_timing_loop(void);                         		/* setup the initial scheduling queue */
 void display_scheduling_info(void);				/* displays service check scheduling information */
@@ -79,5 +81,7 @@ int handle_timed_event(timed_event *);		     		/* top level handler for timed ev
 void adjust_check_scheduling(void);		        	/* auto-adjusts scheduling of host and service checks */
 void compensate_for_system_time_change(unsigned long, unsigned long);	/* attempts to compensate for a change in the system time */
 void adjust_timestamp_for_time_change(time_t, time_t, unsigned long, time_t *); /* adjusts a timestamp variable for a system time change */
+
+NAGIOS_END_DECL
 
 #endif
