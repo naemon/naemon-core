@@ -23,9 +23,11 @@ naemon_SOURCES = \
 	downtime.c downtime.h \
 	events.c events.h \
 	flapping.c flapping.h \
+	globals.h \
+	loadctl.h \
 	logging.c logging.h \
 	macros.c macros.h \
-	naemon.c naemon.h \
+	naemon.c \
 	nebcallbacks.h neberrors.h \
 	nebmods.c nebmods.h \
 	nebmodules.h nebstructs.h \
@@ -45,7 +47,7 @@ naemon_SOURCES = \
 	xpddefault.c xpddefault.h \
 	xrddefault.c xrddefault.h \
 	xsddefault.c xsddefault.h \
-	nagios.h
+	nagios.h naemon.h
 naemon_CPPFLAGS=$(AM_CPPFLAGS) -DPREFIX='"$(prefix)"'
 naemon_LDADD=\
 	lib/libnaemon.la \

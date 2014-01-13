@@ -3,7 +3,6 @@
 #include "objects.h"
 #include "statusdata.h"
 #include "xsddefault.h"
-#include "nagios.h"
 #include "broker.h"
 
 

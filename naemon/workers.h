@@ -2,7 +2,8 @@
 #define INCLUDE_workers_h__
 #include "lib/libnagios.h"
 #include "lib/worker.h"
-#include "nagios.h" /* for check_result definition */
+#include "objects.h" /* for check_result definition */
+#include "macros.h"
 
 /* different jobtypes. We add more as needed */
 #define WPJOB_CHECK   0
@@ -43,6 +44,8 @@ typedef struct wproc_result {
 extern unsigned int wproc_num_workers_spawned;
 extern unsigned int wproc_num_workers_online;
 extern unsigned int wproc_num_workers_desired;
+
+struct load_control; /* TODO: load_control is ugly */
 
 extern void wproc_reap(int jobs, int msecs);
 extern int wproc_can_spawn(struct load_control *lc);

@@ -3,6 +3,69 @@
 
 #include "objects.h"
 
+
+/******************* EVENT TYPES **********************/
+
+#define EVENT_SERVICE_CHECK		0	/* active service check */
+#define EVENT_COMMAND_CHECK		1	/* external command check */
+#define EVENT_LOG_ROTATION		2	/* log file rotation */
+#define EVENT_PROGRAM_SHUTDOWN		3	/* program shutdown */
+#define EVENT_PROGRAM_RESTART		4	/* program restart */
+#define EVENT_CHECK_REAPER              5       /* reaps results from host and service checks */
+#define EVENT_ORPHAN_CHECK		6	/* checks for orphaned hosts and services */
+#define EVENT_RETENTION_SAVE		7	/* save (dump) retention data */
+#define EVENT_STATUS_SAVE		8	/* save (dump) status data */
+#define EVENT_SCHEDULED_DOWNTIME	9	/* scheduled host or service downtime */
+#define EVENT_SFRESHNESS_CHECK          10      /* checks service result "freshness" */
+#define EVENT_EXPIRE_DOWNTIME		11      /* checks for (and removes) expired scheduled downtime */
+#define EVENT_HOST_CHECK                12      /* active host check */
+#define EVENT_HFRESHNESS_CHECK          13      /* checks host result "freshness" */
+#define EVENT_RESCHEDULE_CHECKS		14      /* adjust scheduling of host and service checks */
+#define EVENT_EXPIRE_COMMENT            15      /* removes expired comments */
+#define EVENT_CHECK_PROGRAM_UPDATE      16      /* checks for new version of Nagios */
+#define EVENT_SLEEP                     98      /* asynchronous sleep event that occurs when event queues are empty */
+#define EVENT_USER_FUNCTION             99      /* USER-defined function (modules) */
+
+/*
+ * VERSIONFIX: Make EVENT_SLEEP and EVENT_USER_FUNCTION appear
+ * linearly in order.
+ */
+
+#define EVENT_TYPE_STR(type)	( \
+	type == EVENT_SERVICE_CHECK ? "SERVICE_CHECK" : \
+	type == EVENT_COMMAND_CHECK ? "COMMAND_CHECK" : \
+	type == EVENT_LOG_ROTATION ? "LOG_ROTATION" : \
+	type == EVENT_PROGRAM_SHUTDOWN ? "PROGRAM_SHUTDOWN" : \
+	type == EVENT_PROGRAM_RESTART ? "PROGRAM_RESTART" : \
+	type == EVENT_CHECK_REAPER ? "CHECK_REAPER" : \
+	type == EVENT_ORPHAN_CHECK ? "ORPHAN_CHECK" : \
+	type == EVENT_RETENTION_SAVE ? "RETENTION_SAVE" : \
+	type == EVENT_STATUS_SAVE ? "STATUS_SAVE" : \
+	type == EVENT_SCHEDULED_DOWNTIME ? "SCHEDULED_DOWNTIME" : \
+	type == EVENT_SFRESHNESS_CHECK ? "SFRESHNESS_CHECK" : \
+	type == EVENT_EXPIRE_DOWNTIME ? "EXPIRE_DOWNTIME" : \
+	type == EVENT_HOST_CHECK ? "HOST_CHECK" : \
+	type == EVENT_HFRESHNESS_CHECK ? "HFRESHNESS_CHECK" : \
+	type == EVENT_RESCHEDULE_CHECKS ? "RESCHEDULE_CHECKS" : \
+	type == EVENT_EXPIRE_COMMENT ? "EXPIRE_COMMENT" : \
+	type == EVENT_CHECK_PROGRAM_UPDATE ? "CHECK_PROGRAM_UPDATE" : \
+	type == EVENT_SLEEP ? "SLEEP" : \
+	type == EVENT_USER_FUNCTION ? "USER_FUNCTION" : \
+	"UNKNOWN" \
+)
+
+/******* INTER-CHECK DELAY CALCULATION TYPES **********/
+
+#define ICD_NONE			0	/* no inter-check delay */
+#define ICD_DUMB			1	/* dumb delay of 1 second */
+#define ICD_SMART			2	/* smart delay */
+#define ICD_USER			3       /* user-specified delay */
+
+/******* INTERLEAVE FACTOR CALCULATION TYPES **********/
+
+#define ILF_USER			0	/* user-specified interleave factor */
+#define ILF_SMART			1	/* smart interleave */
+
 int dump_event_stats(int sd);
 void init_timing_loop(void);                         		/* setup the initial scheduling queue */
 void display_scheduling_info(void);				/* displays service check scheduling information */

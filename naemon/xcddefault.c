@@ -4,8 +4,8 @@
 #include "comments.h"
 #include "macros.h"
 #include "objects.h"
-#include "nagios.h"
 #include "xcddefault.h"
+#include "globals.h"
 
 
 /******************************************************************/

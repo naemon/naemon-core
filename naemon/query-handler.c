@@ -1,13 +1,16 @@
 #include "config.h"
-#include "nagios.h"
 #include "lib/libnaemon.h"
 #include "lib/nsock.h"
 #include "query-handler.h"
 #include "events.h"
 #include "utils.h"
+#include "logging.h"
+#include "loadctl.h"
+#include "globals.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <string.h>
 
 /* A registered handler */
 struct query_handler {
