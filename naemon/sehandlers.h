@@ -16,6 +16,7 @@
 #define HOST_STATECHANGE                0
 #define SERVICE_STATECHANGE             1
 
+NAGIOS_BEGIN_DECL
 
 int obsessive_compulsive_service_check_processor(service *);	/* distributed monitoring craziness... */
 int obsessive_compulsive_host_check_processor(host *);		/* distributed monitoring craziness... */
@@ -25,5 +26,7 @@ int run_global_service_event_handler(nagios_macros *mac, service *);		/* runs th
 int handle_host_event(host *);					/* top level host event logic */
 int run_host_event_handler(nagios_macros *mac, host *);				/* runs the event handler for a specific host */
 int run_global_host_event_handler(nagios_macros *mac, host *);			/* runs the global host event handler */
+
+NAGIOS_END_DECL
 
 #endif

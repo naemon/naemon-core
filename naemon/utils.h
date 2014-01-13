@@ -4,6 +4,8 @@
 #include "objects.h"
 #include "macros.h"
 
+NAGIOS_BEGIN_DECL
+
 const char *check_result_source(check_result *cr);
 int set_loadctl_options(char *opts, unsigned int len);
 
@@ -68,4 +70,7 @@ char *get_program_version(void);
 char *get_program_modification_date(void);
 
 void cleanup(void);                                  	/* cleanup after ourselves (before quitting or restarting) */
+
+NAGIOS_END_DECL
+
 #endif

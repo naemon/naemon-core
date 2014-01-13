@@ -4,6 +4,8 @@
 #include "objects.h"
 #include "macros.h" /* For MAX_USER_MACROS */
 
+NAGIOS_BEGIN_DECL
+
 /*
  * global variables only used in the core. Reducing this list would be
  * a Good Thing(tm).
@@ -203,5 +205,7 @@ extern int     service_perfdata_process_empty_results;
 extern struct notify_list *notification_list;
 
 extern struct check_engine nagios_check_engine;
+
+NAGIOS_END_DECL
 
 #endif
