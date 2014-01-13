@@ -20,6 +20,7 @@
 		retry_check_window(o) : \
 		normal_check_window(o))
 
+NAGIOS_BEGIN_DECL
 
 int parse_check_output(char *, char **, char **, char **, int, int);
 int check_service_dependencies(service *, int);          	/* checks service dependencies */
@@ -54,5 +55,7 @@ void schedule_host_check(host *, time_t, int);		/* schedules an immediate or del
 /* GONE?!? */
 int perform_on_demand_host_check(host *, int *, int, int, unsigned long);
 int execute_sync_host_check(host *);
+
+NAGIOS_END_DECL
 
 #endif

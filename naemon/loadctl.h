@@ -1,6 +1,11 @@
 #ifndef LOADCTL_H_
 #define LOADCTL_H_
 
+/* options for load control */
+#define LOADCTL_ENABLED    (1 << 0)
+
+NAGIOS_BEGIN_DECL
+
 /*
  * Everything we need to keep system load in check.
  * Don't use this from modules.
@@ -25,8 +30,7 @@ struct load_control {
 };
 extern struct load_control loadctl;
 
-/* options for load control */
-#define LOADCTL_ENABLED    (1 << 0)
+NAGIOS_END_DECL
 
 
 #endif /* LOADCTL_H_ */

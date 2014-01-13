@@ -1,6 +1,8 @@
 #ifndef _NERD_H
 #define _NERD_H
 
+NAGIOS_BEGIN_DECL
+
 /** Nerd subscription type */
 struct nerd_subscription {
 	int sd;
@@ -15,5 +17,7 @@ extern int nerd_cancel_subscriber(int sd);
 extern int nerd_get_channel_id(const char *chan_name);
 extern objectlist *nerd_get_subscriptions(int chan_id);
 extern int nerd_broadcast(unsigned int chan_id, void *buf, unsigned int len);
+
+NAGIOS_END_DECL
 
 #endif

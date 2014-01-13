@@ -23,6 +23,8 @@
 #define NOTIFICATION_DOWNTIMECANCELLED  7
 #define NOTIFICATION_CUSTOM             8
 
+NAGIOS_BEGIN_DECL
+
 const char *notification_reason_name(unsigned int reason_type);
 int check_service_notification_viability(service *, int, int);			/* checks viability of notifying all contacts about a service */
 int is_valid_escalation_for_service_notification(service *, serviceescalation *, int);	/* checks if an escalation entry is valid for a particular service notification */
@@ -42,5 +44,7 @@ int add_notification(nagios_macros *mac, contact *);						/* adds a notification
 notification *find_notification(contact *);					/* finds a notification object */
 time_t get_next_host_notification_time(host *, time_t);				/* calculates nex acceptable re-notification time for a host */
 time_t get_next_service_notification_time(service *, time_t);			/* calculates nex acceptable re-notification time for a service */
+
+NAGIOS_END_DECL
 
 #endif
