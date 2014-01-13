@@ -2,10 +2,11 @@
 #include "common.h"
 #include "objects.h"
 #include "statusdata.h"
-#include "nagios.h"
 #include "sretention.h"
 #include "broker.h"
 #include "xrddefault.h"
+#include "globals.h"
+#include "logging.h"
 
 
 /******************************************************************/

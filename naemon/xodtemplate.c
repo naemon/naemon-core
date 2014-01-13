@@ -21,6 +21,7 @@
  *
  *****************************************************************************/
 
+#include "xodtemplate.h"
 #include "config.h"
 #include "common.h"
 #include "objects.h"
@@ -31,8 +32,9 @@
 #include <sys/types.h>
 #include <regex.h>
 #include <libgen.h> /* for 'dirname()' */
-#include "nagios.h"
-#include "xodtemplate.h"
+#include "logging.h"
+#include <string.h>
+#include "globals.h"
 
 #define XOD_NEW   0 /* not seen */
 #define XOD_SEEN  1 /* seen, but not yet loopy */
@@ -445,7 +447,7 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 
 
 /* process all files in a specific config directory */
-int xodtemplate_process_config_dir(char *dirname, int options)
+int xodtemplate_process_config_dir(char *dir_name, int options)
 {
 	char file[MAX_FILENAME_LENGTH];
 	DIR *dirp = NULL;
@@ -455,12 +457,12 @@ int xodtemplate_process_config_dir(char *dirname, int options)
 	struct stat stat_buf;
 
 	if (verify_config >= 2)
-		printf("Processing object config directory '%s'...\n", dirname);
+		printf("Processing object config directory '%s'...\n", dir_name);
 
 	/* open the directory for reading */
-	dirp = opendir(dirname);
+	dirp = opendir(dir_name);
 	if (dirp == NULL) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not open config directory '%s' for reading.\n", dirname);
+		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not open config directory '%s' for reading.\n", dir_name);
 		return ERROR;
 	}
 
@@ -472,7 +474,7 @@ int xodtemplate_process_config_dir(char *dirname, int options)
 			continue;
 
 		/* create /path/to/file */
-		snprintf(file, sizeof(file), "%s/%s", dirname, dirfile->d_name);
+		snprintf(file, sizeof(file), "%s/%s", dir_name, dirfile->d_name);
 		file[sizeof(file) - 1] = '\x0';
 
 		/* process this if it's a non-hidden config file... */
@@ -5771,7 +5773,7 @@ int xodtemplate_recombobulate_contactgroups(void)
 
 	/* expand members of all contactgroups - this could be done in xodtemplate_register_contactgroup(), but we can save the CGIs some work if we do it here */
 	for (temp_contactgroup = xodtemplate_contactgroup_list; temp_contactgroup; temp_contactgroup = temp_contactgroup->next) {
-		objectlist *next, *list, *accept = NULL;
+		objectlist *next, *list, *accepted = NULL;
 
 		if (!(temp_contactgroup->member_map = bitmap_create(xodcount.contacts))) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not create contactgroup bitmap\n");
@@ -5809,7 +5811,7 @@ int xodtemplate_recombobulate_contactgroups(void)
 		}
 
 		/* get list of contacts in the contactgroup */
-		if (xodtemplate_expand_contacts(&accept, temp_contactgroup->reject_map, temp_contactgroup->members, temp_contactgroup->_config_file, temp_contactgroup->_start_line) != OK) {
+		if (xodtemplate_expand_contacts(&accepted, temp_contactgroup->reject_map, temp_contactgroup->members, temp_contactgroup->_config_file, temp_contactgroup->_start_line) != OK) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Failed to expand contacts for contactgroup '%s' (config file '%s', starting at line %d)\n",
 			      temp_contactgroup->contactgroup_name,
 			      xodtemplate_config_file_name(temp_contactgroup->_config_file),
@@ -5818,7 +5820,7 @@ int xodtemplate_recombobulate_contactgroups(void)
 		}
 
 		my_free(temp_contactgroup->members);
-		for (list = accept; list; list = next) {
+		for (list = accepted; list; list = next) {
 			temp_contact = (xodtemplate_contact *)list->object_ptr;
 			next = list->next;
 			free(list);
@@ -5939,7 +5941,7 @@ int xodtemplate_recombobulate_hostgroups(void)
 
 	/* expand members of all hostgroups - this could be done in xodtemplate_register_hostgroup(), but we can save the CGIs some work if we do it here */
 	for (temp_hostgroup = xodtemplate_hostgroup_list; temp_hostgroup; temp_hostgroup = temp_hostgroup->next) {
-		objectlist *next, *list, *accept = NULL;
+		objectlist *next, *list, *accepted = NULL;
 
 		/*
 		 * if the hostgroup has no accept or reject list and no group
@@ -5985,16 +5987,16 @@ int xodtemplate_recombobulate_hostgroups(void)
 		}
 
 		/* get list of hosts in the hostgroup */
-		xodtemplate_expand_hosts(&accept, temp_hostgroup->reject_map, temp_hostgroup->members, temp_hostgroup->_config_file, temp_hostgroup->_start_line);
+		xodtemplate_expand_hosts(&accepted, temp_hostgroup->reject_map, temp_hostgroup->members, temp_hostgroup->_config_file, temp_hostgroup->_start_line);
 
-		if (!accept && !bitmap_count_set_bits(temp_hostgroup->reject_map)) {
+		if (!accepted && !bitmap_count_set_bits(temp_hostgroup->reject_map)) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not expand members specified in hostgroup (config file '%s', starting on line %d)\n", xodtemplate_config_file_name(temp_hostgroup->_config_file), temp_hostgroup->_start_line);
 			return ERROR;
 		}
 
 		my_free(temp_hostgroup->members);
 
-		for (list = accept; list; list = next) {
+		for (list = accepted; list; list = next) {
 			temp_host = (xodtemplate_host *)list->object_ptr;
 			next = list->next;
 			free(list);
@@ -6125,7 +6127,7 @@ int xodtemplate_recombobulate_servicegroups(void)
 	 * before we add members from the servicelist.
 	 */
 	for (temp_servicegroup = xodtemplate_servicegroup_list; temp_servicegroup; temp_servicegroup = temp_servicegroup->next) {
-		objectlist *list, *next, *accept = NULL;
+		objectlist *list, *next, *accepted = NULL;
 
 		if (temp_servicegroup->members == NULL && temp_servicegroup->servicegroup_members == NULL)
 			continue;
@@ -6168,8 +6170,8 @@ int xodtemplate_recombobulate_servicegroups(void)
 		}
 
 		/* get list of service members in the servicegroup */
-		xodtemplate_expand_services(&accept, temp_servicegroup->reject_map, NULL, temp_servicegroup->members, temp_servicegroup->_config_file, temp_servicegroup->_start_line);
-		if (!accept && !bitmap_count_set_bits(temp_servicegroup->reject_map)) {
+		xodtemplate_expand_services(&accepted, temp_servicegroup->reject_map, NULL, temp_servicegroup->members, temp_servicegroup->_config_file, temp_servicegroup->_start_line);
+		if (!accepted && !bitmap_count_set_bits(temp_servicegroup->reject_map)) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not expand members specified in servicegroup '%s' (config file '%s', starting at line %d)\n", temp_servicegroup->servicegroup_name, xodtemplate_config_file_name(temp_servicegroup->_config_file), temp_servicegroup->_start_line);
 			return ERROR;
 		}
@@ -6177,7 +6179,7 @@ int xodtemplate_recombobulate_servicegroups(void)
 		/* we don't need this anymore */
 		my_free(temp_servicegroup->members);
 
-		for (list = accept; list; list = next) {
+		for (list = accepted; list; list = next) {
 			xodtemplate_service *s = (xodtemplate_service *)list->object_ptr;
 			next = list->next;
 			free(list);

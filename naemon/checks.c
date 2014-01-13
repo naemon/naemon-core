@@ -1,13 +1,21 @@
+#include "checks.h"
 #include "config.h"
 #include "comments.h"
 #include "common.h"
 #include "statusdata.h"
 #include "downtime.h"
 #include "macros.h"
-#include "nagios.h"
 #include "broker.h"
 #include "perfdata.h"
 #include "workers.h"
+#include "utils.h"
+#include "events.h"
+#include "flapping.h"
+#include "sehandlers.h"
+#include "notifications.h"
+#include "logging.h"
+#include "globals.h"
+#include <string.h>
 
 /*#define DEBUG_CHECKS*/
 /*#define DEBUG_HOST_CHECKS 1*/

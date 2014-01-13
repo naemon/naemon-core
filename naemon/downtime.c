@@ -3,8 +3,12 @@
 #include "comments.h"
 #include "downtime.h"
 #include "statusdata.h"
-#include "nagios.h"
 #include "broker.h"
+#include "events.h"
+#include "notifications.h"
+#include "logging.h"
+#include "globals.h"
+#include <string.h>
 
 
 scheduled_downtime *scheduled_downtime_list = NULL;

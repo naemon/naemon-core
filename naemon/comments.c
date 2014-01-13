@@ -1,10 +1,11 @@
+#include <string.h>
 #include "config.h"
 #include "common.h"
 #include "comments.h"
 #include "objects.h"
 #include "xcddefault.h"
-#include "nagios.h"
 #include "broker.h"
+#include "events.h"
 
 comment     *comment_list = NULL;
 int	    defer_comment_sorting = 0;

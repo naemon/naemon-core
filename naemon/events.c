@@ -3,12 +3,20 @@
 #include "downtime.h"
 #include "comments.h"
 #include "statusdata.h"
-#include "nagios.h"
 #include "broker.h"
 #include "sretention.h"
 #include "workers.h"
 #include "lib/squeue.h"
+#include "events.h"
+#include "utils.h"
+#include "checks.h"
+#include "notifications.h"
+#include "logging.h"
+#include "globals.h"
+#include "defaults.h"
+#include "loadctl.h"
 #include <math.h>
+#include <string.h>
 
 /* the event we're currently processing */
 static timed_event *current_event;

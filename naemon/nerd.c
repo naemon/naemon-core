@@ -22,6 +22,11 @@
 #include "nebmods.h"
 #include "nebmodules.h"
 #include "nebstructs.h"
+#include "query-handler.h"
+#include "utils.h"
+#include "logging.h"
+#include "nerd.h"
+#include "globals.h"
 
 struct nerd_channel {
 	const char *name; /* name of this channel */

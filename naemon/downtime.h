@@ -3,7 +3,6 @@
 
 #include "common.h"
 #include "objects.h"
-#include "nagios.h"
 
 NAGIOS_BEGIN_DECL
 

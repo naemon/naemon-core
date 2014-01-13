@@ -6,7 +6,10 @@
 #include "downtime.h"
 #include "macros.h"
 #include "xsddefault.h"
-#include "nagios.h"
+#include "utils.h"
+#include "logging.h"
+#include "globals.h"
+#include <string.h>
 
 time_t program_start;
 int daemon_mode;

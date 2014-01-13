@@ -2,7 +2,9 @@
 #include "common.h"
 #include "nebmods.h"
 #include "neberrors.h"
-#include "nagios.h"
+#include "logging.h"
+#include "globals.h"
+#include <string.h>
 
 #ifdef USE_EVENT_BROKER
 

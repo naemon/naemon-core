@@ -1,9 +1,12 @@
+#include "logging.h"
 #include "config.h"
 #include "common.h"
 #include "statusdata.h"
 #include "macros.h"
-#include "nagios.h"
 #include "broker.h"
+#include "utils.h"
+#include "globals.h"
+#include <string.h>
 #include <fcntl.h>
 #include <syslog.h>
 #include <stdarg.h>

@@ -6,13 +6,20 @@
 #include "perfdata.h"
 #include "sretention.h"
 #include "broker.h"
-#include "nagios.h"
 #include "workers.h"
+#include "commands.h"
+#include "events.h"
+#include "utils.h"
+#include "checks.h"
+#include "flapping.h"
+#include "notifications.h"
+#include "globals.h"
+#include "logging.h"
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <ctype.h>
-#include <poll.h>
 
 
 static int command_file_fd;
@@ -2237,7 +2244,7 @@ int process_passive_service_check(time_t check_time, char *host_name, char *svc_
 	cr.service_description = temp_service->description;
 	cr.output = output;
 	cr.start_time.tv_sec = cr.finish_time.tv_sec = check_time;
-	cr.source = command_worker.source_name;
+	cr.source = (void*)command_worker.source_name;
 
 	/* save the return code and make sure it's sane */
 	cr.return_code = return_code;
@@ -2330,7 +2337,7 @@ int process_passive_host_check(time_t check_time, char *host_name, int return_co
 	cr.host_name = temp_host->name;
 	cr.output = output;
 	cr.start_time.tv_sec = cr.finish_time.tv_sec = check_time;
-	cr.source = command_worker.source_name;
+	cr.source = (void*)command_worker.source_name;
 	cr.return_code = return_code;
 
 	/* calculate latency */

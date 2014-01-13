@@ -4,11 +4,17 @@
 #include "statusdata.h"
 #include "comments.h"
 #include "macros.h"
-#include "nagios.h"
 #include "broker.h"
 #include "nebmods.h"
 #include "nebmodules.h"
 #include "workers.h"
+#include "utils.h"
+#include "commands.h"
+#include "checks.h"
+#include "events.h"
+#include "logging.h"
+#include "defaults.h"
+#include "globals.h"
 #include <assert.h>
 #include <limits.h>
 #include <sys/types.h>
@@ -18,6 +24,8 @@
 #include <dirent.h>
 #include <math.h>
 #include <poll.h>
+#include <string.h>
+#include "loadctl.h"
 
 #define SECS_PER_DAY 86400
 /* global varaiables only used by the daemon */
@@ -190,9 +198,6 @@ char    *service_perfdata_file_processing_command = NULL;
 int     host_perfdata_process_empty_results = DEFAULT_HOST_PERFDATA_PROCESS_EMPTY_RESULTS;
 int     service_perfdata_process_empty_results = DEFAULT_SERVICE_PERFDATA_PROCESS_EMPTY_RESULTS;
 /*** end perfdata variables */
-
-/* Filename variables used by handle_sigxfsz */
-extern char *status_file;
 
 static long long check_file_size(char *, unsigned long, struct rlimit);
 
@@ -695,9 +700,9 @@ int set_environment_var(char *name, char *value, int set)
 /******************************************************************/
 
 /* Checks if the given time is in daylight time saving period */
-static int is_dst_time(time_t *time)
+static int is_dst_time(time_t *timestamp)
 {
-	struct tm *bt = localtime(time);
+	struct tm *bt = localtime(timestamp);
 	return bt->tm_isdst;
 }
 
@@ -996,6 +1001,7 @@ static void _get_next_invalid_time(time_t pref_time, time_t *invalid_time, timep
 	time_t midnight = (time_t)0L;
 	time_t day_range_start = (time_t)0L;
 	time_t day_range_end = (time_t)0L;
+	timerange *temp_timerange = NULL;
 
 	/* if no period was specified, assume the time is good */
 	if (tperiod == NULL) {
@@ -1014,7 +1020,7 @@ static void _get_next_invalid_time(time_t pref_time, time_t *invalid_time, timep
 		t->tm_hour = 0;
 		midnight = mktime(t);
 
-		timerange *temp_timerange = _get_matching_timerange(earliest_time, tperiod);
+		temp_timerange = _get_matching_timerange(earliest_time, tperiod);
 
 		for (; temp_timerange != NULL; temp_timerange = temp_timerange->next) {
 			/* ranges with start/end of zero mean exlude this day */
@@ -1072,6 +1078,7 @@ void _get_next_valid_time(time_t pref_time, time_t *valid_time, timeperiod *tper
 	time_t day_range_start = (time_t)0L;
 	time_t day_range_end = (time_t)0L;
 	int have_earliest_time = FALSE;
+	timerange *temp_timerange = NULL;
 
 	/* if no period was specified, assume the time is good */
 	if (tperiod == NULL) {
@@ -1091,7 +1098,7 @@ void _get_next_valid_time(time_t pref_time, time_t *valid_time, timeperiod *tper
 		t->tm_hour = 0;
 		midnight = mktime(t);
 
-		timerange *temp_timerange = _get_matching_timerange(earliest_time, tperiod);
+		temp_timerange = _get_matching_timerange(earliest_time, tperiod);
 #ifdef TEST_TIMEPERIODS_B
 		printf("  RANGE START: %lu\n", temp_timerange ? temp_timerange->range_start : 0);
 		printf("  RANGE END:   %lu\n", temp_timerange ? temp_timerange->range_end : 0);
@@ -1520,7 +1527,7 @@ void handle_sigxfsz(int sig)
 
 		/* Try to figure out which file caused the signal and react
 				appropriately */
-		for (x = 0, filep = files; x < (sizeof(files) / sizeof(files[0]));
+		for (x = 0, filep = files; (size_t)x < (sizeof(files) / sizeof(files[0]));
 		     x++, filep++) {
 			if ((*filep != NULL) && strcmp(*filep, "/dev/null")) {
 				if ((size = check_file_size(*filep, 1024, rlim)) == -1) {
@@ -2016,7 +2023,7 @@ int process_check_result_file(char *fname)
 
 			/* file is too old - ignore check results it contains and delete it */
 			/* this will only work as intended if file_time comes before check results */
-			if (max_check_result_file_age > 0 && (current_time - (strtoul(val, NULL, 0)) > max_check_result_file_age)) {
+			if (max_check_result_file_age > 0 && (current_time - (time_t)(strtoul(val, NULL, 0)) > max_check_result_file_age)) {
 				break;
 			}
 		}

@@ -2,12 +2,17 @@
 #include "common.h"
 #include "objects.h"
 #include "macros.h"
-#include "nagios.h"
 #include "broker.h"
 #include "nebmods.h"
 #include "nebmodules.h"
+#include "utils.h"
+#include "configuration.h"
+#include "events.h"
+#include "logging.h"
+#include "globals.h"
 #include <sys/types.h>
 #include <dirent.h>
+#include <string.h>
 
 /*** helpers ****/
 /*

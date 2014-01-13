@@ -3,12 +3,17 @@
 #include "objects.h"
 #include "statusdata.h"
 #include "macros.h"
-#include "nagios.h"
 #include "sretention.h"
 #include "comments.h"
 #include "downtime.h"
 #include "xrddefault.h"
-
+#include "utils.h"
+#include "flapping.h"
+#include "notifications.h"
+#include "globals.h"
+#include "logging.h"
+#include "defaults.h"
+#include <string.h>
 
 /******************************************************************/
 /********************* INIT/CLEANUP FUNCTIONS *********************/

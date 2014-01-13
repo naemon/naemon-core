@@ -5,7 +5,7 @@
 #include "lib/libnaemon.h"
 #include "config.h"
 #include "common.h"
-#include "nagios.h"
+#include "naemon.h"
 #include "defaults.h"
 
 #define STATUS_NO_DATA             0

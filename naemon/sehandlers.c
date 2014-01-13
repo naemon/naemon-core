@@ -1,13 +1,17 @@
+#include "sehandlers.h"
 #include "config.h"
 #include "comments.h"
 #include "common.h"
 #include "statusdata.h"
 #include "downtime.h"
 #include "macros.h"
-#include "nagios.h"
 #include "perfdata.h"
 #include "broker.h"
 #include "workers.h"
+#include "utils.h"
+#include "logging.h"
+#include "globals.h"
+#include <string.h>
 
 #ifdef USE_EVENT_BROKER
 #include "neberrors.h"
