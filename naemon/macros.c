@@ -4,8 +4,10 @@
 #include "objects.h"
 #include "statusdata.h"
 #include "comments.h"
-#include "nagios.h"
 #include "utils.h"
+#include "logging.h"
+#include "globals.h"
+#include <string.h>
 
 static char *macro_x_names[MACRO_X_COUNT]; /* the macro names */
 char *macro_user[MAX_USER_MACROS]; /* $USERx$ macros */

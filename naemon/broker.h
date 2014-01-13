@@ -1,7 +1,7 @@
 #ifndef _BROKER_H
 #define _BROKER_H
 
-#include "nagios.h"
+#include "objects.h"
 
 /*************** EVENT BROKER OPTIONS *****************/
 

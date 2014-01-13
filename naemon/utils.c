@@ -4,7 +4,6 @@
 #include "statusdata.h"
 #include "comments.h"
 #include "macros.h"
-#include "nagios.h"
 #include "broker.h"
 #include "nebmods.h"
 #include "nebmodules.h"
@@ -12,6 +11,10 @@
 #include "utils.h"
 #include "commands.h"
 #include "checks.h"
+#include "events.h"
+#include "logging.h"
+#include "defaults.h"
+#include "globals.h"
 #include <assert.h>
 #include <limits.h>
 #include <sys/types.h>
@@ -21,6 +24,8 @@
 #include <dirent.h>
 #include <math.h>
 #include <poll.h>
+#include <string.h>
+#include "loadctl.h"
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif

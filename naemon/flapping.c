@@ -4,9 +4,10 @@
 #include "objects.h"
 #include "comments.h"
 #include "statusdata.h"
-#include "nagios.h"
 #include "broker.h"
 #include "notifications.h"
+#include "logging.h"
+#include "globals.h"
 
 
 /******************************************************************/

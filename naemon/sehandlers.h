@@ -4,6 +4,19 @@
 #include "objects.h"
 #include "macros.h"
 
+/**************** EVENT HANDLER TYPES *****************/
+
+#define HOST_EVENTHANDLER               0
+#define SERVICE_EVENTHANDLER            1
+#define GLOBAL_HOST_EVENTHANDLER        2
+#define GLOBAL_SERVICE_EVENTHANDLER     3
+
+/***************** STATE CHANGE TYPES *****************/
+
+#define HOST_STATECHANGE                0
+#define SERVICE_STATECHANGE             1
+
+
 int obsessive_compulsive_service_check_processor(service *);	/* distributed monitoring craziness... */
 int obsessive_compulsive_host_check_processor(host *);		/* distributed monitoring craziness... */
 int handle_service_event(service *);				/* top level service event logic */

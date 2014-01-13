@@ -21,6 +21,7 @@
  *
  *****************************************************************************/
 
+#include "xodtemplate.h"
 #include "config.h"
 #include "common.h"
 #include "objects.h"
@@ -31,8 +32,9 @@
 #include <sys/types.h>
 #include <regex.h>
 #include <libgen.h> /* for 'dirname()' */
-#include "nagios.h"
-#include "xodtemplate.h"
+#include "logging.h"
+#include <string.h>
+#include "globals.h"
 
 #define XOD_NEW   0 /* not seen */
 #define XOD_SEEN  1 /* seen, but not yet loopy */

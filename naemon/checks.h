@@ -3,6 +3,24 @@
 
 #include "objects.h"
 
+/************ SERVICE DEPENDENCY VALUES ***************/
+
+#define DEPENDENCIES_OK			0
+#define DEPENDENCIES_FAILED		1
+
+/***************** OBJECT CHECK TYPES *****************/
+#define SERVICE_CHECK                   0
+#define HOST_CHECK                      1
+
+/* useful for hosts and services to determine time 'til next check */
+#define normal_check_window(o) ((time_t)(o->check_interval * interval_length))
+#define retry_check_window(o) ((time_t)(o->retry_interval * interval_length))
+#define check_window(o) \
+	((!o->current_state && o->state_type == SOFT_STATE) ? \
+		retry_check_window(o) : \
+		normal_check_window(o))
+
+
 int parse_check_output(char *, char **, char **, char **, int, int);
 int check_service_dependencies(service *, int);          	/* checks service dependencies */
 int check_host_dependencies(host *, int);                	/* checks host dependencies */
