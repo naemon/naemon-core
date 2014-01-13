@@ -6,7 +6,6 @@
 #include "perfdata.h"
 #include "sretention.h"
 #include "broker.h"
-#include "naemon.h"
 #include "workers.h"
 #include "commands.h"
 #include "events.h"
@@ -14,11 +13,13 @@
 #include "checks.h"
 #include "flapping.h"
 #include "notifications.h"
+#include "globals.h"
+#include "logging.h"
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <ctype.h>
-#include <poll.h>
 
 
 static int command_file_fd;

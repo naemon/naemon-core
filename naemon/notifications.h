@@ -4,6 +4,25 @@
 #include "objects.h"
 #include "macros.h"
 
+
+/**************** NOTIFICATION TYPES ******************/
+
+#define HOST_NOTIFICATION               0
+#define SERVICE_NOTIFICATION            1
+
+
+/************* NOTIFICATION REASON TYPES ***************/
+
+#define NOTIFICATION_NORMAL             0
+#define NOTIFICATION_ACKNOWLEDGEMENT    1
+#define NOTIFICATION_FLAPPINGSTART      2
+#define NOTIFICATION_FLAPPINGSTOP       3
+#define NOTIFICATION_FLAPPINGDISABLED   4
+#define NOTIFICATION_DOWNTIMESTART      5
+#define NOTIFICATION_DOWNTIMEEND        6
+#define NOTIFICATION_DOWNTIMECANCELLED  7
+#define NOTIFICATION_CUSTOM             8
+
 const char *notification_reason_name(unsigned int reason_type);
 int check_service_notification_viability(service *, int, int);			/* checks viability of notifying all contacts about a service */
 int is_valid_escalation_for_service_notification(service *, serviceescalation *, int);	/* checks if an escalation entry is valid for a particular service notification */

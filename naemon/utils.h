@@ -67,8 +67,5 @@ int set_environment_var(char *, char *, int);           /* sets/clears and envir
 char *get_program_version(void);
 char *get_program_modification_date(void);
 
-/* GONE?!? */
-int check_for_nagios_updates(int, int);                 /* checks to see if new version of Nagios are available */
-int query_update_api(void);                             /* checks to see if new version of Nagios are available */
-
+void cleanup(void);                                  	/* cleanup after ourselves (before quitting or restarting) */
 #endif

@@ -1,10 +1,14 @@
 #include "config.h"
 #include "common.h"
-#include "nagios.h"
 #include "broker.h"
 #include "nebcallbacks.h"
 #include "nebstructs.h"
 #include "nebmods.h"
+#include "flapping.h"
+#include "notifications.h"
+#include "sehandlers.h"
+#include "globals.h"
+#include <string.h>
 
 #ifdef USE_EVENT_BROKER
 

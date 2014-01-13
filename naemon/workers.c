@@ -9,10 +9,14 @@
  */
 #include "config.h"
 #include <string.h>
-#include "naemon.h"
 #include "workers.h"
 #include "query-handler.h"
 #include "utils.h"
+#include "logging.h"
+#include "globals.h"
+#include "defaults.h"
+
+#include "loadctl.h"
 
 /* perfect hash function for wproc response codes */
 #include "wpres-phash.h"

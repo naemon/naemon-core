@@ -1,6 +1,13 @@
 #ifndef _NERD_H
 #define _NERD_H
 
+/** Nerd subscription type */
+struct nerd_subscription {
+	int sd;
+	struct nerd_channel *chan;
+	char *format; /* requested format (macro string) for this subscription */
+};
+
 /*** Nagios Event Radio Dispatcher functions ***/
 extern int nerd_init(void);
 extern int nerd_mkchan(const char *name, const char *description, int (*handler)(int, void *), unsigned int callbacks);

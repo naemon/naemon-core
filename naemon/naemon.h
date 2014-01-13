@@ -1,420 +1,77 @@
 #ifndef _NAEMON_H
 #define _NAEMON_H
 
-#ifndef NSCORE
-# define NSCORE
-#endif
+/*
+ * NEVER INCLUDE THIS FILE WITHIN A FILE IN THE NEAMON PROJECT
+ *
+ * ONLY FOR USE FROM BROKER MODULES
+ *
+ * This file includes everything in naemon, which means, if included in naemon,
+ * this will make it impossible to track dependenceies within the neamon project
+ * itself. Using this as the entrypoint in broker modules will however make it
+ * possible to move methods around within neamon, and still maintain API
+ * compatiblity.
+ */
 
-#include "defaults.h"
+#include "broker.h"
+#include "checks.h"
+#include "commands.h"
+#include "comments.h"
 #include "common.h"
+#include "configuration.h"
+#include "defaults.h"
+#include "downtime.h"
+#include "events.h"
+#include "flapping.h"
+#include "globals.h"
 #include "logging.h"
-#include "objects.h"
 #include "macros.h"
-#include <string.h>
+#include "naemon.h"
+#include "nagios.h"
+#include "nebcallbacks.h"
+#include "neberrors.h"
+#include "nebmods.h"
+#include "nebmodules.h"
+#include "nebstructs.h"
+#include "nerd.h"
+#include "notifications.h"
+#include "objects.h"
+#include "perfdata.h"
+#include "query-handler.h"
+#include "sehandlers.h"
+#include "shared.h"
+#include "sretention.h"
+#include "statusdata.h"
+#include "utils.h"
+#include "waf-config.h"
+#include "workers.h"
 
 /*
- * global variables only used in the core. Reducing this list would be
- * a Good Thing(tm).
+ * Defines below is kept pruely of backward compatibility purposes. They aren't
+ * used within the naemon project itself.
+ *
+ * If they should be used within the naemon project, move them to the correct
+ * header before use.
  */
-extern char *naemon_binary_path;
-extern char *config_file;
-extern char *command_file;
-extern char *temp_file;
-extern char *temp_path;
-extern char *check_result_path;
-extern char *lock_file;
-extern char *object_precache_file;
 
-extern unsigned int nofile_limit, nproc_limit, max_apps;
-
-extern int num_check_workers;
-extern char *qh_socket_path;
-
-extern char *naemon_user;
-extern char *naemon_group;
-
-extern char *macro_user[MAX_USER_MACROS];
-
-extern char *ocsp_command;
-extern char *ochp_command;
-extern command *ocsp_command_ptr;
-extern command *ochp_command_ptr;
-extern int ocsp_timeout;
-extern int ochp_timeout;
-
-extern char *global_host_event_handler;
-extern char *global_service_event_handler;
-extern command *global_host_event_handler_ptr;
-extern command *global_service_event_handler_ptr;
-
-extern char *illegal_object_chars;
-
-extern int use_regexp_matches;
-extern int use_true_regexp_matching;
-
-extern int use_syslog;
-extern char *log_file;
-extern char *log_archive_path;
-extern int log_notifications;
-extern int log_service_retries;
-extern int log_host_retries;
-extern int log_event_handlers;
-extern int log_external_commands;
-extern int log_passive_checks;
-extern unsigned long logging_options;
-extern unsigned long syslog_options;
-
-extern int service_check_timeout;
-extern int service_check_timeout_state;
-extern int host_check_timeout;
-extern int event_handler_timeout;
-extern int notification_timeout;
-
-extern int log_initial_states;
-extern int log_current_states;
-
-extern int daemon_dumps_core;
-extern int sig_id;
-extern int caught_signal;
-
-
-extern int verify_config;
-extern int test_scheduling;
-extern int precache_objects;
-extern int use_precached_objects;
-
-extern int service_inter_check_delay_method;
-extern int host_inter_check_delay_method;
-extern int service_interleave_factor_method;
-extern int max_host_check_spread;
-extern int max_service_check_spread;
-
-extern sched_info scheduling_info;
-
-extern int max_parallel_service_checks;
-
-extern int check_reaper_interval;
-extern int max_check_reaper_time;
-extern int service_freshness_check_interval;
-extern int host_freshness_check_interval;
-extern int auto_rescheduling_interval;
-extern int auto_rescheduling_window;
-
-extern int check_orphaned_services;
-extern int check_orphaned_hosts;
-extern int check_service_freshness;
-extern int check_host_freshness;
-extern int auto_reschedule_checks;
-
-extern int additional_freshness_latency;
-
-extern int check_for_updates;
-extern int bare_update_check;
-extern time_t last_update_check;
-extern unsigned long update_uid;
-extern int update_available;
-extern char *last_program_version;
-extern char *new_program_version;
-
-extern int use_aggressive_host_checking;
-extern time_t cached_host_check_horizon;
-extern time_t cached_service_check_horizon;
-extern int enable_predictive_host_dependency_checks;
-extern int enable_predictive_service_dependency_checks;
-
-extern int soft_state_dependencies;
-
-extern int retain_state_information;
-extern int retention_update_interval;
-extern int use_retained_program_state;
-extern int use_retained_scheduling_info;
-extern int retention_scheduling_horizon;
-extern char *retention_file;
-extern unsigned long retained_host_attribute_mask;
-extern unsigned long retained_service_attribute_mask;
-extern unsigned long retained_contact_host_attribute_mask;
-extern unsigned long retained_contact_service_attribute_mask;
-extern unsigned long retained_process_host_attribute_mask;
-extern unsigned long retained_process_service_attribute_mask;
-
-extern int translate_passive_host_checks;
-extern int passive_host_checks_are_soft;
-
-extern int status_update_interval;
-
-extern int time_change_threshold;
-
-extern unsigned long event_broker_options;
-
-extern double low_service_flap_threshold;
-extern double high_service_flap_threshold;
-extern double low_host_flap_threshold;
-extern double high_host_flap_threshold;
-
-extern int use_large_installation_tweaks;
-extern int enable_environment_macros;
-extern int free_child_process_memory;
-extern int child_processes_fork_twice;
-
-extern char *use_timezone;
-
-extern time_t max_check_result_file_age;
-
-extern char *debug_file;
-extern int debug_level;
-extern int debug_verbosity;
-extern unsigned long max_debug_file_size;
-
-extern int allow_empty_hostgroup_assignment;
-
-extern time_t last_program_stop;
-extern time_t event_start;
-
-extern int sigshutdown, sigrestart;
-extern int currently_running_service_checks;
-extern int currently_running_host_checks;
-
-extern unsigned long next_event_id;
-extern unsigned long next_problem_id;
-extern unsigned long next_comment_id;
-extern unsigned long next_notification_id;
-
-extern unsigned long modified_process_attributes;
-extern unsigned long modified_host_process_attributes;
-extern unsigned long modified_service_process_attributes;
-
-extern squeue_t *nagios_squeue;
-extern iobroker_set *nagios_iobs;
-
-extern struct check_stats check_statistics[MAX_CHECK_STATS_TYPES];
-
-/*** perfdata variables ***/
-extern int     perfdata_timeout;
-extern char    *host_perfdata_command;
-extern char    *service_perfdata_command;
-extern char    *host_perfdata_file_template;
-extern char    *service_perfdata_file_template;
-extern char    *host_perfdata_file;
-extern char    *service_perfdata_file;
-extern int     host_perfdata_file_append;
-extern int     service_perfdata_file_append;
-extern int     host_perfdata_file_pipe;
-extern int     service_perfdata_file_pipe;
-extern unsigned long host_perfdata_file_processing_interval;
-extern unsigned long service_perfdata_file_processing_interval;
-extern char    *host_perfdata_file_processing_command;
-extern char    *service_perfdata_file_processing_command;
-extern int     host_perfdata_process_empty_results;
-extern int     service_perfdata_process_empty_results;
-/*** end perfdata variables */
-
-extern struct notify_list *notification_list;
-
-extern struct check_engine nagios_check_engine;
+/************* MISC LENGTH/SIZE DEFINITIONS ***********/
 
 /*
- * Everything we need to keep system load in check.
- * Don't use this from modules.
+ NOTE: Plugin length is artificially capped at 8k to prevent runaway plugins from returning MBs/GBs of data
+ back to Nagios.  If you increase the 8k cap by modifying this value, make sure you also increase the value
+ of MAX_EXTERNAL_COMMAND_LENGTH in common.h to allow for passive checks results received through the external
+ command file. EG 10/19/07
  */
-struct load_control {
-	time_t last_check;  /* last time we checked the real load */
-	time_t last_change; /* last time we changed settings */
-	time_t check_interval; /* seconds between load checks */
-	double load[3];      /* system load, as reported by getloadavg() */
-	float backoff_limit; /* limit we must reach before we back off */
-	float rampup_limit;  /* limit we must reach before we ramp back up */
-	unsigned int backoff_change; /* backoff by this much */
-	unsigned int rampup_change;  /* ramp up by this much */
-	unsigned int changes;  /* number of times we've changed settings */
-	unsigned int jobs_max;   /* upper setting for jobs_limit */
-	unsigned int jobs_limit; /* current limit */
-	unsigned int jobs_min;   /* lower setting for jobs_limit */
-	unsigned int jobs_running;  /* jobs currently running */
-	unsigned int nproc_limit;  /* rlimit for user processes */
-	unsigned int nofile_limit; /* rlimit for open files */
-	unsigned int options; /* various option flags */
-};
-extern struct load_control loadctl;
-
-/* options for load control */
-#define LOADCTL_ENABLED    (1 << 0)
-
-
-	/************* MISC LENGTH/SIZE DEFINITIONS ***********/
-
-	/*
-	   NOTE: Plugin length is artificially capped at 8k to prevent runaway plugins from returning MBs/GBs of data
-	   back to Nagios.  If you increase the 8k cap by modifying this value, make sure you also increase the value
-	   of MAX_EXTERNAL_COMMAND_LENGTH in common.h to allow for passive checks results received through the external
-	   command file. EG 10/19/07
-	*/
 #define MAX_PLUGIN_OUTPUT_LENGTH                8192    /* max length of plugin output (including perf data) */
 
-
-	/******************* STATE LOGGING TYPES **************/
-
-#define INITIAL_STATES                  1
-#define CURRENT_STATES                  2
-
-
-
-	/************ SERVICE DEPENDENCY VALUES ***************/
-
-#define DEPENDENCIES_OK			0
-#define DEPENDENCIES_FAILED		1
-
-
-
-	/*********** ROUTE CHECK PROPAGATION TYPES ************/
+/*********** ROUTE CHECK PROPAGATION TYPES ************/
 
 #define PROPAGATE_TO_PARENT_HOSTS	1
 #define PROPAGATE_TO_CHILD_HOSTS	2
 
-
-
-	/****************** FLAPPING TYPES ********************/
-
-#define HOST_FLAPPING                   0
-#define SERVICE_FLAPPING                1
-
-
-
-	/**************** NOTIFICATION TYPES ******************/
-
-#define HOST_NOTIFICATION               0
-#define SERVICE_NOTIFICATION            1
-
-
-
-	/************* NOTIFICATION REASON TYPES ***************/
-
-#define NOTIFICATION_NORMAL             0
-#define NOTIFICATION_ACKNOWLEDGEMENT    1
-#define NOTIFICATION_FLAPPINGSTART      2
-#define NOTIFICATION_FLAPPINGSTOP       3
-#define NOTIFICATION_FLAPPINGDISABLED   4
-#define NOTIFICATION_DOWNTIMESTART      5
-#define NOTIFICATION_DOWNTIMEEND        6
-#define NOTIFICATION_DOWNTIMECANCELLED  7
-#define NOTIFICATION_CUSTOM             8
-
-
-
-	/**************** EVENT HANDLER TYPES *****************/
-
-#define HOST_EVENTHANDLER               0
-#define SERVICE_EVENTHANDLER            1
-#define GLOBAL_HOST_EVENTHANDLER        2
-#define GLOBAL_SERVICE_EVENTHANDLER     3
-
-
-
-	/***************** STATE CHANGE TYPES *****************/
-
-#define HOST_STATECHANGE                0
-#define SERVICE_STATECHANGE             1
-
-
-
-	/***************** OBJECT CHECK TYPES *****************/
-#define SERVICE_CHECK                   0
-#define HOST_CHECK                      1
-
-
-
-	/******************* EVENT TYPES **********************/
-
-#define EVENT_SERVICE_CHECK		0	/* active service check */
-#define EVENT_COMMAND_CHECK		1	/* external command check */
-#define EVENT_LOG_ROTATION		2	/* log file rotation */
-#define EVENT_PROGRAM_SHUTDOWN		3	/* program shutdown */
-#define EVENT_PROGRAM_RESTART		4	/* program restart */
-#define EVENT_CHECK_REAPER              5       /* reaps results from host and service checks */
-#define EVENT_ORPHAN_CHECK		6	/* checks for orphaned hosts and services */
-#define EVENT_RETENTION_SAVE		7	/* save (dump) retention data */
-#define EVENT_STATUS_SAVE		8	/* save (dump) status data */
-#define EVENT_SCHEDULED_DOWNTIME	9	/* scheduled host or service downtime */
-#define EVENT_SFRESHNESS_CHECK          10      /* checks service result "freshness" */
-#define EVENT_EXPIRE_DOWNTIME		11      /* checks for (and removes) expired scheduled downtime */
-#define EVENT_HOST_CHECK                12      /* active host check */
-#define EVENT_HFRESHNESS_CHECK          13      /* checks host result "freshness" */
-#define EVENT_RESCHEDULE_CHECKS		14      /* adjust scheduling of host and service checks */
-#define EVENT_EXPIRE_COMMENT            15      /* removes expired comments */
-#define EVENT_CHECK_PROGRAM_UPDATE      16      /* checks for new version of Nagios */
-#define EVENT_SLEEP                     98      /* asynchronous sleep event that occurs when event queues are empty */
-#define EVENT_USER_FUNCTION             99      /* USER-defined function (modules) */
-
-/*
- * VERSIONFIX: Make EVENT_SLEEP and EVENT_USER_FUNCTION appear
- * linearly in order.
- */
-
-#define EVENT_TYPE_STR(type)	( \
-	type == EVENT_SERVICE_CHECK ? "SERVICE_CHECK" : \
-	type == EVENT_COMMAND_CHECK ? "COMMAND_CHECK" : \
-	type == EVENT_LOG_ROTATION ? "LOG_ROTATION" : \
-	type == EVENT_PROGRAM_SHUTDOWN ? "PROGRAM_SHUTDOWN" : \
-	type == EVENT_PROGRAM_RESTART ? "PROGRAM_RESTART" : \
-	type == EVENT_CHECK_REAPER ? "CHECK_REAPER" : \
-	type == EVENT_ORPHAN_CHECK ? "ORPHAN_CHECK" : \
-	type == EVENT_RETENTION_SAVE ? "RETENTION_SAVE" : \
-	type == EVENT_STATUS_SAVE ? "STATUS_SAVE" : \
-	type == EVENT_SCHEDULED_DOWNTIME ? "SCHEDULED_DOWNTIME" : \
-	type == EVENT_SFRESHNESS_CHECK ? "SFRESHNESS_CHECK" : \
-	type == EVENT_EXPIRE_DOWNTIME ? "EXPIRE_DOWNTIME" : \
-	type == EVENT_HOST_CHECK ? "HOST_CHECK" : \
-	type == EVENT_HFRESHNESS_CHECK ? "HFRESHNESS_CHECK" : \
-	type == EVENT_RESCHEDULE_CHECKS ? "RESCHEDULE_CHECKS" : \
-	type == EVENT_EXPIRE_COMMENT ? "EXPIRE_COMMENT" : \
-	type == EVENT_CHECK_PROGRAM_UPDATE ? "CHECK_PROGRAM_UPDATE" : \
-	type == EVENT_SLEEP ? "SLEEP" : \
-	type == EVENT_USER_FUNCTION ? "USER_FUNCTION" : \
-	"UNKNOWN" \
-)
-
-
-
-	/******* INTER-CHECK DELAY CALCULATION TYPES **********/
-
-#define ICD_NONE			0	/* no inter-check delay */
-#define ICD_DUMB			1	/* dumb delay of 1 second */
-#define ICD_SMART			2	/* smart delay */
-#define ICD_USER			3       /* user-specified delay */
-
-
-
-	/******* INTERLEAVE FACTOR CALCULATION TYPES **********/
-
-#define ILF_USER			0	/* user-specified interleave factor */
-#define ILF_SMART			1	/* smart interleave */
-
-
-
-	/************ SCHEDULED DOWNTIME TYPES ****************/
+/************ SCHEDULED DOWNTIME TYPES ****************/
 
 #define ACTIVE_DOWNTIME                 0       /* active downtime - currently in effect */
 #define PENDING_DOWNTIME                1       /* pending downtime - scheduled for the future */
 
-
-NAGIOS_BEGIN_DECL
-
-/* useful for hosts and services to determine time 'til next check */
-#define normal_check_window(o) ((time_t)(o->check_interval * interval_length))
-#define retry_check_window(o) ((time_t)(o->retry_interval * interval_length))
-#define check_window(o) \
-	((!o->current_state && o->state_type == SOFT_STATE) ? \
-		retry_check_window(o) : \
-		normal_check_window(o))
-
-/** Nerd subscription type */
-struct nerd_subscription {
-	int sd;
-	struct nerd_channel *chan;
-	char *format; /* requested format (macro string) for this subscription */
-};
-
-/******************** FUNCTIONS **********************/
-void cleanup(void);                                  	/* cleanup after ourselves (before quitting or restarting) */
-
-NAGIOS_END_DECL
 #endif

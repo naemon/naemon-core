@@ -5,7 +5,6 @@
 #include "downtime.h"
 #include "statusdata.h"
 #include "macros.h"
-#include "naemon.h"
 #include "sretention.h"
 #include "perfdata.h"
 #include "broker.h"
@@ -18,7 +17,12 @@
 #include "commands.h"
 #include "events.h"
 #include "utils.h"
+#include "defaults.h"
+#include "loadctl.h"
+#include "globals.h"
+#include "logging.h"
 #include <getopt.h>
+#include <string.h>
 
 static int is_worker;
 

@@ -1,8 +1,10 @@
+#include <string.h>
 #include "config.h"
 #include "common.h"
 #include "objects.h"
 #include "xodtemplate.h"
-#include "nagios.h"
+#include "logging.h"
+#include "globals.h"
 
 
 /*

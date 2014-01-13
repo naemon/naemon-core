@@ -63,6 +63,13 @@
 #define DEBUGV_MORE			1
 #define DEBUGV_MOST                     2
 
+
+/******************* STATE LOGGING TYPES **************/
+
+#define INITIAL_STATES                  1
+#define CURRENT_STATES                  2
+
+
 NAGIOS_BEGIN_DECL
 /**** Logging Functions ****/
 void logit(int, int, const char *, ...)

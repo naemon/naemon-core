@@ -3,6 +3,11 @@
 
 #include "objects.h"
 
+
+#define HOST_FLAPPING                   0
+#define SERVICE_FLAPPING                1
+
+
 void check_for_service_flapping(service *, int, int);	      /* determines whether or not a service is "flapping" between states */
 void check_for_host_flapping(host *, int, int, int);		/* determines whether or not a host is "flapping" between states */
 void set_service_flap(service *, double, double, double, int);	/* handles a service that is flapping */

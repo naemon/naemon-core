@@ -1,6 +1,7 @@
 #ifndef _XODTEMPLATE_H
 #define _XODTEMPLATE_H
 
+#include "objects.h"
 
 /*********** GENERAL DEFINITIONS ************/
 
