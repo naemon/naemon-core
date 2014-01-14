@@ -40,6 +40,7 @@ AC_CHECK_HEADERS([locale.h malloc.h memory.h netdb.h netinet/in.h pwd.h regex.h 
 AC_CHECK_HEADERS([stdbool.h stdint.h stdlib.h string.h strings.h syslog.h])
 AC_CHECK_HEADERS([sys/mman.h sys/resource.h sys/socket.h sys/stat.h sys/time.h])
 AC_CHECK_HEADERS([sys/timeb.h sys/types.h sys/wait.h unistd.h vfork.h wchar.h])
+AC_CHECK_HEADERS([sys/prctl.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T
