@@ -292,6 +292,7 @@ static void destroy_job(struct wproc_job *job)
 	case WPJOB_CALLBACK:
 		/* call with NULL result to make callback clean things up */
 		run_job_callback(job, NULL, 0);
+		free(job->arg);
 		break;
 	default:
 		logit(NSLOG_RUNTIME_WARNING, TRUE, "wproc: Unknown job type: %d\n", job->type);
@@ -633,6 +634,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 		if (wpres.error_code == ETIME) {
 			wpres.early_timeout = TRUE;
 		}
+
 		if (wpres.early_timeout) {
 			asprintf(&error_reason, "timed out after %.2fs", tv_delta_f(&wpres.start, &wpres.stop));
 		} else if (WIFSIGNALED(wpres.wait_status)) {
