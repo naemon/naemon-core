@@ -2307,7 +2307,7 @@ int process_passive_host_check(time_t check_time, char *host_name, int return_co
 	struct timeval tv;
 
 	/* skip this host check result if we aren't accepting passive host checks */
-	if (accept_passive_service_checks == FALSE)
+	if (accept_passive_host_checks == FALSE)
 		return ERROR;
 
 	/* make sure we have all required data */
