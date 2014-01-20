@@ -930,7 +930,6 @@ int init_workers(int desired_workers)
 	else
 		logit(NSLOG_RUNTIME_ERROR, TRUE, "wproc: Failed to register manager with query handler\n");
 
-	i = desired_workers;
 	if (desired_workers <= 0) {
 		int cpus = online_cpus();
 
