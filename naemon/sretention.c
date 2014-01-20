@@ -77,8 +77,5 @@ int read_initial_state_information(void)
 	broker_retention_data(NEBTYPE_RETENTIONDATA_ENDLOAD, NEBFLAG_NONE, NEBATTR_NONE, NULL);
 #endif
 
-	if (result == ERROR)
-		return ERROR;
-
-	return OK;
+	return result;
 }
