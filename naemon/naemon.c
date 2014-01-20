@@ -495,348 +495,346 @@ int main(int argc, char **argv)
 	}
 
 
-	/* else start to monitor things... */
-	else {
+	/* start to monitor things... */
+
+	/*
+	 * if we're called with a relative path we must make
+	 * it absolute so we can launch our workers.
+	 * If not, we needn't bother, as we're using execvp()
+	 */
+	if (strchr(argv[0], '/'))
+		naemon_binary_path = nspath_absolute(argv[0], NULL);
+	else
+		naemon_binary_path = strdup(argv[0]);
+
+	if (!naemon_binary_path) {
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to allocate memory for naemon_binary_path\n");
+		exit(EXIT_FAILURE);
+	}
+
+	if (!(nagios_iobs = iobroker_create())) {
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to create IO broker set: %s\n",
+		      strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+
+	/* keep monitoring things until we get a shutdown command */
+	do {
+		/* reset internal book-keeping (in case we're restarting) */
+		wproc_num_workers_spawned = wproc_num_workers_online = 0;
+		caught_signal = sigshutdown = sigrestart = FALSE;
+		sig_id = 0;
+
+		/* reset program variables */
+		reset_variables();
+		timing_point("Variables reset\n");
+
+		/* get PID */
+		nagios_pid = (int)getpid();
+
+		/* read in the configuration files (main and resource config files) */
+		result = read_main_config_file(config_file);
+		if (result != OK) {
+			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Failed to process config file '%s'. Aborting\n", config_file);
+			exit(EXIT_FAILURE);
+		}
+		timing_point("Main config file read\n");
+
+		/* NOTE 11/06/07 EG moved to after we read config files, as user may have overridden timezone offset */
+		/* get program (re)start time and save as macro */
+		program_start = time(NULL);
+		my_free(mac->x[MACRO_PROCESSSTARTTIME]);
+		asprintf(&mac->x[MACRO_PROCESSSTARTTIME], "%lu", (unsigned long)program_start);
+
+		/* drop privileges */
+		if (drop_privileges(naemon_user, naemon_group) == ERROR) {
+
+			logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_CONFIG_ERROR, TRUE, "Failed to drop privileges.  Aborting.");
+
+			cleanup();
+			exit(ERROR);
+		}
+
+		if (test_path_access(naemon_binary_path, X_OK)) {
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: failed to access() %s: %s\n", naemon_binary_path, strerror(errno));
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Spawning workers will be impossible. Aborting.\n");
+			exit(EXIT_FAILURE);
+		}
+
+		if (test_configured_paths() == ERROR) {
+			/* error has already been logged */
+			exit(EXIT_FAILURE);
+		}
+		/* enter daemon mode (unless we're restarting...) */
+		if (daemon_mode == TRUE && sigrestart == FALSE) {
+
+			result = daemon_init();
+
+			/* we had an error daemonizing, so bail... */
+			if (result == ERROR) {
+				logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "Bailing out due to failure to daemonize. (PID=%d)", (int)getpid());
+				cleanup();
+				exit(EXIT_FAILURE);
+			}
+
+			/* get new PID */
+			nagios_pid = (int)getpid();
+		}
+
+		/* this must be logged after we read config data, as user may have changed location of main log file */
+		logit(NSLOG_PROCESS_INFO, TRUE, "Naemon %s starting... (PID=%d)\n", PROGRAM_VERSION, (int)getpid());
+
+		/* log the local time - may be different than clock time due to timezone offset */
+		now = time(NULL);
+		tm = localtime_r(&now, &tm_s);
+		strftime(datestring, sizeof(datestring), "%a %b %d %H:%M:%S %Z %Y", tm);
+		logit(NSLOG_PROCESS_INFO, TRUE, "Local time is %s", datestring);
+
+		/* write log version/info */
+		write_log_file_info(NULL);
+
+		/* open debug log now that we're the right user */
+		open_debug_log();
+
+#ifdef USE_EVENT_BROKER
+		/* initialize modules */
+		neb_init_modules();
+		neb_init_callback_list();
+#endif
+		timing_point("NEB module API initialized\n");
+
+		/* handle signals (interrupts) before we do any socket I/O */
+		setup_sighandler();
 
 		/*
-		 * if we're called with a relative path we must make
-		 * it absolute so we can launch our workers.
-		 * If not, we needn't bother, as we're using execvp()
+		 * Initialize query handler and event subscription service.
+		 * This must be done before modules are initialized, so
+		 * the modules can use our in-core stuff properly
 		 */
-		if (strchr(argv[0], '/'))
-			naemon_binary_path = nspath_absolute(argv[0], NULL);
-		else
-			naemon_binary_path = strdup(argv[0]);
-
-		if (!naemon_binary_path) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to allocate memory for naemon_binary_path\n");
+		if (qh_init(qh_socket_path ? qh_socket_path : DEFAULT_QUERY_SOCKET) != OK) {
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to initialize query handler. Aborting\n");
 			exit(EXIT_FAILURE);
 		}
+		timing_point("Query handler initialized\n");
+		nerd_init();
+		timing_point("NERD initialized\n");
 
-		if (!(nagios_iobs = iobroker_create())) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to create IO broker set: %s\n",
-			      strerror(errno));
+		/* initialize check workers */
+		if (init_workers(num_check_workers) < 0) {
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Failed to spawn workers. Aborting\n");
 			exit(EXIT_FAILURE);
 		}
+		timing_point("%u workers spawned\n", wproc_num_workers_spawned);
+		i = 0;
+		while (i < 50 && wproc_num_workers_online < wproc_num_workers_spawned) {
+			iobroker_poll(nagios_iobs, 50);
+			i++;
+		}
+		timing_point("%u workers connected\n", wproc_num_workers_online);
 
-		/* keep monitoring things until we get a shutdown command */
-		do {
-			/* reset internal book-keeping (in case we're restarting) */
-			wproc_num_workers_spawned = wproc_num_workers_online = 0;
-			caught_signal = sigshutdown = sigrestart = FALSE;
-			sig_id = 0;
+		/* now that workers have arrived we can set the defaults */
+		set_loadctl_defaults();
 
-			/* reset program variables */
-			reset_variables();
-			timing_point("Variables reset\n");
+		/* read in all object config data */
+		if (result == OK)
+			result = read_all_object_data(config_file);
 
-			/* get PID */
-			nagios_pid = (int)getpid();
-
-			/* read in the configuration files (main and resource config files) */
-			result = read_main_config_file(config_file);
-			if (result != OK) {
-				logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Failed to process config file '%s'. Aborting\n", config_file);
-				exit(EXIT_FAILURE);
-			}
-			timing_point("Main config file read\n");
-
-			/* NOTE 11/06/07 EG moved to after we read config files, as user may have overridden timezone offset */
-			/* get program (re)start time and save as macro */
-			program_start = time(NULL);
-			my_free(mac->x[MACRO_PROCESSSTARTTIME]);
-			asprintf(&mac->x[MACRO_PROCESSSTARTTIME], "%lu", (unsigned long)program_start);
-
-			/* drop privileges */
-			if (drop_privileges(naemon_user, naemon_group) == ERROR) {
-
-				logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_CONFIG_ERROR, TRUE, "Failed to drop privileges.  Aborting.");
-
-				cleanup();
-				exit(ERROR);
-			}
-
-			if (test_path_access(naemon_binary_path, X_OK)) {
-				logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: failed to access() %s: %s\n", naemon_binary_path, strerror(errno));
-				logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Spawning workers will be impossible. Aborting.\n");
-				exit(EXIT_FAILURE);
-			}
-
-			if (test_configured_paths() == ERROR) {
-				/* error has already been logged */
-				exit(EXIT_FAILURE);
-			}
-			/* enter daemon mode (unless we're restarting...) */
-			if (daemon_mode == TRUE && sigrestart == FALSE) {
-
-				result = daemon_init();
-
-				/* we had an error daemonizing, so bail... */
-				if (result == ERROR) {
-					logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "Bailing out due to failure to daemonize. (PID=%d)", (int)getpid());
-					cleanup();
-					exit(EXIT_FAILURE);
-				}
-
-				/* get new PID */
-				nagios_pid = (int)getpid();
-			}
-
-			/* this must be logged after we read config data, as user may have changed location of main log file */
-			logit(NSLOG_PROCESS_INFO, TRUE, "Naemon %s starting... (PID=%d)\n", PROGRAM_VERSION, (int)getpid());
-
-			/* log the local time - may be different than clock time due to timezone offset */
-			now = time(NULL);
-			tm = localtime_r(&now, &tm_s);
-			strftime(datestring, sizeof(datestring), "%a %b %d %H:%M:%S %Z %Y", tm);
-			logit(NSLOG_PROCESS_INFO, TRUE, "Local time is %s", datestring);
-
-			/* write log version/info */
-			write_log_file_info(NULL);
-
-			/* open debug log now that we're the right user */
-			open_debug_log();
+		/*
+		 * the queue has to be initialized befor loading the neb modules
+		 * to give them the chance to register user events.
+		 * (initializing event queue requires number of objects, so do
+		 * this after parsing the objects)
+		 */
+		init_event_queue();
+		timing_point("Event queue initialized\n");
 
 #ifdef USE_EVENT_BROKER
-			/* initialize modules */
-			neb_init_modules();
-			neb_init_callback_list();
-#endif
-			timing_point("NEB module API initialized\n");
+		/* load modules */
+		if (neb_load_all_modules() != OK) {
+			logit(NSLOG_CONFIG_ERROR, ERROR, "Error: Module loading failed. Aborting.\n");
+			/* if we're dumping core, we must remove all dl-files */
+			if (daemon_dumps_core)
+				neb_unload_all_modules(NEBMODULE_FORCE_UNLOAD, NEBMODULE_NEB_SHUTDOWN);
+			exit(EXIT_FAILURE);
+		}
+		timing_point("Modules loaded\n");
 
-			/* handle signals (interrupts) before we do any socket I/O */
-			setup_sighandler();
-
-			/*
-			 * Initialize query handler and event subscription service.
-			 * This must be done before modules are initialized, so
-			 * the modules can use our in-core stuff properly
-			 */
-			if (qh_init(qh_socket_path ? qh_socket_path : DEFAULT_QUERY_SOCKET) != OK) {
-				logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to initialize query handler. Aborting\n");
-				exit(EXIT_FAILURE);
-			}
-			timing_point("Query handler initialized\n");
-			nerd_init();
-			timing_point("NERD initialized\n");
-
-			/* initialize check workers */
-			if (init_workers(num_check_workers) < 0) {
-				logit(NSLOG_RUNTIME_ERROR, TRUE, "Failed to spawn workers. Aborting\n");
-				exit(EXIT_FAILURE);
-			}
-			timing_point("%u workers spawned\n", wproc_num_workers_spawned);
-			i = 0;
-			while (i < 50 && wproc_num_workers_online < wproc_num_workers_spawned) {
-				iobroker_poll(nagios_iobs, 50);
-				i++;
-			}
-			timing_point("%u workers connected\n", wproc_num_workers_online);
-
-			/* now that workers have arrived we can set the defaults */
-			set_loadctl_defaults();
-
-			/* read in all object config data */
-			if (result == OK)
-				result = read_all_object_data(config_file);
-
-			/*
-			 * the queue has to be initialized befor loading the neb modules
-			 * to give them the chance to register user events.
-			 * (initializing event queue requires number of objects, so do
-			 * this after parsing the objects)
-			 */
-			init_event_queue();
-			timing_point("Event queue initialized\n");
-
-#ifdef USE_EVENT_BROKER
-			/* load modules */
-			if (neb_load_all_modules() != OK) {
-				logit(NSLOG_CONFIG_ERROR, ERROR, "Error: Module loading failed. Aborting.\n");
-				/* if we're dumping core, we must remove all dl-files */
-				if (daemon_dumps_core)
-					neb_unload_all_modules(NEBMODULE_FORCE_UNLOAD, NEBMODULE_NEB_SHUTDOWN);
-				exit(EXIT_FAILURE);
-			}
-			timing_point("Modules loaded\n");
-
-			/* send program data to broker */
-			broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE, NULL);
-			timing_point("First callback made\n");
+		/* send program data to broker */
+		broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+		timing_point("First callback made\n");
 #endif
 
-			/* there was a problem reading the config files */
-			if (result != OK)
-				logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_CONFIG_ERROR, TRUE, "Bailing out due to one or more errors encountered in the configuration files. Run Naemon from the command line with the -v option to verify your config before restarting. (PID=%d)", (int)getpid());
+		/* there was a problem reading the config files */
+		if (result != OK)
+			logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_CONFIG_ERROR, TRUE, "Bailing out due to one or more errors encountered in the configuration files. Run Naemon from the command line with the -v option to verify your config before restarting. (PID=%d)", (int)getpid());
 
-			else {
+		else {
 
-				/* run the pre-flight check to make sure everything looks okay*/
-				if ((result = pre_flight_check()) != OK)
-					logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_VERIFICATION_ERROR, TRUE, "Bailing out due to errors encountered while running the pre-flight check.  Run Naemon from the command line with the -v option to verify your config before restarting. (PID=%d)\n", (int)getpid());
-			}
+			/* run the pre-flight check to make sure everything looks okay*/
+			if ((result = pre_flight_check()) != OK)
+				logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_VERIFICATION_ERROR, TRUE, "Bailing out due to errors encountered while running the pre-flight check.  Run Naemon from the command line with the -v option to verify your config before restarting. (PID=%d)\n", (int)getpid());
+		}
 
-			/* an error occurred that prevented us from (re)starting */
-			if (result != OK) {
+		/* an error occurred that prevented us from (re)starting */
+		if (result != OK) {
 
-				/* if we were restarting, we need to cleanup from the previous run */
-				if (sigrestart == TRUE) {
+			/* if we were restarting, we need to cleanup from the previous run */
+			if (sigrestart == TRUE) {
 
-					/* clean up the status data */
-					cleanup_status_data(TRUE);
-				}
-
-#ifdef USE_EVENT_BROKER
-				/* send program data to broker */
-				broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_PROCESS_INITIATED, NEBATTR_SHUTDOWN_ABNORMAL, NULL);
-#endif
-				cleanup();
-				exit(ERROR);
-			}
-
-			timing_point("Object configuration parsed and understood\n");
-
-			/* write the objects.cache file */
-			fcache_objects(object_cache_file);
-			timing_point("Objects cached\n");
-
-#ifdef USE_EVENT_BROKER
-			/* send program data to broker */
-			broker_program_state(NEBTYPE_PROCESS_START, NEBFLAG_NONE, NEBATTR_NONE, NULL);
-#endif
-
-			/* initialize status data unless we're starting */
-			if (sigrestart == FALSE) {
-				initialize_status_data(config_file);
-				timing_point("Status data initialized\n");
-			}
-
-			/* initialize scheduled downtime data */
-			initialize_downtime_data();
-			timing_point("Downtime data initialized\n");
-
-			/* read initial service and host state information  */
-			initialize_retention_data(config_file);
-			timing_point("Retention data initialized\n");
-			read_initial_state_information();
-			timing_point("Initial state information read\n");
-
-			/* initialize comment data */
-			initialize_comment_data();
-			timing_point("Comment data initialized\n");
-
-			/* initialize performance data */
-			initialize_performance_data(config_file);
-			timing_point("Performance data initialized\n");
-
-			/* initialize the event timing loop */
-			init_timing_loop();
-			timing_point("Event timing loop initialized\n");
-
-			/* initialize check statistics */
-			init_check_stats();
-			timing_point("check stats initialized\n");
-
-			/* update all status data (with retained information) */
-			update_all_status_data();
-			timing_point("Status data updated\n");
-
-			/* log initial host and service state */
-			log_host_states(INITIAL_STATES, NULL);
-			log_service_states(INITIAL_STATES, NULL);
-			timing_point("Initial states logged\n");
-
-			/* reset the restart flag */
-			sigrestart = FALSE;
-
-			/* fire up command file worker */
-			launch_command_file_worker();
-			timing_point("Command file worker launched\n");
-
-#ifdef USE_EVENT_BROKER
-			/* send program data to broker */
-			broker_program_state(NEBTYPE_PROCESS_EVENTLOOPSTART, NEBFLAG_NONE, NEBATTR_NONE, NULL);
-#endif
-
-			/* get event start time and save as macro */
-			event_start = time(NULL);
-			my_free(mac->x[MACRO_EVENTSTARTTIME]);
-			asprintf(&mac->x[MACRO_EVENTSTARTTIME], "%lu", (unsigned long)event_start);
-
-			timing_point("Entering event execution loop\n");
-			/***** start monitoring all services *****/
-			/* (doesn't return until a restart or shutdown signal is encountered) */
-			event_execution_loop();
-
-			/*
-			 * immediately deinitialize the query handler so it
-			 * can remove modules that have stashed data with it
-			 */
-			qh_deinit(qh_socket_path ? qh_socket_path : DEFAULT_QUERY_SOCKET);
-
-			/* 03/01/2007 EG Moved from sighandler() to prevent FUTEX locking problems under NPTL */
-			/* 03/21/2007 EG SIGSEGV signals are still logged in sighandler() so we don't loose them */
-			/* did we catch a signal? */
-			if (caught_signal == TRUE) {
-
-				if (sig_id == SIGHUP)
-					logit(NSLOG_PROCESS_INFO, TRUE, "Caught SIGHUP, restarting...\n");
-
-			}
-
-#ifdef USE_EVENT_BROKER
-			/* send program data to broker */
-			broker_program_state(NEBTYPE_PROCESS_EVENTLOOPEND, NEBFLAG_NONE, NEBATTR_NONE, NULL);
-			if (sigshutdown == TRUE)
-				broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_USER_INITIATED, NEBATTR_SHUTDOWN_NORMAL, NULL);
-			else if (sigrestart == TRUE)
-				broker_program_state(NEBTYPE_PROCESS_RESTART, NEBFLAG_USER_INITIATED, NEBATTR_RESTART_NORMAL, NULL);
-#endif
-
-			disconnect_command_file_worker();
-
-			/* save service and host state information */
-			save_state_information(FALSE);
-			cleanup_retention_data();
-
-			/* clean up performance data */
-			cleanup_performance_data();
-
-			/* clean up the scheduled downtime data */
-			cleanup_downtime_data();
-
-			/* clean up the status data unless we're restarting */
-			if (sigrestart == FALSE) {
+				/* clean up the status data */
 				cleanup_status_data(TRUE);
 			}
 
-			free_worker_memory(WPROC_FORCE);
-			/* shutdown stuff... */
-			if (sigshutdown == TRUE) {
-				iobroker_destroy(nagios_iobs, IOBROKER_CLOSE_SOCKETS);
-				nagios_iobs = NULL;
-
-				/* log a shutdown message */
-				logit(NSLOG_PROCESS_INFO, TRUE, "Successfully shutdown... (PID=%d)\n", (int)getpid());
-			}
-
-			/* clean up after ourselves */
+#ifdef USE_EVENT_BROKER
+			/* send program data to broker */
+			broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_PROCESS_INITIATED, NEBATTR_SHUTDOWN_ABNORMAL, NULL);
+#endif
 			cleanup();
+			exit(ERROR);
+		}
 
-			/* close debug log */
-			close_debug_log();
+		timing_point("Object configuration parsed and understood\n");
 
-		} while (sigrestart == TRUE && sigshutdown == FALSE);
+		/* write the objects.cache file */
+		fcache_objects(object_cache_file);
+		timing_point("Objects cached\n");
 
-		if (daemon_mode == TRUE)
-			unlink(lock_file);
+#ifdef USE_EVENT_BROKER
+		/* send program data to broker */
+		broker_program_state(NEBTYPE_PROCESS_START, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+#endif
 
-		/* free misc memory */
-		my_free(lock_file);
-		my_free(config_file);
-		my_free(config_file_dir);
-		my_free(naemon_binary_path);
-	}
+		/* initialize status data unless we're starting */
+		if (sigrestart == FALSE) {
+			initialize_status_data(config_file);
+			timing_point("Status data initialized\n");
+		}
+
+		/* initialize scheduled downtime data */
+		initialize_downtime_data();
+		timing_point("Downtime data initialized\n");
+
+		/* read initial service and host state information  */
+		initialize_retention_data(config_file);
+		timing_point("Retention data initialized\n");
+		read_initial_state_information();
+		timing_point("Initial state information read\n");
+
+		/* initialize comment data */
+		initialize_comment_data();
+		timing_point("Comment data initialized\n");
+
+		/* initialize performance data */
+		initialize_performance_data(config_file);
+		timing_point("Performance data initialized\n");
+
+		/* initialize the event timing loop */
+		init_timing_loop();
+		timing_point("Event timing loop initialized\n");
+
+		/* initialize check statistics */
+		init_check_stats();
+		timing_point("check stats initialized\n");
+
+		/* update all status data (with retained information) */
+		update_all_status_data();
+		timing_point("Status data updated\n");
+
+		/* log initial host and service state */
+		log_host_states(INITIAL_STATES, NULL);
+		log_service_states(INITIAL_STATES, NULL);
+		timing_point("Initial states logged\n");
+
+		/* reset the restart flag */
+		sigrestart = FALSE;
+
+		/* fire up command file worker */
+		launch_command_file_worker();
+		timing_point("Command file worker launched\n");
+
+#ifdef USE_EVENT_BROKER
+		/* send program data to broker */
+		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPSTART, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+#endif
+
+		/* get event start time and save as macro */
+		event_start = time(NULL);
+		my_free(mac->x[MACRO_EVENTSTARTTIME]);
+		asprintf(&mac->x[MACRO_EVENTSTARTTIME], "%lu", (unsigned long)event_start);
+
+		timing_point("Entering event execution loop\n");
+		/***** start monitoring all services *****/
+		/* (doesn't return until a restart or shutdown signal is encountered) */
+		event_execution_loop();
+
+		/*
+		 * immediately deinitialize the query handler so it
+		 * can remove modules that have stashed data with it
+		 */
+		qh_deinit(qh_socket_path ? qh_socket_path : DEFAULT_QUERY_SOCKET);
+
+		/* 03/01/2007 EG Moved from sighandler() to prevent FUTEX locking problems under NPTL */
+		/* 03/21/2007 EG SIGSEGV signals are still logged in sighandler() so we don't loose them */
+		/* did we catch a signal? */
+		if (caught_signal == TRUE) {
+
+			if (sig_id == SIGHUP)
+				logit(NSLOG_PROCESS_INFO, TRUE, "Caught SIGHUP, restarting...\n");
+
+		}
+
+#ifdef USE_EVENT_BROKER
+		/* send program data to broker */
+		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPEND, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+		if (sigshutdown == TRUE)
+			broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_USER_INITIATED, NEBATTR_SHUTDOWN_NORMAL, NULL);
+		else if (sigrestart == TRUE)
+			broker_program_state(NEBTYPE_PROCESS_RESTART, NEBFLAG_USER_INITIATED, NEBATTR_RESTART_NORMAL, NULL);
+#endif
+
+		disconnect_command_file_worker();
+
+		/* save service and host state information */
+		save_state_information(FALSE);
+		cleanup_retention_data();
+
+		/* clean up performance data */
+		cleanup_performance_data();
+
+		/* clean up the scheduled downtime data */
+		cleanup_downtime_data();
+
+		/* clean up the status data unless we're restarting */
+		if (sigrestart == FALSE) {
+			cleanup_status_data(TRUE);
+		}
+
+		free_worker_memory(WPROC_FORCE);
+		/* shutdown stuff... */
+		if (sigshutdown == TRUE) {
+			iobroker_destroy(nagios_iobs, IOBROKER_CLOSE_SOCKETS);
+			nagios_iobs = NULL;
+
+			/* log a shutdown message */
+			logit(NSLOG_PROCESS_INFO, TRUE, "Successfully shutdown... (PID=%d)\n", (int)getpid());
+		}
+
+		/* clean up after ourselves */
+		cleanup();
+
+		/* close debug log */
+		close_debug_log();
+
+	} while (sigrestart == TRUE && sigshutdown == FALSE);
+
+	if (daemon_mode == TRUE)
+		unlink(lock_file);
+
+	/* free misc memory */
+	my_free(lock_file);
+	my_free(config_file);
+	my_free(config_file_dir);
+	my_free(naemon_binary_path);
 
 	return OK;
 }
