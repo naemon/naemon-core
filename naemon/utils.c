@@ -1557,10 +1557,12 @@ void handle_sigxfsz(int sig)
 }
 
 
-/* Checks a file to determine whether it exceeds resource limit imposed
-	limits. Returns the file size if file is OK, 0 if it's status could not
-	be determined, or -1 if not OK. fudge is the fudge factor (in bytes) for
-	checking the file size */
+/*
+ * Checks a file to determine whether it exceeds resource limit imposed
+ * limits. Returns the file size if file is OK, 0 if it's status could not
+ * be determined, or -1 if not OK. fudge is the fudge factor (in bytes) for
+ * checking the file size 
+ */
 static long long check_file_size(char *path, unsigned long fudge,
                                  struct rlimit rlim)
 {
@@ -1568,37 +1570,39 @@ static long long check_file_size(char *path, unsigned long fudge,
 	struct stat status;
 
 	/* Make sure we were passed a legitimate file path */
-	if (NULL == path) {
+	if (NULL == path)
 		return 0;
-	}
 
 	/* Get the status of the file */
-	if (stat(path, &status) == 0) {
-		/* Make sure it is a file */
-		if (S_ISREG(status.st_mode)) {
-			/* If the file size plus the fudge factor exceeds the
-				current resource limit imposed size limit, log an error */
-			if (status.st_size + fudge > rlim.rlim_cur) {
-				logit(NSLOG_RUNTIME_ERROR, TRUE, "Size of file '%s' (%llu) "
-				      "exceeds (or nearly exceeds) size imposed by resource "
-				      "limits (%llu). Consider increasing limits with "
-				      "ulimit(1).\n", path,
-				      (unsigned long long)status.st_size,
-				      (unsigned long long)rlim.rlim_cur);
-				return -1;
-			} else {
-				return status.st_size;
-			}
-		} else {
-			return 0;
-		}
-	} else {
-		/* If we could not determine the file status, log an error message */
+	if (stat(path, &status) < 0) {
+		/* 
+		 * If we could not determine the file status, 
+		 * log an error message 
+		 */
 		logit(NSLOG_RUNTIME_ERROR, TRUE,
 		      "Unable to determine status of file %s: %s\n",
 		      path, strerror(errno));
 		return 0;
 	}
+
+	/* Make sure it is a file */
+	if (!S_ISREG(status.st_mode))
+		return 0;
+
+	if (status.st_size + fudge <= rlim.rlim_cur)
+		return status.st_size;
+
+	/* 
+	 * If the file size plus the fudge factor exceeds the
+	 * current resource limit imposed size limit, log an error
+	 */
+	logit(NSLOG_RUNTIME_ERROR, TRUE, "Size of file '%s' (%llu) "
+	      "exceeds (or nearly exceeds) size imposed by resource "
+	      "limits (%llu). Consider increasing limits with "
+	      "ulimit(1).\n", path,
+	      (unsigned long long)status.st_size,
+	      (unsigned long long)rlim.rlim_cur);
+	return -1;
 }
 
 
