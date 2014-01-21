@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <string.h>
 #include <time.h>
+#include <pwd.h>
 #include "libnaemon.h"
 
 #define MSG_DELIM "\1\0\0" /**< message limiter */
@@ -659,11 +660,16 @@ int set_socket_options(int sd, int bufsize)
 
 void enter_worker(int sd, int (*cb)(child_process *))
 {
+	struct passwd *pwd;
 	/* created with socketpair(), usually */
 	master_sd = sd;
 	parent_pid = getppid();
-	(void)chdir("/tmp");
-	(void)chdir("nagios-workers");
+	pwd = getpwuid(getuid());
+	if (!pwd || !chdir(pwd->pw_dir)) {
+		if (!chdir("/")) {
+			// now what?
+		}
+	}
 
 	ptab = fanout_create(4096);
 
