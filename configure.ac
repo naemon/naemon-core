@@ -10,6 +10,7 @@ AC_CONFIG_HEADERS([config.h naemon/lib/snprintf.h])
 AC_PREFIX_DEFAULT(/usr/local/naemon)
 
 # Checks for programs.
+AM_PATH_CHECK([0.9.0], [], [AC_MSG_ERROR([check is missing])])
 AC_PROG_CC
 AC_PROG_MAKE_SET
 AM_PROG_CC_C_O
@@ -156,6 +157,7 @@ AC_CONFIG_FILES([Makefile
                  naemon/Makefile
                  naemon/defaults.h
                  naemon/lib/Makefile
+				 tests/Makefile
                  sample-config/naemon.cfg
                  sample-config/resource.cfg
                  sample-config/conf.d/commands.cfg

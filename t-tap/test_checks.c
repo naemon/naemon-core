@@ -89,12 +89,51 @@ void setup_objects(time_t time)
 
 }
 
+#defined FREE_OUTPUT() free(output; free(short_output); free(long_output); free(perf_data);
+void
+test_parse_check_output() {
+	/**
+	 * TEXT OUTPUT | OPTIONAL PERFDATA
+	 * LONG TEXT LINE 1
+	 * LONG TEXT LINE 2
+	 * ...
+	 * LONG TEXT LINE N | PERFDATA LINE 2
+	 * PERFDATA LINE 3
+	 * ...
+	 * PERFDATA LINE N
+	 **/
+	char *full_output = "TEST OK - just one line of output, no perfdata";
+	char *output = strdup(full_output);
+	char *short_output = NULL, *long_output = NULL, *perf_data = NULL;
+	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
+	ok(0 == strcmp(short_output, full_output), "short output contains all of the output") || diag("short output was: '%s', compare with full output '%s'", short_output, full_output);
+	ok(NULL == long_output, "there is no long output");
+	ok(NULL == long_output, "there is no perfdata");
+	FREE_OUTPUT()
+
+	full_output = "TEST WARNING - a line of output and | some=perfdata;";
+	output = strdup(full_output);
+	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
+	ok(0 == strcmp(short_output, "TEST WARNING - a line of output and"), "short output contains the initial text output") || diag("short output was: '%s', compare with full output '%s'", short_output, full_output);
+	ok(0 == strcmp(perf_data, "some=perfdata;"), "perfdata looks correct") || diag("perfdata was: '%s', compare with full output '%s'", perf_data, full_output);
+	ok(NULL == long_output, "there is no long output");
+	FREE_OUTPUT()
+
+	full_output = "TEST OK - a line of output and | some=perfdata;\nHere's some additional\nLONG output\nwhich suddenly becomes | more=perfdata;\non=several;lines;";
+	output = strdup(full_output);
+	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
+	ok(0 == strcmp(short_output, "TEST OK - a line of output and"), "short output contains the initial text output") || diag("short output was: '%s', compare with full output '%s'", short_output, full_output);
+	ok(0 == strcmp(perf_data, "some=perfdata; more=perfdata; on=several;lines;"), "perfdata looks correct") || diag("perfdata was: '%s', compare with full output '%s'", perf_data, full_output);
+	ok(0 == strcmp(long_output, "Here's some additional\nLONG output\nwhich suddenly becomes "), "long output looks correct") || diag("long output was: '%s', compare with full output '%s'", long_output, full_output);
+	FREE_OUTPUT()
+}
+
 int main(int argc, char **argv)
 {
 	time_t now = 0L;
 
 
-	plan_tests(35);
+	plan_tests(44);
 
 	time(&now);
 
@@ -359,6 +398,7 @@ int main(int argc, char **argv)
 	ok(host1->current_attempt == 1, "Attempts reset") || diag("current_attempt=%d", host1->current_attempt);
 	ok(strcmp(host1->plugin_output, "UP again") == 0, "output set") || diag("plugin_output=%s", host1->plugin_output);
 
+	test_parse_check_output();
 
 	return exit_status();
 }
