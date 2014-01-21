@@ -14,29 +14,6 @@
 #include <dirent.h>
 #include <string.h>
 
-/*** helpers ****/
-/*
- * find a command with arguments still attached
- * if we're unsuccessful, the buffer pointed to by 'name' is modified
- * to have only the real command name (everything up until the first '!')
- */
-static command *find_bang_command(char *name)
-{
-	char *bang;
-	command *cmd;
-
-	if (!name)
-		return NULL;
-
-	bang = strchr(name, '!');
-	if (!bang)
-		return find_command(name);
-	*bang = 0;
-	cmd = find_command(name);
-	*bang = '!';
-	return cmd;
-}
-
 
 /******************************************************************/
 /************** CONFIGURATION INPUT FUNCTIONS *********************/
