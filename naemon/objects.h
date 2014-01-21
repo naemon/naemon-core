@@ -760,6 +760,7 @@ struct hostgroup *find_hostgroup(const char *);
 struct servicegroup *find_servicegroup(const char *);
 struct contact *find_contact(const char *);
 struct contactgroup *find_contactgroup(const char *);
+struct command *find_bang_command(char *);
 struct command *find_command(const char *);
 struct service *find_service(const char *, const char *);
 

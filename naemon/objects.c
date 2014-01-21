@@ -1986,6 +1986,24 @@ contactgroup *find_contactgroup(const char *name)
 	return dkhash_get(object_hash_tables[CONTACTGROUP_SKIPLIST], name, NULL);
 }
 
+/* find a command with arguments still attached */
+command *find_bang_command(char *name)
+{
+	char *bang;
+	command *cmd;
+
+	if (!name)
+		return NULL;
+
+	bang = strchr(name, '!');
+	if (!bang)
+		return find_command(name);
+	*bang = 0;
+	cmd = find_command(name);
+	*bang = '!';
+	return cmd;
+}
+
 command *find_command(const char *name)
 {
 	return dkhash_get(object_hash_tables[COMMAND_SKIPLIST], name, NULL);
