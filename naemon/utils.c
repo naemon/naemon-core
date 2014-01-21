@@ -1596,7 +1596,7 @@ static long long check_file_size(char *path, unsigned long fudge,
 		/* If we could not determine the file status, log an error message */
 		logit(NSLOG_RUNTIME_ERROR, TRUE,
 		      "Unable to determine status of file %s: %s\n",
-		      log_file, strerror(errno));
+		      path, strerror(errno));
 		return 0;
 	}
 }
