@@ -1484,17 +1484,20 @@ void my_system_sighandler(int sig)
 }
 
 
-/* Handle the SIGXFSZ signal. A SIGXFSZ signal is received when a file exceeds
-	the maximum allowable size either as dictated by the fzise paramater in
-	/etc/security/limits.conf (ulimit -f) or by the maximum size allowed by
-	the filesystem */
+/* 
+ * Handle the SIGXFSZ signal. A SIGXFSZ signal is received when a file exceeds
+ * the maximum allowable size either as dictated by the fzise paramater in
+ * /etc/security/limits.conf (ulimit -f) or by the maximum size allowed by
+ * the filesystem
+ */
 void handle_sigxfsz(int sig)
 {
 
-	static time_t lastlog_time = (time_t)0;	/* Save the last log time so we
-											   don't log too often. */
-	unsigned long log_interval = 300;		/* How frequently to log messages
-											   about receiving the signal */
+	static time_t lastlog_time = (time_t)0; /* Save the last log time so we 
+	                                           don't log too often. */
+
+	unsigned long log_interval = 300; /* How frequently to log messages
+	                                     about receiving the signal */
 	struct rlimit rlim;
 	time_t now;
 	char *files[] = {
@@ -1513,47 +1516,55 @@ void handle_sigxfsz(int sig)
 	long long max_size = 0LL;
 	char *max_name = NULL;
 
-	if (SIGXFSZ == sig) {	/* Make sure we're handling the correct signal */
-		/* Check the current time and if less time has passed since the last
-			time the signal was received, ignore it */
-		time(&now);
-		if ((unsigned long)(now - lastlog_time) < log_interval) return;
+	/* Make sure we're handling the correct signal */
+	if (SIGXFSZ != sig)
+		return;
 
-		/* Get the current file size limit */
-		if (getrlimit(RLIMIT_FSIZE, &rlim) != 0) {
-			/* Attempt to log the error, realizing that the logging may fail
-				if it is the log file that is over the size limit. */
-			logit(NSLOG_RUNTIME_ERROR, TRUE,
-			      "Unable to determine current resoure limits: %s\n",
-			      strerror(errno));
-		}
+	/* Check the current time and if less time has passed since the last
+	   time the signal was received, ignore it */
+	time(&now);
+	if ((unsigned long)(now - lastlog_time) < log_interval)
+		return;
 
-		/* Try to figure out which file caused the signal and react
-				appropriately */
-		for (x = 0, filep = files; (size_t)x < (sizeof(files) / sizeof(files[0]));
-		     x++, filep++) {
-			if ((*filep != NULL) && strcmp(*filep, "/dev/null")) {
-				if ((size = check_file_size(*filep, 1024, rlim)) == -1) {
-					lastlog_time = now;
-					return;
-				} else if (size > max_size) {
-					max_size = size;
-					max_name = log_file;
-				}
-			}
-		}
-		if ((max_size > 0) && (max_name != NULL)) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "SIGXFSZ received because a "
-			      "file's size may have exceeded the file size limits of "
-			      "the filesystem. The largest file checked, '%s', has a "
-			      "size of %lld bytes", max_name, max_size);
+	/* Get the current file size limit */
+	if (getrlimit(RLIMIT_FSIZE, &rlim) != 0) {
+		/* Attempt to log the error, realizing that the logging may 
+		   fail if it is the log file that is over the size limit. */
+		logit(NSLOG_RUNTIME_ERROR, TRUE,
+		      "Unable to determine current resoure limits: %s\n",
+		      strerror(errno));
+		lastlog_time = now;
+		return;
+	}
 
-		} else {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "SIGXFSZ received but unable to "
-			      "determine which file may have caused it.");
+	/* Try to figure out which file caused the signal and react 
+	   appropriately */
+	for (x = 0, filep = files; (size_t)x < (sizeof(files) / sizeof(files[0]));
+	     x++, filep++) {
+
+		if ((*filep == NULL) || !strcmp(*filep, "/dev/null"))
+			continue;
+
+		size = check_file_size(*filep, 1024, rlim);
+		if (size == -1) {
+			lastlog_time = now;
+			return;
+		} else if (size > max_size) {
+			max_size = size;
+			max_name = *filep;
 		}
 	}
-	return;
+
+	if ((max_size > 0) && (max_name != NULL)) {
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "SIGXFSZ received because a "
+		      "file's size may have exceeded the file size limits of "
+		      "the filesystem. The largest file checked, '%s', has a "
+		      "size of %lld bytes", max_name, max_size);
+
+	} else {
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "SIGXFSZ received but unable to "
+		      "determine which file may have caused it.");
+	}
 }
 
 
