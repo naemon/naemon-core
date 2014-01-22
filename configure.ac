@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
-AC_INIT([naemon], [4.0-beta5], [naemon-dev@monitoring-lists.org])
+AC_INIT([naemon], [0.0.1], [naemon-dev@monitoring-lists.org])
 AC_CONFIG_SRCDIR([naemon/naemon.c])
 AM_INIT_AUTOMAKE
 
