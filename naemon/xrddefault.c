@@ -638,7 +638,7 @@ int xrddefault_read_state_information(void)
 								break;
 						}
 						if (temp_customvariablesmember == NULL)
-							temp_host->modified_attributes -= MODATTR_CUSTOM_VARIABLE;
+							temp_host->modified_attributes &= ~MODATTR_CUSTOM_VARIABLE;
 					}
 
 					/* calculate next possible notification time */
@@ -703,7 +703,7 @@ int xrddefault_read_state_information(void)
 
 						}
 						if (temp_customvariablesmember == NULL)
-							temp_service->modified_attributes -= MODATTR_CUSTOM_VARIABLE;
+							temp_service->modified_attributes &= ~MODATTR_CUSTOM_VARIABLE;
 					}
 
 					/* calculate next possible notification time */
@@ -773,7 +773,7 @@ int xrddefault_read_state_information(void)
 
 						}
 						if (temp_customvariablesmember == NULL)
-							temp_contact->modified_attributes -= MODATTR_CUSTOM_VARIABLE;
+							temp_contact->modified_attributes &= ~MODATTR_CUSTOM_VARIABLE;
 					}
 
 					/* update contact status */
@@ -1137,7 +1137,7 @@ int xrddefault_read_state_information(void)
 									my_free(temp_host->check_command);
 									temp_host->check_command = tempval;
 								} else
-									temp_host->modified_attributes -= MODATTR_CHECK_COMMAND;
+									temp_host->modified_attributes &= ~MODATTR_CHECK_COMMAND;
 							}
 						} else if (!strcmp(var, "check_period")) {
 							if (temp_host->modified_attributes & MODATTR_CHECK_TIMEPERIOD) {
@@ -1150,7 +1150,7 @@ int xrddefault_read_state_information(void)
 									my_free(temp_host->check_period);
 									temp_host->check_period = temp_ptr;
 								} else
-									temp_host->modified_attributes -= MODATTR_CHECK_TIMEPERIOD;
+									temp_host->modified_attributes &= ~MODATTR_CHECK_TIMEPERIOD;
 							}
 						} else if (!strcmp(var, "notification_period")) {
 							if (temp_host->modified_attributes & MODATTR_NOTIFICATION_TIMEPERIOD) {
@@ -1163,7 +1163,7 @@ int xrddefault_read_state_information(void)
 									my_free(temp_host->notification_period);
 									temp_host->notification_period = temp_ptr;
 								} else
-									temp_host->modified_attributes -= MODATTR_NOTIFICATION_TIMEPERIOD;
+									temp_host->modified_attributes &= ~MODATTR_NOTIFICATION_TIMEPERIOD;
 							}
 						} else if (!strcmp(var, "event_handler")) {
 							if (temp_host->modified_attributes & MODATTR_EVENT_HANDLER_COMMAND) {
@@ -1175,7 +1175,7 @@ int xrddefault_read_state_information(void)
 									my_free(temp_host->event_handler);
 									temp_host->event_handler = tempval;
 								} else
-									temp_host->modified_attributes -= MODATTR_EVENT_HANDLER_COMMAND;
+									temp_host->modified_attributes &= ~MODATTR_EVENT_HANDLER_COMMAND;
 							}
 						} else if (!strcmp(var, "normal_check_interval")) {
 							if (temp_host->modified_attributes & MODATTR_NORMAL_CHECK_INTERVAL && strtod(val, NULL) >= 0)
@@ -1402,7 +1402,7 @@ int xrddefault_read_state_information(void)
 									my_free(temp_service->check_command);
 									temp_service->check_command = tempval;
 								} else {
-									temp_service->modified_attributes -= MODATTR_CHECK_COMMAND;
+									temp_service->modified_attributes &= ~MODATTR_CHECK_COMMAND;
 								}
 							}
 						} else if (!strcmp(var, "check_period")) {
@@ -1416,7 +1416,7 @@ int xrddefault_read_state_information(void)
 									my_free(temp_service->check_period);
 									temp_service->check_period = temp_ptr;
 								} else
-									temp_service->modified_attributes -= MODATTR_CHECK_TIMEPERIOD;
+									temp_service->modified_attributes &= ~MODATTR_CHECK_TIMEPERIOD;
 							}
 						} else if (!strcmp(var, "notification_period")) {
 							if (temp_service->modified_attributes & MODATTR_NOTIFICATION_TIMEPERIOD) {
@@ -1429,7 +1429,7 @@ int xrddefault_read_state_information(void)
 									my_free(temp_service->notification_period);
 									temp_service->notification_period = temp_ptr;
 								} else {
-									temp_service->modified_attributes -= MODATTR_NOTIFICATION_TIMEPERIOD;
+									temp_service->modified_attributes &= ~MODATTR_NOTIFICATION_TIMEPERIOD;
 								}
 							}
 						} else if (!strcmp(var, "event_handler")) {
@@ -1442,7 +1442,7 @@ int xrddefault_read_state_information(void)
 									my_free(temp_service->event_handler);
 									temp_service->event_handler = tempval;
 								} else {
-									temp_service->modified_attributes -= MODATTR_EVENT_HANDLER_COMMAND;
+									temp_service->modified_attributes &= ~MODATTR_EVENT_HANDLER_COMMAND;
 								}
 							}
 						} else if (!strcmp(var, "normal_check_interval")) {
@@ -1538,7 +1538,7 @@ int xrddefault_read_state_information(void)
 									my_free(temp_contact->host_notification_period);
 									temp_contact->host_notification_period = temp_ptr;
 								} else
-									temp_contact->modified_host_attributes -= MODATTR_NOTIFICATION_TIMEPERIOD;
+									temp_contact->modified_host_attributes &= ~MODATTR_NOTIFICATION_TIMEPERIOD;
 							}
 						} else if (!strcmp(var, "service_notification_period")) {
 							if (temp_contact->modified_service_attributes & MODATTR_NOTIFICATION_TIMEPERIOD) {
@@ -1551,7 +1551,7 @@ int xrddefault_read_state_information(void)
 									my_free(temp_contact->service_notification_period);
 									temp_contact->service_notification_period = temp_ptr;
 								} else
-									temp_contact->modified_service_attributes -= MODATTR_NOTIFICATION_TIMEPERIOD;
+									temp_contact->modified_service_attributes &= ~MODATTR_NOTIFICATION_TIMEPERIOD;
 							}
 						} else if (!strcmp(var, "config:host_notifications_enabled")) {
 							cont_have.host_notifications_enabled = TRUE;
