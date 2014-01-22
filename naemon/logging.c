@@ -142,7 +142,7 @@ int close_log_file(void)
 	return 0;
 }
 
-/* write something to the nagios log file */
+/* write something to the naemon log file */
 int write_to_log(char *buffer, unsigned long data_type, time_t *timestamp)
 {
 	FILE *fp;
@@ -210,7 +210,7 @@ int write_to_syslog(char *buffer, unsigned long data_type)
 }
 
 
-/* write a service problem/recovery to the nagios log file */
+/* write a service problem/recovery to the naemon log file */
 int log_service_event(service *svc)
 {
 	char *temp_buffer = NULL;
@@ -376,7 +376,13 @@ int rotate_log_file(time_t rotation_time)
 	close_log_file();
 
 	/* get the archived filename to use */
-	asprintf(&log_archive, "%s%snagios-%02d-%02d-%d-%02d.log", log_archive_path, (log_archive_path[strlen(log_archive_path) - 1] == '/') ? "" : "/", t->tm_mon + 1, t->tm_mday, t->tm_year + 1900, t->tm_hour);
+	asprintf(&log_archive, "%s%snaemon-%d-%02d-%02d-%02d.log",
+				log_archive_path,
+				(log_archive_path[strlen(log_archive_path) - 1] == '/') ? "" : "/",
+				t->tm_year + 1900,
+				t->tm_mon + 1,
+				t->tm_mday,
+				t->tm_hour);
 
 	log_archive_short = log_archive;
 	while (!stat(log_archive, &log_archive_stat) && existing < 50) {
