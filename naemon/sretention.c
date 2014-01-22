@@ -7,7 +7,11 @@
 #include "xrddefault.h"
 #include "globals.h"
 #include "logging.h"
+#include <string.h>
 
+/* hosts and services before attribute modifications */
+static struct host **premod_hosts;
+static struct service **premod_services;
 
 /******************************************************************/
 /************* TOP-LEVEL STATE INFORMATION FUNCTIONS **************/
@@ -16,6 +20,13 @@
 /* initializes retention data at program start */
 int initialize_retention_data(const char *cfgfile)
 {
+	if (!(premod_hosts = calloc(sizeof(void *), num_objects.hosts)))
+		return ERROR;
+	if (!(premod_services = calloc(sizeof(void *), num_objects.services))) {
+		free(premod_hosts);
+		return ERROR;
+	}
+
 	return xrddefault_initialize_retention_data(cfgfile);
 }
 
@@ -23,6 +34,17 @@ int initialize_retention_data(const char *cfgfile)
 /* cleans up retention data before program termination */
 int cleanup_retention_data(void)
 {
+	unsigned int i;
+
+	for (i = 0; i < num_objects.hosts; i++) {
+		free(premod_hosts[i]);
+	}
+	for (i = 0; i < num_objects.services; i++) {
+		free(premod_services[i]);
+	}
+	premod_hosts = NULL;
+	premod_services = NULL;
+
 	return xrddefault_cleanup_retention_data();
 }
 
@@ -78,4 +100,46 @@ int read_initial_state_information(void)
 #endif
 
 	return result;
+}
+
+int pre_modify_service_attribute(struct service *s, int attr)
+{
+	struct service *stash;
+
+	/* might be stashed already */
+	if (premod_services[s->id]) {
+		return 0;
+	}
+
+	stash = malloc(sizeof(*stash));
+	memcpy(stash, s, sizeof(*stash));
+	premod_services[s->id] = stash;
+	return 0;
+}
+
+int pre_modify_host_attribute(struct host *h, int attr)
+{
+	struct host *stash;
+
+	/* might be stashed already */
+	if (premod_hosts[h->id]) {
+		printf("Host '%s' already stashed. Skipping\n", h->name);
+		return 0;
+	}
+
+	printf("Stashing host '%s'\n", h->name);
+	stash = malloc(sizeof(*stash));
+	memcpy(stash, h, sizeof(*stash));
+	premod_hosts[h->id] = stash;
+	return 0;
+}
+
+struct host *get_premod_host(unsigned int id)
+{
+	return premod_hosts ? premod_hosts[id] : NULL;
+}
+
+struct service *get_premod_service(unsigned int id)
+{
+	return premod_services ? premod_services[id] : NULL;
 }
