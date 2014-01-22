@@ -82,16 +82,8 @@ int run_scheduled_service_check(service *svc, int check_options, double latency)
 	log_debug_info(DEBUGL_CHECKS, 1, "Unable to run scheduled service check at this time\n");
 
 	/* only attempt to (re)schedule checks that should get checked... */
-	if (svc->should_be_scheduled == FALSE) {
-		/* XXX 
-		 * not sure if we stil need to call 
-		 * update_service_status() if check
-		 * have failed
-		 */
-		update_service_status(svc, FALSE);
+	if (svc->should_be_scheduled == FALSE)
 		return ERROR;
-	}
-
 
 	/* reschedule */
 	/* get current time */
