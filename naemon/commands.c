@@ -3146,7 +3146,6 @@ int cmd_change_object_char_var(int cmd, char *args)
 	char *contact_name = NULL;
 	char *charval = NULL;
 	char *temp_ptr = NULL;
-	char *temp_ptr2 = NULL;
 	unsigned long attr = MODATTR_NONE;
 	unsigned long hattr = MODATTR_NONE;
 	unsigned long sattr = MODATTR_NONE;
@@ -3269,16 +3268,10 @@ int cmd_change_object_char_var(int cmd, char *args)
 	case CMD_CHANGE_SVC_CHECK_COMMAND:
 
 		/* make sure the command exists */
-		temp_ptr2 = my_strtok(temp_ptr, "!");
-		if ((temp_command = find_command(temp_ptr2)) == NULL) {
+		if ((temp_command = find_bang_command(temp_ptr)) == NULL) {
 			my_free(temp_ptr);
 			return ERROR;
 		}
-
-		my_free(temp_ptr);
-		if ((temp_ptr = (char *)strdup(charval)) == NULL)
-			return ERROR;
-
 		break;
 
 	default:
