@@ -1144,26 +1144,24 @@ int xrddefault_read_state_information(void)
 
 								/* make sure the timeperiod still exists... */
 								temp_timeperiod = find_timeperiod(val);
-								temp_ptr = (char *)strdup(val);
-
-								if (temp_timeperiod != NULL && temp_ptr != NULL) {
-									my_free(temp_host->check_period);
-									temp_host->check_period = temp_ptr;
-								} else
+								if (temp_timeperiod) {
+									temp_host->check_period = temp_timeperiod->name;
+									temp_host->check_period_ptr = temp_timeperiod;
+								} else {
 									temp_host->modified_attributes &= ~MODATTR_CHECK_TIMEPERIOD;
+								}
 							}
 						} else if (!strcmp(var, "notification_period")) {
 							if (temp_host->modified_attributes & MODATTR_NOTIFICATION_TIMEPERIOD) {
 
 								/* make sure the timeperiod still exists... */
 								temp_timeperiod = find_timeperiod(val);
-								temp_ptr = (char *)strdup(val);
-
-								if (temp_timeperiod != NULL && temp_ptr != NULL) {
-									my_free(temp_host->notification_period);
-									temp_host->notification_period = temp_ptr;
-								} else
+								if (temp_timeperiod) {
+									temp_host->notification_period = temp_timeperiod->name;
+									temp_host->notification_period_ptr = temp_timeperiod;
+								} else {
 									temp_host->modified_attributes &= ~MODATTR_NOTIFICATION_TIMEPERIOD;
+								}
 							}
 						} else if (!strcmp(var, "event_handler")) {
 							if (temp_host->modified_attributes & MODATTR_EVENT_HANDLER_COMMAND) {
@@ -1410,24 +1408,21 @@ int xrddefault_read_state_information(void)
 
 								/* make sure the timeperiod still exists... */
 								temp_timeperiod = find_timeperiod(val);
-								temp_ptr = (char *)strdup(val);
-
-								if (temp_timeperiod != NULL && temp_ptr != NULL) {
-									my_free(temp_service->check_period);
-									temp_service->check_period = temp_ptr;
-								} else
+								if (temp_timeperiod) {
+									temp_service->check_period = temp_timeperiod->name;
+									temp_service->check_period_ptr = temp_timeperiod;
+								} else {
 									temp_service->modified_attributes &= ~MODATTR_CHECK_TIMEPERIOD;
+								}
 							}
 						} else if (!strcmp(var, "notification_period")) {
 							if (temp_service->modified_attributes & MODATTR_NOTIFICATION_TIMEPERIOD) {
 
 								/* make sure the timeperiod still exists... */
 								temp_timeperiod = find_timeperiod(val);
-								temp_ptr = (char *)strdup(val);
-
-								if (temp_timeperiod != NULL && temp_ptr != NULL) {
-									my_free(temp_service->notification_period);
-									temp_service->notification_period = temp_ptr;
+								if (temp_timeperiod) {
+									temp_service->notification_period = temp_timeperiod->name;
+									temp_service->notification_period_ptr = temp_timeperiod;
 								} else {
 									temp_service->modified_attributes &= ~MODATTR_NOTIFICATION_TIMEPERIOD;
 								}
@@ -1532,26 +1527,24 @@ int xrddefault_read_state_information(void)
 
 								/* make sure the timeperiod still exists... */
 								temp_timeperiod = find_timeperiod(val);
-								temp_ptr = (char *)strdup(val);
-
-								if (temp_timeperiod != NULL && temp_ptr != NULL) {
-									my_free(temp_contact->host_notification_period);
-									temp_contact->host_notification_period = temp_ptr;
-								} else
+								if (temp_timeperiod) {
+									temp_contact->host_notification_period = temp_timeperiod->name;
+									temp_contact->host_notification_period_ptr = temp_timeperiod;
+								} else {
 									temp_contact->modified_host_attributes &= ~MODATTR_NOTIFICATION_TIMEPERIOD;
+								}
 							}
 						} else if (!strcmp(var, "service_notification_period")) {
 							if (temp_contact->modified_service_attributes & MODATTR_NOTIFICATION_TIMEPERIOD) {
 
 								/* make sure the timeperiod still exists... */
 								temp_timeperiod = find_timeperiod(val);
-								temp_ptr = (char *)strdup(val);
-
-								if (temp_timeperiod != NULL && temp_ptr != NULL) {
-									my_free(temp_contact->service_notification_period);
-									temp_contact->service_notification_period = temp_ptr;
-								} else
+								if (temp_timeperiod) {
+									temp_contact->service_notification_period = temp_timeperiod->name;
+									temp_contact->service_notification_period_ptr = temp_timeperiod;
+								} else {
 									temp_contact->modified_service_attributes &= ~MODATTR_NOTIFICATION_TIMEPERIOD;
+								}
 							}
 						} else if (!strcmp(var, "config:host_notifications_enabled")) {
 							cont_have.host_notifications_enabled = TRUE;
