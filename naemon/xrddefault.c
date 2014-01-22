@@ -955,14 +955,10 @@ int xrddefault_read_state_information(void)
 
 							/* make sure the check command still exists... */
 							tempval = (char *)strdup(val);
-							temp_ptr = my_strtok(tempval, "!");
-							temp_command = find_command(temp_ptr);
-							temp_ptr = (char *)strdup(val);
-							my_free(tempval);
-
-							if (temp_command != NULL && temp_ptr != NULL) {
+							temp_command = find_bang_command(tempval);
+							if (temp_command && tempval) {
 								my_free(global_host_event_handler);
-								global_host_event_handler = temp_ptr;
+								global_host_event_handler = tempval;
 							}
 						}
 					} else if (!strcmp(var, "global_service_event_handler")) {
@@ -970,14 +966,11 @@ int xrddefault_read_state_information(void)
 
 							/* make sure the check command still exists... */
 							tempval = (char *)strdup(val);
-							temp_ptr = my_strtok(tempval, "!");
-							temp_command = find_command(temp_ptr);
-							temp_ptr = (char *)strdup(val);
-							my_free(tempval);
+							temp_command = find_bang_command(tempval);
 
-							if (temp_command != NULL && temp_ptr != NULL) {
+							if (temp_command && tempval) {
 								my_free(global_service_event_handler);
-								global_service_event_handler = temp_ptr;
+								global_service_event_handler = tempval;
 							}
 						}
 					} else if (!strcmp(var, "next_comment_id"))
@@ -1139,14 +1132,10 @@ int xrddefault_read_state_information(void)
 
 								/* make sure the check command still exists... */
 								tempval = (char *)strdup(val);
-								temp_ptr = my_strtok(tempval, "!");
-								temp_command = find_command(temp_ptr);
-								temp_ptr = (char *)strdup(val);
-								my_free(tempval);
-
-								if (temp_command != NULL && temp_ptr != NULL) {
+								temp_command = find_bang_command(tempval);
+								if (temp_command && tempval) {
 									my_free(temp_host->check_command);
-									temp_host->check_command = temp_ptr;
+									temp_host->check_command = tempval;
 								} else
 									temp_host->modified_attributes -= MODATTR_CHECK_COMMAND;
 							}
@@ -1181,14 +1170,10 @@ int xrddefault_read_state_information(void)
 
 								/* make sure the check command still exists... */
 								tempval = (char *)strdup(val);
-								temp_ptr = my_strtok(tempval, "!");
-								temp_command = find_command(temp_ptr);
-								temp_ptr = (char *)strdup(val);
-								my_free(tempval);
-
-								if (temp_command != NULL && temp_ptr != NULL) {
+								temp_command = find_bang_command(tempval);
+								if (temp_command && tempval) {
 									my_free(temp_host->event_handler);
-									temp_host->event_handler = temp_ptr;
+									temp_host->event_handler = tempval;
 								} else
 									temp_host->modified_attributes -= MODATTR_EVENT_HANDLER_COMMAND;
 							}
@@ -1412,14 +1397,10 @@ int xrddefault_read_state_information(void)
 
 								/* make sure the check command still exists... */
 								tempval = (char *)strdup(val);
-								temp_ptr = my_strtok(tempval, "!");
-								temp_command = find_command(temp_ptr);
-								temp_ptr = (char *)strdup(val);
-								my_free(tempval);
-
-								if (temp_command != NULL && temp_ptr != NULL) {
+								temp_command = find_bang_command(tempval);
+								if (temp_command && tempval) {
 									my_free(temp_service->check_command);
-									temp_service->check_command = temp_ptr;
+									temp_service->check_command = tempval;
 								} else {
 									temp_service->modified_attributes -= MODATTR_CHECK_COMMAND;
 								}
@@ -1456,14 +1437,10 @@ int xrddefault_read_state_information(void)
 
 								/* make sure the check command still exists... */
 								tempval = (char *)strdup(val);
-								temp_ptr = my_strtok(tempval, "!");
-								temp_command = find_command(temp_ptr);
-								temp_ptr = (char *)strdup(val);
-								my_free(tempval);
-
-								if (temp_command != NULL && temp_ptr != NULL) {
+								temp_command = find_bang_command(temp_ptr);
+								if (temp_command && tempval) {
 									my_free(temp_service->event_handler);
-									temp_service->event_handler = temp_ptr;
+									temp_service->event_handler = tempval;
 								} else {
 									temp_service->modified_attributes -= MODATTR_EVENT_HANDLER_COMMAND;
 								}

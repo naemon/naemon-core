@@ -64,16 +64,9 @@ int xpddefault_initialize_performance_data(const char *cfgfile)
 
 	/* verify that performance data commands are valid */
 	if (host_perfdata_command != NULL) {
-
 		temp_buffer = (char *)strdup(host_perfdata_command);
-
-		/* get the command name, leave any arguments behind */
-		temp_command_name = my_strtok(temp_buffer, "!");
-
-		if ((temp_command = find_command(temp_command_name)) == NULL) {
-
+		if ((temp_command = find_bang_command(temp_buffer)) == NULL) {
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Host performance command '%s' was not found - host performance data will not be processed!\n", temp_command_name);
-
 			my_free(host_perfdata_command);
 		}
 
@@ -82,37 +75,24 @@ int xpddefault_initialize_performance_data(const char *cfgfile)
 		/* save the command pointer for later */
 		host_perfdata_command_ptr = temp_command;
 	}
+
 	if (service_perfdata_command != NULL) {
-
 		temp_buffer = (char *)strdup(service_perfdata_command);
-
-		/* get the command name, leave any arguments behind */
-		temp_command_name = my_strtok(temp_buffer, "!");
-
-		if ((temp_command = find_command(temp_command_name)) == NULL) {
-
+		if ((temp_command = find_bang_command(temp_command_name)) == NULL) {
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Service performance command '%s' was not found - service performance data will not be processed!\n", temp_command_name);
-
 			my_free(service_perfdata_command);
 		}
 
-		/* free memory */
 		my_free(temp_buffer);
 
 		/* save the command pointer for later */
 		service_perfdata_command_ptr = temp_command;
 	}
+
 	if (host_perfdata_file_processing_command != NULL) {
-
 		temp_buffer = (char *)strdup(host_perfdata_file_processing_command);
-
-		/* get the command name, leave any arguments behind */
-		temp_command_name = my_strtok(temp_buffer, "!");
-
-		if ((temp_command = find_command(temp_command_name)) == NULL) {
-
+		if ((temp_command = find_bang_command(temp_command_name)) == NULL) {
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Host performance file processing command '%s' was not found - host performance data file will not be processed!\n", temp_command_name);
-
 			my_free(host_perfdata_file_processing_command);
 		}
 
@@ -122,17 +102,11 @@ int xpddefault_initialize_performance_data(const char *cfgfile)
 		/* save the command pointer for later */
 		host_perfdata_file_processing_command_ptr = temp_command;
 	}
+
 	if (service_perfdata_file_processing_command != NULL) {
-
 		temp_buffer = (char *)strdup(service_perfdata_file_processing_command);
-
-		/* get the command name, leave any arguments behind */
-		temp_command_name = my_strtok(temp_buffer, "!");
-
-		if ((temp_command = find_command(temp_command_name)) == NULL) {
-
+		if ((temp_command = find_bang_command(temp_command_name)) == NULL) {
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Service performance file processing command '%s' was not found - service performance data file will not be processed!\n", temp_command_name);
-
 			my_free(service_perfdata_file_processing_command);
 		}
 
