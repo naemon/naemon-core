@@ -3657,6 +3657,8 @@ void disable_service_checks(service *svc)
 	if (svc->checks_enabled == FALSE)
 		return;
 
+	pre_modify_service_attribute(svc, attr);
+
 	/* set the attribute modified flag */
 	svc->modified_attributes |= attr;
 
@@ -3686,6 +3688,8 @@ void enable_service_checks(service *svc)
 	/* checks are already enabled */
 	if (svc->checks_enabled == TRUE)
 		return;
+
+	pre_modify_service_attribute(svc, attr);
 
 	/* set the attribute modified flag */
 	svc->modified_attributes |= attr;
@@ -3787,6 +3791,8 @@ void enable_service_notifications(service *svc)
 	if (svc->notifications_enabled == TRUE)
 		return;
 
+	pre_modify_service_attribute(svc, attr);
+
 	/* set the attribute modified flag */
 	svc->modified_attributes |= attr;
 
@@ -3813,6 +3819,8 @@ void disable_service_notifications(service *svc)
 	/* no change */
 	if (svc->notifications_enabled == FALSE)
 		return;
+
+	pre_modify_service_attribute(svc, attr);
 
 	/* set the attribute modified flag */
 	svc->modified_attributes |= attr;
@@ -3841,6 +3849,8 @@ void enable_host_notifications(host *hst)
 	if (hst->notifications_enabled == TRUE)
 		return;
 
+	pre_modify_host_attribute(hst, attr);
+
 	/* set the attribute modified flag */
 	hst->modified_attributes |= attr;
 
@@ -3867,6 +3877,8 @@ void disable_host_notifications(host *hst)
 	/* no change */
 	if (hst->notifications_enabled == FALSE)
 		return;
+
+	pre_modify_host_attribute(hst, attr);
 
 	/* set the attribute modified flag */
 	hst->modified_attributes |= attr;
@@ -4319,6 +4331,8 @@ void enable_passive_service_checks(service *svc)
 	if (svc->accept_passive_checks == TRUE)
 		return;
 
+	pre_modify_service_attribute(svc, attr);
+
 	/* set the attribute modified flag */
 	svc->modified_attributes |= attr;
 
@@ -4345,6 +4359,8 @@ void disable_passive_service_checks(service *svc)
 	/* no change */
 	if (svc->accept_passive_checks == FALSE)
 		return;
+
+	pre_modify_service_attribute(svc, attr);
 
 	/* set the attribute modified flag */
 	svc->modified_attributes |= attr;
@@ -4481,6 +4497,8 @@ void enable_passive_host_checks(host *hst)
 	if (hst->accept_passive_checks == TRUE)
 		return;
 
+	pre_modify_host_attribute(hst, attr);
+
 	/* set the attribute modified flag */
 	hst->modified_attributes |= attr;
 
@@ -4507,6 +4525,8 @@ void disable_passive_host_checks(host *hst)
 	/* no change */
 	if (hst->accept_passive_checks == FALSE)
 		return;
+
+	pre_modify_host_attribute(hst, attr);
 
 	/* set the attribute modified flag */
 	hst->modified_attributes |= attr;
@@ -4591,6 +4611,8 @@ void enable_service_event_handler(service *svc)
 	if (svc->event_handler_enabled == TRUE)
 		return;
 
+	pre_modify_service_attribute(svc, attr);
+
 	/* set the attribute modified flag */
 	svc->modified_attributes |= attr;
 
@@ -4617,6 +4639,8 @@ void disable_service_event_handler(service *svc)
 	/* no change */
 	if (svc->event_handler_enabled == FALSE)
 		return;
+
+	pre_modify_service_attribute(svc, attr);
 
 	/* set the attribute modified flag */
 	svc->modified_attributes |= attr;
@@ -4645,6 +4669,8 @@ void enable_host_event_handler(host *hst)
 	if (hst->event_handler_enabled == TRUE)
 		return;
 
+	pre_modify_host_attribute(hst, attr);
+
 	/* set the attribute modified flag */
 	hst->modified_attributes |= attr;
 
@@ -4672,6 +4698,8 @@ void disable_host_event_handler(host *hst)
 	if (hst->event_handler_enabled == FALSE)
 		return;
 
+	pre_modify_host_attribute(hst, attr);
+
 	/* set the attribute modified flag */
 	hst->modified_attributes |= attr;
 
@@ -4698,6 +4726,8 @@ void disable_host_checks(host *hst)
 	/* checks are already disabled */
 	if (hst->checks_enabled == FALSE)
 		return;
+
+	pre_modify_host_attribute(hst, attr);
 
 	/* set the attribute modified flag */
 	hst->modified_attributes |= attr;
@@ -4728,6 +4758,8 @@ void enable_host_checks(host *hst)
 	/* checks are already enabled */
 	if (hst->checks_enabled == TRUE)
 		return;
+
+	pre_modify_host_attribute(hst, attr);
 
 	/* set the attribute modified flag */
 	hst->modified_attributes |= attr;

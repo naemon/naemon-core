@@ -164,6 +164,8 @@ int xrddefault_save_state_information(void)
 
 	/* save host state information */
 	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
+		struct host *conf_host;
+		conf_host = get_premod_host(temp_host->id);
 		fprintf(fp, "host {\n");
 		fprintf(fp, "host_name=%s\n", temp_host->name);
 		fprintf(fp, "modified_attributes=%lu\n", (temp_host->modified_attributes & ~host_attribute_mask));
@@ -203,15 +205,36 @@ int xrddefault_save_state_information(void)
 		fprintf(fp, "last_notification=%lu\n", temp_host->last_notification);
 		fprintf(fp, "current_notification_number=%d\n", temp_host->current_notification_number);
 		fprintf(fp, "current_notification_id=%lu\n", temp_host->current_notification_id);
-		fprintf(fp, "notifications_enabled=%d\n", temp_host->notifications_enabled);
+		if (conf_host && conf_host->notifications_enabled != temp_host->notifications_enabled) {
+			fprintf(fp, "config:notifications_enabled=%d\n", conf_host->notifications_enabled);
+			fprintf(fp, "notifications_enabled=%d\n", temp_host->notifications_enabled);
+		}
 		fprintf(fp, "problem_has_been_acknowledged=%d\n", temp_host->problem_has_been_acknowledged);
 		fprintf(fp, "acknowledgement_type=%d\n", temp_host->acknowledgement_type);
-		fprintf(fp, "active_checks_enabled=%d\n", temp_host->checks_enabled);
-		fprintf(fp, "passive_checks_enabled=%d\n", temp_host->accept_passive_checks);
-		fprintf(fp, "event_handler_enabled=%d\n", temp_host->event_handler_enabled);
-		fprintf(fp, "flap_detection_enabled=%d\n", temp_host->flap_detection_enabled);
-		fprintf(fp, "process_performance_data=%d\n", temp_host->process_performance_data);
-		fprintf(fp, "obsess=%d\n", temp_host->obsess);
+		if (conf_host && conf_host->checks_enabled != temp_host->checks_enabled) {
+			fprintf(fp, "config:active_checks_enabled=%d\n", conf_host->checks_enabled);
+			fprintf(fp, "active_checks_enabled=%d\n", temp_host->checks_enabled);
+		}
+		if (conf_host && conf_host->accept_passive_checks != temp_host->accept_passive_checks) {
+			fprintf(fp, "config:passive_checks_enabled=%d\n", conf_host->accept_passive_checks);
+			fprintf(fp, "passive_checks_enabled=%d\n", temp_host->accept_passive_checks);
+		}
+		if (conf_host && conf_host->event_handler_enabled != temp_host->event_handler_enabled) {
+			fprintf(fp, "config:event_handler_enabled=%d\n", conf_host->event_handler_enabled);
+			fprintf(fp, "event_handler_enabled=%d\n", temp_host->event_handler_enabled);
+		}
+		if (conf_host && conf_host->flap_detection_enabled != temp_host->flap_detection_enabled) {
+			fprintf(fp, "config:flap_detection_enabled=%d\n", conf_host->flap_detection_enabled);
+			fprintf(fp, "flap_detection_enabled=%d\n", temp_host->flap_detection_enabled);
+		}
+		if (conf_host && conf_host->process_performance_data != temp_host->process_performance_data) {
+			fprintf(fp, "config:process_performance_data=%d\n", conf_host->process_performance_data);
+			fprintf(fp, "process_performance_data=%d\n", temp_host->process_performance_data);
+		}
+		if (conf_host && conf_host->obsess != temp_host->obsess) {
+			fprintf(fp, "config:obsess=%d\n", conf_host->obsess);
+			fprintf(fp, "obsess=%d\n", temp_host->obsess);
+		}
 		fprintf(fp, "is_flapping=%d\n", temp_host->is_flapping);
 		fprintf(fp, "percent_state_change=%.2f\n", temp_host->percent_state_change);
 		fprintf(fp, "check_flapping_recovery_notification=%d\n", temp_host->check_flapping_recovery_notification);
@@ -232,6 +255,8 @@ int xrddefault_save_state_information(void)
 
 	/* save service state information */
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
+		struct service *conf_svc;
+		conf_svc = get_premod_service(temp_service->id);
 		fprintf(fp, "service {\n");
 		fprintf(fp, "host_name=%s\n", temp_service->host_name);
 		fprintf(fp, "service_description=%s\n", temp_service->description);
@@ -274,15 +299,36 @@ int xrddefault_save_state_information(void)
 		fprintf(fp, "current_notification_number=%d\n", temp_service->current_notification_number);
 		fprintf(fp, "current_notification_id=%lu\n", temp_service->current_notification_id);
 		fprintf(fp, "last_notification=%lu\n", temp_service->last_notification);
-		fprintf(fp, "notifications_enabled=%d\n", temp_service->notifications_enabled);
-		fprintf(fp, "active_checks_enabled=%d\n", temp_service->checks_enabled);
-		fprintf(fp, "passive_checks_enabled=%d\n", temp_service->accept_passive_checks);
-		fprintf(fp, "event_handler_enabled=%d\n", temp_service->event_handler_enabled);
+		if (conf_svc && conf_svc->notifications_enabled != temp_host->notifications_enabled) {
+			fprintf(fp, "config:notifications_enabled=%d\n", conf_svc->notifications_enabled);
+			fprintf(fp, "notifications_enabled=%d\n", temp_service->notifications_enabled);
+		}
+		if (conf_svc && conf_svc->checks_enabled != temp_service->checks_enabled) {
+			fprintf(fp, "config:active_checks_enabled=%d\n", conf_svc->checks_enabled);
+			fprintf(fp, "active_checks_enabled=%d\n", temp_service->checks_enabled);
+		}
+		if (conf_svc && conf_svc->accept_passive_checks != temp_service->accept_passive_checks) {
+			fprintf(fp, "config:passive_checks_enabled=%d\n", conf_svc->accept_passive_checks);
+			fprintf(fp, "passive_checks_enabled=%d\n", temp_service->accept_passive_checks);
+		}
+		if (conf_svc && conf_svc->event_handler_enabled != temp_service->event_handler_enabled) {
+			fprintf(fp, "config:event_handler_enabled=%d\n", conf_svc->event_handler_enabled);
+			fprintf(fp, "event_handler_enabled=%d\n", temp_service->event_handler_enabled);
+		}
 		fprintf(fp, "problem_has_been_acknowledged=%d\n", temp_service->problem_has_been_acknowledged);
 		fprintf(fp, "acknowledgement_type=%d\n", temp_service->acknowledgement_type);
-		fprintf(fp, "flap_detection_enabled=%d\n", temp_service->flap_detection_enabled);
-		fprintf(fp, "process_performance_data=%d\n", temp_service->process_performance_data);
-		fprintf(fp, "obsess=%d\n", temp_service->obsess);
+		if (conf_svc && conf_svc->flap_detection_enabled != temp_service->flap_detection_enabled) {
+			fprintf(fp, "config:flap_detection_enabled=%d\n", conf_svc->flap_detection_enabled);
+			fprintf(fp, "flap_detection_enabled=%d\n", temp_service->flap_detection_enabled);
+		}
+		if (conf_svc && conf_svc->process_performance_data != temp_service->process_performance_data) {
+			fprintf(fp, "config:process_performance_data=%d\n", conf_svc->process_performance_data);
+			fprintf(fp, "process_performance_data=%d\n", temp_service->process_performance_data);
+		}
+		if (conf_svc && conf_svc->obsess != temp_service->obsess) {
+			fprintf(fp, "config:obsess=%d\n", conf_svc->obsess);
+			fprintf(fp, "obsess=%d\n", temp_service->obsess);
+		}
 		fprintf(fp, "is_flapping=%d\n", temp_service->is_flapping);
 		fprintf(fp, "percent_state_change=%.2f\n", temp_service->percent_state_change);
 		fprintf(fp, "check_flapping_recovery_notification=%d\n", temp_service->check_flapping_recovery_notification);
@@ -409,6 +455,13 @@ int xrddefault_save_state_information(void)
 /******************************************************************/
 /***************** DEFAULT STATE INPUT FUNCTION *******************/
 /******************************************************************/
+#define RETAIN_BOOL(type, obj, v, attr) \
+	do { \
+		if (obj->modified_attributes & attr || (have.v && conf.v == obj->v)) { \
+			pre_modify_##type##_attribute(obj, attr); \
+			obj->v = atoi(val) > 0 ? TRUE : FALSE; \
+		} \
+	} while(0)
 
 int xrddefault_read_state_information(void)
 {
@@ -501,6 +554,7 @@ int xrddefault_read_state_information(void)
 
 	/* read all lines in the retention file */
 	while (1) {
+		struct host conf, have;
 
 		/* free memory */
 		my_free(inputbuf);
@@ -517,10 +571,16 @@ int xrddefault_read_state_information(void)
 
 		strip(input);
 
-		if (!strcmp(input, "service {"))
+		if (!strcmp(input, "service {")) {
+			memset(&conf, 0, sizeof(conf));
+			memset(&have, 0, sizeof(have));
 			data_type = XRDDEFAULT_SERVICESTATUS_DATA;
-		else if (!strcmp(input, "host {"))
+		}
+		else if (!strcmp(input, "host {")) {
+			memset(&conf, 0, sizeof(conf));
+			memset(&have, 0, sizeof(have));
 			data_type = XRDDEFAULT_HOSTSTATUS_DATA;
+		}
 		else if (!strcmp(input, "contact {"))
 			data_type = XRDDEFAULT_CONTACTSTATUS_DATA;
 		else if (!strcmp(input, "hostcomment {"))
@@ -565,7 +625,6 @@ int xrddefault_read_state_information(void)
 						for (temp_customvariablesmember = temp_host->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 							if (temp_customvariablesmember->has_been_modified == TRUE)
 								break;
-
 						}
 						if (temp_customvariablesmember == NULL)
 							temp_host->modified_attributes -= MODATTR_CUSTOM_VARIABLE;
@@ -614,8 +673,6 @@ int xrddefault_read_state_information(void)
 				was_flapping = FALSE;
 				allow_flapstart_notification = TRUE;
 
-				my_free(host_name);
-				host_name = NULL;
 				temp_host = NULL;
 				break;
 
@@ -686,7 +743,6 @@ int xrddefault_read_state_information(void)
 				allow_flapstart_notification = TRUE;
 
 				my_free(host_name);
-				my_free(service_description);
 				temp_service = NULL;
 				break;
 
@@ -930,8 +986,7 @@ int xrddefault_read_state_information(void)
 
 				if (temp_host == NULL) {
 					if (!strcmp(var, "host_name")) {
-						host_name = (char *)strdup(val);
-						temp_host = find_host(host_name);
+						temp_host = find_host(val);
 					}
 				} else {
 					if (!strcmp(var, "modified_attributes")) {
@@ -1027,34 +1082,47 @@ int xrddefault_read_state_information(void)
 							found_directive = FALSE;
 					}
 					if (temp_host->retain_nonstatus_information == TRUE) {
-						/* null-op speeds up logic */
-						if (found_directive == TRUE);
-
-						else if (!strcmp(var, "problem_has_been_acknowledged"))
+						if (found_directive == TRUE) {
+							/* null-op speeds up logic */
+						} else if (!strcmp(var, "config:notifications_enabled")) {
+							conf.notifications_enabled = atoi(val) > 0 ? TRUE : FALSE;
+							have.notifications_enabled = 1;
+						} else if (!strcmp(var, "config:active_checks_enabled")) {
+							conf.checks_enabled = atoi(val) > 0 ? TRUE : FALSE;
+							have.checks_enabled = 1;
+						} else if (!strcmp(var, "config:passive_checks_enabled")) {
+							conf.accept_passive_checks = atoi(val) > 0 ? TRUE : FALSE;
+							have.accept_passive_checks = 1;
+						} else if (!strcmp(var, "config:event_handler_enabled")) {
+							conf.event_handler_enabled = atoi(val) > 0 ? TRUE : FALSE;
+							have.event_handler_enabled = 1;
+						} else if (!strcmp(var, "config:flap_detection_enabled")) {
+							conf.flap_detection_enabled = atoi(val) > 0 ? TRUE : FALSE;
+							have.flap_detection_enabled = 1;
+						} else if (!strcmp(var, "config:process_performance_data")) {
+							conf.process_performance_data = atoi(val) > 0 ? TRUE : FALSE;
+							have.process_performance_data = 1;
+						} else if (!strcmp(var, "config:obsess")) {
+							conf.obsess = atoi(val) > 0 ? TRUE : FALSE;
+							have.obsess = 1;
+						} else if (!strcmp(var, "problem_has_been_acknowledged")) {
 							temp_host->problem_has_been_acknowledged = (atoi(val) > 0) ? TRUE : FALSE;
-						else if (!strcmp(var, "acknowledgement_type"))
+						} else if (!strcmp(var, "acknowledgement_type")) {
 							temp_host->acknowledgement_type = atoi(val);
-						else if (!strcmp(var, "notifications_enabled")) {
-							if (temp_host->modified_attributes & MODATTR_NOTIFICATIONS_ENABLED)
-								temp_host->notifications_enabled = (atoi(val) > 0) ? TRUE : FALSE;
+						} else if (!strcmp(var, "notifications_enabled")) {
+							RETAIN_BOOL(host, temp_host, notifications_enabled, MODATTR_NOTIFICATIONS_ENABLED);
 						} else if (!strcmp(var, "active_checks_enabled")) {
-							if (temp_host->modified_attributes & MODATTR_ACTIVE_CHECKS_ENABLED)
-								temp_host->checks_enabled = (atoi(val) > 0) ? TRUE : FALSE;
+							RETAIN_BOOL(host, temp_host, checks_enabled, MODATTR_ACTIVE_CHECKS_ENABLED);
 						} else if (!strcmp(var, "passive_checks_enabled")) {
-							if (temp_host->modified_attributes & MODATTR_PASSIVE_CHECKS_ENABLED)
-								temp_host->accept_passive_checks = (atoi(val) > 0) ? TRUE : FALSE;
+							RETAIN_BOOL(host, temp_host, accept_passive_checks, MODATTR_PASSIVE_CHECKS_ENABLED);
 						} else if (!strcmp(var, "event_handler_enabled")) {
-							if (temp_host->modified_attributes & MODATTR_EVENT_HANDLER_ENABLED)
-								temp_host->event_handler_enabled = (atoi(val) > 0) ? TRUE : FALSE;
+							RETAIN_BOOL(host, temp_host, event_handler_enabled, MODATTR_EVENT_HANDLER_ENABLED);
 						} else if (!strcmp(var, "flap_detection_enabled")) {
-							if (temp_host->modified_attributes & MODATTR_FLAP_DETECTION_ENABLED)
-								temp_host->flap_detection_enabled = (atoi(val) > 0) ? TRUE : FALSE;
+							RETAIN_BOOL(host, temp_host, flap_detection_enabled, MODATTR_FLAP_DETECTION_ENABLED);
 						} else if (!strcmp(var, "process_performance_data")) {
-							if (temp_host->modified_attributes & MODATTR_PERFORMANCE_DATA_ENABLED)
-								temp_host->process_performance_data = (atoi(val) > 0) ? TRUE : FALSE;
+							RETAIN_BOOL(host, temp_host, process_performance_data, MODATTR_PERFORMANCE_DATA_ENABLED);
 						} else if (!strcmp(var, "obsess_over_host") || !strcmp(var, "obsess")) {
-							if (temp_host->modified_attributes & MODATTR_OBSESSIVE_HANDLER_ENABLED)
-								temp_host->obsess = (atoi(val) > 0) ? TRUE : FALSE;
+							RETAIN_BOOL(host, temp_host, obsess, MODATTR_OBSESSIVE_HANDLER_ENABLED);
 						} else if (!strcmp(var, "check_command")) {
 							if (temp_host->modified_attributes & MODATTR_CHECK_COMMAND) {
 
@@ -1166,16 +1234,9 @@ int xrddefault_read_state_information(void)
 				if (temp_service == NULL) {
 					if (!strcmp(var, "host_name")) {
 						host_name = (char *)strdup(val);
-
-						/*temp_service=find_service(host_name,service_description);*/
-
-						/* break out */
 						break;
 					} else if (!strcmp(var, "service_description")) {
-						service_description = (char *)strdup(val);
-						temp_service = find_service(host_name, service_description);
-
-						/* break out */
+						temp_service = find_service(host_name, val);
 						break;
 					}
 				} else {
@@ -1187,9 +1248,30 @@ int xrddefault_read_state_information(void)
 						temp_service->modified_attributes &= ~service_attribute_mask;
 					}
 					if (temp_service->retain_status_information == TRUE) {
-						if (!strcmp(var, "has_been_checked"))
+						if (!strcmp(var, "has_been_checked")) {
 							temp_service->has_been_checked = (atoi(val) > 0) ? TRUE : FALSE;
-						else if (!strcmp(var, "check_execution_time"))
+						} else if (!strcmp(var, "config:notifications_enabled")) {
+							conf.notifications_enabled = atoi(val) > 0 ? TRUE : FALSE;
+							have.notifications_enabled = 1;
+						} else if (!strcmp(var, "config:active_checks_enabled")) {
+							conf.checks_enabled = atoi(val) > 0 ? TRUE : FALSE;
+							have.checks_enabled = 1;
+						} else if (!strcmp(var, "config:passive_checks_enabled")) {
+							conf.accept_passive_checks = atoi(val) > 0 ? TRUE : FALSE;
+							have.accept_passive_checks = 1;
+						} else if (!strcmp(var, "config:event_handler_enabled")) {
+							conf.event_handler_enabled = atoi(val) > 0 ? TRUE : FALSE;
+							have.event_handler_enabled = 1;
+						} else if (!strcmp(var, "config:flap_detection_enabled")) {
+							conf.flap_detection_enabled = atoi(val) > 0 ? TRUE : FALSE;
+							have.flap_detection_enabled = 1;
+						} else if (!strcmp(var, "config:process_performance_data")) {
+							conf.process_performance_data = atoi(val) > 0 ? TRUE : FALSE;
+							have.process_performance_data = 1;
+						} else if (!strcmp(var, "config:obsess")) {
+							conf.obsess = atoi(val) > 0 ? TRUE : FALSE;
+							have.obsess = 1;
+						} else if (!strcmp(var, "check_execution_time"))
 							temp_service->execution_time = strtod(val, NULL);
 						else if (!strcmp(var, "check_latency"))
 							temp_service->latency = strtod(val, NULL);
@@ -1273,34 +1355,47 @@ int xrddefault_read_state_information(void)
 							found_directive = FALSE;
 					}
 					if (temp_service->retain_nonstatus_information == TRUE) {
-						/* null-op speeds up logic */
-						if (found_directive == TRUE);
-
-						else if (!strcmp(var, "problem_has_been_acknowledged"))
+						if (found_directive == TRUE) {
+							/* null-op speeds up logic */
+						} else if (!strcmp(var, "config:notifications_enabled")) {
+							conf.notifications_enabled = atoi(val) > 0 ? TRUE : FALSE;
+							have.notifications_enabled = 1;
+						} else if (!strcmp(var, "config:active_checks_enabled")) {
+							conf.checks_enabled = atoi(val) > 0 ? TRUE : FALSE;
+							have.checks_enabled = 1;
+						} else if (!strcmp(var, "config:passive_checks_enabled")) {
+							conf.accept_passive_checks = atoi(val) > 0 ? TRUE : FALSE;
+							have.accept_passive_checks = 1;
+						} else if (!strcmp(var, "config:event_handler_enabled")) {
+							conf.event_handler_enabled = atoi(val) > 0 ? TRUE : FALSE;
+							have.event_handler_enabled = 1;
+						} else if (!strcmp(var, "config:flap_detection_enabled")) {
+							conf.flap_detection_enabled = atoi(val) > 0 ? TRUE : FALSE;
+							have.flap_detection_enabled = 1;
+						} else if (!strcmp(var, "config:process_performance_data")) {
+							conf.process_performance_data = atoi(val) > 0 ? TRUE : FALSE;
+							have.process_performance_data = 1;
+						} else if (!strcmp(var, "config:obsess")) {
+							conf.obsess = atoi(val) > 0 ? TRUE : FALSE;
+							have.obsess = 1;
+						} else if (!strcmp(var, "problem_has_been_acknowledged")) {
 							temp_service->problem_has_been_acknowledged = (atoi(val) > 0) ? TRUE : FALSE;
-						else if (!strcmp(var, "acknowledgement_type"))
+						} else if (!strcmp(var, "acknowledgement_type")) {
 							temp_service->acknowledgement_type = atoi(val);
-						else if (!strcmp(var, "notifications_enabled")) {
-							if (temp_service->modified_attributes & MODATTR_NOTIFICATIONS_ENABLED)
-								temp_service->notifications_enabled = (atoi(val) > 0) ? TRUE : FALSE;
+						} else if (!strcmp(var, "notifications_enabled")) {
+							RETAIN_BOOL(service, temp_service, notifications_enabled, MODATTR_NOTIFICATIONS_ENABLED);
 						} else if (!strcmp(var, "active_checks_enabled")) {
-							if (temp_service->modified_attributes & MODATTR_ACTIVE_CHECKS_ENABLED)
-								temp_service->checks_enabled = (atoi(val) > 0) ? TRUE : FALSE;
+							RETAIN_BOOL(service, temp_service, checks_enabled, MODATTR_ACTIVE_CHECKS_ENABLED);
 						} else if (!strcmp(var, "passive_checks_enabled")) {
-							if (temp_service->modified_attributes & MODATTR_PASSIVE_CHECKS_ENABLED)
-								temp_service->accept_passive_checks = (atoi(val) > 0) ? TRUE : FALSE;
+							RETAIN_BOOL(service, temp_service, accept_passive_checks, MODATTR_PASSIVE_CHECKS_ENABLED);
 						} else if (!strcmp(var, "event_handler_enabled")) {
-							if (temp_service->modified_attributes & MODATTR_EVENT_HANDLER_ENABLED)
-								temp_service->event_handler_enabled = (atoi(val) > 0) ? TRUE : FALSE;
+							RETAIN_BOOL(service, temp_service, event_handler_enabled, MODATTR_EVENT_HANDLER_ENABLED);
 						} else if (!strcmp(var, "flap_detection_enabled")) {
-							if (temp_service->modified_attributes & MODATTR_FLAP_DETECTION_ENABLED)
-								temp_service->flap_detection_enabled = (atoi(val) > 0) ? TRUE : FALSE;
+							RETAIN_BOOL(service, temp_service, flap_detection_enabled, MODATTR_FLAP_DETECTION_ENABLED);
 						} else if (!strcmp(var, "process_performance_data")) {
-							if (temp_service->modified_attributes & MODATTR_PERFORMANCE_DATA_ENABLED)
-								temp_service->process_performance_data = (atoi(val) > 0) ? TRUE : FALSE;
+							RETAIN_BOOL(service, temp_service, process_performance_data, MODATTR_PERFORMANCE_DATA_ENABLED);
 						} else if (!strcmp(var, "obsess_over_service") || !strcmp(var, "obsess")) {
-							if (temp_service->modified_attributes & MODATTR_OBSESSIVE_HANDLER_ENABLED)
-								temp_service->obsess = (atoi(val) > 0) ? TRUE : FALSE;
+							RETAIN_BOOL(service, temp_service, obsess, MODATTR_OBSESSIVE_HANDLER_ENABLED);
 						} else if (!strcmp(var, "check_command")) {
 							if (temp_service->modified_attributes & MODATTR_CHECK_COMMAND) {
 
@@ -1314,8 +1409,9 @@ int xrddefault_read_state_information(void)
 								if (temp_command != NULL && temp_ptr != NULL) {
 									my_free(temp_service->check_command);
 									temp_service->check_command = temp_ptr;
-								} else
+								} else {
 									temp_service->modified_attributes -= MODATTR_CHECK_COMMAND;
+								}
 							}
 						} else if (!strcmp(var, "check_period")) {
 							if (temp_service->modified_attributes & MODATTR_CHECK_TIMEPERIOD) {
@@ -1340,8 +1436,9 @@ int xrddefault_read_state_information(void)
 								if (temp_timeperiod != NULL && temp_ptr != NULL) {
 									my_free(temp_service->notification_period);
 									temp_service->notification_period = temp_ptr;
-								} else
+								} else {
 									temp_service->modified_attributes -= MODATTR_NOTIFICATION_TIMEPERIOD;
+								}
 							}
 						} else if (!strcmp(var, "event_handler")) {
 							if (temp_service->modified_attributes & MODATTR_EVENT_HANDLER_COMMAND) {
@@ -1356,8 +1453,9 @@ int xrddefault_read_state_information(void)
 								if (temp_command != NULL && temp_ptr != NULL) {
 									my_free(temp_service->event_handler);
 									temp_service->event_handler = temp_ptr;
-								} else
+								} else {
 									temp_service->modified_attributes -= MODATTR_EVENT_HANDLER_COMMAND;
+								}
 							}
 						} else if (!strcmp(var, "normal_check_interval")) {
 							if (temp_service->modified_attributes & MODATTR_NORMAL_CHECK_INTERVAL && strtod(val, NULL) >= 0)
@@ -1399,7 +1497,6 @@ int xrddefault_read_state_information(void)
 									my_free(customvarname);
 								}
 							}
-
 						}
 					}
 				}
