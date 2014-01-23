@@ -1484,7 +1484,7 @@ void my_system_sighandler(int sig)
 }
 
 
-/* 
+/**
  * Handle the SIGXFSZ signal. A SIGXFSZ signal is received when a file exceeds
  * the maximum allowable size either as dictated by the fzise paramater in
  * /etc/security/limits.conf (ulimit -f) or by the maximum size allowed by
@@ -1540,7 +1540,7 @@ void handle_sigxfsz(int sig)
 	   appropriately */
 	for (x = 0, filep = files; (size_t)x < (sizeof(files) / sizeof(files[0]));
 	     x++, filep++) {
-	
+
 		if (*filep == NULL)
 			continue;
 
@@ -1566,10 +1566,11 @@ void handle_sigxfsz(int sig)
 }
 
 
-/* Checks a file to determine whether it exceeds resource limit imposed
+/**
+ * Checks a file to determine whether it exceeds resource limit imposed
  * limits. Returns the file size if file is OK, 0 if it's status could not
  * be determined, or -1 if not OK. fudge is the fudge factor (in bytes) for
- * checking the file size 
+ * checking the file size
  */
 static long long check_file_size(char *path, unsigned long fudge,
                                  struct rlimit rlim)
