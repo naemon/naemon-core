@@ -82,47 +82,41 @@ int run_scheduled_service_check(service *svc, int check_options, double latency)
 	log_debug_info(DEBUGL_CHECKS, 1, "Unable to run scheduled service check at this time\n");
 
 	/* only attempt to (re)schedule checks that should get checked... */
-	if (svc->should_be_scheduled == TRUE) {
+	if (svc->should_be_scheduled == FALSE)
+		return ERROR;
 
-		/* get current time */
-		time(&current_time);
+	/* reschedule */
+	/* get current time */
+	time(&current_time);
 
-		/* determine next time we should check the service if needed */
-		/* if service has no check interval, schedule it again for 5 minutes from now */
-		if (current_time >= preferred_time)
-			preferred_time = current_time + ((svc->check_interval <= 0) ? 300 : (svc->check_interval * interval_length));
+	/* determine next time we should check the service if needed */
+	/* if service has no check interval, schedule it again for 5 minutes from now */
+	if (current_time >= preferred_time)
+		preferred_time = current_time + ((svc->check_interval <= 0) ? 300 : (svc->check_interval * interval_length));
 
-		/* make sure we rescheduled the next service check at a valid time */
-		get_next_valid_time(preferred_time, &next_valid_time, svc->check_period_ptr);
-
-		/*
-		 * If we really can't reschedule the service properly, we
-		 * just push the check to preferred_time and try again then.
-		 */
-		if (time_is_valid == FALSE &&  check_time_against_period(next_valid_time, svc->check_period_ptr) == ERROR) {
-
-			svc->next_check = preferred_time;
-
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Check of service '%s' on host '%s' could not be rescheduled properly.  Scheduling check for %s...\n", svc->description, svc->host_name, ctime(&preferred_time));
-
-			log_debug_info(DEBUGL_CHECKS, 1, "Unable to find any valid times to reschedule the next service check!\n");
-		}
-
-		/* this service could be rescheduled... */
-		else {
-			svc->next_check = next_valid_time;
-			svc->should_be_scheduled = TRUE;
-
-			log_debug_info(DEBUGL_CHECKS, 1, "Rescheduled next service check for %s", ctime(&next_valid_time));
-		}
-	}
+	/* make sure we rescheduled the next service check at a valid time */
+	get_next_valid_time(preferred_time, &next_valid_time, svc->check_period_ptr);
 
 	/*
-	 * reschedule the next service check - unless we couldn't
-	 * find a valid next check time, but keep original options
+	 * If we really can't reschedule the service properly, we
+	 * just push the check to preferred_time and try again then.
 	 */
-	if (svc->should_be_scheduled == TRUE)
-		schedule_service_check(svc, svc->next_check, check_options);
+	if (time_is_valid == FALSE &&  check_time_against_period(next_valid_time, svc->check_period_ptr) == ERROR) {
+
+		svc->next_check = preferred_time;
+
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Check of service '%s' on host '%s' could not be rescheduled properly.  Scheduling check for %s...\n", svc->description, svc->host_name, ctime(&preferred_time));
+
+		log_debug_info(DEBUGL_CHECKS, 1, "Unable to find any valid times to reschedule the next service check!\n");
+	}
+
+	/* this service could be rescheduled... */
+	else {
+		svc->next_check = next_valid_time;
+		log_debug_info(DEBUGL_CHECKS, 1, "Rescheduled next service check for %s", ctime(&next_valid_time));
+	}
+
+	schedule_service_check(svc, svc->next_check, check_options);
 
 	/* update the status log */
 	update_service_status(svc, FALSE);
