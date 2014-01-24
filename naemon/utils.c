@@ -430,11 +430,8 @@ int my_system_r(nagios_macros *mac, char *cmd, int timeout, int *early_timeout, 
 			/* report an error if we couldn't close the command */
 			if (status == -1)
 				result = STATE_CRITICAL;
-			else {
-				if (WEXITSTATUS(status) == 0 && WIFSIGNALED(status))
-					result = 128 + WTERMSIG(status);
+			else
 				result = WEXITSTATUS(status);
-			}
 		}
 
 		/* close pipe for writing */
