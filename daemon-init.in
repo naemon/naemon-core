@@ -42,6 +42,9 @@ user="naemon"
 group="naemon"
 checkconfig="false"
 
+# Default nice for performance, change in sysconfig file not here!
+NICELEVEL=-15
+
 test -e /etc/sysconfig/$prog && . /etc/sysconfig/$prog
 
 lockfile=/var/lock/subsys/$prog
