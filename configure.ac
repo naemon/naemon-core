@@ -157,7 +157,7 @@ AC_CONFIG_FILES([Makefile
                  naemon/Makefile
                  naemon/defaults.h
                  naemon/lib/Makefile
-				 tests/Makefile
+                 tests/Makefile
                  sample-config/naemon.cfg
                  sample-config/resource.cfg
                  sample-config/conf.d/commands.cfg

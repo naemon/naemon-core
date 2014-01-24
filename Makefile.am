@@ -1,5 +1,5 @@
 SUBDIRS = naemon tests
-AM_CPPFLAGS = -I$(top_builddir)
+AM_CPPFLAGS += -I$(top_builddir)
 
 EXTRA_DIST = naemon.spec contrib
 
