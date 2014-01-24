@@ -10,6 +10,10 @@ distclean-local:
 install-rc:
 	$(install_sh_PROGRAM) -m 644 daemon-init    $(DESTDIR)$(initrddir)/naemon
 
+install-logrotate:
+	$(install_sh_PROGRAM) -m 644 naemon.logrotate $(DESTDIR)$(logrotatedir)/naemon
+	mkdir -p $(DESTDIR)$(logdir)/archives
+
 install-sample-config:
 	$(install_sh_PROGRAM) -m 644 sample-config/naemon.cfg    $(DESTDIR)$(sysconfdir)/naemon.cfg
 	$(install_sh_PROGRAM) -m 644 sample-config/resource.cfg  $(DESTDIR)$(sysconfdir)/resource.cfg
