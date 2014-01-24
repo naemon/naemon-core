@@ -5,8 +5,8 @@
 # chkconfig:    - 85 15
 # description:  Naemon is a service monitoring system
 # processname:  naemon
-# config:       /etc/naemon/naemon.cfg
-# pidfile:      /var/cache/naemon/naemon.pid
+# config:       @sysconfdir@/naemon.cfg
+# pidfile:      @lockfile@
 #
 ### BEGIN INIT INFO
 # Provides:          naemon
