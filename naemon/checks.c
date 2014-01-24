@@ -2190,8 +2190,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 	parse_check_output(queued_check_result->output, &temp_host->plugin_output, &temp_host->long_plugin_output, &temp_host->perf_data, TRUE, FALSE);
 
 	/* make sure we have some data */
-	if (temp_host->plugin_output == NULL || !strcmp(temp_host->plugin_output, "")) {
-		my_free(temp_host->plugin_output);
+	if (temp_host->plugin_output == NULL) {
 		temp_host->plugin_output = (char *)strdup("(No output returned from host check)");
 	}
 
