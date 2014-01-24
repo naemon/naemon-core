@@ -344,7 +344,10 @@ int my_system_r(nagios_macros *mac, char *cmd, int timeout, int *early_timeout, 
 	log_debug_info(DEBUGL_COMMANDS, 1, "Running command '%s'...\n", cmd);
 
 	/* create a pipe */
-	pipe(fd);
+	if (pipe(fd) < 0) {
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: pipe() in my_system_r() failed: '%s'\n", strerror(errno));
+		return STATE_UNKNOWN;
+	}
 
 	/* make the pipe non-blocking */
 	fcntl(fd[0], F_SETFL, O_NONBLOCK);
