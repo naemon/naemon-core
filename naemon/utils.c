@@ -515,6 +515,7 @@ int my_system_r(nagios_macros *mac, char *cmd, int timeout, int *early_timeout, 
 			if (bytes_read > 0) {
 				buffer[bytes_read] = '\x0';
 				dbuf_strcat(&output_dbuf, buffer);
+				continue;
 			}
 
 			/* handle errors */
