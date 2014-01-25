@@ -23,6 +23,7 @@
 NAGIOS_BEGIN_DECL
 
 int parse_check_output(char *, char **, char **, char **, int, int);
+struct check_output *parse_output(const char *, struct check_output *);
 int check_service_dependencies(service *, int);          	/* checks service dependencies */
 int check_host_dependencies(host *, int);                	/* checks host dependencies */
 void check_for_orphaned_services(void);				/* checks for orphaned services */
