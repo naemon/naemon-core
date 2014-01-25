@@ -8,6 +8,6 @@
     missingok
     notifempty
     postrotate
-      [ -f @lockfile@ ] && kill -USR1 `cat @lockfile@`
+      [ -f @lockfile@ ] && kill -s USR1 `cat @lockfile@`
     endscript
 }
