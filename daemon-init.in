@@ -43,7 +43,7 @@ group="naemon"
 checkconfig="false"
 
 # Default nice for performance, change in sysconfig file not here!
-NICELEVEL=-15
+NICELEVEL=0
 
 test -e /etc/sysconfig/$prog && . /etc/sysconfig/$prog
 
@@ -81,7 +81,9 @@ start() {
     # We need to _make sure_ the precache is there and verified
     # Raise priority to make it run better
     if type start-stop-daemon >/dev/null 2>&1; then
-        start-stop-daemon --nicelevel $NICELEVEL --start --user $user --name $prog --pidfile $pidfile --exec $exec -- -d $config
+        NICE_OPT=""
+        if [ $NICELEVEL != "0" ]; then NICE_OPT="--nicelevel $NICELEVEL"; fi
+        start-stop-daemon $NICE_OPT --start --user $user --name $prog --pidfile $pidfile --exec $exec -- -d $config
     else
         daemon --user=$user $exec -d $config
     fi
@@ -158,7 +160,7 @@ case "$1" in
         ;;
     configtest|check|checkconfig)
         if type runuser >/dev/null 2>&1; then
-          $nice runuser -s /bin/bash - $user -c "$corelimit >/dev/null 2>&1 ; $exec -vp $config"
+          runuser -s /bin/bash - $user -c "$corelimit >/dev/null 2>&1 ; $exec -vp $config"
         else
           /bin/su - -s /bin/sh $user -c "$corelimit >/dev/null 2>&1 ; $exec -vp $config"
         fi
