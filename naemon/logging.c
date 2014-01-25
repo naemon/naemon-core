@@ -344,91 +344,28 @@ int log_service_states(int type, time_t *timestamp)
 int rotate_log_file(time_t rotation_time)
 {
 	char *temp_buffer = NULL;
-	char method_string[16] = "";
-	char *log_archive = NULL, *log_archive_short = NULL;
-	struct tm *t, tm_s;
-	int rename_result = 0;
-	int stat_result = -1;
-	int existing = 1;
-	struct stat log_file_stat, log_archive_stat;
-
-	if (log_rotation_method == LOG_ROTATION_NONE) {
-		return OK;
-	} else if (log_rotation_method == LOG_ROTATION_HOURLY)
-		strcpy(method_string, "HOURLY");
-	else if (log_rotation_method == LOG_ROTATION_DAILY)
-		strcpy(method_string, "DAILY");
-	else if (log_rotation_method == LOG_ROTATION_WEEKLY)
-		strcpy(method_string, "WEEKLY");
-	else if (log_rotation_method == LOG_ROTATION_MONTHLY)
-		strcpy(method_string, "MONTHLY");
-	else
-		return ERROR;
 
 	/* update the last log rotation time and status log */
 	last_log_rotation = time(NULL);
 	update_program_status(FALSE);
 
-	t = localtime_r(&rotation_time, &tm_s);
-
-	stat_result = stat(log_file, &log_file_stat);
-
 	close_log_file();
-
-	/* get the archived filename to use */
-	asprintf(&log_archive, "%s%snaemon-%d-%02d-%02d-%02d.log",
-				log_archive_path,
-				(log_archive_path[strlen(log_archive_path) - 1] == '/') ? "" : "/",
-				t->tm_year + 1900,
-				t->tm_mon + 1,
-				t->tm_mday,
-				t->tm_hour);
-
-	log_archive_short = log_archive;
-	while (!stat(log_archive, &log_archive_stat) && existing < 50) {
-		if (log_archive_short != log_archive)
-			my_free(log_archive);
-		asprintf(&log_archive, "%s.%d", log_archive_short, existing++);
-	}
-	if (log_archive_short != log_archive)
-		my_free(log_archive_short);
-
-	/* 50 files already, this hour? Sounds like a bug, bail */
-	if (existing >= 50)
-		return ERROR;
-
-	/* rotate the log file */
-	rename_result = my_rename(log_file, log_archive);
 	log_fp = open_log_file();
 	if (log_fp == NULL)
 		return ERROR;
 
-	if (rename_result) {
-		my_free(log_archive);
-		return ERROR;
-	}
-
 	/* record the log rotation after it has been done... */
-	asprintf(&temp_buffer, "LOG ROTATION: %s\n", method_string);
+	temp_buffer = "LOG ROTATION: EXTERNAL";
 	write_to_all_logs_with_timestamp(temp_buffer, NSLOG_PROCESS_INFO, &rotation_time);
-	my_free(temp_buffer);
 
 	/* record log file version format */
 	write_log_file_info(&rotation_time);
-
-	if (stat_result == 0) {
-		chmod(log_file, log_file_stat.st_mode);
-		chown(log_file, log_file_stat.st_uid, log_file_stat.st_gid);
-	}
 
 	/* log current host and service state if activated */
 	if (log_current_states == TRUE) {
 		log_host_states(CURRENT_STATES, &rotation_time);
 		log_service_states(CURRENT_STATES, &rotation_time);
 	}
-
-	/* free memory */
-	my_free(log_archive);
 
 	return OK;
 }
