@@ -71,13 +71,20 @@ trouble.
 
 ### Installing ###
 
-If you get this stuff from git, you should run "autoreconf -i" and then
+When installing from a released tarball, all you need to do is to run
 ```
-./configure; make all; make install
+./configure
+make
+sudo make install
 ```
-to install everything in the default paths.
 
-If you get a tarball you should be able to skip the "autoreconf" step.
+If you want to help out with development and hence download the source from
+git, you instead need to run
+```
+./autogen.sh
+make
+sudo make install
+```
 
 
 ### More info ###
