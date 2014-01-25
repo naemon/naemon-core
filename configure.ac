@@ -16,22 +16,22 @@ AC_PROG_CC
 AC_PROG_MAKE_SET
 AM_PROG_CC_C_O
 
-# Check for check. Do start with modern way (pkg-config), fall back to legacy
-# way (custom macro, which was the only way to set it up until recently-ish),
-# and throw errors if everything errored out.
-# Making this dep optional (as it only relates to tests) is left as an
-# exercise for the reader. :)
-PKG_CHECK_MODULES([CHECK],
-                  [check >= 0.9.0],
-                  [],
-                  [m4_ifdef([AM_PATH_CHECK],
-                           [AM_PATH_CHECK([0.9.0],
-                                         [],
-                                         [AC_MSG_ERROR([check <http://check.sourceforge.net/> is missing])]
-                                        )],
-                           [AC_MSG_ERROR([check <http://check.sourceforge.net/> is missing])]
-                  )]
-)
+AC_ARG_WITH([tests],
+            [AS_HELP_STRING([--with-tests], [Enable building tests (requires the check library)])])
+
+AS_IF([test "x$with_tests" != "xno"], [
+	m4_ifdef([PKG_CHECK_MODULES],
+	         [PKG_CHECK_MODULES([CHECK],
+	                            [check >= 0.9.0],
+	                            [],
+	                            [AC_MSG_RESULT([checking for non-pkgconfig enabled check])])])
+	AS_IF([test "x$CHECK_LIBS" = "x"],
+	          [m4_ifdef([AM_PATH_CHECK],
+	                    [AM_PATH_CHECK([0.9.0])])])
+	AS_IF([test "x$CHECK_LIBS" = "x"],
+	          [AC_MSG_ERROR([Install check <http://check.sourceforge.net/>, or re-run configure with the --without-tests flag])])
+])
+AM_CONDITIONAL([HAVE_CHECK], [test "x$with_tests" = "xyes"])
 
 AM_MISSING_PROG([GPERF], [gperf])
 # am_missing_prog doesn't seem to fail,
