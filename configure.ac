@@ -9,6 +9,8 @@ AM_INIT_AUTOMAKE
 AC_CONFIG_HEADERS([config.h naemon/lib/snprintf.h])
 AC_PREFIX_DEFAULT(/usr/local/naemon)
 
+AC_CONFIG_MACRO_DIR([m4])
+
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_MAKE_SET
