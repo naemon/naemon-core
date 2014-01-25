@@ -120,6 +120,12 @@ struct check_engine {
 	void (*clean_result)(void *);
 };
 
+struct check_output {
+	char *short_output;
+	char *long_output;
+	char *perf_data;
+};
+
 /* CHECK_RESULT structure */
 typedef struct check_result {
 	int object_check_type;                          /* is this a service or a host check? */
