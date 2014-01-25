@@ -3,7 +3,7 @@ AM_CPPFLAGS += -I$(top_builddir)
 BUILT_SOURCES = wpres-phash.h
 
 wpres-phash.h: wpres.gperf
-	$(GPERF) --switch=1 --struct-type \
+	$(AM_V_GEN) $(GPERF) --switch=1 --struct-type \
 		--hash-function-name=wpres_key_phash \
 		--lookup-function-name=wpres_get_key \
 		--language=ANSI-C \
