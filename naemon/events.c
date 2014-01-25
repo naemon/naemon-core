@@ -1159,14 +1159,6 @@ int handle_timed_event(timed_event *event)
 		run_scheduled_host_check(temp_host, event->event_options, latency);
 		break;
 
-	case EVENT_LOG_ROTATION:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Log File Rotation Event. Latency: %.3fs\n", latency);
-
-		/* rotate the log file */
-		rotate_log_file(event->run_time);
-		break;
-
 	case EVENT_PROGRAM_SHUTDOWN:
 
 		log_debug_info(DEBUGL_EVENTS, 0, "** Program Shutdown Event. Latency: %.3fs\n", latency);
