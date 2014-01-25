@@ -2,11 +2,10 @@
     daily
     rotate 3650
     nocompress
-    olddir archive
+    olddir archives
     dateext
     dateformat -%Y%m%d
     missingok
-    rotate 10
     notifempty
     postrotate
       [ -f @lockfile@ ] && kill -USR1 `cat @lockfile@`
