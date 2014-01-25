@@ -2913,13 +2913,13 @@ int handle_host_state(host *hst, int *alert_recorded)
 struct check_output *parse_output(const char *buf, struct check_output *check_output) {
 	char *saveptr = NULL, *tmpbuf = NULL;
 	char *p = NULL, *tmp = NULL;
+	dbuf perf_data_dbuf;
 
 	check_output->long_output = NULL;
 	check_output->short_output = NULL;
 	if(!buf)
 		return check_output;
 	tmpbuf = strdup(buf);
-	dbuf perf_data_dbuf;
 
 	dbuf_init(&perf_data_dbuf, 1024);
 	tmp = strtok_r(tmpbuf, "\n", &saveptr);
