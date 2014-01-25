@@ -15,7 +15,14 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_CC
 AC_PROG_MAKE_SET
 AM_PROG_CC_C_O
+
 AM_MISSING_PROG([GPERF], [gperf])
+# am_missing_prog doesn't seem to fail,
+# so I'm putting this redundant check in place to whine more loudly:
+AC_CHECK_PROG(GPERF_CHECK,gperf,yes)
+if test x"$GPERF_CHECK" != x"yes" ; then
+	AC_MSG_ERROR([You need to install gperf before building.])
+fi
 
 AM_CPPFLAGS="-D_GNU_SOURCE"
 AX_CHECK_COMPILE_FLAG([-Wall], AM_CFLAGS+=" -Wall")
