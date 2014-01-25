@@ -176,9 +176,18 @@ AC_ARG_WITH([logdir],
 logdir="$with_logdir"
 AC_SUBST(logdir)
 
+# Determine the logrotate directory
+AC_ARG_WITH([logrotatedir],
+[AS_HELP_STRING([--with-logrotate-dir],
+[specify the log rotate directory @<:@default="/etc/logrotate.d"@:>@])],
+[], [with_logrotatedir="/etc/logrotate.d"])
+logrotatedir="$with_logrotatedir"
+AC_SUBST(logrotatedir)
+
 AC_SUBST(libdir)
 AC_CONFIG_FILES([Makefile
                  daemon-init
+                 naemon.logrotate
                  naemon/Makefile
                  naemon/defaults.h
                  naemon/lib/Makefile
