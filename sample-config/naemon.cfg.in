@@ -198,22 +198,9 @@ event_broker_options=-1
 
 
 
-# LOG ROTATION METHOD
-# This is the log rotation method that Naemon should use to rotate
-# the main log file. Values are as follows..
-#    n    = None - don't rotate the log
-#    h    = Hourly rotation (top of the hour)
-#    d    = Daily rotation (midnight every day)
-#    w    = Weekly rotation (midnight on Saturday evening)
-#    m    = Monthly rotation (midnight last day of month)
-
-log_rotation_method=d
-
-
-
 # LOG ARCHIVE PATH
-# This is the directory where archived (rotated) log files should be
-# placed (assuming you've chosen to do log rotation).
+# This is the directory where archived (rotated) log files are placed by the
+# logrotate daemon. It is used by out of core add-ons to discover the logfiles.
 
 log_archive_path=@logdir@/archives
 

@@ -148,6 +148,7 @@ int use_precached_objects = FALSE;
 
 int sigshutdown = FALSE;
 int sigrestart = FALSE;
+int sigrotate = FALSE;
 int caught_signal = FALSE;
 int sig_id = 0;
 
@@ -1349,53 +1350,6 @@ time_t calculate_time_from_weekday_of_month(int year, int month, int weekday, in
 }
 
 
-/* get the next time to schedule a log rotation */
-time_t get_next_log_rotation_time(void)
-{
-	time_t current_time;
-	struct tm *t, tm_s;
-	int is_dst_now = FALSE;
-	time_t run_time;
-
-	time(&current_time);
-	t = localtime_r(&current_time, &tm_s);
-	t->tm_min = 0;
-	t->tm_sec = 0;
-	is_dst_now = (t->tm_isdst > 0) ? TRUE : FALSE;
-
-	switch (log_rotation_method) {
-	case LOG_ROTATION_HOURLY:
-		t->tm_hour++;
-		run_time = mktime(t);
-		break;
-	case LOG_ROTATION_DAILY:
-		t->tm_mday++;
-		t->tm_hour = 0;
-		run_time = mktime(t);
-		break;
-	case LOG_ROTATION_WEEKLY:
-		t->tm_mday += (7 - t->tm_wday);
-		t->tm_hour = 0;
-		run_time = mktime(t);
-		break;
-	case LOG_ROTATION_MONTHLY:
-	default:
-		t->tm_mon++;
-		t->tm_mday = 1;
-		t->tm_hour = 0;
-		run_time = mktime(t);
-		break;
-	}
-
-	if (is_dst_now == TRUE && t->tm_isdst == 0)
-		run_time += 3600;
-	else if (is_dst_now == FALSE && t->tm_isdst > 0)
-		run_time -= 3600;
-
-	return run_time;
-}
-
-
 /******************************************************************/
 /******************** SIGNAL HANDLER FUNCTIONS ********************/
 /******************************************************************/
@@ -1435,6 +1389,7 @@ void reset_sighandler(void)
 	signal(SIGSEGV, SIG_DFL);
 	signal(SIGPIPE, SIG_DFL);
 	signal(SIGXFSZ, SIG_DFL);
+	signal(SIGUSR1, SIG_DFL);
 
 	return;
 }
@@ -1461,11 +1416,12 @@ void sighandler(int sig)
 
 	sig_id = sig;
 
-	/* we received a SIGHUP, so restart... */
-	if (sig == SIGHUP)
+	if (sig == SIGUSR1) {
+		sigrotate = TRUE;
+	}
+	else if (sig == SIGHUP) {
 		sigrestart = TRUE;
-
-	/* else begin shutting down... */
+	}
 	else if (sig < 16) {
 		logit(NSLOG_PROCESS_INFO, TRUE, "Caught SIG%s, shutting down...\n", sigs[sig]);
 		sigshutdown = TRUE;

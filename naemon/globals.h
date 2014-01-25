@@ -164,7 +164,7 @@ extern int allow_empty_hostgroup_assignment;
 extern time_t last_program_stop;
 extern time_t event_start;
 
-extern int sigshutdown, sigrestart;
+extern int sigshutdown, sigrestart, sigrotate;
 extern int currently_running_service_checks;
 extern int currently_running_host_checks;
 

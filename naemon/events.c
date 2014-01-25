@@ -565,10 +565,6 @@ void init_timing_loop(void)
 	/* add a status save event */
 	schedule_new_event(EVENT_STATUS_SAVE, TRUE, current_time + status_update_interval, TRUE, status_update_interval, NULL, TRUE, NULL, NULL, 0);
 
-	/* add a log rotation event if necessary */
-	if (log_rotation_method != LOG_ROTATION_NONE)
-		schedule_new_event(EVENT_LOG_ROTATION, TRUE, get_next_log_rotation_time(), TRUE, 0, (void *)get_next_log_rotation_time, TRUE, NULL, NULL, 0);
-
 	/* add a retention data save event if needed */
 	if (retain_state_information == TRUE && retention_update_interval > 0)
 		schedule_new_event(EVENT_RETENTION_SAVE, TRUE, current_time + (retention_update_interval * 60), TRUE, (retention_update_interval * 60), NULL, TRUE, NULL, NULL, 0);
@@ -1010,6 +1006,9 @@ int event_execution_loop(void)
 
 		/* get the current time */
 		time(&current_time);
+
+		if (sigrotate == TRUE)
+			rotate_log_file(current_time);
 
 		/* hey, wait a second...  we traveled back in time! */
 		if (current_time < last_time)

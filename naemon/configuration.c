@@ -637,25 +637,14 @@ int read_main_config_file(char *main_config_file)
 		}
 
 		else if (!strcmp(variable, "log_rotation_method")) {
-			if (!strcmp(value, "n"))
-				log_rotation_method = LOG_ROTATION_NONE;
-			else if (!strcmp(value, "h"))
-				log_rotation_method = LOG_ROTATION_HOURLY;
-			else if (!strcmp(value, "d"))
-				log_rotation_method = LOG_ROTATION_DAILY;
-			else if (!strcmp(value, "w"))
-				log_rotation_method = LOG_ROTATION_WEEKLY;
-			else if (!strcmp(value, "m"))
-				log_rotation_method = LOG_ROTATION_MONTHLY;
-			else {
-				asprintf(&error_message, "Illegal value for log_rotation_method");
-				error = TRUE;
-				break;
-			}
+			obsoleted_warning(variable, "Logs are rotated by logrotate(8) - check your configuration");
 		}
 
 		else if (!strcmp(variable, "log_archive_path")) {
-
+			/* FIXME: it's silly to have this here, despite naemon not using it.
+			 * However, removing it removes the means for 3rd party addons to
+			 * find the log archive at all.
+			 */
 			if (strlen(value) > MAX_FILENAME_LENGTH - 1) {
 				asprintf(&error_message, "Log archive path too long");
 				error = TRUE;
