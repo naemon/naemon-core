@@ -13,6 +13,7 @@ Makefile.in
 config.log
 config.status
 daemon-init
+naemon.logrotate
 Makefile
 .deps/
 .libs/
