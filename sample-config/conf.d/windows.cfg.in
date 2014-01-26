@@ -105,3 +105,10 @@ define service {
   use                            generic-service
   check_command                  check_nt!PROCSTATE!-d SHOWALL -l Explorer.exe
 }
+
+# example service group
+define servicegroup {
+  servicegroup_name              windows
+  alias                          Some Windows Checks
+  members                        winserver,CPU Load,winserver,Memory Usage
+}
