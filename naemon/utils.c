@@ -238,7 +238,7 @@ static const char *spool_file_source_name(void *source)
 }
 
 struct check_engine nagios_check_engine = {
-	"Nagios Core",
+	"Naemon Core",
 	worker_source_name,
 	NULL,
 };
@@ -2717,7 +2717,7 @@ int generate_check_stats(void)
 /************************* MISC FUNCTIONS *************************/
 /******************************************************************/
 
-/* returns Nagios version */
+/* returns Naemon version */
 char *get_program_version(void)
 {
 
@@ -2725,7 +2725,7 @@ char *get_program_version(void)
 }
 
 
-/* returns Nagios modification date */
+/* returns Naemon modification date */
 char *get_program_modification_date(void)
 {
 
