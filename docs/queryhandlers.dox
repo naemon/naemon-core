@@ -1,18 +1,18 @@
 /** @page qh Query Handler
 
-A brief intro to the Nagios query handler system
+A brief intro to the Naemon query handler system
 
 [TOC]
 
 @section purpose Purpose
-The purpose of the query handler is to provide Nagios Core and its
+The purpose of the query handler is to provide Naemon Core and its
 eventbroker modules with the ability to communicate directly with
 the outside world through a well-defined API, as well as allowing
-external apps a way to help out with various Nagios tasks.
+external apps a way to help out with various Naemon tasks.
 
 @section caveats Caveats
-The query handlers run in the main thread. Nagios doesn't provide any
-parallellism here and main Nagios will be blocked while a query is
+The query handlers run in the main thread. Naemon doesn't provide any
+parallellism here and main Naemon will be blocked while a query is
 running. As such, it's a very good idea to make ones queryhandlers
 complete in as little time as possible.
 
@@ -34,7 +34,7 @@ They will suffice for this explanation, however.
 @li query - The query, minus the address and the magic byte.
 @li query_len - Length of the query, in bytes.
 
-The call to register it with Nagios so you get all queries directed
+The call to register it with Naemon so you get all queries directed
 to the 'lala' address is then:
 @code
 qh_register_handler("lala", "The LaLa query handler", 0,
@@ -72,7 +72,7 @@ One-shot query the core query handler for current load-control options:
 #core loadctl\0
 @endverbatim
 
-Get Nagios to say hi to you:
+Get Naemon to say hi to you:
 @verbatim
 #echo Greetings, Exalted One
 @endverbatim
@@ -102,9 +102,9 @@ help output, like so:
 As I'm sure you've already guessed, the echo service just prints the
 inbound data right back at you. While that's not exactly nobel prize
 winning material, it's actually pretty nifty to figure out how fast
-Nagios can parse its inbound data, which in turn shows how fast it can
+Naemon can parse its inbound data, which in turn shows how fast it can
 handle its inbound checkresults, which puts an upper cap on how many
-checks Nagios can handle at any given time (although short bursts that
+checks Naemon can handle at any given time (although short bursts that
 exceed that limit are ok and will be handled just fine).
 
 It can be addressed as such:
@@ -112,9 +112,9 @@ It can be addressed as such:
 @echo foo bar baz said the bunny\0
 @endverbatim
 
-@subsection nerd Nagios Event Radio Dispatcher
+@subsection nerd Naemon Event Radio Dispatcher
 The nerd radio is subscribed in fuller detail at @see nerd, but its
-worth knowing that it's a core part of Nagios 4 and that it will
+worth knowing that it's a core part of Naemon and that it will
 always be available.
 
 @subsection wproc Worker process manager

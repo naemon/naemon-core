@@ -426,7 +426,7 @@ int qh_init(const char *path)
 	logit(NSLOG_INFO_MESSAGE, FALSE, "qh: Socket '%s' successfully initialized\n", path);
 
 	/* now register our the in-core handlers */
-	if (!qh_register_handler("core", "Nagios Core control and info", 0, qh_core))
+	if (!qh_register_handler("core", "Naemon Core control and info", 0, qh_core))
 		logit(NSLOG_INFO_MESSAGE, FALSE, "qh: core query handler registered\n");
 	qh_register_handler("echo", "The Echo Service - What You Put Is What You Get", 0, qh_echo);
 	qh_register_handler("help", "Help for the query handler", 0, qh_help);

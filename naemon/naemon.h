@@ -2,14 +2,14 @@
 #define _NAEMON_H
 
 /*
- * NEVER INCLUDE THIS FILE WITHIN A FILE IN THE NEAMON PROJECT
+ * NEVER INCLUDE THIS FILE WITHIN A FILE IN THE NAEMON PROJECT
  *
  * ONLY FOR USE FROM BROKER MODULES
  *
  * This file includes everything in naemon, which means, if included in naemon,
- * this will make it impossible to track dependenceies within the neamon project
+ * this will make it impossible to track dependenceies within the naemon project
  * itself. Using this as the entrypoint in broker modules will however make it
- * possible to move methods around within neamon, and still maintain API
+ * possible to move methods around within naemon, and still maintain API
  * compatiblity.
  */
 

@@ -65,7 +65,7 @@ int open_command_file(void)
 		/* create the external command file as a named pipe (FIFO) */
 		if ((result = mkfifo(command_file, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) != 0) {
 
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Could not create external command file '%s' as named pipe: (%d) -> %s.  If this file already exists and you are sure that another copy of Nagios is not running, you should delete this file.\n", command_file, errno, strerror(errno));
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Could not create external command file '%s' as named pipe: (%d) -> %s.  If this file already exists and you are sure that another copy of Naemon is not running, you should delete this file.\n", command_file, errno, strerror(errno));
 			return ERROR;
 		}
 	}
@@ -1302,7 +1302,7 @@ int process_external_command2(int cmd, time_t entry_time, char *args)
 
 
 	case CMD_CUSTOM_COMMAND:
-		/* custom commands aren't handled internally by Nagios, but may be by NEB modules */
+		/* custom commands aren't handled internally by Naemon, but may be by NEB modules */
 		break;
 
 	default:
