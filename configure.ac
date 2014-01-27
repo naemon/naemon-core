@@ -24,10 +24,12 @@ AS_IF([test "x$with_tests" != "xno"], [
 	         [PKG_CHECK_MODULES([CHECK],
 	                            [check >= 0.9.0],
 	                            [],
-	                            [AC_MSG_RESULT([checking for non-pkgconfig enabled check])])])
+	                            [AC_MSG_RESULT([checking for non-pkgconfig enabled check])])],
+	         [true])
 	AS_IF([test "x$CHECK_LIBS" = "x"],
 	          [m4_ifdef([AM_PATH_CHECK],
-	                    [AM_PATH_CHECK([0.9.0])])])
+	                    [AM_PATH_CHECK([0.9.0])])],
+	          [true])
 	AS_IF([test "x$CHECK_LIBS" = "x"],
 	          [AC_MSG_ERROR([Install check <http://check.sourceforge.net/>, or re-run configure with the --without-tests flag])])
 ])
