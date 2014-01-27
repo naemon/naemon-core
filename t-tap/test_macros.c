@@ -38,7 +38,7 @@
 /*****************************************************************************/
 
 host test_host = { .name = "name'&%", .address = "address'&%", .notes_url =
-                       "notes_url'&%($HOSTNOTES$)", .notes = "notes'&%($HOSTACTIONURL$)",
+                       "notes_url'&%($HOSTNOTES$)", .notes = "notes'&%\"($HOSTACTIONURL$)",
                    .action_url = "action_url'&%", .plugin_output = "name'&%",
                    .check_command = "check_command!3!\"Some output\""
                  };
@@ -91,6 +91,9 @@ void test_escaping(nagios_macros *mac)
 	RUN_MACRO_TEST("$HOSTCHECKCOMMAND$ '&%", "check_command!3!Some output '&%", STRIP_ILLEGAL_MACRO_CHARS);
 	RUN_MACRO_TEST("$HOSTCHECKCOMMAND$ '&%", "check_command!3!\"Some output\" '&%", 0);
 
+	RUN_MACRO_TEST("$HOSTNOTES$", "notes%(action_url%)", STRIP_ILLEGAL_MACRO_CHARS);
+	RUN_MACRO_TEST("$HOSTNOTES$", "notes'&%\"(action_url'&%)", 0);
+
 	/* Nothing should be changed... HOSTNAME doesn't accept STRIP_ILLEGAL_MACRO_CHARS */
 	RUN_MACRO_TEST("$HOSTNAME$ '&%", "name'&% '&%", STRIP_ILLEGAL_MACRO_CHARS);
 
@@ -114,7 +117,7 @@ void test_escaping(nagios_macros *mac)
 	 * exist
 	 */
 	RUN_MACRO_TEST("$HOSTNOTESURL$ '&%",
-	               "notes_url'&%(notes%27%26%25%28action_url%27%26%25%29) '&%", 0);
+	               "notes_url'&%(notes%27%26%25%22%28action_url%27%26%25%29) '&%", 0);
 
 	/* '& in the source string shouldn't be removed, because HOSTNOTESURL
 	 * doesn't accept STRIP_ILLEGAL_MACRO_CHARS, as in the url. the macros
@@ -122,14 +125,14 @@ void test_escaping(nagios_macros *mac)
 	 * and '
 	 */
 	RUN_MACRO_TEST("$HOSTNOTESURL$ '&%",
-	               "notes_url'&%(notes%27%26%25%28action_url%27%26%25%29) '&%",
+	               "notes_url'&%(notes%27%26%25%22%28action_url%27%26%25%29) '&%",
 	               STRIP_ILLEGAL_MACRO_CHARS);
 
 	/* This should double-encode some chars ($HOSTNOTESURL$ should contain
 	 * url-encoded chars, and should itself be url-encoded
 	 */
 	RUN_MACRO_TEST("$HOSTNOTESURL$ '&%",
-	               "notes_url%27%26%25%28notes%2527%2526%2525%2528action_url%2527%2526%2525%2529%29 '&%",
+	               "notes_url%27%26%25%28notes%2527%2526%2525%2522%2528action_url%2527%2526%2525%2529%29 '&%",
 	               URL_ENCODE_MACRO_CHARS);
 }
 
@@ -141,7 +144,7 @@ int main(void)
 {
 	nagios_macros *mac;
 
-	plan_tests(11);
+	plan_tests(13);
 
 	reset_variables();
 	init_environment();
