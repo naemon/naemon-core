@@ -3,7 +3,7 @@
 # Simple interface to interact with the Query Handler
 # Daniel Wittenberg <dwittenberg2008@gmail.com>
 
-require "socket" 
+require "socket"
 require 'optparse'
 
 $DEBUG="false"
@@ -11,7 +11,7 @@ $DEBUGLOG=""
 
 def debug(msg)
   if($DEBUG == "true")
-    if($DEBUGLOG != "") 
+    if($DEBUGLOG != "")
       File.open("#{$DEBUGLOG}",'a') {|f| f.puts("DEBUG: #{msg}")}
     else
       puts("DEBUG: #{msg}")
@@ -19,26 +19,26 @@ def debug(msg)
   end 
 end
 
-def send_cmd(cmd, mysock) 
-   mysock="/var/nagios/rw/nagios.qh" if mysock.nil? 
+def send_cmd(cmd, mysock)
+   mysock="/var/lib/naemon/naemon.qh" if mysock.nil?
    cmd=cmd.chomp
    debug("Starting send_cmd with command: #{cmd}")
-  
-   if(cmd == "quit" or cmd == "exit") 
+
+   if(cmd == "quit" or cmd == "exit")
       exit(0)
    end
 
    # If we forget to start with a command type assume #
    if(! cmd.start_with?('#') and ! cmd.start_with?('@'))
-      cmd = "##{cmd}" 
+      cmd = "##{cmd}"
    end
 
    # Cleanup the space if they forget you can't have one
    cmd.gsub!(/^#\s+/,"#")
    cmd.gsub!(/^@\s+/,"@")
 
-   # If no socket we might as well bail 
-   if(! File.socket?(mysock)) 
+   # If no socket we might as well bail
+   if(! File.socket?(mysock))
       puts "Not a socket (#{mysock}) sucker!"
       exit(1)
    end 
@@ -61,16 +61,16 @@ end
 
 def print_usage()
   puts "
-Simple command-line interface to Nagios Query Handler
+Simple command-line interface to Naemon Query Handler
 
    -h, --help                     Show this help message.
-  
+
    -d, --debug                    Turn on debug mode
- 
-   -s, --socket                   Specify the query handler socket 
-                                  (default: /var/nagios/rw/nagios.qh)
- 
-   -c, --cmd <cmd>        Run a specific command and exit
+
+   -s, --socket                   Specify the query handler socket
+                                  (default: /var/lib/naemon/naemon.qh)
+
+   -c, --cmd <cmd>                Run a specific command and exit
   "
   exit
 end
@@ -88,7 +88,7 @@ end
 options = {}
 optparse = OptionParser.new do |opts|
   opts.banner = "Usage: $0 [options]"
-  
+
   opts.on('-d','--debug','Debugging mode on') do
       options[:debug] = true
       $DEBUG="true"
@@ -102,7 +102,7 @@ optparse = OptionParser.new do |opts|
   opts.on('-c','--command command','Command') do|command|
      options[:cmd] = command
   end
-end 
+end
 
 optparse.parse!
 
@@ -116,9 +116,9 @@ if(options[:cmd])
      exit
   puts "Command not specified"
   print_usage()
-end 
+end
 
-puts "Welcome to Nagios Query handler, here's a list of handlers available:"
+puts "Welcome to Naemon Query handler, here's a list of handlers available:"
 puts ""
 
 # We'll give the users a nudge to know what to type next
@@ -127,7 +127,7 @@ send_cmd("#help list", options[:socket])
 puts "use @<handler> <cmd> for running queries such as '@nerd subscribe servicechecks'"
 puts ""
 puts "quit or exit will quit interactive mode"
-  
+
 puts ""
 
 STDOUT.sync = true
