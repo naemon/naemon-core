@@ -1,5 +1,5 @@
 SUBDIRS = lib
-AM_CPPFLAGS += -I$(top_builddir)
+AM_CPPFLAGS += -I$(top_builddir) '-DSYSCONFDIR="$(sysconfdir)"' '-DLOCALSTATEDIR="$(localstatedir)"' '-DLOGDIR="$(logdir)"' '-DLOCKFILE="$(lockfile)"'
 BUILT_SOURCES = wpres-phash.h
 
 wpres-phash.h: wpres.gperf
