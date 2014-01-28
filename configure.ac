@@ -192,19 +192,8 @@ AC_CONFIG_FILES([Makefile
                  naemon.logrotate
                  naemon/Makefile
                  naemon/lib/Makefile
+                 sample-config/Makefile
                  tests/Makefile
-                 sample-config/naemon.cfg
-                 sample-config/resource.cfg
-                 sample-config/conf.d/commands.cfg
-                 sample-config/conf.d/printer.cfg
-                 sample-config/conf.d/switch.cfg
-                 sample-config/conf.d/timeperiods.cfg
-                 sample-config/conf.d/localhost.cfg
-                 sample-config/conf.d/contacts.cfg
-                 sample-config/conf.d/windows.cfg
-                 sample-config/conf.d/templates/services.cfg
-                 sample-config/conf.d/templates/hosts.cfg
-                 sample-config/conf.d/templates/contacts.cfg
-                 ])
+                ])
 #AC_CONFIG_SUBDIRS([])
 AC_OUTPUT
