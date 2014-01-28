@@ -191,7 +191,6 @@ AC_CONFIG_FILES([Makefile
                  daemon-init
                  naemon.logrotate
                  naemon/Makefile
-                 naemon/defaults.h
                  naemon/lib/Makefile
                  tests/Makefile
                  sample-config/naemon.cfg
