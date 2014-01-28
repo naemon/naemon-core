@@ -35,20 +35,20 @@ $(CONFIG_FILES) : % : %.in
 
 # not install-share-hook, because sysconfdir is usually part of install-exec
 install-exec-hook: $(CONFIG_FILES)
-	if [ ! -d $(DESTDIR)$(sysconfdir) ]; then \
-		$(install_sh_PROGRAM) -d $(DESTDIR)$(sysconfdir)/; \
-		$(install_sh_PROGRAM) -m 644 naemon.cfg    $(DESTDIR)$(sysconfdir)/naemon.cfg; \
-		$(install_sh_PROGRAM) -m 644 resource.cfg  $(DESTDIR)$(sysconfdir)/resource.cfg; \
-		$(install_sh_PROGRAM) -d $(DESTDIR)$(sysconfdir)/conf.d; \
-		$(install_sh_PROGRAM) -m 644 conf.d/commands.cfg            $(DESTDIR)$(sysconfdir)/conf.d; \
-		$(install_sh_PROGRAM) -m 644 conf.d/printer.cfg             $(DESTDIR)$(sysconfdir)/conf.d; \
-		$(install_sh_PROGRAM) -m 644 conf.d/switch.cfg              $(DESTDIR)$(sysconfdir)/conf.d; \
-		$(install_sh_PROGRAM) -m 644 conf.d/timeperiods.cfg         $(DESTDIR)$(sysconfdir)/conf.d; \
-		$(install_sh_PROGRAM) -m 644 conf.d/localhost.cfg           $(DESTDIR)$(sysconfdir)/conf.d; \
-		$(install_sh_PROGRAM) -m 644 conf.d/contacts.cfg            $(DESTDIR)$(sysconfdir)/conf.d; \
-		$(install_sh_PROGRAM) -m 644 conf.d/windows.cfg             $(DESTDIR)$(sysconfdir)/conf.d; \
-		$(install_sh_PROGRAM) -d $(DESTDIR)$(sysconfdir)/conf.d/templates; \
-		$(install_sh_PROGRAM) -m 644 conf.d/templates/services.cfg  $(DESTDIR)$(sysconfdir)/conf.d/templates; \
-		$(install_sh_PROGRAM) -m 644 conf.d/templates/hosts.cfg     $(DESTDIR)$(sysconfdir)/conf.d/templates; \
-		$(install_sh_PROGRAM) -m 644 conf.d/templates/contacts.cfg  $(DESTDIR)$(sysconfdir)/conf.d/templates; \
+	if [ ! -d $(DESTDIR)$(sysconfdir)/naemon ]; then \
+		$(install_sh_PROGRAM) -d $(DESTDIR)$(sysconfdir)/naemon; \
+		$(install_sh_PROGRAM) -m 644 naemon.cfg    $(DESTDIR)$(sysconfdir)/naemon/naemon.cfg; \
+		$(install_sh_PROGRAM) -m 644 resource.cfg  $(DESTDIR)$(sysconfdir)/naemon/resource.cfg; \
+		$(install_sh_PROGRAM) -d $(DESTDIR)$(sysconfdir)/naemon/conf.d; \
+		$(install_sh_PROGRAM) -m 644 conf.d/commands.cfg            $(DESTDIR)$(sysconfdir)/naemon/conf.d; \
+		$(install_sh_PROGRAM) -m 644 conf.d/printer.cfg             $(DESTDIR)$(sysconfdir)/naemon/conf.d; \
+		$(install_sh_PROGRAM) -m 644 conf.d/switch.cfg              $(DESTDIR)$(sysconfdir)/naemon/conf.d; \
+		$(install_sh_PROGRAM) -m 644 conf.d/timeperiods.cfg         $(DESTDIR)$(sysconfdir)/naemon/conf.d; \
+		$(install_sh_PROGRAM) -m 644 conf.d/localhost.cfg           $(DESTDIR)$(sysconfdir)/naemon/conf.d; \
+		$(install_sh_PROGRAM) -m 644 conf.d/contacts.cfg            $(DESTDIR)$(sysconfdir)/naemon/conf.d; \
+		$(install_sh_PROGRAM) -m 644 conf.d/windows.cfg             $(DESTDIR)$(sysconfdir)/naemon/conf.d; \
+		$(install_sh_PROGRAM) -d $(DESTDIR)$(sysconfdir)/naemon/conf.d/templates; \
+		$(install_sh_PROGRAM) -m 644 conf.d/templates/services.cfg  $(DESTDIR)$(sysconfdir)/naemon/conf.d/templates; \
+		$(install_sh_PROGRAM) -m 644 conf.d/templates/hosts.cfg     $(DESTDIR)$(sysconfdir)/naemon/conf.d/templates; \
+		$(install_sh_PROGRAM) -m 644 conf.d/templates/contacts.cfg  $(DESTDIR)$(sysconfdir)/naemon/conf.d/templates; \
 	fi

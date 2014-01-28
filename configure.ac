@@ -7,7 +7,6 @@ AC_CONFIG_SRCDIR([naemon/naemon.c])
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_HEADERS([config.h naemon/lib/snprintf.h])
-AC_PREFIX_DEFAULT(/usr/local/naemon)
 
 AC_CONFIG_MACRO_DIR([m4])
 
