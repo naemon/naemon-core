@@ -93,22 +93,22 @@
 
 
 /* default locations */
-#define DEFAULT_TEMP_FILE			"@localstatedir@/tempfile"
+#define DEFAULT_TEMP_FILE			LOCALSTATEDIR "/tempfile"
 #define DEFAULT_TEMP_PATH                       "/tmp"
-#define DEFAULT_CHECK_RESULT_PATH		"@localstatedir@/spool/checkresults"
-#define DEFAULT_STATUS_FILE			"@localstatedir@/status.dat"
-#define DEFAULT_LOG_FILE			"@logdir@/naemon.log"
-#define DEFAULT_LOG_ARCHIVE_PATH		"@logdir@/archives/"
-#define DEFAULT_DEBUG_FILE                      "@localstatedir@/naemon.debug"
-#define DEFAULT_COMMENT_FILE			"@localstatedir@/comments.dat"
-#define DEFAULT_DOWNTIME_FILE			"@localstatedir@/downtime.dat"
-#define DEFAULT_RETENTION_FILE			"@localstatedir@/retention.dat"
-#define DEFAULT_COMMAND_FILE			"@localstatedir@/naemon.cmd"
-#define DEFAULT_QUERY_SOCKET            "@localstatedir@/naemon.qh"
-#define DEFAULT_CONFIG_FILE			"@sysconfdir@/naemon.cfg"
-#define DEFAULT_LOCK_FILE			"@lockfile@"
-#define DEFAULT_OBJECT_CACHE_FILE		"@localstatedir@/objects.cache"
-#define DEFAULT_PRECACHED_OBJECT_FILE		"@localstatedir@/objects.precache"
-#define DEFAULT_EVENT_BROKER_FILE		"@localstatedir@/broker.socket"
+#define DEFAULT_CHECK_RESULT_PATH		LOCALSTATEDIR "/spool/checkresults"
+#define DEFAULT_STATUS_FILE			LOCALSTATEDIR "/status.dat"
+#define DEFAULT_LOG_FILE			LOGDIR "/naemon.log"
+#define DEFAULT_LOG_ARCHIVE_PATH		LOGDIR "/archives/"
+#define DEFAULT_DEBUG_FILE                      LOCALSTATEDIR "/naemon.debug"
+#define DEFAULT_COMMENT_FILE			LOCALSTATEDIR "/comments.dat"
+#define DEFAULT_DOWNTIME_FILE			LOCALSTATEDIR "/downtime.dat"
+#define DEFAULT_RETENTION_FILE			LOCALSTATEDIR "/retention.dat"
+#define DEFAULT_COMMAND_FILE			LOCALSTATEDIR "/naemon.cmd"
+#define DEFAULT_QUERY_SOCKET            LOCALSTATEDIR "/naemon.qh"
+#define DEFAULT_CONFIG_FILE			SYSCONFDIR "/naemon.cfg"
+#define DEFAULT_LOCK_FILE			LOCKFILE
+#define DEFAULT_OBJECT_CACHE_FILE		LOCALSTATEDIR "/objects.cache"
+#define DEFAULT_PRECACHED_OBJECT_FILE		LOCALSTATEDIR "/objects.precache"
+#define DEFAULT_EVENT_BROKER_FILE		LOCALSTATEDIR "/broker.socket"
 
 #endif /* INCLUDE_defaults_h__ */
