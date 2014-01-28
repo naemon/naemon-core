@@ -7,7 +7,6 @@ AC_CONFIG_SRCDIR([naemon/naemon.c])
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_HEADERS([config.h naemon/lib/snprintf.h])
-AC_PREFIX_DEFAULT(/usr/local/naemon)
 
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -191,21 +190,9 @@ AC_CONFIG_FILES([Makefile
                  daemon-init
                  naemon.logrotate
                  naemon/Makefile
-                 naemon/defaults.h
                  naemon/lib/Makefile
+                 sample-config/Makefile
                  tests/Makefile
-                 sample-config/naemon.cfg
-                 sample-config/resource.cfg
-                 sample-config/conf.d/commands.cfg
-                 sample-config/conf.d/printer.cfg
-                 sample-config/conf.d/switch.cfg
-                 sample-config/conf.d/timeperiods.cfg
-                 sample-config/conf.d/localhost.cfg
-                 sample-config/conf.d/contacts.cfg
-                 sample-config/conf.d/windows.cfg
-                 sample-config/conf.d/templates/services.cfg
-                 sample-config/conf.d/templates/hosts.cfg
-                 sample-config/conf.d/templates/contacts.cfg
-                 ])
+                ])
 #AC_CONFIG_SUBDIRS([])
 AC_OUTPUT
