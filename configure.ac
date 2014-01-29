@@ -185,6 +185,14 @@ AC_ARG_WITH([logrotatedir],
 logrotatedir="$with_logrotatedir"
 AC_SUBST(logrotatedir)
 
+# Determine the naemon plugins dir
+AC_ARG_WITH([pluginsdir],
+[AS_HELP_STRING([--with-pluginsdir],
+[specify the naemon/monitoring plugins directory @<:@default="/usr/lib/naemon/plugins"@:>@])],
+[], [with_pluginsdir="/usr/lib/naemon/plugins"])
+pluginsdir="$with_pluginsdir"
+AC_SUBST(pluginsdir)
+
 AC_SUBST(libdir)
 AC_CONFIG_FILES([Makefile
                  daemon-init

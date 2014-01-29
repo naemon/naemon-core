@@ -21,7 +21,7 @@ CLEANFILES = $(CONFIG_FILES)
 $(CONFIG_FILES) : % : %.in
 	$(AM_V_GEN) sed \
 		-e 's,@libdir[@],$(libdir),g' \
-		-e 's,@libexecdir[@],$(libexecdir),g' \
+		-e 's,@pluginsdir[@],$(pluginsdir),g' \
 		-e 's,@localstatedir[@],$(localstatedir),g' \
 		-e 's,@lockfile[@],$(lockfile),g' \
 		-e 's,@logdir[@],$(logdir),g' \

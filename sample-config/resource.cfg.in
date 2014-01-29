@@ -19,10 +19,10 @@
 ###########################################################################
 
 # Sets $USER1$ to be the path to the plugins
-$USER1$=@libexecdir@
+$USER1$=@pluginsdir@
 
 # Sets $USER2$ to be the path to event handlers
-#$USER2$=@libexecdir@/eventhandlers
+#$USER2$=@pluginsdir@/eventhandlers
 
 # Store some usernames and passwords (hidden from the CGIs)
 #$USER3$=someuser
