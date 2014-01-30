@@ -6,8 +6,8 @@ script:
   - ./autogen.sh
   - make
 after_success:
-  - make distcheck || exit 1
   - make check | tee maketests.log
+  - make distcheck | tee -a maketests.log
   - grep "Result: FAIL" maketests.log && exit 1
 before_install:
   - sudo apt-get install autoconf
