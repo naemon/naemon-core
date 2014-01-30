@@ -43,7 +43,6 @@
 #include "sretention.h"
 #include "statusdata.h"
 #include "utils.h"
-#include "waf-config.h"
 #include "workers.h"
 
 /*

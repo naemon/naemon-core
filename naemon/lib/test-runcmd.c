@@ -99,10 +99,10 @@ int main(int argc, char **argv)
 		int i;
 		char *out = calloc(1, BUF_SIZE);
 		for (i = 0; cases[i].input != NULL; i++) {
-			memset(out, 0, BUF_SIZE);
 			int pfd[2] = { -1, -1}, pfderr[2] = { -1, -1};
 			int fd;
 			char *cmd;
+			memset(out, 0, BUF_SIZE);
 			asprintf(&cmd, "/bin/echo -n %s", cases[i].input);
 			fd = runcmd_open(cmd, pfd, pfderr, NULL);
 			read(pfd[0], out, BUF_SIZE);
