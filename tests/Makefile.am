@@ -1,5 +1,5 @@
 if HAVE_CHECK
-AM_CPPFLAGS = -I$(top_builddir)
+AM_CPPFLAGS += -I$(top_srcdir)
 TESTS = test-checks test-log
 TEST_CHECKS_DEPS = nebmods.o commands.o broker.o query-handler.o utils.o events.o notifications.o \
 			  flapping.o sehandlers.o logging.o workers.o shared.o comments.o downtime.o sretention.o objects.o \
