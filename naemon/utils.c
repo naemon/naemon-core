@@ -432,9 +432,30 @@ int my_system_r(nagios_macros *mac, char *cmd, int timeout, int *early_timeout, 
 			if (status == -1)
 				result = STATE_CRITICAL;
 			else {
-				if (WEXITSTATUS(status) == 0 && WIFSIGNALED(status))
-					result = 128 + WTERMSIG(status);
-				result = WEXITSTATUS(status);
+				if (WIFSIGNALED(status)) {
+
+					alarm(0);
+
+					/**
+					 * time for suicide has arrived.
+					 * command on pclose has been killed
+					 * so we need to kill ourselves with
+					 * the same signal in order to parent
+					 * process recognizes the unexpected
+					 * command dead and treat it as
+					 * needed.
+					 */
+					kill(getpid(), WTERMSIG(status));
+
+					/**
+					 * dead code, only to garantee that if
+					 * we didn't died at kill() above, at
+					 * least we end the process with a
+					 * wellknown state
+					 */
+					result = STATE_UNKNOWN;
+				} else
+					result = WEXITSTATUS(status);
 			}
 		}
 
@@ -476,8 +497,11 @@ int my_system_r(nagios_macros *mac, char *cmd, int timeout, int *early_timeout, 
 	/* get the exit code returned from the program */
 	result = WEXITSTATUS(status);
 
-	/* check for possibly missing scripts/binaries/etc */
-	if (result == 126 || result == 127) {
+	if (WIFSIGNALED(status)) {
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: command \"%s\" killed by signal %d.\n", cmd, WTERMSIG(status));
+		result = STATE_UNKNOWN;
+	} else if (result == 126 || result == 127) {
+		/* check for possibly missing scripts/binaries/etc */
 		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Attempting to execute the command \"%s\" resulted in a return code of %d.  Make sure the script or binary you are trying to execute actually exists...\n", cmd, result);
 	}
 
@@ -1421,11 +1445,9 @@ void sighandler(int sig)
 
 	if (sig == SIGUSR1) {
 		sigrotate = TRUE;
-	}
-	else if (sig == SIGHUP) {
+	} else if (sig == SIGHUP) {
 		sigrestart = TRUE;
-	}
-	else if (sig < 16) {
+	} else if (sig < 16) {
 		logit(NSLOG_PROCESS_INFO, TRUE, "Caught SIG%s, shutting down...\n", sigs[sig]);
 		sigshutdown = TRUE;
 	}
