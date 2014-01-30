@@ -32,6 +32,6 @@ $output = `$nagiostats -c "$etc/nagios-with-generated-status.cfg" -m -d NUMHOSTS
 is( $?, 0, "Bad return code with implied status file in MRTG mode" );
 unlike( $output, "/^0\$/", "Implied generated status file contains host(s)" );
 
-$output = `$nagiostats -s "$var/status-generated.dat" -m -d NUMHOSTS`;
+$output = `$nagiostats -s "$var/status.dat" -m -d NUMHOSTS`;
 is( $?, 0, "Bad return code with explicit status file in MRTG mode" );
 unlike( $output, "/^0\$/", "Explicit generated status file contains host(s)" );
