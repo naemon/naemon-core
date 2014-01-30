@@ -4,7 +4,7 @@ compiler:
 # Change this to your needs
 script:
   - ./autogen.sh
-  - make --with-tests
+  - make
 after_success:
   - make distcheck || exit 1
   - make check | tee maketests.log
