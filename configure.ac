@@ -168,32 +168,32 @@ AC_SUBST(naemon_grp)
 # Determine the lockfile
 AC_ARG_WITH([lockfile],
 [AS_HELP_STRING([--with-lockfile],
-[specify the naemon lockfile @<:@default="/var/cache/naemon/naemon.pid"@:>@])],
-[], [with_lockfile="/var/cache/naemon/naemon.pid"])
+[specify the naemon lockfile @<:@default="${localstatedir}/cache/naemon/naemon.pid"@:>@])],
+[], [with_lockfile="${localstatedir}/cache/naemon/naemon.pid"])
 lockfile="$with_lockfile"
 AC_SUBST(lockfile)
 
 # Determine the logpath
 AC_ARG_WITH([logdir],
 [AS_HELP_STRING([--with-logdir],
-[specify the naemon log directory @<:@default="/var/log/naemon"@:>@])],
-[], [with_logdir="/var/log/naemon"])
+[specify the naemon log directory @<:@default="${localstatedir}/log/naemon"@:>@])],
+[], [with_logdir="${localstatedir}/log/naemon"])
 logdir="$with_logdir"
 AC_SUBST(logdir)
 
 # Determine the logrotate directory
 AC_ARG_WITH([logrotatedir],
 [AS_HELP_STRING([--with-logrotate-dir],
-[specify the log rotate directory @<:@default="/etc/logrotate.d"@:>@])],
-[], [with_logrotatedir="/etc/logrotate.d"])
+[specify the log rotate directory @<:@default="${sysconfdir}/logrotate.d"@:>@])],
+[], [with_logrotatedir="${sysconfdir}/logrotate.d"])
 logrotatedir="$with_logrotatedir"
 AC_SUBST(logrotatedir)
 
 # Determine the naemon plugins dir
 AC_ARG_WITH([pluginsdir],
 [AS_HELP_STRING([--with-pluginsdir],
-[specify the naemon/monitoring plugins directory @<:@default="/usr/lib/naemon/plugins"@:>@])],
-[], [with_pluginsdir="/usr/lib/naemon/plugins"])
+[specify the naemon/monitoring plugins directory @<:@default="%{libdir}/naemon/plugins"@:>@])],
+[], [with_pluginsdir="%{libdir}/naemon/plugins"])
 pluginsdir="$with_pluginsdir"
 AC_SUBST(pluginsdir)
 
