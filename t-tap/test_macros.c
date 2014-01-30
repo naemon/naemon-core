@@ -38,11 +38,26 @@
 /*****************************************************************************/
 
 host test_host = { .name = "name'&%", .address = "address'&%", .notes_url =
-                       "notes_url'&%($HOSTNOTES$)", .notes = "notes'&%\"($HOSTACTIONURL$)",
-                   .action_url = "action_url'&%", .plugin_output = "name'&%",
-                   .check_command = "check_command!3!\"Some output\""
-                 };
+	"notes_url'&%($HOSTNOTES$)", .notes = "notes'&%\"($HOSTACTIONURL$)",
+	.action_url = "action_url'&%", .plugin_output = "name'&%",
+	.check_command = "check_command!3!\"Some output\""
+};
 
+service test_service = { .host_name = "name'&%", .description = "service description",
+	.notes_url = "notes_url'&%($SERVICENOTES$)",
+	.notes = "notes'&%\"($SERVICEACTIONURL$)", .action_url = "action_url'&%",
+	.plugin_output = "name'&%", .check_command = "check_command!3!\"Some output\""
+};
+
+hostgroup test_hostgroup = { .group_name = "hostgroup name'&%",
+	.notes = "notes'&%\"($HOSTGROUPACTIONURL$)", .action_url = "action_url'&%",
+	.next=NULL
+};
+
+servicegroup test_servicegroup = { .group_name = "servicegroup name'&%",
+	.notes = "notes'&%\"($SERVICEGROUPACTIONURL$)", .action_url = "action_url'&%",
+	.next=NULL
+};
 /*****************************************************************************/
 /*                             Helper functions                              */
 /*****************************************************************************/
@@ -64,6 +79,9 @@ nagios_macros *setup_macro_object(void)
 {
 	nagios_macros *mac = (nagios_macros *) calloc(1, sizeof(nagios_macros));
 	grab_host_macros_r(mac, &test_host);
+	grab_service_macros_r(mac, &test_service);
+	grab_hostgroup_macros_r(mac, &test_hostgroup);
+	grab_servicegroup_macros_r(mac, &test_servicegroup);
 	return mac;
 }
 
@@ -93,6 +111,15 @@ void test_escaping(nagios_macros *mac)
 
 	RUN_MACRO_TEST("$HOSTNOTES$", "notes%(action_url%)", STRIP_ILLEGAL_MACRO_CHARS);
 	RUN_MACRO_TEST("$HOSTNOTES$", "notes'&%\"(action_url'&%)", 0);
+
+	RUN_MACRO_TEST("$SERVICENOTES$", "notes%(action_url%)", STRIP_ILLEGAL_MACRO_CHARS);
+	RUN_MACRO_TEST("$SERVICENOTES$", "notes'&%\"(action_url'&%)", 0);
+
+	RUN_MACRO_TEST("$HOSTGROUPNOTES$", "notes%(action_url%)", STRIP_ILLEGAL_MACRO_CHARS);
+	RUN_MACRO_TEST("$HOSTGROUPNOTES$", "notes'&%\"(action_url'&%)", 0);
+
+	RUN_MACRO_TEST("$SERVICEGROUPNOTES$", "notes%(action_url%)", STRIP_ILLEGAL_MACRO_CHARS);
+	RUN_MACRO_TEST("$SERVICEGROUPNOTES$", "notes'&%\"(action_url'&%)", 0);
 
 	/* Nothing should be changed... HOSTNAME doesn't accept STRIP_ILLEGAL_MACRO_CHARS */
 	RUN_MACRO_TEST("$HOSTNAME$ '&%", "name'&% '&%", STRIP_ILLEGAL_MACRO_CHARS);
@@ -144,7 +171,7 @@ int main(void)
 {
 	nagios_macros *mac;
 
-	plan_tests(13);
+	plan_tests(19);
 
 	reset_variables();
 	init_environment();

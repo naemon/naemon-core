@@ -2494,6 +2494,8 @@ int init_macros(void)
 		case MACRO_SERVICECHECKCOMMAND:
 		case MACRO_HOSTNOTES:
 		case MACRO_SERVICENOTES:
+		case MACRO_HOSTGROUPNOTES:
+		case MACRO_SERVICEGROUPNOTES:
 			macro_keys[x].options |= STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 			break;
 		}
