@@ -53,3 +53,8 @@ install-exec-hook: $(CONFIG_FILES)
 		$(install_sh_PROGRAM) -m 644 conf.d/templates/hosts.cfg     $(DESTDIR)$(sysconfdir)/conf.d/templates; \
 		$(install_sh_PROGRAM) -m 644 conf.d/templates/contacts.cfg  $(DESTDIR)$(sysconfdir)/conf.d/templates; \
 	fi
+
+uninstall-hook:
+	rm $(DESTDIR)$(sysconfdir)/naemon.cfg
+	rm $(DESTDIR)$(sysconfdir)/resource.cfg
+	rm -r $(DESTDIR)$(sysconfdir)/conf.d
