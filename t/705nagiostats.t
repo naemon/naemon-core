@@ -10,7 +10,7 @@ use FindBin qw($Bin);
 chdir $Bin or die "Cannot chdir";
 
 my $topdir = "$Bin/..";
-my $nagiostats = "$topdir/base/nagiostats";
+my $nagiostats = "$topdir/naemon/naemonstats";
 my $etc = "$Bin/etc";
 my $var = "$Bin/var";
 
