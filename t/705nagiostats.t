@@ -5,14 +5,10 @@
 use warnings;
 use strict;
 use Test::More;
-use FindBin qw($Bin);
 
-chdir $Bin or die "Cannot chdir";
-
-my $topdir = "$Bin/..";
-my $nagiostats = "$topdir/naemon/naemonstats";
-my $etc = "$Bin/etc";
-my $var = "$Bin/var";
+my $nagiostats = "$ENV{builddir}/../naemon/naemonstats";
+my $etc = "$ENV{builddir}/etc";
+my $var = "$ENV{builddir}/var";
 
 plan tests => 10;
 
