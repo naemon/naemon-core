@@ -2,14 +2,14 @@ language: c
 compiler:
   - gcc
 # Change this to your needs
-script: 
-  - ./configure
-  - make all
+script:
+  - ./autogen.sh
+  - make
 after_success:
-  - make test | tee maketests.log
+  - make check | tee maketests.log
   - grep "Result: FAIL" maketests.log && exit 1
 before_install:
   - sudo apt-get install autoconf
   - sudo apt-get install build-essential
-  - sudo apt-get install libgd2-xpm-dev
-  - sudo apt-get install gperf 
+  - sudo apt-get install gperf
+  - sudo apt-get install check
