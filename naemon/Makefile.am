@@ -11,7 +11,7 @@ wpres-phash.h: wpres.gperf
 
 CLEANFILES = wpres-phash.h
 
-bin_PROGRAMS = naemon
+bin_PROGRAMS = naemon naemonstats
 naemon_SOURCES = \
 	broker.c broker.h \
 	checks.c checks.h \
@@ -54,6 +54,8 @@ naemon_LDADD=\
 	lib/libnaemon.la \
 	-lm -ldl
 naemon_LDFLAGS=-rdynamic -static
+
+naemonstats_SOURCES = naemonstats.c lib/nspath.h lib/nspath.c
 
 #naemonworker_SOURCES=
 #naemonworker_LDADD=$(top_builddir)/naemon/worker/libnaemon_worker.a \

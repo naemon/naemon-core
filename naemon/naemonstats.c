@@ -2,7 +2,10 @@
  * naemonstats: Displays Naemon Statistics
  */
 
-#include "lib/libnaemon.h"
+#include <getopt.h>
+#include <string.h>
+
+#include "lib/nspath.h"
 #include "config.h"
 #include "common.h"
 #include "naemon.h"
