@@ -4,7 +4,7 @@ compiler:
 # Change this to your needs
 script:
   - ./autogen.sh
-  - make
+  - make --with-tests
 after_success:
   - make check | tee maketests.log
   - grep "Result: FAIL" maketests.log && exit 1

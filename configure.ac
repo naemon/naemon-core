@@ -30,7 +30,10 @@ AS_IF([test "x$with_tests" != "xno"], [
 	                    [AM_PATH_CHECK([0.9.0])],
 	                    [true])])
 	AS_IF([test "x$CHECK_LIBS" = "x"],
-	          [AC_MSG_ERROR([Install check <http://check.sourceforge.net/>, or re-run configure with the --without-tests flag])])
+	      [AS_IF([test "x$with_tests" = "xyes"],
+	            [AC_MSG_ERROR([Install check <http://check.sourceforge.net/>, or re-run configure with the --without-tests flag])],
+	            [with_tests="no"])],
+	      [with_tests="yes"])
 ])
 AM_CONDITIONAL([HAVE_CHECK], [test "x$with_tests" = "xyes"])
 
