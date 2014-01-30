@@ -14,19 +14,19 @@
 
 static void squeue_foreach(squeue_t *q, int (*walker)(squeue_event *, void *), void *arg)
 {
-	squeue_t *dup;
+	squeue_t *dupl;
 	void *e, *dup_d;
 
-	dup = squeue_create(q->size);
-	dup_d = dup->d;
-	memcpy(dup, q, sizeof(*q));
-	dup->d = dup_d;
-	memcpy(dup->d, q->d, (q->size * sizeof(void *)));
+	dupl = squeue_create(q->size);
+	dup_d = dupl->d;
+	memcpy(dupl, q, sizeof(*q));
+	dupl->d = dup_d;
+	memcpy(dupl->d, q->d, (q->size * sizeof(void *)));
 
-	while ((e = pqueue_pop(dup))) {
+	while ((e = pqueue_pop(dupl))) {
 		walker(e, arg);
 	}
-	squeue_destroy(dup, 0);
+	squeue_destroy(dupl, 0);
 }
 
 #define t(expr, args...) \
