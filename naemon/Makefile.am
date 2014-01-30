@@ -47,7 +47,8 @@ naemon_SOURCES = \
 	xpddefault.c xpddefault.h \
 	xrddefault.c xrddefault.h \
 	xsddefault.c xsddefault.h \
-	nagios.h naemon.h
+	nagios.h naemon.h \
+	wpres.gperf
 naemon_CPPFLAGS=$(AM_CPPFLAGS) -DPREFIX='"$(prefix)"'
 naemon_LDADD=\
 	lib/libnaemon.la \

@@ -19,6 +19,7 @@ noinst_DATA = $(CONFIG_FILES)
 CLEANFILES = $(CONFIG_FILES)
 
 $(CONFIG_FILES) : % : %.in
+	mkdir -p $(builddir)/$$(dirname $@)
 	$(AM_V_GEN) sed \
 		-e 's,@libdir[@],$(libdir),g' \
 		-e 's,@pluginsdir[@],$(pluginsdir),g' \

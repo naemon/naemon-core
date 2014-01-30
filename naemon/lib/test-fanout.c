@@ -72,9 +72,9 @@ static void pdest(void *arg_)
 int main(int argc, char **argv)
 {
 	unsigned long k;
+	struct test_data *td;
 	t_set_colors(0);
 	t_start("fanout tests");
-	struct test_data *td;
 
 	run_tests(10, 64);
 	run_tests(512, 64);
