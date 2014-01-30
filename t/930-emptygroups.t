@@ -7,13 +7,9 @@
 use warnings;
 use strict;
 use Test::More;
-use FindBin qw($Bin);
 
-chdir $Bin or die "Cannot chdir";
-
-my $topdir = "$Bin/..";
-my $nagios = "$topdir/naemon/naemon";
-my $etc = "$Bin/etc";
+my $nagios = "$ENV{builddir}/../naemon/naemon";
+my $etc = "$ENV{builddir}/etc";
 
 plan tests => 1;
 
