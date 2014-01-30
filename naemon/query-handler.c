@@ -7,6 +7,7 @@
 #include "logging.h"
 #include "loadctl.h"
 #include "globals.h"
+#include "commands.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -344,6 +345,7 @@ static int qh_core(int sd, char *buf, unsigned int len)
 		                 "                    The options are the same parameters and format as\n"
 		                 "                    returned above.\n"
 		                 "  squeuestats       scheduling queue statistics\n"
+		                 "  command <command> submit external command.\n"
 		                );
 		return 0;
 	}
@@ -375,6 +377,10 @@ static int qh_core(int sd, char *buf, unsigned int len)
 		len -= (unsigned long)space - (unsigned long)buf;
 		if (!strcmp(buf, "loadctl")) {
 			return set_loadctl_options(space, len) == OK ? 200 : 400;
+		}
+
+		if (!strcmp(buf, "command")) {
+			return process_external_command1(space) == OK ? 200 : 400;
 		}
 	}
 
