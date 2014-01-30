@@ -37,6 +37,7 @@ AS_IF([test "x$with_tests" != "xno"], [
 ])
 AM_CONDITIONAL([HAVE_CHECK], [test "x$with_tests" = "xyes"])
 
+AM_MISSING_PROG([PROVE], [prove])
 AM_MISSING_PROG([GPERF], [gperf])
 # am_missing_prog doesn't seem to fail,
 # so I'm putting this redundant check in place to whine more loudly:
@@ -204,6 +205,7 @@ AC_CONFIG_FILES([Makefile
                  naemon/lib/Makefile
                  sample-config/Makefile
                  tests/Makefile
+                 t/Makefile
                 ])
 #AC_CONFIG_SUBDIRS([])
 AC_OUTPUT
