@@ -12,7 +12,7 @@ extern unsigned long logging_options;
 
 START_TEST(common_case)
 {
-	int fd;
+	int fd, ret;
 	char active_contents[1024], rotated_contents[1024];
 	time_t rotate_time = 1234, log_ts1 = 5678, log_ts2 = 9012;
 	char workdir[1024], *rotated_file;
@@ -27,10 +27,14 @@ START_TEST(common_case)
 	ck_assert_msg(access(rotated_file, F_OK) == -1,
 			"Log file '%s' already exists - cowardly refusing to unlink it for you", rotated_file);
 
-	ck_assert_int_eq(OK, write_to_log("Log information", -1, &log_ts1));
-	ck_assert_int_eq(0, rename(log_file, rotated_file));
-	ck_assert_int_eq(OK, rotate_log_file(rotate_time));
-	ck_assert_int_eq(OK, write_to_log("New log information", -1, &log_ts2));
+	ret = write_to_log("Log information", -1, &log_ts1);
+	ck_assert_int_eq(OK, ret);
+	ret = rename(log_file, rotated_file);
+	ck_assert_int_eq(0, ret);
+	ret = rotate_log_file(rotate_time);
+	ck_assert_int_eq(OK, ret);
+	ret = write_to_log("New log information", -1, &log_ts2);
+	ck_assert_int_eq(OK, ret);
 
 	ck_assert_int_eq(0, access(log_file, R_OK));
 	ck_assert_int_eq(0, access(rotated_file, R_OK));
