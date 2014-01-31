@@ -126,27 +126,27 @@ AC_CHECK_FUNCS([dup2 floor ftruncate munmap pow putenv realpath \
 	regcomp select setenv strncasecmp strrchr tzset])
 
 # Determine the system init.d directory
-AC_ARG_WITH([init-dir],
-[AS_HELP_STRING([--with-init-dir],
+AC_ARG_WITH([initdir],
+[AS_HELP_STRING([--with-initdir],
 [specify the system init script directory @<:@default="${sysconfdir}/init.d"@:>@])],
-[], [with_init_dir="${sysconfdir}/init.d"])
-initrddir="$with_init_dir"
+[], [with_initdir="${sysconfdir}/init.d"])
+initrddir="$with_initdir"
 AC_SUBST(initrddir)
 
 # Determine the temp directory
-AC_ARG_WITH([temp-dir],
-[AS_HELP_STRING([--with-temp-dir],
+AC_ARG_WITH([tempdir],
+[AS_HELP_STRING([--with-tempdir],
 [specify the temp directory @<:@default="${localstatedir}/cache/naemon"@:>@])],
-[], [with_temp_dir="${localstatedir}/cache/naemon"])
-TMPDIR="$with_temp_dir"
+[], [with_tempdir="${localstatedir}/cache/naemon"])
+TMPDIR="$with_tempdir"
 AC_SUBST(TMPDIR)
 
 # Determine the check results directory
-AC_ARG_WITH([checkresult-dir],
-[AS_HELP_STRING([--with-checkresult-dir],
+AC_ARG_WITH([checkresultdir],
+[AS_HELP_STRING([--with-checkresultdir],
 [specify the checkresults directory @<:@default="${localstatedir}/cache/naemon/checkresults"@:>@])],
-[], [with_checkresult_dir="${localstatedir}/cache/naemon/checkresults"])
-CHECKRESULTDIR="$with_checkresult_dir"
+[], [with_checkresultdir="${localstatedir}/cache/naemon/checkresults"])
+CHECKRESULTDIR="$with_checkresultdir"
 AC_SUBST(CHECKRESULTDIR)
 
 # Determine the naemon user
@@ -183,7 +183,7 @@ AC_SUBST(logdir)
 
 # Determine the logrotate directory
 AC_ARG_WITH([logrotatedir],
-[AS_HELP_STRING([--with-logrotate-dir],
+[AS_HELP_STRING([--with-logrotatedir],
 [specify the log rotate directory @<:@default="${sysconfdir}/logrotate.d"@:>@])],
 [], [with_logrotatedir="${sysconfdir}/logrotate.d"])
 logrotatedir="$with_logrotatedir"
