@@ -19,7 +19,6 @@ void teardown (void) {
 	free(short_output);
 	free(long_output);
 	free(perf_data);
-	free(full_output);
 }
 
 START_TEST(one_line_no_perfdata)
