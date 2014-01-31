@@ -333,6 +333,28 @@ static int qh_help(int sd, char *buf, unsigned int len)
 	return 0;
 }
 
+static int qh_command(int sd, char *buf, unsigned int len)
+{
+	char *space;
+
+	if (!*buf || !strcmp(buf, "help")) {
+		nsock_printf_nul(sd, "Query handler for naemon commands.\n"
+		                 "Available commands:\n"
+							  "  run <command>     Run a command\n"
+							  );
+		return 0;
+	}
+	if ((space = memchr(buf, ' ', len)))
+		* (space++) = 0;
+	if (space) {
+		if (!strcmp(buf, "run")) {
+			return process_external_command1(space) == OK ? 200 : 400;
+		}
+	}
+
+	return 404;
+}
+
 static int qh_core(int sd, char *buf, unsigned int len)
 {
 	char *space;
@@ -345,7 +367,6 @@ static int qh_core(int sd, char *buf, unsigned int len)
 		                 "                    The options are the same parameters and format as\n"
 		                 "                    returned above.\n"
 		                 "  squeuestats       scheduling queue statistics\n"
-		                 "  command <command> submit external command.\n"
 		                );
 		return 0;
 	}
@@ -377,10 +398,6 @@ static int qh_core(int sd, char *buf, unsigned int len)
 		len -= (unsigned long)space - (unsigned long)buf;
 		if (!strcmp(buf, "loadctl")) {
 			return set_loadctl_options(space, len) == OK ? 200 : 400;
-		}
-
-		if (!strcmp(buf, "command")) {
-			return process_external_command1(space) == OK ? 200 : 400;
 		}
 	}
 
@@ -434,6 +451,7 @@ int qh_init(const char *path)
 	/* now register our the in-core handlers */
 	if (!qh_register_handler("core", "Naemon Core control and info", 0, qh_core))
 		logit(NSLOG_INFO_MESSAGE, FALSE, "qh: core query handler registered\n");
+	qh_register_handler("command", "Naemon external commands interface", 0, qh_command);
 	qh_register_handler("echo", "The Echo Service - What You Put Is What You Get", 0, qh_echo);
 	qh_register_handler("help", "Help for the query handler", 0, qh_help);
 
