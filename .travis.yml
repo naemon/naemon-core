@@ -13,11 +13,13 @@ before_install:
   - sudo apt-get install build-essential
   - sudo apt-get install gperf
   - sudo apt-get install check
-notification:
+notifications:
   irc:
     channels:
       - "chat.freenode.net#naemon-devel"
     on_success: change
     on_failure: always
+    use_notice: true
+    skip_join: true
   email:
     - ozamosi@flukkost.nu
