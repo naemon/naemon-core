@@ -157,7 +157,7 @@ AC_ARG_WITH([naemon-user],
 naemon_user="$with_naemon_user"
 AC_SUBST(naemon_user)
 
-# Determine the naemon user
+# Determine the naemon group
 AC_ARG_WITH([naemon-group],
 [AS_HELP_STRING([--with-naemon-group],
 [specify the naemon group @<:@default="naemon"@:>@])],
