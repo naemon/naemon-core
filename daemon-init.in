@@ -121,7 +121,7 @@ restart() {
 }
 
 reload() {
-    echo -n $"Reloading $prog: "
+    echo -n "Reloading $prog: "
     pkill -HUP -u ${user} -f ${exec}
     RETVAL=$?
     echo
