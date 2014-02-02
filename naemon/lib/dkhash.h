@@ -2,6 +2,8 @@
 #define LIBNAEMON_dkhash_h__
 #include <errno.h>
 
+#include "lnae-utils.h"
+
 /**
  * @file dkhash.h
  * @brief Dual-key hash functions for Nagios

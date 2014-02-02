@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include "snprintf.h"
+#include "lnae-utils.h"
 
 NAGIOS_BEGIN_DECL
 

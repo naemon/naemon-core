@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include "lnae-utils.h"
 
 NAGIOS_BEGIN_DECL
 

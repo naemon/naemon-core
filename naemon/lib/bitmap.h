@@ -1,6 +1,8 @@
 #ifndef LIBNAEMON_bitmap_h__
 #define LIBNAEMON_bitmap_h__
 
+#include "lnae-utils.h"
+
 NAGIOS_BEGIN_DECL
 
 /**
