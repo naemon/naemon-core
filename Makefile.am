@@ -14,8 +14,8 @@ install-exec-hook:
 	[ -z $(initrddir) ]    || $(install_sh_DATA) daemon-init      $(DESTDIR)$(initrddir)/naemon
 
 uninstall-hook:
-	rm $(DESTDIR)$(logrotatedir)/naemon
-	rm $(DESTDIR)$(initrddir)/naemon
+	[ -z $(logrotatedir) ] || rm $(DESTDIR)$(logrotatedir)/naemon
+	[ -z $(initrddir) ]    || rm $(DESTDIR)$(initrddir)/naemon
 
 dox:
 	rm -rf Documentation
