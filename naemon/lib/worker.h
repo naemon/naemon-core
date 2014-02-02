@@ -22,6 +22,8 @@
 #define ETIME ETIMEDOUT
 #endif
 
+NAGIOS_BEGIN_DECL
+
 typedef struct iobuf {
 	int fd;
 	unsigned int len;
@@ -129,4 +131,6 @@ extern int worker_set_sockopts(int sd, int bufsize);
 /** @deprecated Use worker_set_sockopts() instead */
 extern int set_socket_options(int sd, int bufsize)
 	NAGIOS_DEPRECATED(4.1.0, "worker_set_sockopts()");
+
+NAGIOS_END_DECL
 #endif /* INCLUDE_worker_h__ */

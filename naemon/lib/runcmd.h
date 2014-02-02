@@ -30,6 +30,8 @@
 #define RUNCMD_EINVAL (-5)  /**< Invalid parameters */
 #define RUNCMD_EWAIT  (-6)  /**< Failed to wait() */
 
+NAGIOS_BEGIN_DECL
+
 /**
  * Initialize the runcmd library.
  *
@@ -88,6 +90,8 @@ extern int runcmd_close(int fd);
  * See the RUNCMD_HAS_* and their ilk to find out about the flag.
  */
 extern int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv);
+
+NAGIOS_END_DECL
 
 #endif /* INCLUDE_runcmd_h__ */
 /** @} */

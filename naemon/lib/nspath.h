@@ -9,6 +9,8 @@
 #include <sys/stat.h>
 #include "snprintf.h"
 
+NAGIOS_BEGIN_DECL
+
 /**
  * @file nspath.h
  * @brief path handling functions
@@ -87,5 +89,6 @@ extern int nspath_mkdir_p(const char *path, mode_t mode, int options);
 /** Don't mkdir() last element of path when calling nspath_mkdir_p() */
 #define NSPATH_MKDIR_SKIP_LAST (1 << 0)
 
+NAGIOS_END_DECL
 /** @} */
 #endif

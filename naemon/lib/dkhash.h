@@ -25,6 +25,8 @@
 #define DKHASH_EINVAL (-EINVAL) /**< Invalid parameters passed */
 #define DKHASH_ENOMEM (-ENOMEM) /**< Memory allocation failed */
 
+NAGIOS_BEGIN_DECL
+
 struct dkhash_table;
 /** opaque type */
 typedef struct dkhash_table dkhash_table;
@@ -131,4 +133,6 @@ extern unsigned int dkhash_num_entries_removed(dkhash_table *t);
  */
 extern unsigned int dkhash_table_size(dkhash_table *t);
 /** @} */
+
+NAGIOS_END_DECL
 #endif /* LIBNAEMON_dkhash_h__ */

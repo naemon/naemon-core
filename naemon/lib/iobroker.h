@@ -45,6 +45,8 @@
 /** Flags for iobroker_destroy() */
 #define IOBROKER_CLOSE_SOCKETS 1
 
+NAGIOS_BEGIN_DECL
+
 /* Opaque type. Callers needn't worry about this */
 struct iobroker_set;
 typedef struct iobroker_set iobroker_set;
@@ -166,5 +168,7 @@ extern void iobroker_destroy(iobroker_set *iobs, int flags);
  * @return -1 on errors, or number of filedescriptors with input
  */
 extern int iobroker_poll(iobroker_set *iobs, int timeout);
+
+NAGIOS_END_DECL
 #endif /* INCLUDE_iobroker_h__ */
 /** @} */
