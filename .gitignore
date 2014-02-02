@@ -41,3 +41,4 @@ aclocal.m4
 libtool
 ltmain.sh
 naemon/defaults.h
+m4/
