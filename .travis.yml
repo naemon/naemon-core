@@ -19,7 +19,6 @@ notifications:
       - "chat.freenode.net#naemon-devel"
     on_success: change
     on_failure: always
-    use_notice: true
     skip_join: true
   email:
     - ozamosi@flukkost.nu
