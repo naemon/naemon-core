@@ -10,8 +10,8 @@ install-exec-hook:
 	$(mkinstalldirs) $(DESTDIR)$(logdir)
 	$(mkinstalldirs) $(DESTDIR)$(logdir)/archives
 	$(mkinstalldirs) $(DESTDIR)$(libdir)
-	$(install_sh_DATA) naemon.logrotate $(DESTDIR)$(logrotatedir)/naemon
-	$(install_sh_DATA) daemon-init      $(DESTDIR)$(initrddir)/naemon
+	[ -z $(logrotatedir) ] || $(install_sh_DATA) naemon.logrotate $(DESTDIR)$(logrotatedir)/naemon
+	[ -z $(initrddir) ]    || $(install_sh_DATA) daemon-init      $(DESTDIR)$(initrddir)/naemon
 
 uninstall-hook:
 	rm $(DESTDIR)$(logrotatedir)/naemon
