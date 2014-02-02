@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+NAGIOS_BEGIN_DECL
+
 /**
  * @file iocache.h
  * @brief I/O cache function declarations
@@ -177,5 +179,7 @@ static inline int iocache_write(iocache *ioc, int fd, char *buf, unsigned int le
 {
 	return iocache_send(ioc, fd, buf, len, 0);
 }
+
+NAGIOS_END_DECL
 #endif /* INCLUDE_iocache_h__ */
 /** @} */

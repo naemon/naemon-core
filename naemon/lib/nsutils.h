@@ -2,6 +2,8 @@
 #define LIBNAEMON_nsutils_h__
 #include <sys/types.h>
 
+NAGIOS_BEGIN_DECL
+
 /**
  * @file nsutils.h
  * @brief Non-Standard (or Nagios) utility functions and macros.
@@ -106,6 +108,8 @@ extern int tv_delta_msec(const struct timeval *start, const struct timeval *stop
  * @return time difference in fractions of seconds
  */
 extern float tv_delta_f(const struct timeval *start, const struct timeval *stop);
+
+NAGIOS_END_DECL
 
 /** @} */
 #endif /* LIBNAEMON_nsutils_h__ */

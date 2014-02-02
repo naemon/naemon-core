@@ -1,6 +1,8 @@
 #ifndef LIBNAEMON_kvvec_h__
 #define LIBNAEMON_kvvec_h__
 
+NAGIOS_BEGIN_DECL
+
 /**
  * @file kvvec.h
  * @brief Key/value vector library function and type declarations
@@ -204,4 +206,7 @@ extern struct kvvec *buf2kvvec(char *str, unsigned int len, const char kvsep, co
  */
 extern int buf2kvvec_prealloc(struct kvvec *kvv, char *str, unsigned int len, const char kvsep, const char pair_sep, int flags);
 /** @} */
+
+NAGIOS_END_DECL
+
 #endif /* INCLUDE_kvvec_h__ */

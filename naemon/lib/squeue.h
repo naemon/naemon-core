@@ -3,6 +3,9 @@
 #include <sys/time.h>
 #include <time.h>
 #include "pqueue.h"
+
+NAGIOS_BEGIN_DECL
+
 /**
  * @file squeue.h
  * @brief Scheduling queue function declarations
@@ -147,5 +150,8 @@ extern int squeue_remove(squeue_t *q, squeue_event *evt);
  * @return number of events in the inspected queue
  */
 extern unsigned int squeue_size(squeue_t *q);
+
+NAGIOS_END_DECL
+
 #endif
 /** @} */

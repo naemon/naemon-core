@@ -1,6 +1,8 @@
 #ifndef LIBNAEMON_bitmap_h__
 #define LIBNAEMON_bitmap_h__
 
+NAGIOS_BEGIN_DECL
+
 /**
  * @file bitmap.h
  * @brief Bit map API
@@ -153,4 +155,7 @@ extern bitmap *bitmap_symdiff(const bitmap *a, const bitmap *b);
  */
 extern int bitmap_cmp(const bitmap *a, const bitmap *b);
 /** @} */
+
+NAGIOS_END_DECL
+
 #endif /* LIBNAEMON_bitmap_h__ */

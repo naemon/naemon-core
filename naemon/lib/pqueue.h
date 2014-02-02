@@ -18,6 +18,8 @@
 #define LIBNAEMON_pqueue_h__
 #include <stdio.h>
 
+NAGIOS_BEGIN_DECL
+
 /**
  * @file  pqueue.h
  * @brief Priority Queue function declarations
@@ -181,5 +183,6 @@ void pqueue_dump(pqueue_t *q, FILE *out, pqueue_print_entry_f print);
  */
 int pqueue_is_valid(pqueue_t *q);
 
+NAGIOS_END_DECL
 #endif
 /** @} */

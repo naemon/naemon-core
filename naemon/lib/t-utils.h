@@ -29,6 +29,8 @@
 #define CLR_BRIGHT_MAGENTA "\033[35m\033[1m"
 #define CLR_BRIGHT_CYAN    "\033[36m\033[1m"
 
+NAGIOS_BEGIN_DECL
+
 extern const char *red, *green, *yellow, *cyan, *reset;
 extern unsigned int passed, failed, t_verbose;
 
@@ -61,4 +63,6 @@ extern int t_end(void);
 extern void t_reset(void);
 extern void crash(const char *fmt, ...)
 	__attribute__((__format__(__printf__, 1, 2), __noreturn__));
+
+NAGIOS_END_DECL
 #endif

@@ -37,6 +37,8 @@
 
 /********** STRUCTURE DEFINITIONS **********/
 
+NAGIOS_BEGIN_DECL
+
 /* CUSTOMVARIABLESMEMBER structure */
 typedef struct xodtemplate_customvariablesmember_struct {
 	char    *variable_name;
@@ -875,4 +877,7 @@ int xodtemplate_skiplist_compare_hostdependency(void *a, void *b);
 int xodtemplate_skiplist_compare_servicedependency(void *a, void *b);
 int xodtemplate_skiplist_compare_hostescalation(void *a, void *b);
 int xodtemplate_skiplist_compare_serviceescalation(void *a, void *b);
+
+NAGIOS_END_DECL
+
 #endif

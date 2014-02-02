@@ -30,6 +30,8 @@
 #define NSOCK_CONNECT (1 << 3)  /**< connect rather than create */
 #define NSOCK_BLOCK   (1 << 4)  /**< socket should be in blocking mode */
 
+NAGIOS_BEGIN_DECL
+
 /**
  * Grab an error string relating to nsock_unix()
  * @param code The error code return by the nsock library
@@ -71,6 +73,9 @@ extern int nsock_printf_nul(int sd, const char *fmt, ...)
  */
 extern int nsock_printf(int sd, const char *fmt, ...)
 	__attribute__((__format__(__printf__, 2, 3)));
+
+
+NAGIOS_END_DECL
 
 /** @} */
 #endif /* LIBNAEMON_nsock_h__ */
