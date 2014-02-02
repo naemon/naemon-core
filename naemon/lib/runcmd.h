@@ -1,6 +1,7 @@
 #ifndef LIBNAEMON_runcmd_h__
 #define LIBNAEMON_runcmd_h__
 #include <signal.h>
+#include "lnae-utils.h"
 
 /**
  * @file runcmd.h

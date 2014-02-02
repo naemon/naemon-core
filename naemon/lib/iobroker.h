@@ -1,6 +1,8 @@
 #ifndef LIBNAEMON_iobroker_h__
 #define LIBNAEMON_iobroker_h__
 
+#include "lnae-utils.h"
+
 /**
  * @file iobroker.h
  * @brief I/O broker library function declarations

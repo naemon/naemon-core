@@ -1,5 +1,6 @@
 #ifndef LIBNAEMON_kvvec_h__
 #define LIBNAEMON_kvvec_h__
+#include "lnae-utils.h"
 
 NAGIOS_BEGIN_DECL
 

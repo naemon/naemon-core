@@ -17,6 +17,7 @@
 #ifndef LIBNAEMON_pqueue_h__
 #define LIBNAEMON_pqueue_h__
 #include <stdio.h>
+#include "lnae-utils.h"
 
 NAGIOS_BEGIN_DECL
 
