@@ -1,7 +1,7 @@
 #ifndef _CONFIGURATION_H
 #define _CONFIGURATION_H
 
-#include "lnae-utils.h"
+#include "lib/lnae-utils.h"
 
 NAGIOS_BEGIN_DECL
 
