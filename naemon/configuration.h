@@ -1,6 +1,8 @@
 #ifndef _CONFIGURATION_H
 #define _CONFIGURATION_H
 
+#include "lnae-utils.h"
+
 NAGIOS_BEGIN_DECL
 
 int read_main_config_file(char *);                     		/* reads the main config file (naemon.cfg) */

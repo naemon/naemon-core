@@ -3,6 +3,7 @@
 
 #include "objects.h"
 #include "macros.h"
+#include "lnae-utils.h"
 
 NAGIOS_BEGIN_DECL
 

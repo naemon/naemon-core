@@ -206,6 +206,7 @@ AC_CONFIG_FILES([Makefile
                  sample-config/Makefile
                  tests/Makefile
                  t/Makefile
+                 t-tap/Makefile
                 ])
-#AC_CONFIG_SUBDIRS([])
+AC_CONFIG_SUBDIRS([tap])
 AC_OUTPUT

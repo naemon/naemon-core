@@ -28,86 +28,24 @@
  *
  *****************************************************************************/
 
-#include "../include/config.h"
-#include "../include/common.h"
-#include "../include/objects.h"
-#include "../include/comments.h"
-#include "../include/downtime.h"
-#include "../include/statusdata.h"
-#include "../include/macros.h"
-#include "../include/nagios.h"
-#include "../include/sretention.h"
-#include "../include/perfdata.h"
-#include "../include/broker.h"
-#include "../include/nebmods.h"
-#include "../include/nebmodules.h"
+#include <string.h>
+
+#include "naemon/configuration.h"
+#include "naemon/common.h"
+#include "naemon/objects.h"
+#include "naemon/comments.h"
+#include "naemon/downtime.h"
+#include "naemon/statusdata.h"
+#include "naemon/macros.h"
+#include "naemon/nagios.h"
+#include "naemon/sretention.h"
+#include "naemon/perfdata.h"
+#include "naemon/broker.h"
+#include "naemon/nebmods.h"
+#include "naemon/nebmodules.h"
 #include "tap.h"
 
-/* Dummy functions */
-void logit(int data_type, int display, const char *fmt, ...) {}
-int my_sendall(int s, char *buf, int *len, int timeout)
-{
-	return 0;
-}
-void free_comment_data(void) {}
-int write_to_log(char *buffer, unsigned long data_type, time_t *timestamp)
-{
-	return 0;
-}
-int log_debug_info(int level, int verbosity, const char *fmt, ...)
-{
-	return 0;
-}
-
-int neb_free_callback_list(void)
-{
-	return 0;
-}
-void broker_program_status(int type, int flags, int attr, struct timeval *timestamp) {}
-int neb_deinit_modules(void)
-{
-	return 0;
-}
-void broker_program_state(int type, int flags, int attr, struct timeval *timestamp) {}
-void broker_comment_data(int type, int flags, int attr, int comment_type, int entry_type, char *host_name, char *svc_description, time_t entry_time, char *author_name, char *comment_data, int persistent, int source, int expires, time_t expire_time, unsigned long comment_id, struct timeval *timestamp) {}
-int neb_unload_all_modules(int flags, int reason)
-{
-	return 0;
-}
-int neb_add_module(char *filename, char *args, int should_be_loaded)
-{
-	return 0;
-}
-void broker_system_command(int type, int flags, int attr, struct timeval start_time, struct timeval end_time, double exectime, int timeout, int early_timeout, int retcode, char *cmd, char *output, struct timeval *timestamp) {}
-
-timed_event *schedule_new_event(int event_type, int high_priority, time_t run_time, int recurring, unsigned long event_interval, void *timing_func, int compensate_for_time_change, void *event_data, void *event_args, int event_options)
-{
-	return NULL;
-}
-int neb_free_module_list(void)
-{
-	return 0;
-}
-int close_command_file(void)
-{
-	return 0;
-}
-int close_log_file(void)
-{
-	return 0;
-}
-int fix_log_file_owner(uid_t uid, gid_t gid)
-{
-	return 0;
-}
-int handle_async_service_check_result(service *temp_service, check_result *queued_check_result)
-{
-	return 0;
-}
-int handle_async_host_check_result(host *temp_host, check_result *queued_check_result)
-{
-	return 0;
-}
+#include "naemon/utils.c"
 
 int main(int argc, char **argv)
 {

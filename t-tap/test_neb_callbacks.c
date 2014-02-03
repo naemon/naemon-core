@@ -1,9 +1,11 @@
-#include "nebmods.h"
-#include "broker.h"
-#include "nebstructs.h"
-#include "tap.h"
 #include "fixtures.h"
-#include "statusdata.h"
+
+#include "naemon/nebmods.h"
+#include "naemon/broker.h"
+#include "naemon/nebstructs.h"
+#include "naemon/statusdata.h"
+#include "naemon/globals.h"
+#include "tap.h"
 #include <assert.h>
 #define NUM_NEBTYPES 2000
 nebmodule *test_nebmodule;
@@ -66,10 +68,12 @@ int test_cb_service_check_processed() {
 	 * This output change is emulated implicitly by our fixture where service->plugin_output
 	 * is "Initial state" and cr->output is "Some output"
 	 * */
+	service_destroy(service);
+	service = service_new(host, "MyService");
 	service->stalking_options |= ~0; /*stalk all the states*/
 	assert(OK == handle_async_service_check_result(service, cr));
 	ds = (nebstruct_service_check_data *) received_callback_data[NEBCALLBACK_SERVICE_CHECK_DATA][NEBTYPE_SERVICECHECK_PROCESSED];
-	ok(ds->attr == NEBATTR_CHECK_ALERT, "nebstruct has NEBATTR_CHECK_ALERT attribute set");
+	ok(ds->attr == NEBATTR_CHECK_ALERT, "nebstruct should have NEBATTR_CHECK_ALERT attribute set");
 
 	clear_callback_data();
 	check_result_destroy(cr);
