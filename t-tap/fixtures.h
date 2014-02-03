@@ -1,4 +1,4 @@
-#include "objects.h"
+#include "naemon/objects.h"
 #include <string.h>
 void check_result_destroy(check_result *cr);
 check_result *check_result_new(int status, const char *output);

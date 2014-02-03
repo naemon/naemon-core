@@ -1,5 +1,5 @@
 SUBDIRS  = src
-SUBDIRS += tests
+#SUBDIRS += tests
 
 prove:
 	prove -v -r
