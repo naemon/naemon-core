@@ -1,4 +1,4 @@
-SUBDIRS = naemon tests sample-config t t-tap
+SUBDIRS = naemon tests sample-config t t-tap tap
 AM_CPPFLAGS += -I$(top_builddir)
 
 EXTRA_DIST = contrib
