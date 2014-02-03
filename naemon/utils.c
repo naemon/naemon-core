@@ -935,11 +935,7 @@ static timerange *_get_matching_timerange(time_t test_time, timeperiod *tperiod)
 			 * end time < start_time when range covers end-of-$unit
 			 * (fe. end-of-month) */
 
-			/* (unnecessary (pre 2038)) overflow protection, this is
-			 * necessary to avoid having to compile with
-			  -fwrapv or -fno-strict-overflow */
-			assert(!(midnight > (INT_MAX - SECS_PER_DAY)));
-			if (((midnight + SECS_PER_DAY >= start_time && (midnight <= end_time || start_time > end_time)) || (midnight <= end_time && start_time > end_time))) {
+			if (((midnight >= start_time && (midnight <= end_time || start_time > end_time)) || (midnight <= end_time && start_time > end_time))) {
 #ifdef TEST_TIMEPERIODS_A
 				printf("(MATCH)\n");
 #endif
@@ -1145,7 +1141,7 @@ void _get_next_valid_time(time_t pref_time, time_t *valid_time, timeperiod *tper
 		}
 
 		if (have_earliest_time == FALSE) {
-			earliest_time = midnight + 86400;
+			earliest_time = midnight + SECS_PER_DAY;
 		} else {
 			for (temp_timeperiodexclusion = tperiod->exclusions; temp_timeperiodexclusion != NULL; temp_timeperiodexclusion = temp_timeperiodexclusion->next) {
 				_get_next_invalid_time(earliest_time, &earliest_time, temp_timeperiodexclusion->timeperiod_ptr);
