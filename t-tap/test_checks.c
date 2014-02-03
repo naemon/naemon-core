@@ -1,4 +1,3 @@
-#define NSCORE 1
 #include "config.h"
 #include "comments.h"
 #include "common.h"
