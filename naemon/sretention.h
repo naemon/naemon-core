@@ -1,3 +1,6 @@
+#ifndef _SRETENTION_H
+#define _SRETENTION_H
+
 #include "common.h"
 NAGIOS_BEGIN_DECL
 
@@ -7,3 +10,5 @@ int save_state_information(int);                 /* saves all host and state inf
 int read_initial_state_information(void);        /* reads in initial host and state information */
 
 NAGIOS_END_DECL
+
+#endif
