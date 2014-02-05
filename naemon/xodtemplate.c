@@ -3605,6 +3605,9 @@ int xodtemplate_duplicate_services(void)
 
 		/* bail out on service definitions without enough data */
 		if ((temp_service->hostgroup_name == NULL && temp_service->host_name == NULL) || temp_service->service_description == NULL) {
+			/* service templates don't need any of that though */
+			if (temp_service->name)
+				continue;
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Service has no hosts and/or service_description (config file '%s', starting on line %d)\n", xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
 			return ERROR;
 		}
