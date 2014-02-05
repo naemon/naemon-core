@@ -3988,6 +3988,8 @@ void enable_contact_host_notifications(contact *cntct)
 	if (cntct->host_notifications_enabled == TRUE)
 		return;
 
+	pre_modify_contact_attribute(cntct, attr);
+
 	/* set the attribute modified flag */
 	cntct->modified_host_attributes |= attr;
 
@@ -4014,6 +4016,8 @@ void disable_contact_host_notifications(contact *cntct)
 	/* no change */
 	if (cntct->host_notifications_enabled == FALSE)
 		return;
+
+	pre_modify_contact_attribute(cntct, attr);
 
 	/* set the attribute modified flag */
 	cntct->modified_host_attributes |= attr;
@@ -4042,6 +4046,8 @@ void enable_contact_service_notifications(contact *cntct)
 	if (cntct->service_notifications_enabled == TRUE)
 		return;
 
+	pre_modify_contact_attribute(cntct, attr);
+
 	/* set the attribute modified flag */
 	cntct->modified_service_attributes |= attr;
 
@@ -4068,6 +4074,8 @@ void disable_contact_service_notifications(contact *cntct)
 	/* no change */
 	if (cntct->service_notifications_enabled == FALSE)
 		return;
+
+	pre_modify_contact_attribute(cntct, attr);
 
 	/* set the attribute modified flag */
 	cntct->modified_service_attributes |= attr;

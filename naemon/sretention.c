@@ -12,6 +12,7 @@
 /* hosts and services before attribute modifications */
 static struct host **premod_hosts;
 static struct service **premod_services;
+static struct contact **premod_contacts;
 
 /******************************************************************/
 /************* TOP-LEVEL STATE INFORMATION FUNCTIONS **************/
@@ -24,6 +25,11 @@ int initialize_retention_data(const char *cfgfile)
 		return ERROR;
 	if (!(premod_services = calloc(sizeof(void *), num_objects.services))) {
 		free(premod_hosts);
+		return ERROR;
+	}
+	if (!(premod_contacts = calloc(sizeof(void *), num_objects.contacts))) {
+		free(premod_hosts);
+		free(premod_services);
 		return ERROR;
 	}
 
@@ -102,6 +108,21 @@ int read_initial_state_information(void)
 	return result;
 }
 
+int pre_modify_contact_attribute(struct contact *c, int attr)
+{
+	struct contact *stash;
+
+	/* might be stashed already */
+	if (premod_contacts[c->id]) {
+		return 0;
+	}
+
+	stash = malloc(sizeof(*stash));
+	memcpy(stash, c, sizeof(*stash));
+	premod_contacts[c->id] = stash;
+	return 0;
+}
+
 int pre_modify_service_attribute(struct service *s, int attr)
 {
 	struct service *stash;
@@ -132,6 +153,11 @@ int pre_modify_host_attribute(struct host *h, int attr)
 	memcpy(stash, h, sizeof(*stash));
 	premod_hosts[h->id] = stash;
 	return 0;
+}
+
+struct contact *get_premod_contact(unsigned int id)
+{
+	return premod_contacts ? premod_contacts[id] : NULL;
 }
 
 struct host *get_premod_host(unsigned int id)
