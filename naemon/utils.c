@@ -79,7 +79,7 @@ int event_handler_timeout = DEFAULT_EVENT_HANDLER_TIMEOUT;
 int notification_timeout = DEFAULT_NOTIFICATION_TIMEOUT;
 
 
-char *object_precache_file = DEFAULT_PRECACHED_OBJECT_FILE;
+char *object_precache_file;
 
 char *global_host_event_handler = NULL;
 char *global_service_event_handler = NULL;
