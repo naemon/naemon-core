@@ -1325,8 +1325,6 @@ int process_host_command(int cmd, time_t entry_time, char *args)
 	char *buf[2] = {NULL, NULL};
 	int intval = 0;
 
-	printf("ARGS: %s\n", args);
-
 	/* get the host name */
 	if ((host_name = my_strtok(args, ";")) == NULL)
 		return ERROR;
