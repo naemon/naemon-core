@@ -348,6 +348,8 @@ int xrddefault_save_state_information(void)
 
 	/* save contact state information */
 	for (temp_contact = contact_list; temp_contact != NULL; temp_contact = temp_contact->next) {
+		struct contact *conf_cont;
+		conf_cont = get_premod_contact(temp_contact->id);
 
 		fprintf(fp, "contact {\n");
 		fprintf(fp, "contact_name=%s\n", temp_contact->name);
@@ -358,8 +360,14 @@ int xrddefault_save_state_information(void)
 		fprintf(fp, "service_notification_period=%s\n", (temp_contact->service_notification_period == NULL) ? "" : temp_contact->service_notification_period);
 		fprintf(fp, "last_host_notification=%lu\n", temp_contact->last_host_notification);
 		fprintf(fp, "last_service_notification=%lu\n", temp_contact->last_service_notification);
-		fprintf(fp, "host_notifications_enabled=%d\n", temp_contact->host_notifications_enabled);
-		fprintf(fp, "service_notifications_enabled=%d\n", temp_contact->service_notifications_enabled);
+		if (conf_cont && conf_cont->host_notifications_enabled != temp_contact->host_notifications_enabled) {
+			fprintf(fp, "config:host_notifications_enabled=%d\n", conf_cont->host_notifications_enabled);
+			fprintf(fp, "host_notifications_enabled=%d\n", temp_contact->host_notifications_enabled);
+		}
+		if (conf_cont && conf_cont->service_notifications_enabled != temp_contact->service_notifications_enabled) {
+			fprintf(fp, "config:service_notifications_enabled=%d\n", conf_cont->service_notifications_enabled);
+			fprintf(fp, "service_notifications_enabled=%d\n", temp_contact->service_notifications_enabled);
+		}
 
 		/* custom variables */
 		for (temp_customvariablesmember = temp_contact->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
@@ -555,6 +563,7 @@ int xrddefault_read_state_information(void)
 	/* read all lines in the retention file */
 	while (1) {
 		struct host conf, have;
+		struct contact cont_conf, cont_have;
 
 		/* free memory */
 		my_free(inputbuf);
@@ -574,6 +583,8 @@ int xrddefault_read_state_information(void)
 		if (!strcmp(input, "service {")) {
 			memset(&conf, 0, sizeof(conf));
 			memset(&have, 0, sizeof(have));
+			memset(&cont_conf, 0, sizeof(cont_conf));
+			memset(&cont_have, 0, sizeof(cont_have));
 			data_type = XRDDEFAULT_SERVICESTATUS_DATA;
 		}
 		else if (!strcmp(input, "host {")) {
@@ -1565,12 +1576,27 @@ int xrddefault_read_state_information(void)
 								} else
 									temp_contact->modified_service_attributes -= MODATTR_NOTIFICATION_TIMEPERIOD;
 							}
+						} else if (!strcmp(var, "config:host_notifications_enabled")) {
+							cont_have.host_notifications_enabled = TRUE;
+							cont_conf.host_notifications_enabled = atoi(val) > 0 ? TRUE : FALSE;
 						} else if (!strcmp(var, "host_notifications_enabled")) {
-							if (temp_contact->modified_host_attributes & MODATTR_NOTIFICATIONS_ENABLED)
+							if (temp_contact->modified_host_attributes & MODATTR_NOTIFICATIONS_ENABLED
+							    || (cont_have.host_notifications_enabled && cont_conf.host_notifications_enabled == temp_contact->host_notifications_enabled))
+							{
+								pre_modify_contact_attribute(temp_contact, MODATTR_NOTIFICATIONS_ENABLED);
 								temp_contact->host_notifications_enabled = (atoi(val) > 0) ? TRUE : FALSE;
-						} else if (!strcmp(var, "service_notifications_enabled")) {
-							if (temp_contact->modified_service_attributes & MODATTR_NOTIFICATIONS_ENABLED)
+							}
+						} else if (!strcmp(var, "config:service_notifications_enabled")) {
+							cont_have.service_notifications_enabled = TRUE;
+							cont_conf.service_notifications_enabled = atoi(val) > 0 ? TRUE : FALSE;
+						}
+						else if (!strcmp(var, "service_notifications_enabled")) {
+							if (temp_contact->modified_service_attributes & MODATTR_NOTIFICATIONS_ENABLED
+							    || (cont_have.service_notifications_enabled && cont_conf.service_notifications_enabled == temp_contact->service_notifications_enabled))
+							{
+								pre_modify_contact_attribute(temp_contact, MODATTR_NOTIFICATIONS_ENABLED);
 								temp_contact->service_notifications_enabled = (atoi(val) > 0) ? TRUE : FALSE;
+							}
 						}
 						/* custom variables */
 						else if (var[0] == '_') {
