@@ -9,9 +9,9 @@ START_TEST(recursive)
 	host *h;
 	res = reset_variables();
 	ck_assert_int_eq(OK, res);
-	res = read_main_config_file("configs/recursive/naemon.cfg");
+	res = read_main_config_file(SYSCONFDIR "recursive/naemon.cfg");
 	ck_assert_int_eq(OK, res);
-	res = read_all_object_data("configs/recursive/naemon.cfg");
+	res = read_all_object_data(SYSCONFDIR "recursive/naemon.cfg");
 	ck_assert_int_eq(OK, res);
 	for (h = host_list, hits=0; h; h = h->next, hits++) {
 		if (!strcmp(h->name, "host1")) {
