@@ -594,7 +594,7 @@ host *add_host(char *name, char *display_name, char *alias, char *address, char 
 	}
 	/* check values */
 	if (max_attempts <= 0) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Invalid max_check_attempts value for host '%s'\n", name);
+		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: max_check_attempts must be a positive integer host '%s'\n", name);
 		return NULL;
 	}
 	if (check_interval < 0) {
@@ -1390,13 +1390,24 @@ service *add_service(char *host_name, char *description, char *display_name, cha
 	}
 
 	/* check values */
-	if (max_attempts <= 0 || check_interval < 0 || retry_interval <= 0 || notification_interval < 0) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Invalid max_attempts, check_interval, retry_interval, or notification_interval value for service '%s' on host '%s'\n", description, host_name);
+	if (max_attempts <= 0) {
+		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: max_check_attempts must be a positive integer for service '%s' on host '%s'\n", description, host_name);
 		return NULL;
 	}
-
+	if (check_interval < 0) {
+		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: check_interval must be a non-negative integer for service '%s' on host '%s'\n", description, host_name);
+		return NULL;
+	}
+	if (retry_interval <= 0) {
+		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: retry_interval must be a positive integer for service '%s' on host '%s'\n", description, host_name);
+		return NULL;
+	}
+	if (notification_interval < 0) {
+		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: notification_interval must be a non-negative integer for service '%s' on host '%s'\n", description, host_name);
+		return NULL;
+	}
 	if (first_notification_delay < 0) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Invalid first_notification_delay value for service '%s' on host '%s'\n", description, host_name);
+		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: first_notification_delay must be a non-negative integer for service '%s' on host '%s'\n", description, host_name);
 		return NULL;
 	}
 
