@@ -2817,6 +2817,7 @@ void free_memory(nagios_macros *mac)
 	mac->x[MACRO_TEMPPATH] = NULL; /*assigned from temp_path */
 	my_free(check_result_path);
 	my_free(command_file);
+	my_free(qh_socket_path);
 	mac->x[MACRO_COMMANDFILE] = NULL; /* assigned from command_file */
 	my_free(log_archive_path);
 
@@ -2864,6 +2865,7 @@ int reset_variables(void)
 	temp_path = (char *)strdup(DEFAULT_TEMP_PATH);
 	check_result_path = (char *)strdup(DEFAULT_CHECK_RESULT_PATH);
 	command_file = (char *)strdup(DEFAULT_COMMAND_FILE);
+	qh_socket_path = (char *)strdup(DEFAULT_QUERY_SOCKET);
 	if (lock_file) /* this is kept across restarts */
 		free(lock_file);
 	lock_file = (char *)strdup(DEFAULT_LOCK_FILE);
