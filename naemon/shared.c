@@ -22,7 +22,7 @@ time_t program_start = 0L;
 int check_external_commands;
 int log_rotation_method = LOG_ROTATION_NONE;
 
-char *object_cache_file = DEFAULT_OBJECT_CACHE_FILE;
+char *object_cache_file;
 struct object_count num_objects;
 
 int process_performance_data = DEFAULT_PROCESS_PERFORMANCE_DATA;
