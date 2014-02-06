@@ -3,6 +3,33 @@
 
 #include <check.h>
 
+/**
+ * Apparently, a lot of ways to specify services are broken and we didn't
+ * notice. Gogo regression tests!
+ */
+START_TEST(services)
+{
+	int res, hits;
+	service *s;
+	res = reset_variables();
+	ck_assert_int_eq(OK, res);
+	res = read_main_config_file(SYSCONFDIR "services/naemon.cfg");
+	ck_assert_int_eq(OK, res);
+	res = read_all_object_data(SYSCONFDIR "services/naemon.cfg");
+	ck_assert_int_eq(OK, res);
+	for (s = service_list, hits=0; s; s = s->next, hits++) {
+		if (!strcmp(s->description, "service3")) {
+			ck_assert_str_eq("from_template", s->display_name);
+		}
+	}
+	ck_assert_int_eq(3, hits);
+}
+END_TEST
+
+/**
+ * Check that recursive objects don't too weird loops - a recursive object
+ * should be included once, but not twice.
+ */
 START_TEST(recursive)
 {
 	int res, hits;
@@ -32,6 +59,7 @@ config_suite(void)
 	Suite *s = suite_create("Config");
 	TCase *parse = tcase_create("Parse configuration");
 	tcase_add_test(parse, recursive);
+	tcase_add_test(parse, services);
 	suite_add_tcase(s, parse);
 	return s;
 }
