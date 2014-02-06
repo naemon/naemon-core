@@ -2917,7 +2917,7 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 	check_output->perf_data = NULL;
 	check_output->long_output = NULL;
 	check_output->short_output = NULL;
-	if(!buf)
+	if(!buf || !*buf)
 		return check_output;
 	tmpbuf = strdup(buf);
 
