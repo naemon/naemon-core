@@ -1,4 +1,4 @@
-EXTRA_DIST = configs/recursive/minimal.cfg configs/recursive/naemon.cfg
+EXTRA_DIST = configs/recursive configs/services
 if HAVE_CHECK
 LDADD = @CHECK_LIBS@ $(top_builddir)/naemon/lib/libnaemon.la -lm -ldl
 AM_CPPFLAGS += -I$(top_srcdir) '-DSYSCONFDIR="$(abs_srcdir)/configs/"'
