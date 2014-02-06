@@ -130,6 +130,16 @@ START_TEST(no_plugin_output_at_all)
 }
 END_TEST
 
+START_TEST(empty_plugin_output)
+{
+	output = strdup("");
+	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
+	ck_assert(NULL == short_output);
+	ck_assert(NULL == long_output);
+	ck_assert(NULL == perf_data);
+}
+END_TEST
+
 START_TEST(no_plugin_output_on_first_line)
 {
 	full_output = "\n|some=perfdata;";
@@ -157,6 +167,7 @@ checks_suite(void)
 	tcase_add_test(tc_output, multiline_perfdata_only);
 	tcase_add_test(tc_output, no_plugin_output_on_first_line);
 	tcase_add_test(tc_output, no_plugin_output_at_all);
+	tcase_add_test(tc_output, empty_plugin_output);
 	suite_add_tcase(s, tc_output);
 	return s;
 }
