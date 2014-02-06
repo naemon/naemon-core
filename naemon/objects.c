@@ -1369,13 +1369,21 @@ service *add_service(char *host_name, char *description, char *display_name, cha
 	int result = OK;
 
 	/* make sure we have everything we need */
-	if (host_name == NULL || description == NULL || !*description || check_command == NULL || !*check_command) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Service description, host name, or check command is NULL\n");
+	if (host_name == NULL) {
+		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Host name not provided for service\n");
 		return NULL;
 	}
 	if (!(h = find_host(host_name))) {
 		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Unable to locate host '%s' for service '%s'\n",
 		      host_name, description);
+		return NULL;
+	}
+	if (description == NULL || !*description) {
+		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Found service on host '%s' with no service description\n", host_name);
+		return NULL;
+	}
+	if (check_command == NULL || !*check_command) {
+		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: No check command provided for service '%s' on host '%s'\n", host_name, description);
 		return NULL;
 	}
 	if (notification_period && !(np = find_timeperiod(notification_period))) {
