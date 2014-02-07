@@ -3,3 +3,4 @@ naemon
 naemonstats
 wpres-phash.h
 defaults.h
+oconfsplit

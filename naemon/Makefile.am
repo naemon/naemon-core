@@ -11,8 +11,7 @@ wpres-phash.h: wpres.gperf
 
 CLEANFILES = wpres-phash.h
 
-bin_PROGRAMS = naemon naemonstats
-naemon_SOURCES = \
+common_sources = \
 	broker.c broker.h \
 	checks.c checks.h \
 	commands.c commands.h \
@@ -27,7 +26,6 @@ naemon_SOURCES = \
 	loadctl.h \
 	logging.c logging.h \
 	macros.c macros.h \
-	naemon.c \
 	nebcallbacks.h neberrors.h \
 	nebmods.c nebmods.h \
 	nebmodules.h nebstructs.h \
@@ -49,13 +47,19 @@ naemon_SOURCES = \
 	xsddefault.c xsddefault.h \
 	nagios.h naemon.h \
 	wpres.gperf
-naemon_CPPFLAGS=$(AM_CPPFLAGS) -DPREFIX='"$(prefix)"'
-naemon_LDADD=\
-	lib/libnaemon.la \
-	-lm -ldl
-naemon_LDFLAGS=-rdynamic -static
+
+
+bin_PROGRAMS = naemon naemonstats oconfsplit
+naemon_SOURCES = naemon.c $(common_sources)
+
+naemon_CPPFLAGS = $(AM_CPPFLAGS) -DPREFIX='"$(prefix)"'
+naemon_LDADD = lib/libnaemon.la -lm -ldl
+naemon_LDFLAGS = -rdynamic -static
 
 naemonstats_SOURCES = naemonstats.c lib/nspath.h lib/nspath.c
+
+oconfsplit_LDADD = lib/libnaemon.la -lm -ldl
+oconfsplit_SOURCES = oconfsplit.c $(common_sources)
 
 #naemonworker_SOURCES=
 #naemonworker_LDADD=$(top_builddir)/naemon/worker/libnaemon_worker.a \
