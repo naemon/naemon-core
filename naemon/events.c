@@ -1007,8 +1007,10 @@ int event_execution_loop(void)
 		/* get the current time */
 		time(&current_time);
 
-		if (sigrotate == TRUE)
+		if (sigrotate == TRUE) {
 			rotate_log_file(current_time);
+			update_program_status(FALSE);
+		}
 
 		/* hey, wait a second...  we traveled back in time! */
 		if (current_time < last_time)

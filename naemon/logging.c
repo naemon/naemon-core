@@ -349,7 +349,6 @@ int rotate_log_file(time_t rotation_time)
 
 	/* update the last log rotation time and status log */
 	last_log_rotation = time(NULL);
-	update_program_status(FALSE);
 
 	close_log_file();
 	log_fp = open_log_file();
