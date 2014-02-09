@@ -25,13 +25,6 @@ if [ -e /etc/rc.d/init.d/functions ]; then
   . /etc/rc.d/init.d/functions
 fi
 
-status() {
-  [ ! -e $pidfile ] && return 1;
-  PID=`cat $pidfile`;
-  kill -0 $PID
-  return $?
-}
-
 prefix="@prefix@"
 exec_prefix="@exec_prefix@"
 exec="@bindir@/naemon"
@@ -49,6 +42,22 @@ NICELEVEL=0
 test -e /etc/sysconfig/$prog && . /etc/sysconfig/$prog
 
 lockfile=/var/lock/subsys/$prog
+
+status() {
+    [ ! -e $pidfile ] && return 1;
+    PID=`cat $pidfile`;
+    kill -0 $PID
+    return $?
+}
+
+pidof_naemon() {
+    if [ -e "$pidfile" ]; then
+        if pidof $prog | tr ' ' '\n' | grep -w $(cat $pidfile); then
+            return 0
+        fi
+    fi
+    return 1
+}
 
 check_config() {
     TMPFILE=$(mktemp /tmp/.configtest.XXXXXXXX)
@@ -69,6 +78,32 @@ check_config() {
         chmod 0644 @TMPDIR@/naemon.configtest
         cat "$TMPFILE"
     exit 8
+    fi
+}
+
+naemon_wait_stop() {
+    pidtmp=$(pidof_naemon) || true
+    if kill -0 "${pidtmp:-}" 2> /dev/null; then
+        pid=$pidtmp
+    fi
+    stop
+
+    # wait until really stopped
+    if [ -n "${pid:-}" ]; then
+        i=0
+        while kill -0 "${pid:-}" 2> /dev/null;  do
+        if [ $i = '60' ]; then
+            break;
+        else
+            if [ $i = '0' ]; then
+                echo -n " ... waiting "
+            else
+                echo -n "."
+            fi
+            i=$(($i+1))
+            sleep 1
+        fi
+        done
     fi
 }
 
@@ -103,8 +138,12 @@ start() {
 
 stop() {
     echo -n "Stopping $prog: "
-    pkill -u ${user} -f ${exec} || \
-    pkill -u ${user} -f $(basename $exec) # ex.: sles uses basename only
+    pid=$(pidof_naemon) || true
+    if [ "${pid}" ]; then
+        kill $pid
+    else
+        return 1
+    fi
     retval=$?
     echo
     test $retval -eq 0 && rm -f $lockfile
@@ -115,15 +154,16 @@ stop() {
 restart() {
     check_config
     checkconfig="true"
-    stop
-    sleep 1
+    pid=$(pidof_naemon) || true
+    naemon_wait_stop
+    echo
     start
 }
 
 reload() {
     echo -n "Reloading $prog: "
     pkill -HUP -u ${user} -f ${exec}
-    RETVAL=$?
+    retval=$?
     echo
 }
 
@@ -173,7 +213,7 @@ case "$1" in
         RETVAL=$?
         ;;
     *)
-        echo $"Usage: $0 {start|stop|status|restart|condrestart|try-restart|reload|force-reload|configtest}"
+        echo "Usage: $0 {start|stop|status|restart|condrestart|try-restart|reload|force-reload|configtest}"
         exit 2
 esac
 exit $?
