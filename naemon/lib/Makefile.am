@@ -1,10 +1,6 @@
 LDADD = libnaemon.la
 lib_LTLIBRARIES = libnaemon.la
 AM_CPPFLAGS = -I$(top_builddir)
-pkginclude_HEADERS = libnaemon.h libnagios.h bitmap.h dkhash.h \
-	fanout.h iobroker.h iocache.h kvvec.h lnag-utils.h \
-	nsock.h nspath.h nsutils.h pqueue.h runcmd.h skiplist.h \
-	snprintf.h squeue.h worker.h lnae-utils.h
 # details on library version numbers https://www.sourceware.org/autobook/autobook/autobook_91.html
 libnaemon_la_LDFLAGS = -version-info 0:0:0
 libnaemon_la_SOURCES = $(pkginclude_HEADERS) \
