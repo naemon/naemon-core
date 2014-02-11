@@ -347,8 +347,8 @@ int check_service_notification_viability(service *svc, int type, int options)
 		servicesmember *sm;
 		for (sm = svc->parents; sm; sm = sm->next) {
 			/* @todo: tweak this so it handles hard states and whatnot */
-			if (sm->service_ptr->current_state == STATE_OK)
-				bad_parents += !!sm->service_ptr->current_state;
+			if (sm->service_ptr->current_state != STATE_OK)
+				bad_parents++;
 			total_parents++;
 		}
 		if (bad_parents == total_parents) {
