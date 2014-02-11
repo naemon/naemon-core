@@ -748,6 +748,8 @@ int main(int argc, char **argv)
 		/* reset the restart flag */
 		sigrestart = FALSE;
 
+		registered_commands_init(200);
+		register_core_commands();
 		/* fire up command file worker */
 		launch_command_file_worker();
 		timing_point("Command file worker launched\n");
@@ -809,6 +811,7 @@ int main(int argc, char **argv)
 			cleanup_status_data(TRUE);
 		}
 
+		registered_commands_deinit();
 		free_worker_memory(WPROC_FORCE);
 		/* shutdown stuff... */
 		if (sigshutdown == TRUE) {
