@@ -299,7 +299,7 @@ int xrddefault_save_state_information(void)
 		fprintf(fp, "current_notification_number=%d\n", temp_service->current_notification_number);
 		fprintf(fp, "current_notification_id=%lu\n", temp_service->current_notification_id);
 		fprintf(fp, "last_notification=%lu\n", temp_service->last_notification);
-		if (conf_svc && conf_svc->notifications_enabled != temp_host->notifications_enabled) {
+		if (conf_svc && conf_svc->notifications_enabled != temp_service->notifications_enabled) {
 			fprintf(fp, "config:notifications_enabled=%d\n", conf_svc->notifications_enabled);
 			fprintf(fp, "notifications_enabled=%d\n", temp_service->notifications_enabled);
 		}
