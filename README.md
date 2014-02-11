@@ -89,4 +89,4 @@ sudo make install
 
 ### More info ###
 
-Visit the Naemon homepage at http://www.naemon.org
+Visit the Naemon homepage at http://naemon.org
