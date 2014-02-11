@@ -2,6 +2,24 @@ SUBDIRS = lib
 AM_CPPFLAGS += -I$(top_builddir) '-DSYSCONFDIR="$(sysconfdir)"' '-DLOCALSTATEDIR="$(localstatedir)"' '-DLOGDIR="$(logdir)"' '-DLOCKFILE="$(lockfile)"'
 BUILT_SOURCES = wpres-phash.h
 
+nobase_pkginclude_HEADERS = \
+	lib/bitmap.h    lib/kvvec.h       lib/nsock.h    lib/skiplist.h \
+	lib/dkhash.h    lib/libnaemon.h   lib/nspath.h   lib/snprintf.h \
+	lib/fanout.h    lib/libnagios.h   lib/nsutils.h  lib/squeue.h \
+	lib/iobroker.h  lib/lnae-utils.h  lib/pqueue.h   lib/t-utils.h \
+	lib/iocache.h   lib/lnag-utils.h  lib/runcmd.h   lib/worker.h
+
+pkginclude_HEADERS = \
+	broker.h         events.h       nagios.h         objects.h \
+	workers.h \
+	checks.h         flapping.h     nebcallbacks.h   perfdata.h \
+	commands.h       globals.h      neberrors.h      query-handler.h \
+	comments.h       loadctl.h      nebmods.h        sehandlers.h \
+	common.h         logging.h      nebmodules.h     shared.h \
+	configuration.h  macros.h       nebstructs.h     sretention.h \
+	defaults.h       naemon.h       nerd.h           statusdata.h \
+	downtime.h       naemonstats.h  notifications.h  utils.h
+
 wpres-phash.h: wpres.gperf
 	$(AM_V_GEN) $(GPERF) --switch=1 --struct-type \
 		--hash-function-name=wpres_key_phash \
