@@ -6,8 +6,6 @@
 
 /* different jobtypes. We add more as needed */
 #define WPJOB_CALLBACK 8
-#define WPJOB_HOST_PERFDATA 9
-#define WPJOB_SVC_PERFDATA 10
 
 #define WPROC_FORCE  (1 << 0)
 
