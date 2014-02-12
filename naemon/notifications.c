@@ -313,6 +313,7 @@ int check_service_notification_viability(service *svc, int type, int options)
 	time_t current_time;
 	time_t timeperiod_start;
 	time_t first_problem_time;
+	servicesmember *sm;
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_service_notification_viability()\n");
 
@@ -343,15 +344,11 @@ int check_service_notification_viability(service *svc, int type, int options)
 
 	/* if all parents are bad (usually just one), we shouldn't notify */
 	if (svc->parents) {
-		int bad_parents = 0, total_parents = 0;
-		servicesmember *sm;
-		for (sm = svc->parents; sm; sm = sm->next) {
-			/* @todo: tweak this so it handles hard states and whatnot */
-			if (sm->service_ptr->current_state == STATE_OK)
-				bad_parents += !!sm->service_ptr->current_state;
-			total_parents++;
+		sm = svc->parents;
+		while ( sm && sm->service_ptr->current_state != STATE_OK) {
+			sm = sm->next;
 		}
-		if (bad_parents == total_parents) {
+		if (sm == NULL) {
 			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "This service has no good parents, so notification will be blocked.\n");
 			return ERROR;
 		}
