@@ -2,14 +2,9 @@
 #define INCLUDE_workers_h__
 #include "lib/libnagios.h"
 #include "lib/worker.h"
-#include "objects.h" /* for check_result definition */
 #include "macros.h"
 
 /* different jobtypes. We add more as needed */
-#define WPJOB_GLOBAL_SVC_EVTHANDLER 4
-#define WPJOB_SVC_EVTHANDLER  5
-#define WPJOB_GLOBAL_HOST_EVTHANDLER 6
-#define WPJOB_HOST_EVTHANDLER 7
 #define WPJOB_CALLBACK 8
 #define WPJOB_HOST_PERFDATA 9
 #define WPJOB_SVC_PERFDATA 10
@@ -50,8 +45,6 @@ extern void free_worker_memory(int flags);
 extern int workers_alive(void);
 extern int init_workers(int desired_workers);
 extern int wproc_run(int job_type, char *cmd, int timeout, nagios_macros *mac);
-extern int wproc_run_service_job(int jtype, int timeout, service *svc, char *cmd, nagios_macros *mac);
-extern int wproc_run_host_job(int jtype, int timeout, host *hst, char *cmd, nagios_macros *mac);
 extern int wproc_run_callback(char *cmt, int timeout, void (*cb)(struct wproc_result *, void *, int), void *data, nagios_macros *mac);
 
 NAGIOS_END_DECL;
