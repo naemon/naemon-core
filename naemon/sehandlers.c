@@ -185,6 +185,17 @@ int obsessive_compulsive_host_check_processor(host *hst)
 /**************** SERVICE EVENT HANDLER FUNCTIONS *****************/
 /******************************************************************/
 
+void event_handler_job_handler(struct wproc_result *wpres, void *data, int flags) {
+	const char *event_type = (const char*)data;
+	if(wpres) {
+		if (wpres->early_timeout) {
+			logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, TRUE,
+			      "Warning: %s handler command '%s' timed out\n",
+			      event_type, wpres->command);
+		}
+	}
+}
+
 /* handles changes in the state of a service */
 int handle_service_event(service *svc)
 {
@@ -305,8 +316,7 @@ int run_global_service_event_handler(nagios_macros *mac, service *svc)
 #endif
 
 	/* run the command through a worker */
-	/* XXX FIXME make base/workers.c handle the eventbroker stuff below */
-	result = wproc_run(WPJOB_GLOBAL_SVC_EVTHANDLER, processed_command, event_handler_timeout, mac);
+	result = wproc_run_callback(processed_command, event_handler_timeout, event_handler_job_handler, "Global service", mac);
 
 	/* check to see if the event handler timed out */
 	if (early_timeout == TRUE)
@@ -405,8 +415,7 @@ int run_service_event_handler(nagios_macros *mac, service *svc)
 #endif
 
 	/* run the command through a worker */
-	/* XXX FIXME make base/workers.c handle the eventbroker stuff below */
-	result = wproc_run(WPJOB_SVC_EVTHANDLER, processed_command, event_handler_timeout, mac);
+	result = wproc_run_callback(processed_command, event_handler_timeout, event_handler_job_handler, "Service", mac);
 
 	/* check to see if the event handler timed out */
 	if (early_timeout == TRUE)
@@ -548,8 +557,7 @@ int run_global_host_event_handler(nagios_macros *mac, host *hst)
 #endif
 
 	/* run the command through a worker */
-	/* XXX FIXME make base/workers.c handle the eventbroker stuff below */
-	wproc_run(WPJOB_GLOBAL_HOST_EVTHANDLER, processed_command, event_handler_timeout, mac);
+	result = wproc_run_callback(processed_command, event_handler_timeout, event_handler_job_handler, "Global host", mac);
 
 	/* check for a timeout in the execution of the event handler command */
 	if (early_timeout == TRUE)
@@ -647,7 +655,7 @@ int run_host_event_handler(nagios_macros *mac, host *hst)
 #endif
 
 	/* run the command through a worker */
-	result = wproc_run(WPJOB_HOST_EVTHANDLER, processed_command, event_handler_timeout, mac);
+	result = wproc_run_callback(processed_command, event_handler_timeout, event_handler_job_handler, "Host", mac);
 
 	/* check to see if the event handler timed out */
 	if (early_timeout == TRUE)
