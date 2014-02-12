@@ -72,8 +72,6 @@ static const char *wpjob_type_name(unsigned int type)
 {
 	switch (type) {
 	case WPJOB_CALLBACK: return "CALLBACK";
-	case WPJOB_HOST_PERFDATA: return "HOST PERFDATA";
-	case WPJOB_SVC_PERFDATA: return "SERVICE PERFDATA";
 	}
 	return "UNKNOWN";
 }
@@ -261,10 +259,6 @@ static void destroy_job(struct wproc_job *job)
 		return;
 
 	switch (job->type) {
-	case WPJOB_HOST_PERFDATA:
-	case WPJOB_SVC_PERFDATA:
-		/* these require nothing special */
-		break;
 	case WPJOB_CALLBACK:
 		/* call with NULL result to make callback clean things up */
 		run_job_callback(job, NULL, 0);
@@ -631,11 +625,6 @@ static int handle_worker_result(int sd, int events, void *arg)
 		switch (job->type) {
 		case WPJOB_CALLBACK:
 			run_job_callback(job, &wpres, 0);
-			break;
-
-		case WPJOB_HOST_PERFDATA:
-		case WPJOB_SVC_PERFDATA:
-			/* these require nothing special */
 			break;
 
 		default:
