@@ -6,8 +6,6 @@
 #include "macros.h"
 
 /* different jobtypes. We add more as needed */
-#define WPJOB_OCSP    2
-#define WPJOB_OCHP    3
 #define WPJOB_GLOBAL_SVC_EVTHANDLER 4
 #define WPJOB_SVC_EVTHANDLER  5
 #define WPJOB_GLOBAL_HOST_EVTHANDLER 6

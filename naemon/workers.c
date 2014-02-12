@@ -77,8 +77,6 @@ unsigned int wproc_num_workers_spawned = 0;
 static const char *wpjob_type_name(unsigned int type)
 {
 	switch (type) {
-	case WPJOB_OCSP: return "OCSP";
-	case WPJOB_OCHP: return "OCHP";
 	case WPJOB_GLOBAL_SVC_EVTHANDLER: return "GLOBAL SERVICE EVENTHANDLER";
 	case WPJOB_SVC_EVTHANDLER: return "SERVICE EVENTHANDLER";
 	case WPJOB_GLOBAL_HOST_EVTHANDLER: return "GLOBAL HOST EVENTHANDLER";
@@ -273,11 +271,6 @@ static void destroy_job(struct wproc_job *job)
 		return;
 
 	switch (job->type) {
-	case WPJOB_OCSP:
-	case WPJOB_OCHP:
-		free(job->arg);
-		break;
-
 	case WPJOB_GLOBAL_SVC_EVTHANDLER:
 	case WPJOB_SVC_EVTHANDLER:
 	case WPJOB_GLOBAL_HOST_EVTHANDLER:
@@ -662,19 +655,6 @@ static int handle_worker_result(int sd, int events, void *arg)
 		my_free(error_reason);
 
 		switch (job->type) {
-		case WPJOB_OCSP:
-			if (wpres.early_timeout) {
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: OCSP command '%s' for service '%s' on host '%s' timed out after %.2f seconds\n",
-				      job->command, oj->service_description, oj->host_name,
-				      tv2float(&wpres.runtime));
-			}
-			break;
-		case WPJOB_OCHP:
-			if (wpres.early_timeout) {
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: OCHP command '%s' for host '%s' timed out after %.2f seconds\n",
-				      job->command, oj->host_name, tv2float(&wpres.runtime));
-			}
-			break;
 		case WPJOB_GLOBAL_SVC_EVTHANDLER:
 			if (wpres.early_timeout) {
 				logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, TRUE,
