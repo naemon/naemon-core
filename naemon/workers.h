@@ -1,11 +1,7 @@
 #ifndef INCLUDE_workers_h__
 #define INCLUDE_workers_h__
 #include "lib/libnagios.h"
-#include "lib/worker.h"
 #include "macros.h"
-
-/* different jobtypes. We add more as needed */
-#define WPJOB_CALLBACK 8
 
 #define WPROC_FORCE  (1 << 0)
 
@@ -13,7 +9,6 @@ NAGIOS_BEGIN_DECL;
 
 typedef struct wproc_result {
 	unsigned int job_id;
-	unsigned int type;
 	time_t timeout;
 	struct timeval start;
 	struct timeval stop;
@@ -42,7 +37,7 @@ extern int wproc_can_spawn(struct load_control *lc);
 extern void free_worker_memory(int flags);
 extern int workers_alive(void);
 extern int init_workers(int desired_workers);
-extern int wproc_run(int job_type, char *cmd, int timeout, nagios_macros *mac);
+
 extern int wproc_run_callback(char *cmt, int timeout, void (*cb)(struct wproc_result *, void *, int), void *data, nagios_macros *mac);
 
 NAGIOS_END_DECL;
