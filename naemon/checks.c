@@ -46,11 +46,56 @@ int reap_check_results(void)
 	return OK;
 }
 
+/******************************************************************/
+/********************* WORKER RESULT CALLBACKS ********************/
+/******************************************************************/
+
+static void handle_worker_check(wproc_result *wpres, void *arg, int flags)
+{
+	check_result *cr = (check_result *)arg;
+	if(wpres) {
+		memcpy(&cr->rusage, &wpres->rusage, sizeof(wpres->rusage));
+		cr->start_time.tv_sec = wpres->start.tv_sec;
+		cr->start_time.tv_usec = wpres->start.tv_usec;
+		cr->finish_time.tv_sec = wpres->stop.tv_sec;
+		cr->finish_time.tv_usec = wpres->stop.tv_usec;
+		if (WIFEXITED(wpres->wait_status)) {
+			cr->return_code = WEXITSTATUS(wpres->wait_status);
+		} else {
+			cr->return_code = STATE_UNKNOWN;
+		}
+
+		if (wpres->outstd && *wpres->outstd) {
+			cr->output = strdup(wpres->outstd);
+		} else if (wpres->outerr) {
+			asprintf(&cr->output, "(No output on stdout) stderr: %s", wpres->outerr);
+		} else {
+			cr->output = NULL;
+		}
+
+		cr->early_timeout = wpres->early_timeout;
+		cr->exited_ok = wpres->exited_ok;
+		cr->engine = NULL;
+		cr->source = wpres->source;
+		process_check_result(cr);
+	}
+	free_check_result(cr);
+	free(cr);
+}
 
 /******************************************************************/
 /****************** SERVICE MONITORING FUNCTIONS ******************/
 /******************************************************************/
+/*
+static void check_service_result_handler(struct wproc_result *wpres, void *data, int flags) {
+	check_result *cr = (check_result*)data;
+	if(wpres) {
 
+	}
+	free_check_result(cr);
+	free(cr);
+}
+*/
 /* executes a scheduled service check */
 int run_scheduled_service_check(service *svc, int check_options, double latency)
 {
@@ -272,7 +317,7 @@ int run_async_service_check(service *svc, int check_options, double latency, int
 	svc->latency = old_latency;
 
 	/* paw off the check to a worker to run */
-	runchk_result = wproc_run_check(cr, processed_command, &mac);
+	runchk_result = wproc_run_callback(processed_command, service_check_timeout, handle_worker_check, (void*)cr, &mac);
 	if (runchk_result == ERROR) {
 		logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to run check for service '%s' on host '%s'\n", svc->description, svc->host_name);
 	} else {
@@ -2060,7 +2105,7 @@ int run_async_host_check(host *hst, int check_options, double latency, int sched
 	}
 #endif
 
-	runchk_result = wproc_run_check(cr, processed_command, &mac);
+	runchk_result = wproc_run_callback(processed_command, host_check_timeout, handle_worker_check, (void*)cr, &mac);
 	if (runchk_result == ERROR) {
 		logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to send check for host '%s' to worker (ret=%d)\n", hst->name, runchk_result);
 	} else {
