@@ -6,7 +6,6 @@
 #include "macros.h"
 
 /* different jobtypes. We add more as needed */
-#define WPJOB_NOTIFY  1
 #define WPJOB_OCSP    2
 #define WPJOB_OCHP    3
 #define WPJOB_GLOBAL_SVC_EVTHANDLER 4
@@ -52,7 +51,6 @@ extern int wproc_can_spawn(struct load_control *lc);
 extern void free_worker_memory(int flags);
 extern int workers_alive(void);
 extern int init_workers(int desired_workers);
-extern int wproc_notify(char *cname, char *hname, char *sdesc, char *cmd, nagios_macros *mac);
 extern int wproc_run(int job_type, char *cmd, int timeout, nagios_macros *mac);
 extern int wproc_run_service_job(int jtype, int timeout, service *svc, char *cmd, nagios_macros *mac);
 extern int wproc_run_host_job(int jtype, int timeout, host *hst, char *cmd, nagios_macros *mac);
