@@ -10,7 +10,6 @@
 #include "workers.h"
 #include "config.h"
 #include <string.h>
-#include "workers.h"
 #include "query-handler.h"
 #include "utils.h"
 #include "logging.h"
@@ -78,7 +77,6 @@ unsigned int wproc_num_workers_spawned = 0;
 static const char *wpjob_type_name(unsigned int type)
 {
 	switch (type) {
-	case WPJOB_NOTIFY: return "NOTIFY";
 	case WPJOB_OCSP: return "OCSP";
 	case WPJOB_OCHP: return "OCHP";
 	case WPJOB_GLOBAL_SVC_EVTHANDLER: return "GLOBAL SERVICE EVENTHANDLER";
@@ -275,7 +273,6 @@ static void destroy_job(struct wproc_job *job)
 		return;
 
 	switch (job->type) {
-	case WPJOB_NOTIFY:
 	case WPJOB_OCSP:
 	case WPJOB_OCHP:
 		free(job->arg);
@@ -665,20 +662,6 @@ static int handle_worker_result(int sd, int events, void *arg)
 		my_free(error_reason);
 
 		switch (job->type) {
-		case WPJOB_NOTIFY:
-			if (wpres.early_timeout) {
-				if (oj->service_description) {
-					logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Notifying contact '%s' of service '%s' on host '%s' by command '%s' timed out after %.2f seconds\n",
-					      oj->contact_name, oj->service_description,
-					      oj->host_name, job->command,
-					      tv2float(&wpres.runtime));
-				} else {
-					logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Notifying contact '%s' of host '%s' by command '%s' timed out after %.2f seconds\n",
-					      oj->contact_name, oj->host_name,
-					      job->command, tv2float(&wpres.runtime));
-				}
-			}
-			break;
 		case WPJOB_OCSP:
 			if (wpres.early_timeout) {
 				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: OCSP command '%s' for service '%s' on host '%s' timed out after %.2f seconds\n",
@@ -990,19 +973,6 @@ static wproc_object_job *create_object_job(char *cname, char *hname, char *sdesc
 	}
 
 	return oj;
-}
-
-int wproc_notify(char *cname, char *hname, char *sdesc, char *cmd, nagios_macros *mac)
-{
-	struct wproc_job *job;
-	wproc_object_job *oj;
-
-	if (!(oj = create_object_job(cname, hname, sdesc)))
-		return ERROR;
-
-	job = create_job(WPJOB_NOTIFY, oj, notification_timeout, cmd);
-
-	return wproc_run_job(job, mac);
 }
 
 int wproc_run_service_job(int jtype, int timeout, service *svc, char *cmd, nagios_macros *mac)
