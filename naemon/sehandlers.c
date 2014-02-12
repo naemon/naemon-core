@@ -17,9 +17,31 @@
 #include "neberrors.h"
 #endif
 
+struct obsessive_compulsive_job {
+	host *hst;
+	service *svc;
+};
+
 /******************************************************************/
 /************* OBSESSIVE COMPULSIVE HANDLER FUNCTIONS *************/
 /******************************************************************/
+
+void obsessive_compulsive_job_handler(struct wproc_result *wpres, void *data, int flags) {
+	struct obsessive_compulsive_job *ocj = (struct obsessive_compulsive_job *)data;
+	if (wpres) {
+		if (wpres->early_timeout) {
+			if(ocj->svc) {
+				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: OCSP command '%s' for service '%s' on host '%s'\n",
+						wpres->command, ocj->svc->description, ocj->hst->name);
+			} else {
+				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: OCHP command '%s' for host '%s'\n",
+						wpres->command, ocj->hst->name);
+			}
+		}
+	}
+	free(ocj);
+}
+
 
 /* handles service check results in an obsessive compulsive manner... */
 int obsessive_compulsive_service_check_processor(service *svc)
@@ -29,6 +51,7 @@ int obsessive_compulsive_service_check_processor(service *svc)
 	host *temp_host = NULL;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	nagios_macros mac;
+	struct obsessive_compulsive_job *ocj;
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "obsessive_compulsive_service_check_processor()\n");
 
@@ -72,7 +95,17 @@ int obsessive_compulsive_service_check_processor(service *svc)
 	log_debug_info(DEBUGL_CHECKS, 2, "Processed obsessive compulsive service processor command line: %s\n", processed_command);
 
 	/* run the command through a worker */
-	wproc_run_service_job(WPJOB_OCSP, ocsp_timeout, svc, processed_command, &mac);
+	ocj = (struct obsessive_compulsive_job*)calloc(1,sizeof(struct obsessive_compulsive_job));
+	if(ocj == NULL) {
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Allocating storage for OCSP job\n");
+	} else {
+		ocj->hst = svc->host_ptr;
+		ocj->svc = svc;
+		if(ERROR == wproc_run_callback(processed_command, ocsp_timeout, obsessive_compulsive_job_handler, ocj, &mac)) {
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to start OCSP job for service '%s on host '%s' to worker\n", svc->description, svc->host_ptr->name);
+			free(ocj);
+		}
+	}
 
 	/* free memory */
 	clear_volatile_macros_r(&mac);
@@ -89,6 +122,7 @@ int obsessive_compulsive_host_check_processor(host *hst)
 	char *processed_command = NULL;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	nagios_macros mac;
+	struct obsessive_compulsive_job *ocj;
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "obsessive_compulsive_host_check_processor()\n");
 
@@ -127,7 +161,17 @@ int obsessive_compulsive_host_check_processor(host *hst)
 	log_debug_info(DEBUGL_CHECKS, 2, "Processed obsessive compulsive host processor command line: %s\n", processed_command);
 
 	/* run the command through a worker */
-	wproc_run_host_job(WPJOB_OCHP, ochp_timeout, hst, processed_command, &mac);
+	ocj = (struct obsessive_compulsive_job*)calloc(1,sizeof(struct obsessive_compulsive_job));
+	if(ocj == NULL) {
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Allocating storage for OCHP job\n");
+	} else {
+		ocj->hst = hst;
+		ocj->svc = NULL;
+		if(ERROR == wproc_run_callback(processed_command, ochp_timeout, obsessive_compulsive_job_handler, ocj, &mac)) {
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to start OCHP job for host '%s' to worker\n", hst->name);
+			free(ocj);
+		}
+	}
 
 	/* free memory */
 	clear_volatile_macros_r(&mac);
