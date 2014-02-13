@@ -1056,7 +1056,7 @@ int event_execution_loop(void)
 		else if (poll_time_ms >= 1500)
 			poll_time_ms = 1500;
 
-		log_debug_info(DEBUGL_SCHEDULING | DEBUGL_IPC, 1, "## Polling %dms; sockets=%d; events=%u; iobs=%p\n",
+		log_debug_info(DEBUGL_SCHEDULING, 2, "## Polling %dms; sockets=%d; events=%u; iobs=%p\n",
 		               poll_time_ms, iobroker_get_num_fds(nagios_iobs),
 		               squeue_size(nagios_squeue), nagios_iobs);
 		inputs = iobroker_poll(nagios_iobs, poll_time_ms);
