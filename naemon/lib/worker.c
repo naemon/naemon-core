@@ -522,8 +522,10 @@ int start_cmd(child_process *cp)
 	/* We must never block, even if plugins issue '_exit()' */
 	fcntl(cp->outstd.fd, F_SETFL, O_NONBLOCK);
 	fcntl(cp->outerr.fd, F_SETFL, O_NONBLOCK);
-	iobroker_register(iobs, cp->outstd.fd, cp, stdout_handler);
-	iobroker_register(iobs, cp->outerr.fd, cp, stderr_handler);
+	if (iobroker_register(iobs, cp->outstd.fd, cp, stdout_handler))
+		wlog("Failed to register iobroker for stdout");
+	if (iobroker_register(iobs, cp->outerr.fd, cp, stderr_handler))
+		wlog("Failed to register iobroker for stderr");
 	fanout_add(ptab, cp->ei->pid, cp);
 
 	return 0;
