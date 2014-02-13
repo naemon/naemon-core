@@ -457,7 +457,7 @@ static int handle_worker_check(wproc_result *wpres, struct wproc_worker *wp, str
 
 	if (wpres->outstd && *wpres->outstd) {
 		cr->output = strdup(wpres->outstd);
-	} else if (wpres->outerr) {
+	} else if (wpres->outerr && *wpres->outerr) {
 		asprintf(&cr->output, "(No output on stdout) stderr: %s", wpres->outerr);
 	} else {
 		cr->output = NULL;
