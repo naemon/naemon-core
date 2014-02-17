@@ -226,10 +226,12 @@ int finish_job(child_process *cp, int reason)
 	if (cp->outstd.fd != -1) {
 		gather_output(cp, &cp->outstd, 1);
 		iobroker_close(iobs, cp->outstd.fd);
+		cp->outstd.fd = -1;
 	}
 	if (cp->outerr.fd != -1) {
 		gather_output(cp, &cp->outerr, 1);
 		iobroker_close(iobs, cp->outerr.fd);
+		cp->outerr.fd = -1;
 	}
 
 	/* Make sure network-supplied data doesn't contain nul bytes */
@@ -407,33 +409,50 @@ static void gather_output(child_process *cp, iobuf *io, int final)
 
 		rd = read(io->fd, buf, sizeof(buf));
 		if (rd < 0) {
-			if (errno == EINTR)
+			if (errno == EINTR) {
+				/* signal caught before we read anything */
 				continue;
-			if (!final && errno != EAGAIN)
-				wlog("job %d (pid=%d): Failed to read(): %s", cp->id, cp->ei->pid, strerror(errno));
+			}
+			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+				/* broken system or no more data. Just return */
+				return;
+			}
+			wlog("job %d (pid=%d): Failed to read(): %s", cp->id, cp->ei->pid, strerror(errno));
 		}
 
 		if (rd > 0) {
-			/* we read some data */
+			/*
+			 * we read some data, so stash it and try to read again.
+			 * That "read again" is necessary because we may have
+			 * gotten *some* data and then been interrupted by a
+			 * signal, and we need to read all data available when
+			 * we get an input event, and we may have more data
+			 * available than our buffer can hold.
+			 */
 			io->buf = realloc(io->buf, rd + io->len + 1);
 			memcpy(&io->buf[io->len], buf, rd);
 			io->len += rd;
 			io->buf[io->len] = '\0';
+			continue;
 		}
 
 		/*
-		 * Close down on bad, zero and final reads (we don't get
-		 * EAGAIN, so all errors are really unfixable)
+		 * Close down on bad and zero read.
+		 * This is the catch-all that handles EBADF, EFAULT,
+		 * EINVAL and EIO, which we can't do anything about.
+		 * We mustn't enter it on final reads though, as that
+		 * would mean the first invocation of finish_job()
+		 * would end up with a job that gets destroyed the
+		 * second (or third) time its entered for the same
+		 * job.
 		 */
 		if (rd <= 0 || final) {
 			iobroker_close(iobs, io->fd);
 			io->fd = -1;
 			if (!final)
 				check_completion(cp, WNOHANG);
-			break;
+			return;
 		}
-
-		break;
 	}
 }
 
