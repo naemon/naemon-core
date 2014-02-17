@@ -1005,6 +1005,9 @@ static int wproc_run_job(struct wproc_job *job, nagios_macros *mac)
 	if (ret != (int)kvvb->bufsize) {
 		logit(NSLOG_RUNTIME_ERROR, TRUE, "wproc: '%s' seems to be choked. ret = %d; bufsize = %lu: errno = %d (%s)\n",
 		      wp->name, ret, kvvb->bufsize, errno, strerror(errno));
+		// these two will be decremented by destroy_job, so preemptively increment them
+		wp->jobs_running++;
+		loadctl.jobs_running++;
 		destroy_job(job);
 		result = ERROR;
 	} else {
