@@ -446,10 +446,11 @@ static void gather_output(child_process *cp, iobuf *io, int final)
 		 * second (or third) time its entered for the same
 		 * job.
 		 */
-		if (rd <= 0 && !final) {
+		if (rd <= 0 || final) {
 			iobroker_close(iobs, io->fd);
 			io->fd = -1;
-			check_completion(cp, WNOHANG);
+			if (!final)
+				check_completion(cp, WNOHANG);
 			return;
 		}
 	}
