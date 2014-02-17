@@ -1,5 +1,6 @@
 #ifndef INCLUDE_defaults_h__
 #define INCLUDE_defaults_h__
+#include "buildopts.h"
 
 /******************* DEFAULT VALUES *******************/
 
@@ -93,22 +94,22 @@
 
 
 /* default locations */
-#define DEFAULT_TEMP_FILE			LOCALSTATEDIR "/tempfile"
-#define DEFAULT_TEMP_PATH                       "/tmp"
-#define DEFAULT_CHECK_RESULT_PATH		LOCALSTATEDIR "/spool/checkresults"
-#define DEFAULT_STATUS_FILE			LOCALSTATEDIR "/status.dat"
-#define DEFAULT_LOG_FILE			LOGDIR "/naemon.log"
-#define DEFAULT_LOG_ARCHIVE_PATH		LOGDIR "/archives/"
-#define DEFAULT_DEBUG_FILE                      LOCALSTATEDIR "/naemon.debug"
-#define DEFAULT_COMMENT_FILE			LOCALSTATEDIR "/comments.dat"
-#define DEFAULT_DOWNTIME_FILE			LOCALSTATEDIR "/downtime.dat"
-#define DEFAULT_RETENTION_FILE			LOCALSTATEDIR "/retention.dat"
-#define DEFAULT_COMMAND_FILE			LOCALSTATEDIR "/naemon.cmd"
-#define DEFAULT_QUERY_SOCKET            LOCALSTATEDIR "/naemon.qh"
-#define DEFAULT_CONFIG_FILE			SYSCONFDIR "/naemon.cfg"
-#define DEFAULT_LOCK_FILE			LOCKFILE
-#define DEFAULT_OBJECT_CACHE_FILE		LOCALSTATEDIR "/objects.cache"
-#define DEFAULT_PRECACHED_OBJECT_FILE		LOCALSTATEDIR "/objects.precache"
-#define DEFAULT_EVENT_BROKER_FILE		LOCALSTATEDIR "/broker.socket"
+#define DEFAULT_TEMP_FILE              NAEMON_LOCALSTATEDIR "/tempfile"
+#define DEFAULT_TEMP_PATH              "/tmp"
+#define DEFAULT_CHECK_RESULT_PATH      NAEMON_LOCALSTATEDIR "/spool/checkresults"
+#define DEFAULT_STATUS_FILE            NAEMON_LOCALSTATEDIR "/status.dat"
+#define DEFAULT_LOG_FILE               NAEMON_LOGDIR "/naemon.log"
+#define DEFAULT_LOG_ARCHIVE_PATH       NAEMON_LOGDIR "/archives/"
+#define DEFAULT_DEBUG_FILE             NAEMON_LOCALSTATEDIR "/naemon.debug"
+#define DEFAULT_COMMENT_FILE           NAEMON_LOCALSTATEDIR "/comments.dat"
+#define DEFAULT_DOWNTIME_FILE          NAEMON_LOCALSTATEDIR "/downtime.dat"
+#define DEFAULT_RETENTION_FILE         NAEMON_LOCALSTATEDIR "/retention.dat"
+#define DEFAULT_COMMAND_FILE           NAEMON_LOCALSTATEDIR "/naemon.cmd"
+#define DEFAULT_QUERY_SOCKET           NAEMON_LOCALSTATEDIR "/naemon.qh"
+#define DEFAULT_CONFIG_FILE			   NAEMON_SYSCONFDIR "/naemon.cfg"
+#define DEFAULT_LOCK_FILE              NAEMON_LOCKFILE
+#define DEFAULT_OBJECT_CACHE_FILE      NAEMON_LOCALSTATEDIR "/objects.cache"
+#define DEFAULT_PRECACHED_OBJECT_FILE  NAEMON_LOCALSTATEDIR "/objects.precache"
+#define DEFAULT_EVENT_BROKER_FILE      NAEMON_LOCALSTATEDIR "/broker.socket"
 
 #endif /* INCLUDE_defaults_h__ */
