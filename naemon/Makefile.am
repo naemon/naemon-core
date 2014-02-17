@@ -1,6 +1,6 @@
 SUBDIRS = lib
 AM_CPPFLAGS += -I$(top_builddir) '-DSYSCONFDIR="$(sysconfdir)"' '-DLOCALSTATEDIR="$(localstatedir)"' '-DLOGDIR="$(logdir)"' '-DLOCKFILE="$(lockfile)"'
-BUILT_SOURCES = wpres-phash.h
+BUILT_SOURCES = wpres-phash.h buildopts.h
 
 nobase_pkginclude_HEADERS = \
 	lib/bitmap.h    lib/kvvec.h       lib/nsock.h    lib/skiplist.h \
@@ -18,7 +18,8 @@ pkginclude_HEADERS = \
 	common.h         logging.h      nebmodules.h     shared.h \
 	configuration.h  macros.h       nebstructs.h     sretention.h \
 	defaults.h       naemon.h       nerd.h           statusdata.h \
-	downtime.h       naemonstats.h  notifications.h  utils.h
+	downtime.h       naemonstats.h  notifications.h  utils.h \
+	buildopts.h
 
 wpres-phash.h: wpres.gperf
 	$(AM_V_GEN) $(GPERF) --switch=1 --struct-type \
@@ -27,7 +28,14 @@ wpres-phash.h: wpres.gperf
 		--language=ANSI-C \
 	$< > $@
 
-CLEANFILES = wpres-phash.h
+buildopts.h: buildopts.h.in
+	sed -e 's,@@NAEMON_SYSCONFDIR@@,$(sysconfdir),' \
+	 -e 's,@@NAEMON_LOCALSTATEDIR@@,$(localstatedir),' \
+	 -e 's,@@NAEMON_LOGDIR@@,$(logdir),' \
+	 -e 's,@@NAEMON_LOCKFILE@@,$(lockfile),' \
+	$< > $@
+
+CLEANFILES = wpres-phash.h buildopts.h
 
 common_sources = \
 	broker.c broker.h \
@@ -64,7 +72,8 @@ common_sources = \
 	xrddefault.c xrddefault.h \
 	xsddefault.c xsddefault.h \
 	nagios.h naemon.h \
-	wpres.gperf
+	wpres.gperf \
+	buildopts.h
 
 
 bin_PROGRAMS = naemon naemonstats oconfsplit
@@ -74,7 +83,7 @@ naemon_CPPFLAGS = $(AM_CPPFLAGS) -DPREFIX='"$(prefix)"'
 naemon_LDADD = lib/libnaemon.la -lm -ldl
 naemon_LDFLAGS = -rdynamic -static
 
-naemonstats_SOURCES = naemonstats.c lib/nspath.h lib/nspath.c
+naemonstats_SOURCES = naemonstats.c buildopts.h lib/nspath.h lib/nspath.c
 
 oconfsplit_LDADD = lib/libnaemon.la -lm -ldl
 oconfsplit_SOURCES = oconfsplit.c $(common_sources)
