@@ -1,18 +1,17 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.63])
+AC_PREREQ([2.59])
 AC_INIT([naemon], [0.8.0], [naemon-dev@monitoring-lists.org])
 AC_CONFIG_SRCDIR([naemon/naemon.c])
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_HEADERS([config.h naemon/lib/snprintf.h])
 
-AC_CONFIG_MACRO_DIR([m4])
-
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_MAKE_SET
+AC_PROG_LIBTOOL
 AM_PROG_CC_C_O
 
 AC_ARG_WITH([tests],
@@ -60,6 +59,7 @@ AX_CHECK_COMPILE_FLAG([-Wshadow], AM_CFLAGS+=" -Wshadow")
 AX_CHECK_COMPILE_FLAG([-Wstrict-prototypes], AM_CFLAGS+=" -Wstrict-prototypes")
 AX_CHECK_COMPILE_FLAG([-Wno-unused-result], AM_CFLAGS+=" -Wno-unused-result")
 AX_CHECK_COMPILE_FLAG([-Wno-unused-parameter], AM_CFLAGS+=" -Wno-unused-parameter")
+AX_CHECK_COMPILE_FLAG([-Wno-strict-aliasing], AM_CFLAGS+=" -Wno-strict-aliasing")
 
 AC_SUBST([AM_CPPFLAGS])
 AC_SUBST([AM_CFLAGS])
