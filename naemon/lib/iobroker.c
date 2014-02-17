@@ -291,7 +291,8 @@ int iobroker_close(iobroker_set *iobs, int fd)
 	int result;
 
 	result = iobroker_unregister(iobs, fd);
-	(void)close(fd);
+	if (fd >= 0) /* make sure valgrind shuts up */
+		(void)close(fd);
 	return result;
 }
 
