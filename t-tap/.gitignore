@@ -2,6 +2,7 @@
 /test_macros
 /test_neb_callbacks
 /test_timeperiods
+/test_config
 *.dSYM
 test*.log
 test*.trs
