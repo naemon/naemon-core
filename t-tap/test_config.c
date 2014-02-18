@@ -34,11 +34,11 @@ int main(int argc, char **argv)
 {
 	int result;
 	int c = 0;
-	host *temp_host = NULL;
+	struct host *host1, *host2;
 	hostgroup *temp_hostgroup = NULL;
 	hostsmember *temp_member = NULL;
 
-	plan_tests(16);
+	plan_tests(21);
 
 	/* reset program variables */
 	reset_variables();
@@ -72,8 +72,12 @@ int main(int argc, char **argv)
 		//printf("host pointer=%d\n", temp_member->host_ptr);
 	}
 
-	temp_host = find_host("host1");
-	ok(temp_host->current_state == 0, "State is assumed OK on initial load");
+	host1 = find_host("host1");
+	host2 = find_host("host2");
+	ok(host1 != NULL && host2 != NULL, "find_host() should work");
+	ok(host1->current_state == 0, "State is assumed OK on initial load");
+	ok(host1->notifications_enabled == 1, "host1 notifications_enabled set from config");
+	ok(host2->notifications_enabled == 1, "host2 notifications_enabled set from config");
 
 	ok(!link(NAEMON_SYSCONFDIR "/retention.dat", get_default_retention_file()), "Linking retention file from %s to writable path %s: %s", NAEMON_SYSCONFDIR "/retention.dat", get_default_retention_file(), strerror(errno));
 	retention_file = strdup(get_default_retention_file());
@@ -82,7 +86,9 @@ int main(int argc, char **argv)
 	init_event_queue();
 	ok(xrddefault_read_state_information() == OK, "Reading retention data");
 
-	ok(temp_host->current_state == 1, "State changed due to retention file settings");
+	ok(host1->current_state == 1, "State changed due to retention file settings");
+	ok(host1->notifications_enabled == 1, "Config change should override notifications_enabled for host1");
+	ok(host2->notifications_enabled == 0, "Retention data should win on no config change");
 
 	ok(find_host_comment(418) != NULL, "Found host comment id 418");
 	ok(find_service_comment(419) != NULL, "Found service comment id 419");
