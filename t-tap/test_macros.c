@@ -47,7 +47,7 @@ host test_host = { .name = "name'&%", .address = "address'&%", .notes_url =
 /*                             Helper functions                              */
 /*****************************************************************************/
 
-void init_environment()
+void init_environment(void)
 {
 	char *p;
 
