@@ -1,18 +1,20 @@
 #include "fixtures.h"
 
-void check_result_destroy(check_result *cr) {
+void check_result_destroy(check_result *cr)
+{
 	free(cr->output);
 	free(cr);
 }
 
 check_result *check_result_new(int status, const char *output) {
 	struct timeval start_time, finish_time;
+	check_result *cr = calloc(1, sizeof(check_result));
+
 	start_time.tv_sec = (time_t)(time(NULL) - 2);
 	start_time.tv_usec = 0L;
 	finish_time.tv_sec = (time_t)(time(NULL) - 1);
 	finish_time.tv_usec = 0L;
 
-	check_result *cr = calloc(1, sizeof(check_result));
 	cr->check_type = SERVICE_CHECK_ACTIVE;
 	cr->check_options = 0;
 	cr->scheduled_check = TRUE;
@@ -27,15 +29,16 @@ check_result *check_result_new(int status, const char *output) {
 	return cr;
 }
 
-void host_destroy(host *host) {
-	free(host->name);
-	free(host->address);
-	free(host);
+void host_destroy(struct host *hst)
+{
+	free(hst->name);
+	free(hst->address);
+	free(hst);
 }
 
-host *host_new(const char *name) {
-
-	host *new_host = (host *)calloc(1, sizeof(host));
+host *host_new(const char *name)
+{
+	struct host *new_host = (host *)calloc(1, sizeof(host));
 	new_host->name = strdup(name);
 	new_host->address = strdup("127.0.0.1");
 	new_host->retry_interval = 1;
@@ -49,17 +52,18 @@ host *host_new(const char *name) {
 	return new_host;
 }
 
-void service_destroy(service *service) {
-	free(service->host_name);
-	free(service->description);
-	free(service->plugin_output);
-	free(service);
+void service_destroy(struct service *svc)
+{
+	free(svc->host_name);
+	free(svc->description);
+	free(svc->plugin_output);
+	free(svc);
 }
 
-service *service_new(host *host, const char *service_description) {
-	service *new_svc = (service *)calloc(1, sizeof(service));
-	new_svc->host_name = strdup(host->name);
-	new_svc->host_ptr = host;
+struct service *service_new(struct host *hst, const char *service_description) {
+	struct service *new_svc = (struct service *)calloc(1, sizeof(*new_svc));
+	new_svc->host_name = strdup(hst->name);
+	new_svc->host_ptr = hst;
 	new_svc->description = strdup(service_description);
 	new_svc->check_options = 0;
 	new_svc->next_check = (time_t) (time(NULL) + 1);

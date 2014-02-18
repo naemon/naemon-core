@@ -1,3 +1,4 @@
+#include <string.h>
 #include "naemon/configuration.h"
 #include "naemon/comments.h"
 #include "naemon/common.h"
@@ -18,7 +19,7 @@ int found_log_rechecking_host_when_service_wobbles = 0;
 int found_log_run_async_host_check = 0;
 check_result *tmp_check_result;
 
-void setup_check_result()
+void setup_check_result(void)
 {
 	struct timeval start_time, finish_time;
 	start_time.tv_sec = 1234567890L;
@@ -39,7 +40,7 @@ void setup_check_result()
 	tmp_check_result->finish_time = finish_time;
 }
 
-void setup_objects(time_t time)
+void setup_objects(time_t when)
 {
 	enable_predictive_service_dependency_checks = FALSE;
 
@@ -52,8 +53,8 @@ void setup_objects(time_t time)
 	host1->state_type = SOFT_STATE;
 	host1->current_state = HOST_DOWN;
 	host1->has_been_checked = TRUE;
-	host1->last_check = time;
-	host1->next_check = time;
+	host1->last_check = when;
+	host1->next_check = when;
 
 	/* First service is a normal one */
 	svc1 = (service *)calloc(1, sizeof(service));
@@ -61,7 +62,7 @@ void setup_objects(time_t time)
 	svc1->host_ptr = host1;
 	svc1->description = strdup("Normal service");
 	svc1->check_options = 0;
-	svc1->next_check = time;
+	svc1->next_check = when;
 	svc1->state_type = SOFT_STATE;
 	svc1->current_state = STATE_CRITICAL;
 	svc1->retry_interval = 1;
@@ -80,7 +81,7 @@ void setup_objects(time_t time)
 	svc2->host_name = strdup("Host1");
 	svc2->description = strdup("To be nudged");
 	svc2->check_options = 0;
-	svc2->next_check = time;
+	svc2->next_check = when;
 	svc2->state_type = SOFT_STATE;
 	svc2->current_state = STATE_OK;
 	svc2->retry_interval = 1;

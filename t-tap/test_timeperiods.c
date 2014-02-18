@@ -2,14 +2,12 @@
  *
  * test_timeperiod.c - Test timeperiod
  *
- * Program: Nagios Core Testing
+ * Program: Naemon Core Testing
  * License: GPL
- *
- * First Written:   10-08-2009, based on nagios.c
  *
  * Description:
  *
- * Tests Nagios configuration loading
+ * Tests Naemon configuration loading
  *
  * License:
  *
@@ -27,25 +25,11 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  *****************************************************************************/
-
 #include <string.h>
 
-#include "naemon/configuration.h"
-#include "naemon/common.h"
-#include "naemon/objects.h"
-#include "naemon/comments.h"
-#include "naemon/downtime.h"
-#include "naemon/statusdata.h"
-#include "naemon/macros.h"
-#include "naemon/nagios.h"
-#include "naemon/sretention.h"
-#include "naemon/perfdata.h"
-#include "naemon/broker.h"
-#include "naemon/nebmods.h"
-#include "naemon/nebmodules.h"
-#include "tap.h"
-
 #include "naemon/utils.c"
+#include "naemon/configuration.h"
+#include "tap.h"
 
 int main(int argc, char **argv)
 {
