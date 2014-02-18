@@ -1,6 +1,7 @@
 SUBDIRS = lib
 AM_CPPFLAGS += -I$(top_builddir) '-DSYSCONFDIR="$(sysconfdir)"' '-DLOCALSTATEDIR="$(localstatedir)"' '-DLOGDIR="$(logdir)"' '-DLOCKFILE="$(lockfile)"'
 BUILT_SOURCES = wpres-phash.h buildopts.h
+EXTRA_DIST = buildopts.h.in
 
 nobase_pkginclude_HEADERS = \
 	lib/bitmap.h    lib/kvvec.h       lib/nsock.h    lib/skiplist.h \
