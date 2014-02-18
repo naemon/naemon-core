@@ -129,8 +129,6 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 
 		log_debug_info(DEBUGL_MACROS, 2, "  Processing part: '%s'\n", temp_buffer);
 
-		selected_macro = NULL;
-
 		/* we're in plain text... */
 		if (in_macro == FALSE) {
 
@@ -140,91 +138,91 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 
 			log_debug_info(DEBUGL_MACROS, 2, "  Not currently in macro.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
 			in_macro = TRUE;
+			continue;
 		}
 
 		/* looks like we're in a macro, so process it... */
-		else {
-			/* grab the macro value */
-			free_macro = FALSE;
-			result = grab_macro_value_r(mac, temp_buffer, &selected_macro, &macro_options, &free_macro);
-			log_debug_info(DEBUGL_MACROS, 2, "  Processed '%s', Free: %d\n", temp_buffer, free_macro);
+		/* grab the macro value */
+		free_macro = FALSE;
+		selected_macro = NULL;
+		result = grab_macro_value_r(mac, temp_buffer, &selected_macro, &macro_options, &free_macro);
+		log_debug_info(DEBUGL_MACROS, 2, "  Processed '%s', Free: %d\n", temp_buffer, free_macro);
 
-			/* an error occurred - we couldn't parse the macro, so continue on */
-			if (result == ERROR) {
-				log_debug_info(DEBUGL_MACROS, 0, " WARNING: An error occurred processing macro '%s'!\n", temp_buffer);
-				if (free_macro == TRUE)
-					my_free(selected_macro);
-			}
-
-			if (result == OK)
-				; /* do nothing special if things worked out ok */
-			/* an escaped $ is done by specifying two $$ next to each other */
-			else if (!strcmp(temp_buffer, "")) {
-				log_debug_info(DEBUGL_MACROS, 2, "  Escaped $.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
-				*output_buffer = (char *)realloc(*output_buffer, strlen(*output_buffer) + 2);
-				strcat(*output_buffer, "$");
-			}
-
-			/* a non-macro, just some user-defined string between two $s */
-			else {
-				log_debug_info(DEBUGL_MACROS, 2, "  Non-macro.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
-
-				/* add the plain text to the end of the already processed buffer */
-				*output_buffer = (char *)realloc(*output_buffer, strlen(*output_buffer) + strlen(temp_buffer) + 3);
-				strcat(*output_buffer, "$");
-				strcat(*output_buffer, temp_buffer);
-				strcat(*output_buffer, "$");
-			}
-
-			/* insert macro */
-			if (selected_macro != NULL) {
-				log_debug_info(DEBUGL_MACROS, 2, "  Processed '%s', Free: %d,  Cleaning options: %d\n", temp_buffer, free_macro, options);
-
-				/* URL encode the macro if requested - this allocates new memory */
-				if (options & URL_ENCODE_MACRO_CHARS) {
-					original_macro = selected_macro;
-					selected_macro = get_url_encoded_string(selected_macro);
-					if (free_macro == TRUE) {
-						my_free(original_macro);
-					}
-					free_macro = TRUE;
-				}
-
-				/* some macros should sometimes be cleaned */
-				if (macro_options & options & (STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS)) {
-					char *cleaned_macro = NULL;
-
-					/* add the (cleaned) processed macro to the end of the already processed buffer */
-					if (selected_macro != NULL && (cleaned_macro = clean_macro_chars(selected_macro, options)) != NULL) {
-						*output_buffer = (char *)realloc(*output_buffer, strlen(*output_buffer) + strlen(cleaned_macro) + 1);
-						strcat(*output_buffer, cleaned_macro);
-						if (*cleaned_macro)
-							free(cleaned_macro);
-
-						log_debug_info(DEBUGL_MACROS, 2, "  Cleaned macro.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
-					}
-				}
-
-				/* others are not cleaned */
-				else {
-					/* add the processed macro to the end of the already processed buffer */
-					if (selected_macro != NULL) {
-						*output_buffer = (char *)realloc(*output_buffer, strlen(*output_buffer) + strlen(selected_macro) + 1);
-						strcat(*output_buffer, selected_macro);
-
-						log_debug_info(DEBUGL_MACROS, 2, "  Uncleaned macro.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
-					}
-				}
-
-				/* free memory if necessary (if we URL encoded the macro or we were told to do so by grab_macro_value()) */
-				if (free_macro == TRUE)
-					my_free(selected_macro);
-
-				log_debug_info(DEBUGL_MACROS, 2, "  Just finished macro.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
-			}
-
-			in_macro = FALSE;
+		/* an error occurred - we couldn't parse the macro, so continue on */
+		if (result == ERROR) {
+			log_debug_info(DEBUGL_MACROS, 0, " WARNING: An error occurred processing macro '%s'!\n", temp_buffer);
+			if (free_macro == TRUE)
+				my_free(selected_macro);
 		}
+
+		if (result == OK)
+			; /* do nothing special if things worked out ok */
+		/* an escaped $ is done by specifying two $$ next to each other */
+		else if (!strcmp(temp_buffer, "")) {
+			log_debug_info(DEBUGL_MACROS, 2, "  Escaped $.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
+			*output_buffer = (char *)realloc(*output_buffer, strlen(*output_buffer) + 2);
+			strcat(*output_buffer, "$");
+		}
+
+		/* a non-macro, just some user-defined string between two $s */
+		else {
+			log_debug_info(DEBUGL_MACROS, 2, "  Non-macro.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
+
+			/* add the plain text to the end of the already processed buffer */
+			*output_buffer = (char *)realloc(*output_buffer, strlen(*output_buffer) + strlen(temp_buffer) + 3);
+			strcat(*output_buffer, "$");
+			strcat(*output_buffer, temp_buffer);
+			strcat(*output_buffer, "$");
+		}
+
+		/* insert macro */
+		if (selected_macro != NULL) {
+			log_debug_info(DEBUGL_MACROS, 2, "  Processed '%s', Free: %d,  Cleaning options: %d\n", temp_buffer, free_macro, options);
+
+			/* URL encode the macro if requested - this allocates new memory */
+			if (options & URL_ENCODE_MACRO_CHARS) {
+				original_macro = selected_macro;
+				selected_macro = get_url_encoded_string(selected_macro);
+				if (free_macro == TRUE) {
+					my_free(original_macro);
+				}
+				free_macro = TRUE;
+			}
+
+			/* some macros should sometimes be cleaned */
+			if (macro_options & options & (STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS)) {
+				char *cleaned_macro = NULL;
+
+				/* add the (cleaned) processed macro to the end of the already processed buffer */
+				if (selected_macro != NULL && (cleaned_macro = clean_macro_chars(selected_macro, options)) != NULL) {
+					*output_buffer = (char *)realloc(*output_buffer, strlen(*output_buffer) + strlen(cleaned_macro) + 1);
+					strcat(*output_buffer, cleaned_macro);
+					if (*cleaned_macro)
+						free(cleaned_macro);
+
+					log_debug_info(DEBUGL_MACROS, 2, "  Cleaned macro.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
+				}
+			}
+
+			/* others are not cleaned */
+			else {
+				/* add the processed macro to the end of the already processed buffer */
+				if (selected_macro != NULL) {
+					*output_buffer = (char *)realloc(*output_buffer, strlen(*output_buffer) + strlen(selected_macro) + 1);
+					strcat(*output_buffer, selected_macro);
+
+					log_debug_info(DEBUGL_MACROS, 2, "  Uncleaned macro.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
+				}
+			}
+
+			/* free memory if necessary (if we URL encoded the macro or we were told to do so by grab_macro_value()) */
+			if (free_macro == TRUE)
+				my_free(selected_macro);
+
+			log_debug_info(DEBUGL_MACROS, 2, "  Just finished macro.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
+		}
+
+		in_macro = FALSE;
 	}
 
 	/* free copy of input buffer */
