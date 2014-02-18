@@ -141,6 +141,15 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 			continue;
 		}
 
+		/* an escaped $ is done by specifying two $$ next to each other */
+		if (!strcmp(temp_buffer, "")) {
+			log_debug_info(DEBUGL_MACROS, 2, "  Escaped $.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
+			*output_buffer = (char *)realloc(*output_buffer, strlen(*output_buffer) + 2);
+			strcat(*output_buffer, "$");
+			in_macro = FALSE;
+			continue;
+		}
+
 		/* looks like we're in a macro, so process it... */
 		/* grab the macro value */
 		free_macro = FALSE;
@@ -155,17 +164,8 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 				my_free(selected_macro);
 		}
 
-		if (result == OK)
-			; /* do nothing special if things worked out ok */
-		/* an escaped $ is done by specifying two $$ next to each other */
-		else if (!strcmp(temp_buffer, "")) {
-			log_debug_info(DEBUGL_MACROS, 2, "  Escaped $.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
-			*output_buffer = (char *)realloc(*output_buffer, strlen(*output_buffer) + 2);
-			strcat(*output_buffer, "$");
-		}
-
 		/* a non-macro, just some user-defined string between two $s */
-		else {
+		if (result != OK) {
 			log_debug_info(DEBUGL_MACROS, 2, "  Non-macro.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
 
 			/* add the plain text to the end of the already processed buffer */
@@ -173,6 +173,8 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 			strcat(*output_buffer, "$");
 			strcat(*output_buffer, temp_buffer);
 			strcat(*output_buffer, "$");
+			in_macro = FALSE;
+			continue;
 		}
 
 		/* insert macro */
