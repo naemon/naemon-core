@@ -1165,10 +1165,10 @@ int add_downtime(int downtime_type, char *host_name, char *svc_description, time
 		result = downtime_add(new_downtime);
 		if (result) {
 			if (new_downtime->type == SERVICE_DOWNTIME) {
-				log_debug_info(DEBUGL_DOWNTIME, 0, "Failed to add downtime for service '%s' on host '%s': %s\n",
+				logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to add downtime for service '%s' on host '%s': %s\n",
 							   new_downtime->service_description, new_downtime->host_name, dt_strerror(result));
 			} else {
-				log_debug_info(DEBUGL_DOWNTIME, 0, "Failed to add downtime for host '%s': %s\n", new_downtime->host_name, dt_strerror(result));
+				logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to add downtime for host '%s': %s\n", new_downtime->host_name, dt_strerror(result));
 			}
 			result = ERROR;
 		}
