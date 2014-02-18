@@ -1,5 +1,5 @@
 SUBDIRS = lib
-AM_CPPFLAGS += -I$(top_builddir) '-DSYSCONFDIR="$(sysconfdir)"' '-DLOCALSTATEDIR="$(localstatedir)"' '-DLOGDIR="$(logdir)"' '-DLOCKFILE="$(lockfile)"'
+AM_CPPFLAGS += -I$(top_builddir)
 BUILT_SOURCES = wpres-phash.h buildopts.h
 EXTRA_DIST = buildopts.h.in
 
@@ -45,7 +45,7 @@ common_sources = \
 	comments.c comments.h \
 	common.h \
 	configuration.c configuration.h \
-	defaults.h \
+	defaults.c defaults.h \
 	downtime.c downtime.h \
 	events.c events.h \
 	flapping.c flapping.h \
@@ -84,7 +84,7 @@ naemon_CPPFLAGS = $(AM_CPPFLAGS) -DPREFIX='"$(prefix)"'
 naemon_LDADD = lib/libnaemon.la -lm -ldl
 naemon_LDFLAGS = -rdynamic -static
 
-naemonstats_SOURCES = naemonstats.c buildopts.h lib/nspath.h lib/nspath.c
+naemonstats_SOURCES = naemonstats.c buildopts.h lib/nspath.h lib/nspath.c defaults.h defaults.c
 
 oconfsplit_LDADD = lib/libnaemon.la -lm -ldl
 oconfsplit_SOURCES = oconfsplit.c $(common_sources)

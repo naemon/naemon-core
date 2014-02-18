@@ -2860,20 +2860,20 @@ void free_notification_list(void)
 int reset_variables(void)
 {
 
-	log_file = (char *)strdup(DEFAULT_LOG_FILE);
-	temp_file = (char *)strdup(DEFAULT_TEMP_FILE);
-	temp_path = (char *)strdup(DEFAULT_TEMP_PATH);
-	check_result_path = (char *)strdup(DEFAULT_CHECK_RESULT_PATH);
-	command_file = (char *)strdup(DEFAULT_COMMAND_FILE);
-	qh_socket_path = (char *)strdup(DEFAULT_QUERY_SOCKET);
+	log_file = (char *)strdup(get_default_log_file());
+	temp_file = (char *)strdup(get_default_temp_file());
+	temp_path = (char *)strdup(get_default_temp_path());
+	check_result_path = (char *)strdup(get_default_check_result_path());
+	command_file = (char *)strdup(get_default_command_file());
+	qh_socket_path = (char *)strdup(get_default_query_socket());
 	if (lock_file) /* this is kept across restarts */
 		free(lock_file);
-	lock_file = (char *)strdup(DEFAULT_LOCK_FILE);
-	log_archive_path = (char *)strdup(DEFAULT_LOG_ARCHIVE_PATH);
-	debug_file = (char *)strdup(DEFAULT_DEBUG_FILE);
+	lock_file = (char *)strdup(get_default_lock_file());
+	log_archive_path = (char *)strdup(get_default_log_archive_path());
+	debug_file = (char *)strdup(get_default_debug_file());
 
-	object_cache_file = (char *)strdup(DEFAULT_OBJECT_CACHE_FILE);
-	object_precache_file = (char *)strdup(DEFAULT_PRECACHED_OBJECT_FILE);
+	object_cache_file = (char *)strdup(get_default_object_cache_file());
+	object_precache_file = (char *)strdup(get_default_precached_object_file());
 
 	naemon_user = (char *)strdup(DEFAULT_NAEMON_USER);
 	naemon_group = (char *)strdup(DEFAULT_NAEMON_GROUP);

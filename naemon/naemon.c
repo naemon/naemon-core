@@ -412,7 +412,7 @@ int main(int argc, char **argv)
 				printf("\n");
 				printf("     Make sure you are specifying the name of the MAIN configuration file on\n");
 				printf("     the command line and not the name of another configuration file.  The\n");
-				printf("     main configuration file is typically '%s'\n", DEFAULT_CONFIG_FILE);
+				printf("     main configuration file is typically '%s'\n", get_default_config_file());
 			}
 
 			printf("\n***> One or more problems was encountered while processing the config files...\n");

@@ -38,14 +38,14 @@ int main(int argc, char **argv)
 	hostgroup *temp_hostgroup = NULL;
 	hostsmember *temp_member = NULL;
 
-	plan_tests(14);
+	plan_tests(16);
 
 	/* reset program variables */
 	reset_variables();
 
 	printf("Reading configuration data...\n");
 
-	config_file = strdup("smallconfig/naemon.cfg");
+	config_file = strdup(get_default_config_file());
 	/* read in the configuration files (main config file, resource and object config files) */
 	result = read_main_config_file(config_file);
 	ok(result == OK, "Read main configuration file okay - if fails, use nagios -v to check");
@@ -75,7 +75,8 @@ int main(int argc, char **argv)
 	temp_host = find_host("host1");
 	ok(temp_host->current_state == 0, "State is assumed OK on initial load");
 
-	retention_file = strdup("smallconfig/retention.dat");
+	ok(!link(NAEMON_SYSCONFDIR "/retention.dat", get_default_retention_file()), "Linking retention file from %s to writable path %s: %s", NAEMON_SYSCONFDIR "/retention.dat", get_default_retention_file(), strerror(errno));
+	retention_file = strdup(get_default_retention_file());
 	initialize_retention_data(config_file);
 	initialize_downtime_data();
 	init_event_queue();
@@ -93,6 +94,7 @@ int main(int argc, char **argv)
 	ok(find_host_downtime(1234567888) == NULL, "No such host downtime");
 
 	cleanup();
+	ok(!unlink(get_default_retention_file()), "Remove linked retention file again");
 
 	my_free(config_file);
 

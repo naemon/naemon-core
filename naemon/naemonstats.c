@@ -204,7 +204,7 @@ int main(int argc, char **argv)
 #endif
 
 	/* defaults */
-	main_config_file = strdup(DEFAULT_CONFIG_FILE);
+	main_config_file = strdup(get_default_config_file());
 
 	/* get all command line arguments */
 	while (1) {

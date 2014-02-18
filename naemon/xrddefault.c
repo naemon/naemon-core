@@ -26,7 +26,7 @@ int xrddefault_initialize_retention_data(const char *cfgfile)
 
 	/* initialize locations if necessary  */
 	if (retention_file == NULL)
-		retention_file = (char *)strdup(DEFAULT_RETENTION_FILE);
+		retention_file = (char *)strdup(get_default_retention_file());
 
 	/* make sure we have everything */
 	if (retention_file == NULL)
