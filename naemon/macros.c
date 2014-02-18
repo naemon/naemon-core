@@ -157,16 +157,13 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 		result = grab_macro_value_r(mac, temp_buffer, &selected_macro, &macro_options, &free_macro);
 		log_debug_info(DEBUGL_MACROS, 2, "  Processed '%s', Free: %d\n", temp_buffer, free_macro);
 
-		/* an error occurred - we couldn't parse the macro, so continue on */
-		if (result == ERROR) {
-			log_debug_info(DEBUGL_MACROS, 0, " WARNING: An error occurred processing macro '%s'!\n", temp_buffer);
+		/** 
+		 * we couldn't parse the macro cause the macro 
+		 * doesn't exist, so continue on 
+		 */
+		if (result != OK) {
 			if (free_macro == TRUE)
 				my_free(selected_macro);
-		}
-
-		/* a non-macro, just some user-defined string between two $s */
-		if (result != OK) {
-			log_debug_info(DEBUGL_MACROS, 2, "  Non-macro.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
 
 			/* add the plain text to the end of the already processed buffer */
 			*output_buffer = (char *)realloc(*output_buffer, strlen(*output_buffer) + strlen(temp_buffer) + 3);
