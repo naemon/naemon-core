@@ -93,7 +93,9 @@
 #define DEFAULT_SERVICE_PERFDATA_PROCESS_EMPTY_RESULTS 1
 
 
-/* default locations */
+/* Legacy way to find out default locations - do not go near these, as they
+ * cause configure options to trigger ABI breaks. At some point, they'll become
+ * hidden */
 #define DEFAULT_TEMP_FILE              NAEMON_LOCALSTATEDIR "/tempfile"
 #define DEFAULT_TEMP_PATH              "/tmp"
 #define DEFAULT_CHECK_RESULT_PATH      NAEMON_LOCALSTATEDIR "/spool/checkresults"
@@ -101,8 +103,8 @@
 #define DEFAULT_LOG_FILE               NAEMON_LOGDIR "/naemon.log"
 #define DEFAULT_LOG_ARCHIVE_PATH       NAEMON_LOGDIR "/archives/"
 #define DEFAULT_DEBUG_FILE             NAEMON_LOCALSTATEDIR "/naemon.debug"
-#define DEFAULT_COMMENT_FILE           NAEMON_LOCALSTATEDIR "/comments.dat"
-#define DEFAULT_DOWNTIME_FILE          NAEMON_LOCALSTATEDIR "/downtime.dat"
+#define DEFAULT_COMMENT_FILE           NAEMON_LOCALSTATEDIR "/comments.dat" /* not used anywhere */
+#define DEFAULT_DOWNTIME_FILE          NAEMON_LOCALSTATEDIR "/downtime.dat" /* not used anywhere */
 #define DEFAULT_RETENTION_FILE         NAEMON_LOCALSTATEDIR "/retention.dat"
 #define DEFAULT_COMMAND_FILE           NAEMON_LOCALSTATEDIR "/naemon.cmd"
 #define DEFAULT_QUERY_SOCKET           NAEMON_LOCALSTATEDIR "/naemon.qh"
@@ -111,5 +113,22 @@
 #define DEFAULT_OBJECT_CACHE_FILE      NAEMON_LOCALSTATEDIR "/objects.cache"
 #define DEFAULT_PRECACHED_OBJECT_FILE  NAEMON_LOCALSTATEDIR "/objects.precache"
 #define DEFAULT_EVENT_BROKER_FILE      NAEMON_LOCALSTATEDIR "/broker.socket"
+
+/* modern way to find out default locations */
+const char const *get_default_temp_file(void);
+const char const *get_default_temp_path(void);
+const char const *get_default_check_result_path(void);
+const char const *get_default_status_file(void);
+const char const *get_default_log_file(void);
+const char const *get_default_log_archive_path(void);
+const char const *get_default_debug_file(void);
+const char const *get_default_retention_file(void);
+const char const *get_default_command_file(void);
+const char const *get_default_query_socket(void);
+const char const *get_default_config_file(void);
+const char const *get_default_lock_file(void);
+const char const *get_default_object_cache_file(void);
+const char const *get_default_precached_object_file(void);
+const char const *get_default_event_broker_file(void);
 
 #endif /* INCLUDE_defaults_h__ */

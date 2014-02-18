@@ -466,7 +466,7 @@ int main(int argc, char **argv)
 
 	if (!config_file) {
 		if (optind >= argc)
-			config_file = DEFAULT_CONFIG_FILE;
+			config_file = strdup(get_default_config_file());
 		else
 			config_file = argv[optind];
 	}

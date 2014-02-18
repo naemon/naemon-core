@@ -41,7 +41,7 @@ int xsddefault_initialize_status_data(const char *cfgfile)
 
 	/* initialize locations if necessary */
 	if (!status_file)
-		status_file = (char *)strdup(DEFAULT_STATUS_FILE);
+		status_file = (char *)strdup(get_default_status_file());
 
 	/* make sure we have what we need */
 	if (status_file == NULL)
