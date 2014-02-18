@@ -465,7 +465,8 @@ int xrddefault_save_state_information(void)
 /******************************************************************/
 #define RETAIN_BOOL(type, obj, v, attr) \
 	do { \
-		if (obj->modified_attributes & attr || (have.v && conf.v == obj->v)) { \
+		if ((obj->modified_attributes & attr && !have.v) || (have.v && conf.v == obj->v)) { \
+			printf("Retaining boolean " #v " for " #type " (%s) (conf.v = %d; have.v = %d)\n", val, conf.v, have.v); \
 			pre_modify_##type##_attribute(obj, attr); \
 			obj->v = atoi(val) > 0 ? TRUE : FALSE; \
 		} \
@@ -528,6 +529,8 @@ int xrddefault_read_state_information(void)
 	int found_directive = FALSE;
 	int is_in_effect = FALSE;
 	int start_notification_sent = FALSE;
+	struct host conf, have;
+	struct contact cont_conf, cont_have;
 
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "xrddefault_read_state_information() start\n");
@@ -562,9 +565,6 @@ int xrddefault_read_state_information(void)
 
 	/* read all lines in the retention file */
 	while (1) {
-		struct host conf, have;
-		struct contact cont_conf, cont_have;
-
 		/* free memory */
 		my_free(inputbuf);
 
