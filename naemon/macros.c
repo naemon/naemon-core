@@ -109,7 +109,9 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 	log_debug_info(DEBUGL_MACROS, 1, "Processing: '%s'\n", input_buffer);
 
 	/* use a duplicate of original buffer, so we don't modify the original */
-	save_buffer = buf_ptr = (input_buffer ? strdup(input_buffer) : NULL);
+	save_buffer = buf_ptr = strdup(input_buffer);
+	if (buf_ptr == NULL)
+		return ERROR;
 
 	while (buf_ptr) {
 
