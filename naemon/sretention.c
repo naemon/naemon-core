@@ -144,11 +144,9 @@ int pre_modify_host_attribute(struct host *h, int attr)
 
 	/* might be stashed already */
 	if (premod_hosts[h->id]) {
-		printf("Host '%s' already stashed. Skipping\n", h->name);
 		return 0;
 	}
 
-	printf("Stashing host '%s'\n", h->name);
 	stash = malloc(sizeof(*stash));
 	memcpy(stash, h, sizeof(*stash));
 	premod_hosts[h->id] = stash;
