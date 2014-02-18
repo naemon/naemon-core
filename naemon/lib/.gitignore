@@ -11,3 +11,5 @@ wproc
 snprintf.h
 core
 stamp-h2
+/test-*.log
+/test-*.trs

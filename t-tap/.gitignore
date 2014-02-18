@@ -1,10 +1,7 @@
-test_events
-test_logging
-test_checks
-test_nagios_config
-test_timeperiods
-test_xsddefault
-test_commands
-test_downtime
-test_strtoul
+/test_checks
+/test_macros
+/test_neb_callbacks
+/test_timeperiods
 *.dSYM
+test*.log
+test*.trs
