@@ -115,20 +115,20 @@
 #define DEFAULT_EVENT_BROKER_FILE      NAEMON_LOCALSTATEDIR "/broker.socket"
 
 /* modern way to find out default locations */
-const char const *get_default_temp_file(void);
-const char const *get_default_temp_path(void);
-const char const *get_default_check_result_path(void);
-const char const *get_default_status_file(void);
-const char const *get_default_log_file(void);
-const char const *get_default_log_archive_path(void);
-const char const *get_default_debug_file(void);
-const char const *get_default_retention_file(void);
-const char const *get_default_command_file(void);
-const char const *get_default_query_socket(void);
-const char const *get_default_config_file(void);
-const char const *get_default_lock_file(void);
-const char const *get_default_object_cache_file(void);
-const char const *get_default_precached_object_file(void);
-const char const *get_default_event_broker_file(void);
+const char *get_default_temp_file(void);
+const char *get_default_temp_path(void);
+const char *get_default_check_result_path(void);
+const char *get_default_status_file(void);
+const char *get_default_log_file(void);
+const char *get_default_log_archive_path(void);
+const char *get_default_debug_file(void);
+const char *get_default_retention_file(void);
+const char *get_default_command_file(void);
+const char *get_default_query_socket(void);
+const char *get_default_config_file(void);
+const char *get_default_lock_file(void);
+const char *get_default_object_cache_file(void);
+const char *get_default_precached_object_file(void);
+const char *get_default_event_broker_file(void);
 
 #endif /* INCLUDE_defaults_h__ */
