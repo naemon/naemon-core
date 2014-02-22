@@ -192,16 +192,16 @@ AC_SUBST(logrotatedir)
 # Determine the naemon plugins dir
 AC_ARG_WITH([pluginsdir],
 [AS_HELP_STRING([--with-pluginsdir],
-[specify the naemon/monitoring plugins directory @<:@default="%{libdir}/naemon/plugins"@:>@])],
-[], [with_pluginsdir="%{libdir}/naemon/plugins"])
+[specify the naemon/monitoring plugins directory @<:@default="${libdir}/naemon/plugins"@:>@])],
+[], [with_pluginsdir="${libdir}/naemon/plugins"])
 pluginsdir="$with_pluginsdir"
 AC_SUBST(pluginsdir)
 
 # Determine the mail binary
 AC_ARG_WITH([mail],
 [AS_HELP_STRING([--with-mail],
-[specify the mail binary used for the sample configuration @<:@default="%{bindir}/mail"@:>@])],
-[], [with_mail="%{bindir}/mail"])
+[specify the mail binary used for the sample configuration @<:@default="${bindir}/mail"@:>@])],
+[], [with_mail="${bindir}/mail"])
 MAIL_PROG="$with_mail"
 AC_SUBST(MAIL_PROG)
 
