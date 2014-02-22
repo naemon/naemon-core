@@ -32,6 +32,7 @@ $(CONFIG_FILES) : % : %.in
 		-e 's,@CHECKRESULTDIR[@],$(CHECKRESULTDIR),g' \
 		-e 's,@TMPDIR[@],$(TMPDIR),g' \
 		-e 's,@VERSION[@],$(VERSION),g' \
+		-e 's,@MAIL_PROG[@],$(MAIL_PROG),g' \
 		$< > $@
 
 # not install-share-hook, because sysconfdir is usually part of install-exec

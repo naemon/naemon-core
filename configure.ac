@@ -197,6 +197,14 @@ AC_ARG_WITH([pluginsdir],
 pluginsdir="$with_pluginsdir"
 AC_SUBST(pluginsdir)
 
+# Determine the mail binary
+AC_ARG_WITH([mail],
+[AS_HELP_STRING([--with-mail],
+[specify the mail binary used for the sample configuration @<:@default="%{bindir}/mail"@:>@])],
+[], [with_mail="%{bindir}/mail"])
+MAIL_PROG="$with_mail"
+AC_SUBST(MAIL_PROG)
+
 AC_SUBST(libdir)
 AC_CONFIG_FILES([Makefile
                  daemon-init
