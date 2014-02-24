@@ -139,6 +139,9 @@ char *nspath_absolute(const char *rel_path, const char *base)
 	int len;
 	char *path = NULL, *normpath;
 
+	if (!rel_path)
+		return NULL;
+
 	if (*rel_path == '/')
 		return nspath_normalize(rel_path);
 
