@@ -208,6 +208,7 @@ AC_SUBST(MAIL_PROG)
 AC_SUBST(libdir)
 AC_CONFIG_FILES([Makefile
                  daemon-init
+                 daemon-systemd
                  naemon.logrotate
                  naemon/Makefile
                  naemon/lib/Makefile
