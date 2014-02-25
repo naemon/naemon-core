@@ -32,6 +32,7 @@ check_PROGRAMS = test_macros test_timeperiods test_checks \
 TESTS = $(check_PROGRAMS)
 FIXTURE_FILES = smallconfig/minimal.cfg smallconfig/naemon.cfg smallconfig/resource.cfg smallconfig/retention.dat
 DISTCLEANFILES = $(FIXTURE_FILES)
+CLEANFILES = smallconfig/naemon.log
 EXTRA_DIST = smallconfig/minimal.cfg smallconfig/naemon.cfg \
 	smallconfig/resource.cfg smallconfig/retention.dat $(FIXTURE_FILES)
 AM_TESTS_ENVIRONMENT = \
