@@ -47,17 +47,17 @@ extern unsigned int wproc_num_workers_desired;
 
 struct load_control; /* TODO: load_control is ugly */
 
-extern void wproc_reap(int jobs, int msecs);
-extern int wproc_can_spawn(struct load_control *lc);
-extern void free_worker_memory(int flags);
-extern int workers_alive(void);
-extern int init_workers(int desired_workers);
-extern int wproc_run_check(check_result *cr, char *cmd, nagios_macros *mac);
-extern int wproc_notify(char *cname, char *hname, char *sdesc, char *cmd, nagios_macros *mac);
-extern int wproc_run(int job_type, char *cmd, int timeout, nagios_macros *mac);
-extern int wproc_run_service_job(int jtype, int timeout, service *svc, char *cmd, nagios_macros *mac);
-extern int wproc_run_host_job(int jtype, int timeout, host *hst, char *cmd, nagios_macros *mac);
-extern int wproc_run_callback(char *cmt, int timeout, void (*cb)(struct wproc_result *, void *, int), void *data, nagios_macros *mac);
+void wproc_reap(int jobs, int msecs);
+int wproc_can_spawn(struct load_control *lc);
+void free_worker_memory(int flags);
+int workers_alive(void);
+int init_workers(int desired_workers);
+int wproc_run_check(check_result *cr, char *cmd, nagios_macros *mac);
+int wproc_notify(char *cname, char *hname, char *sdesc, char *cmd, nagios_macros *mac);
+int wproc_run(int job_type, char *cmd, int timeout, nagios_macros *mac);
+int wproc_run_service_job(int jtype, int timeout, service *svc, char *cmd, nagios_macros *mac);
+int wproc_run_host_job(int jtype, int timeout, host *hst, char *cmd, nagios_macros *mac);
+int wproc_run_callback(char *cmt, int timeout, void (*cb)(struct wproc_result *, void *, int), void *data, nagios_macros *mac);
 
 NAGIOS_END_DECL;
 #endif

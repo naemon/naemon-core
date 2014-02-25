@@ -13,10 +13,10 @@ NAGIOS_BEGIN_DECL
 /*** Query Handler functions, types and macros*/
 typedef int (*qh_handler)(int, char *, unsigned int);
 
-extern int qh_init(const char *path);
-extern void qh_deinit(const char *path);
-extern int qh_register_handler(const char *name, const char *description, unsigned int options, qh_handler handler);
-extern const char *qh_strerror(int code);
+int qh_init(const char *path);
+void qh_deinit(const char *path);
+int qh_register_handler(const char *name, const char *description, unsigned int options, qh_handler handler);
+const char *qh_strerror(int code);
 
 NAGIOS_END_DECL
 
