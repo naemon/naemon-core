@@ -10,6 +10,7 @@ AC_CONFIG_HEADERS([config.h naemon/lib/snprintf.h])
 
 # Checks for programs.
 AC_PROG_CC
+AC_PROG_AWK
 AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
 AM_PROG_CC_C_O
@@ -206,6 +207,7 @@ MAIL_PROG="$with_mail"
 AC_SUBST(MAIL_PROG)
 
 AC_SUBST(libdir)
+AC_REQUIRE_AUX_FILE([tap-driver.sh])
 AC_CONFIG_FILES([Makefile
                  daemon-init
                  daemon-systemd
