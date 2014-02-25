@@ -9,7 +9,7 @@
  */
 START_TEST(services)
 {
-	int res, hits;
+	int res, hits, s5_hits = 0;
 	service *s;
 	res = reset_variables();
 	ck_assert_int_eq(OK, res);
@@ -21,8 +21,13 @@ START_TEST(services)
 		if (!strcmp(s->description, "service3")) {
 			ck_assert_str_eq("from_template", s->display_name);
 		}
+		if (!strcmp(s->description, "service5")) {
+			s5_hits++;
+			ck_assert_msg(!strncmp("host", s->host_name, 4), "Only the host* hosts should match");
+		}
 	}
-	ck_assert_int_eq(3, hits);
+	ck_assert_int_eq(2, s5_hits);
+	ck_assert_int_eq(5, hits);
 }
 END_TEST
 
