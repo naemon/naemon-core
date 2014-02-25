@@ -48,7 +48,7 @@ extern char *config_file_dir;
 
 #ifdef HAVE_TZNAME
 #ifdef CYGWIN
-extern char     *_tzname[2] __declspec(dllimport);
+char     *_tzname[2] __declspec(dllimport);
 #else
 extern char     *tzname[2];
 #endif
@@ -335,7 +335,7 @@ NAGIOS_END_DECL
 #define CMD_ERROR_INTERNAL_ERROR 3 /* Internal error */
 #define CMD_ERROR_FAILURE 4 /* Command routine failed */
 
-extern const char *cmd_error_strerror(int error_code);
+const char *cmd_error_strerror(int error_code);
 
 /**************************** CHECK TYPES ********************************/
 

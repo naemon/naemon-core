@@ -263,7 +263,7 @@ int init_macros(void);
 int init_macrox_names(void);
 int free_macrox_names(void);
 
-extern void copy_constant_macros(char **dest);
+void copy_constant_macros(char **dest);
 
 /* clear macros */
 int clear_argv_macros(void);
