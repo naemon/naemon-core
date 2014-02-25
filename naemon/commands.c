@@ -800,7 +800,7 @@ static struct external_command * parse_nokv_command(const char * cmdstr, int *er
 	int parse_error;
 	struct external_command * ext_command = NULL, *command2 = NULL;
 	char *cmd = NULL;
-	char *command_name = NULL;
+	char *cmd_name = NULL;
 	time_t entry_time = 0L;
 	*error = CMD_ERROR_OK;
 	if (cmdstr == NULL) {
@@ -821,7 +821,7 @@ static struct external_command * parse_nokv_command(const char * cmdstr, int *er
 		else if((temp_ptr = my_strtok(NULL, ";")) == NULL) {
 			*error = CMD_ERROR_MALFORMED_COMMAND;
 		}
-		else if((command_name = (char *)strdup(temp_ptr + 1)) == NULL) {
+		else if((cmd_name = (char *)strdup(temp_ptr + 1)) == NULL) {
 			*error = CMD_ERROR_INTERNAL_ERROR;
 		}
 		/* get the command arguments */
@@ -836,17 +836,17 @@ static struct external_command * parse_nokv_command(const char * cmdstr, int *er
 			log_mem_error();
 			*error = CMD_ERROR_INTERNAL_ERROR;
 		}
-		else if (command_name[0] == '_') {
+		else if (cmd_name[0] == '_') {
 			/*command*/
 			*error = CMD_ERROR_CUSTOM_COMMAND;
-			command2 = command_create(command_name, NULL, "A custom command", NULL);
+			command2 = command_create(cmd_name, NULL, "A custom command", NULL);
 			command2->entry_time = entry_time;
 			command2->raw_arguments = strdup(args);
 		}
 
 		if (*error == CMD_ERROR_OK) {
 			/* Find the command */
-			if ((ext_command = command_lookup(command_name)) == NULL) {
+			if ((ext_command = command_lookup(cmd_name)) == NULL) {
 				*error = CMD_ERROR_UNKNOWN_COMMAND;
 			}
 			else {
@@ -863,7 +863,7 @@ static struct external_command * parse_nokv_command(const char * cmdstr, int *er
 		}
 	}
 
-	free(command_name);
+	free(cmd_name);
 	free(args);
 	free(cmd);
 	return command2;
