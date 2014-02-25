@@ -20,7 +20,7 @@
 /******************************************************************/
 
 /* read all configuration data */
-int read_all_object_data(char *main_config_file)
+int read_all_object_data(const char *main_config_file)
 {
 	int result = OK;
 	int options = 0;
@@ -49,7 +49,7 @@ static void obsoleted_warning(const char *key, const char *msg)
 
 
 /* process the main configuration file */
-int read_main_config_file(char *main_config_file)
+int read_main_config_file(const char *main_config_file)
 {
 	char *input = NULL;
 	char *variable = NULL;
@@ -1216,7 +1216,7 @@ int read_main_config_file(char *main_config_file)
 
 
 /* processes macros in resource file */
-int read_resource_file(char *resource_file)
+int read_resource_file(const char *resource_file)
 {
 	char *input = NULL;
 	char *variable = NULL;

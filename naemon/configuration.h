@@ -5,9 +5,9 @@
 
 NAGIOS_BEGIN_DECL
 
-int read_main_config_file(char *);                     		/* reads the main config file (naemon.cfg) */
-int read_resource_file(char *);					/* processes macros in resource file */
-int read_all_object_data(char *);				/* reads all object config data */
+int read_main_config_file(const char *);                     		/* reads the main config file (naemon.cfg) */
+int read_resource_file(const char *);					/* processes macros in resource file */
+int read_all_object_data(const char *);				/* reads all object config data */
 
 int pre_flight_check(void);                          		/* try and verify the configuration data */
 int pre_flight_object_check(int *, int *);               	/* verify object relationships and settings */
