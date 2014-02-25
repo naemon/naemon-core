@@ -53,11 +53,11 @@ static void notification_handle_job_result(struct wproc_result *wpres, void *dat
 	if (wpres) {
 		if (wpres->early_timeout) {
 			if(nj->svc) {
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Notifying contact '%s' of service '%s' on host '%s' by command '%s'\n",
+				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Timeout while notifying contact '%s' of service '%s' on host '%s' by command '%s'\n",
 						nj->ctc->name, nj->svc->description,
 						nj->hst->name, wpres->command);
 			} else {
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Notifying contact '%s' of host '%s' by command '%s'\n",
+				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Timeout while notifying contact '%s' of host '%s' by command '%s'\n",
 						nj->ctc->name, nj->hst->name,
 						wpres->command);
 			}

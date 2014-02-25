@@ -31,10 +31,10 @@ void obsessive_compulsive_job_handler(struct wproc_result *wpres, void *data, in
 	if (wpres) {
 		if (wpres->early_timeout) {
 			if(ocj->svc) {
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: OCSP command '%s' for service '%s' on host '%s'\n",
+				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Timeout while executing OCSP command '%s' for service '%s' on host '%s'\n",
 						wpres->command, ocj->svc->description, ocj->hst->name);
 			} else {
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: OCHP command '%s' for host '%s'\n",
+				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Timeout while executing OCHP command '%s' for host '%s'\n",
 						wpres->command, ocj->hst->name);
 			}
 		}
