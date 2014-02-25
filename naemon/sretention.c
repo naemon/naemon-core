@@ -24,12 +24,12 @@ int initialize_retention_data(const char *cfgfile)
 	if (!(premod_hosts = calloc(sizeof(void *), num_objects.hosts)))
 		return ERROR;
 	if (!(premod_services = calloc(sizeof(void *), num_objects.services))) {
-		free(premod_hosts);
+		my_free(premod_hosts);
 		return ERROR;
 	}
 	if (!(premod_contacts = calloc(sizeof(void *), num_objects.contacts))) {
-		free(premod_hosts);
-		free(premod_services);
+		my_free(premod_hosts);
+		my_free(premod_services);
 		return ERROR;
 	}
 
@@ -43,10 +43,10 @@ int cleanup_retention_data(void)
 	unsigned int i;
 
 	for (i = 0; i < num_objects.hosts; i++) {
-		free(premod_hosts[i]);
+		my_free(premod_hosts[i]);
 	}
 	for (i = 0; i < num_objects.services; i++) {
-		free(premod_services[i]);
+		my_free(premod_services[i]);
 	}
 	premod_hosts = NULL;
 	premod_services = NULL;
