@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 	hostgroup *temp_hostgroup = NULL;
 	hostsmember *temp_member = NULL;
 
-	plan_tests(21);
+	plan_tests(19);
 
 	/* reset program variables */
 	reset_variables();
@@ -46,6 +46,7 @@ int main(int argc, char **argv)
 	printf("Reading configuration data...\n");
 
 	config_file = strdup(get_default_config_file());
+	config_file_dir = nspath_absolute_dirname(config_file, NULL);
 	/* read in the configuration files (main config file, resource and object config files) */
 	result = read_main_config_file(config_file);
 	ok(result == OK, "Read main configuration file okay - if fails, use nagios -v to check");
@@ -79,9 +80,7 @@ int main(int argc, char **argv)
 	ok(host1->notifications_enabled == 1, "host1 notifications_enabled set from config");
 	ok(host2->notifications_enabled == 1, "host2 notifications_enabled set from config");
 
-	ok(!link(NAEMON_SYSCONFDIR "/retention.dat", get_default_retention_file()), "Linking retention file from %s to writable path %s: %s", NAEMON_SYSCONFDIR "/retention.dat", get_default_retention_file(), strerror(errno));
-	retention_file = strdup(get_default_retention_file());
-	initialize_retention_data(config_file);
+	initialize_retention_data(NULL);
 	initialize_downtime_data();
 	init_event_queue();
 	ok(xrddefault_read_state_information() == OK, "Reading retention data");
@@ -100,7 +99,6 @@ int main(int argc, char **argv)
 	ok(find_host_downtime(1234567888) == NULL, "No such host downtime");
 
 	cleanup();
-	ok(!unlink(get_default_retention_file()), "Remove linked retention file again");
 
 	my_free(config_file);
 
