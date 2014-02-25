@@ -2,40 +2,207 @@
 #define _COMMANDS_H
 
 NAGIOS_BEGIN_DECL
+#include <time.h>
+
+/**************************** COMMAND ERRORS *****************************/
+#define CMD_ERROR_OK 0 /* No errors encountered */
+#define CMD_ERROR_UNKNOWN_COMMAND 1 /* Unknown/unsupported command */
+#define CMD_ERROR_MALFORMED_COMMAND 2 /* Command malformed/missing timestamp? */
+#define CMD_ERROR_INTERNAL_ERROR 3 /* Internal error */
+#define CMD_ERROR_FAILURE 4 /* Command routine failed */
+#define CMD_ERROR_PARSE_MISSING_ARG 5 /*Missing required argument for command*/
+#define CMD_ERROR_PARSE_EXCESS_ARG 6 /*Too many arguments for command*/
+#define CMD_ERROR_PARSE_TYPE_MISMATCH 7 /*Wrong type for argument, the argument could not be parsed*/
+#define CMD_ERROR_UNSUPPORTED_ARG_TYPE 8 /*Unsupported argument type - indicative of implementation bug*/
+#define CMD_ERROR_VALIDATION_FAILURE 9 /*Invalid value for argument (validator failed)*/
+#define CMD_ERROR_UNSUPPORTED_PARSE_MODE 10 /*Unsupported parse mode*/
+#define CMD_ERROR_CUSTOM_COMMAND 11 /*Backwards compat. custom command*/
+
+#define GV(NAME) command_argument_get_value(ext_command, NAME)
+#define GV_INT(NAME) (*(int *) GV(NAME))
+#define GV_BOOL(NAME) (GV_INT(NAME))
+#define GV_ULONG(NAME) (*(unsigned long*)GV(NAME))
+#define GV_TIMESTAMP(NAME) (*(time_t *) GV(NAME))
+#define GV_TIMEPERIOD(NAME) ((struct timeperiod *) GV(NAME))
+#define GV_CONTACT(NAME) ((struct contact *) GV(NAME))
+#define GV_CONTACTGROUP(NAME) ((struct contactgroup *) GV(NAME))
+#define GV_HOST(NAME) ((host *) GV(NAME))
+#define GV_HOSTGROUP(NAME) ((struct hostgroup *) GV(NAME))
+#define GV_SERVICE(NAME) ((struct service *) GV(NAME))
+#define GV_SERVICEGROUP(NAME) ((struct servicegroup *) GV(NAME))
+#define GV_STRING(NAME) ((char *) GV(NAME))
+#define GV_DOUBLE(NAME) (*(double *) GV(DOUBLE))
+
+typedef enum {
+	UNKNOWN_TYPE,
+	CONTACT,
+	CONTACTGROUP,
+	TIMEPERIOD,
+	HOST,
+	HOSTGROUP,
+	SERVICE,
+	SERVICEGROUP,
+	STRING,
+	BOOL,
+	INTEGER,
+	ULONG,
+	TIMESTAMP,
+	DOUBLE
+} arg_t;
+
+/**
+ * Convert a numeric command error code to a text string. The error message
+ * is in English.
+ * @param error_code The error code to convert
+ */
+const char *cmd_error_strerror(int error_code);
+
+/*** PARSE MODES ***/
+
+/**
+ * XXX: PARSE MODE PLACEHOLDER
+ * TODO: This is not yet implemented, and subject to change!
+ * Parse a command of the form [<entry time>] <command name>;<arg1>=<value1>;<arg ...>=<value ...>;<argN>=<valueN>.
+ * Note the space between the end of the entry time and the name of the command,
+ * it is significant. Optional arguments (i.e arguments with default values) can be omitted
+ * by not specifying them.
+ * */
+#define COMMAND_SYNTAX_KV (1 << 1)
+
+/**
+ * Parse a command of the form [<entry time>] <command name>;<arg1>;<arg ...>;<argN>.
+ * Note the space between the end of the entry time and the name of the command,
+ * it is significant. Optional arguments (i.e arguments with default values) can be omitted
+ * by replacing their position in the command string with and empty string (semicolons are still
+ * required to denote the absence of a value).
+ *
+ * Command strings in this form rely on the order of the arguments.
+ * */
+#define COMMAND_SYNTAX_NOKV (1 << 2)
+
+
+typedef int (*arg_validator_fn)(void *value);
+
+struct external_command_argument;
+struct external_command;
+typedef int (*ext_command_handler)(const struct external_command *command, time_t entry_time);
+
+/**
+ * Create a command from the given parameters. argspec is a string specifying the argument template
+ * of the form "<type>=name;<type>=name2" where type is one of [timeperiod, host, hostgroup, service,
+ * servicegroup, str, bool, int, ulong, timestamp, double, contact, contactgroup]. argspecs do not
+ * support default values/optional arguments or custom validators, so if those are required you need
+ * to use the somewhat more laborious command_argument_add() interface.
+ * @param cmd The name of the command. Names must be unique within a register. Custom commands are denoted by a leading _ (underscore)
+ * @param handler Callback to be invoked for this command on command_execute_handler()
+ * @param description Text describing the purpose and any caveats of this command
+ * @param argspec Optional argument template specification. Pass NULL if no arguments are required or you want to add them manually with command_argument_add()
+ * @return Pointer to a command. To free the object, use command_destroy()
+ */
+struct external_command /*@null@*/ * command_create(char *cmd, ext_command_handler handler, char *description, char *argspec);
+
+/**
+ * Adds a template for one argument to a command.
+ * @param command The command to add an argument to
+ * @param name The name of the argument
+ * @param type The type of the argument, will be used to determine how to validate the argument if no validator callback is provided
+ * @param default_value A default value for this argument if no other value is passed. Must validate. Pass NULL if the argument is required (not optional)
+ * @param validator Callback that will be called upon parsing of this argument.
+ */
+void command_argument_add(struct external_command *command, char *name, arg_t type, void * default_value, arg_validator_fn validator);
+
+
+/**
+ * Adds a command to the command register. Commands in the command register are susceptible to parsing.
+ * It is an error to deallocate/destroy a command which has been successfully registered.
+ * @param command The command to register
+ * @param id A unique ID for this command. Mainly intended for backwards compatibility for core commands. A negative value enables automatic ID allocation.
+ * @return On success, the allocated ID for the command is returned. On error, a negative value is returned.
+ */
+int command_register(struct external_command *command, int id);
+
+/**
+ * Does a lookup in the command register for a command name.
+ * @param command The name of the command
+ * @return If found, the command with the given name is returned. Otherwise, NULL is returned.
+ */
+struct external_command /*@null@*/ * command_lookup(const char *command);
+
+/**
+ * Returns the value of an argument for a command. If the command was retrieved by command_parse(),
+ * the parsed, validated argument value is returned. Otherwise, the default argument value is returned.
+ * @param command Command
+ * @param arg_name Name of the command (as specified in command_argument_add())
+ * @return A pointer to the value of the argument. Use the GV* macros for convenient casting of argument values.
+ */
+void * command_argument_get_value(const struct external_command *command, const char *arg_name);
+
+/**
+ * Copies the argument value in src to dst. Space for the destination is allocated by the function.
+ * @param dst The destination. To free the destination, use free().
+ * @param src The source
+ * @return On success, 0 is returned. Otherwise, a negative value is returned.
+ */
+int command_argument_value_copy(void **dst, const void *src, arg_t type);
+
+/**
+ * Unregisters and deallocates the given command. This has the effect of
+ * disabling the command for future invocations.
+ * @param command The command to unregister
+ */
+void command_unregister(struct external_command *command);
+
+/**
+ * Allocates space for and initializes the command register. The register grows as needed on
+ * @param initial_size The initial size (number of commands) of the register
+ */
+void registered_commands_init(int initial_size);
+
+/**
+ * Deinitializes the command register including deregistration and deallocation of all currently registered commands.
+ */
+void registered_commands_deinit(void);
+
+/**
+ * Destroys a command.
+ */
+void command_destroy(struct external_command * command);
+
+/**
+ * Parses a string in accordance with the specified mode. The mode is a bitwise or of modes to attempt -
+ * one or more of CMD_SYNTAX_NOKV and CMD_SYNTAX_KV - in that order. When a command is succesfully parsed,
+ * a handle to the matching registered command is returned.
+ * @param cmdstr A command string
+ * @param mode Parse modes to attempt
+ * @param error Pointer to an integer in which to store error codes on failure. This code can be passed to cmd_error_strerror() for conversion to a human readable message.
+ * @return The parsed command, or NULL on failure.
+ */
+struct external_command /*@null@*/ * command_parse(const char * cmdstr, int mode, int * error);
+
+/**
+ * Executes the handler associated with a command.
+ * @param command Command
+ * @return One of OK or ERROR, signifying the success or failure, respectively, of the command handler
+ */
+int command_execute_handler(const struct external_command * command);
+
+/**
+ * For core use only.
+ */
+void register_core_commands(void);
+
+/* Various accessors */
+time_t command_entry_time(const struct external_command * command);
+const char *command_raw_arguments(const struct external_command * command);
+int command_id(const struct external_command * command);
+const char *command_name(const struct external_command * command);
+
 
 int open_command_file(void);					/* creates the external command file as a named pipe (FIFO) and opens it for reading */
 int close_command_file(void);					/* closes and deletes the external command file (FIFO) */
 
 int process_external_command1(char *);                  /* top-level external command processor */
-int process_external_command2(int, time_t, char *);	/* process an external command */
 int process_external_commands_from_file(char *, int);   /* process external commands in a file */
-int process_host_command(int, time_t, char *);          /* process an external host command */
-int process_hostgroup_command(int, time_t, char *);     /* process an external hostgroup command */
-int process_service_command(int, time_t, char *);       /* process an external service command */
-int process_servicegroup_command(int, time_t, char *);  /* process an external servicegroup command */
-int process_contact_command(int, time_t, char *);       /* process an external contact command */
-int process_contactgroup_command(int, time_t, char *);  /* process an external contactgroup command */
-
-int cmd_add_comment(int, time_t, char *);				/* add a service or host comment */
-int cmd_delete_comment(int, char *);				/* delete a service or host comment */
-int cmd_delete_all_comments(int, char *);			/* delete all comments associated with a host or service */
-int cmd_delay_notification(int, char *);				/* delay a service or host notification */
-int cmd_schedule_check(int, char *);				/* schedule an immediate or delayed host check */
-int cmd_schedule_host_service_checks(int, char *, int);		/* schedule an immediate or delayed checks of all services on a host */
-int cmd_signal_process(int, char *);				/* schedules a program shutdown or restart */
-int cmd_process_service_check_result(int, time_t, char *);	/* processes a passive service check */
-int cmd_process_host_check_result(int, time_t, char *);		/* processes a passive host check */
-int cmd_acknowledge_problem(int, char *);			/* acknowledges a host or service problem */
-int cmd_remove_acknowledgement(int, char *);			/* removes a host or service acknowledgement */
-int cmd_schedule_downtime(int, time_t, char *);                 /* schedules host or service downtime */
-int cmd_delete_downtime(int, char *);				/* cancels active/pending host or service scheduled downtime */
-int cmd_change_object_int_var(int, char *);                     /* changes host/svc (int) variable */
-int cmd_change_object_char_var(int, char *);			/* changes host/svc (char) variable */
-int cmd_change_object_custom_var(int, char *);                  /* changes host/svc custom variable */
-int cmd_process_external_commands_from_file(int, char *);       /* process external commands from a file */
-int cmd_delete_downtime_by_start_time_comment(int, char *);
-int cmd_delete_downtime_by_host_name(int, char *);
-int cmd_delete_downtime_by_hostgroup_name(int, char *);
 
 int process_passive_service_check(time_t, char *, char *, int, char *);
 int process_passive_host_check(time_t, char *, int, char *);

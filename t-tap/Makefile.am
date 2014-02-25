@@ -14,6 +14,7 @@ MACROS_DEPS = $(BASE_DEPS) utils.o
 CHECKS_DEPS = $(BASE_DEPS) utils.o
 NEB_CALLBACKS_DEPS = $(BASE_DEPS) utils.o
 CONFIG_DEPS = $(BASE_DEPS) utils.o
+COMMANDS_DEPS = $(BASE_DEPS) utils.o
 test_timeperiods_SOURCES = test_timeperiods.c $(top_srcdir)/naemon/defaults.c
 test_timeperiods_LDADD = $(TIMEPERIODS_DEPS:%=$(top_builddir)/naemon/naemon-%) $(LDADD)
 test_macros_SOURCES = test_macros.c $(top_srcdir)/naemon/defaults.c
@@ -24,8 +25,17 @@ test_neb_callbacks_SOURCES = test_neb_callbacks.c fixtures.c fixtures.h $(top_sr
 test_neb_callbacks_LDADD = $(NEB_CALLBACKS_DEPS:%=$(top_builddir)/naemon/naemon-%) $(LDADD)
 test_config_SOURCES = test_config.c $(top_srcdir)/naemon/defaults.c
 test_config_LDADD = $(CONFIG_DEPS:%=$(top_builddir)/naemon/naemon-%) $(LDADD)
+test_commands_SOURCES = test_commands.c $(top_srcdir)/naemon/defaults.c
+test_commands_LDADD = $(COMMANDS_DEPS:%=$(top_builddir)/naemon/naemon-%) $(LDADD)
 check_PROGRAMS = test_macros test_timeperiods test_checks \
-	test_neb_callbacks test_config
+	test_neb_callbacks test_config test_commands
 TESTS = $(check_PROGRAMS)
+FIXTURE_FILES = smallconfig/minimal.cfg smallconfig/naemon.cfg smallconfig/resource.cfg smallconfig/retention.dat
+DISTCLEANFILES = $(FIXTURE_FILES)
 EXTRA_DIST = smallconfig/minimal.cfg smallconfig/naemon.cfg \
-	smallconfig/resource.cfg smallconfig/retention.dat
+	smallconfig/resource.cfg smallconfig/retention.dat $(FIXTURE_FILES)
+AM_TESTS_ENVIRONMENT = \
+					   if test -n "${builddir}"; then \
+					   cp -R ${abs_srcdir}/smallconfig "${builddir}"; \
+					   chmod -R u+w ${builddir}/smallconfig; \
+					   fi;
