@@ -1243,6 +1243,7 @@ void registered_commands_deinit(void)
 		command_unregister(registered_commands[i]);
 	}
 	num_registered_commands = 0;
+	registered_commands_sz = 0;
 	free(registered_commands);
 	registered_commands = NULL;
 }
