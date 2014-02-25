@@ -8526,9 +8526,17 @@ int xodtemplate_expand_contacts(objectlist **ret, bitmap *reject_map, char *cont
 		/* strip trailing spaces */
 		strip(temp_ptr);
 
+		/* this contact should be excluded (rejected) */
+		if (temp_ptr[0] == '!') {
+			reject_item = TRUE;
+			temp_ptr++;
+		}
+				
 		/* should we use regular expression matching? */
 		if (use_regexp_matches == TRUE && (use_true_regexp_matching == TRUE || strstr(temp_ptr, "*") || strstr(temp_ptr, "?") || strstr(temp_ptr, "+") || strstr(temp_ptr, "\\.")))
 			use_regexp = TRUE;
+		else
+			use_regexp = FALSE;
 
 		/* use regular expression matching */
 		if (use_regexp == TRUE) {
@@ -8556,7 +8564,11 @@ int xodtemplate_expand_contacts(objectlist **ret, bitmap *reject_map, char *cont
 					continue;
 
 				/* add contact to list */
-				prepend_object_to_objectlist(ret, temp_contact);
+				if (reject_item)
+					bitmap_set(reject_map, temp_contact->id);
+				else
+					prepend_object_to_objectlist(ret, temp_contact);
+
 			}
 
 			/* free memory allocated to compiled regexp */
@@ -8581,18 +8593,16 @@ int xodtemplate_expand_contacts(objectlist **ret, bitmap *reject_map, char *cont
 						continue;
 
 					/* add contact to list */
-					prepend_object_to_objectlist(ret, temp_contact);
+					if (reject_item)
+						bitmap_set(reject_map, temp_contact->id);
+					else
+						prepend_object_to_objectlist(ret, temp_contact);
+
 				}
 			}
 
 			/* else this is just a single contact... */
 			else {
-
-				/* this contact should be excluded (rejected) */
-				if (temp_ptr[0] == '!') {
-					reject_item = TRUE;
-					temp_ptr++;
-				}
 
 				/* find the contact */
 				temp_contact = xodtemplate_find_real_contact(temp_ptr);
@@ -8601,11 +8611,11 @@ int xodtemplate_expand_contacts(objectlist **ret, bitmap *reject_map, char *cont
 					found_match = TRUE;
 
 					/* add contact to list */
-					if (reject_item) {
+					if (reject_item)
 						bitmap_set(reject_map, temp_contact->id);
-					} else {
+					else
 						prepend_object_to_objectlist(ret, temp_contact);
-					}
+
 				}
 			}
 		}
@@ -8725,6 +8735,12 @@ int xodtemplate_expand_hostgroups(objectlist **list, bitmap *reject_map, char *h
 		/* strip trailing spaces */
 		strip(temp_ptr);
 
+		/* this hostgroup should be excluded (rejected) */
+		if (temp_ptr[0] == '!') {
+			reject_item = TRUE;
+			temp_ptr++;
+		}
+
 		/* should we use regular expression matching? */
 		if (use_regexp_matches == TRUE && (use_true_regexp_matching == TRUE || strstr(temp_ptr, "*") || strstr(temp_ptr, "?") || strstr(temp_ptr, "+") || strstr(temp_ptr, "\\.")))
 			use_regexp = TRUE;
@@ -8756,7 +8772,12 @@ int xodtemplate_expand_hostgroups(objectlist **list, bitmap *reject_map, char *h
 				if (temp_hostgroup->register_object == FALSE)
 					continue;
 
-				prepend_object_to_objectlist(list, temp_hostgroup);
+				/* add hostgroup to list */
+				if (reject_item)
+					bitmap_unite(reject_map, temp_hostgroup->member_map);
+				else
+					prepend_object_to_objectlist(list, temp_hostgroup);
+
 			}
 
 			/* free memory allocated to compiled regexp */
@@ -8778,30 +8799,28 @@ int xodtemplate_expand_hostgroups(objectlist **list, bitmap *reject_map, char *h
 						continue;
 
 					/* add hostgroup to list */
-					prepend_object_to_objectlist(list, temp_hostgroup);
+					if (reject_item)
+						bitmap_unite(reject_map, temp_hostgroup->member_map);
+					else
+						prepend_object_to_objectlist(list, temp_hostgroup);
+
 				}
 			}
 
 			/* else this is just a single hostgroup... */
 			else {
 
-				/* this hostgroup should be excluded (rejected) */
-				if (temp_ptr[0] == '!') {
-					reject_item = TRUE;
-					temp_ptr++;
-				}
-
 				/* find the hostgroup */
 				temp_hostgroup = xodtemplate_find_real_hostgroup(temp_ptr);
 				if (temp_hostgroup != NULL) {
 					found_match = TRUE;
 
-					if (reject_item) {
+					/* add hostgroup to list */
+					if (reject_item)
 						bitmap_unite(reject_map, temp_hostgroup->member_map);
-					} else {
-						/* add hostgroup members to proper list */
+					else
 						prepend_object_to_objectlist(list, temp_hostgroup);
-					}
+
 				}
 			}
 		}
@@ -8844,9 +8863,17 @@ int xodtemplate_expand_hosts(objectlist **list, bitmap *reject_map, char *hosts,
 		/* strip trailing spaces */
 		strip(temp_ptr);
 
+		/* this host should be excluded (rejected) */
+		if (temp_ptr[0] == '!') {
+			reject_item = TRUE;
+			temp_ptr++;
+		}
+
 		/* should we use regular expression matching? */
 		if (use_regexp_matches == TRUE && (use_true_regexp_matching == TRUE || strstr(temp_ptr, "*") || strstr(temp_ptr, "?") || strstr(temp_ptr, "+") || strstr(temp_ptr, "\\.")))
 			use_regexp = TRUE;
+		else
+			use_regexp = FALSE;
 
 		/* use regular expression matching */
 		if (use_regexp == TRUE) {
@@ -8873,7 +8900,11 @@ int xodtemplate_expand_hosts(objectlist **list, bitmap *reject_map, char *hosts,
 					continue;
 
 				/* add host to list */
-				prepend_object_to_objectlist(list, temp_host);
+				if (!reject_item)
+					prepend_object_to_objectlist(list, temp_host);
+				else
+					bitmap_set(reject_map, temp_host->id);
+
 			}
 
 			/* free memory allocated to compiled regexp */
@@ -8898,18 +8929,16 @@ int xodtemplate_expand_hosts(objectlist **list, bitmap *reject_map, char *hosts,
 						continue;
 
 					/* add host to list */
-					prepend_object_to_objectlist(list, temp_host);
+					if (!reject_item)
+						prepend_object_to_objectlist(list, temp_host);
+					else
+						bitmap_set(reject_map, temp_host->id);
+
 				}
 			}
 
 			/* else this is just a single host... */
 			else {
-
-				/* this host should be excluded (rejected) */
-				if (temp_ptr[0] == '!') {
-					reject_item = TRUE;
-					temp_ptr++;
-				}
 
 				/* find the host */
 				temp_host = xodtemplate_find_real_host(temp_ptr);
@@ -8918,11 +8947,11 @@ int xodtemplate_expand_hosts(objectlist **list, bitmap *reject_map, char *hosts,
 					found_match = TRUE;
 
 					/* add host to list */
-					if (!reject_item) {
+					if (!reject_item)
 						prepend_object_to_objectlist(list, temp_host);
-					} else {
+					else
 						bitmap_set(reject_map, temp_host->id);
-					}
+						
 				}
 			}
 		}
@@ -8974,6 +9003,12 @@ int xodtemplate_expand_servicegroups(objectlist **list, bitmap *reject, char *se
 		/* strip trailing spaces */
 		strip(temp_ptr);
 
+		/* this servicegroup should be excluded (rejected) */
+		if (temp_ptr[0] == '!') {
+			reject_item = TRUE;
+			temp_ptr++;
+		}
+
 		/* should we use regular expression matching? */
 		if (use_regexp_matches == TRUE && (use_true_regexp_matching == TRUE || strstr(temp_ptr, "*") || strstr(temp_ptr, "?") || strstr(temp_ptr, "+") || strstr(temp_ptr, "\\.")))
 			use_regexp = TRUE;
@@ -9005,8 +9040,11 @@ int xodtemplate_expand_servicegroups(objectlist **list, bitmap *reject, char *se
 				if (temp_servicegroup->register_object == FALSE)
 					continue;
 
-				/* add servicegroup to list */
-				prepend_object_to_objectlist(list, temp_servicegroup);
+				/* add servicegroup members to list */
+				if (reject_item)
+					bitmap_unite(reject, temp_servicegroup->member_map);
+				else
+					prepend_object_to_objectlist(list, temp_servicegroup);
 			}
 
 			/* free memory allocated to compiled regexp */
@@ -9027,19 +9065,16 @@ int xodtemplate_expand_servicegroups(objectlist **list, bitmap *reject, char *se
 					if (temp_servicegroup->register_object == FALSE)
 						continue;
 
-					/* add servicegroup to list */
-					prepend_object_to_objectlist(list, temp_servicegroup);
+					/* add servicegroup members to list */
+					if (reject_item)
+						bitmap_unite(reject, temp_servicegroup->member_map);
+					else
+						prepend_object_to_objectlist(list, temp_servicegroup);
 				}
 			}
 
 			/* else this is just a single servicegroup... */
 			else {
-
-				/* this servicegroup should be excluded (rejected) */
-				if (temp_ptr[0] == '!') {
-					reject_item = TRUE;
-					temp_ptr++;
-				}
 
 				/* find the servicegroup */
 				if ((temp_servicegroup = xodtemplate_find_real_servicegroup(temp_ptr)) != NULL) {
@@ -9152,6 +9187,12 @@ int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, char *hos
 		/* strip trailing spaces */
 		strip(temp_ptr);
 
+		/* this service should be excluded (rejected) */
+		if (temp_ptr[0] == '!') {
+			reject_item = TRUE;
+			temp_ptr++;
+		}
+
 		/* should we use regular expression matching for the service description? */
 		if (use_regexp_matches == TRUE && (use_true_regexp_matching == TRUE || strstr(temp_ptr, "*") || strstr(temp_ptr, "?") || strstr(temp_ptr, "+") || strstr(temp_ptr, "\\.")))
 			use_regexp_service = TRUE;
@@ -9202,7 +9243,10 @@ int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, char *hos
 					continue;
 
 				/* add service to the list */
-				prepend_object_to_objectlist(list, temp_service);
+				if (reject_item == TRUE)
+					bitmap_set(reject_map, temp_service->id);
+				else
+					prepend_object_to_objectlist(list, temp_service);
 			}
 
 			/* free memory allocated to compiled regexp */
@@ -9229,24 +9273,22 @@ int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, char *hos
 					continue;
 
 				/* add service to the list */
-				prepend_object_to_objectlist(list, temp_service);
+				if (reject_item == TRUE)
+					bitmap_set(reject_map, temp_service->id);
+				else
+					prepend_object_to_objectlist(list, temp_service);
 			}
 		}
 
 		/* else this is just a single service... */
 		else {
 
-			/* this service should be excluded (rejected) */
-			if (temp_ptr[0] == '!') {
-				reject_item = TRUE;
-				temp_ptr++;
-			}
-
 			/* find the service */
 			if ((temp_service = xodtemplate_find_real_service(host_name, temp_ptr)) != NULL) {
 
 				found_match = TRUE;
 
+				/* add service to the list */
 				if (reject_item == TRUE)
 					bitmap_set(reject_map, temp_service->id);
 				else
@@ -9351,6 +9393,12 @@ int xodtemplate_get_hostgroup_names(xodtemplate_memberlist **list, xodtemplate_m
 		/* strip trailing spaces */
 		strip(temp_ptr);
 
+		/* this hostgroup should be excluded (rejected) */
+		if (temp_ptr[0] == '!') {
+			reject_item = TRUE;
+			temp_ptr++;
+		}
+
 		/* should we use regular expression matching? */
 		if (use_regexp_matches == TRUE && (use_true_regexp_matching == TRUE || strstr(temp_ptr, "*") || strstr(temp_ptr, "?") || strstr(temp_ptr, "+") || strstr(temp_ptr, "\\.")))
 			use_regexp = TRUE;
@@ -9383,7 +9431,7 @@ int xodtemplate_get_hostgroup_names(xodtemplate_memberlist **list, xodtemplate_m
 					continue;
 
 				/* add hostgroup to list */
-				xodtemplate_add_member_to_memberlist(list, temp_hostgroup->hostgroup_name, NULL);
+				xodtemplate_add_member_to_memberlist((reject_item == TRUE) ? reject_list : list, temp_hostgroup->hostgroup_name, NULL);
 			}
 
 			/* free memory allocated to compiled regexp */
@@ -9405,18 +9453,12 @@ int xodtemplate_get_hostgroup_names(xodtemplate_memberlist **list, xodtemplate_m
 						continue;
 
 					/* add hostgroup to list */
-					xodtemplate_add_member_to_memberlist(list, temp_hostgroup->hostgroup_name, NULL);
+					xodtemplate_add_member_to_memberlist((reject_item == TRUE) ? reject_list : list, temp_hostgroup->hostgroup_name, NULL);
 				}
 			}
 
 			/* else this is just a single hostgroup... */
 			else {
-
-				/* this hostgroup should be excluded (rejected) */
-				if (temp_ptr[0] == '!') {
-					reject_item = TRUE;
-					temp_ptr++;
-				}
 
 				/* find the hostgroup */
 				temp_hostgroup = xodtemplate_find_real_hostgroup(temp_ptr);
@@ -9424,7 +9466,7 @@ int xodtemplate_get_hostgroup_names(xodtemplate_memberlist **list, xodtemplate_m
 
 					found_match = TRUE;
 
-					/* add hostgroup to proper list */
+					/* add hostgroup to list */
 					xodtemplate_add_member_to_memberlist((reject_item == TRUE) ? reject_list : list, temp_hostgroup->hostgroup_name, NULL);
 				}
 			}
@@ -9526,6 +9568,12 @@ int xodtemplate_get_contactgroup_names(xodtemplate_memberlist **list, xodtemplat
 		/* strip trailing spaces */
 		strip(temp_ptr);
 
+		/* this contactgroup should be excluded (rejected) */
+		if (temp_ptr[0] == '!') {
+			reject_item = TRUE;
+			temp_ptr++;
+		}
+
 		/* should we use regular expression matching? */
 		if (use_regexp_matches == TRUE && (use_true_regexp_matching == TRUE || strstr(temp_ptr, "*") || strstr(temp_ptr, "?") || strstr(temp_ptr, "+") || strstr(temp_ptr, "\\.")))
 			use_regexp = TRUE;
@@ -9558,7 +9606,7 @@ int xodtemplate_get_contactgroup_names(xodtemplate_memberlist **list, xodtemplat
 					continue;
 
 				/* add contactgroup to list */
-				xodtemplate_add_member_to_memberlist(list, temp_contactgroup->contactgroup_name, NULL);
+				xodtemplate_add_member_to_memberlist((reject_item == TRUE) ? reject_list : list, temp_contactgroup->contactgroup_name, NULL);
 			}
 
 			/* free memory allocated to compiled regexp */
@@ -9580,18 +9628,12 @@ int xodtemplate_get_contactgroup_names(xodtemplate_memberlist **list, xodtemplat
 						continue;
 
 					/* add contactgroup to list */
-					xodtemplate_add_member_to_memberlist(list, temp_contactgroup->contactgroup_name, NULL);
+					xodtemplate_add_member_to_memberlist((reject_item == TRUE) ? reject_list : list, temp_contactgroup->contactgroup_name, NULL);
 				}
 			}
 
 			/* else this is just a single contactgroup... */
 			else {
-
-				/* this contactgroup should be excluded (rejected) */
-				if (temp_ptr[0] == '!') {
-					reject_item = TRUE;
-					temp_ptr++;
-				}
 
 				/* find the contactgroup */
 				temp_contactgroup = xodtemplate_find_real_contactgroup(temp_ptr);
@@ -9599,7 +9641,7 @@ int xodtemplate_get_contactgroup_names(xodtemplate_memberlist **list, xodtemplat
 
 					found_match = TRUE;
 
-					/* add contactgroup members to proper list */
+					/* add contactgroup members to list */
 					xodtemplate_add_member_to_memberlist((reject_item == TRUE) ? reject_list : list, temp_contactgroup->contactgroup_name, NULL);
 				}
 			}
@@ -9701,6 +9743,12 @@ int xodtemplate_get_servicegroup_names(xodtemplate_memberlist **list, xodtemplat
 		/* strip trailing spaces */
 		strip(temp_ptr);
 
+		/* this servicegroup should be excluded (rejected) */
+		if (temp_ptr[0] == '!') {
+			reject_item = TRUE;
+			temp_ptr++;
+		}
+
 		/* should we use regular expression matching? */
 		if (use_regexp_matches == TRUE && (use_true_regexp_matching == TRUE || strstr(temp_ptr, "*") || strstr(temp_ptr, "?") || strstr(temp_ptr, "+") || strstr(temp_ptr, "\\.")))
 			use_regexp = TRUE;
@@ -9733,7 +9781,7 @@ int xodtemplate_get_servicegroup_names(xodtemplate_memberlist **list, xodtemplat
 					continue;
 
 				/* add servicegroup to list */
-				xodtemplate_add_member_to_memberlist(list, temp_servicegroup->servicegroup_name, NULL);
+				xodtemplate_add_member_to_memberlist((reject_item == TRUE) ? reject_list : list, temp_servicegroup->servicegroup_name, NULL);
 			}
 
 			/* free memory allocated to compiled regexp */
@@ -9755,18 +9803,12 @@ int xodtemplate_get_servicegroup_names(xodtemplate_memberlist **list, xodtemplat
 						continue;
 
 					/* add servicegroup to list */
-					xodtemplate_add_member_to_memberlist(list, temp_servicegroup->servicegroup_name, NULL);
+					xodtemplate_add_member_to_memberlist((reject_item == TRUE) ? reject_list : list, temp_servicegroup->servicegroup_name, NULL);
 				}
 			}
 
 			/* else this is just a single servicegroup... */
 			else {
-
-				/* this servicegroup should be excluded (rejected) */
-				if (temp_ptr[0] == '!') {
-					reject_item = TRUE;
-					temp_ptr++;
-				}
 
 				/* find the servicegroup */
 				temp_servicegroup = xodtemplate_find_real_servicegroup(temp_ptr);
@@ -9774,7 +9816,7 @@ int xodtemplate_get_servicegroup_names(xodtemplate_memberlist **list, xodtemplat
 
 					found_match = TRUE;
 
-					/* add servicegroup members to proper list */
+					/* add servicegroup members to list */
 					xodtemplate_add_member_to_memberlist((reject_item == TRUE) ? reject_list : list, temp_servicegroup->servicegroup_name, NULL);
 				}
 			}
