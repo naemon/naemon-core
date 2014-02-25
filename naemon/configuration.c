@@ -1130,8 +1130,14 @@ int read_main_config_file(const char *main_config_file)
 		deprecated = NULL;
 	}
 
-	if (!temp_path && !(temp_path = getenv("TMPDIR")) && !(temp_path = getenv("TMP"))) {
-		temp_path = strdup("/tmp");
+	if (!temp_path) {
+		temp_path = getenv("TMPDIR");
+		if (!temp_path)
+			temp_path = getenv("TMP");
+		if (!temp_path)
+			temp_path = "/tmp";
+
+		temp_path = strdup(temp_path);
 	} else {
 		/* make sure we don't have a trailing slash */
 		if (temp_path[strlen(temp_path) - 1] == '/')
