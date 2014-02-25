@@ -7,7 +7,9 @@ AM_TESTS_ENVIRONMENT = \
 					   cp -R ${abs_srcdir}/var "${abs_builddir}"; \
 					   chmod -R u+w ${abs_builddir}/etc ${abs_builddir}/var; \
 					   fi; \
-					   builddir=$(builddir); export builddir;
+					   builddir=$(abs_builddir); export builddir;
 
 TEST_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
 	$(top_srcdir)/build-aux/tap-driver.sh
+
+DISTCLEANFILES = etc/* var/* var/spool/checkresults/.gitignore var/.gitignore
