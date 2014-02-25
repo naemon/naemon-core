@@ -526,7 +526,8 @@ void test_host_commands(void) {
 
 void test_core_commands(void) {
 	/*setup configuration*/
-	char *test_config_file = DEFAULT_CONFIG_FILE;
+	const char *test_config_file = get_default_config_file();
+	config_file_dir = nspath_absolute_dirname(test_config_file, NULL);
 	assert(OK == read_main_config_file(test_config_file));
 	assert(OK == read_all_object_data(test_config_file));
 	assert(OK == initialize_downtime_data());
@@ -561,7 +562,7 @@ int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 	ocount[CONTACT_SKIPLIST] = 1;
 	assert(OK == create_object_tables(ocount));
 
-	initialize_retention_data(DEFAULT_CONFIG_FILE);
+	initialize_retention_data(NULL);
 	test_register();
 	test_parsing();
 	test_core_commands();
