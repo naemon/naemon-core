@@ -40,3 +40,6 @@ AM_TESTS_ENVIRONMENT = \
 					   cp -R ${abs_srcdir}/smallconfig "${abs_builddir}"; \
 					   chmod -R u+w ${abs_builddir}/smallconfig; \
 					   fi;
+
+TEST_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
+	$(top_srcdir)/build-aux/tap-driver.sh
