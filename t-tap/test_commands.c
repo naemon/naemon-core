@@ -269,11 +269,12 @@ void test_parsing(void) {
 		command_argument_add(ext_command, "timeperiod", TIMEPERIOD, NULL, NULL);
 		command_register(ext_command, -1);
 
-		ext_command = command_parse("[1234567890] DO_THING_WITH_TIMEPERIOD;24x7", COMMAND_SYNTAX_NOKV, &error);
+		ext_command = command_parse("[1234567890] DO_THING_WITH_TIMEPERIOD;24x8", COMMAND_SYNTAX_NOKV, &error);
 		ok(ext_command == NULL, "No command returned when timeperiod arg is invalid");
 		ok(CMD_ERROR_VALIDATION_FAILURE == error, "Validation error raised for invalid timeperiod");
 
-		assert(NULL != (registered_timeperiod = add_timeperiod("24x7", "all 'round the clock")));
+		registered_timeperiod = find_timeperiod("24x7");
+		assert(NULL != registered_timeperiod);
 		ext_command = command_parse("[1234567890] DO_THING_WITH_TIMEPERIOD;24x7", COMMAND_SYNTAX_NOKV, &error);
 		ok(ext_command != NULL, "Command returned when timeperiod arg is not invalid");
 		ok(CMD_ERROR_OK == error, "Validation error not raised for valid timeperiod");
@@ -284,9 +285,7 @@ void test_parsing(void) {
 		ext_command = command_create("FIND_CONTACT", test__do_thing_with_contact_handler, "Does a thing with contact", NULL);
 		command_argument_add(ext_command, "contact", CONTACT, NULL, NULL);
 		command_register(ext_command, -1);
-		addresses[0] = "A street";
-		addresses[1] = "Another street";
-		created_contact = add_contact("bingo", "bingo", "bingo@bingo.se", "123465", addresses, "24x7", "24x7", 'd', 'd', 0, 0, 0, 0, 0, 0);
+		created_contact = find_contact("nagiosadmin");
 		assert(NULL != created_contact);
 
 		/** CONTACT TEST*/
@@ -295,7 +294,7 @@ void test_parsing(void) {
 		ok(CMD_ERROR_VALIDATION_FAILURE == error, "Validation error raised for invalid contact");
 
 		/** CONTACT TEST*/
-		ext_command = command_parse("[1234567890] FIND_CONTACT;bingo", COMMAND_SYNTAX_NOKV, &error);
+		ext_command = command_parse("[1234567890] FIND_CONTACT;nagiosadmin", COMMAND_SYNTAX_NOKV, &error);
 		ok(ext_command != NULL, "Command returned when contact arg is not invalid");
 		ok(CMD_ERROR_OK == error, "Validation error not raised for valid contact");
 		fetched_contact = command_argument_get_value(ext_command, "contact");
@@ -398,7 +397,7 @@ void test_global_commands(void) {
 void test_host_commands(void) {
 	char *host_name = "host1";
 	host *target_host = NULL;
-	int pre = 0;
+	int pre = 0, prev_comment_id = next_comment_id;
 	time_t check_time =0;
 	char *cmdstr = NULL;
 	target_host = find_host(host_name);
@@ -406,7 +405,9 @@ void test_host_commands(void) {
 	pre = number_of_host_comments(host_name);
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] ADD_HOST_COMMENT;host1;0;myself;my comment"), "core command: ADD_HOST_COMMENT");
 	ok(pre+1 == number_of_host_comments(host_name), "ADD_HOST_COMMENT adds a host comment");
-	ok(CMD_ERROR_OK == process_external_command1("[1234567890] DEL_HOST_COMMENT;0"), "core command: DEL_HOST_COMMENT");
+	asprintf(&cmdstr, "[1234567890] DEL_HOST_COMMENT;%i", prev_comment_id);
+	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: DEL_HOST_COMMENT");
+	free(cmdstr);
 	ok(pre == number_of_host_comments(host_name), "DEL_HOST_COMMENT deletes a host comment");
 
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] DELAY_HOST_NOTIFICATION;host1;9980283485"), "core command: DELAY_HOST_NOTIFICATION");
@@ -474,14 +475,17 @@ void test_host_commands(void) {
 	ok(check_time == target_host->services->service_ptr->next_check, "SCHEDULE_FORCED_HOST_SVC_CHECKS schedules forced checks for services on a host");
 	free(cmdstr);
 
-	assert(NULL == find_host_downtime(1));
+	int prev_downtime_id = next_downtime_id;
 	asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_DOWNTIME;host1;%llu;%llu;1;0;0;myself;my downtime comment", (unsigned long long int)time(NULL), (unsigned long long int)time(NULL) + 1500);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_HOST_DOWNTIME");
-	ok(NULL != find_host_downtime(1), "SCHEDULE_HOST_DOWNTIME schedules downtime for a host");
+	ok(prev_downtime_id != next_downtime_id, "SCHEDULE_HOST_DOWNTIME schedules one new downtime");
+	ok(NULL != find_host_downtime(prev_downtime_id), "SCHEDULE_HOST_DOWNTIME schedules downtime for a host");
 	free(cmdstr);
 
-	ok(CMD_ERROR_OK == process_external_command1("[1234567890] DEL_HOST_DOWNTIME;1"), "core command: DEL_HOST_DOWNTIME");
-	ok(!find_host_downtime(1), "DEL_HOST_DOWNTIME deletes a scheduled host downtime");
+	asprintf(&cmdstr, "[1234567890] DEL_HOST_DOWNTIME;%i", prev_downtime_id);
+	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: DEL_HOST_DOWNTIME");
+	ok(!find_host_downtime(prev_downtime_id), "DEL_HOST_DOWNTIME deletes a scheduled host downtime");
+	free(cmdstr);
 
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] DISABLE_HOST_FLAP_DETECTION;host1"), "core command: DISABLE_HOST_FLAP_DETECTION");
 	ok(!target_host->flap_detection_enabled, "DISABLE_HOST_FLAP_DETECTION disables host flap detection");
@@ -526,11 +530,6 @@ void test_host_commands(void) {
 
 void test_core_commands(void) {
 	/*setup configuration*/
-	const char *test_config_file = get_default_config_file();
-	config_file_dir = nspath_absolute_dirname(test_config_file, NULL);
-	assert(OK == read_main_config_file(test_config_file));
-	assert(OK == read_all_object_data(test_config_file));
-	assert(OK == initialize_downtime_data());
 	pre_flight_check(); /*without this, child_host links are not created and *_BEYOND_HOST test cases fail...*/
 	registered_commands_init(200);
 	register_core_commands();
@@ -552,17 +551,15 @@ void test_core_commands(void) {
 int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 {
 	unsigned int i;
-	/*Make it possible to add objects*/
-	unsigned int ocount[NUM_OBJECT_SKIPLISTS];
-	plan_tests(485);
-	for ( i = 0; i < ARRAY_SIZE(ocount); i++) {
-		ocount[i] = 0;
-	}
-	ocount[TIMEPERIOD_SKIPLIST] = 1;
-	ocount[CONTACT_SKIPLIST] = 1;
-	assert(OK == create_object_tables(ocount));
+	const char *test_config_file = get_default_config_file();
+	plan_tests(486);
 
-	initialize_retention_data(NULL);
+	config_file_dir = nspath_absolute_dirname(test_config_file, NULL);
+	assert(OK == read_main_config_file(test_config_file));
+	assert(OK == read_all_object_data(test_config_file));
+	assert(OK == initialize_downtime_data());
+	assert(OK == initialize_retention_data(get_default_config_file()));
+	assert(OK == read_initial_state_information());
 	test_register();
 	test_parsing();
 	test_core_commands();
