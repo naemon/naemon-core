@@ -169,7 +169,11 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 			*output_buffer = (char *)realloc(*output_buffer, strlen(*output_buffer) + strlen(temp_buffer) + 3);
 			strcat(*output_buffer, "$");
 			strcat(*output_buffer, temp_buffer);
-			strcat(*output_buffer, "$");
+
+			/* if we still do not reach the end of string */
+			if (buf_ptr)
+				strcat(*output_buffer, "$");
+
 			in_macro = FALSE;
 			continue;
 		}
