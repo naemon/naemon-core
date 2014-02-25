@@ -1,6 +1,6 @@
 BROKEN = test_downtime test_events test_nagios_config test_xsddefault
 
-AM_CPPFLAGS += -I$(top_srcdir) -I$(top_srcdir)/tap/src -I$(top_builddir) -DNAEMON_BUILDOPTS_H__ '-DNAEMON_SYSCONFDIR="$(abs_srcdir)/smallconfig/"' '-DNAEMON_LOCALSTATEDIR="$(builddir)"' '-DNAEMON_LOGDIR="$(abs_builddir)/"' '-DNAEMON_LOCKFILE="$(lockfile)"'
+AM_CPPFLAGS += -I$(top_srcdir) -I$(top_srcdir)/tap/src -I$(top_builddir) -DNAEMON_BUILDOPTS_H__ '-DNAEMON_SYSCONFDIR="$(abs_builddir)/smallconfig/"' '-DNAEMON_LOCALSTATEDIR="$(abs_builddir)"' '-DNAEMON_LOGDIR="$(abs_builddir)/"' '-DNAEMON_LOCKFILE="$(lockfile)"'
 AM_CFLAGS += -Wno-error
 LDADD = -ltap -L$(top_builddir)/tap/src -lnaemon -L$(top_builddir)/naemon/lib -ldl -lm
 BASE_DEPS = broker.o checks.o commands.o comments.o \
@@ -35,7 +35,7 @@ DISTCLEANFILES = $(FIXTURE_FILES)
 EXTRA_DIST = smallconfig/minimal.cfg smallconfig/naemon.cfg \
 	smallconfig/resource.cfg smallconfig/retention.dat $(FIXTURE_FILES)
 AM_TESTS_ENVIRONMENT = \
-					   if test -n "${builddir}"; then \
-					   cp -R ${abs_srcdir}/smallconfig "${builddir}"; \
-					   chmod -R u+w ${builddir}/smallconfig; \
+					   if test "${abs_srcdir}" != "${abs_builddir}"; then \
+					   cp -R ${abs_srcdir}/smallconfig "${abs_builddir}"; \
+					   chmod -R u+w ${abs_builddir}/smallconfig; \
 					   fi;
