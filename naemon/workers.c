@@ -7,9 +7,9 @@
  * all of Naemon into it, and that they can remain general-purpose
  * code that can be reused for other things later.
  */
+#include "workers.h"
 #include "config.h"
 #include <string.h>
-#include "workers.h"
 #include "query-handler.h"
 #include "utils.h"
 #include "logging.h"
@@ -25,10 +25,10 @@ struct wproc_worker;
 
 struct wproc_job {
 	unsigned int id;
-	unsigned int type;
 	unsigned int timeout;
 	char *command;
-	void *arg;
+	void (*callback)(struct wproc_result *, void *, int);
+	void *data;
 	struct wproc_worker *wp;
 };
 
@@ -58,39 +58,10 @@ static struct wproc_list workers = {0, 0, NULL};
 static dkhash_table *specialized_workers;
 static struct wproc_list *to_remove = NULL;
 
-typedef struct wproc_callback_job {
-	void *data;
-	void (*callback)(struct wproc_result *, void *, int);
-} wproc_callback_job;
-
-typedef struct wproc_object_job {
-	char *contact_name;
-	char *host_name;
-	char *service_description;
-} wproc_object_job;
-
 unsigned int wproc_num_workers_online = 0, wproc_num_workers_desired = 0;
 unsigned int wproc_num_workers_spawned = 0;
 
 #define tv2float(tv) ((float)((tv)->tv_sec) + ((float)(tv)->tv_usec) / 1000000.0)
-
-static const char *wpjob_type_name(unsigned int type)
-{
-	switch (type) {
-	case WPJOB_CHECK: return "CHECK";
-	case WPJOB_NOTIFY: return "NOTIFY";
-	case WPJOB_OCSP: return "OCSP";
-	case WPJOB_OCHP: return "OCHP";
-	case WPJOB_GLOBAL_SVC_EVTHANDLER: return "GLOBAL SERVICE EVENTHANDLER";
-	case WPJOB_SVC_EVTHANDLER: return "SERVICE EVENTHANDLER";
-	case WPJOB_GLOBAL_HOST_EVTHANDLER: return "GLOBAL HOST EVENTHANDLER";
-	case WPJOB_HOST_EVTHANDLER: return "HOST EVENTHANDLER";
-	case WPJOB_CALLBACK: return "CALLBACK";
-	case WPJOB_HOST_PERFDATA: return "HOST PERFDATA";
-	case WPJOB_SVC_PERFDATA: return "SERVICE PERFDATA";
-	}
-	return "UNKNOWN";
-}
 
 static void wproc_logdump_buffer(int debuglevel, int verbosity, const char *prefix, char *buf)
 {
@@ -227,46 +198,13 @@ static struct wproc_worker *get_worker(const char *cmd)
 	return wp_list->wps[wp_list->idx++ % wp_list->len];
 }
 
-static struct wproc_job *create_job(int type, void *arg, time_t timeout, const char *cmd)
-{
-	struct wproc_job *job;
-	struct wproc_worker *wp;
-
-	wp = get_worker(cmd);
-	if (!wp)
-		return NULL;
-
-	job = calloc(1, sizeof(*job));
-	if (!job) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to allocate memory for worker job: %s\n", strerror(errno));
-		return NULL;
-	}
-
-	job->wp = wp;
-	job->id = get_job_id(wp);
-	job->type = type;
-	job->arg = arg;
-	job->timeout = timeout;
-	if (fanout_add(wp->jobs, job->id, job) < 0 || !(job->command = strdup(cmd))) {
-		free(job);
-		return NULL;
-	}
-
-	return job;
-}
-
 static void run_job_callback(struct wproc_job *job, struct wproc_result *wpres, int val)
 {
-	wproc_callback_job *cj;
-
-	if (!job || !job->arg)
+	if (!job || !job->callback)
 		return;
-	cj = (struct wproc_callback_job *)job->arg;
 
-	if (!cj->callback)
-		return;
-	cj->callback(wpres, cj->data, val);
-	cj->callback = NULL;
+	(*job->callback)(wpres, job->data, val);
+	job->callback = NULL;
 }
 
 static void destroy_job(struct wproc_job *job)
@@ -274,33 +212,8 @@ static void destroy_job(struct wproc_job *job)
 	if (!job)
 		return;
 
-	switch (job->type) {
-	case WPJOB_CHECK:
-		free_check_result(job->arg);
-		free(job->arg);
-		break;
-	case WPJOB_NOTIFY:
-	case WPJOB_OCSP:
-	case WPJOB_OCHP:
-		free(job->arg);
-		break;
-
-	case WPJOB_GLOBAL_SVC_EVTHANDLER:
-	case WPJOB_SVC_EVTHANDLER:
-	case WPJOB_GLOBAL_HOST_EVTHANDLER:
-	case WPJOB_HOST_EVTHANDLER:
-	case WPJOB_HOST_PERFDATA:
-	case WPJOB_SVC_PERFDATA:
-		/* these require nothing special */
-		break;
-	case WPJOB_CALLBACK:
-		/* call with NULL result to make callback clean things up */
-		run_job_callback(job, NULL, 0);
-		break;
-	default:
-		logit(NSLOG_RUNTIME_WARNING, TRUE, "wproc: Unknown job type: %d\n", job->type);
-		break;
-	}
+	/* call with NULL result to make callback clean things up */
+	run_job_callback(job, NULL, 0);
 
 	my_free(job->command);
 	if (job->wp) {
@@ -439,41 +352,6 @@ static int str2timeval(char *str, struct timeval *tv)
 	return 0;
 }
 
-static int handle_worker_check(wproc_result *wpres, struct wproc_worker *wp, struct wproc_job *job)
-{
-	int result = ERROR;
-	check_result *cr = (check_result *)job->arg;
-
-	memcpy(&cr->rusage, &wpres->rusage, sizeof(wpres->rusage));
-	cr->start_time.tv_sec = wpres->start.tv_sec;
-	cr->start_time.tv_usec = wpres->start.tv_usec;
-	cr->finish_time.tv_sec = wpres->stop.tv_sec;
-	cr->finish_time.tv_usec = wpres->stop.tv_usec;
-	if (WIFEXITED(wpres->wait_status)) {
-		cr->return_code = WEXITSTATUS(wpres->wait_status);
-	} else {
-		cr->return_code = STATE_UNKNOWN;
-	}
-
-	if (wpres->outstd && *wpres->outstd) {
-		cr->output = strdup(wpres->outstd);
-	} else if (wpres->outerr && *wpres->outerr) {
-		asprintf(&cr->output, "(No output on stdout) stderr: %s", wpres->outerr);
-	} else {
-		cr->output = NULL;
-	}
-
-	cr->early_timeout = wpres->early_timeout;
-	cr->exited_ok = wpres->exited_ok;
-	cr->engine = NULL;
-	cr->source = wp->name;
-
-	process_check_result(cr);
-	free_check_result(cr);
-
-	return result;
-}
-
 /*
  * parses a worker result. We do no strdup()'s here, so when
  * kvv is destroyed, all references to strings will become
@@ -498,9 +376,6 @@ static int parse_worker_result(wproc_result *wpres, struct kvvec *kvv)
 		case WPRES_job_id:
 			wpres->job_id = atoi(value);
 			break;
-		case WPRES_type:
-			wpres->type = atoi(value);
-			break;
 		case WPRES_command:
 			wpres->command = value;
 			break;
@@ -515,6 +390,9 @@ static int parse_worker_result(wproc_result *wpres, struct kvvec *kvv)
 			break;
 		case WPRES_stop:
 			str2timeval(value, &wpres->stop);
+			break;
+		case WPRES_type:
+			/* Keep for backward compatibility of nagios special purpose workers */
 			break;
 		case WPRES_outstd:
 			wpres->outstd = value;
@@ -593,7 +471,6 @@ static void fo_reassign_wproc_job(void *job_)
 
 static int handle_worker_result(int sd, int events, void *arg)
 {
-	wproc_object_job *oj = NULL;
 	char *buf, *error_reason = NULL;
 	unsigned long size;
 	int ret;
@@ -646,8 +523,8 @@ static int handle_worker_result(int sd, int events, void *arg)
 
 		memset(&wpres, 0, sizeof(wpres));
 		wpres.job_id = -1;
-		wpres.type = -1;
 		wpres.response = &kvv;
+		wpres.source = wp->name;
 		parse_worker_result(&wpres, &kvv);
 
 		job = get_job(wp, wpres.job_id);
@@ -656,12 +533,6 @@ static int handle_worker_result(int sd, int events, void *arg)
 			      wpres.job_id, wp->name);
 			continue;
 		}
-		if (wpres.type != job->type) {
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "wproc: %s claims job %d is type %d, but we think it's type %d\n",
-			      wp->name, job->id, wpres.type, job->type);
-			break;
-		}
-		oj = (wproc_object_job *)job->arg;
 
 		/*
 		 * ETIME ("Timer expired") doesn't really happen
@@ -671,6 +542,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 		if (wpres.error_code == ETIME) {
 			wpres.early_timeout = TRUE;
 		}
+
 		if (wpres.early_timeout) {
 			asprintf(&error_reason, "timed out after %.2fs", tv_delta_f(&wpres.start, &wpres.stop));
 		} else if (WIFSIGNALED(wpres.wait_status)) {
@@ -678,24 +550,11 @@ static int handle_worker_result(int sd, int events, void *arg)
 			         WTERMSIG(wpres.wait_status),
 			         WCOREDUMP(wpres.wait_status) ? " (core dumped)" : "",
 			         tv_delta_f(&wpres.start, &wpres.stop));
-		} else if (job->type != WPJOB_CHECK && WEXITSTATUS(wpres.wait_status) != 0) {
-			asprintf(&error_reason, "is a non-check helper but exited with return code %d",
-			         WEXITSTATUS(wpres.wait_status));
 		}
 		if (error_reason) {
-			log_debug_info(DEBUGL_IPC, DEBUGV_BASIC, "wproc: %s job %d from worker %s %s",
-			      wpjob_type_name(job->type), job->id, wp->name, error_reason);
+			log_debug_info(DEBUGL_IPC, DEBUGV_BASIC, "wproc: job %d from worker %s %s",
+					job->id, wp->name, error_reason);
 			log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   command: %s\n", job->command);
-			if (job->type != WPJOB_CHECK && oj) {
-				log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   host=%s; service=%s; contact=%s\n",
-				      oj->host_name ? oj->host_name : "(none)",
-				      oj->service_description ? oj->service_description : "(none)",
-				      oj->contact_name ? oj->contact_name : "(none)");
-			} else if (oj) {
-				struct check_result *cr = (struct check_result *)job->arg;
-				log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   host=%s; service=%s;\n",
-				      cr->host_name, cr->service_description);
-			}
 			log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   early_timeout=%d; exited_ok=%d; wait_status=%d; error_code=%d;\n",
 			      wpres.early_timeout, wpres.exited_ok, wpres.wait_status, wpres.error_code);
 			wproc_logdump_buffer(DEBUGL_IPC, DEBUGV_MOST, "wproc:   stderr", wpres.outerr);
@@ -703,79 +562,8 @@ static int handle_worker_result(int sd, int events, void *arg)
 		}
 		my_free(error_reason);
 
-		switch (job->type) {
-		case WPJOB_CHECK:
-			ret = handle_worker_check(&wpres, wp, job);
-			break;
-		case WPJOB_NOTIFY:
-			if (wpres.early_timeout) {
-				if (oj->service_description) {
-					logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Notifying contact '%s' of service '%s' on host '%s' by command '%s' timed out after %.2f seconds\n",
-					      oj->contact_name, oj->service_description,
-					      oj->host_name, job->command,
-					      tv2float(&wpres.runtime));
-				} else {
-					logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Notifying contact '%s' of host '%s' by command '%s' timed out after %.2f seconds\n",
-					      oj->contact_name, oj->host_name,
-					      job->command, tv2float(&wpres.runtime));
-				}
-			}
-			break;
-		case WPJOB_OCSP:
-			if (wpres.early_timeout) {
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: OCSP command '%s' for service '%s' on host '%s' timed out after %.2f seconds\n",
-				      job->command, oj->service_description, oj->host_name,
-				      tv2float(&wpres.runtime));
-			}
-			break;
-		case WPJOB_OCHP:
-			if (wpres.early_timeout) {
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: OCHP command '%s' for host '%s' timed out after %.2f seconds\n",
-				      job->command, oj->host_name, tv2float(&wpres.runtime));
-			}
-			break;
-		case WPJOB_GLOBAL_SVC_EVTHANDLER:
-			if (wpres.early_timeout) {
-				logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, TRUE,
-				      "Warning: Global service event handler command '%s' timed out after %.2f seconds\n",
-				      job->command, tv2float(&wpres.runtime));
-			}
-			break;
-		case WPJOB_SVC_EVTHANDLER:
-			if (wpres.early_timeout) {
-				logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, TRUE,
-				      "Warning: Service event handler command '%s' timed out after %.2f seconds\n",
-				      job->command, tv2float(&wpres.runtime));
-			}
-			break;
-		case WPJOB_GLOBAL_HOST_EVTHANDLER:
-			if (wpres.early_timeout) {
-				logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, TRUE,
-				      "Warning: Global host event handler command '%s' timed out after %.2f seconds\n",
-				      job->command, tv2float(&wpres.runtime));
-			}
-			break;
-		case WPJOB_HOST_EVTHANDLER:
-			if (wpres.early_timeout) {
-				logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, TRUE,
-				      "Warning: Host event handler command '%s' timed out after %.2f seconds\n",
-				      job->command, tv2float(&wpres.runtime));
-			}
-			break;
+		run_job_callback(job, &wpres, 0);
 
-		case WPJOB_CALLBACK:
-			run_job_callback(job, &wpres, 0);
-			break;
-
-		case WPJOB_HOST_PERFDATA:
-		case WPJOB_SVC_PERFDATA:
-			/* these require nothing special */
-			break;
-
-		default:
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "Worker %d: Unknown jobtype: %d\n", wp->pid, job->type);
-			break;
-		}
 		destroy_job(job);
 	}
 
@@ -969,6 +757,35 @@ int init_workers(int desired_workers)
 	return 0;
 }
 
+
+static struct wproc_job *create_job(void (*callback)(struct wproc_result *, void *, int), void *data, time_t timeout, const char *cmd)
+{
+	struct wproc_job *job;
+	struct wproc_worker *wp;
+
+	wp = get_worker(cmd);
+	if (!wp)
+		return NULL;
+
+	job = calloc(1, sizeof(*job));
+	if (!job) {
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to allocate memory for worker job: %s\n", strerror(errno));
+		return NULL;
+	}
+
+	job->wp = wp;
+	job->id = get_job_id(wp);
+	job->callback = callback;
+	job->data = data;
+	job->timeout = timeout;
+	if (fanout_add(wp->jobs, job->id, job) < 0 || !(job->command = strdup(cmd))) {
+		free(job);
+		return NULL;
+	}
+
+	return job;
+}
+
 /*
  * Handles adding the command and macros to the kvvec,
  * as well as shipping the command off to a designated
@@ -993,11 +810,11 @@ static int wproc_run_job(struct wproc_job *job, nagios_macros *mac)
 	 * so workers know to add them to environment. For now,
 	 * we don't support that though.
 	 */
-	if (!kvvec_init(&kvv, 4))	/* job_id, type, command and timeout */
+	if (!kvvec_init(&kvv, 4))	/* job_id, command and timeout */
 		return ERROR;
 
 	kvvec_addkv(&kvv, "job_id", (char *)mkstr("%d", job->id));
-	kvvec_addkv(&kvv, "type", (char *)mkstr("%d", job->type));
+	kvvec_addkv(&kvv, "type", "0");
 	kvvec_addkv(&kvv, "command", job->command);
 	kvvec_addkv(&kvv, "timeout", (char *)mkstr("%u", job->timeout));
 	kvvb = build_kvvec_buf(&kvv);
@@ -1021,94 +838,11 @@ static int wproc_run_job(struct wproc_job *job, nagios_macros *mac)
 	return result;
 }
 
-static wproc_object_job *create_object_job(char *cname, char *hname, char *sdesc)
-{
-	wproc_object_job *oj;
-
-	oj = calloc(1, sizeof(*oj));
-	if (oj) {
-		oj->host_name = hname;
-		if (cname)
-			oj->contact_name = cname;
-		if (sdesc)
-			oj->service_description = sdesc;
-	}
-
-	return oj;
-}
-
-int wproc_notify(char *cname, char *hname, char *sdesc, char *cmd, nagios_macros *mac)
-{
-	struct wproc_job *job;
-	wproc_object_job *oj;
-
-	if (!(oj = create_object_job(cname, hname, sdesc)))
-		return ERROR;
-
-	job = create_job(WPJOB_NOTIFY, oj, notification_timeout, cmd);
-
-	return wproc_run_job(job, mac);
-}
-
-int wproc_run_service_job(int jtype, int timeout, service *svc, char *cmd, nagios_macros *mac)
-{
-	struct wproc_job *job;
-	wproc_object_job *oj;
-
-	if (!(oj = create_object_job(NULL, svc->host_name, svc->description)))
-		return ERROR;
-
-	job = create_job(jtype, oj, timeout, cmd);
-
-	return wproc_run_job(job, mac);
-}
-
-int wproc_run_host_job(int jtype, int timeout, host *hst, char *cmd, nagios_macros *mac)
-{
-	struct wproc_job *job;
-	wproc_object_job *oj;
-
-	if (!(oj = create_object_job(NULL, hst->name, NULL)))
-		return ERROR;
-
-	job = create_job(jtype, oj, timeout, cmd);
-
-	return wproc_run_job(job, mac);
-}
-
-int wproc_run_check(check_result *cr, char *cmd, nagios_macros *mac)
-{
-	struct wproc_job *job;
-	int timeout;
-
-	if (cr->service_description)
-		timeout = service_check_timeout;
-	else
-		timeout = host_check_timeout;
-
-	job = create_job(WPJOB_CHECK, cr, timeout, cmd);
-	return wproc_run_job(job, mac);
-}
-
-int wproc_run(int jtype, char *cmd, int timeout, nagios_macros *mac)
-{
-	struct wproc_job *job;
-
-	job = create_job(jtype, NULL, timeout, cmd);
-	return wproc_run_job(job, mac);
-}
-
 int wproc_run_callback(char *cmd, int timeout,
                        void (*cb)(struct wproc_result *, void *, int), void *data,
                        nagios_macros *mac)
 {
 	struct wproc_job *job;
-	struct wproc_callback_job *cj;
-	if (!(cj = calloc(1, sizeof(*cj))))
-		return ERROR;
-	cj->callback = cb;
-	cj->data = data;
-
-	job = create_job(WPJOB_CALLBACK, cj, timeout, cmd);
+	job = create_job(cb, data, timeout, cmd);
 	return wproc_run_job(job, mac);
 }
