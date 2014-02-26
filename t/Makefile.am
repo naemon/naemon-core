@@ -12,4 +12,7 @@ AM_TESTS_ENVIRONMENT = \
 TEST_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
 	$(top_srcdir)/build-aux/tap-driver.sh
 
-DISTCLEANFILES = etc/* var/* var/spool/checkresults/.gitignore var/.gitignore
+distclean-local:
+	if test "${abs_srcdir}" != "${abs_builddir}"; then \
+		rm -r ${abs_builddir}/etc ${abs_builddir}/var; \
+	fi;
