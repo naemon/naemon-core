@@ -41,7 +41,7 @@ distclean-local:
 CLEANFILES = smallconfig/naemon.log
 EXTRA_DIST = smallconfig/minimal.cfg smallconfig/naemon.cfg \
 	smallconfig/resource.cfg smallconfig/retention.dat $(FIXTURE_FILES)
-AM_TESTS_ENVIRONMENT = \
+TESTS_ENVIRONMENT = \
 					   if test "${abs_srcdir}" != "${abs_builddir}"; then \
 					   cp -R ${abs_srcdir}/smallconfig "${abs_builddir}"; \
 					   chmod -R u+w ${abs_builddir}/smallconfig; \
