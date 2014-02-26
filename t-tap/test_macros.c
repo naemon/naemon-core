@@ -161,6 +161,21 @@ void test_escaping(nagios_macros *mac)
 	RUN_MACRO_TEST("$HOSTNOTESURL$ '&%",
 	               "notes_url%27%26%25%28notes%2527%2526%2525%2522%2528action_url%2527%2526%2525%2529%29 '&%",
 	               URL_ENCODE_MACRO_CHARS);
+
+	/* Test for escaped $ value($$) */
+	RUN_MACRO_TEST("$$ '&%",
+	               "$ '&%",
+	               URL_ENCODE_MACRO_CHARS);
+
+	/* Testing for invalid macro */
+	RUN_MACRO_TEST("$IDONOTEXIST$ '&%",
+	               "$IDONOTEXIST$ '&%",
+	               URL_ENCODE_MACRO_CHARS);
+
+	/* Testing for incomplete macro */
+	RUN_MACRO_TEST("we have an $ alone",
+	               "we have an $ alone",
+	               URL_ENCODE_MACRO_CHARS);
 }
 
 /*****************************************************************************/
@@ -171,7 +186,7 @@ int main(void)
 {
 	nagios_macros *mac;
 
-	plan_tests(19);
+	plan_tests(22);
 
 	reset_variables();
 	init_environment();
