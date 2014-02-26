@@ -13,6 +13,12 @@
 #include "globals.h"
 #include <string.h>
 
+struct notification_job {
+	host *hst;
+	service *svc;
+	contact *ctc;
+};
+
 /*** silly helpers ****/
 static contact *find_contact_by_name_or_alias(const char *name)
 {
@@ -40,6 +46,24 @@ const char *notification_reason_name(unsigned int reason_type)
 		return names[reason_type];
 
 	return "(unknown)";
+}
+
+static void notification_handle_job_result(struct wproc_result *wpres, void *data, int flags) {
+	struct notification_job *nj = (struct notification_job*)data;
+	if (wpres) {
+		if (wpres->early_timeout) {
+			if(nj->svc) {
+				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Timeout while notifying contact '%s' of service '%s' on host '%s' by command '%s'\n",
+						nj->ctc->name, nj->svc->description,
+						nj->hst->name, wpres->command);
+			} else {
+				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Timeout while notifying contact '%s' of host '%s' by command '%s'\n",
+						nj->ctc->name, nj->hst->name,
+						wpres->command);
+			}
+		}
+	}
+	free(nj);
 }
 
 
@@ -681,6 +705,7 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 	struct timeval method_start_time, method_end_time;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	int neb_result;
+	struct notification_job *nj;
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "notify_contact_of_service()\n");
 
@@ -778,7 +803,18 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 		}
 
 		/* run the notification command */
-		wproc_notify(cntct->name, svc->host_name, svc->description, processed_command, mac);
+		nj = (struct notification_job*)calloc(1,sizeof(struct notification_job));
+		if(nj == NULL) {
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Allocating storage for notification job\n");
+		} else {
+			nj->ctc = cntct;
+			nj->hst = svc->host_ptr;
+			nj->svc = svc;
+			if(ERROR == wproc_run_callback(processed_command, notification_timeout, notification_handle_job_result, nj, mac)) {
+				logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to send notification for service '%s on host '%s' to worker\n", svc->description, svc->host_ptr->name);
+				free(nj);
+			}
+		}
 
 		/* free memory */
 		my_free(command_name);
@@ -995,6 +1031,7 @@ int create_notification_list_from_service(nagios_macros *mac, service *svc, int 
 /******************************************************************/
 /******************* HOST NOTIFICATION FUNCTIONS ******************/
 /******************************************************************/
+
 
 /* notify all contacts for a host that the entire host is down or up */
 int host_notification(host *hst, int type, char *not_author, char *not_data, int options)
@@ -1574,6 +1611,7 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 	struct timeval method_end_time;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	int neb_result;
+	struct notification_job *nj;
 
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "notify_contact_of_host()\n");
@@ -1672,7 +1710,18 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 		}
 
 		/* run the notification command */
-		wproc_notify(cntct->name, hst->name, NULL, processed_command, mac);
+		nj = (struct notification_job*)calloc(1,sizeof(struct notification_job));
+		if(nj == NULL) {
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Allocating storage for notification job\n");
+		} else {
+			nj->ctc = cntct;
+			nj->hst = hst;
+			nj->svc = NULL;
+			if(ERROR == wproc_run_callback(processed_command, notification_timeout, notification_handle_job_result, nj, mac)) {
+				logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to send notification for host '%s' to worker\n", hst->name);
+				free(nj);
+			}
+		}
 
 		/* @todo Handle nebmod stuff when getting results from workers */
 
