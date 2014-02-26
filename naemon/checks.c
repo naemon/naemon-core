@@ -87,16 +87,6 @@ static void handle_worker_check(wproc_result *wpres, void *arg, int flags)
 /****************** SERVICE MONITORING FUNCTIONS ******************/
 /******************************************************************/
 
-/*
-static void check_service_result_handler(struct wproc_result *wpres, void *data, int flags) {
-	check_result *cr = (check_result*)data;
-	if(wpres) {
-
-	}
-	free_check_result(cr);
-	free(cr);
-}
-*/
 /* executes a scheduled service check */
 int run_scheduled_service_check(service *svc, int check_options, double latency)
 {
