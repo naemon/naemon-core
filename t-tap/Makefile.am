@@ -31,7 +31,13 @@ check_PROGRAMS = test_macros test_timeperiods test_checks \
 	test_neb_callbacks test_config test_commands
 TESTS = $(check_PROGRAMS)
 FIXTURE_FILES = smallconfig/minimal.cfg smallconfig/naemon.cfg smallconfig/resource.cfg smallconfig/retention.dat
-DISTCLEANFILES = $(FIXTURE_FILES)
+distclean-local:
+	if test "${abs_srcdir}" != "${abs_builddir}"; then \
+		for file in $(FIXTURE_FILES); do \
+			rm ${abs_builddir}/$$file; \
+		done; \
+	fi;
+
 CLEANFILES = smallconfig/naemon.log
 EXTRA_DIST = smallconfig/minimal.cfg smallconfig/naemon.cfg \
 	smallconfig/resource.cfg smallconfig/retention.dat $(FIXTURE_FILES)
