@@ -32,13 +32,13 @@ extern unsigned int wproc_num_workers_desired;
 
 struct load_control; /* TODO: load_control is ugly */
 
-extern void wproc_reap(int jobs, int msecs);
-extern int wproc_can_spawn(struct load_control *lc);
-extern void free_worker_memory(int flags);
-extern int workers_alive(void);
-extern int init_workers(int desired_workers);
+void wproc_reap(int jobs, int msecs);
+int wproc_can_spawn(struct load_control *lc);
+void free_worker_memory(int flags);
+int workers_alive(void);
+int init_workers(int desired_workers);
 
-extern int wproc_run_callback(char *cmt, int timeout, void (*cb)(struct wproc_result *, void *, int), void *data, nagios_macros *mac);
+int wproc_run_callback(char *cmt, int timeout, void (*cb)(struct wproc_result *, void *, int), void *data, nagios_macros *mac);
 
 NAGIOS_END_DECL;
 #endif

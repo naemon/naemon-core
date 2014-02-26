@@ -48,7 +48,7 @@ extern char *config_file_dir;
 
 #ifdef HAVE_TZNAME
 #ifdef CYGWIN
-extern char     *_tzname[2] __declspec(dllimport);
+char     *_tzname[2] __declspec(dllimport);
 #else
 extern char     *tzname[2];
 #endif
