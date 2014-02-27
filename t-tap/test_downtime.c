@@ -19,15 +19,8 @@
 #define NSCORE 1
 #include "config.h"
 #include "common.h"
-#include "nagios.h"
+#include "naemon.h"
 #include "downtime.h"
-#include "stub_broker.c"
-#include "stub_comments.c"
-#include "stub_objects.c"
-#include "stub_statusdata.c"
-#include "stub_notifications.c"
-#include "stub_shared.c"
-#include "stub_events.c"
 #include "tap.h"
 
 void logit(int data_type, int display, const char *fmt, ...) {}
