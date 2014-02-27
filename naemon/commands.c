@@ -276,9 +276,6 @@ int launch_command_file_worker(void)
 	/* make our own process-group so we can be traced into and stuff */
 	setpgid(0, 0);
 
-	/* we must preserve command_file before nuking memory */
-	(void)chdir("/tmp");
-	(void)chdir("nagios-cfw");
 	str = strdup(command_file);
 	free_memory(get_global_macros());
 	command_file = str;
