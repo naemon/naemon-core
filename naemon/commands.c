@@ -1171,7 +1171,7 @@ int command_register(struct external_command *ext_command, int id)
 {
 	int i;
 
-	if (!ext_command) { 
+	if (!ext_command) {
 		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Null parameter command passed to %s", __func__);
 		return -1;
 	}
@@ -2150,7 +2150,7 @@ static int change_custom_var_handler(const struct external_command *ext_command,
 	customvariablesmember *customvariablesmember_p = NULL;
 	char *varname;
 	int x = 0;
-	switch ( ext_command->id ) { 
+	switch ( ext_command->id ) {
 		case CMD_CHANGE_CUSTOM_SVC_VAR:
 			customvariablesmember_p = ((service *)GV("service"))->custom_variables;
 			break;
@@ -2193,7 +2193,7 @@ static int change_custom_var_handler(const struct external_command *ext_command,
 
 
 	my_free(varname);
-	switch ( ext_command->id ) { 
+	switch ( ext_command->id ) {
 		case CMD_CHANGE_CUSTOM_SVC_VAR:
 			((service *)GV("service"))->modified_attributes |= MODATTR_CUSTOM_VARIABLE;
 			return update_service_status(GV("service"), FALSE);
@@ -2335,7 +2335,7 @@ void register_core_commands(void)
 	command_register(core_command, CMD_DISABLE_HOST_SVC_NOTIFICATIONS);
 
 	core_command = command_create("PROCESS_SERVICE_CHECK_RESULT", service_command_handler,
-			"This is used to submit a passive check result for a particular service. The 'return_code' field should be one of the following: 0=OK, 1=WARNING, 2=CRITICAL, 3=UNKNOWN. The 'plugin_output' field contains text output from the service check, along with optional performance data.", "service=service;int=return_code;str=plugin_output");
+			"This is used to submit a passive check result for a particular service. The 'status_code' field should be one of the following: 0=OK, 1=WARNING, 2=CRITICAL, 3=UNKNOWN. The 'plugin_output' field contains text output from the service check, along with optional performance data.", "service=service;int=status_code;str=plugin_output");
 	command_register(core_command, CMD_PROCESS_SERVICE_CHECK_RESULT);
 
 	core_command = command_create("SAVE_STATE_INFORMATION", global_command_handler,
