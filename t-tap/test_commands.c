@@ -398,11 +398,15 @@ void test_host_commands(void) {
 	char *host_name = "host1";
 	host *target_host = NULL;
 	int pre = 0, prev_comment_id = next_comment_id;
+	unsigned int prev_downtime_id;
 	time_t check_time =0;
 	char *cmdstr = NULL;
 	target_host = find_host(host_name);
 	target_host->obsess = FALSE;
 	pre = number_of_host_comments(host_name);
+	ok(CMD_ERROR_OK == process_external_command2(CMD_ADD_HOST_COMMENT, check_time, "host1;0;myself;my comment"), "process_external_command2: ADD_HOST_COMMENT");
+	ok(pre+1 == number_of_host_comments(host_name), "ADD_HOST_COMMENT (through process_external_command2) adds a host comment");
+	++pre;
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] ADD_HOST_COMMENT;host1;0;myself;my comment"), "core command: ADD_HOST_COMMENT");
 	ok(pre+1 == number_of_host_comments(host_name), "ADD_HOST_COMMENT adds a host comment");
 	asprintf(&cmdstr, "[1234567890] DEL_HOST_COMMENT;%i", prev_comment_id);
@@ -475,7 +479,7 @@ void test_host_commands(void) {
 	ok(check_time == target_host->services->service_ptr->next_check, "SCHEDULE_FORCED_HOST_SVC_CHECKS schedules forced checks for services on a host");
 	free(cmdstr);
 
-	int prev_downtime_id = next_downtime_id;
+	prev_downtime_id = next_downtime_id;
 	asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_DOWNTIME;host1;%llu;%llu;1;0;0;myself;my downtime comment", (unsigned long long int)time(NULL), (unsigned long long int)time(NULL) + 1500);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_HOST_DOWNTIME");
 	ok(prev_downtime_id != next_downtime_id, "SCHEDULE_HOST_DOWNTIME schedules one new downtime");
@@ -552,7 +556,7 @@ int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 {
 	unsigned int i;
 	const char *test_config_file = get_default_config_file();
-	plan_tests(486);
+	plan_tests(488);
 
 	config_file_dir = nspath_absolute_dirname(test_config_file, NULL);
 	assert(OK == read_main_config_file(test_config_file));

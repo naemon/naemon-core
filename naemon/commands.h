@@ -202,6 +202,7 @@ int open_command_file(void);					/* creates the external command file as a named
 int close_command_file(void);					/* closes and deletes the external command file (FIFO) */
 
 int process_external_command1(char *);                  /* top-level external command processor */
+int process_external_command2(int cmd, time_t entry_time, char *args);  /* DEPRECATED: for backwards NEB compatibility only */
 int process_external_commands_from_file(char *, int);   /* process external commands in a file */
 
 int process_passive_service_check(time_t, char *, char *, int, char *);
