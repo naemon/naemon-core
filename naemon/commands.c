@@ -487,6 +487,7 @@ static struct external_command * external_command_copy(struct external_command *
 		copy->arguments[i] = command_argument_copy(ext_command->arguments[i]);
 	}
 	copy->description = strdup(ext_command->description);
+	copy->raw_arguments = ext_command ->raw_arguments ? strdup(ext_command->raw_arguments) : NULL;
 	return copy;
 
 }
