@@ -26,6 +26,8 @@
 #include "neberrors.h"
 #endif
 
+/* forward declarations */
+static int process_host_check_result(host *hst, int new_state, char *old_plugin_output, char *old_long_plugin_output, int check_options, int reschedule_check, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded);
 /******************************************************************/
 /********************** CHECK REAPER FUNCTIONS ********************/
 /******************************************************************/
@@ -342,6 +344,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	time_t current_time = 0L;
 	int alert_recorded = FALSE;
 	char *old_plugin_output = NULL;
+	char *old_long_plugin_output = NULL;
 	char *temp_plugin_output = NULL;
 	char *temp_ptr = NULL;
 	servicedependency *temp_dependency = NULL;
@@ -425,6 +428,8 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	if (temp_service->plugin_output)
 		old_plugin_output = nm_strdup(temp_service->plugin_output);
 
+	if (temp_service->long_plugin_output)
+		old_long_plugin_output = strdup(temp_service->long_plugin_output);
 	/* clear the old plugin output and perf data buffers */
 	my_free(temp_service->plugin_output);
 	my_free(temp_service->long_plugin_output);
@@ -979,8 +984,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	}
 
 	/* if we're stalking this state type and state was not already logged AND the plugin output changed since last check, log it now.. */
-	if (temp_service->state_type == HARD_STATE && state_change == FALSE && alert_recorded == FALSE && compare_strings(old_plugin_output, temp_service->plugin_output)) {
-
+	if (temp_service->state_type == HARD_STATE && state_change == FALSE && alert_recorded == FALSE && (compare_strings(old_plugin_output, temp_service->plugin_output) || compare_strings(old_long_plugin_output, temp_service->long_plugin_output))) {
 		if (should_stalk(temp_service)) {
 			log_service_event(temp_service);
 			alert_recorded = TRUE;
@@ -1011,6 +1015,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	/* free allocated memory */
 	my_free(temp_plugin_output);
 	my_free(old_plugin_output);
+	my_free(old_long_plugin_output);
 
 	return OK;
 }
@@ -2121,6 +2126,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 	int result = STATE_OK;
 	int reschedule_check = FALSE;
 	char *old_plugin_output = NULL;
+	char *old_long_plugin_output = NULL;
 	char *temp_ptr = NULL;
 	struct timeval start_time_hires;
 	struct timeval end_time_hires;
@@ -2214,6 +2220,9 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 	/* save old plugin output */
 	if (temp_host->plugin_output)
 		old_plugin_output = nm_strdup(temp_host->plugin_output);
+
+	if (temp_host->long_plugin_output)
+		old_long_plugin_output = nm_strdup(temp_host->long_plugin_output);
 
 	/* clear the old plugin output and perf data buffers */
 	my_free(temp_host->plugin_output);
@@ -2311,10 +2320,11 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 	/******************* PROCESS THE CHECK RESULTS ******************/
 
 	/* process the host check result */
-	process_host_check_result(temp_host, result, old_plugin_output, CHECK_OPTION_NONE, reschedule_check, TRUE, cached_host_check_horizon, &alert_recorded);
+	process_host_check_result(temp_host, result, old_plugin_output, old_long_plugin_output, CHECK_OPTION_NONE, reschedule_check, TRUE, cached_host_check_horizon, &alert_recorded);
 
 	/* free memory */
 	my_free(old_plugin_output);
+	my_free(old_long_plugin_output);
 
 	log_debug_info(DEBUGL_CHECKS, 1, "** Async check result for host '%s' handled: new state=%d\n", temp_host->name, temp_host->current_state);
 
@@ -2334,7 +2344,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 
 
 /* processes the result of a synchronous or asynchronous host check */
-int process_host_check_result(host *hst, int new_state, char *old_plugin_output, int check_options, int reschedule_check, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded)
+static int process_host_check_result(host *hst, int new_state, char *old_plugin_output, char *old_long_plugin_output, int check_options, int reschedule_check, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded)
 {
 	hostsmember *temp_hostsmember = NULL;
 	host *child_host = NULL;
@@ -2595,7 +2605,7 @@ int process_host_check_result(host *hst, int new_state, char *old_plugin_output,
 	/******************** POST-PROCESSING STUFF *********************/
 
 	/* if the plugin output differs from previous check and no state change, log the current state/output if state stalking is enabled */
-	if (hst->last_state == hst->current_state && should_stalk(hst) && compare_strings(old_plugin_output, hst->plugin_output)) {
+	if (hst->last_state == hst->current_state && should_stalk(hst) && (compare_strings(old_plugin_output, hst->plugin_output) || compare_strings(old_long_plugin_output, hst->long_plugin_output))) {
 		log_host_event(hst);
 		*alert_recorded = TRUE;
 	}

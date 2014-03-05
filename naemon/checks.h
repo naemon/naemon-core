@@ -40,7 +40,6 @@ int is_host_result_fresh(host *, time_t, int);                  /* determines if
 int check_host_check_viability(host *, int, int *, time_t *);
 int adjust_host_check_attempt(host *, int);
 int determine_host_reachability(host *);
-int process_host_check_result(host *, int, char *, int, int, int, unsigned long, int *);
 int run_scheduled_host_check(host *, int, double);
 int run_async_host_check(host *, int, double, int, int, int *, time_t *);
 int handle_async_host_check_result(host *, check_result *);
