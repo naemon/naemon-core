@@ -69,7 +69,7 @@ int test_cb_service_check_processed(void)
 	/* a change in plugin output should result in the NEBATTR_CHECK_ALERT attribute being set
 	 * for a service, for which stalking is enabled
 	 *
-	 * This output change is emulated implicitly by our fixture where service->plugin_output
+	 * This output change is emulated implicitly by our fixture where svc->plugin_output
 	 * is "Initial state" and cr->output is "Some output"
 	 * */
 	service_destroy(svc);
@@ -77,9 +77,26 @@ int test_cb_service_check_processed(void)
 	svc->stalking_options |= ~0; /*stalk all the states*/
 	assert(OK == handle_async_service_check_result(svc, cr));
 	ds = (nebstruct_service_check_data *) received_callback_data[NEBCALLBACK_SERVICE_CHECK_DATA][NEBTYPE_SERVICECHECK_PROCESSED];
-	ok(ds->attr == NEBATTR_CHECK_ALERT, "nebstruct should have NEBATTR_CHECK_ALERT attribute set");
+	ok(ds->attr == NEBATTR_CHECK_ALERT, "nebstruct has NEBATTR_CHECK_ALERT attribute set (stalking, output changed)");
 
+	svc->plugin_output = strdup("Initial state");
+	svc->long_plugin_output = strdup("Some long output");
+	assert(OK == handle_async_service_check_result(svc, cr));
+	ok(ds->attr == NEBATTR_CHECK_ALERT, "nebstruct has NEBATTR_CHECK_ALERT attribute set (stalking, long output appeared)");
 	clear_callback_data();
+
+	svc->plugin_output = strdup("Initial state");
+	svc->long_plugin_output = strdup("Some other long output");
+	assert(OK == handle_async_service_check_result(svc, cr));
+	ok(ds->attr == NEBATTR_CHECK_ALERT, "nebstruct has NEBATTR_CHECK_ALERT attribute set (stalking, long output changed)");
+	clear_callback_data();
+
+	assert(OK == handle_async_service_check_result(svc, cr));
+	ds = (nebstruct_service_check_data *) received_callback_data[NEBCALLBACK_SERVICE_CHECK_DATA][NEBTYPE_SERVICECHECK_PROCESSED];
+	ok(ds->attr != NEBATTR_CHECK_ALERT, "nebstruct DOES NOT have NEBATTR_CHECK_ALERT attribute set (stalking, but no output changed)");
+	clear_callback_data();
+
+
 	check_result_destroy(cr);
 	service_destroy(svc);
 	host_destroy(hst);
@@ -111,9 +128,28 @@ int test_cb_host_check_processed(void)
 	hst->stalking_options |= ~0; /*stalk all the states*/
 	assert(OK == handle_async_host_check_result(hst, cr));
 	ds = (nebstruct_host_check_data *) received_callback_data[NEBCALLBACK_HOST_CHECK_DATA][NEBTYPE_HOSTCHECK_PROCESSED];
-	ok(ds->attr == NEBATTR_CHECK_ALERT, "nebstruct has NEBATTR_CHECK_ALERT attribute set");
-
+	ok(ds->attr == NEBATTR_CHECK_ALERT, "nebstruct has NEBATTR_CHECK_ALERT attribute set (stalking, output changed)");
 	clear_callback_data();
+
+	hst->plugin_output = strdup("Initial state");
+	hst->long_plugin_output = strdup("Some long output");
+	assert(OK == handle_async_host_check_result(hst, cr));
+	ds = (nebstruct_host_check_data *) received_callback_data[NEBCALLBACK_HOST_CHECK_DATA][NEBTYPE_HOSTCHECK_PROCESSED];
+	ok(ds->attr == NEBATTR_CHECK_ALERT, "nebstruct has NEBATTR_CHECK_ALERT attribute set (stalking, long output appeared)");
+	clear_callback_data();
+
+	hst->plugin_output = strdup("Initial state");
+	hst->long_plugin_output = strdup("Some other long output");
+	assert(OK == handle_async_host_check_result(hst, cr));
+	ds = (nebstruct_host_check_data *) received_callback_data[NEBCALLBACK_HOST_CHECK_DATA][NEBTYPE_HOSTCHECK_PROCESSED];
+	ok(ds->attr == NEBATTR_CHECK_ALERT, "nebstruct has NEBATTR_CHECK_ALERT attribute set (stalking, long output changed)");
+	clear_callback_data();
+
+	assert(OK == handle_async_host_check_result(hst, cr));
+	ds = (nebstruct_host_check_data *) received_callback_data[NEBCALLBACK_HOST_CHECK_DATA][NEBTYPE_HOSTCHECK_PROCESSED];
+	ok(ds->attr != NEBATTR_CHECK_ALERT, "nebstruct DOES NOT have NEBATTR_CHECK_ALERT attribute set (stalking, but no output changed)");
+	clear_callback_data();
+
 	check_result_destroy(cr);
 	host_destroy(hst);
 	return 0;
@@ -121,7 +157,7 @@ int test_cb_host_check_processed(void)
 
 int main(int argc, char **argv)
 {
-	plan_tests(11);
+	plan_tests(17);
 	assert(OK == neb_init_callback_list());
 	test_nebmodule = malloc(sizeof(nebmodule));
 	neb_add_core_module(test_nebmodule);
