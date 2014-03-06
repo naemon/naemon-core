@@ -487,6 +487,7 @@ static struct external_command * external_command_copy(struct external_command *
 		copy->arguments[i] = command_argument_copy(ext_command->arguments[i]);
 	}
 	copy->description = strdup(ext_command->description);
+	copy->raw_arguments = ext_command ->raw_arguments ? strdup(ext_command->raw_arguments) : NULL;
 	return copy;
 
 }
@@ -3021,6 +3022,24 @@ int process_external_command1(char *cmd)
 	return external_command_ret;
 }
 
+int process_external_command2(int cmd, time_t entry_time, char *args)
+{
+	struct external_command *ext_command = NULL;
+	int ret = CMD_ERROR_OK;
+	log_debug_info(DEBUGL_FUNCTIONS, 0, "process_external_command1()\n");
+	log_debug_info(DEBUGL_EXTERNALCOMMANDS, 1, "External Command Type: %d\n", cmd);
+	log_debug_info(DEBUGL_EXTERNALCOMMANDS, 1, "Command Entry Time: %lu\n", (unsigned long)entry_time);
+	log_debug_info(DEBUGL_EXTERNALCOMMANDS, 1, "Command Arguments: %s\n", (args == NULL) ? "" : args);
+
+	ext_command = external_command_copy(registered_commands[cmd]);
+	ext_command->entry_time = entry_time;
+	ret = parse_arguments((const char *)args, ext_command->arguments, ext_command->argc);
+	if (ret == CMD_ERROR_OK) {
+		ret = command_execute_handler(ext_command);
+	}
+	command_destroy(ext_command);
+	return ret;
+}
 
 const char *cmd_error_strerror(int code)
 {
