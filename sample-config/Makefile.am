@@ -40,7 +40,7 @@ install-exec-hook: $(CONFIG_FILES)
 	if [ ! -d $(DESTDIR)$(sysconfdir) ]; then \
 		$(install_sh_PROGRAM) -d $(DESTDIR)$(sysconfdir)/conf.d; \
 		$(install_sh_PROGRAM) -m 644 naemon.cfg    $(DESTDIR)$(sysconfdir)/naemon.cfg; \
-		$(install_sh_PROGRAM) -m 644 resource.cfg  $(DESTDIR)$(sysconfdir)/resource.cfg; \
+		$(install_sh_PROGRAM) -m 640 resource.cfg  $(DESTDIR)$(sysconfdir)/resource.cfg; \
 		$(install_sh_PROGRAM) -d $(DESTDIR)$(sysconfdir)/conf.d; \
 		$(install_sh_PROGRAM) -m 644 conf.d/commands.cfg            $(DESTDIR)$(sysconfdir)/conf.d; \
 		$(install_sh_PROGRAM) -m 644 conf.d/printer.cfg             $(DESTDIR)$(sysconfdir)/conf.d; \
