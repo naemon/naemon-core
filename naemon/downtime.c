@@ -568,10 +568,18 @@ int handle_scheduled_downtime(scheduled_downtime *temp_downtime)
 #endif
 
 		/* decrement the downtime depth variable */
-		if (temp_downtime->type == HOST_DOWNTIME && hst->scheduled_downtime_depth > 0)
-			hst->scheduled_downtime_depth--;
-		else if (svc->scheduled_downtime_depth > 0)
-			svc->scheduled_downtime_depth--;
+		if(temp_downtime->type == HOST_DOWNTIME) {
+			if (hst->scheduled_downtime_depth > 0)
+				hst->scheduled_downtime_depth--;
+			else
+				log_debug_info(DEBUGL_DOWNTIME, 0, "Host '%s' tried to exit from a period of scheduled downtime (id=%lu), but was already out of downtime.\n", hst->name, temp_downtime->downtime_id);
+		}
+		else {
+			if (svc->scheduled_downtime_depth > 0)
+				svc->scheduled_downtime_depth--;
+			else
+				log_debug_info(DEBUGL_DOWNTIME, 0, "Service '%s' on host '%s' tried to exited from a period of scheduled downtime (id=%lu), but was already out of downtime.\n", svc->description, svc->host_name, temp_downtime->downtime_id);
+		}
 
 		if (temp_downtime->type == HOST_DOWNTIME && hst->scheduled_downtime_depth == 0) {
 
