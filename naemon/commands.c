@@ -676,6 +676,9 @@ static int parse_arguments(const char *s, struct external_command_argument **arg
 	s_ptr2 = s_ptr = strdup(s);
 	for (i = 0; ret == CMD_ERROR_OK; s_ptr = NULL, i++) {
 
+		if (i == argc - 1 && args[i]->argval->type == STRING)
+			break;
+
 		if ((temp = my_strtok(s_ptr, ";")) == NULL || !strcmp(temp, "")) {
 			/*No more arguments*/
 			if (argc > i) { /* Still expecting arguments?*/
