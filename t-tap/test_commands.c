@@ -105,7 +105,8 @@ void test_register(void)
 	registered_commands_deinit();
 }
 
-void test_parsing(void) {
+void test_parsing(void)
+{
 	struct external_command *ext_command = NULL;
 	contact *created_contact = NULL;
 	contact *fetched_contact = NULL;
@@ -165,9 +166,9 @@ void test_parsing(void) {
 		ok(CMD_ERROR_PARSE_MISSING_ARG == error, "Missing arguments are complained about (no arguments supplied)");
 		ok(ext_command == NULL, "No command returned for command with missing arguments");
 
-		ext_command = command_parse("[1234567890] ADD_HOST_COMMENT;my_host;0;441;this is my comment, there are many like it but this one is mine;This is an excess argument, ha-ha!", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_PARSE_EXCESS_ARG == error, "Excess arguments are complained about");
-		ok(ext_command == NULL, "No command returned for command with excess arguments");
+		ext_command = command_parse("[1234567890] ADD_HOST_COMMENT;my_host;0;441;this is my comment, there are many like it but this one is mine;Post-semi-colon stuff", COMMAND_SYNTAX_NOKV, &error);
+		ok(CMD_ERROR_OK == error, "Last string argument may contain semi-colons");
+		ok(ext_command != NULL, "A command should be returned when last string-argument has semi-colons");
 
 		ext_command = command_parse("[1234567890] ADD_HOST_COMMENT;my_host;0;Dora the Explora';this is my comment, there are many like it but this one is mine", COMMAND_SYNTAX_NOKV, &error);
 		ok(CMD_ERROR_PARSE_TYPE_MISMATCH == error, "Type errors are complained about");
@@ -240,7 +241,11 @@ void test_parsing(void) {
 		command_argument_add(ext_command, "comment_id", ULONG, NULL, NULL);
 		command_register(ext_command, -1);
 
-		ext_command = command_parse("[1234567890] DEL_HOST_COMMENT;10;", COMMAND_SYNTAX_NOKV, &error);
+		ext_command = command_parse("[1234567890] DEL_HOST_COMMENT;10;Excess argument;snurre", COMMAND_SYNTAX_NOKV, &error);
+		ok(CMD_ERROR_PARSE_EXCESS_ARG == error, "Excess arguments are complained about");
+		ok(ext_command == NULL, "No command returned for commands with excess arguments");
+
+		ext_command = command_parse("[1234567890] DEL_HOST_COMMENT;10", COMMAND_SYNTAX_NOKV, &error);
 		ok((unsigned long) 10 ==  *(unsigned long *)command_argument_get_value(ext_command, "comment_id"), "ULONG argument parsed correctly");
 		command_destroy(ext_command);
 
@@ -554,9 +559,9 @@ void test_core_commands(void) {
 
 int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 {
-	unsigned int i;
 	const char *test_config_file = get_default_config_file();
-	plan_tests(488);
+	plan_tests(490);
+	init_event_queue();
 
 	config_file_dir = nspath_absolute_dirname(test_config_file, NULL);
 	assert(OK == read_main_config_file(test_config_file));
