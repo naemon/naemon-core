@@ -354,11 +354,16 @@ struct external_command * command_lookup(const char *ext_command)
 static struct external_command_argument * command_argument_get(const struct external_command * ext_command, const char *argname)
 {
 	int i;
+
+	if (!ext_command || !argname)
+		return NULL;
+
 	for ( i = 0; i < ext_command->argc; i++) {
 		if ( strcmp(argname, ext_command->arguments[i]->name) == 0) {
 			return ext_command->arguments[i];
 		}
 	}
+
 	return NULL;
 }
 
@@ -442,6 +447,10 @@ void * command_argument_get_value(const struct external_command * ext_command, c
 {
 	struct external_command_argument * arg = NULL;
 	void *value = NULL;
+
+	if (!ext_command)
+		return NULL;
+
 	if ((arg = command_argument_get(ext_command, argname)) != NULL) {
 		value = arg->argval->val;
 	}
@@ -789,6 +798,8 @@ static int parse_arguments(const char *s, struct external_command_argument **arg
 
 int command_execute_handler(const struct external_command * ext_command)
 {
+	if (!ext_command)
+		return ERROR;
 	return ext_command->handler(ext_command, ext_command->entry_time);
 }
 
@@ -1048,6 +1059,10 @@ static void command_argument_destroy(struct external_command_argument *argument)
 void command_destroy(struct external_command * ext_command)
 {
 	int i;
+
+	if (!ext_command)
+		return;
+
 	for (i = 0; i < ext_command->argc; i++) {
 		command_argument_destroy(ext_command->arguments[i]);
 	}
