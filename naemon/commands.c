@@ -677,43 +677,40 @@ static const char * arg_t2str(arg_t type)
 }
 static int parse_arguments(const char *s, struct external_command_argument **args, int argc)
 {
-	char *s_ptr = NULL, *s_ptr2 = NULL, *temp = NULL, *hostname = NULL;
-	int i, error = 0, ret = CMD_ERROR_OK;
+	char *scopy, *next, *temp;
+	int i = 0, error = 0, ret = CMD_ERROR_OK;
 
-	/* stash ptr start for free()ing,
-	 * since we strtok our dup*/
-	s_ptr2 = s_ptr = strdup(s);
-	for (i = 0; ret == CMD_ERROR_OK; s_ptr = NULL, i++) {
-
-		if ((temp = my_strtok(s_ptr, ";")) == NULL || !strcmp(temp, "")) {
-			/*No more arguments*/
-			if (argc > i) { /* Still expecting arguments?*/
-
-				/*default value?*/
-				if (NULL == args[i]->argval->val) {
-					/*Nope, raise missing arg error*/
-					ret = CMD_ERROR_PARSE_MISSING_ARG;
-				}
-				if (temp == NULL) {
-					/*End of command string, for better or worse*/
-					break;
-				}
-				else {
-					continue;
-				}
-			}
-			else {
-				/*no more arguments expected, break*/
-				break;
-			}
+	temp = scopy = strdup(s);
+	/* stash ptr start for free()ing, since *s is const and we copy it */
+	for (temp = scopy; temp && ret == CMD_ERROR_OK; i++, temp = next ? next + 1 : NULL) {
+		next = strchr(temp, ';');
+		if (next && i < argc) {
+			*next = '\0';
 		}
-		else if (i > argc-1) {
-			/*Too many arguments*/
-			ret = CMD_ERROR_PARSE_EXCESS_ARG;
+
+		/*
+		 * if the last argument we parse is a string, we allow
+		 * semicolons as part of the string
+		 */
+		if (i == argc - 1 && args[i]->argval->type == STRING && next) {
+			*next = ';';
+			next = NULL;
+		}
+
+		if (i >= argc) {
+			/* Too many arguments */
+			if (argc)
+				ret = CMD_ERROR_PARSE_EXCESS_ARG;
 			break;
 		}
-		if (is_stringy(args[i]->argval->type) && args[i]->argval->val) {
-			free(args[i]->argval->val); /*Free before reassignment*/
+
+		/* empty argument, so check for default value */
+		if (!*temp) {
+			if (NULL == args[i]->argval->val) {
+				/*Nope, raise missing arg error*/
+				ret = CMD_ERROR_PARSE_MISSING_ARG;
+			}
+			continue;
 		}
 
 		if(!args[i]->argval->val) {
@@ -722,6 +719,8 @@ static int parse_arguments(const char *s, struct external_command_argument **arg
 			if (!is_stringy(args[i]->argval->type)) {
 				args[i]->argval->val = malloc(type_sz(args[i]->argval->type));
 			}
+		} else if (is_stringy(args[i]->argval->type)) {
+			free(args[i]->argval->val); /*Free before reassignment*/
 		}
 
 		log_debug_info(DEBUGL_COMMANDS, 2, "Parsing '%s' as %s\n", temp, arg_t2str(args[i]->argval->type));
@@ -738,21 +737,19 @@ static int parse_arguments(const char *s, struct external_command_argument **arg
 				}
 				break;
 			case SERVICE:
-				hostname = strdup(temp);
-				if (hostname == NULL) {
-					ret = CMD_ERROR_INTERNAL_ERROR;
-				}
 				/* look-ahead for service name*/
-				else
-				{
-					if ((temp = my_strtok(NULL, ";")) == NULL){
-						/*No service name*/
-						ret = CMD_ERROR_PARSE_TYPE_MISMATCH;
-					}
-					if(asprintf((char **) &(args[i]->argval->val), "%s;%s", hostname, temp) == -1) {
-						ret = CMD_ERROR_INTERNAL_ERROR;
-					}
-					free(hostname);
+				if (!next) {
+					/*No service name*/
+					ret = CMD_ERROR_PARSE_TYPE_MISMATCH;
+					break;
+				}
+				*next = ';';
+				if ((next = strchr(next + 1, ';'))) {
+					*next = '\0';
+				}
+				args[i]->argval->val = strdup(temp);
+				if(args[i]->argval->val == NULL) {
+					ret = CMD_ERROR_INTERNAL_ERROR;
 				}
 				break;
 			case BOOL:
@@ -792,7 +789,21 @@ static int parse_arguments(const char *s, struct external_command_argument **arg
 			ret = CMD_ERROR_VALIDATION_FAILURE;
 		}
 	}
-	free(s_ptr2);
+
+	free(scopy);
+
+	if (ret != CMD_ERROR_OK)
+		return ret;
+
+	/* discount trailing default values */
+	while (argc > i && args[i]->argval->val) {
+		i++;
+	}
+
+	if (argc > i) { /* Still expecting arguments?*/
+		return CMD_ERROR_PARSE_MISSING_ARG;
+	}
+
 	return ret;
 }
 
