@@ -1,3 +1,9 @@
+unreleased
+=================
+ * external commands are now validated
+ * query handler supports commands now
+ * added shadownaemon tool to locally shadow a remote core via livestatus
+
 0.8 - Feb 13 2014
 =================
  * Based on nagios 4.0.2
