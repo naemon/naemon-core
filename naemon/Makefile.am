@@ -77,7 +77,7 @@ common_sources = \
 	buildopts.h
 
 
-bin_PROGRAMS = naemon naemonstats oconfsplit
+bin_PROGRAMS = naemon naemonstats oconfsplit shadownaemon
 naemon_SOURCES = naemon.c $(common_sources)
 
 naemon_CPPFLAGS = $(AM_CPPFLAGS) -DPREFIX='"$(prefix)"'
@@ -85,6 +85,10 @@ naemon_LDADD = lib/libnaemon.la -lm -ldl
 naemon_LDFLAGS = -rdynamic -static
 
 naemonstats_SOURCES = naemonstats.c buildopts.h lib/nspath.h lib/nspath.c defaults.h defaults.c
+
+shadownaemon_SOURCES = shadownaemon.c shadownaemon.h $(common_sources)
+shadownaemon_LDADD = lib/libnaemon.la -lm -ldl
+shadownaemon_LDFLAGS = -rdynamic -static
 
 oconfsplit_LDADD = lib/libnaemon.la -lm -ldl
 oconfsplit_SOURCES = oconfsplit.c $(common_sources)
