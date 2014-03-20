@@ -3,7 +3,7 @@ AM_CPPFLAGS += -I$(top_builddir)
 
 EXTRA_DIST = contrib
 
-all-local: documentation
+all-local: manpages
 
 test: check
 
@@ -18,12 +18,6 @@ install-exec-hook:
 uninstall-hook:
 	[ -z $(logrotatedir) ] || rm $(DESTDIR)$(logrotatedir)/naemon
 	[ -z $(initrddir) ]    || rm $(DESTDIR)$(initrddir)/naemon
-
-documentation: dox manpages
-
-dox:
-	rm -rf Documentation
-	doxygen doxy.conf
 
 manpages: naemon naemonstats shadownaemon oconfsplit
 	help2man --no-info --section=8 --version-string="naemon $(PACKAGE_VERSION)" \

@@ -48,9 +48,6 @@ perl -i -p -e "s/MODIFICATION_DATE \".*\"/MODIFICATION_DATE \"$SHORTDATE\"/;" na
 # Update version number in configure.ac
 perl -i -p -e "s/^(AC_INIT.*?\[)\d+\.\d+.\d+/AC_INIT([naemon], [$newversion/;" configure.ac
 
-# Update the doxygen docs
-perl -i -p -e "s/^PROJECT_NUMBER = .*/PROJECT_NUMBER = $newversion/;" doxy.conf
-
 # Update this file with version number and last date
 perl -i -p -e "s/^CURRENTVERSION=.*/CURRENTVERSION=$newversion/;" update-version
 perl -i -p -e "s/^LASTDATE=.*/LASTDATE=$SHORTDATE/;" update-version
