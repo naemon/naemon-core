@@ -22,6 +22,8 @@ pkginclude_HEADERS = \
 	downtime.h       naemonstats.h  notifications.h  utils.h \
 	buildopts.h
 
+all-local: manpages
+
 wpres-phash.h: wpres.gperf
 	$(AM_V_GEN) $(GPERF) --switch=1 --struct-type \
 		--hash-function-name=wpres_key_phash \
@@ -36,7 +38,7 @@ buildopts.h: buildopts.h.in
 	 -e 's,@@NAEMON_LOCKFILE@@,$(lockfile),' \
 	$< > $@
 
-CLEANFILES = wpres-phash.h buildopts.h
+CLEANFILES = wpres-phash.h buildopts.h naemon.8 naemonstats.8 shadownaemon.8 oconfsplit.8
 
 common_sources = \
 	broker.c broker.h \
@@ -99,3 +101,16 @@ oconfsplit_SOURCES = oconfsplit.c $(common_sources)
 
 distclean-local:
 	rm -rf Makefile.in
+
+manpages: naemon naemonstats shadownaemon oconfsplit
+	help2man --no-info --section=8 --help-option=-h -n "monitoring core"                          ./naemon       > naemon.8
+	help2man --no-info --section=8 --help-option=-h -n "gather statistics from naemon core"       ./naemonstats  > naemonstats.8
+	help2man --no-info --section=8 --help-option=-h -n "shadow remote cores via livestatus"       ./shadownaemon > shadownaemon.8
+	help2man --no-info --section=8 --help-option=-h -n "split naemon configuration by hostgroups" ./oconfsplit   > oconfsplit.8
+
+install-data-local:
+	mkdir -p $(DESTDIR)$(mandir)/man8/
+	install -m 644 naemon.8       $(DESTDIR)$(mandir)/man8/
+	install -m 644 naemonstats.8  $(DESTDIR)$(mandir)/man8/
+	install -m 644 shadownaemon.8 $(DESTDIR)$(mandir)/man8/
+	install -m 644 oconfsplit.8   $(DESTDIR)$(mandir)/man8/
