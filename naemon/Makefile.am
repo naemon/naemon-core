@@ -114,3 +114,9 @@ install-data-local:
 	install -m 644 naemonstats.8  $(DESTDIR)$(mandir)/man8/
 	install -m 644 shadownaemon.8 $(DESTDIR)$(mandir)/man8/
 	install -m 644 oconfsplit.8   $(DESTDIR)$(mandir)/man8/
+
+uninstall-hook:
+	rm $(DESTDIR)$(mandir)/man8/naemon.8
+	rm $(DESTDIR)$(mandir)/man8/naemonstats.8
+	rm $(DESTDIR)$(mandir)/man8/shadownaemon.8
+	rm $(DESTDIR)$(mandir)/man8/oconfsplit.8
