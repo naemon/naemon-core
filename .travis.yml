@@ -13,6 +13,7 @@ before_install:
   - sudo apt-get install build-essential
   - sudo apt-get install gperf
   - sudo apt-get install check
+  - sudo apt-get install help2man
 notifications:
   irc:
     channels:
