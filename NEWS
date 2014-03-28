@@ -1,8 +1,9 @@
-unreleased
+Unreleased
 =================
- * external commands are now validated
- * query handler supports commands now
- * added shadownaemon tool to locally shadow a remote core via livestatus
+ * External commands are now validated
+ * Query handler supports commands now
+ * Added shadownaemon tool to locally shadow a remote core via livestatus
+ * Naemon now starts after reboot on Debian
 
 0.8 - Feb 13 2014
 =================
