@@ -1,6 +1,5 @@
 #include <signal.h>
 #include <stdio.h>
-#include <malloc.h>
 #include <netdb.h>
 #include <string.h>
 #include <netinet/in.h>
@@ -119,8 +118,8 @@ static int conn_spam(struct sockaddr_in *sain)
 {
 	int i;
 
-	signal(SIGALRM, (__sighandler_t)sighandler);
-	signal(SIGINT, (__sighandler_t)sighandler);
+	signal(SIGALRM, (void (*)(int))sighandler);
+	signal(SIGINT, (void (*)(int))sighandler);
 	signal(SIGPIPE, SIG_IGN);
 	alarm(20);
 
