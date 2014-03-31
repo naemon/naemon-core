@@ -172,7 +172,7 @@ int worker_buf2kvvec_prealloc(struct kvvec *kvv, char *buf, unsigned long len, i
 
 #define kvvec_add_tv(kvv, key, value) \
 	do { \
-		const char *buf = mkstr("%ld.%06ld", value.tv_sec, value.tv_usec); \
+		const char *buf = mkstr("%ld.%06ld", (long)value.tv_sec, (long)value.tv_usec); \
 		kvvec_addkv_wlen(kvv, key, sizeof(key) - 1, buf, strlen(buf)); \
 	} while (0)
 
@@ -384,7 +384,7 @@ static void kill_job(child_process *cp, int reason)
 		 */
 		if (reason == ESTALE) {
 			tv.tv_sec += 5;
-			wlog("Failed to reap child with pid %d. Next attempt @ %lu.%lu", cp->ei->pid, tv.tv_sec, tv.tv_usec);
+			wlog("Failed to reap child with pid %d. Next attempt @ %ld.%ld", cp->ei->pid, (long)tv.tv_sec, (long)tv.tv_usec);
 		} else {
 			tv.tv_sec += 1;
 			cp->ei->state = ESTALE;

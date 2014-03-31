@@ -123,8 +123,9 @@ AC_FUNC_WAIT3
 # Don't add functions to this list that are in either C89 or in
 # both POSIX.1-2001 and C99. Just let the compile fail instead.
 # Also, obviously, don't add functions that aren't used in the code.
-AC_CHECK_FUNCS([dup2 floor ftruncate initgroups munmap pow putenv realpath \
-	regcomp select setenv strncasecmp strrchr tzset unsetenv])
+AC_CHECK_FUNCS([dup2 floor ftruncate get_current_dir_name initgroups \
+	munmap pow putenv realpath regcomp select setenv strncasecmp \
+	strrchr tzset unsetenv])
 
 # Determine the system init.d directory
 AC_ARG_WITH([initdir],
