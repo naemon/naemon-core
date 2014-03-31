@@ -6,6 +6,7 @@
  */
 
 #include "shadownaemon.h"
+#include <libgen.h>
 
 static int verbose                         = FALSE;
 static int daemonmode                      = FALSE;
@@ -175,11 +176,37 @@ int main(int argc, char **argv) {
         lock_file = malloc(sizeof(char) * 250);
         snprintf(lock_file, 249, "%s/shadownaemon.pid", tmp_folder);
         // daemon init changes to wrong folder otherwise
+#ifdef HAVE_GET_CURRENT_DIR_NAME
         cwd = get_current_dir_name();
+#else
+        // Emulate get_current_dir_name() without relying on
+        // getcwd(NULL, 0) to be working
+        {
+            size_t size = 50;
+            errno = 0;
+            do {
+                cwd = malloc(size);
+                if (!cwd) {
+                    goto error_out;
+                }
+                if (getcwd(cwd, size) == cwd) {
+                    break;
+                }
+                if (errno != ERANGE) {
+                    free(cwd);
+                    goto error_out;
+                }
+                size *= 2;
+            } while (1);
+        }
+#endif
         setenv("HOME", cwd, 1);
         free(cwd);
         daemon_dumps_core = TRUE;
         if (daemon_init() == ERROR) {
+#ifndef HAVE_GET_CURRENT_DIR_NAME
+error_out:
+#endif
             /* we had an error daemonizing, so bail... */
             logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "Bailing out due to failure to daemonize. (PID=%d)", (int)getpid());
             cleanup();

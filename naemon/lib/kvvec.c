@@ -94,7 +94,7 @@ int kvvec_addkv_wlen(struct kvvec *kvv, const char *key, int keylen, const char 
 		}
 	} else {
 		kv->value_len = 0;
-		kv->value = '\0';
+		kv->value = NULL;
 	}
 	kvv->kvv_sorted = 0;
 

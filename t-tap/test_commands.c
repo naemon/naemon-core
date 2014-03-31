@@ -27,6 +27,7 @@
 #include "naemon/configuration.h"
 #include "naemon/defaults.h"
 #include "naemon/sretention.h"
+#include "naemon/events.h"
 
 static int *received_persistent;
 static char *received_host;

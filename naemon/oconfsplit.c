@@ -26,6 +26,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <getopt.h>
+#include <libgen.h>
 
 static struct {
 	bitmap *hosts;
