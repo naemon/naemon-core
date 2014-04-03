@@ -1099,20 +1099,30 @@ int xodtemplate_add_object_property(char *input, int options)
 
 	/* get variable name */
 	variable = input;
+
+	result = ERROR;
 	/* trim at first whitespace occurance */
 	for (x = 0; variable[x] != '\x0'; x++) {
 		if (variable[x] == ' ' || variable[x] == '\t') {
+			result = OK;
 			variable[x] = 0;
 			break;
 		}
 	}
 
-	/* get variable value */
-	value = input + x + 1;
-	while (*value == ' ' || *value == '\t')
-		value++;
-	/* now strip trailing spaces */
-	strip(value);
+	if (result != OK) {
+		/* we found key without a value, so do the equivalent of
+		 * value = strdup(""), without allocating the trailing NULL byte */
+		value = input + x;
+		result = OK;
+	} else {
+		/* get variable value */
+		value = input + x + 1;
+		while (*value == ' ' || *value == '\t')
+			value++;
+		/* now strip trailing spaces */
+		strip(value);
+	}
 
 	switch (xodtemplate_current_object_type) {
 
