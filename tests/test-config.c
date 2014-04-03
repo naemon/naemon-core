@@ -48,6 +48,7 @@ START_TEST(recursive)
 	for (h = host_list, hits=0; h; h = h->next, hits++) {
 		if (!strcmp(h->name, "host1")) {
 			ck_assert_str_eq("from_template", h->alias);
+			ck_assert_str_eq("", h->notes);
 		} else if (!strcmp(h->name, "hosttemplate")) {
 			ck_assert_str_eq("from_template", h->alias);
 		} else {
