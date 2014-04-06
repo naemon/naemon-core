@@ -1361,7 +1361,7 @@ contactsmember *add_contact_to_contactgroup(contactgroup *grp, char *contact_nam
 
 
 /* add a new service to the list in memory */
-service *add_service(char *host_name, char *description, char *display_name, char *check_period, int initial_state, int max_attempts, int parallelize, int accept_passive_checks, double check_interval, double retry_interval, double notification_interval, double first_notification_delay, char *notification_period, int notification_options, int notifications_enabled, int is_volatile, char *event_handler, int event_handler_enabled, char *check_command, int checks_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, char *notes, char *notes_url, char *action_url, char *icon_image, char *icon_image_alt, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
+service *add_service(char *host_name, char *description, char *display_name, char *check_period, int initial_state, int max_attempts, int accept_passive_checks, double check_interval, double retry_interval, double notification_interval, double first_notification_delay, char *notification_period, int notification_options, int notifications_enabled, int is_volatile, char *event_handler, int event_handler_enabled, char *check_command, int checks_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, char *notes, char *notes_url, char *action_url, char *icon_image, char *icon_image_alt, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
 {
 	host *h;
 	timeperiod *cp = NULL, *np = NULL;
@@ -1470,7 +1470,6 @@ service *add_service(char *host_name, char *description, char *display_name, cha
 	new_service->check_interval = check_interval;
 	new_service->retry_interval = retry_interval;
 	new_service->max_attempts = max_attempts;
-	new_service->parallelize = (parallelize > 0) ? TRUE : FALSE;
 	new_service->notification_interval = notification_interval;
 	new_service->first_notification_delay = first_notification_delay;
 	new_service->notification_options = notification_options;
@@ -3142,7 +3141,6 @@ void fcache_service(FILE *fp, service *temp_service)
 	fprintf(fp, "\tretry_interval\t%f\n", temp_service->retry_interval);
 	fprintf(fp, "\tmax_check_attempts\t%d\n", temp_service->max_attempts);
 	fprintf(fp, "\tis_volatile\t%d\n", temp_service->is_volatile);
-	fprintf(fp, "\tparallelize_check\t%d\n", temp_service->parallelize);
 	fprintf(fp, "\tactive_checks_enabled\t%d\n", temp_service->checks_enabled);
 	fprintf(fp, "\tpassive_checks_enabled\t%d\n", temp_service->accept_passive_checks);
 	fprintf(fp, "\tobsess\t%d\n", temp_service->obsess);
