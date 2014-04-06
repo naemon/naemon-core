@@ -511,6 +511,7 @@ struct service {
 	double	check_interval;
 	double  retry_interval;
 	int	max_attempts;
+	int     reserved1;   /* placeholder var to not break interface, was parallelize before */
 	struct contactgroupsmember *contact_groups;
 	struct contactsmember *contacts;
 	double	notification_interval;
