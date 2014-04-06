@@ -21,7 +21,6 @@ define service {
   notification_period            24x7                                ; Notifications can be sent out at any time
   notifications_enabled          1                                   ; Service notifications are enabled
   obsess_over_service            1                                   ; We should obsess over this service (if necessary)
-  parallelize_check              1                                   ; Active service checks should be parallelized (disabling this can lead to major performance problems)
   passive_checks_enabled         1                                   ; Passive service checks are enabled/accepted
   process_perf_data              1                                   ; Process performance data
   register                       0                                   ; DONT REGISTER THIS DEFINITION - ITS NOT A REAL SERVICE, JUST A TEMPLATE!

@@ -939,7 +939,6 @@ int xodtemplate_begin_object_definition(char *input, int options, int cfgfile, i
 		new_service->retry_interval = 1.0;
 		new_service->active_checks_enabled = TRUE;
 		new_service->passive_checks_enabled = TRUE;
-		new_service->parallelize_check = TRUE;
 		new_service->obsess = TRUE;
 		new_service->event_handler_enabled = TRUE;
 		new_service->flap_detection_enabled = TRUE;
@@ -2575,8 +2574,11 @@ int xodtemplate_add_object_property(char *input, int options)
 			temp_service->passive_checks_enabled = (atoi(value) > 0) ? TRUE : FALSE;
 			temp_service->have_passive_checks_enabled = TRUE;
 		} else if (!strcmp(variable, "parallelize_check")) {
-			temp_service->parallelize_check = atoi(value);
-			temp_service->have_parallelize_check = TRUE;
+			/* deprecated and was never implemented
+			 * removing it here would result in lots of
+			 * Invalid service object directive errors
+			 * for existing configs
+			 */
 		} else if (!strcmp(variable, "is_volatile")) {
 			temp_service->is_volatile = (atoi(value) > 0) ? TRUE : FALSE;
 			temp_service->have_is_volatile = TRUE;
@@ -5434,7 +5436,6 @@ int xodtemplate_resolve_service(xodtemplate_service *this_service)
 		xod_inherit(this_service, template_service, retry_interval);
 		xod_inherit(this_service, template_service, active_checks_enabled);
 		xod_inherit(this_service, template_service, passive_checks_enabled);
-		xod_inherit(this_service, template_service, parallelize_check);
 		xod_inherit(this_service, template_service, is_volatile);
 		xod_inherit(this_service, template_service, obsess);
 		xod_inherit(this_service, template_service, event_handler_enabled);
@@ -7328,7 +7329,7 @@ int xodtemplate_register_service(xodtemplate_service *this_service)
 		return OK;
 
 	/* add the service */
-	new_service = add_service(this_service->host_name, this_service->service_description, this_service->display_name, this_service->check_period, this_service->initial_state, this_service->max_check_attempts, this_service->parallelize_check, this_service->passive_checks_enabled, this_service->check_interval, this_service->retry_interval, this_service->notification_interval, this_service->first_notification_delay, this_service->notification_period, this_service->notification_options, this_service->notifications_enabled, this_service->is_volatile, this_service->event_handler, this_service->event_handler_enabled, this_service->check_command, this_service->active_checks_enabled, this_service->flap_detection_enabled, this_service->low_flap_threshold, this_service->high_flap_threshold, this_service->flap_detection_options, this_service->stalking_options, this_service->process_perf_data, this_service->check_freshness, this_service->freshness_threshold, this_service->notes, this_service->notes_url, this_service->action_url, this_service->icon_image, this_service->icon_image_alt, this_service->retain_status_information, this_service->retain_nonstatus_information, this_service->obsess, this_service->hourly_value);
+	new_service = add_service(this_service->host_name, this_service->service_description, this_service->display_name, this_service->check_period, this_service->initial_state, this_service->max_check_attempts, this_service->passive_checks_enabled, this_service->check_interval, this_service->retry_interval, this_service->notification_interval, this_service->first_notification_delay, this_service->notification_period, this_service->notification_options, this_service->notifications_enabled, this_service->is_volatile, this_service->event_handler, this_service->event_handler_enabled, this_service->check_command, this_service->active_checks_enabled, this_service->flap_detection_enabled, this_service->low_flap_threshold, this_service->high_flap_threshold, this_service->flap_detection_options, this_service->stalking_options, this_service->process_perf_data, this_service->check_freshness, this_service->freshness_threshold, this_service->notes, this_service->notes_url, this_service->action_url, this_service->icon_image, this_service->icon_image_alt, this_service->retain_status_information, this_service->retain_nonstatus_information, this_service->obsess, this_service->hourly_value);
 
 	/* return with an error if we couldn't add the service */
 	if (new_service == NULL) {
