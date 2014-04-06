@@ -116,7 +116,7 @@ define service {
   service_description            HTTP
   host_name                      localhost
   use                            local-service                       ; Name of service template to use
-  check_command                  check_http
+  check_command                  check_http!-u /naemon/
   notifications_enabled          0
 }
 
