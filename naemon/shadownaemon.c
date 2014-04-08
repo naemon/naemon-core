@@ -376,6 +376,7 @@ int write_config_files() {
     fprintf(file,"debug_file=%s/debug.log\n", tmp_folder);
     fprintf(file,"command_file=%s/naemon.cmd\n", tmp_folder);
     fprintf(file,"log_file=%s\n", log_file);
+    fprintf(file,"use_syslog=0\n");
     fprintf(file,"object_cache_file=%s/objects.cache\n", tmp_folder);
     fprintf(file,"precached_object_file=%s/objects.precache\n", tmp_folder);
     fprintf(file,"resource_file=%s\n", resource_config);
