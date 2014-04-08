@@ -986,6 +986,8 @@ int update_host_status_data() {
                        "last_time_down",
                        "last_time_unreachable",         // 30
                        "last_time_up",
+                       "acknowledged",
+                       "acknowledgement_type",
     };
     int columns_size = sizeof(columns)/sizeof(columns[0]);
 
@@ -1059,6 +1061,8 @@ int update_host_status_data() {
             hst->last_time_down                 = atoi(row->set[29]);
             hst->last_time_unreachable          = atoi(row->set[30]);
             hst->last_time_up                   = atoi(row->set[31]);
+            hst->problem_has_been_acknowledged  = atoi(row->set[32]);
+            hst->acknowledgement_type           = atoi(row->set[33]);
             row = row->next;
         }
     }
@@ -1113,6 +1117,8 @@ int update_service_status_data() {
                        "last_time_warning",
                        "last_time_unknown",
                        "last_time_critical",
+                       "acknowledged",
+                       "acknowledgement_type",          // 35
     };
     int columns_size = sizeof(columns)/sizeof(columns[0]);
 
@@ -1186,6 +1192,8 @@ int update_service_status_data() {
             svc->last_time_warning              = atoi(row->set[31]);
             svc->last_time_unknown              = atoi(row->set[32]);
             svc->last_time_critical             = atoi(row->set[33]);
+            svc->problem_has_been_acknowledged  = atoi(row->set[34]);
+            svc->acknowledgement_type           = atoi(row->set[35]);
             row = row->next;
         }
     }
