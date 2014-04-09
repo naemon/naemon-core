@@ -164,6 +164,8 @@ static int qh_input(int sd, int events, void *ioc_)
 		/* Identify handler part and any magic query bytes */
 		if (*buf == '@' || *buf == '#') {
 			handler = buf + 1;
+		} else {
+			handler = buf;
 		}
 
 		/* Locate query (if any) */
@@ -194,7 +196,7 @@ static int qh_input(int sd, int events, void *ioc_)
 			nsock_printf_nul(sd, "%d: %s", result, qh_strerror(result));
 		}
 
-		if (result >= 300 || *buf == '#') {
+		if (result >= 300 || *buf != '@') {
 			/* error code or one-shot query */
 			iobroker_close(nagios_iobs, sd);
 			iocache_destroy(ioc);
