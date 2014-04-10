@@ -67,7 +67,6 @@ if __name__ == '__main__':
 		query_args.append(arg)
 
 	query = ' '.join(query_args)
-	print("Socket: %s\nQuery : %s" % (socket_path, query))
 	qh = naemon_qh(socket_path)
 	for block in qh.query(query):
 		sys.stdout.write(block)
