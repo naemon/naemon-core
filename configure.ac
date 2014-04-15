@@ -39,6 +39,7 @@ AM_CONDITIONAL([HAVE_CHECK], [test "x$with_tests" = "xyes"])
 
 AM_MISSING_PROG([PROVE], [prove])
 AM_MISSING_PROG([GPERF], [gperf])
+AM_MISSING_PROG(HELP2MAN, help2man)
 # am_missing_prog doesn't seem to fail,
 # so I'm putting this redundant check in place to whine more loudly:
 AC_CHECK_PROG(GPERF_CHECK,gperf,yes)
