@@ -103,10 +103,10 @@ distclean-local:
 	rm -rf Makefile.in
 
 manpages: naemon naemonstats shadownaemon oconfsplit
-	help2man --no-info --section=8 --help-option=-h -n "monitoring core"                          ./naemon       > naemon.8
-	help2man --no-info --section=8 --help-option=-h -n "gather statistics from naemon core"       ./naemonstats  > naemonstats.8
-	help2man --no-info --section=8 --help-option=-h -n "shadow remote cores via livestatus"       ./shadownaemon > shadownaemon.8
-	help2man --no-info --section=8 --help-option=-h -n "split naemon configuration by hostgroups" ./oconfsplit   > oconfsplit.8
+	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "monitoring core"                          ./naemon       > naemon.8
+	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "gather statistics from naemon core"       ./naemonstats  > naemonstats.8
+	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "shadow remote cores via livestatus"       ./shadownaemon > shadownaemon.8
+	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "split naemon configuration by hostgroups" ./oconfsplit   > oconfsplit.8
 
 install-data-local:
 	mkdir -p $(DESTDIR)$(mandir)/man8/
