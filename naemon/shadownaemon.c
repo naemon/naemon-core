@@ -399,7 +399,7 @@ int write_config_files() {
     fprintf(file,"cfg_file=%s\n", objects_file);
     fprintf(file,"illegal_macro_output_chars=`~$&|'\"<>\n");
     fprintf(file,"event_broker_options=-1\n");
-    fprintf(file,"broker_module=%s num_client_threads=20 debug=5 %s\n", livestatus_module, output_socket_path);
+    fprintf(file,"broker_module=%s num_client_threads=20 debug=0 %s\n", livestatus_module, output_socket_path);
     fclose(file);
     timing_point("wrote %s\n", config_file);
 
