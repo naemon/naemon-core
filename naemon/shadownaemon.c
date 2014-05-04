@@ -276,6 +276,21 @@ char *get_default_livestatus_module() {
     char *livestatus_path = malloc(sizeof(char) * 250);
     struct stat st;
 
+    snprintf(livestatus_path, 249, "%s/lib/naemon/naemon-livestatus/livestatus.so", getenv("HOME"));
+    if(stat(livestatus_path, &st) == 0) {
+        return(livestatus_path);
+    }
+
+    snprintf(livestatus_path, 249, "/usr/lib/naemon/naemon-livestatus/livestatus.so");
+    if(stat(livestatus_path, &st) == 0) {
+        return(livestatus_path);
+    }
+
+    snprintf(livestatus_path, 249, "/usr/lib64/naemon/naemon-livestatus/livestatus.so");
+    if(stat(livestatus_path, &st) == 0) {
+        return(livestatus_path);
+    }
+
     snprintf(livestatus_path, 249, "%s/lib/naemon/livestatus.o", getenv("HOME"));
     if(stat(livestatus_path, &st) == 0) {
         return(livestatus_path);
@@ -384,7 +399,7 @@ int write_config_files() {
     fprintf(file,"cfg_file=%s\n", objects_file);
     fprintf(file,"illegal_macro_output_chars=`~$&|'\"<>\n");
     fprintf(file,"event_broker_options=-1\n");
-    fprintf(file,"broker_module=%s num_client_threads=20 debug=0 %s\n", livestatus_module, output_socket_path);
+    fprintf(file,"broker_module=%s num_client_threads=20 debug=5 %s\n", livestatus_module, output_socket_path);
     fclose(file);
     timing_point("wrote %s\n", config_file);
 
