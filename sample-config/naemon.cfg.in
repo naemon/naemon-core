@@ -192,7 +192,7 @@ event_broker_options=-1
 #
 #   broker_module=<modulepath> [moduleargs]
 
-#broker_module=@libdir@/livestatus.so @TMPDIR@/live
+#broker_module=@libdir@/naemon-livestatus/livestatus.so @TMPDIR@/live
 #broker_module=/somewhere/module1.o
 #broker_module=/somewhere/module2.o arg1 arg2=3 debug=0
 

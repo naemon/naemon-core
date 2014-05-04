@@ -1,5 +1,6 @@
 Unreleased
 =================
+ * livestatus module name change to livestatus.so, path changed to libdir/naemon/naemon-livestatus/livestatus.so
  * External commands are now validated
  * Query handler supports commands now
  * Added shadownaemon tool to locally shadow a remote core via livestatus
