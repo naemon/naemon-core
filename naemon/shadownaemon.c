@@ -1611,7 +1611,7 @@ int run_refresh_loop() {
         duration = tv_delta_f(&refresh_start, &refresh_end);
 
         /* decide wheter to use long or short sleep interval, start slow interval after 10min runtime and if there are no connections in 10minutes */
-        if(shadow_program_restart < refresh_end.tv_sec - 60 && last_connection < refresh_end.tv_sec - 60) {
+        if(errors == 0 && shadow_program_restart < refresh_end.tv_sec - 60 && last_connection < refresh_end.tv_sec - 60) {
             /* no connections in last 10minutes, use slow interval */
             sleep_remaining = long_shadow_update_interval - (duration*1000000);
         } else {
