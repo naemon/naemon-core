@@ -2015,7 +2015,7 @@ static int service_command_handler(const struct external_command *ext_command, t
 			/* update the status log with the host info */
 			return update_service_status(target_service, FALSE);
 		default:
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unknown host command ID %d", (ext_command->id));
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unknown service command ID %d", (ext_command->id));
 			return ERROR;
 	}
 }
