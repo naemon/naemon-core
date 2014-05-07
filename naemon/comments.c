@@ -3,13 +3,13 @@
 #include "common.h"
 #include "comments.h"
 #include "objects.h"
-#include "xcddefault.h"
 #include "broker.h"
 #include "events.h"
+#include "globals.h"
 
-comment     *comment_list = NULL;
-int	    defer_comment_sorting = 0;
-comment     **comment_hashlist = NULL;
+comment *comment_list = NULL;
+int defer_comment_sorting = 0;
+comment **comment_hashlist = NULL;
 
 
 /******************************************************************/
@@ -19,7 +19,21 @@ comment     **comment_hashlist = NULL;
 /* initializes comment data */
 int initialize_comment_data(void)
 {
-	return xcddefault_initialize_comment_data();
+	comment *temp_comment = NULL;
+
+	/* find the new starting index for comment id if its missing*/
+	if (next_comment_id == 0L) {
+		for (temp_comment = comment_list; temp_comment != NULL; temp_comment = temp_comment->next) {
+			if (temp_comment->comment_id >= next_comment_id)
+				next_comment_id = temp_comment->comment_id + 1;
+		}
+	}
+
+	/* initialize next comment id if necessary */
+	if (next_comment_id == 0L)
+		next_comment_id = 1;
+
+	return OK;
 }
 
 
@@ -31,41 +45,40 @@ int initialize_comment_data(void)
 int add_new_comment(int type, int entry_type, char *host_name, char *svc_description, time_t entry_time, char *author_name, char *comment_data, int persistent, int source, int expires, time_t expire_time, unsigned long *comment_id)
 {
 	int result;
-	unsigned long new_comment_id = 0L;
 
 	if (type == HOST_COMMENT)
-		result = add_new_host_comment(entry_type, host_name, entry_time, author_name, comment_data, persistent, source, expires, expire_time, &new_comment_id);
+		result = add_new_host_comment(entry_type, host_name, entry_time, author_name, comment_data, persistent, source, expires, expire_time, comment_id);
 	else
-		result = add_new_service_comment(entry_type, host_name, svc_description, entry_time, author_name, comment_data, persistent, source, expires, expire_time, &new_comment_id);
+		result = add_new_service_comment(entry_type, host_name, svc_description, entry_time, author_name, comment_data, persistent, source, expires, expire_time, comment_id);
 
 	/* add an event to expire comment data if necessary... */
 	if (expires == TRUE)
-		schedule_new_event(EVENT_EXPIRE_COMMENT, FALSE, expire_time, FALSE, 0, NULL, TRUE, (void *)new_comment_id, NULL, 0);
-
-	/* save comment id */
-	if (comment_id != NULL)
-		*comment_id = new_comment_id;
+		schedule_new_event(EVENT_EXPIRE_COMMENT, FALSE, expire_time, FALSE, 0, NULL, TRUE, (void *)comment_id, NULL, 0);
 
 	return result;
 }
 
-
 /* adds a new host comment */
 int add_new_host_comment(int entry_type, char *host_name, time_t entry_time, char *author_name, char *comment_data, int persistent, int source, int expires, time_t expire_time, unsigned long *comment_id)
 {
-	int result;
-	unsigned long new_comment_id = 0L;
+	int result = OK;
 
-	result = xcddefault_add_new_host_comment(entry_type, host_name, entry_time, author_name, comment_data, persistent, source, expires, expire_time, &new_comment_id);
+	/* find the next valid comment id */
+	while (find_host_comment(next_comment_id) != NULL)
+		next_comment_id++;
 
-	/* save comment id */
-	if (comment_id != NULL)
-		*comment_id = new_comment_id;
+	/* add comment to list in memory */
+	add_host_comment(entry_type, host_name, entry_time, author_name, comment_data, next_comment_id, persistent, expires, expire_time, source);
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
-	broker_comment_data(NEBTYPE_COMMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, HOST_COMMENT, entry_type, host_name, NULL, entry_time, author_name, comment_data, persistent, source, expires, expire_time, new_comment_id, NULL);
+	broker_comment_data(NEBTYPE_COMMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, HOST_COMMENT, entry_type, host_name, NULL, entry_time, author_name, comment_data, persistent, source, expires, expire_time, next_comment_id, NULL);
 #endif
+
+	/* increment the comment id, AFTER, broker_comment_data(),
+	 * as we use it in that call
+	 */
+	next_comment_id++;
 
 	return result;
 }
@@ -74,21 +87,28 @@ int add_new_host_comment(int entry_type, char *host_name, time_t entry_time, cha
 /* adds a new service comment */
 int add_new_service_comment(int entry_type, char *host_name, char *svc_description, time_t entry_time, char *author_name, char *comment_data, int persistent, int source, int expires, time_t expire_time, unsigned long *comment_id)
 {
-	int result;
-	unsigned long new_comment_id = 0L;
+	/* find the next valid comment id */
+	while (find_service_comment(next_comment_id) != NULL)
+		next_comment_id++;
 
-	result = xcddefault_add_new_service_comment(entry_type, host_name, svc_description, entry_time, author_name, comment_data, persistent, source, expires, expire_time, &new_comment_id);
+	/* add comment to list in memory */
+	add_service_comment(entry_type, host_name, svc_description, entry_time, author_name, comment_data, next_comment_id, persistent, expires, expire_time, source);
 
-	/* save comment id */
 	if (comment_id != NULL)
-		*comment_id = new_comment_id;
+		*comment_id = next_comment_id;
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
-	broker_comment_data(NEBTYPE_COMMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_COMMENT, entry_type, host_name, svc_description, entry_time, author_name, comment_data, persistent, source, expires, expire_time, new_comment_id, NULL);
+	broker_comment_data(NEBTYPE_COMMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_COMMENT, entry_type, host_name, svc_description, entry_time, author_name, comment_data, persistent, source, expires, expire_time, next_comment_id, NULL);
 #endif
 
-	return result;
+	/*
+	 * increment the comment id, AFTER broker_comment_data,
+	 * as we use it in that call
+	 */
+	next_comment_id++;
+
+	return OK;
 }
 
 

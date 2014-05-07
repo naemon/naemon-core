@@ -69,7 +69,6 @@ common_sources = \
 	statusdata.c statusdata.h \
 	utils.c utils.h \
 	workers.c workers.h \
-	xcddefault.c xcddefault.h \
 	xodtemplate.c xodtemplate.h \
 	xpddefault.c xpddefault.h \
 	xrddefault.c xrddefault.h \
