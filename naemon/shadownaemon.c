@@ -887,6 +887,7 @@ int update_program_status_data() {
     if(num == 1) {
         if(last_program_restart != 0 && last_program_restart != program_start) {
             sigrestart = TRUE;
+            full_refresh_required = TRUE;
             logit(NSLOG_INFO_MESSAGE, TRUE, "remote site has restarted, need new config...\n");
         } else {
             last_program_restart = program_start;
@@ -1568,6 +1569,8 @@ int update_all_runtime_data() {
     if(update_service_status_data() != OK)
         return(ERROR);
 
+    // reset full refresh flag
+    full_refresh_required = FALSE;
     return(OK);
 }
 
@@ -1599,7 +1602,6 @@ int run_refresh_loop() {
     usleep(short_shadow_update_interval);
 
     while(sigshutdown == FALSE && sigrestart == FALSE) {
-        full_refresh_required = FALSE;
         gettimeofday(&refresh_start, NULL);
         if(update_all_runtime_data() != OK) {
             program_start = 0;
