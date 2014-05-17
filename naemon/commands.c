@@ -145,9 +145,9 @@ static int command_input_handler(int sd, int events, void *discard)
 		return 0;
 	}
 	while ((buf = iocache_use_delim(command_worker.ioc, "\n", 1, &size))) {
+		buf[size] = 0;
 		if (buf[0] == '[') {
 			/* raw external command */
-			buf[size] = 0;
 			log_debug_info(DEBUGL_COMMANDS, 1, "Read raw external command '%s'\n", buf);
 		}
 		if ((cmd_ret = process_external_command1(buf)) != CMD_ERROR_OK) {
