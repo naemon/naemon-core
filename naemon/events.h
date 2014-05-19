@@ -20,7 +20,6 @@
 #define EVENT_EXPIRE_DOWNTIME		11      /* checks for (and removes) expired scheduled downtime */
 #define EVENT_HOST_CHECK                12      /* active host check */
 #define EVENT_HFRESHNESS_CHECK          13      /* checks host result "freshness" */
-#define EVENT_RESCHEDULE_CHECKS		14      /* adjust scheduling of host and service checks */
 #define EVENT_EXPIRE_COMMENT            15      /* removes expired comments */
 #define EVENT_CHECK_PROGRAM_UPDATE      16      /* checks for new version of Nagios */
 #define EVENT_SLEEP                     98      /* asynchronous sleep event that occurs when event queues are empty */
@@ -46,7 +45,6 @@
 	type == EVENT_EXPIRE_DOWNTIME ? "EXPIRE_DOWNTIME" : \
 	type == EVENT_HOST_CHECK ? "HOST_CHECK" : \
 	type == EVENT_HFRESHNESS_CHECK ? "HFRESHNESS_CHECK" : \
-	type == EVENT_RESCHEDULE_CHECKS ? "RESCHEDULE_CHECKS" : \
 	type == EVENT_EXPIRE_COMMENT ? "EXPIRE_COMMENT" : \
 	type == EVENT_CHECK_PROGRAM_UPDATE ? "CHECK_PROGRAM_UPDATE" : \
 	type == EVENT_SLEEP ? "SLEEP" : \

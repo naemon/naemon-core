@@ -20,8 +20,6 @@
 #define DEFAULT_RETENTION_SCHEDULING_HORIZON    		900     /* max seconds between program restarts that we will preserve scheduling information */
 #define DEFAULT_STATUS_UPDATE_INTERVAL				60	/* seconds between aggregated status data updates */
 #define DEFAULT_FRESHNESS_CHECK_INTERVAL        		60      /* seconds between service result freshness checks */
-#define DEFAULT_AUTO_RESCHEDULING_INTERVAL      		30      /* seconds between host and service check rescheduling events */
-#define DEFAULT_AUTO_RESCHEDULING_WINDOW        		180     /* window of time (in seconds) for which we should reschedule host and service checks */
 #define DEFAULT_ORPHAN_CHECK_INTERVAL           		60      /* seconds between checks for orphaned hosts and services */
 
 #define DEFAULT_INTERVAL_LENGTH  60 /* seconds per interval unit for check scheduling */
@@ -55,7 +53,6 @@
 #define DEFAULT_PROCESS_PERFORMANCE_DATA        		0       /* don't process performance data */
 #define DEFAULT_CHECK_SERVICE_FRESHNESS         		1       /* check service result freshness */
 #define DEFAULT_CHECK_HOST_FRESHNESS            		0       /* don't check host result freshness */
-#define DEFAULT_AUTO_RESCHEDULE_CHECKS          		0       /* don't auto-reschedule host and service checks */
 #define DEFAULT_TRANSLATE_PASSIVE_HOST_CHECKS                   0       /* should we translate DOWN/UNREACHABLE passive host checks? */
 #define DEFAULT_PASSIVE_HOST_CHECKS_SOFT                        0       /* passive host checks are treated as HARD by default */
 

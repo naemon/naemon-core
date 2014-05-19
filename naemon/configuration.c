@@ -787,34 +787,15 @@ int read_main_config_file(const char *main_config_file)
 				break;
 			}
 		} else if (!strcmp(variable, "auto_reschedule_checks")) {
-
-			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for auto_reschedule_checks");
-				error = TRUE;
-				break;
-			}
-
-			auto_reschedule_checks = (atoi(value) > 0) ? TRUE : FALSE;
+			obsoleted_warning(variable, "Auto-rescheduling has been removed");
 		}
 
 		else if (!strcmp(variable, "auto_rescheduling_interval")) {
-
-			auto_rescheduling_interval = atoi(value);
-			if (auto_rescheduling_interval <= 0) {
-				asprintf(&error_message, "Illegal value for auto_rescheduling_interval");
-				error = TRUE;
-				break;
-			}
+			obsoleted_warning(variable, "Auto-rescheduling has been removed");
 		}
 
 		else if (!strcmp(variable, "auto_rescheduling_window")) {
-
-			auto_rescheduling_window = atoi(value);
-			if (auto_rescheduling_window <= 0) {
-				asprintf(&error_message, "Illegal value for auto_rescheduling_window");
-				error = TRUE;
-				break;
-			}
+			obsoleted_warning(variable, "Auto-rescheduling has been removed");
 		}
 
 		else if (!strcmp(variable, "status_update_interval")) {

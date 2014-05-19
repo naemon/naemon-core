@@ -284,10 +284,6 @@ void init_timing_loop(void)
 
 	/******** SCHEDULE MISC EVENTS ********/
 
-	/* add a host and service check rescheduling event */
-	if (auto_reschedule_checks == TRUE)
-		schedule_new_event(EVENT_RESCHEDULE_CHECKS, TRUE, current_time + auto_rescheduling_interval, TRUE, auto_rescheduling_interval, NULL, TRUE, NULL, NULL, 0);
-
 	/* add a check result reaper event */
 	schedule_new_event(EVENT_CHECK_REAPER, TRUE, current_time + check_reaper_interval, TRUE, check_reaper_interval, NULL, TRUE, NULL, NULL, 0);
 
@@ -866,14 +862,6 @@ int handle_timed_event(timed_event *event)
 		check_for_expired_downtime();
 		break;
 
-	case EVENT_RESCHEDULE_CHECKS:
-
-		/* adjust scheduling of host and service checks */
-		log_debug_info(DEBUGL_EVENTS, 0, "** Reschedule Checks Event. Latency: %.3fs\n", latency);
-
-		adjust_check_scheduling();
-		break;
-
 	case EVENT_EXPIRE_COMMENT:
 
 		log_debug_info(DEBUGL_EVENTS, 0, "** Expire Comment Event. Latency: %.3fs\n", latency);
@@ -906,19 +894,6 @@ int handle_timed_event(timed_event *event)
 
 	return OK;
 }
-
-
-/*
- * adjusts scheduling of host and service checks
- * @TODO: Replace the earlier O(n lg n) behaviour of this algorithm
- * and instead add a (small) random component to each new scheduled
- * check. It will work better and in O(1) time.
- */
-void adjust_check_scheduling(void)
-{
-	return;
-}
-
 
 static void adjust_squeue_for_time_change(squeue_t **q, int delta)
 {
