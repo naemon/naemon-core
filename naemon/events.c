@@ -542,13 +542,6 @@ static int should_run_event(timed_event *temp_event)
 		if ((temp_service->check_options & CHECK_OPTION_FORCE_EXECUTION))
 			return TRUE;
 
-		/* don't run a service check if we're already maxed out on the number of parallel service checks...  */
-		if (max_parallel_service_checks != 0 && (currently_running_service_checks >= max_parallel_service_checks)) {
-			nudge_seconds = ranged_urand(5, 17);
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "\tMax concurrent service checks (%d) has been reached.  Nudging %s:%s by %d seconds...\n", max_parallel_service_checks, temp_service->host_name, temp_service->description, nudge_seconds);
-			run_event = FALSE;
-		}
-
 		/* don't run a service check if active checks are disabled */
 		if (execute_service_checks == FALSE) {
 			log_debug_info(DEBUGL_EVENTS | DEBUGL_CHECKS, 1, "We're not executing service checks right now, so we'll skip check event for service '%s;%s'.\n", temp_service->host_name, temp_service->description);
@@ -664,9 +657,6 @@ int event_execution_loop(void)
 		if (temp_event != last_event) {
 			log_debug_info(DEBUGL_EVENTS, 1, "** Event Check Loop\n");
 			log_debug_info(DEBUGL_EVENTS, 1, "Next Event Time: %s", ctime(&temp_event->run_time));
-			log_debug_info(DEBUGL_EVENTS, 1, "Current/Max Service Checks: %d/%d (%.3lf%% saturation)\n",
-			               currently_running_service_checks, max_parallel_service_checks,
-			               ((float)currently_running_service_checks / (float)max_parallel_service_checks) * 100);
 		}
 
 		last_event = temp_event;

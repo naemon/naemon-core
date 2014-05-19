@@ -671,13 +671,7 @@ int read_main_config_file(const char *main_config_file)
 		}
 
 		else if (!strcmp(variable, "max_concurrent_checks")) {
-
-			max_parallel_service_checks = atoi(value);
-			if (max_parallel_service_checks < 0) {
-				asprintf(&error_message, "Illegal value for max_concurrent_checks");
-				error = TRUE;
-				break;
-			}
+			obsoleted_warning(variable, "Check concurrency is managed with loadctl_options and check_workers - check your configuration");
 		}
 
 		else if (!strcmp(variable, "check_result_reaper_frequency") || !strcmp(variable, "service_reaper_frequency")) {
