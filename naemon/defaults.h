@@ -65,9 +65,6 @@
 #define DEFAULT_LOW_HOST_FLAP_THRESHOLD				20.0	/* low threshold for detection of host flapping */
 #define DEFAULT_HIGH_HOST_FLAP_THRESHOLD			30.0	/* high threshold for detection of host flapping */
 
-#define DEFAULT_HOST_CHECK_SPREAD				30	/* max minutes to schedule all initial host checks */
-#define DEFAULT_SERVICE_CHECK_SPREAD				30	/* max minutes to schedule all initial service checks */
-
 #define DEFAULT_CACHED_HOST_CHECK_HORIZON      			15      /* max age in seconds that cached host checks can be used */
 #define DEFAULT_CACHED_SERVICE_CHECK_HORIZON    		15      /* max age in seconds that cached service checks can be used */
 #define DEFAULT_ENABLE_PREDICTIVE_HOST_DEPENDENCY_CHECKS	1	/* should we use predictive host dependency checks? */

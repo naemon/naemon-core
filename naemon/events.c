@@ -64,18 +64,12 @@ void init_timing_loop(void)
 	host *temp_host = NULL;
 	service *temp_service = NULL;
 	time_t current_time = 0L;
-	int total_interleave_blocks = 0;
-	int current_interleave_block = 1;
-	int interleave_block_index = 0;
-	int mult_factor = 0;
 	int is_valid_time = 0;
 	time_t next_valid_time = 0L;
 	int schedule_check = 0;
-	double max_inter_check_delay = 0.0;
 	struct timeval tv[9];
 	double runtime[9];
 	struct timeval now;
-	unsigned int fixed_hosts = 0, fixed_services = 0;
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "init_timing_loop() start\n");
 
@@ -86,18 +80,6 @@ void init_timing_loop(void)
 
 
 	/******** GET BASIC HOST/SERVICE INFO  ********/
-
-	scheduling_info.total_services = 0;
-	scheduling_info.total_scheduled_services = 0;
-	scheduling_info.total_hosts = 0;
-	scheduling_info.total_scheduled_hosts = 0;
-	scheduling_info.average_services_per_host = 0.0;
-	scheduling_info.average_scheduled_services_per_host = 0.0;
-	scheduling_info.average_service_execution_time = 0.0;
-	scheduling_info.service_check_interval_total = 0;
-	scheduling_info.average_service_inter_check_delay = 0.0;
-	scheduling_info.host_check_interval_total = 0;
-	scheduling_info.average_host_inter_check_delay = 0.0;
 
 	if (test_scheduling == TRUE)
 		gettimeofday(&tv[0], NULL);
@@ -123,26 +105,11 @@ void init_timing_loop(void)
 				schedule_check = FALSE;
 		}
 
-		if (schedule_check == TRUE) {
-			double exec_time;
-
-			/* get real exec time, or make a pessimistic guess */
-			exec_time = temp_service->execution_time ? temp_service->execution_time : 2.0;
-
-			scheduling_info.total_scheduled_services++;
-
-			/* used later in inter-check delay calculations */
-			scheduling_info.service_check_interval_total += temp_service->check_interval;
-
-			/* calculate rolling average execution time (available from retained state information) */
-			scheduling_info.average_service_execution_time = (double)(((scheduling_info.average_service_execution_time * (scheduling_info.total_scheduled_services - 1)) + exec_time) / (double)scheduling_info.total_scheduled_services);
-		} else {
+		if (schedule_check != TRUE) {
 			temp_service->should_be_scheduled = FALSE;
 
 			log_debug_info(DEBUGL_EVENTS, 1, "Service '%s' on host '%s' should not be scheduled.\n", temp_service->description, temp_service->host_name);
 		}
-
-		scheduling_info.total_services++;
 	}
 
 	if (test_scheduling == TRUE)
@@ -169,121 +136,15 @@ void init_timing_loop(void)
 				schedule_check = FALSE;
 		}
 
-		if (schedule_check == TRUE) {
-
-			scheduling_info.total_scheduled_hosts++;
-
-			/* this is used later in inter-check delay calculations */
-			scheduling_info.host_check_interval_total += temp_host->check_interval;
-		} else {
+		if (schedule_check != TRUE) {
 			temp_host->should_be_scheduled = FALSE;
 
 			log_debug_info(DEBUGL_EVENTS, 1, "Host '%s' should not be scheduled.\n", temp_host->name);
 		}
-
-		scheduling_info.total_hosts++;
 	}
 
 	if (test_scheduling == TRUE)
 		gettimeofday(&tv[2], NULL);
-
-	scheduling_info.average_services_per_host = (double)((double)scheduling_info.total_services / (double)scheduling_info.total_hosts);
-	scheduling_info.average_scheduled_services_per_host = (double)((double)scheduling_info.total_scheduled_services / (double)scheduling_info.total_hosts);
-
-	/* adjust the check interval total to correspond to the interval length */
-	scheduling_info.service_check_interval_total = (scheduling_info.service_check_interval_total * interval_length);
-
-	/* calculate the average check interval for services */
-	scheduling_info.average_service_check_interval = (double)((double)scheduling_info.service_check_interval_total / (double)scheduling_info.total_scheduled_services);
-
-
-	/******** DETERMINE SERVICE SCHEDULING PARAMS  ********/
-
-	log_debug_info(DEBUGL_EVENTS, 2, "Determining service scheduling parameters...");
-
-	/* default max service check spread (in minutes) */
-	scheduling_info.max_service_check_spread = max_service_check_spread;
-
-	/* how should we determine the service inter-check delay to use? */
-	switch (service_inter_check_delay_method) {
-
-	case ICD_NONE:
-
-		/* don't spread checks out - useful for testing parallelization code */
-		scheduling_info.service_inter_check_delay = 0.0;
-		break;
-
-	case ICD_DUMB:
-
-		/* be dumb and just schedule checks 1 second apart */
-		scheduling_info.service_inter_check_delay = 1.0;
-		break;
-
-	case ICD_USER:
-
-		/* the user specified a delay, so don't try to calculate one */
-		break;
-
-	case ICD_SMART:
-	default:
-
-		/* be smart and calculate the best delay to use to minimize local load... */
-		if (scheduling_info.total_scheduled_services > 0 && scheduling_info.service_check_interval_total > 0) {
-
-			/* calculate the average inter check delay (in seconds) needed to evenly space the service checks out */
-			scheduling_info.average_service_inter_check_delay = (double)(scheduling_info.average_service_check_interval / (double)scheduling_info.total_scheduled_services);
-
-			/* set the global inter check delay value */
-			scheduling_info.service_inter_check_delay = scheduling_info.average_service_inter_check_delay;
-
-			/* calculate max inter check delay and see if we should use that instead */
-			max_inter_check_delay = (double)((scheduling_info.max_service_check_spread * 60.0) / (double)scheduling_info.total_scheduled_services);
-			if (scheduling_info.service_inter_check_delay > max_inter_check_delay)
-				scheduling_info.service_inter_check_delay = max_inter_check_delay;
-		} else
-			scheduling_info.service_inter_check_delay = 0.0;
-
-		log_debug_info(DEBUGL_EVENTS, 1, "Total scheduled service checks:  %d\n", scheduling_info.total_scheduled_services);
-		log_debug_info(DEBUGL_EVENTS, 1, "Average service check interval:  %0.2f sec\n", scheduling_info.average_service_check_interval);
-		log_debug_info(DEBUGL_EVENTS, 1, "Service inter-check delay:       %0.2f sec\n", scheduling_info.service_inter_check_delay);
-	}
-
-	/* how should we determine the service interleave factor? */
-	switch (service_interleave_factor_method) {
-
-	case ILF_USER:
-
-		/* the user supplied a value, so don't do any calculation */
-		break;
-
-	case ILF_SMART:
-	default:
-
-		/* protect against a divide by zero problem - shouldn't happen, but just in case... */
-		if (scheduling_info.total_hosts == 0)
-			scheduling_info.total_hosts = 1;
-
-		scheduling_info.service_interleave_factor = (int)(ceil(scheduling_info.average_scheduled_services_per_host));
-
-		log_debug_info(DEBUGL_EVENTS, 1, "Total scheduled service checks: %d\n", scheduling_info.total_scheduled_services);
-		log_debug_info(DEBUGL_EVENTS, 1, "Total hosts:                    %d\n", scheduling_info.total_hosts);
-		log_debug_info(DEBUGL_EVENTS, 1, "Service Interleave factor:      %d\n", scheduling_info.service_interleave_factor);
-	}
-
-	/* calculate number of service interleave blocks */
-	if (scheduling_info.service_interleave_factor == 0)
-		total_interleave_blocks = scheduling_info.total_scheduled_services;
-	else
-		total_interleave_blocks = (int)ceil((double)scheduling_info.total_scheduled_services / (double)scheduling_info.service_interleave_factor);
-
-	scheduling_info.first_service_check = (time_t)0L;
-	scheduling_info.last_service_check = (time_t)0L;
-
-	log_debug_info(DEBUGL_EVENTS, 1, "Total scheduled services: %d\n", scheduling_info.total_scheduled_services);
-	log_debug_info(DEBUGL_EVENTS, 1, "Service Interleave factor: %d\n", scheduling_info.service_interleave_factor);
-	log_debug_info(DEBUGL_EVENTS, 1, "Total service interleave blocks: %d\n", total_interleave_blocks);
-	log_debug_info(DEBUGL_EVENTS, 1, "Service inter-check delay: %2.1f\n", scheduling_info.service_inter_check_delay);
-
 
 	if (test_scheduling == TRUE)
 		gettimeofday(&tv[3], NULL);
@@ -292,81 +153,42 @@ void init_timing_loop(void)
 
 	log_debug_info(DEBUGL_EVENTS, 2, "Scheduling service checks...");
 
-	/* determine check times for service checks (with interleaving to minimize remote load) */
-	current_interleave_block = 0;
-	for (temp_service = service_list; temp_service != NULL && scheduling_info.service_interleave_factor > 0;) {
-
-		log_debug_info(DEBUGL_EVENTS, 2, "Current Interleave Block: %d\n", current_interleave_block);
-
-		for (interleave_block_index = 0; interleave_block_index < scheduling_info.service_interleave_factor && temp_service != NULL; temp_service = temp_service->next) {
-			int check_delay = 0;
-
-			log_debug_info(DEBUGL_EVENTS, 2, "Service '%s' on host '%s'\n", temp_service->description, temp_service->host_name);
-			/* skip this service if it shouldn't be scheduled */
-			if (temp_service->should_be_scheduled == FALSE) {
-				log_debug_info(DEBUGL_EVENTS, 2, "Service check should not be scheduled.\n");
-				continue;
-			}
-
-			/*
-			 * skip services that are already scheduled for the (near)
-			 * future from retention data, but reschedule ones that
-			 * were supposed to happen while we weren't running...
-			 * We check to make sure the check isn't scheduled to run
-			 * far in the future to make sure checks who've hade their
-			 * timeperiods changed during the restart aren't left
-			 * hanging too long without being run.
-			 */
-			check_delay = temp_service->next_check - current_time;
-			if (check_delay > 0 && check_delay < check_window(temp_service)) {
-				log_debug_info(DEBUGL_EVENTS, 2, "Service is already scheduled to be checked in the future: %s\n", ctime(&temp_service->next_check));
-				continue;
-			}
-
-			/* interleave block index should only be increased when we find a schedulable service */
-			/* moved from for() loop 11/05/05 EG */
-			interleave_block_index++;
-
-			mult_factor = current_interleave_block + (interleave_block_index * total_interleave_blocks);
-
-			log_debug_info(DEBUGL_EVENTS, 2, "CIB: %d, IBI: %d, TIB: %d, SIF: %d\n", current_interleave_block, interleave_block_index, total_interleave_blocks, scheduling_info.service_interleave_factor);
-			log_debug_info(DEBUGL_EVENTS, 2, "Mult factor: %d\n", mult_factor);
-
-			/*
-			 * set the preferred next check time for the service
-			 * If we end up too far into the future, grab a random
-			 * time within the service's window instead.
-			 */
-			temp_service->next_check = (time_t)(current_time + (mult_factor * scheduling_info.service_inter_check_delay));
-			if (temp_service->next_check - current_time > check_window(temp_service)) {
-				log_debug_info(DEBUGL_EVENTS, 0, "  Fixing check time %lu secs too far away (%lu - %lu)\n",
-				               (temp_service->next_check - current_time) - check_window(temp_service),
-				               temp_service->next_check - current_time, check_window(temp_service));
-				fixed_services++;
-				temp_service->next_check = current_time + ranged_urand(0, check_window(temp_service));
-				log_debug_info(DEBUGL_EVENTS, 0, "  New check offset: %lu\n", temp_service->next_check - current_time);
-			}
-
-			log_debug_info(DEBUGL_EVENTS, 2, "Preferred Check Time: %lu --> %s", (unsigned long)temp_service->next_check, ctime(&temp_service->next_check));
-
-
-			/* make sure the service can actually be scheduled when we want */
-			is_valid_time = check_time_against_period(temp_service->next_check, temp_service->check_period_ptr);
-			if (is_valid_time == ERROR) {
-				log_debug_info(DEBUGL_EVENTS, 2, "Preferred Time is Invalid In Timeperiod '%s': %lu --> %s", temp_service->check_period_ptr->name, (unsigned long)temp_service->next_check, ctime(&temp_service->next_check));
-				get_next_valid_time(temp_service->next_check, &next_valid_time, temp_service->check_period_ptr);
-				temp_service->next_check = next_valid_time;
-			}
-
-			log_debug_info(DEBUGL_EVENTS, 2, "Actual Check Time: %lu --> %s", (unsigned long)temp_service->next_check, ctime(&temp_service->next_check));
-
-			if (scheduling_info.first_service_check == (time_t)0 || (temp_service->next_check < scheduling_info.first_service_check))
-				scheduling_info.first_service_check = temp_service->next_check;
-			if (temp_service->next_check > scheduling_info.last_service_check)
-				scheduling_info.last_service_check = temp_service->next_check;
+	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
+		int check_delay;
+		log_debug_info(DEBUGL_EVENTS, 2, "Service '%s' on host '%s'\n", temp_service->description, temp_service->host_name);
+		/* skip this service if it shouldn't be scheduled */
+		if (temp_service->should_be_scheduled == FALSE) {
+			log_debug_info(DEBUGL_EVENTS, 2, "Service check should not be scheduled.\n");
+			continue;
 		}
 
-		current_interleave_block++;
+		/*
+		 * skip services that are already scheduled for the (near)
+		 * future from retention data, but reschedule ones that
+		 * were supposed to happen while we weren't running...
+		 * We check to make sure the check isn't scheduled to run
+		 * far in the future to make sure checks who've hade their
+		 * timeperiods changed during the restart aren't left
+		 * hanging too long without being run.
+		 */
+		check_delay = temp_service->next_check - current_time;
+		if (check_delay > 0 && check_delay < check_window(temp_service)) {
+			log_debug_info(DEBUGL_EVENTS, 2, "Service is already scheduled to be checked in the future: %s\n", ctime(&temp_service->next_check));
+			continue;
+		}
+
+		temp_service->next_check = current_time + ranged_urand(0, check_window(temp_service));
+		log_debug_info(DEBUGL_EVENTS, 2, "Preferred Check Time: %lu --> %s", (unsigned long)temp_service->next_check, ctime(&temp_service->next_check));
+
+		/* make sure the service can actually be scheduled when we want */
+		is_valid_time = check_time_against_period(temp_service->next_check, temp_service->check_period_ptr);
+		if (is_valid_time == ERROR) {
+			log_debug_info(DEBUGL_EVENTS, 2, "Preferred Time is Invalid In Timeperiod '%s': %lu --> %s", temp_service->check_period_ptr->name, (unsigned long)temp_service->next_check, ctime(&temp_service->next_check));
+			get_next_valid_time(temp_service->next_check, &next_valid_time, temp_service->check_period_ptr);
+			temp_service->next_check = next_valid_time;
+		}
+
+		log_debug_info(DEBUGL_EVENTS, 2, "Actual Check Time: %lu --> %s", (unsigned long)temp_service->next_check, ctime(&temp_service->next_check));
 	}
 
 	if (test_scheduling == TRUE)
@@ -395,67 +217,6 @@ void init_timing_loop(void)
 	if (test_scheduling == TRUE)
 		gettimeofday(&tv[5], NULL);
 
-	/******** DETERMINE HOST SCHEDULING PARAMS  ********/
-
-	log_debug_info(DEBUGL_EVENTS, 2, "Determining host scheduling parameters...");
-
-	scheduling_info.first_host_check = (time_t)0L;
-	scheduling_info.last_host_check = (time_t)0L;
-
-	/* default max host check spread (in minutes) */
-	scheduling_info.max_host_check_spread = max_host_check_spread;
-
-	/* how should we determine the host inter-check delay to use? */
-	switch (host_inter_check_delay_method) {
-
-	case ICD_NONE:
-
-		/* don't spread checks out */
-		scheduling_info.host_inter_check_delay = 0.0;
-		break;
-
-	case ICD_DUMB:
-
-		/* be dumb and just schedule checks 1 second apart */
-		scheduling_info.host_inter_check_delay = 1.0;
-		break;
-
-	case ICD_USER:
-
-		/* the user specified a delay, so don't try to calculate one */
-		break;
-
-	case ICD_SMART:
-	default:
-
-		/* be smart and calculate the best delay to use to minimize local load... */
-		if (scheduling_info.total_scheduled_hosts > 0 && scheduling_info.host_check_interval_total > 0) {
-
-			/* adjust the check interval total to correspond to the interval length */
-			scheduling_info.host_check_interval_total = (scheduling_info.host_check_interval_total * interval_length);
-
-			/* calculate the average check interval for hosts */
-			scheduling_info.average_host_check_interval = (double)((double)scheduling_info.host_check_interval_total / (double)scheduling_info.total_scheduled_hosts);
-
-			/* calculate the average inter check delay (in seconds) needed to evenly space the host checks out */
-			scheduling_info.average_host_inter_check_delay = (double)(scheduling_info.average_host_check_interval / (double)scheduling_info.total_scheduled_hosts);
-
-			/* set the global inter check delay value */
-			scheduling_info.host_inter_check_delay = scheduling_info.average_host_inter_check_delay;
-
-			/* calculate max inter check delay and see if we should use that instead */
-			max_inter_check_delay = (double)((scheduling_info.max_host_check_spread * 60.0) / (double)scheduling_info.total_scheduled_hosts);
-			if (scheduling_info.host_inter_check_delay > max_inter_check_delay)
-				scheduling_info.host_inter_check_delay = max_inter_check_delay;
-		} else
-			scheduling_info.host_inter_check_delay = 0.0;
-
-		log_debug_info(DEBUGL_EVENTS, 2, "Total scheduled host checks:  %d\n", scheduling_info.total_scheduled_hosts);
-		log_debug_info(DEBUGL_EVENTS, 2, "Host check interval total:    %lu\n", scheduling_info.host_check_interval_total);
-		log_debug_info(DEBUGL_EVENTS, 2, "Average host check interval:  %0.2f sec\n", scheduling_info.average_host_check_interval);
-		log_debug_info(DEBUGL_EVENTS, 2, "Host inter-check delay:       %0.2f sec\n", scheduling_info.host_inter_check_delay);
-	}
-
 	if (test_scheduling == TRUE)
 		gettimeofday(&tv[6], NULL);
 
@@ -465,7 +226,6 @@ void init_timing_loop(void)
 	log_debug_info(DEBUGL_EVENTS, 2, "Scheduling host checks...");
 
 	/* determine check times for host checks */
-	mult_factor = 0;
 	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
 
 		log_debug_info(DEBUGL_EVENTS, 2, "Host '%s'\n", temp_host->name);
@@ -482,17 +242,7 @@ void init_timing_loop(void)
 			continue;
 		}
 
-		/*
-		 * calculate preferred host check time.
-		 * If it's too far into the future, we grab a random time
-		 * within this host's max check window instead
-		 */
-		temp_host->next_check = (time_t)(current_time + (mult_factor * scheduling_info.host_inter_check_delay));
-		if (temp_host->next_check - current_time > check_window(temp_host)) {
-			log_debug_info(DEBUGL_EVENTS, 1, "Fixing check time (off by %lu)\n", (temp_host->next_check - current_time) - check_window(temp_host));
-			fixed_hosts++;
-			temp_host->next_check = current_time + ranged_urand(0, check_window(temp_host));
-		}
+		temp_host->next_check = current_time + ranged_urand(0, check_window(temp_host));
 
 		log_debug_info(DEBUGL_EVENTS, 2, "Preferred Check Time: %lu --> %s", (unsigned long)temp_host->next_check, ctime(&temp_host->next_check));
 
@@ -504,16 +254,7 @@ void init_timing_loop(void)
 		}
 
 		log_debug_info(DEBUGL_EVENTS, 2, "Actual Check Time: %lu --> %s", (unsigned long)temp_host->next_check, ctime(&temp_host->next_check));
-
-		if (scheduling_info.first_host_check == (time_t)0 || (temp_host->next_check < scheduling_info.first_host_check))
-			scheduling_info.first_host_check = temp_host->next_check;
-		if (temp_host->next_check > scheduling_info.last_host_check)
-			scheduling_info.last_host_check = temp_host->next_check;
-
-		mult_factor++;
 	}
-
-	log_debug_info(DEBUGL_EVENTS, 0, "Fixed scheduling for %u hosts and %u services\n", fixed_hosts, fixed_services);
 
 	if (test_scheduling == TRUE)
 		gettimeofday(&tv[7], NULL);
@@ -598,125 +339,6 @@ void init_timing_loop(void)
 	}
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "init_timing_loop() end\n");
-
-	return;
-}
-
-
-/* displays service check scheduling information */
-void display_scheduling_info(void)
-{
-	float minimum_concurrent_checks = 0.0;
-	int suggestions = 0;
-
-	printf("Projected scheduling information for host and service checks\n");
-	printf("is listed below.  This information assumes that you are going\n");
-	printf("to start running Nagios with your current config files.\n\n");
-
-	printf("HOST SCHEDULING INFORMATION\n");
-	printf("---------------------------\n");
-	printf("Total hosts:                     %d\n", scheduling_info.total_hosts);
-	printf("Total scheduled hosts:           %d\n", scheduling_info.total_scheduled_hosts);
-
-	printf("Host inter-check delay method:   ");
-	if (host_inter_check_delay_method == ICD_NONE)
-		printf("NONE\n");
-	else if (host_inter_check_delay_method == ICD_DUMB)
-		printf("DUMB\n");
-	else if (host_inter_check_delay_method == ICD_SMART) {
-		printf("SMART\n");
-		printf("Average host check interval:     %.2f sec\n", scheduling_info.average_host_check_interval);
-	} else
-		printf("USER-SUPPLIED VALUE\n");
-	printf("Host inter-check delay:          %.2f sec\n", scheduling_info.host_inter_check_delay);
-	printf("Max host check spread:           %d min\n", scheduling_info.max_host_check_spread);
-	printf("First scheduled check:           %s", (scheduling_info.total_scheduled_hosts == 0) ? "N/A\n" : ctime(&scheduling_info.first_host_check));
-	printf("Last scheduled check:            %s", (scheduling_info.total_scheduled_hosts == 0) ? "N/A\n" : ctime(&scheduling_info.last_host_check));
-	printf("\n\n");
-
-	printf("SERVICE SCHEDULING INFORMATION\n");
-	printf("-------------------------------\n");
-	printf("Total services:                     %d\n", scheduling_info.total_services);
-	printf("Total scheduled services:           %d\n", scheduling_info.total_scheduled_services);
-
-	printf("Service inter-check delay method:   ");
-	if (service_inter_check_delay_method == ICD_NONE)
-		printf("NONE\n");
-	else if (service_inter_check_delay_method == ICD_DUMB)
-		printf("DUMB\n");
-	else if (service_inter_check_delay_method == ICD_SMART) {
-		printf("SMART\n");
-		printf("Average service check interval:     %.2f sec\n", scheduling_info.average_service_check_interval);
-	} else
-		printf("USER-SUPPLIED VALUE\n");
-	printf("Inter-check delay:                  %.2f sec\n", scheduling_info.service_inter_check_delay);
-
-	printf("Interleave factor method:           %s\n", (service_interleave_factor_method == ILF_USER) ? "USER-SUPPLIED VALUE" : "SMART");
-	if (service_interleave_factor_method == ILF_SMART)
-		printf("Average services per host:          %.2f\n", scheduling_info.average_services_per_host);
-	printf("Service interleave factor:          %d\n", scheduling_info.service_interleave_factor);
-
-	printf("Max service check spread:           %d min\n", scheduling_info.max_service_check_spread);
-	printf("First scheduled check:              %s", ctime(&scheduling_info.first_service_check));
-	printf("Last scheduled check:               %s", ctime(&scheduling_info.last_service_check));
-	printf("\n\n");
-
-	/***** MINIMUM CONCURRENT CHECKS RECOMMENDATION *****/
-	minimum_concurrent_checks = ceil((((scheduling_info.total_scheduled_services / scheduling_info.average_service_check_interval)
-	                                   + (scheduling_info.total_scheduled_hosts / scheduling_info.average_host_check_interval))
-	                                  * 1.4 * scheduling_info.average_service_execution_time));
-
-	printf("CHECK PROCESSING INFORMATION\n");
-	printf("----------------------------\n");
-	printf("Average check execution time:    %.2fs%s",
-	       scheduling_info.average_service_execution_time,
-	       scheduling_info.average_service_execution_time == 2.0 ? " (pessimistic guesstimate)\n" : "\n");
-	printf("Estimated concurrent checks:     %.0f (%.2f per cpu core)\n",
-	       minimum_concurrent_checks, (float)minimum_concurrent_checks / (float)online_cpus());
-	printf("Max concurrent service checks:   ");
-	if (max_parallel_service_checks == 0)
-		printf("Unlimited\n");
-	else
-		printf("%d\n", max_parallel_service_checks);
-	printf("\n\n");
-
-	printf("PERFORMANCE SUGGESTIONS\n");
-	printf("-----------------------\n");
-
-
-	/* compare with configured value */
-	if (((int)minimum_concurrent_checks > max_parallel_service_checks) && max_parallel_service_checks != 0) {
-		printf("* Value for 'max_concurrent_checks' option should be >= %d\n", (int)minimum_concurrent_checks);
-		suggestions++;
-	}
-	if (loadctl.nofile_limit * 0.4 < minimum_concurrent_checks) {
-		printf("* Increase the \"open files\" ulimit for user '%s'\n", naemon_user);
-		printf(" - You can do this by adding\n      %s hard nofiles %d\n   to /etc/security/limits.conf\n",
-		       naemon_user, rup2pof2(minimum_concurrent_checks * 2));
-		suggestions++;
-	}
-	if (loadctl.nproc_limit * 0.75 < minimum_concurrent_checks) {
-		printf("* Increase the \"max user processes\" ulimit for user '%s'\n", naemon_user);
-		printf(" - You can do this by adding\n      %s hard nproc %d\n   to /etc/security/limits.conf\n",
-		       naemon_user, rup2pof2(minimum_concurrent_checks));
-		suggestions++;
-	}
-
-	if (minimum_concurrent_checks > online_cpus() * 75) {
-		printf("* Aim for a max of 50 concurrent checks / cpu core (current: %.2f)\n",
-		       (float)minimum_concurrent_checks / (float)online_cpus());
-		suggestions++;
-	}
-
-	if (suggestions) {
-		printf("\nNOTE: These are just guidelines and *not* hard numbers.\n\n");
-		printf("Ultimately, only testing will tell if your settings and hardware are\n");
-		printf("suitable for the types and number of checks you're planning to run.\n");
-	} else {
-		printf("I have no suggestions - things look okay.\n");
-	}
-
-	printf("\n");
 
 	return;
 }

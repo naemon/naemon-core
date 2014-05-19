@@ -77,14 +77,6 @@ extern int test_scheduling;
 extern int precache_objects;
 extern int use_precached_objects;
 
-extern int service_inter_check_delay_method;
-extern int host_inter_check_delay_method;
-extern int service_interleave_factor_method;
-extern int max_host_check_spread;
-extern int max_service_check_spread;
-
-extern sched_info scheduling_info;
-
 extern int max_parallel_service_checks;
 
 extern int check_reaper_interval;
