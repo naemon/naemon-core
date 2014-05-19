@@ -98,7 +98,6 @@ extern int check_orphaned_services;
 extern int check_orphaned_hosts;
 extern int check_service_freshness;
 extern int check_host_freshness;
-extern int auto_reschedule_checks;
 
 extern int additional_freshness_latency;
 
