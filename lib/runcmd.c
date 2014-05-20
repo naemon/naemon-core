@@ -127,7 +127,7 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv)
 	int arg = 0, a = 0;
 	unsigned int i;
 	int state, ret = 0;
-	int seen_space = 0, seen_equals = 0;
+	int seen_space = 0;
 	size_t len;
 	char *argz;
 
@@ -147,12 +147,6 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv)
 				set_state(STATE_NONE);
 				argz[a++] = 0;
 				continue;
-			}
-			/* if this is the first whitespace we've encountered and we've seen an '=',
-			   command is probably of form "VAR='value' /bin/command" so need to force use of /bin/sh */
-
-			if (seen_equals && !seen_space) {
-				add_ret(RUNCMD_HAS_SHVAR);
 			}
 			seen_space = 1;
 			if (!in_quotes)
@@ -261,7 +255,10 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv)
 
 		case '=':
 			if (!in_quotes) {
-				seen_equals = 1;
+				/* if we haven't seen any whitespace yet, this command is probably of form "VAR='value' /bin/command" so need to force use of /bin/sh */
+				if (!seen_space) {
+					add_ret(RUNCMD_HAS_SHVAR);
+				}
 			}
 
 			/* fallthrough */
