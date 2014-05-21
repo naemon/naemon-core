@@ -761,7 +761,6 @@ struct customvariablesmember *add_custom_variable_to_object(customvariablesmembe
 struct servicesmember *add_service_link_to_host(host *, service *);
 
 
-int skiplist_compare_text(const char *val1a, const char *val1b, const char *val2a, const char *val2b);
 int get_host_count(void);
 int get_service_count(void);
 
