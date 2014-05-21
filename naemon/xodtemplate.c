@@ -72,8 +72,8 @@ static xodtemplate_hostextinfo *xodtemplate_hostextinfo_list_tail = NULL;
 static xodtemplate_serviceextinfo *xodtemplate_serviceextinfo_list_tail = NULL;
 
 
-static skiplist *xobject_template_skiplists[NUM_XOBJECT_SKIPLISTS];
-static skiplist *xobject_skiplists[NUM_XOBJECT_SKIPLISTS];
+static struct rbtree *xobject_template_tree[NUM_OBJECT_TYPES];
+static struct rbtree *xobject_tree[NUM_OBJECT_TYPES];
 
 
 static void *xodtemplate_current_object = NULL;
@@ -135,21 +135,21 @@ static const char *xodtemplate_config_file_name(int cfgfile)
 /********************** CLEANUP FUNCTIONS *************************/
 /******************************************************************/
 
-static void xodtemplate_free_xobject_skiplists(void)
+static void xodtemplate_free_xobject_trees(void)
 {
 	int x;
 
-	for (x = 1; x < NUM_XOBJECT_SKIPLISTS; x++)
-		skiplist_free(&xobject_skiplists[x]);
+	for (x = 0; x < NUM_OBJECT_TYPES; x++)
+		rbtree_destroy(xobject_tree[x], NULL);
 }
 
 
-static void xodtemplate_free_template_skiplists(void)
+static void xodtemplate_free_template_trees(void)
 {
 	int x;
 
-	for (x = 1; x < NUM_XOBJECT_SKIPLISTS; x++)
-		skiplist_free(&xobject_template_skiplists[x]);
+	for (x = 0; x < NUM_OBJECT_TYPES; x++)
+		rbtree_destroy(xobject_template_tree[x], NULL);
 }
 
 
@@ -406,13 +406,13 @@ static void xodtemplate_free_memory(void)
 	my_free(xodtemplate_config_files);
 	xodtemplate_current_config_file = 0;
 
-	/* free skiplists */
-	xodtemplate_free_xobject_skiplists();
+	/* free trees */
+	xodtemplate_free_xobject_trees();
 }
 
 
 /******************************************************************/
-/******************* OBJECT SEARCH FUNCTIONS **********************/
+/***************** OBJECT SORT/LOOKUP FUNCTIONS *******************/
 /******************************************************************/
 
 /* finds a specific timeperiod object */
@@ -425,7 +425,7 @@ static xodtemplate_timeperiod *xodtemplate_find_timeperiod(char *name)
 
 	temp_timeperiod.name = name;
 
-	return skiplist_find_first(xobject_template_skiplists[TIMEPERIOD_SKIPLIST], &temp_timeperiod, NULL);
+	return rbtree_find(xobject_template_tree[OBJTYPE_TIMEPERIOD], &temp_timeperiod);
 }
 
 
@@ -439,7 +439,7 @@ static xodtemplate_command *xodtemplate_find_command(char *name)
 
 	temp_command.name = name;
 
-	return skiplist_find_first(xobject_template_skiplists[COMMAND_SKIPLIST], &temp_command, NULL);
+	return rbtree_find(xobject_template_tree[OBJTYPE_COMMAND], &temp_command);
 }
 
 
@@ -453,7 +453,7 @@ static xodtemplate_contactgroup *xodtemplate_find_contactgroup(char *name)
 
 	temp_contactgroup.name = name;
 
-	return skiplist_find_first(xobject_template_skiplists[CONTACTGROUP_SKIPLIST], &temp_contactgroup, NULL);
+	return rbtree_find(xobject_template_tree[OBJTYPE_CONTACTGROUP], &temp_contactgroup);
 }
 
 
@@ -467,7 +467,7 @@ static xodtemplate_contactgroup *xodtemplate_find_real_contactgroup(char *name)
 
 	temp_contactgroup.contactgroup_name = name;
 
-	return skiplist_find_first(xobject_skiplists[CONTACTGROUP_SKIPLIST], &temp_contactgroup, NULL);
+	return rbtree_find(xobject_tree[OBJTYPE_CONTACTGROUP], &temp_contactgroup);
 }
 
 
@@ -481,7 +481,7 @@ static xodtemplate_hostgroup *xodtemplate_find_hostgroup(char *name)
 
 	temp_hostgroup.name = name;
 
-	return skiplist_find_first(xobject_template_skiplists[HOSTGROUP_SKIPLIST], &temp_hostgroup, NULL);
+	return rbtree_find(xobject_template_tree[OBJTYPE_HOSTGROUP], &temp_hostgroup);
 }
 
 
@@ -495,7 +495,7 @@ static xodtemplate_hostgroup *xodtemplate_find_real_hostgroup(char *name)
 
 	temp_hostgroup.hostgroup_name = name;
 
-	return skiplist_find_first(xobject_skiplists[HOSTGROUP_SKIPLIST], &temp_hostgroup, NULL);
+	return rbtree_find(xobject_tree[OBJTYPE_HOSTGROUP], &temp_hostgroup);
 }
 
 
@@ -509,7 +509,7 @@ static xodtemplate_servicegroup *xodtemplate_find_servicegroup(char *name)
 
 	temp_servicegroup.name = name;
 
-	return skiplist_find_first(xobject_template_skiplists[SERVICEGROUP_SKIPLIST], &temp_servicegroup, NULL);
+	return rbtree_find(xobject_template_tree[OBJTYPE_SERVICEGROUP], &temp_servicegroup);
 }
 
 
@@ -523,7 +523,7 @@ static xodtemplate_servicegroup *xodtemplate_find_real_servicegroup(char *name)
 
 	temp_servicegroup.servicegroup_name = name;
 
-	return skiplist_find_first(xobject_skiplists[SERVICEGROUP_SKIPLIST], &temp_servicegroup, NULL);
+	return rbtree_find(xobject_tree[OBJTYPE_SERVICEGROUP], &temp_servicegroup);
 }
 
 
@@ -537,7 +537,7 @@ static xodtemplate_servicedependency *xodtemplate_find_servicedependency(char *n
 
 	temp_servicedependency.name = name;
 
-	return skiplist_find_first(xobject_template_skiplists[SERVICEDEPENDENCY_SKIPLIST], &temp_servicedependency, NULL);
+	return rbtree_find(xobject_template_tree[OBJTYPE_SERVICEDEPENDENCY], &temp_servicedependency);
 }
 
 
@@ -551,7 +551,7 @@ static xodtemplate_serviceescalation *xodtemplate_find_serviceescalation(char *n
 
 	temp_serviceescalation.name = name;
 
-	return skiplist_find_first(xobject_template_skiplists[SERVICEESCALATION_SKIPLIST], &temp_serviceescalation, NULL);
+	return rbtree_find(xobject_template_tree[OBJTYPE_SERVICEESCALATION], &temp_serviceescalation);
 }
 
 
@@ -565,7 +565,7 @@ static xodtemplate_contact *xodtemplate_find_contact(char *name)
 
 	temp_contact.name = name;
 
-	return skiplist_find_first(xobject_template_skiplists[CONTACT_SKIPLIST], &temp_contact, NULL);
+	return rbtree_find(xobject_template_tree[OBJTYPE_CONTACT], &temp_contact);
 }
 
 
@@ -579,7 +579,7 @@ static xodtemplate_contact *xodtemplate_find_real_contact(char *name)
 
 	temp_contact.contact_name = name;
 
-	return skiplist_find_first(xobject_skiplists[CONTACT_SKIPLIST], &temp_contact, NULL);
+	return rbtree_find(xobject_tree[OBJTYPE_CONTACT], &temp_contact);
 }
 
 
@@ -593,7 +593,7 @@ static xodtemplate_host *xodtemplate_find_host(char *name)
 
 	temp_host.name = name;
 
-	return skiplist_find_first(xobject_template_skiplists[HOST_SKIPLIST], &temp_host, NULL);
+	return rbtree_find(xobject_template_tree[OBJTYPE_HOST], &temp_host);
 }
 
 
@@ -607,7 +607,7 @@ static xodtemplate_host *xodtemplate_find_real_host(char *name)
 
 	temp_host.host_name = name;
 
-	return skiplist_find_first(xobject_skiplists[HOST_SKIPLIST], &temp_host, NULL);
+	return rbtree_find(xobject_tree[OBJTYPE_HOST], &temp_host);
 }
 
 
@@ -621,7 +621,7 @@ static xodtemplate_hostdependency *xodtemplate_find_hostdependency(char *name)
 
 	temp_hostdependency.name = name;
 
-	return skiplist_find_first(xobject_template_skiplists[HOSTDEPENDENCY_SKIPLIST], &temp_hostdependency, NULL);
+	return rbtree_find(xobject_template_tree[OBJTYPE_HOSTDEPENDENCY], &temp_hostdependency);
 }
 
 
@@ -635,7 +635,7 @@ static xodtemplate_hostescalation *xodtemplate_find_hostescalation(char *name)
 
 	temp_hostescalation.name = name;
 
-	return skiplist_find_first(xobject_template_skiplists[HOSTESCALATION_SKIPLIST], &temp_hostescalation, NULL);
+	return rbtree_find(xobject_template_tree[OBJTYPE_HOSTESCALATION], &temp_hostescalation);
 }
 
 
@@ -649,7 +649,7 @@ static xodtemplate_hostextinfo *xodtemplate_find_hostextinfo(char *name)
 
 	temp_hostextinfo.name = name;
 
-	return skiplist_find_first(xobject_template_skiplists[HOSTEXTINFO_SKIPLIST], &temp_hostextinfo, NULL);
+	return rbtree_find(xobject_template_tree[OBJTYPE_HOSTEXTINFO], &temp_hostextinfo);
 }
 
 
@@ -663,7 +663,7 @@ static xodtemplate_serviceextinfo *xodtemplate_find_serviceextinfo(char *name)
 
 	temp_serviceextinfo.name = name;
 
-	return skiplist_find_first(xobject_template_skiplists[SERVICEEXTINFO_SKIPLIST], &temp_serviceextinfo, NULL);
+	return rbtree_find(xobject_template_tree[OBJTYPE_SERVICEEXTINFO], &temp_serviceextinfo);
 }
 
 
@@ -677,7 +677,7 @@ static xodtemplate_service *xodtemplate_find_service(char *name)
 
 	temp_service.name = name;
 
-	return skiplist_find_first(xobject_template_skiplists[SERVICE_SKIPLIST], &temp_service, NULL);
+	return rbtree_find(xobject_template_tree[OBJTYPE_SERVICE], &temp_service);
 }
 
 
@@ -692,47 +692,23 @@ static xodtemplate_service *xodtemplate_find_real_service(char *host_name, char 
 	temp_service.host_name = host_name;
 	temp_service.service_description = service_description;
 
-	return skiplist_find_first(xobject_skiplists[SERVICE_SKIPLIST], &temp_service, NULL);
+	return rbtree_find(xobject_tree[OBJTYPE_SERVICE], &temp_service);
 }
 
 
-static int skiplist_compare_text(const char *val1a, const char *val1b, const char *val2a, const char *val2b)
+static inline int safestrcmp(const char *a, const char *b)
 {
-	int result = 0;
-
-	/* check first name */
-	if (val1a == NULL && val2a == NULL)
-		result = 0;
-	else if (val1a == NULL)
-		result = 1;
-	else if (val2a == NULL)
-		result = -1;
-	else
-		result = strcmp(val1a, val2a);
-
-	/* return early if we can */
-	if (result)
-		return result;
-
-	/* ... otherwise check second name */
-	if (val1b == NULL && val2b == NULL)
+	if (a == b)
 		return 0;
-	else if (val1b == NULL)
-		return 1;
-	else if (val2b == NULL)
-		return -1;
 
-	return strcmp(val1b, val2b);
+	/* double ternary, so please leave the parens there */
+	return !a ? 1 : (!b ? -1 : strcmp(a, b));
 }
 
-
-static int xodtemplate_skiplist_compare_host_template(void *a, void *b)
+static int xod_sort_compare_host_template(const void *a, const void *b)
 {
-	xodtemplate_host *oa = NULL;
-	xodtemplate_host *ob = NULL;
-
-	oa = (xodtemplate_host *)a;
-	ob = (xodtemplate_host *)b;
+	xodtemplate_host *oa = (xodtemplate_host *)a;
+	xodtemplate_host *ob = (xodtemplate_host *)b;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -741,17 +717,14 @@ static int xodtemplate_skiplist_compare_host_template(void *a, void *b)
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->name, NULL, ob->name, NULL);
+	return safestrcmp(oa->name, ob->name);
 }
 
 
-static int xodtemplate_skiplist_compare_host(void *a, void *b)
+static int xod_sort_compare_host(const void *a, const void *b)
 {
-	xodtemplate_host *oa = NULL;
-	xodtemplate_host *ob = NULL;
-
-	oa = (xodtemplate_host *)a;
-	ob = (xodtemplate_host *)b;
+	xodtemplate_host *oa = (xodtemplate_host *)a;
+	xodtemplate_host *ob = (xodtemplate_host *)b;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -760,17 +733,14 @@ static int xodtemplate_skiplist_compare_host(void *a, void *b)
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->host_name, NULL, ob->host_name, NULL);
+	return safestrcmp(oa->host_name, ob->host_name);
 }
 
 
-static int xodtemplate_skiplist_compare_service_template(void *a, void *b)
+static int xod_sort_compare_service_template(const void *a, const void *b)
 {
-	xodtemplate_service *oa = NULL;
-	xodtemplate_service *ob = NULL;
-
-	oa = (xodtemplate_service *)a;
-	ob = (xodtemplate_service *)b;
+	xodtemplate_service *oa = (xodtemplate_service *)a;
+	xodtemplate_service *ob = (xodtemplate_service *)b;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -779,17 +749,15 @@ static int xodtemplate_skiplist_compare_service_template(void *a, void *b)
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->name, NULL, ob->name, NULL);
+	return safestrcmp(oa->name, ob->name);
 }
 
 
-static int xodtemplate_skiplist_compare_service(void *a, void *b)
+static int xod_sort_compare_service(const void *a, const void *b)
 {
-	xodtemplate_service *oa = NULL;
-	xodtemplate_service *ob = NULL;
-
-	oa = (xodtemplate_service *)a;
-	ob = (xodtemplate_service *)b;
+	xodtemplate_service *oa = (xodtemplate_service *)a;
+	xodtemplate_service *ob = (xodtemplate_service *)b;
+	int val;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -798,11 +766,30 @@ static int xodtemplate_skiplist_compare_service(void *a, void *b)
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->host_name, oa->service_description, ob->host_name, ob->service_description);
+	if ((val = safestrcmp(oa->host_name, ob->host_name)))
+		return val;
+
+	return safestrcmp(oa->service_description, ob->service_description);
 }
 
 
-static int xodtemplate_skiplist_compare_timeperiod_template(void *a, void *b)
+static int xod_sort_compare_timeperiod_template(const void *a, const void *b)
+{
+	xodtemplate_timeperiod *oa = (xodtemplate_timeperiod *)a;
+	xodtemplate_timeperiod *ob = (xodtemplate_timeperiod *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->name, ob->name);
+}
+
+
+static int xod_sort_compare_timeperiod(const void *a, const void *b)
 {
 	xodtemplate_timeperiod *oa = NULL;
 	xodtemplate_timeperiod *ob = NULL;
@@ -817,17 +804,14 @@ static int xodtemplate_skiplist_compare_timeperiod_template(void *a, void *b)
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->name, NULL, ob->name, NULL);
+	return safestrcmp(oa->timeperiod_name, ob->timeperiod_name);
 }
 
 
-static int xodtemplate_skiplist_compare_timeperiod(void *a, void *b)
+static int xod_sort_compare_command_template(const void *a, const void *b)
 {
-	xodtemplate_timeperiod *oa = NULL;
-	xodtemplate_timeperiod *ob = NULL;
-
-	oa = (xodtemplate_timeperiod *)a;
-	ob = (xodtemplate_timeperiod *)b;
+	xodtemplate_command *oa = (xodtemplate_command *)a;
+	xodtemplate_command *ob = (xodtemplate_command *)b;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -836,17 +820,14 @@ static int xodtemplate_skiplist_compare_timeperiod(void *a, void *b)
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->timeperiod_name, NULL, ob->timeperiod_name, NULL);
+	return safestrcmp(oa->name, ob->name);
 }
 
 
-static int xodtemplate_skiplist_compare_command_template(void *a, void *b)
+static int xod_sort_compare_command(const void *a, const void *b)
 {
-	xodtemplate_command *oa = NULL;
-	xodtemplate_command *ob = NULL;
-
-	oa = (xodtemplate_command *)a;
-	ob = (xodtemplate_command *)b;
+	xodtemplate_command *oa = (xodtemplate_command *)a;
+	xodtemplate_command *ob = (xodtemplate_command *)b;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -855,17 +836,14 @@ static int xodtemplate_skiplist_compare_command_template(void *a, void *b)
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->name, NULL, ob->name, NULL);
+	return safestrcmp(oa->command_name, ob->command_name);
 }
 
 
-static int xodtemplate_skiplist_compare_command(void *a, void *b)
+static int xod_sort_compare_contact_template(const void *a, const void *b)
 {
-	xodtemplate_command *oa = NULL;
-	xodtemplate_command *ob = NULL;
-
-	oa = (xodtemplate_command *)a;
-	ob = (xodtemplate_command *)b;
+	xodtemplate_contact *oa = (xodtemplate_contact *)a;
+	xodtemplate_contact *ob = (xodtemplate_contact *)b;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -874,17 +852,14 @@ static int xodtemplate_skiplist_compare_command(void *a, void *b)
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->command_name, NULL, ob->command_name, NULL);
+	return safestrcmp(oa->name, ob->name);
 }
 
 
-static int xodtemplate_skiplist_compare_contact_template(void *a, void *b)
+static int xod_sort_compare_contact(const void *a, const void *b)
 {
-	xodtemplate_contact *oa = NULL;
-	xodtemplate_contact *ob = NULL;
-
-	oa = (xodtemplate_contact *)a;
-	ob = (xodtemplate_contact *)b;
+	xodtemplate_contact *oa = (xodtemplate_contact *)a;
+	xodtemplate_contact *ob = (xodtemplate_contact *)b;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -893,17 +868,14 @@ static int xodtemplate_skiplist_compare_contact_template(void *a, void *b)
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->name, NULL, ob->name, NULL);
+	return safestrcmp(oa->contact_name, ob->contact_name);
 }
 
 
-static int xodtemplate_skiplist_compare_contact(void *a, void *b)
+static int xod_sort_compare_contactgroup_template(const void *a, const void *b)
 {
-	xodtemplate_contact *oa = NULL;
-	xodtemplate_contact *ob = NULL;
-
-	oa = (xodtemplate_contact *)a;
-	ob = (xodtemplate_contact *)b;
+	xodtemplate_contactgroup *oa = (xodtemplate_contactgroup *)a;
+	xodtemplate_contactgroup *ob = (xodtemplate_contactgroup *)b;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -912,17 +884,13 @@ static int xodtemplate_skiplist_compare_contact(void *a, void *b)
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->contact_name, NULL, ob->contact_name, NULL);
+	return safestrcmp(oa->name, ob->name);
 }
 
-
-static int xodtemplate_skiplist_compare_contactgroup_template(void *a, void *b)
+static int xod_sort_compare_contactgroup(const void *a, const void *b)
 {
-	xodtemplate_contactgroup *oa = NULL;
-	xodtemplate_contactgroup *ob = NULL;
-
-	oa = (xodtemplate_contactgroup *)a;
-	ob = (xodtemplate_contactgroup *)b;
+	xodtemplate_contactgroup *oa = (xodtemplate_contactgroup *)a;
+	xodtemplate_contactgroup *ob = (xodtemplate_contactgroup *)b;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -931,30 +899,11 @@ static int xodtemplate_skiplist_compare_contactgroup_template(void *a, void *b)
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->name, NULL, ob->name, NULL);
+	return safestrcmp(oa->contactgroup_name, ob->contactgroup_name);
 }
 
 
-static int xodtemplate_skiplist_compare_contactgroup(void *a, void *b)
-{
-	xodtemplate_contactgroup *oa = NULL;
-	xodtemplate_contactgroup *ob = NULL;
-
-	oa = (xodtemplate_contactgroup *)a;
-	ob = (xodtemplate_contactgroup *)b;
-
-	if (oa == NULL && ob == NULL)
-		return 0;
-	if (oa == NULL)
-		return 1;
-	if (ob == NULL)
-		return -1;
-
-	return skiplist_compare_text(oa->contactgroup_name, NULL, ob->contactgroup_name, NULL);
-}
-
-
-static int xodtemplate_skiplist_compare_hostgroup_template(void *a, void *b)
+static int xod_sort_compare_hostgroup_template(const void *a, const void *b)
 {
 	xodtemplate_hostgroup *oa = NULL;
 	xodtemplate_hostgroup *ob = NULL;
@@ -969,17 +918,14 @@ static int xodtemplate_skiplist_compare_hostgroup_template(void *a, void *b)
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->name, NULL, ob->name, NULL);
+	return safestrcmp(oa->name, ob->name);
 }
 
 
-static int xodtemplate_skiplist_compare_hostgroup(void *a, void *b)
+static int xod_sort_compare_hostgroup(const void *a, const void *b)
 {
-	xodtemplate_hostgroup *oa = NULL;
-	xodtemplate_hostgroup *ob = NULL;
-
-	oa = (xodtemplate_hostgroup *)a;
-	ob = (xodtemplate_hostgroup *)b;
+	xodtemplate_hostgroup *oa = (xodtemplate_hostgroup *)a;
+	xodtemplate_hostgroup *ob = (xodtemplate_hostgroup *)b;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -988,17 +934,14 @@ static int xodtemplate_skiplist_compare_hostgroup(void *a, void *b)
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->hostgroup_name, NULL, ob->hostgroup_name, NULL);
+	return safestrcmp(oa->hostgroup_name, ob->hostgroup_name);
 }
 
 
-static int xodtemplate_skiplist_compare_servicegroup_template(void *a, void *b)
+static int xod_sort_compare_servicegroup_template(const void *a, const void *b)
 {
-	xodtemplate_servicegroup *oa = NULL;
-	xodtemplate_servicegroup *ob = NULL;
-
-	oa = (xodtemplate_servicegroup *)a;
-	ob = (xodtemplate_servicegroup *)b;
+	xodtemplate_servicegroup *oa = (xodtemplate_servicegroup *)a;
+	xodtemplate_servicegroup *ob = (xodtemplate_servicegroup *)b;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -1007,17 +950,14 @@ static int xodtemplate_skiplist_compare_servicegroup_template(void *a, void *b)
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->name, NULL, ob->name, NULL);
+	return safestrcmp(oa->name, ob->name);
 }
 
 
-static int xodtemplate_skiplist_compare_servicegroup(void *a, void *b)
+static int xod_sort_compare_servicegroup(const void *a, const void *b)
 {
-	xodtemplate_servicegroup *oa = NULL;
-	xodtemplate_servicegroup *ob = NULL;
-
-	oa = (xodtemplate_servicegroup *)a;
-	ob = (xodtemplate_servicegroup *)b;
+	xodtemplate_servicegroup *oa = (xodtemplate_servicegroup *)a;
+	xodtemplate_servicegroup *ob = (xodtemplate_servicegroup *)b;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -1026,17 +966,14 @@ static int xodtemplate_skiplist_compare_servicegroup(void *a, void *b)
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->servicegroup_name, NULL, ob->servicegroup_name, NULL);
+	return safestrcmp(oa->servicegroup_name, ob->servicegroup_name);
 }
 
 
-static int xodtemplate_skiplist_compare_hostdependency_template(void *a, void *b)
+static int xod_sort_compare_hostdependency_template(const void *a, const void *b)
 {
-	xodtemplate_hostdependency *oa = NULL;
-	xodtemplate_hostdependency *ob = NULL;
-
-	oa = (xodtemplate_hostdependency *)a;
-	ob = (xodtemplate_hostdependency *)b;
+	xodtemplate_hostdependency *oa = (xodtemplate_hostdependency *)a;
+	xodtemplate_hostdependency *ob = (xodtemplate_hostdependency *)b;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -1045,17 +982,14 @@ static int xodtemplate_skiplist_compare_hostdependency_template(void *a, void *b
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->name, NULL, ob->name, NULL);
+	return safestrcmp(oa->name, ob->name);
 }
 
-
-static int xodtemplate_skiplist_compare_servicedependency_template(void *a, void *b)
+static int xod_sort_compare_servicedependency_template(const void *a, const void *b)
 {
-	xodtemplate_servicedependency *oa = NULL;
-	xodtemplate_servicedependency *ob = NULL;
-
-	oa = (xodtemplate_servicedependency *)a;
-	ob = (xodtemplate_servicedependency *)b;
+	xodtemplate_servicedependency *oa = (xodtemplate_servicedependency *)a;
+	xodtemplate_servicedependency *ob = (xodtemplate_servicedependency *)b;
+	int val;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -1064,17 +998,15 @@ static int xodtemplate_skiplist_compare_servicedependency_template(void *a, void
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->name, NULL, ob->name, NULL);
+	if ((val = safestrcmp(oa->host_name, ob->host_name)))
+		return val;
+	return safestrcmp(oa->service_description, ob->service_description);
 }
 
-
-static int xodtemplate_skiplist_compare_hostescalation_template(void *a, void *b)
+static int xod_sort_compare_hostescalation_template(const void *a, const void *b)
 {
-	xodtemplate_hostescalation *oa = NULL;
-	xodtemplate_hostescalation *ob = NULL;
-
-	oa = (xodtemplate_hostescalation *)a;
-	ob = (xodtemplate_hostescalation *)b;
+	xodtemplate_hostescalation *oa = (xodtemplate_hostescalation *)a;
+	xodtemplate_hostescalation *ob = (xodtemplate_hostescalation *)b;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -1083,11 +1015,11 @@ static int xodtemplate_skiplist_compare_hostescalation_template(void *a, void *b
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->name, NULL, ob->name, NULL);
+	return safestrcmp(oa->name, ob->name);
 }
 
 
-static int xodtemplate_skiplist_compare_serviceescalation_template(void *a, void *b)
+static int xod_sort_compare_serviceescalation_template(const void *a, const void *b)
 {
 	xodtemplate_serviceescalation *oa = NULL;
 	xodtemplate_serviceescalation *ob = NULL;
@@ -1102,17 +1034,14 @@ static int xodtemplate_skiplist_compare_serviceescalation_template(void *a, void
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->name, NULL, ob->name, NULL);
+	return safestrcmp(oa->name, ob->name);
 }
 
 
-static int xodtemplate_skiplist_compare_hostextinfo_template(void *a, void *b)
+static int xod_sort_compare_hostextinfo_template(const void *a, const void *b)
 {
-	xodtemplate_hostextinfo *oa = NULL;
-	xodtemplate_hostextinfo *ob = NULL;
-
-	oa = (xodtemplate_hostextinfo *)a;
-	ob = (xodtemplate_hostextinfo *)b;
+	xodtemplate_hostextinfo *oa = (xodtemplate_hostextinfo *)a;
+	xodtemplate_hostextinfo *ob = (xodtemplate_hostextinfo *)b;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -1121,17 +1050,14 @@ static int xodtemplate_skiplist_compare_hostextinfo_template(void *a, void *b)
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->name, NULL, ob->name, NULL);
+	return safestrcmp(oa->name, ob->name);
 }
 
 
-static int xodtemplate_skiplist_compare_serviceextinfo_template(void *a, void *b)
+static int xod_sort_compare_serviceextinfo_template(const void *a, const void *b)
 {
-	xodtemplate_serviceextinfo *oa = NULL;
-	xodtemplate_serviceextinfo *ob = NULL;
-
-	oa = (xodtemplate_serviceextinfo *)a;
-	ob = (xodtemplate_serviceextinfo *)b;
+	xodtemplate_serviceextinfo *oa = (xodtemplate_serviceextinfo *)a;
+	xodtemplate_serviceextinfo *ob = (xodtemplate_serviceextinfo *)b;;
 
 	if (oa == NULL && ob == NULL)
 		return 0;
@@ -1140,45 +1066,45 @@ static int xodtemplate_skiplist_compare_serviceextinfo_template(void *a, void *b
 	if (ob == NULL)
 		return -1;
 
-	return skiplist_compare_text(oa->name, NULL, ob->name, NULL);
+	return safestrcmp(oa->name, ob->name);
 }
 
 
-static int xodtemplate_init_xobject_skiplists(void)
+static int xodtemplate_init_trees(void)
 {
 	int x = 0;
 
-	for (x = 0; x < NUM_XOBJECT_SKIPLISTS; x++) {
-		xobject_template_skiplists[x] = NULL;
-		xobject_skiplists[x] = NULL;
+	for (x = 0; x < NUM_OBJECT_TYPES; x++) {
+		xobject_template_tree[x] = NULL;
+		xobject_tree[x] = NULL;
 	}
 
-	xobject_template_skiplists[HOST_SKIPLIST] = skiplist_new(16, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_host_template);
-	xobject_template_skiplists[SERVICE_SKIPLIST] = skiplist_new(16, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_service_template);
-	xobject_template_skiplists[COMMAND_SKIPLIST] = skiplist_new(10, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_command_template);
-	xobject_template_skiplists[TIMEPERIOD_SKIPLIST] = skiplist_new(10, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_timeperiod_template);
-	xobject_template_skiplists[CONTACT_SKIPLIST] = skiplist_new(10, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_contact_template);
-	xobject_template_skiplists[CONTACTGROUP_SKIPLIST] = skiplist_new(10, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_contactgroup_template);
-	xobject_template_skiplists[HOSTGROUP_SKIPLIST] = skiplist_new(10, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_hostgroup_template);
-	xobject_template_skiplists[SERVICEGROUP_SKIPLIST] = skiplist_new(10, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_servicegroup_template);
-	xobject_template_skiplists[HOSTDEPENDENCY_SKIPLIST] = skiplist_new(16, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_hostdependency_template);
-	xobject_template_skiplists[SERVICEDEPENDENCY_SKIPLIST] = skiplist_new(16, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_servicedependency_template);
-	xobject_template_skiplists[HOSTESCALATION_SKIPLIST] = skiplist_new(16, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_hostescalation_template);
-	xobject_template_skiplists[SERVICEESCALATION_SKIPLIST] = skiplist_new(16, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_serviceescalation_template);
-	xobject_template_skiplists[HOSTEXTINFO_SKIPLIST] = skiplist_new(16, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_hostextinfo_template);
-	xobject_template_skiplists[SERVICEEXTINFO_SKIPLIST] = skiplist_new(16, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_serviceextinfo_template);
+	xobject_template_tree[OBJTYPE_HOST] = rbtree_create(xod_sort_compare_host_template);
+	xobject_template_tree[OBJTYPE_SERVICE] = rbtree_create(xod_sort_compare_service_template);
+	xobject_template_tree[OBJTYPE_COMMAND] = rbtree_create(xod_sort_compare_command_template);
+	xobject_template_tree[OBJTYPE_TIMEPERIOD] = rbtree_create(xod_sort_compare_timeperiod_template);
+	xobject_template_tree[OBJTYPE_CONTACT] = rbtree_create(xod_sort_compare_contact_template);
+	xobject_template_tree[OBJTYPE_CONTACTGROUP] = rbtree_create(xod_sort_compare_contactgroup_template);
+	xobject_template_tree[OBJTYPE_HOSTGROUP] = rbtree_create(xod_sort_compare_hostgroup_template);
+	xobject_template_tree[OBJTYPE_SERVICEGROUP] = rbtree_create(xod_sort_compare_servicegroup_template);
+	xobject_template_tree[OBJTYPE_HOSTDEPENDENCY] = rbtree_create(xod_sort_compare_hostdependency_template);
+	xobject_template_tree[OBJTYPE_SERVICEDEPENDENCY] = rbtree_create(xod_sort_compare_servicedependency_template);
+	xobject_template_tree[OBJTYPE_HOSTESCALATION] = rbtree_create(xod_sort_compare_hostescalation_template);
+	xobject_template_tree[OBJTYPE_SERVICEESCALATION] = rbtree_create(xod_sort_compare_serviceescalation_template);
+	xobject_template_tree[OBJTYPE_HOSTEXTINFO] = rbtree_create(xod_sort_compare_hostextinfo_template);
+	xobject_template_tree[OBJTYPE_SERVICEEXTINFO] = rbtree_create(xod_sort_compare_serviceextinfo_template);
 
-	xobject_skiplists[HOST_SKIPLIST] = skiplist_new(16, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_host);
-	xobject_skiplists[SERVICE_SKIPLIST] = skiplist_new(16, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_service);
-	xobject_skiplists[COMMAND_SKIPLIST] = skiplist_new(16, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_command);
-	xobject_skiplists[TIMEPERIOD_SKIPLIST] = skiplist_new(16, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_timeperiod);
-	xobject_skiplists[CONTACT_SKIPLIST] = skiplist_new(10, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_contact);
-	xobject_skiplists[CONTACTGROUP_SKIPLIST] = skiplist_new(10, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_contactgroup);
-	xobject_skiplists[HOSTGROUP_SKIPLIST] = skiplist_new(10, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_hostgroup);
-	xobject_skiplists[SERVICEGROUP_SKIPLIST] = skiplist_new(10, 0.5, FALSE, FALSE, xodtemplate_skiplist_compare_servicegroup);
+	xobject_tree[OBJTYPE_HOST] = rbtree_create(xod_sort_compare_host);
+	xobject_tree[OBJTYPE_SERVICE] = rbtree_create(xod_sort_compare_service);
+	xobject_tree[OBJTYPE_COMMAND] = rbtree_create(xod_sort_compare_command);
+	xobject_tree[OBJTYPE_TIMEPERIOD] = rbtree_create(xod_sort_compare_timeperiod);
+	xobject_tree[OBJTYPE_CONTACT] = rbtree_create(xod_sort_compare_contact);
+	xobject_tree[OBJTYPE_CONTACTGROUP] = rbtree_create(xod_sort_compare_contactgroup);
+	xobject_tree[OBJTYPE_HOSTGROUP] = rbtree_create(xod_sort_compare_hostgroup);
+	xobject_tree[OBJTYPE_SERVICEGROUP] = rbtree_create(xod_sort_compare_servicegroup);
 	/*
 	 * host and service extinfo, dependencies, and escalations don't
-	 * need to be sorted, so we avoid creating skiplists for them.
+	 * need to be sorted, so we avoid creating trees for them.
 	 */
 	return OK;
 }
@@ -1219,6 +1145,7 @@ static int xodtemplate_init_xobject_skiplists(void)
 			xodtemplate_current_object=xodtemplate_##type##_list; \
 		} \
 	} while (0)
+
 
 /* starts a new object definition */
 static int xodtemplate_begin_object_definition(char *input, int options, int cfgfile, int start_line)
@@ -1450,7 +1377,6 @@ static int xodtemplate_begin_object_definition(char *input, int options, int cfg
 }
 #undef xod_begin_def /* we don't need this anymore */
 
-
 #define xod_check_complete(otype) \
 	do { \
 		xodtemplate_##otype *o = (xodtemplate_##otype *)xodtemplate_current_object; \
@@ -1500,11 +1426,6 @@ static int xodtemplate_end_object_definition(int options)
 	return result;
 }
 
-
-/******************************************************************/
-/***************** OBJECT DEFINITION FUNCTIONS ********************/
-/******************************************************************/
-
 static const char *xodtemplate_type_name(unsigned int id)
 {
 	static const char *otype_name[] = {
@@ -1525,6 +1446,7 @@ static void xodtemplate_obsoleted(const char *var, int start_line)
 	      var, xodtemplate_type_name(xodtemplate_current_object_type),
 	      xodtemplate_config_file_name(xodtemplate_current_config_file), start_line);
 }
+
 
 /* adds a custom variable to an object */
 static xodtemplate_customvariablesmember *xodtemplate_add_custom_variable_to_object(xodtemplate_customvariablesmember **object_ptr, char *varname, char *varvalue)
@@ -1914,6 +1836,10 @@ static int xodtemplate_parse_timeperiod_directive(xodtemplate_timeperiod *tperio
 	return result;
 }
 
+
+/******************************************************************/
+/***************** OBJECT DUPLICATION FUNCTIONS *******************/
+/******************************************************************/
 
 /* expands contacts */
 static int xodtemplate_expand_contacts(objectlist **ret, bitmap *reject_map, char *contacts, int _config_file, int _start_line)
@@ -2730,10 +2656,6 @@ static int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, ch
 }
 
 
-/******************************************************************/
-/***************** OBJECT DUPLICATION FUNCTIONS *******************/
-/******************************************************************/
-
 /**
  * Create an objectlist of services from whatever someone put into a
  * servicedescription. Rules go like this:
@@ -2863,6 +2785,10 @@ static int xodtemplate_create_service_list(objectlist **ret, bitmap *reject_map,
 }
 
 
+/******************************************************************/
+/*********************** MERGE FUNCTIONS **************************/
+/******************************************************************/
+
 /* merges a service extinfo definition */
 static int xodtemplate_merge_service_extinfo_object(xodtemplate_service *this_service, xodtemplate_serviceextinfo *this_serviceextinfo)
 {
@@ -2967,9 +2893,11 @@ static int xodtemplate_duplicate_service(xodtemplate_service *temp_service, char
 }
 
 
+
 /* duplicates service definitions */
 static int xodtemplate_duplicate_services(void)
 {
+	struct rbnode *prev;
 	int result = OK;
 	xodtemplate_service *temp_service = NULL;
 
@@ -3074,7 +3002,7 @@ static int xodtemplate_duplicate_services(void)
 	}
 
 	/***************************************/
-	/* SKIPLIST STUFF FOR FAST SORT/SEARCH */
+	/* INDEXING STUFF FOR FAST SORT/SEARCH */
 	/***************************************/
 
 	/* First loop for single host service definition*/
@@ -3092,24 +3020,17 @@ static int xodtemplate_duplicate_services(void)
 		}
 
 
-		result = skiplist_insert(xobject_skiplists[SERVICE_SKIPLIST], (void *)temp_service);
-		switch (result) {
-		case SKIPLIST_ERROR_DUPLICATE:
+		prev = rbtree_insert(xobject_tree[OBJTYPE_SERVICE], (void *)temp_service);
+		if (prev) {
 			logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for service '%s' on host '%s' (config file '%s', starting on line %d)\n", temp_service->service_description, temp_service->host_name, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
 			result = ERROR;
-			break;
-		case SKIPLIST_OK:
-			result = OK;
-			break;
-		default:
-			result = ERROR;
-			break;
+		} else {
+			xodcount.services++;
 		}
 	}
 
 
 	/* second loop for host group service definition*/
-	/* add services to skiplist for fast searches */
 	for (temp_service = xodtemplate_service_list; temp_service != NULL; temp_service = temp_service->next) {
 
 		/* skip services that shouldn't be registered */
@@ -3126,22 +3047,16 @@ static int xodtemplate_duplicate_services(void)
 
 		temp_service->is_from_hostgroup = 0;
 
-		result = skiplist_insert(xobject_skiplists[SERVICE_SKIPLIST], (void *)temp_service);
-		switch (result) {
-		case SKIPLIST_ERROR_DUPLICATE:
+		prev = rbtree_insert(xobject_tree[OBJTYPE_SERVICE], (void *)temp_service);
+		if (prev) {
 			logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for service '%s' on host '%s' (config file '%s', starting on line %d)\n", temp_service->service_description, temp_service->host_name, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
 			result = ERROR;
-			break;
-		case SKIPLIST_OK:
-			result = OK;
-			break;
-		default:
-			result = ERROR;
-			break;
+		} else {
+			xodcount.services++;
 		}
 	}
 
-	return OK;
+	return result;
 }
 
 
@@ -3424,7 +3339,7 @@ static int xodtemplate_duplicate_objects(void)
 /******************************************************************/
 
 /* removes leading + sign from various directives */
-int xodtemplate_clean_additive_string(char **str)
+static int xodtemplate_clean_additive_string(char **str)
 {
 	char *buf = NULL;
 
@@ -3441,7 +3356,7 @@ int xodtemplate_clean_additive_string(char **str)
 
 /* cleans strings which may contain additive inheritance directives */
 /* NOTE: this must be done after objects are resolved */
-int xodtemplate_clean_additive_strings(void)
+static int xodtemplate_clean_additive_strings(void)
 {
 	xodtemplate_contactgroup *temp_contactgroup = NULL;
 	xodtemplate_hostgroup *temp_hostgroup = NULL;
@@ -3486,11 +3401,6 @@ int xodtemplate_clean_additive_strings(void)
 
 	/* resolve all serviceescalation objects */
 	for (temp_serviceescalation = xodtemplate_serviceescalation_list; temp_serviceescalation != NULL; temp_serviceescalation = temp_serviceescalation->next) {
-		/* 03/05/08 some vars are now handled in xodtemplate_inherit_object_properties() */
-		/*
-		xodtemplate_clean_additive_string(&temp_serviceescalation->contact_groups);
-		xodtemplate_clean_additive_string(&temp_serviceescalation->contacts);
-		*/
 		xodtemplate_clean_additive_string(&temp_serviceescalation->servicegroup_name);
 		xodtemplate_clean_additive_string(&temp_serviceescalation->hostgroup_name);
 		xodtemplate_clean_additive_string(&temp_serviceescalation->host_name);
@@ -3531,11 +3441,6 @@ int xodtemplate_clean_additive_strings(void)
 
 	/* resolve all hostescalation objects */
 	for (temp_hostescalation = xodtemplate_hostescalation_list; temp_hostescalation != NULL; temp_hostescalation = temp_hostescalation->next) {
-		/* 03/05/08 some vars are now handled in xodtemplate_inherit_object_properties() */
-		/*
-		xodtemplate_clean_additive_string(&temp_hostescalation->contact_groups);
-		xodtemplate_clean_additive_string(&temp_hostescalation->contacts);
-		*/
 		xodtemplate_clean_additive_string(&temp_hostescalation->host_name);
 		xodtemplate_clean_additive_string(&temp_hostescalation->hostgroup_name);
 	}
@@ -3543,6 +3448,10 @@ int xodtemplate_clean_additive_strings(void)
 	return OK;
 }
 
+
+/******************************************************************/
+/***************** OBJECT RESOLUTION FUNCTIONS ********************/
+/******************************************************************/
 
 /* determines the value of an inherited string */
 static int xodtemplate_get_inherited_string(char *have_template_value, char **template_value, char *have_this_value, char **this_value)
@@ -3590,6 +3499,145 @@ static int xodtemplate_get_inherited_string(char *have_template_value, char **te
 	return OK;
 }
 
+
+/* inherit object properties */
+/* some missing defaults (notification options, etc.) are also applied here */
+static int xodtemplate_inherit_object_properties(void)
+{
+	xodtemplate_host *temp_host = NULL;
+	xodtemplate_service *temp_service = NULL;
+	xodtemplate_serviceescalation *temp_serviceescalation = NULL;
+	xodtemplate_hostescalation *temp_hostescalation = NULL;
+
+
+	/* fill in missing defaults for hosts... */
+	for (temp_host = xodtemplate_host_list; temp_host != NULL; temp_host = temp_host->next) {
+
+		/* if notification options are missing, assume all */
+		if (temp_host->have_notification_options == FALSE) {
+			temp_host->notification_options = OPT_ALL;
+			temp_host->have_notification_options = TRUE;
+		}
+	}
+
+	/* services inherit some properties from their associated host... */
+	for (temp_service = xodtemplate_service_list; temp_service != NULL; temp_service = temp_service->next) {
+
+		/* find the host */
+		if ((temp_host = xodtemplate_find_real_host(temp_service->host_name)) == NULL)
+			continue;
+
+		/*
+		 * if the service has no contacts specified, it will inherit
+		 * them from the host
+		 */
+		if (temp_service->have_contact_groups == FALSE && temp_service->have_contacts == FALSE) {
+			xod_inherit_str(temp_service, temp_host, contact_groups);
+			xod_inherit_str(temp_service, temp_host, contacts);
+		}
+
+		/* services inherit notification interval from host if not already specified */
+		xod_inherit(temp_service, temp_host, notification_interval);
+
+		/* services inherit notification period from host if not already specified */
+		xod_inherit_str(temp_service, temp_host, notification_period);
+
+		/* if notification options are missing, assume all */
+		if (temp_service->have_notification_options == FALSE) {
+			temp_service->notification_options = OPT_ALL;
+			temp_service->have_notification_options = TRUE;
+		}
+	}
+
+	/* service escalations inherit some properties from their associated service... */
+	for (temp_serviceescalation = xodtemplate_serviceescalation_list; temp_serviceescalation != NULL; temp_serviceescalation = temp_serviceescalation->next) {
+
+		/* find the service */
+		if ((temp_service = xodtemplate_find_real_service(temp_serviceescalation->host_name, temp_serviceescalation->service_description)) == NULL)
+			continue;
+
+		/* SPECIAL RULE 10/04/07 - additive inheritance from service's contactgroup(s) */
+		if (temp_serviceescalation->contact_groups != NULL && temp_serviceescalation->contact_groups[0] == '+')
+			xodtemplate_get_inherited_string(&temp_service->have_contact_groups, &temp_service->contact_groups, &temp_serviceescalation->have_contact_groups, &temp_serviceescalation->contact_groups);
+
+		/* SPECIAL RULE 10/04/07 - additive inheritance from service's contact(s) */
+		if (temp_serviceescalation->contacts != NULL && temp_serviceescalation->contacts[0] == '+')
+			xodtemplate_get_inherited_string(&temp_service->have_contacts, &temp_service->contacts, &temp_serviceescalation->have_contacts, &temp_serviceescalation->contacts);
+
+		/* service escalations inherit contacts from service if none are specified */
+		if (temp_serviceescalation->have_contact_groups == FALSE && temp_serviceescalation->have_contacts == FALSE) {
+			xod_inherit_str(temp_serviceescalation, temp_service, contact_groups);
+			xod_inherit_str(temp_serviceescalation, temp_service, contacts);
+		}
+
+		/* service escalations inherit notification interval from service if not already defined */
+		xod_inherit(temp_serviceescalation, temp_service, notification_interval);
+
+		/* service escalations inherit escalation period from service if not already defined */
+		if (temp_serviceescalation->have_escalation_period == FALSE && temp_service->have_notification_period == TRUE && temp_service->notification_period != NULL) {
+			temp_serviceescalation->escalation_period = (char *)strdup(temp_service->notification_period);
+			temp_serviceescalation->have_escalation_period = TRUE;
+		}
+
+		/* if escalation options are missing, assume all */
+		if (temp_serviceescalation->have_escalation_options == FALSE) {
+			temp_serviceescalation->escalation_options = OPT_ALL;
+			temp_serviceescalation->have_escalation_options = TRUE;
+		}
+
+		/* 03/05/08 clear additive string chars - not done in xodtemplate_clean_additive_strings() anymore */
+		xodtemplate_clean_additive_string(&temp_serviceescalation->contact_groups);
+		xodtemplate_clean_additive_string(&temp_serviceescalation->contacts);
+	}
+
+	/* host escalations inherit some properties from their associated host... */
+	for (temp_hostescalation = xodtemplate_hostescalation_list; temp_hostescalation != NULL; temp_hostescalation = temp_hostescalation->next) {
+
+		/* find the host */
+		if ((temp_host = xodtemplate_find_real_host(temp_hostescalation->host_name)) == NULL)
+			continue;
+
+		/* SPECIAL RULE 10/04/07 - additive inheritance from host's contactgroup(s) */
+		if (temp_hostescalation->contact_groups != NULL && temp_hostescalation->contact_groups[0] == '+')
+			xodtemplate_get_inherited_string(&temp_host->have_contact_groups, &temp_host->contact_groups, &temp_hostescalation->have_contact_groups, &temp_hostescalation->contact_groups);
+
+		/* SPECIAL RULE 10/04/07 - additive inheritance from host's contact(s) */
+		if (temp_hostescalation->contacts != NULL && temp_hostescalation->contacts[0] == '+')
+			xodtemplate_get_inherited_string(&temp_host->have_contacts, &temp_host->contacts, &temp_hostescalation->have_contacts, &temp_hostescalation->contacts);
+
+		/* host escalations inherit contacts from host if none are specified */
+		if (temp_hostescalation->have_contact_groups == FALSE && temp_hostescalation->have_contacts == FALSE) {
+			xod_inherit_str(temp_hostescalation, temp_host, contact_groups);
+			xod_inherit_str(temp_hostescalation, temp_host, contacts);
+		}
+
+		/* host escalations inherit notification interval from host if not already defined */
+		xod_inherit(temp_hostescalation, temp_host, notification_interval);
+
+		/* host escalations inherit escalation period from host if not already defined */
+		if (temp_hostescalation->have_escalation_period == FALSE && temp_host->have_notification_period == TRUE && temp_host->notification_period != NULL) {
+			temp_hostescalation->escalation_period = (char *)strdup(temp_host->notification_period);
+			temp_hostescalation->have_escalation_period = TRUE;
+		}
+
+		/* if escalation options are missing, assume all */
+		if (temp_hostescalation->have_escalation_options == FALSE) {
+			temp_hostescalation->escalation_options = OPT_ALL;
+			temp_hostescalation->have_escalation_options = TRUE;
+		}
+
+		/* 03/05/08 clear additive string chars - not done in xodtemplate_clean_additive_strings() anymore */
+		xodtemplate_clean_additive_string(&temp_hostescalation->contact_groups);
+		xodtemplate_clean_additive_string(&temp_hostescalation->contacts);
+	}
+
+	return OK;
+}
+
+
+/******************************************************************/
+/***************** OBJECT RESOLUTION FUNCTIONS ********************/
+/******************************************************************/
 
 /* resolves a timeperiod object */
 static int xodtemplate_resolve_timeperiod(xodtemplate_timeperiod *this_timeperiod)
@@ -5170,7 +5218,7 @@ static char *xodtemplate_process_hostgroup_names(char *hostgroups, int _config_f
 
 
 /* return a list of servicegroup names */
-int xodtemplate_get_servicegroup_names(xodtemplate_memberlist **list, xodtemplate_memberlist **reject_list, char *servicegroups, int _config_file, int _start_line)
+static int xodtemplate_get_servicegroup_names(xodtemplate_memberlist **list, xodtemplate_memberlist **reject_list, char *servicegroups, int _config_file, int _start_line)
 {
 	char *servicegroup_names = NULL;
 	char *temp_ptr = NULL;
@@ -5291,7 +5339,7 @@ int xodtemplate_get_servicegroup_names(xodtemplate_memberlist **list, xodtemplat
 
 
 /* returns a comma-delimited list of servicegroup names */
-char *xodtemplate_process_servicegroup_names(char *servicegroups, int _config_file, int _start_line)
+static char *xodtemplate_process_servicegroup_names(char *servicegroups, int _config_file, int _start_line)
 {
 	xodtemplate_memberlist *temp_list = NULL;
 	xodtemplate_memberlist *reject_list = NULL;
@@ -5936,8 +5984,9 @@ static int xodtemplate_get_time_ranges(char *buf, unsigned long *range_start, un
 
 
 /* registers a timeperiod definition */
-static int xodtemplate_register_timeperiod(xodtemplate_timeperiod *this_timeperiod)
+static int xodtemplate_register_timeperiod(void *tprd, void *discard)
 {
+	xodtemplate_timeperiod *this_timeperiod = (xodtemplate_timeperiod *)tprd;
 	xodtemplate_daterange *temp_daterange = NULL;
 	timeperiod *new_timeperiod = NULL;
 	daterange *new_daterange = NULL;
@@ -6050,8 +6099,9 @@ static int xodtemplate_register_timeperiod(xodtemplate_timeperiod *this_timeperi
 
 
 /* registers a command definition */
-static int xodtemplate_register_command(xodtemplate_command *this_command)
+static int xodtemplate_register_command(void *cmnd, void *discard)
 {
+	xodtemplate_command *this_command = (xodtemplate_command *)cmnd;
 	command *new_command = NULL;
 
 	/* bail out if we shouldn't register this object */
@@ -6072,8 +6122,9 @@ static int xodtemplate_register_command(xodtemplate_command *this_command)
 
 
 /* registers a contact definition */
-static int xodtemplate_register_contact(xodtemplate_contact *this_contact)
+static int xodtemplate_register_contact(void *contact_, void *discard)
 {
+	xodtemplate_contact *this_contact = (xodtemplate_contact *)contact_;
 	contact *new_contact = NULL;
 	char *command_name = NULL;
 	commandsmember *new_commandsmember = NULL;
@@ -6129,8 +6180,9 @@ static int xodtemplate_register_contact(xodtemplate_contact *this_contact)
 
 
 /* registers a contactgroup definition */
-static int xodtemplate_register_contactgroup(xodtemplate_contactgroup *this_contactgroup)
+static int xodtemplate_register_contactgroup(void *cgrp, void *discard)
 {
+	xodtemplate_contactgroup *this_contactgroup = (xodtemplate_contactgroup *)cgrp;
 	contactgroup *new_contactgroup = NULL;
 
 	/* bail out if we shouldn't register this object */
@@ -6150,11 +6202,12 @@ static int xodtemplate_register_contactgroup(xodtemplate_contactgroup *this_cont
 }
 
 
-static int xodtemplate_register_contactgroup_members(xodtemplate_contactgroup *this_contactgroup)
+static int xodtemplate_register_contactgroup_members(void *cgrp, void *cookie)
 {
+	xodtemplate_contactgroup *this_contactgroup = (xodtemplate_contactgroup *)cgrp;
 	objectlist *list;
 	struct contactgroup *cg;
-	int num_regs = 0;
+	unsigned int *counter = (unsigned int *)cookie;
 
 	if (!this_contactgroup->register_object)
 		return 0;
@@ -6166,15 +6219,16 @@ static int xodtemplate_register_contactgroup_members(xodtemplate_contactgroup *t
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Bad member of contactgroup '%s' (config file '%s', starting on line %d)\n", cg->group_name, xodtemplate_config_file_name(this_contactgroup->_config_file), this_contactgroup->_start_line);
 			return -1;
 		}
-		num_regs++;
+		(*counter)++;
 	}
-	return num_regs;
+	return 0;
 }
 
 
 /* registers a host definition */
-static int xodtemplate_register_host(xodtemplate_host *this_host)
+static int xodtemplate_register_host(void *host_, void *discard)
 {
+	xodtemplate_host *this_host = (xodtemplate_host *)host_;
 	host *new_host = NULL;
 	char *parent_host = NULL;
 	hostsmember *new_hostsmember = NULL;
@@ -6252,8 +6306,9 @@ static int xodtemplate_register_host(xodtemplate_host *this_host)
 
 
 /* registers a hostgroup definition */
-static int xodtemplate_register_hostgroup(xodtemplate_hostgroup *this_hostgroup)
+static int xodtemplate_register_hostgroup(void *hgrp, void *discard)
 {
+	xodtemplate_hostgroup *this_hostgroup = (xodtemplate_hostgroup *)hgrp;
 	hostgroup *new_hostgroup = NULL;
 
 	/* bail out if we shouldn't register this object */
@@ -6273,11 +6328,12 @@ static int xodtemplate_register_hostgroup(xodtemplate_hostgroup *this_hostgroup)
 }
 
 
-static int xodtemplate_register_hostgroup_members(xodtemplate_hostgroup *this_hostgroup)
+static int xodtemplate_register_hostgroup_members(void *hgrp, void *cookie)
 {
+	xodtemplate_hostgroup *this_hostgroup = (xodtemplate_hostgroup *)hgrp;
 	objectlist *list;
 	struct hostgroup *hg;
-	int num_regs = 0;
+	unsigned int *counter = (unsigned int *)cookie;
 
 	if (!this_hostgroup->register_object)
 		return 0;
@@ -6289,9 +6345,9 @@ static int xodtemplate_register_hostgroup_members(xodtemplate_hostgroup *this_ho
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Bad member of hostgrop '%s' (config file '%s', starting on line %d)\n", hg->group_name, xodtemplate_config_file_name(this_hostgroup->_config_file), this_hostgroup->_start_line);
 			return -1;
 		}
-		num_regs++;
+		(*counter)++;
 	}
-	return num_regs;
+	return 0;
 }
 
 
@@ -6471,8 +6527,9 @@ static int xodtemplate_register_and_destroy_hostescalation(void *he_)
 
 
 /* registers a service definition */
-static int xodtemplate_register_service(xodtemplate_service *this_service)
+static int xodtemplate_register_service(void *srv, void *discard)
 {
+	xodtemplate_service *this_service = (xodtemplate_service *)srv;
 	service *new_service = NULL;
 	contactsmember *new_contactsmember = NULL;
 	contactgroupsmember *new_contactgroupsmember = NULL;
@@ -6579,8 +6636,9 @@ static int xodtemplate_register_service(xodtemplate_service *this_service)
 
 
 /* registers a servicegroup definition */
-static int xodtemplate_register_servicegroup(xodtemplate_servicegroup *this_servicegroup)
+static int xodtemplate_register_servicegroup(void *sgrp, void *discard)
 {
+	xodtemplate_servicegroup *this_servicegroup = (xodtemplate_servicegroup *)sgrp;
 	servicegroup *new_servicegroup = NULL;
 
 	/* bail out if we shouldn't register this object */
@@ -6600,11 +6658,12 @@ static int xodtemplate_register_servicegroup(xodtemplate_servicegroup *this_serv
 }
 
 
-static int xodtemplate_register_servicegroup_members(xodtemplate_servicegroup *this_servicegroup)
+static int xodtemplate_register_servicegroup_members(void *sgrp, void *cookie)
 {
+	xodtemplate_servicegroup *this_servicegroup = (xodtemplate_servicegroup *)sgrp;
 	objectlist *list, *next;
 	struct servicegroup *sg;
-	int num_regs = 0;
+	unsigned int *counter = (unsigned int *)cookie;
 
 	if (!this_servicegroup->register_object)
 		return 0;
@@ -6617,10 +6676,10 @@ static int xodtemplate_register_servicegroup_members(xodtemplate_servicegroup *t
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Bad member of servicegroup '%s' (config file '%s', starting on line %d)\n", sg->group_name, xodtemplate_config_file_name(this_servicegroup->_config_file), this_servicegroup->_start_line);
 			return -1;
 		}
-		num_regs++;
+		(*counter)++;
 	}
 
-	return num_regs;
+	return 0;
 }
 
 
@@ -6922,33 +6981,24 @@ static int xodtemplate_register_and_destroy_serviceescalation(void *se_)
 static int xodtemplate_register_objects(void)
 {
 	unsigned int i;
-	int mcount;
-	xodtemplate_timeperiod *temp_timeperiod = NULL;
-	xodtemplate_command *temp_command = NULL;
-	xodtemplate_contactgroup *temp_contactgroup = NULL;
-	xodtemplate_hostgroup *temp_hostgroup = NULL;
-	xodtemplate_servicegroup *temp_servicegroup = NULL;
-	xodtemplate_contact *temp_contact = NULL;
-	xodtemplate_host *temp_host = NULL;
-	xodtemplate_service *temp_service = NULL;
-	void *ptr = NULL;
 	xodtemplate_hostdependency *hd, *next_hd;
 	xodtemplate_hostescalation *he, *next_he;
 	xodtemplate_servicedependency *sd, *next_sd;
 	xodtemplate_serviceescalation *se, *next_se;
-	unsigned int ocount[NUM_OBJECT_SKIPLISTS];
+	/* +4 for dependencies and escalations */
+	unsigned int ocount[NUM_HASHED_OBJECT_TYPES + 4];
 	unsigned int tot_members = 0;
 
 
-	for (i = 0; i < ARRAY_SIZE(ocount); i++) {
-		ocount[i] = (unsigned int)skiplist_num_items(xobject_skiplists[i]);
+	for (i = 0; i < NUM_HASHED_OBJECT_TYPES; i++) {
+		ocount[i] = rbtree_num_nodes(xobject_tree[i]);
 	}
 
-	/* dependencies are handled specially */
-	ocount[SERVICEDEPENDENCY_SKIPLIST] = 0;
-	ocount[HOSTDEPENDENCY_SKIPLIST] = 0;
-	ocount[HOSTESCALATION_SKIPLIST] = xodcount.hostescalations;
-	ocount[SERVICEESCALATION_SKIPLIST] = xodcount.serviceescalations;
+	/* dependencies and escalations are handled specially */
+	ocount[OBJTYPE_SERVICEDEPENDENCY] = 0;
+	ocount[OBJTYPE_HOSTDEPENDENCY] = 0;
+	ocount[OBJTYPE_HOSTESCALATION] = xodcount.hostescalations;
+	ocount[OBJTYPE_SERVICEESCALATION] = xodcount.serviceescalations;
 
 	if (create_object_tables(ocount) != OK) {
 		logit(NSLOG_CONFIG_ERROR, TRUE, "Failed to create object tables\n");
@@ -6956,99 +7006,58 @@ static int xodtemplate_register_objects(void)
 	}
 
 	/* register timeperiods */
-	ptr = NULL;
-	for (temp_timeperiod = (xodtemplate_timeperiod *)skiplist_get_first(xobject_skiplists[TIMEPERIOD_SKIPLIST], &ptr); temp_timeperiod != NULL; temp_timeperiod = (xodtemplate_timeperiod *)skiplist_get_next(&ptr)) {
-		if (xodtemplate_register_timeperiod(temp_timeperiod) == ERROR)
-			return ERROR;
-	}
+	rbtree_traverse(xobject_tree[OBJTYPE_TIMEPERIOD], xodtemplate_register_timeperiod, NULL, rbinorder);
 	timing_point("%u timeperiods registered\n", num_objects.timeperiods);
 
 	/* register commands */
-	ptr = NULL;
-	for (temp_command = (xodtemplate_command *)skiplist_get_first(xobject_skiplists[COMMAND_SKIPLIST], &ptr); temp_command != NULL; temp_command = (xodtemplate_command *)skiplist_get_next(&ptr)) {
-		if (xodtemplate_register_command(temp_command) == ERROR)
-			return ERROR;
-	}
+	rbtree_traverse(xobject_tree[OBJTYPE_COMMAND], xodtemplate_register_command, NULL, rbinorder);
 	timing_point("%u commands registered\n", num_objects.commands);
 
 	/* register contactgroups */
-	ptr = NULL;
-	for (temp_contactgroup = (xodtemplate_contactgroup *)skiplist_get_first(xobject_skiplists[CONTACTGROUP_SKIPLIST], &ptr); temp_contactgroup != NULL; temp_contactgroup = (xodtemplate_contactgroup *)skiplist_get_next(&ptr)) {
-		if (xodtemplate_register_contactgroup(temp_contactgroup) == ERROR)
-			return ERROR;
-	}
+	rbtree_traverse(xobject_tree[OBJTYPE_CONTACTGROUP], xodtemplate_register_contactgroup, NULL, rbinorder);
 	timing_point("%u contactgroups registered\n", num_objects.contactgroups);
 
 	/* register hostgroups */
-	ptr = NULL;
-	for (temp_hostgroup = (xodtemplate_hostgroup *)skiplist_get_first(xobject_skiplists[HOSTGROUP_SKIPLIST], &ptr); temp_hostgroup != NULL; temp_hostgroup = (xodtemplate_hostgroup *)skiplist_get_next(&ptr)) {
-		if (xodtemplate_register_hostgroup(temp_hostgroup) == ERROR)
-			return ERROR;
-	}
+	rbtree_traverse(xobject_tree[OBJTYPE_HOSTGROUP], xodtemplate_register_hostgroup, NULL, rbinorder);
 	timing_point("%u hostgroups registered\n", num_objects.hostgroups);
 
 	/* register servicegroups */
-	ptr = NULL;
-	for (temp_servicegroup = (xodtemplate_servicegroup *)skiplist_get_first(xobject_skiplists[SERVICEGROUP_SKIPLIST], &ptr); temp_servicegroup != NULL; temp_servicegroup = (xodtemplate_servicegroup *)skiplist_get_next(&ptr)) {
-		if (xodtemplate_register_servicegroup(temp_servicegroup) == ERROR)
-			return ERROR;
-	}
+	rbtree_traverse(xobject_tree[OBJTYPE_SERVICEGROUP], xodtemplate_register_servicegroup, NULL, rbinorder);
 	timing_point("%u servicegroups registered\n", num_objects.servicegroups);
 
 	/* register contacts */
-	ptr = NULL;
-	for (temp_contact = (xodtemplate_contact *)skiplist_get_first(xobject_skiplists[CONTACT_SKIPLIST], &ptr); temp_contact != NULL; temp_contact = (xodtemplate_contact *)skiplist_get_next(&ptr)) {
-		if (xodtemplate_register_contact(temp_contact) == ERROR)
-			return ERROR;
-	}
+	rbtree_traverse(xobject_tree[OBJTYPE_CONTACT], xodtemplate_register_contact, NULL, rbinorder);
 	timing_point("%u contacts registered\n", num_objects.contacts);
 
 	/* register hosts */
-	ptr = NULL;
-	for (temp_host = (xodtemplate_host *)skiplist_get_first(xobject_skiplists[HOST_SKIPLIST], &ptr); temp_host != NULL; temp_host = (xodtemplate_host *)skiplist_get_next(&ptr)) {
-		if (xodtemplate_register_host(temp_host) == ERROR)
-			return ERROR;
-	}
+	rbtree_traverse(xobject_tree[OBJTYPE_HOST], xodtemplate_register_host, NULL, rbinorder);
 	timing_point("%u hosts registered\n", num_objects.hosts);
 
 	/* register services */
-	ptr = NULL;
-	for (temp_service = (xodtemplate_service *)skiplist_get_first(xobject_skiplists[SERVICE_SKIPLIST], &ptr); temp_service != NULL; temp_service = (xodtemplate_service *)skiplist_get_next(&ptr)) {
-		if (xodtemplate_register_service(temp_service) == ERROR)
-			return ERROR;
-	}
+	rbtree_traverse(xobject_tree[OBJTYPE_SERVICE], xodtemplate_register_service, NULL, rbinorder);
 	timing_point("%u services registered\n", num_objects.services);
 
 	/* groups and objects are registered, so join them up */
 	/* register contactgroup members */
-	ptr = NULL; tot_members = 0;
-	for (temp_contactgroup = (xodtemplate_contactgroup *)skiplist_get_first(xobject_skiplists[CONTACTGROUP_SKIPLIST], &ptr); temp_contactgroup != NULL; temp_contactgroup = (xodtemplate_contactgroup *)skiplist_get_next(&ptr)) {
-		if ((mcount = xodtemplate_register_contactgroup_members(temp_contactgroup)) < 0)
-			return ERROR;
-		tot_members += mcount;
-	}
+	tot_members = 0;
+	if (rbtree_traverse(xobject_tree[OBJTYPE_CONTACTGROUP], xodtemplate_register_contactgroup_members, (void *)&tot_members, rbinorder))
+		return ERROR;
 	timing_point("%u contactgroup memberships registered\n", tot_members);
 
 	/* register hostgroup members */
-	ptr = NULL; tot_members = 0;
-	for (temp_hostgroup = (xodtemplate_hostgroup *)skiplist_get_first(xobject_skiplists[HOSTGROUP_SKIPLIST], &ptr); temp_hostgroup != NULL; temp_hostgroup = (xodtemplate_hostgroup *)skiplist_get_next(&ptr)) {
-		if ((mcount = xodtemplate_register_hostgroup_members(temp_hostgroup)) < 0)
-			return ERROR;
-		tot_members += mcount;
-	}
+	tot_members = 0;
+	if (rbtree_traverse(xobject_tree[OBJTYPE_HOSTGROUP], xodtemplate_register_hostgroup_members, (void *)&tot_members, rbinorder))
+		return ERROR;
 	timing_point("%u hostgroup memberships registered\n", tot_members);
 
 	/* register servicegroup members */
-	ptr = NULL; tot_members = 0;
-	for (temp_servicegroup = (xodtemplate_servicegroup *)skiplist_get_first(xobject_skiplists[SERVICEGROUP_SKIPLIST], &ptr); temp_servicegroup != NULL; temp_servicegroup = (xodtemplate_servicegroup *)skiplist_get_next(&ptr)) {
-		if ((mcount = xodtemplate_register_servicegroup_members(temp_servicegroup)) < 0)
-			return ERROR;
-		tot_members += mcount;
-	}
+	tot_members = 0;
+	if ((rbtree_traverse(xobject_tree[OBJTYPE_SERVICEGROUP], xodtemplate_register_servicegroup_members, (void *)&tot_members, rbinorder)))
+		return ERROR;
 	timing_point("%u servicegroup memberships registered\n", tot_members);
 
 	/*
-	 * These aren't in skiplists at all, but it's safe to destroy
+	 * These aren't indexed at all, but it's safe to destroy
 	 * them as we go along, since all dupes are at the head of the list
 	 */
 	if (xodtemplate_servicedependency_list) {
@@ -7094,145 +7103,11 @@ static int xodtemplate_register_objects(void)
 }
 
 
-/* inherit object properties */
-/* some missing defaults (notification options, etc.) are also applied here */
-int xodtemplate_inherit_object_properties(void)
-{
-	xodtemplate_host *temp_host = NULL;
-	xodtemplate_service *temp_service = NULL;
-	xodtemplate_serviceescalation *temp_serviceescalation = NULL;
-	xodtemplate_hostescalation *temp_hostescalation = NULL;
-
-
-	/* fill in missing defaults for hosts... */
-	for (temp_host = xodtemplate_host_list; temp_host != NULL; temp_host = temp_host->next) {
-
-		/* if notification options are missing, assume all */
-		if (temp_host->have_notification_options == FALSE) {
-			temp_host->notification_options = OPT_ALL;
-			temp_host->have_notification_options = TRUE;
-		}
-	}
-
-	/* services inherit some properties from their associated host... */
-	for (temp_service = xodtemplate_service_list; temp_service != NULL; temp_service = temp_service->next) {
-
-		/* find the host */
-		if ((temp_host = xodtemplate_find_real_host(temp_service->host_name)) == NULL)
-			continue;
-
-		/*
-		 * if the service has no contacts specified, it will inherit
-		 * them from the host
-		 */
-		if (temp_service->have_contact_groups == FALSE && temp_service->have_contacts == FALSE) {
-			xod_inherit_str(temp_service, temp_host, contact_groups);
-			xod_inherit_str(temp_service, temp_host, contacts);
-		}
-
-		/* services inherit notification interval from host if not already specified */
-		xod_inherit(temp_service, temp_host, notification_interval);
-
-		/* services inherit notification period from host if not already specified */
-		xod_inherit_str(temp_service, temp_host, notification_period);
-
-		/* if notification options are missing, assume all */
-		if (temp_service->have_notification_options == FALSE) {
-			temp_service->notification_options = OPT_ALL;
-			temp_service->have_notification_options = TRUE;
-		}
-	}
-
-	/* service escalations inherit some properties from their associated service... */
-	for (temp_serviceescalation = xodtemplate_serviceescalation_list; temp_serviceescalation != NULL; temp_serviceescalation = temp_serviceescalation->next) {
-
-		/* find the service */
-		if ((temp_service = xodtemplate_find_real_service(temp_serviceescalation->host_name, temp_serviceescalation->service_description)) == NULL)
-			continue;
-
-		/* SPECIAL RULE 10/04/07 - additive inheritance from service's contactgroup(s) */
-		if (temp_serviceescalation->contact_groups != NULL && temp_serviceescalation->contact_groups[0] == '+')
-			xodtemplate_get_inherited_string(&temp_service->have_contact_groups, &temp_service->contact_groups, &temp_serviceescalation->have_contact_groups, &temp_serviceescalation->contact_groups);
-
-		/* SPECIAL RULE 10/04/07 - additive inheritance from service's contact(s) */
-		if (temp_serviceescalation->contacts != NULL && temp_serviceescalation->contacts[0] == '+')
-			xodtemplate_get_inherited_string(&temp_service->have_contacts, &temp_service->contacts, &temp_serviceescalation->have_contacts, &temp_serviceescalation->contacts);
-
-		/* service escalations inherit contacts from service if none are specified */
-		if (temp_serviceescalation->have_contact_groups == FALSE && temp_serviceescalation->have_contacts == FALSE) {
-			xod_inherit_str(temp_serviceescalation, temp_service, contact_groups);
-			xod_inherit_str(temp_serviceescalation, temp_service, contacts);
-		}
-
-		/* service escalations inherit notification interval from service if not already defined */
-		xod_inherit(temp_serviceescalation, temp_service, notification_interval);
-
-		/* service escalations inherit escalation period from service if not already defined */
-		if (temp_serviceescalation->have_escalation_period == FALSE && temp_service->have_notification_period == TRUE && temp_service->notification_period != NULL) {
-			temp_serviceescalation->escalation_period = (char *)strdup(temp_service->notification_period);
-			temp_serviceescalation->have_escalation_period = TRUE;
-		}
-
-		/* if escalation options are missing, assume all */
-		if (temp_serviceescalation->have_escalation_options == FALSE) {
-			temp_serviceescalation->escalation_options = OPT_ALL;
-			temp_serviceescalation->have_escalation_options = TRUE;
-		}
-
-		/* 03/05/08 clear additive string chars - not done in xodtemplate_clean_additive_strings() anymore */
-		xodtemplate_clean_additive_string(&temp_serviceescalation->contact_groups);
-		xodtemplate_clean_additive_string(&temp_serviceescalation->contacts);
-	}
-
-	/* host escalations inherit some properties from their associated host... */
-	for (temp_hostescalation = xodtemplate_hostescalation_list; temp_hostescalation != NULL; temp_hostescalation = temp_hostescalation->next) {
-
-		/* find the host */
-		if ((temp_host = xodtemplate_find_real_host(temp_hostescalation->host_name)) == NULL)
-			continue;
-
-		/* SPECIAL RULE 10/04/07 - additive inheritance from host's contactgroup(s) */
-		if (temp_hostescalation->contact_groups != NULL && temp_hostescalation->contact_groups[0] == '+')
-			xodtemplate_get_inherited_string(&temp_host->have_contact_groups, &temp_host->contact_groups, &temp_hostescalation->have_contact_groups, &temp_hostescalation->contact_groups);
-
-		/* SPECIAL RULE 10/04/07 - additive inheritance from host's contact(s) */
-		if (temp_hostescalation->contacts != NULL && temp_hostescalation->contacts[0] == '+')
-			xodtemplate_get_inherited_string(&temp_host->have_contacts, &temp_host->contacts, &temp_hostescalation->have_contacts, &temp_hostescalation->contacts);
-
-		/* host escalations inherit contacts from host if none are specified */
-		if (temp_hostescalation->have_contact_groups == FALSE && temp_hostescalation->have_contacts == FALSE) {
-			xod_inherit_str(temp_hostescalation, temp_host, contact_groups);
-			xod_inherit_str(temp_hostescalation, temp_host, contacts);
-		}
-
-		/* host escalations inherit notification interval from host if not already defined */
-		xod_inherit(temp_hostescalation, temp_host, notification_interval);
-
-		/* host escalations inherit escalation period from host if not already defined */
-		if (temp_hostescalation->have_escalation_period == FALSE && temp_host->have_notification_period == TRUE && temp_host->notification_period != NULL) {
-			temp_hostescalation->escalation_period = (char *)strdup(temp_host->notification_period);
-			temp_hostescalation->have_escalation_period = TRUE;
-		}
-
-		/* if escalation options are missing, assume all */
-		if (temp_hostescalation->have_escalation_options == FALSE) {
-			temp_hostescalation->escalation_options = OPT_ALL;
-			temp_hostescalation->have_escalation_options = TRUE;
-		}
-
-		/* 03/05/08 clear additive string chars - not done in xodtemplate_clean_additive_strings() anymore */
-		xodtemplate_clean_additive_string(&temp_hostescalation->contact_groups);
-		xodtemplate_clean_additive_string(&temp_hostescalation->contacts);
-	}
-
-	return OK;
-}
-
-
 /* adds a property to an object definition */
 static int xodtemplate_add_object_property(char *input, int options)
 {
 	int result = OK;
+	struct rbnode *prev;
 	char *variable = NULL;
 	char *value = NULL;
 	char *temp_ptr = NULL;
@@ -7252,12 +7127,12 @@ static int xodtemplate_add_object_property(char *input, int options)
 	xodtemplate_hostescalation *temp_hostescalation = NULL;
 	xodtemplate_hostextinfo *temp_hostextinfo = NULL;
 	xodtemplate_serviceextinfo *temp_serviceextinfo = NULL;
-	int x, force_skiplists = FALSE;
+	int x, force_index = FALSE;
 
 
-	/* should some object definitions be added to skiplists immediately? */
+	/* should some object definitions be indexed immediately? */
 	if (use_precached_objects == TRUE)
-		force_skiplists = TRUE;
+		force_index = TRUE;
 
 	/* check to see if we should process this type of object */
 	switch (xodtemplate_current_object_type) {
@@ -7364,19 +7239,10 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add timeperiod to template skiplist for fast searches */
-				result = skiplist_insert(xobject_template_skiplists[TIMEPERIOD_SKIPLIST], (void *)temp_timeperiod);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_TIMEPERIOD], (void *)temp_timeperiod);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for timeperiod '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_timeperiod->_config_file), temp_timeperiod->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
 				}
 			}
 		} else if (!strcmp(variable, "timeperiod_name")) {
@@ -7384,19 +7250,12 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add timeperiod to template skiplist for fast searches */
-				result = skiplist_insert(xobject_skiplists[TIMEPERIOD_SKIPLIST], (void *)temp_timeperiod);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_tree[OBJTYPE_TIMEPERIOD], (void *)temp_timeperiod);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for timeperiod '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_timeperiod->_config_file), temp_timeperiod->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
+				} else {
+					xodcount.timeperiods++;
 				}
 			}
 		} else if (!strcmp(variable, "alias")) {
@@ -7429,19 +7288,10 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add command to template skiplist for fast searches */
-				result = skiplist_insert(xobject_template_skiplists[COMMAND_SKIPLIST], (void *)temp_command);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_COMMAND], (void *)temp_command);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for command '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_command->_config_file), temp_command->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
 				}
 			}
 		} else if (!strcmp(variable, "command_name")) {
@@ -7449,19 +7299,12 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add command to template skiplist for fast searches */
-				result = skiplist_insert(xobject_skiplists[COMMAND_SKIPLIST], (void *)temp_command);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_tree[OBJTYPE_COMMAND], (void *)temp_command);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for command '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_command->_config_file), temp_command->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
+				} else {
+					xodcount.commands++;
 				}
 			}
 		} else if (!strcmp(variable, "command_line")) {
@@ -7489,19 +7332,10 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add contactgroup to template skiplist for fast searches */
-				result = skiplist_insert(xobject_template_skiplists[CONTACTGROUP_SKIPLIST], (void *)temp_contactgroup);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_CONTACTGROUP], (void *)temp_contactgroup);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for contactgroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_contactgroup->_config_file), temp_contactgroup->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
 				}
 			}
 		} else if (!strcmp(variable, "contactgroup_name")) {
@@ -7509,19 +7343,12 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add contactgroup to template skiplist for fast searches */
-				result = skiplist_insert(xobject_skiplists[CONTACTGROUP_SKIPLIST], (void *)temp_contactgroup);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_tree[OBJTYPE_CONTACTGROUP], (void *)temp_contactgroup);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for contactgroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_contactgroup->_config_file), temp_contactgroup->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
+				} else {
+					xodcount.contactgroups++;
 				}
 			}
 		} else if (!strcmp(variable, "alias")) {
@@ -7579,19 +7406,10 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add hostgroup to template skiplist for fast searches */
-				result = skiplist_insert(xobject_template_skiplists[HOSTGROUP_SKIPLIST], (void *)temp_hostgroup);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_HOSTGROUP], (void *)temp_hostgroup);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for hostgroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostgroup->_config_file), temp_hostgroup->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
 				}
 			}
 		} else if (!strcmp(variable, "hostgroup_name")) {
@@ -7599,19 +7417,12 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add hostgroup to template skiplist for fast searches */
-				result = skiplist_insert(xobject_skiplists[HOSTGROUP_SKIPLIST], (void *)temp_hostgroup);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_tree[OBJTYPE_HOSTGROUP], (void *)temp_hostgroup);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for hostgroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostgroup->_config_file), temp_hostgroup->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
+				} else {
+					xodcount.hostgroups++;
 				}
 			}
 		} else if (!strcmp(variable, "alias")) {
@@ -7688,19 +7499,10 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add servicegroup to template skiplist for fast searches */
-				result = skiplist_insert(xobject_template_skiplists[SERVICEGROUP_SKIPLIST], (void *)temp_servicegroup);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_SERVICEGROUP], (void *)temp_servicegroup);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for servicegroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_servicegroup->_config_file), temp_servicegroup->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
 				}
 			}
 		} else if (!strcmp(variable, "servicegroup_name")) {
@@ -7708,19 +7510,12 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add servicegroup to template skiplist for fast searches */
-				result = skiplist_insert(xobject_skiplists[SERVICEGROUP_SKIPLIST], (void *)temp_servicegroup);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_tree[OBJTYPE_SERVICEGROUP], (void *)temp_servicegroup);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for servicegroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_servicegroup->_config_file), temp_servicegroup->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
+				} else {
+					xodcount.servicegroups++;
 				}
 			}
 		} else if (!strcmp(variable, "alias")) {
@@ -7797,19 +7592,10 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add dependency to template skiplist for fast searches */
-				result = skiplist_insert(xobject_template_skiplists[SERVICEDEPENDENCY_SKIPLIST], (void *)temp_servicedependency);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_SERVICEDEPENDENCY], (void *)temp_servicedependency);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for service dependency '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_servicedependency->_config_file), temp_servicedependency->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
 				}
 			}
 		} else if (!strcmp(variable, "servicegroup") || !strcmp(variable, "servicegroups") || !strcmp(variable, "servicegroup_name")) {
@@ -7938,19 +7724,10 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add escalation to template skiplist for fast searches */
-				result = skiplist_insert(xobject_template_skiplists[SERVICEESCALATION_SKIPLIST], (void *)temp_serviceescalation);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_SERVICEESCALATION], (void *)temp_serviceescalation);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for service escalation '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_serviceescalation->_config_file), temp_serviceescalation->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
 				}
 			}
 		} else if (!strcmp(variable, "host") || !strcmp(variable, "host_name")) {
@@ -8048,19 +7825,10 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add contact to template skiplist for fast searches */
-				result = skiplist_insert(xobject_template_skiplists[CONTACT_SKIPLIST], (void *)temp_contact);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_CONTACT], (void *)temp_contact);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for contact '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_contact->_config_file), temp_contact->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
 				}
 			}
 		} else if (!strcmp(variable, "contact_name")) {
@@ -8068,22 +7836,14 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add contact to template skiplist for fast searches */
-				result = skiplist_insert(xobject_skiplists[CONTACT_SKIPLIST], (void *)temp_contact);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_tree[OBJTYPE_CONTACT], (void *)temp_contact);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for contact '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_contact->_config_file), temp_contact->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
+				} else {
+					temp_contact->id = xodcount.contacts++;
 				}
 			}
-			temp_contact->id = xodcount.contacts++;
 		} else if (!strcmp(variable, "alias")) {
 			if ((temp_contact->alias = (char *)strdup(value)) == NULL)
 				result = ERROR;
@@ -8254,19 +8014,10 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add host to template skiplist for fast searches */
-				result = skiplist_insert(xobject_template_skiplists[HOST_SKIPLIST], (void *)temp_host);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_HOST], (void *)temp_host);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for host '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_host->_config_file), temp_host->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
 				}
 			}
 		} else if (!strcmp(variable, "host_name")) {
@@ -8274,19 +8025,12 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add host to template skiplist for fast searches */
-				result = skiplist_insert(xobject_skiplists[HOST_SKIPLIST], (void *)temp_host);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_tree[OBJTYPE_HOST], (void *)temp_host);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for host '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_host->_config_file), temp_host->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
+				} else {
+					temp_host->id = xodcount.hosts++;
 				}
 			}
 			temp_host->id = xodcount.hosts++;
@@ -8605,19 +8349,10 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add service to template skiplist for fast searches */
-				result = skiplist_insert(xobject_template_skiplists[SERVICE_SKIPLIST], (void *)temp_service);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_SERVICE], (void *)temp_service);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for service '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
 				}
 			}
 		} else if (!strcmp(variable, "host") || !strcmp(variable, "hosts") || !strcmp(variable, "host_name")) {
@@ -8627,22 +8362,14 @@ static int xodtemplate_add_object_property(char *input, int options)
 			}
 			temp_service->have_host_name = TRUE;
 
-			/* NOTE: services are added to the skiplist in xodtemplate_duplicate_services(), except if daemon is using precached config */
-			if (result == OK && force_skiplists == TRUE  && temp_service->host_name != NULL && temp_service->service_description != NULL) {
-				/* add service to template skiplist for fast searches */
-				result = skiplist_insert(xobject_skiplists[SERVICE_SKIPLIST], (void *)temp_service);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+			/* NOTE: services are indexed in xodtemplate_duplicate_services(), except if daemon is using precached config */
+			if (result == OK && force_index == TRUE  && temp_service->host_name != NULL && temp_service->service_description != NULL) {
+				prev = rbtree_insert(xobject_tree[OBJTYPE_SERVICE], (void *)temp_service);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for service '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
+				} else {
 					temp_service->id = xodcount.services++;
-					break;
-				default:
-					result = ERROR;
-					break;
 				}
 			}
 		} else if (!strcmp(variable, "service_description") || !strcmp(variable, "description")) {
@@ -8652,22 +8379,14 @@ static int xodtemplate_add_object_property(char *input, int options)
 			}
 			temp_service->have_service_description = TRUE;
 
-			/* NOTE: services are added to the skiplist in xodtemplate_duplicate_services(), except if daemon is using precached config */
-			if (result == OK && force_skiplists == TRUE  && temp_service->host_name != NULL && temp_service->service_description != NULL) {
-				/* add service to template skiplist for fast searches */
-				result = skiplist_insert(xobject_skiplists[SERVICE_SKIPLIST], (void *)temp_service);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+			/* NOTE: services are indexed in xodtemplate_duplicate_services(), except if daemon is using precached config */
+			if (result == OK && force_index == TRUE  && temp_service->host_name != NULL && temp_service->service_description != NULL) {
+				prev = rbtree_insert(xobject_tree[OBJTYPE_SERVICE], (void *)temp_service);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for service '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
+				} else {
 					temp_service->id = xodcount.services++;
-					break;
-				default:
-					result = ERROR;
-					break;
 				}
 			}
 		} else if (!strcmp(variable, "display_name")) {
@@ -8967,19 +8686,10 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add dependency to template skiplist for fast searches */
-				result = skiplist_insert(xobject_template_skiplists[HOSTDEPENDENCY_SKIPLIST], (void *)temp_hostdependency);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_HOSTDEPENDENCY], (void *)temp_hostdependency);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for host dependency '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostdependency->_config_file), temp_hostdependency->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
 				}
 			}
 		} else if (!strcmp(variable, "hostgroup") || !strcmp(variable, "hostgroups") || !strcmp(variable, "hostgroup_name")) {
@@ -9079,19 +8789,10 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add escalation to template skiplist for fast searches */
-				result = skiplist_insert(xobject_template_skiplists[HOSTESCALATION_SKIPLIST], (void *)temp_hostescalation);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_HOSTESCALATION], (void *)temp_hostescalation);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for host escalation '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostescalation->_config_file), temp_hostescalation->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
 				}
 			}
 		} else if (!strcmp(variable, "hostgroup") || !strcmp(variable, "hostgroups") || !strcmp(variable, "hostgroup_name")) {
@@ -9173,19 +8874,10 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add to template skiplist for fast searches */
-				result = skiplist_insert(xobject_template_skiplists[HOSTEXTINFO_SKIPLIST], (void *)temp_hostextinfo);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_HOSTEXTINFO], (void *)temp_hostextinfo);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for extended host info '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostextinfo->_config_file), temp_hostextinfo->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
 				}
 			}
 		} else if (!strcmp(variable, "host_name")) {
@@ -9298,19 +8990,10 @@ static int xodtemplate_add_object_property(char *input, int options)
 				result = ERROR;
 
 			if (result == OK) {
-				/* add to template skiplist for fast searches */
-				result = skiplist_insert(xobject_template_skiplists[SERVICEEXTINFO_SKIPLIST], (void *)temp_serviceextinfo);
-				switch (result) {
-				case SKIPLIST_ERROR_DUPLICATE:
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_SERVICEEXTINFO], (void *)temp_serviceextinfo);
+				if (prev) {
 					logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Duplicate definition found for extended service info '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_serviceextinfo->_config_file), temp_serviceextinfo->_start_line);
 					result = ERROR;
-					break;
-				case SKIPLIST_OK:
-					result = OK;
-					break;
-				default:
-					result = ERROR;
-					break;
 				}
 			}
 		} else if (!strcmp(variable, "host_name")) {
@@ -9683,8 +9366,7 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 	xodtemplate_hostextinfo_list = NULL;
 	xodtemplate_serviceextinfo_list = NULL;
 
-	/* initialize skiplists */
-	xodtemplate_init_xobject_skiplists();
+	xodtemplate_init_trees();
 
 	xodtemplate_current_object = NULL;
 	xodtemplate_current_object_type = XODTEMPLATE_NONE;
@@ -9811,7 +9493,7 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 		timing_point("Done resolving objects\n");
 
 		/* these are no longer needed */
-		xodtemplate_free_template_skiplists();
+		xodtemplate_free_template_trees();
 
 		if (test_scheduling == TRUE)
 			gettimeofday(&tv[2], NULL);
