@@ -12,7 +12,7 @@
  * Escalations are attached to the objects they belong to.
  * Dependencies are attached to the dependent end of the object chain.
  */
-dkhash_table *object_hash_tables[NUM_OBJECT_SKIPLISTS];
+dkhash_table *object_hash_tables[NUM_HASHED_OBJECT_TYPES];
 
 command *command_list = NULL;
 timeperiod *timeperiod_list = NULL;
