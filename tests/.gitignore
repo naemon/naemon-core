@@ -1,2 +1,5 @@
 /test*.log
 /test*.trs
+/test-checks
+/test-config
+/test-log
