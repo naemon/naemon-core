@@ -257,39 +257,6 @@ int read_object_config_data(const char *main_config_file, int options)
 }
 
 
-/******************************************************************/
-/******************** SKIPLIST FUNCTIONS **************************/
-/******************************************************************/
-
-int skiplist_compare_text(const char *val1a, const char *val1b, const char *val2a, const char *val2b)
-{
-	int result = 0;
-
-	/* check first name */
-	if (val1a == NULL && val2a == NULL)
-		result = 0;
-	else if (val1a == NULL)
-		result = 1;
-	else if (val2a == NULL)
-		result = -1;
-	else
-		result = strcmp(val1a, val2a);
-
-	/* check second name if necessary */
-	if (result == 0) {
-		if (val1b == NULL && val2b == NULL)
-			result = 0;
-		else if (val1b == NULL)
-			result = 1;
-		else if (val2b == NULL)
-			result = -1;
-		else
-			result = strcmp(val1b, val2b);
-	}
-
-	return result;
-}
-
 int get_host_count(void)
 {
 	return num_objects.hosts;
