@@ -7,7 +7,7 @@ libnaemon_la_LDFLAGS = -version-info 0:0:0
 libnaemon_la_SOURCES = $(pkginclude_HEADERS) \
 	bitmap.c dkhash.c fanout.c iobroker.c \
 	iocache.c kvvec.c nsock.c nspath.c nsutils.c pqueue.c \
-	runcmd.c skiplist.c snprintf.c squeue.c worker.c
+	rbtree.c runcmd.c skiplist.c snprintf.c squeue.c worker.c
 
 check_PROGRAMS = test-bitmap test-dkhash test-fanout test-iobroker test-iocache \
 	test-kvvec test-nsutils test-runcmd test-squeue
