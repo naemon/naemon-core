@@ -343,29 +343,29 @@ int create_object_tables(unsigned int *ocount)
 	 * errors here will always lead to an early exit, so there's no need
 	 * to free() successful allocs when later ones fail
 	 */
-	if (mktable(timeperiod, TIMEPERIOD_SKIPLIST) != OK)
+	if (mktable(timeperiod, OBJTYPE_TIMEPERIOD) != OK)
 		return ERROR;
-	if (mktable(command, COMMAND_SKIPLIST) != OK)
+	if (mktable(command, OBJTYPE_COMMAND) != OK)
 		return ERROR;
-	if (mktable(host, HOST_SKIPLIST) != OK)
+	if (mktable(host, OBJTYPE_HOST) != OK)
 		return ERROR;
-	if (mktable(service, SERVICE_SKIPLIST) != OK)
+	if (mktable(service, OBJTYPE_SERVICE) != OK)
 		return ERROR;
-	if (mktable(contact, CONTACT_SKIPLIST) != OK)
+	if (mktable(contact, OBJTYPE_CONTACT) != OK)
 		return ERROR;
-	if (mktable(hostgroup, HOSTGROUP_SKIPLIST) != OK)
+	if (mktable(hostgroup, OBJTYPE_HOSTGROUP) != OK)
 		return ERROR;
-	if (mktable(servicegroup, SERVICEGROUP_SKIPLIST) != OK)
+	if (mktable(servicegroup, OBJTYPE_SERVICEGROUP) != OK)
 		return ERROR;
-	if (mktable(contactgroup, CONTACTGROUP_SKIPLIST) != OK)
+	if (mktable(contactgroup, OBJTYPE_CONTACTGROUP) != OK)
 		return ERROR;
-	if (mktable(hostescalation, HOSTESCALATION_SKIPLIST) != OK)
+	if (mktable(hostescalation, OBJTYPE_HOSTESCALATION) != OK)
 		return ERROR;
-	if (mktable(hostdependency, HOSTDEPENDENCY_SKIPLIST) != OK)
+	if (mktable(hostdependency, OBJTYPE_HOSTDEPENDENCY) != OK)
 		return ERROR;
-	if (mktable(serviceescalation, SERVICEESCALATION_SKIPLIST) != OK)
+	if (mktable(serviceescalation, OBJTYPE_SERVICEESCALATION) != OK)
 		return ERROR;
-	if (mktable(servicedependency, SERVICEDEPENDENCY_SKIPLIST) != OK)
+	if (mktable(servicedependency, OBJTYPE_SERVICEDEPENDENCY) != OK)
 		return ERROR;
 
 	return OK;
@@ -394,7 +394,7 @@ timeperiod *add_timeperiod(char *name, char *alias)
 
 	/* add new timeperiod to hash table */
 	if (result == OK) {
-		result = dkhash_insert(object_hash_tables[TIMEPERIOD_SKIPLIST], new_timeperiod->name, NULL, new_timeperiod);
+		result = dkhash_insert(object_hash_tables[OBJTYPE_TIMEPERIOD], new_timeperiod->name, NULL, new_timeperiod);
 		switch (result) {
 		case DKHASH_EDUPE:
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Timeperiod '%s' has already been defined\n", name);
@@ -678,7 +678,7 @@ host *add_host(char *name, char *display_name, char *alias, char *address, char 
 
 	/* add new host to hash table */
 	if (result == OK) {
-		result = dkhash_insert(object_hash_tables[HOST_SKIPLIST], new_host->name, NULL, new_host);
+		result = dkhash_insert(object_hash_tables[OBJTYPE_HOST], new_host->name, NULL, new_host);
 		switch (result) {
 		case DKHASH_EDUPE:
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Host '%s' has already been defined\n", name);
@@ -894,7 +894,7 @@ hostgroup *add_hostgroup(char *name, char *alias, char *notes, char *notes_url, 
 
 	/* add new host group to hash table */
 	if (result == OK) {
-		result = dkhash_insert(object_hash_tables[HOSTGROUP_SKIPLIST], new_hostgroup->group_name, NULL, new_hostgroup);
+		result = dkhash_insert(object_hash_tables[OBJTYPE_HOSTGROUP], new_hostgroup->group_name, NULL, new_hostgroup);
 		switch (result) {
 		case DKHASH_EDUPE:
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Hostgroup '%s' has already been defined\n", name);
@@ -1006,7 +1006,7 @@ servicegroup *add_servicegroup(char *name, char *alias, char *notes, char *notes
 
 	/* add new service group to hash table */
 	if (result == OK) {
-		result = dkhash_insert(object_hash_tables[SERVICEGROUP_SKIPLIST], new_servicegroup->group_name, NULL, new_servicegroup);
+		result = dkhash_insert(object_hash_tables[OBJTYPE_SERVICEGROUP], new_servicegroup->group_name, NULL, new_servicegroup);
 		switch (result) {
 		case DKHASH_EDUPE:
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Servicegroup '%s' has already been defined\n", name);
@@ -1165,7 +1165,7 @@ contact *add_contact(char *name, char *alias, char *email, char *pager, char **a
 
 	/* add new contact to hash table */
 	if (result == OK) {
-		result = dkhash_insert(object_hash_tables[CONTACT_SKIPLIST], new_contact->name, NULL, new_contact);
+		result = dkhash_insert(object_hash_tables[OBJTYPE_CONTACT], new_contact->name, NULL, new_contact);
 		switch (result) {
 		case DKHASH_EDUPE:
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Contact '%s' has already been defined\n", name);
@@ -1295,7 +1295,7 @@ contactgroup *add_contactgroup(char *name, char *alias)
 
 	/* add new contact group to hash table */
 	if (result == OK) {
-		result = dkhash_insert(object_hash_tables[CONTACTGROUP_SKIPLIST], new_contactgroup->group_name, NULL, new_contactgroup);
+		result = dkhash_insert(object_hash_tables[OBJTYPE_CONTACTGROUP], new_contactgroup->group_name, NULL, new_contactgroup);
 		switch (result) {
 		case DKHASH_EDUPE:
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Contactgroup '%s' has already been defined\n", name);
@@ -1501,7 +1501,7 @@ service *add_service(char *host_name, char *description, char *display_name, cha
 
 	/* add new service to hash table */
 	if (result == OK) {
-		result = dkhash_insert(object_hash_tables[SERVICE_SKIPLIST], new_service->host_name, new_service->description, new_service);
+		result = dkhash_insert(object_hash_tables[OBJTYPE_SERVICE], new_service->host_name, new_service->description, new_service);
 		switch (result) {
 		case DKHASH_EDUPE:
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Service '%s' on host '%s' has already been defined\n", description, host_name);
@@ -1586,7 +1586,7 @@ command *add_command(char *name, char *value)
 
 	/* add new command to hash table */
 	if (result == OK) {
-		result = dkhash_insert(object_hash_tables[COMMAND_SKIPLIST], new_command->name, NULL, new_command);
+		result = dkhash_insert(object_hash_tables[OBJTYPE_COMMAND], new_command->name, NULL, new_command);
 		switch (result) {
 		case DKHASH_EDUPE:
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Command '%s' has already been defined\n", name);
@@ -1965,32 +1965,32 @@ customvariablesmember *add_custom_variable_to_object(customvariablesmember **obj
 
 timeperiod *find_timeperiod(const char *name)
 {
-	return dkhash_get(object_hash_tables[TIMEPERIOD_SKIPLIST], name, NULL);
+	return dkhash_get(object_hash_tables[OBJTYPE_TIMEPERIOD], name, NULL);
 }
 
 host *find_host(const char *name)
 {
-	return dkhash_get(object_hash_tables[HOST_SKIPLIST], name, NULL);
+	return dkhash_get(object_hash_tables[OBJTYPE_HOST], name, NULL);
 }
 
 hostgroup *find_hostgroup(const char *name)
 {
-	return dkhash_get(object_hash_tables[HOSTGROUP_SKIPLIST], name, NULL);
+	return dkhash_get(object_hash_tables[OBJTYPE_HOSTGROUP], name, NULL);
 }
 
 servicegroup *find_servicegroup(const char *name)
 {
-	return dkhash_get(object_hash_tables[SERVICEGROUP_SKIPLIST], name, NULL);
+	return dkhash_get(object_hash_tables[OBJTYPE_SERVICEGROUP], name, NULL);
 }
 
 contact *find_contact(const char *name)
 {
-	return dkhash_get(object_hash_tables[CONTACT_SKIPLIST], name, NULL);
+	return dkhash_get(object_hash_tables[OBJTYPE_CONTACT], name, NULL);
 }
 
 contactgroup *find_contactgroup(const char *name)
 {
-	return dkhash_get(object_hash_tables[CONTACTGROUP_SKIPLIST], name, NULL);
+	return dkhash_get(object_hash_tables[OBJTYPE_CONTACTGROUP], name, NULL);
 }
 
 /* find a command with arguments still attached */
@@ -2013,12 +2013,12 @@ command *find_bang_command(char *name)
 
 command *find_command(const char *name)
 {
-	return dkhash_get(object_hash_tables[COMMAND_SKIPLIST], name, NULL);
+	return dkhash_get(object_hash_tables[OBJTYPE_COMMAND], name, NULL);
 }
 
 service *find_service(const char *host_name, const char *svc_desc)
 {
-	return dkhash_get(object_hash_tables[SERVICE_SKIPLIST], host_name, svc_desc);
+	return dkhash_get(object_hash_tables[OBJTYPE_SERVICE], host_name, svc_desc);
 }
 
 
