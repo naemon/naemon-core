@@ -137,21 +137,19 @@ static const char *xodtemplate_config_file_name(int cfgfile)
 
 static void xodtemplate_free_xobject_skiplists(void)
 {
-	int x = 0;
+	int x;
 
-	for (x = 0; x < NUM_XOBJECT_SKIPLISTS; x++) {
+	for (x = 1; x < NUM_XOBJECT_SKIPLISTS; x++)
 		skiplist_free(&xobject_skiplists[x]);
-	}
 }
 
 
 static void xodtemplate_free_template_skiplists(void)
 {
-	int x = 0;
+	int x;
 
-	for (x = 0; x < NUM_XOBJECT_SKIPLISTS; x++) {
+	for (x = 1; x < NUM_XOBJECT_SKIPLISTS; x++)
 		skiplist_free(&xobject_template_skiplists[x]);
-	}
 }
 
 
