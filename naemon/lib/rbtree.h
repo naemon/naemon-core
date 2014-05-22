@@ -147,4 +147,5 @@ void rbtree_destroy(struct rbtree *tree, void (*func)(void *));
  */
 unsigned int rbtree_num_nodes(struct rbtree *tree);
 
+NAEMON_END_DECL
 #endif /* LIBNAEMON_rbtree_h__ */
