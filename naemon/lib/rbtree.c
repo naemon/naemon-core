@@ -108,6 +108,7 @@ struct rbtree *rbtree_create(int (*compar)(const void *, const void *))
 	tree->root.left = tree->root.right = tree->root.parent = &tree->nil;
 	tree->root.color = black;
 	tree->root.data = NULL;
+	tree->num_nodes = 0;
 
 	return (tree);
 }
