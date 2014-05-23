@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 	is_valid_time = check_time_against_period(test_time, temp_timeperiod);
 	ok(is_valid_time == ERROR, "12 Jul 2010 15:00:00 should not be valid");
 	_get_next_valid_time(test_time, &chosen_valid_time, temp_timeperiod);
-	ok(chosen_valid_time == 1279058340, "Next valid time should be Tue Jul 13 23:59:00 2010, was %s", ctime(&chosen_valid_time));
+	ok(chosen_valid_time == 1279058280, "Next valid time should be Tue Jul 13 23:58:00 2010, was %s", ctime(&chosen_valid_time));
 
 
 	temp_timeperiod = find_timeperiod("Test_exclude3");
