@@ -1038,7 +1038,7 @@ static void _get_next_invalid_time(time_t pref_time, time_t *invalid_time, timep
 #endif
 
 			if (day_range_start <= earliest_time && day_range_end > earliest_time)
-				potential_time = day_range_end + 60;
+				potential_time = day_range_end;
 			else
 				potential_time = earliest_time;
 
