@@ -220,6 +220,8 @@ AC_CONFIG_FILES([Makefile
                  tests/Makefile
                  t/Makefile
                  t-tap/Makefile
+                 naemon.pc
+                 naemon-uninstalled.pc
                 ])
 AC_CONFIG_SUBDIRS([tap])
 AC_OUTPUT

@@ -1,0 +1,11 @@
+# the standard variables don't make sense for an uninstalled copy
+prefix=
+exec_prefix=
+libdir=@abs_top_builddir@/naemon/lib
+includedir=@abs_top_builddir@
+
+Name: Naemon Uninstalled
+Description: Naemon network monitoring, Not Installed
+Version: @VERSION@
+Libs: -L${libdir} -lnaemon
+Cflags: -I${includedir}
