@@ -32,11 +32,11 @@ void obsessive_compulsive_job_handler(struct wproc_result *wpres, void *data, in
 	if (wpres) {
 		if (wpres->early_timeout) {
 			if(ocj->svc) {
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Timeout while executing OCSP command '%s' for service '%s' on host '%s'\n",
-						wpres->command, ocj->svc->description, ocj->hst->name);
+				logit(NSLOG_RUNTIME_WARNING,
+				      "Warning: Timeout while executing OCSP command '%s' for service '%s' on host '%s'\n", wpres->command, ocj->svc->description, ocj->hst->name);
 			} else {
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Timeout while executing OCHP command '%s' for host '%s'\n",
-						wpres->command, ocj->hst->name);
+				logit(NSLOG_RUNTIME_WARNING,
+				      "Warning: Timeout while executing OCHP command '%s' for host '%s'\n", wpres->command, ocj->hst->name);
 			}
 		}
 	}
@@ -100,7 +100,8 @@ int obsessive_compulsive_service_check_processor(service *svc)
 	ocj->hst = svc->host_ptr;
 	ocj->svc = svc;
 	if(ERROR == wproc_run_callback(processed_command, ocsp_timeout, obsessive_compulsive_job_handler, ocj, &mac)) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to start OCSP job for service '%s on host '%s' to worker\n", svc->description, svc->host_ptr->name);
+		logit(NSLOG_RUNTIME_ERROR,
+		      "Unable to start OCSP job for service '%s on host '%s' to worker\n", svc->description, svc->host_ptr->name);
 		free(ocj);
 	}
 
@@ -162,7 +163,8 @@ int obsessive_compulsive_host_check_processor(host *hst)
 	ocj->hst = hst;
 	ocj->svc = NULL;
 	if(ERROR == wproc_run_callback(processed_command, ochp_timeout, obsessive_compulsive_job_handler, ocj, &mac)) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to start OCHP job for host '%s' to worker\n", hst->name);
+		logit(NSLOG_RUNTIME_ERROR,
+		      "Unable to start OCHP job for host '%s' to worker\n", hst->name);
 		free(ocj);
 	}
 
@@ -182,9 +184,8 @@ void event_handler_job_handler(struct wproc_result *wpres, void *data, int flags
 	const char *event_type = (const char*)data;
 	if(wpres) {
 		if (wpres->early_timeout) {
-			logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, TRUE,
-			      "Warning: %s handler command '%s' timed out\n",
-			      event_type, wpres->command);
+			logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING,
+			      "Warning: %s handler command '%s' timed out\n", event_type, wpres->command);
 		}
 	}
 }
@@ -290,7 +291,7 @@ int run_global_service_event_handler(nagios_macros *mac, service *svc)
 	if (log_event_handlers == TRUE) {
 		nm_asprintf(&raw_logentry, "GLOBAL SERVICE EVENT HANDLER: %s;%s;$SERVICESTATE$;$SERVICESTATETYPE$;$SERVICEATTEMPT$;%s\n", svc->host_name, svc->description, global_service_event_handler);
 		process_macros_r(mac, raw_logentry, &processed_logentry, macro_options);
-		logit(NSLOG_EVENT_HANDLER, FALSE, "%s", processed_logentry);
+		logit(NSLOG_EVENT_HANDLER, "%s", processed_logentry);
 	}
 
 #ifdef USE_EVENT_BROKER
@@ -313,7 +314,8 @@ int run_global_service_event_handler(nagios_macros *mac, service *svc)
 
 	/* check to see if the event handler timed out */
 	if (early_timeout == TRUE)
-		logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, TRUE, "Warning: Global service event handler command '%s' timed out after %d seconds\n", processed_command, event_handler_timeout);
+		logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING,
+		      "Warning: Global service event handler command '%s' timed out after %d seconds\n", processed_command, event_handler_timeout);
 
 #ifdef USE_EVENT_BROKER
 	/* get end time */
@@ -389,7 +391,7 @@ int run_service_event_handler(nagios_macros *mac, service *svc)
 	if (log_event_handlers == TRUE) {
 		nm_asprintf(&raw_logentry, "SERVICE EVENT HANDLER: %s;%s;$SERVICESTATE$;$SERVICESTATETYPE$;$SERVICEATTEMPT$;%s\n", svc->host_name, svc->description, svc->event_handler);
 		process_macros_r(mac, raw_logentry, &processed_logentry, macro_options);
-		logit(NSLOG_EVENT_HANDLER, FALSE, "%s", processed_logentry);
+		logit(NSLOG_EVENT_HANDLER, "%s", processed_logentry);
 	}
 
 #ifdef USE_EVENT_BROKER
@@ -412,7 +414,8 @@ int run_service_event_handler(nagios_macros *mac, service *svc)
 
 	/* check to see if the event handler timed out */
 	if (early_timeout == TRUE)
-		logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, TRUE, "Warning: Service event handler command '%s' timed out after %d seconds\n", processed_command, event_handler_timeout);
+		logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING,
+		      "Warning: Service event handler command '%s' timed out after %d seconds\n", processed_command, event_handler_timeout);
 
 #ifdef USE_EVENT_BROKER
 	/* get end time */
@@ -531,7 +534,7 @@ int run_global_host_event_handler(nagios_macros *mac, host *hst)
 	if (log_event_handlers == TRUE) {
 		nm_asprintf(&raw_logentry, "GLOBAL HOST EVENT HANDLER: %s;$HOSTSTATE$;$HOSTSTATETYPE$;$HOSTATTEMPT$;%s\n", hst->name, global_host_event_handler);
 		process_macros_r(mac, raw_logentry, &processed_logentry, macro_options);
-		logit(NSLOG_EVENT_HANDLER, FALSE, "%s", processed_logentry);
+		logit(NSLOG_EVENT_HANDLER, "%s", processed_logentry);
 	}
 
 #ifdef USE_EVENT_BROKER
@@ -554,7 +557,8 @@ int run_global_host_event_handler(nagios_macros *mac, host *hst)
 
 	/* check for a timeout in the execution of the event handler command */
 	if (early_timeout == TRUE)
-		logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, TRUE, "Warning: Global host event handler command '%s' timed out after %d seconds\n", processed_command, event_handler_timeout);
+		logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING,
+		      "Warning: Global host event handler command '%s' timed out after %d seconds\n", processed_command, event_handler_timeout);
 
 #ifdef USE_EVENT_BROKER
 	/* get end time */
@@ -629,7 +633,7 @@ int run_host_event_handler(nagios_macros *mac, host *hst)
 	if (log_event_handlers == TRUE) {
 		nm_asprintf(&raw_logentry, "HOST EVENT HANDLER: %s;$HOSTSTATE$;$HOSTSTATETYPE$;$HOSTATTEMPT$;%s\n", hst->name, hst->event_handler);
 		process_macros_r(mac, raw_logentry, &processed_logentry, macro_options);
-		logit(NSLOG_EVENT_HANDLER, FALSE, "%s", processed_logentry);
+		logit(NSLOG_EVENT_HANDLER, "%s", processed_logentry);
 	}
 
 #ifdef USE_EVENT_BROKER
@@ -652,7 +656,8 @@ int run_host_event_handler(nagios_macros *mac, host *hst)
 
 	/* check to see if the event handler timed out */
 	if (early_timeout == TRUE)
-		logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, TRUE, "Warning: Host event handler command '%s' timed out after %d seconds\n", processed_command, event_handler_timeout);
+		logit(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING,
+		      "Warning: Host event handler command '%s' timed out after %d seconds\n", processed_command, event_handler_timeout);
 
 #ifdef USE_EVENT_BROKER
 	/* get end time */

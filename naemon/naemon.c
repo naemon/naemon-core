@@ -180,7 +180,8 @@ static int test_configured_paths(void)
 		 */
 		char *value_absolute = log_file;
 		log_file = mac->x[MACRO_LOGFILE];
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Failed to open logfile '%s' for writing: %s\n", value_absolute, strerror(errno));
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Failed to open logfile '%s' for writing: %s\n", value_absolute, strerror(errno));
 		return ERROR;
 	}
 
@@ -512,13 +513,14 @@ int main(int argc, char **argv)
 		naemon_binary_path = nm_strdup(argv[0]);
 
 	if (!naemon_binary_path) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to allocate memory for naemon_binary_path\n");
+		logit(NSLOG_RUNTIME_ERROR,
+		      "Error: Unable to allocate memory for naemon_binary_path\n");
 		exit(EXIT_FAILURE);
 	}
 
 	if (!(nagios_iobs = iobroker_create())) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to create IO broker set: %s\n",
-		      strerror(errno));
+		logit(NSLOG_RUNTIME_ERROR,
+		      "Error: Failed to create IO broker set: %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
@@ -538,7 +540,8 @@ int main(int argc, char **argv)
 		/* read in the configuration files (main and resource config files) */
 		result = read_main_config_file(config_file);
 		if (result != OK) {
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Failed to process config file '%s'. Aborting\n", config_file);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Failed to process config file '%s'. Aborting\n", config_file);
 			exit(EXIT_FAILURE);
 		}
 		timing_point("Main config file read\n");
@@ -552,15 +555,18 @@ int main(int argc, char **argv)
 		/* drop privileges */
 		if (drop_privileges(naemon_user, naemon_group) == ERROR) {
 
-			logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_CONFIG_ERROR, TRUE, "Failed to drop privileges.  Aborting.");
+			logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_CONFIG_ERROR,
+			      "Failed to drop privileges.  Aborting.");
 
 			cleanup();
 			exit(ERROR);
 		}
 
 		if (test_path_access(naemon_binary_path, X_OK)) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: failed to access() %s: %s\n", naemon_binary_path, strerror(errno));
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Spawning workers will be impossible. Aborting.\n");
+			logit(NSLOG_RUNTIME_ERROR,
+			      "Error: failed to access() %s: %s\n", naemon_binary_path, strerror(errno));
+			logit(NSLOG_RUNTIME_ERROR,
+			      "Error: Spawning workers will be impossible. Aborting.\n");
 			exit(EXIT_FAILURE);
 		}
 
@@ -575,7 +581,8 @@ int main(int argc, char **argv)
 
 			/* we had an error daemonizing, so bail... */
 			if (result == ERROR) {
-				logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "Bailing out due to failure to daemonize. (PID=%d)", (int)getpid());
+				logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
+				      "Bailing out due to failure to daemonize. (PID=%d)", (int)getpid());
 				cleanup();
 				exit(EXIT_FAILURE);
 			}
@@ -585,13 +592,14 @@ int main(int argc, char **argv)
 		}
 
 		/* this must be logged after we read config data, as user may have changed location of main log file */
-		logit(NSLOG_PROCESS_INFO, TRUE, "Naemon " VERSION " starting... (PID=%d)\n", (int)getpid());
+		logit(NSLOG_PROCESS_INFO,
+		      "Naemon "VERSION" starting... (PID=%d)\n", (int)getpid());
 
 		/* log the local time - may be different than clock time due to timezone offset */
 		now = time(NULL);
 		tm = localtime_r(&now, &tm_s);
 		strftime(datestring, sizeof(datestring), "%a %b %d %H:%M:%S %Z %Y", tm);
-		logit(NSLOG_PROCESS_INFO, TRUE, "Local time is %s", datestring);
+		logit(NSLOG_PROCESS_INFO, "Local time is %s", datestring);
 
 		/* write log version/info */
 		write_log_file_info(NULL);
@@ -615,7 +623,8 @@ int main(int argc, char **argv)
 		 * the modules can use our in-core stuff properly
 		 */
 		if (qh_init(qh_socket_path ? qh_socket_path : DEFAULT_QUERY_SOCKET) != OK) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to initialize query handler. Aborting\n");
+			logit(NSLOG_RUNTIME_ERROR,
+			      "Error: Failed to initialize query handler. Aborting\n");
 			exit(EXIT_FAILURE);
 		}
 		timing_point("Query handler initialized\n");
@@ -624,7 +633,8 @@ int main(int argc, char **argv)
 
 		/* initialize check workers */
 		if (init_workers(num_check_workers) < 0) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Failed to spawn workers. Aborting\n");
+			logit(NSLOG_RUNTIME_ERROR,
+			      "Failed to spawn workers. Aborting\n");
 			exit(EXIT_FAILURE);
 		}
 		timing_point("%u workers spawned\n", wproc_num_workers_spawned);
@@ -654,7 +664,8 @@ int main(int argc, char **argv)
 #ifdef USE_EVENT_BROKER
 		/* load modules */
 		if (neb_load_all_modules() != OK) {
-			logit(NSLOG_CONFIG_ERROR, ERROR, "Error: Module loading failed. Aborting.\n");
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Module loading failed. Aborting.\n");
 			/* if we're dumping core, we must remove all dl-files */
 			if (daemon_dumps_core)
 				neb_unload_all_modules(NEBMODULE_FORCE_UNLOAD, NEBMODULE_NEB_SHUTDOWN);
@@ -669,13 +680,15 @@ int main(int argc, char **argv)
 
 		/* there was a problem reading the config files */
 		if (result != OK)
-			logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_CONFIG_ERROR, TRUE, "Bailing out due to one or more errors encountered in the configuration files. Run Naemon from the command line with the -v option to verify your config before restarting. (PID=%d)", (int)getpid());
+			logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_CONFIG_ERROR,
+			      "Bailing out due to one or more errors encountered in the configuration files. Run Naemon from the command line with the -v option to verify your config before restarting. (PID=%d)", (int)getpid());
 
 		else {
 
 			/* run the pre-flight check to make sure everything looks okay*/
 			if ((result = pre_flight_check()) != OK)
-				logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_VERIFICATION_ERROR, TRUE, "Bailing out due to errors encountered while running the pre-flight check.  Run Naemon from the command line with the -v option to verify your config before restarting. (PID=%d)\n", (int)getpid());
+				logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_VERIFICATION_ERROR,
+				      "Bailing out due to errors encountered while running the pre-flight check.  Run Naemon from the command line with the -v option to verify your config before restarting. (PID=%d)\n", (int)getpid());
 		}
 
 		/* an error occurred that prevented us from (re)starting */
@@ -817,7 +830,8 @@ int main(int argc, char **argv)
 			nagios_iobs = NULL;
 
 			/* log a shutdown message */
-			logit(NSLOG_PROCESS_INFO, TRUE, "Successfully shutdown... (PID=%d)\n", (int)getpid());
+			logit(NSLOG_PROCESS_INFO,
+			      "Successfully shutdown... (PID=%d)\n", (int)getpid());
 		}
 
 		/* clean up after ourselves */

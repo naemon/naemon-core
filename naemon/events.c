@@ -485,9 +485,8 @@ void add_event(squeue_t *sq, timed_event *event)
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "add_event()\n");
 
 	if (event->sq_event) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE,
-		      "Error: Adding %s event that seems to already be scheduled\n",
-		      EVENT_TYPE_STR(event->event_type));
+		logit(NSLOG_RUNTIME_ERROR,
+		      "Error: Adding %s event that seems to already be scheduled\n", EVENT_TYPE_STR(event->event_type));
 		remove_event(sq, event);
 	}
 
@@ -497,8 +496,8 @@ void add_event(squeue_t *sq, timed_event *event)
 		event->sq_event = squeue_add(sq, event->run_time, event);
 	}
 	if (!event->sq_event) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to add event to squeue '%p' with prio %u: %s\n",
-		      sq, event->priority, strerror(errno));
+		logit(NSLOG_RUNTIME_ERROR,
+		      "Error: Failed to add event to squeue '%p' with prio %u: %s\n", sq, event->priority, strerror(errno));
 	}
 
 	if (sq == nagios_squeue)
@@ -528,9 +527,8 @@ void remove_event(squeue_t *sq, timed_event *event)
 	if (sq)
 		squeue_remove(sq, event->sq_event);
 	else
-		logit(NSLOG_RUNTIME_ERROR, TRUE,
-		      "Error: remove_event() called for %s event with NULL sq parameter\n",
-		      EVENT_TYPE_STR(event->event_type));
+		logit(NSLOG_RUNTIME_ERROR,
+		      "Error: remove_event() called for %s event with NULL sq parameter\n", EVENT_TYPE_STR(event->event_type));
 
 	if (sq == nagios_squeue)
 		track_events(event->event_type, -1);
@@ -579,7 +577,8 @@ static int should_run_event(timed_event *temp_event)
 		/* don't run a service check if we're already maxed out on the number of parallel service checks...  */
 		if (max_parallel_service_checks != 0 && (currently_running_service_checks >= max_parallel_service_checks)) {
 			nudge_seconds = ranged_urand(5, 17);
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "\tMax concurrent service checks (%d) has been reached.  Nudging %s:%s by %d seconds...\n", max_parallel_service_checks, temp_service->host_name, temp_service->description, nudge_seconds);
+			logit(NSLOG_RUNTIME_WARNING,
+			      "\tMax concurrent service checks (%d) has been reached.  Nudging %s:%s by %d seconds...\n", max_parallel_service_checks, temp_service->host_name, temp_service->description, nudge_seconds);
 			run_event = FALSE;
 		}
 
@@ -717,7 +716,8 @@ int event_execution_loop(void)
 		               squeue_size(nagios_squeue), nagios_iobs);
 		inputs = iobroker_poll(nagios_iobs, poll_time_ms);
 		if (inputs < 0 && errno != EINTR) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Polling for input on %p failed: %s", nagios_iobs, iobroker_strerror(inputs));
+			logit(NSLOG_RUNTIME_ERROR,
+			      "Error: Polling for input on %p failed: %s", nagios_iobs, iobroker_strerror(inputs));
 			break;
 		}
 
@@ -825,7 +825,8 @@ int handle_timed_event(timed_event *event)
 		sigshutdown = TRUE;
 
 		/* log the shutdown */
-		logit(NSLOG_PROCESS_INFO, TRUE, "PROGRAM_SHUTDOWN event encountered, shutting down...\n");
+		logit(NSLOG_PROCESS_INFO,
+		      "PROGRAM_SHUTDOWN event encountered, shutting down...\n");
 		break;
 
 	case EVENT_PROGRAM_RESTART:
@@ -836,7 +837,8 @@ int handle_timed_event(timed_event *event)
 		sigrestart = TRUE;
 
 		/* log the restart */
-		logit(NSLOG_PROCESS_INFO, TRUE, "PROGRAM_RESTART event encountered, restarting...\n");
+		logit(NSLOG_PROCESS_INFO,
+		      "PROGRAM_RESTART event encountered, restarting...\n");
 		break;
 
 	case EVENT_CHECK_REAPER:
@@ -1011,9 +1013,8 @@ void compensate_for_system_time_change(unsigned long last_time, unsigned long cu
 	}
 
 	/* log the time change */
-	logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_WARNING, TRUE, "Warning: A system time change of %d seconds (%dd %dh %dm %ds %s in time) has been detected.  Compensating...\n",
-	      delta, days, hours, minutes, seconds,
-	      (last_time > current_time) ? "backwards" : "forwards");
+	logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_WARNING,
+	      "Warning: A system time change of %d seconds (%dd %dh %dm %ds %s in time) has been detected.  Compensating...\n", delta, days, hours, minutes, seconds, (last_time > current_time) ? "backwards" : "forwards");
 
 	adjust_squeue_for_time_change(&nagios_squeue, delta);
 

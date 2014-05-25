@@ -282,7 +282,8 @@ static int create_object_table(const char *name, unsigned int elems, unsigned in
 	}
 	ret = nm_calloc(elems, size);
 	if (!ret) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Failed to allocate %s table with %u elements\n", name, elems);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Failed to allocate %s table with %u elements\n", name, elems);
 		return ERROR;
 	}
 	*ptr = ret;
@@ -303,7 +304,8 @@ int create_object_tables(unsigned int *ocount)
 			continue;
 		object_hash_tables[i] = dkhash_create(hash_size);
 		if (!object_hash_tables[i]) {
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Failed to create hash table with %u entries\n", hash_size);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Failed to create hash table with %u entries\n", hash_size);
 		}
 	}
 
@@ -348,7 +350,8 @@ timeperiod *add_timeperiod(char *name, char *alias)
 
 	/* make sure we have the data we need */
 	if ((name == NULL || !strcmp(name, "")) || (alias == NULL || !strcmp(alias, ""))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Name or alias for timeperiod is NULL\n");
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Name or alias for timeperiod is NULL\n");
 		return NULL;
 	}
 
@@ -363,14 +366,16 @@ timeperiod *add_timeperiod(char *name, char *alias)
 		result = dkhash_insert(object_hash_tables[OBJTYPE_TIMEPERIOD], new_timeperiod->name, NULL, new_timeperiod);
 		switch (result) {
 		case DKHASH_EDUPE:
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Timeperiod '%s' has already been defined\n", name);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Timeperiod '%s' has already been defined\n", name);
 			result = ERROR;
 			break;
 		case DKHASH_OK:
 			result = OK;
 			break;
 		default:
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not add timeperiod '%s' to hash table\n", name);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Could not add timeperiod '%s' to hash table\n", name);
 			result = ERROR;
 			break;
 		}
@@ -419,15 +424,18 @@ timerange *add_timerange_to_timeperiod(timeperiod *period, int day, unsigned lon
 		return NULL;
 
 	if (day < 0 || day > 6) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Day %d is not valid for timeperiod '%s'\n", day, period->name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Day %d is not valid for timeperiod '%s'\n", day, period->name);
 		return NULL;
 	}
 	if (start_time > 86400) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Start time %lu on day %d is not valid for timeperiod '%s'\n", start_time, day, period->name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Start time %lu on day %d is not valid for timeperiod '%s'\n", start_time, day, period->name);
 		return NULL;
 	}
 	if (end_time > 86400) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: End time %lu on day %d is not value for timeperiod '%s'\n", end_time, day, period->name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: End time %lu on day %d is not value for timeperiod '%s'\n", end_time, day, period->name);
 		return NULL;
 	}
 
@@ -506,11 +514,13 @@ timerange *add_timerange_to_daterange(daterange *drange, unsigned long start_tim
 		return NULL;
 
 	if (start_time > 86400) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Start time %lu is not valid for timeperiod\n", start_time);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Start time %lu is not valid for timeperiod\n", start_time);
 		return NULL;
 	}
 	if (end_time > 86400) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: End time %lu is not value for timeperiod\n", end_time);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: End time %lu is not value for timeperiod\n", end_time);
 		return NULL;
 	}
 
@@ -536,39 +546,44 @@ host *add_host(char *name, char *display_name, char *alias, char *address, char 
 
 	/* make sure we have the data we need */
 	if (name == NULL || !strcmp(name, "")) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Host name is NULL\n");
+		logit(NSLOG_CONFIG_ERROR, "Error: Host name is NULL\n");
 		return NULL;
 	}
 
 	if (check_period && !(check_tp = find_timeperiod(check_period))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Failed to locate check_period '%s' for host '%s'!\n",
-		      check_period, name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Failed to locate check_period '%s' for host '%s'!\n", check_period, name);
 		return NULL;
 	}
 	if (notification_period && !(notify_tp = find_timeperiod(notification_period))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Failed to locate notification_period '%s' for host '%s'!\n",
-		      notification_period, name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Failed to locate notification_period '%s' for host '%s'!\n", notification_period, name);
 		return NULL;
 	}
 	/* check values */
 	if (max_attempts <= 0) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: max_check_attempts must be a positive integer host '%s'\n", name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: max_check_attempts must be a positive integer host '%s'\n", name);
 		return NULL;
 	}
 	if (check_interval < 0) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Invalid check_interval value for host '%s'\n", name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Invalid check_interval value for host '%s'\n", name);
 		return NULL;
 	}
 	if (notification_interval < 0) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Invalid notification_interval value for host '%s'\n", name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Invalid notification_interval value for host '%s'\n", name);
 		return NULL;
 	}
 	if (first_notification_delay < 0) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Invalid first_notification_delay value for host '%s'\n", name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Invalid first_notification_delay value for host '%s'\n", name);
 		return NULL;
 	}
 	if (freshness_threshold < 0) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Invalid freshness_threshold value for host '%s'\n", name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Invalid freshness_threshold value for host '%s'\n", name);
 		return NULL;
 	}
 
@@ -639,14 +654,16 @@ host *add_host(char *name, char *display_name, char *alias, char *address, char 
 		result = dkhash_insert(object_hash_tables[OBJTYPE_HOST], new_host->name, NULL, new_host);
 		switch (result) {
 		case DKHASH_EDUPE:
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Host '%s' has already been defined\n", name);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Host '%s' has already been defined\n", name);
 			result = ERROR;
 			break;
 		case DKHASH_OK:
 			result = OK;
 			break;
 		default:
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not add host '%s' to hash table\n", name);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Could not add host '%s' to hash table\n", name);
 			result = ERROR;
 			break;
 		}
@@ -673,13 +690,15 @@ hostsmember *add_parent_host_to_host(host *hst, char *host_name)
 
 	/* make sure we have the data we need */
 	if (hst == NULL || host_name == NULL || !strcmp(host_name, "")) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Host is NULL or parent host name is NULL\n");
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Host is NULL or parent host name is NULL\n");
 		return NULL;
 	}
 
 	/* a host cannot be a parent/child of itself */
 	if (!strcmp(host_name, hst->name)) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Host '%s' cannot be a child/parent of itself\n", hst->name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Host '%s' cannot be a child/parent of itself\n", hst->name);
 		return NULL;
 	}
 
@@ -774,11 +793,12 @@ static contactgroupsmember *add_contactgroup_to_object(contactgroupsmember **cg_
 	contactgroup *cg;
 
 	if (!group_name || !*group_name) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Contact name is NULL\n");
+		logit(NSLOG_CONFIG_ERROR, "Error: Contact name is NULL\n");
 		return NULL;
 	}
 	if (!(cg = find_contactgroup(group_name))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Contactgroup '%s' is not defined anywhere\n", group_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Contactgroup '%s' is not defined anywhere\n", group_name);
 		return NULL;
 	}
 	cgm = nm_malloc(sizeof(*cgm));
@@ -822,7 +842,7 @@ hostgroup *add_hostgroup(char *name, char *alias, char *notes, char *notes_url, 
 
 	/* make sure we have the data we need */
 	if (name == NULL || !strcmp(name, "")) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Hostgroup name is NULL\n");
+		logit(NSLOG_CONFIG_ERROR, "Error: Hostgroup name is NULL\n");
 		return NULL;
 	}
 
@@ -840,14 +860,16 @@ hostgroup *add_hostgroup(char *name, char *alias, char *notes, char *notes_url, 
 		result = dkhash_insert(object_hash_tables[OBJTYPE_HOSTGROUP], new_hostgroup->group_name, NULL, new_hostgroup);
 		switch (result) {
 		case DKHASH_EDUPE:
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Hostgroup '%s' has already been defined\n", name);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Hostgroup '%s' has already been defined\n", name);
 			result = ERROR;
 			break;
 		case DKHASH_OK:
 			result = OK;
 			break;
 		default:
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not add hostgroup '%s' to hash table\n", name);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Could not add hostgroup '%s' to hash table\n", name);
 			result = ERROR;
 			break;
 		}
@@ -877,11 +899,13 @@ hostsmember *add_host_to_hostgroup(hostgroup *temp_hostgroup, char *host_name)
 
 	/* make sure we have the data we need */
 	if (temp_hostgroup == NULL || (host_name == NULL || !strcmp(host_name, ""))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Hostgroup or group member is NULL\n");
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Hostgroup or group member is NULL\n");
 		return NULL;
 	}
 	if (!(h = find_host(host_name))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Failed to locate host '%s' for hostgroup '%s'\n", host_name, temp_hostgroup->group_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Failed to locate host '%s' for hostgroup '%s'\n", host_name, temp_hostgroup->group_name);
 		return NULL;
 	}
 
@@ -932,7 +956,8 @@ servicegroup *add_servicegroup(char *name, char *alias, char *notes, char *notes
 
 	/* make sure we have the data we need */
 	if (name == NULL || !strcmp(name, "")) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Servicegroup name is NULL\n");
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Servicegroup name is NULL\n");
 		return NULL;
 	}
 
@@ -950,14 +975,16 @@ servicegroup *add_servicegroup(char *name, char *alias, char *notes, char *notes
 		result = dkhash_insert(object_hash_tables[OBJTYPE_SERVICEGROUP], new_servicegroup->group_name, NULL, new_servicegroup);
 		switch (result) {
 		case DKHASH_EDUPE:
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Servicegroup '%s' has already been defined\n", name);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Servicegroup '%s' has already been defined\n", name);
 			result = ERROR;
 			break;
 		case DKHASH_OK:
 			result = OK;
 			break;
 		default:
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not add servicegroup '%s' to hash table\n", name);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Could not add servicegroup '%s' to hash table\n", name);
 			result = ERROR;
 			break;
 		}
@@ -987,11 +1014,13 @@ servicesmember *add_service_to_servicegroup(servicegroup *temp_servicegroup, cha
 
 	/* make sure we have the data we need */
 	if (temp_servicegroup == NULL || (host_name == NULL || !strcmp(host_name, "")) || (svc_description == NULL || !strcmp(svc_description, ""))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Servicegroup or group member is NULL\n");
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Servicegroup or group member is NULL\n");
 		return NULL;
 	}
 	if (!(svc = find_service(host_name, svc_description))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Failed to locate service '%s' on host '%s' for servicegroup '%s'\n", svc_description, host_name, temp_servicegroup->group_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Failed to locate service '%s' on host '%s' for servicegroup '%s'\n", svc_description, host_name, temp_servicegroup->group_name);
 		return NULL;
 	}
 
@@ -1062,17 +1091,17 @@ contact *add_contact(char *name, char *alias, char *email, char *pager, char **a
 
 	/* make sure we have the data we need */
 	if (name == NULL || !*name) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Contact name is NULL\n");
+		logit(NSLOG_CONFIG_ERROR, "Error: Contact name is NULL\n");
 		return NULL;
 	}
 	if (svc_notification_period && !(stp = find_timeperiod(svc_notification_period))) {
-		logit(NSLOG_VERIFICATION_ERROR, TRUE, "Error: Service notification period '%s' specified for contact '%s' is not defined anywhere!\n",
-		      svc_notification_period, name);
+		logit(NSLOG_VERIFICATION_ERROR,
+		      "Error: Service notification period '%s' specified for contact '%s' is not defined anywhere!\n", svc_notification_period, name);
 		return NULL;
 	}
 	if (host_notification_period && !(htp = find_timeperiod(host_notification_period))) {
-		logit(NSLOG_VERIFICATION_ERROR, TRUE, "Error: Host notification period '%s' specified for contact '%s' is not defined anywhere!\n",
-		      host_notification_period, name);
+		logit(NSLOG_VERIFICATION_ERROR,
+		      "Error: Host notification period '%s' specified for contact '%s' is not defined anywhere!\n", host_notification_period, name);
 		return NULL;
 	}
 
@@ -1105,14 +1134,16 @@ contact *add_contact(char *name, char *alias, char *email, char *pager, char **a
 		result = dkhash_insert(object_hash_tables[OBJTYPE_CONTACT], new_contact->name, NULL, new_contact);
 		switch (result) {
 		case DKHASH_EDUPE:
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Contact '%s' has already been defined\n", name);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Contact '%s' has already been defined\n", name);
 			result = ERROR;
 			break;
 		case DKHASH_OK:
 			result = OK;
 			break;
 		default:
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not add contact '%s' to hash table\n", name);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Could not add contact '%s' to hash table\n", name);
 			result = ERROR;
 			break;
 		}
@@ -1140,7 +1171,8 @@ commandsmember *add_host_notification_command_to_contact(contact *cntct, char *c
 
 	/* make sure we have the data we need */
 	if (cntct == NULL || (command_name == NULL || !strcmp(command_name, ""))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Contact or host notification command is NULL\n");
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Contact or host notification command is NULL\n");
 		return NULL;
 	}
 
@@ -1173,7 +1205,8 @@ commandsmember *add_service_notification_command_to_contact(contact *cntct, char
 
 	/* make sure we have the data we need */
 	if (cntct == NULL || (command_name == NULL || !strcmp(command_name, ""))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Contact or service notification command is NULL\n");
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Contact or service notification command is NULL\n");
 		return NULL;
 	}
 
@@ -1214,7 +1247,8 @@ contactgroup *add_contactgroup(char *name, char *alias)
 
 	/* make sure we have the data we need */
 	if (name == NULL || !strcmp(name, "")) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Contactgroup name is NULL\n");
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Contactgroup name is NULL\n");
 		return NULL;
 	}
 
@@ -1229,14 +1263,16 @@ contactgroup *add_contactgroup(char *name, char *alias)
 		result = dkhash_insert(object_hash_tables[OBJTYPE_CONTACTGROUP], new_contactgroup->group_name, NULL, new_contactgroup);
 		switch (result) {
 		case DKHASH_EDUPE:
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Contactgroup '%s' has already been defined\n", name);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Contactgroup '%s' has already been defined\n", name);
 			result = ERROR;
 			break;
 		case DKHASH_OK:
 			result = OK;
 			break;
 		default:
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not add contactgroup '%s' to hash table\n", name);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Could not add contactgroup '%s' to hash table\n", name);
 			result = ERROR;
 			break;
 		}
@@ -1264,12 +1300,14 @@ contactsmember *add_contact_to_contactgroup(contactgroup *grp, char *contact_nam
 
 	/* make sure we have the data we need */
 	if (grp == NULL || (contact_name == NULL || !strcmp(contact_name, ""))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Contactgroup or contact name is NULL\n");
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Contactgroup or contact name is NULL\n");
 		return NULL;
 	}
 
 	if (!(c = find_contact(contact_name))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Failed to locate contact '%s' for contactgroup '%s'\n", contact_name, grp->group_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Failed to locate contact '%s' for contactgroup '%s'\n", contact_name, grp->group_name);
 		return NULL;
 	}
 
@@ -1300,52 +1338,60 @@ service *add_service(char *host_name, char *description, char *display_name, cha
 
 	/* make sure we have everything we need */
 	if (host_name == NULL) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Host name not provided for service\n");
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Host name not provided for service\n");
 		return NULL;
 	}
 	if (!(h = find_host(host_name))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Unable to locate host '%s' for service '%s'\n",
-		      host_name, description);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Unable to locate host '%s' for service '%s'\n", host_name, description);
 		return NULL;
 	}
 	if (description == NULL || !*description) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Found service on host '%s' with no service description\n", host_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Found service on host '%s' with no service description\n", host_name);
 		return NULL;
 	}
 	if (check_command == NULL || !*check_command) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: No check command provided for service '%s' on host '%s'\n", host_name, description);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: No check command provided for service '%s' on host '%s'\n", host_name, description);
 		return NULL;
 	}
 	if (notification_period && !(np = find_timeperiod(notification_period))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: notification_period '%s' for service '%s' on host '%s' could not be found!\n",
-		      notification_period, description, host_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: notification_period '%s' for service '%s' on host '%s' could not be found!\n", notification_period, description, host_name);
 		return NULL;
 	}
 	if (check_period && !(cp = find_timeperiod(check_period))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: check_period '%s' for service '%s' on host '%s' not found!\n",
-		      check_period, description, host_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: check_period '%s' for service '%s' on host '%s' not found!\n", check_period, description, host_name);
 		return NULL;
 	}
 
 	/* check values */
 	if (max_attempts <= 0) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: max_check_attempts must be a positive integer for service '%s' on host '%s'\n", description, host_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: max_check_attempts must be a positive integer for service '%s' on host '%s'\n", description, host_name);
 		return NULL;
 	}
 	if (check_interval < 0) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: check_interval must be a non-negative integer for service '%s' on host '%s'\n", description, host_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: check_interval must be a non-negative integer for service '%s' on host '%s'\n", description, host_name);
 		return NULL;
 	}
 	if (retry_interval <= 0) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: retry_interval must be a positive integer for service '%s' on host '%s'\n", description, host_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: retry_interval must be a positive integer for service '%s' on host '%s'\n", description, host_name);
 		return NULL;
 	}
 	if (notification_interval < 0) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: notification_interval must be a non-negative integer for service '%s' on host '%s'\n", description, host_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: notification_interval must be a non-negative integer for service '%s' on host '%s'\n", description, host_name);
 		return NULL;
 	}
 	if (first_notification_delay < 0) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: first_notification_delay must be a non-negative integer for service '%s' on host '%s'\n", description, host_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: first_notification_delay must be a non-negative integer for service '%s' on host '%s'\n", description, host_name);
 		return NULL;
 	}
 
@@ -1423,14 +1469,16 @@ service *add_service(char *host_name, char *description, char *display_name, cha
 		result = dkhash_insert(object_hash_tables[OBJTYPE_SERVICE], new_service->host_name, new_service->description, new_service);
 		switch (result) {
 		case DKHASH_EDUPE:
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Service '%s' on host '%s' has already been defined\n", description, host_name);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Service '%s' on host '%s' has already been defined\n", description, host_name);
 			result = ERROR;
 			break;
 		case DKHASH_OK:
 			result = OK;
 			break;
 		default:
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not add service '%s' on host '%s' to hash table\n", description, host_name);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Could not add service '%s' on host '%s' to hash table\n", description, host_name);
 			result = ERROR;
 			break;
 		}
@@ -1490,7 +1538,8 @@ command *add_command(char *name, char *value)
 
 	/* make sure we have the data we need */
 	if ((name == NULL || !strcmp(name, "")) || (value == NULL || !strcmp(value, ""))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Command name of command line is NULL\n");
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Command name of command line is NULL\n");
 		return NULL;
 	}
 
@@ -1506,14 +1555,16 @@ command *add_command(char *name, char *value)
 		result = dkhash_insert(object_hash_tables[OBJTYPE_COMMAND], new_command->name, NULL, new_command);
 		switch (result) {
 		case DKHASH_EDUPE:
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Command '%s' has already been defined\n", name);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Command '%s' has already been defined\n", name);
 			result = ERROR;
 			break;
 		case DKHASH_OK:
 			result = OK;
 			break;
 		default:
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not add command '%s' to hash table\n", name);
+			logit(NSLOG_CONFIG_ERROR,
+			      "Error: Could not add command '%s' to hash table\n", name);
 			result = ERROR;
 			break;
 		}
@@ -1542,25 +1593,26 @@ serviceescalation *add_serviceescalation(char *host_name, char *description, int
 
 	/* make sure we have the data we need */
 	if (host_name == NULL || !*host_name || description == NULL || !*description) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Service escalation host name or description is NULL\n");
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Service escalation host name or description is NULL\n");
 		return NULL;
 	}
 	if (!(svc = find_service(host_name, description))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Service '%s' on host '%s' has an escalation but is not defined anywhere!\n",
-		      host_name, description);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Service '%s' on host '%s' has an escalation but is not defined anywhere!\n", host_name, description);
 		return NULL;
 	}
 	if (escalation_period && !(tp = find_timeperiod(escalation_period))) {
-		logit(NSLOG_VERIFICATION_ERROR, TRUE, "Error: Escalation period '%s' specified in service escalation for service '%s' on host '%s' is not defined anywhere!\n",
-		      escalation_period, description, host_name);
+		logit(NSLOG_VERIFICATION_ERROR,
+		      "Error: Escalation period '%s' specified in service escalation for service '%s' on host '%s' is not defined anywhere!\n", escalation_period, description, host_name);
 		return NULL ;
 	}
 
 	new_serviceescalation = nm_calloc(1, sizeof(*new_serviceescalation));
 
 	if (prepend_object_to_objectlist(&svc->escalation_list, new_serviceescalation) != OK) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Could not add escalation to service '%s' on host '%s'\n",
-		      svc->host_name, svc->description);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Could not add escalation to service '%s' on host '%s'\n", svc->host_name, svc->description);
 		return NULL;
 	}
 
@@ -1613,19 +1665,19 @@ servicedependency *add_service_dependency(char *dependent_host_name, char *depen
 	/* make sure we have what we need */
 	parent = find_service(host_name, service_description);
 	if (!parent) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Master service '%s' on host '%s' is not defined anywhere!\n",
-		      service_description, host_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Master service '%s' on host '%s' is not defined anywhere!\n", service_description, host_name);
 		return NULL;
 	}
 	child = find_service(dependent_host_name, dependent_service_description);
 	if (!child) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Dependent service '%s' on host '%s' is not defined anywhere!\n",
-		      dependent_service_description, dependent_host_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Dependent service '%s' on host '%s' is not defined anywhere!\n", dependent_service_description, dependent_host_name);
 		return NULL;
 	}
 	if (dependency_period && !(tp = find_timeperiod(dependency_period))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Failed to locate timeperiod '%s' for dependency from service '%s' on host '%s' to service '%s' on host '%s'\n",
-		      dependency_period, dependent_service_description, dependent_host_name, service_description, host_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Failed to locate timeperiod '%s' for dependency from service '%s' on host '%s' to service '%s' on host '%s'\n", dependency_period, dependent_service_description, dependent_host_name, service_description, host_name);
 		return NULL;
 	}
 
@@ -1682,19 +1734,19 @@ hostdependency *add_host_dependency(char *dependent_host_name, char *host_name, 
 	/* make sure we have what we need */
 	parent = find_host(host_name);
 	if (!parent) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Master host '%s' in hostdependency from '%s' to '%s' is not defined anywhere!\n",
-		      host_name, dependent_host_name, host_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Master host '%s' in hostdependency from '%s' to '%s' is not defined anywhere!\n", host_name, dependent_host_name, host_name);
 		return NULL;
 	}
 	child = find_host(dependent_host_name);
 	if (!child) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Dependent host '%s' in hostdependency from '%s' to '%s' is not defined anywhere!\n",
-		      dependent_host_name, dependent_host_name, host_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Dependent host '%s' in hostdependency from '%s' to '%s' is not defined anywhere!\n", dependent_host_name, dependent_host_name, host_name);
 		return NULL;
 	}
 	if (dependency_period && !(tp = find_timeperiod(dependency_period))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Unable to locate dependency_period '%s' for %s->%s host dependency\n",
-		      dependency_period, parent->name, child->name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Unable to locate dependency_period '%s' for %s->%s host dependency\n", dependency_period, parent->name, child->name);
 		return NULL ;
 	}
 
@@ -1738,16 +1790,18 @@ hostescalation *add_hostescalation(char *host_name, int first_notification, int 
 
 	/* make sure we have the data we need */
 	if (host_name == NULL || !*host_name) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Host escalation host name is NULL\n");
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Host escalation host name is NULL\n");
 		return NULL;
 	}
 	if (!(h = find_host(host_name))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Host '%s' has an escalation, but is not defined anywhere!\n", host_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Host '%s' has an escalation, but is not defined anywhere!\n", host_name);
 		return NULL;
 	}
 	if (escalation_period && !(tp = find_timeperiod(escalation_period))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Unable to locate timeperiod '%s' for hostescalation '%s'\n",
-		      escalation_period, host_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Unable to locate timeperiod '%s' for hostescalation '%s'\n", escalation_period, host_name);
 		return NULL;
 	}
 
@@ -1755,7 +1809,8 @@ hostescalation *add_hostescalation(char *host_name, int first_notification, int 
 
 	/* add the escalation to its host */
 	if (prepend_object_to_objectlist(&h->escalation_list, new_hostescalation) != OK) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not add hostescalation to host '%s'\n", host_name);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Could not add hostescalation to host '%s'\n", host_name);
 		free(new_hostescalation);
 		return NULL;
 	}
@@ -1799,16 +1854,17 @@ contactsmember *add_contact_to_object(contactsmember **object_ptr, char *contact
 
 	/* make sure we have the data we need */
 	if (object_ptr == NULL) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Contact object is NULL\n");
+		logit(NSLOG_CONFIG_ERROR, "Error: Contact object is NULL\n");
 		return NULL;
 	}
 
 	if (contactname == NULL || !*contactname) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Contact name is NULL\n");
+		logit(NSLOG_CONFIG_ERROR, "Error: Contact name is NULL\n");
 		return NULL;
 	}
 	if (!(c = find_contact(contactname))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Contact '%s' is not defined anywhere!\n", contactname);
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Contact '%s' is not defined anywhere!\n", contactname);
 		return NULL;
 	}
 
@@ -1834,12 +1890,14 @@ customvariablesmember *add_custom_variable_to_object(customvariablesmember **obj
 
 	/* make sure we have the data we need */
 	if (object_ptr == NULL) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Custom variable object is NULL\n");
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Custom variable object is NULL\n");
 		return NULL;
 	}
 
 	if (varname == NULL || !strcmp(varname, "")) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Custom variable name is NULL\n");
+		logit(NSLOG_CONFIG_ERROR,
+		      "Error: Custom variable name is NULL\n");
 		return NULL;
 	}
 
@@ -3174,7 +3232,8 @@ int fcache_objects(char *cache_file)
 	/* open the cache file for writing */
 	fp = fopen(cache_file, "w");
 	if (fp == NULL) {
-		logit(NSLOG_CONFIG_WARNING, TRUE, "Warning: Could not open object cache file '%s' for writing!\n", cache_file);
+		logit(NSLOG_CONFIG_WARNING,
+		      "Warning: Could not open object cache file '%s' for writing!\n", cache_file);
 		return ERROR;
 	}
 
