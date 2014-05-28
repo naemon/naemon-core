@@ -18,6 +18,7 @@
 #include "dkhash.h"
 #include "worker.h"
 #include "skiplist.h"
+#include "rbtree.h"
 #include "nsock.h"
 #include "nspath.h"
 #include "snprintf.h"

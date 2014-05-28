@@ -8,7 +8,8 @@ nobase_pkginclude_HEADERS = \
 	lib/dkhash.h    lib/libnaemon.h   lib/nspath.h   lib/snprintf.h \
 	lib/fanout.h    lib/libnagios.h   lib/nsutils.h  lib/squeue.h \
 	lib/iobroker.h  lib/lnae-utils.h  lib/pqueue.h   lib/t-utils.h \
-	lib/iocache.h   lib/lnag-utils.h  lib/runcmd.h   lib/worker.h
+	lib/iocache.h   lib/lnag-utils.h  lib/runcmd.h   lib/worker.h \
+	lib/rbtree.h
 
 pkginclude_HEADERS = \
 	broker.h         events.h       nagios.h         objects.h \

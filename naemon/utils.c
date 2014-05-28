@@ -96,7 +96,6 @@ int check_reaper_interval = DEFAULT_CHECK_REAPER_INTERVAL;
 int max_check_reaper_time = DEFAULT_MAX_REAPER_TIME;
 int service_freshness_check_interval = DEFAULT_FRESHNESS_CHECK_INTERVAL;
 int host_freshness_check_interval = DEFAULT_FRESHNESS_CHECK_INTERVAL;
-int auto_rescheduling_interval = DEFAULT_AUTO_RESCHEDULING_INTERVAL;
 
 struct load_control loadctl;
 
@@ -104,8 +103,6 @@ int check_orphaned_services = DEFAULT_CHECK_ORPHANED_SERVICES;
 int check_orphaned_hosts = DEFAULT_CHECK_ORPHANED_HOSTS;
 int check_service_freshness = DEFAULT_CHECK_SERVICE_FRESHNESS;
 int check_host_freshness = DEFAULT_CHECK_HOST_FRESHNESS;
-int auto_reschedule_checks = DEFAULT_AUTO_RESCHEDULE_CHECKS;
-int auto_rescheduling_window = DEFAULT_AUTO_RESCHEDULING_WINDOW;
 
 int additional_freshness_latency = DEFAULT_ADDITIONAL_FRESHNESS_LATENCY;
 
@@ -1038,7 +1035,7 @@ static void _get_next_invalid_time(time_t pref_time, time_t *invalid_time, timep
 #endif
 
 			if (day_range_start <= earliest_time && day_range_end > earliest_time)
-				potential_time = day_range_end + 60;
+				potential_time = day_range_end;
 			else
 				potential_time = earliest_time;
 
@@ -2936,15 +2933,12 @@ int reset_variables(void)
 	max_check_result_file_age = DEFAULT_MAX_CHECK_RESULT_AGE;
 	service_freshness_check_interval = DEFAULT_FRESHNESS_CHECK_INTERVAL;
 	host_freshness_check_interval = DEFAULT_FRESHNESS_CHECK_INTERVAL;
-	auto_rescheduling_interval = DEFAULT_AUTO_RESCHEDULING_INTERVAL;
-	auto_rescheduling_window = DEFAULT_AUTO_RESCHEDULING_WINDOW;
 
 	check_external_commands = DEFAULT_CHECK_EXTERNAL_COMMANDS;
 	check_orphaned_services = DEFAULT_CHECK_ORPHANED_SERVICES;
 	check_orphaned_hosts = DEFAULT_CHECK_ORPHANED_HOSTS;
 	check_service_freshness = DEFAULT_CHECK_SERVICE_FRESHNESS;
 	check_host_freshness = DEFAULT_CHECK_HOST_FRESHNESS;
-	auto_reschedule_checks = DEFAULT_AUTO_RESCHEDULE_CHECKS;
 
 	log_rotation_method = LOG_ROTATION_NONE;
 
