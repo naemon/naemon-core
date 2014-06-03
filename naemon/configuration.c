@@ -631,71 +631,23 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			accept_passive_host_checks = (atoi(value) > 0) ? TRUE : FALSE;
 
 		else if (!strcmp(variable, "service_inter_check_delay_method")) {
-			if (!strcmp(value, "n"))
-				service_inter_check_delay_method = ICD_NONE;
-			else if (!strcmp(value, "d"))
-				service_inter_check_delay_method = ICD_DUMB;
-			else if (!strcmp(value, "s"))
-				service_inter_check_delay_method = ICD_SMART;
-			else {
-				service_inter_check_delay_method = ICD_USER;
-				scheduling_info.service_inter_check_delay = strtod(value, NULL);
-				if (scheduling_info.service_inter_check_delay <= 0.0) {
-					nm_asprintf(&error_message, "Illegal value for service_inter_check_delay_method");
-					error = TRUE;
-					break;
-				}
-			}
+			obsoleted_warning(variable, "Service checks are delayed sanely - check your configuration");
 		}
 
 		else if (!strcmp(variable, "max_service_check_spread")) {
-			strip(value);
-			max_service_check_spread = atoi(value);
-			if (max_service_check_spread < 1) {
-				nm_asprintf(&error_message, "Illegal value for max_service_check_spread");
-				error = TRUE;
-				break;
-			}
+			obsoleted_warning(variable, "Service checks are delayed sanely - check your configuration");
 		}
 
 		else if (!strcmp(variable, "host_inter_check_delay_method")) {
-
-			if (!strcmp(value, "n"))
-				host_inter_check_delay_method = ICD_NONE;
-			else if (!strcmp(value, "d"))
-				host_inter_check_delay_method = ICD_DUMB;
-			else if (!strcmp(value, "s"))
-				host_inter_check_delay_method = ICD_SMART;
-			else {
-				host_inter_check_delay_method = ICD_USER;
-				scheduling_info.host_inter_check_delay = strtod(value, NULL);
-				if (scheduling_info.host_inter_check_delay <= 0.0) {
-					nm_asprintf(&error_message, "Illegal value for host_inter_check_delay_method");
-					error = TRUE;
-					break;
-				}
-			}
+			obsoleted_warning(variable, "Host checks are delayed sanely - check your configuration");
 		}
 
 		else if (!strcmp(variable, "max_host_check_spread")) {
-
-			max_host_check_spread = atoi(value);
-			if (max_host_check_spread < 1) {
-				nm_asprintf(&error_message, "Illegal value for max_host_check_spread");
-				error = TRUE;
-				break;
-			}
+			obsoleted_warning(variable, "Host checks are delayed sanely - check your configuration");
 		}
 
 		else if (!strcmp(variable, "service_interleave_factor")) {
-			if (!strcmp(value, "s"))
-				service_interleave_factor_method = ILF_SMART;
-			else {
-				service_interleave_factor_method = ILF_USER;
-				scheduling_info.service_interleave_factor = atoi(value);
-				if (scheduling_info.service_interleave_factor < 1)
-					scheduling_info.service_interleave_factor = 1;
-			}
+			obsoleted_warning(variable, "Service checks are delayed sanely - check your configuration");
 		}
 
 		else if (!strcmp(variable, "max_concurrent_checks")) {
