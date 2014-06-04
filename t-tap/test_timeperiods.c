@@ -32,10 +32,11 @@
 #include "naemon/defaults.h"
 #include "tap.h"
 
+#define RUN_24x7_TESTS 1
+
 int main(int argc, char **argv)
 {
 	int result;
-	int c = 0;
 	time_t current_time;
 	time_t test_time;
 	time_t saved_test_time;
@@ -43,7 +44,10 @@ int main(int argc, char **argv)
 	time_t chosen_valid_time = 0L;
 	timeperiod *temp_timeperiod = NULL;
 	int is_valid_time = 0;
+#if RUN_24x7_TESTS
+	int c = 0;
 	int iterations = 1000;
+#endif
 
 	plan_tests(6048);
 
@@ -90,31 +94,28 @@ int main(int argc, char **argv)
 	saved_test_time = 1256511661;
 	saved_test_time = saved_test_time - (24 * 60 * 60);
 
+#if RUN_24x7_TESTS
 	putenv("TZ=UTC");
 	tzset();
 	test_time = saved_test_time;
-	c = 0;
-	while (c < iterations) {
+	for (c = 0; c < iterations; c++) {
 		is_valid_time = check_time_against_period(test_time, temp_timeperiod);
 		ok(is_valid_time == OK, "Always OK for 24x7 with TZ=UTC, time_t=%lu", test_time);
 		chosen_valid_time = 0L;
 		_get_next_valid_time(test_time, &chosen_valid_time, temp_timeperiod);
 		ok(test_time == chosen_valid_time, "get_next_valid_time always returns same time");
 		test_time += 1800;
-		c++;
 	}
 
 	putenv("TZ=Europe/London");
 	tzset();
 	test_time = saved_test_time;
-	c = 0;
-	while (c < iterations) {
+	for (c = 0; c < iterations; c++) {
 		is_valid_time = check_time_against_period(test_time, temp_timeperiod);
 		ok(is_valid_time == OK, "Always OK for 24x7 with TZ=Europe/London, time_t=%lu", test_time);
 		_get_next_valid_time(test_time, &chosen_valid_time, temp_timeperiod);
 		ok(test_time == chosen_valid_time, "get_next_valid_time always returns same time, time_t=%lu", test_time);
 		test_time += 1800;
-		c++;
 	}
 
 	/* 2009-11-01 is the day when clocks go back an hour in America. Bug happens during 23:00 to 00:00 */
@@ -125,16 +126,14 @@ int main(int argc, char **argv)
 	putenv("TZ=America/New_York");
 	tzset();
 	test_time = saved_test_time;
-	c = 0;
-	while (c < iterations) {
+	for (c = 0; c < iterations; c++) {
 		is_valid_time = check_time_against_period(test_time, temp_timeperiod);
 		ok(is_valid_time == OK, "Always OK for 24x7 with TZ=America/New_York, time_t=%lu", test_time);
 		_get_next_valid_time(test_time, &chosen_valid_time, temp_timeperiod);
 		ok(test_time == chosen_valid_time, "get_next_valid_time always returns same time, time_t=%lu", test_time);
 		test_time += 1800;
-		c++;
 	}
-
+#endif
 
 
 	/* Tests around clock change going back for TZ=Europe/London. 1256511661 = Sun Oct
