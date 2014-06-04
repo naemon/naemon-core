@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 	int is_valid_time = 0;
 	int iterations = 1000;
 
-	plan_tests(6046);
+	plan_tests(6048);
 
 	/* reset program variables */
 	reset_variables();
@@ -220,9 +220,15 @@ int main(int argc, char **argv)
 	_get_next_valid_time(test_time, &chosen_valid_time, temp_timeperiod);
 	ok(chosen_valid_time == test_time, "Next valid time=Sun Oct 25 00:03:20 2009");
 
+	test_time = 1256429699;
+	is_valid_time = check_time_against_period(test_time, temp_timeperiod);
+	ok(is_valid_time == OK, "Sun Oct 25 01:14:59 2009 - true");
+	_get_next_valid_time(test_time, &chosen_valid_time, temp_timeperiod);
+	ok(chosen_valid_time == test_time, "Next valid time=Sun Oct 25 01:15:00 2009");
+
 	test_time = 1256429700;
 	is_valid_time = check_time_against_period(test_time, temp_timeperiod);
-	ok(is_valid_time == OK, "Sun Oct 25 01:15:00 2009 - true");
+	ok(is_valid_time == ERROR, "Sun Oct 25 01:15:00 2009 - false");
 	_get_next_valid_time(test_time, &chosen_valid_time, temp_timeperiod);
 	ok(chosen_valid_time == test_time, "Next valid time=Sun Oct 25 01:15:00 2009");
 
@@ -246,7 +252,8 @@ int main(int argc, char **argv)
 
 	test_time = 1256508000;
 	is_valid_time = check_time_against_period(test_time, temp_timeperiod);
-	ok(is_valid_time == OK, "Sun Oct 25 22:00:00 2009 - true");
+	ok(is_valid_time == ERROR, "Sun Oct 25 22:00:00 2009 - false");
+	printf("timeperiod: %s; %lu is %s", temp_timeperiod->name, test_time, ctime(&test_time));
 	_get_next_valid_time(test_time, &chosen_valid_time, temp_timeperiod);
 	ok(chosen_valid_time == 1256508000, "Next valid time=Sun Oct 25 22:00:00 2009");
 

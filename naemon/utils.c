@@ -941,42 +941,53 @@ static timerange *_get_matching_timerange(time_t test_time, timeperiod *tperiod)
 	return tperiod->days[test_time_wday];
 }
 
+static int is_time_excluded(time_t when, struct timeperiod *tp)
+{
+	struct timeperiodexclusion *exc;
+
+	for (exc = tp->exclusions; exc; exc = exc->next) {
+		if (check_time_against_period(when, exc->timeperiod_ptr) == OK) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static inline time_t get_midnight(time_t when)
+{
+	struct tm *t, tm_s;
+
+	t = localtime_r((time_t *)&when, &tm_s);
+	t->tm_sec = 0;
+	t->tm_min = 0;
+	t->tm_hour = 0;
+	return mktime(t);
+}
+
+static inline int timerange_includes_time(struct timerange *range, time_t when)
+{
+	return (when >= (time_t)range->range_start && when < (time_t)range->range_end);
+}
 
 /* see if the specified time falls into a valid time range in the given time period */
 int check_time_against_period(time_t test_time, timeperiod *tperiod)
 {
 	timerange *temp_timerange = NULL;
-	timeperiodexclusion *temp_timeperiodexclusion = NULL;
-	struct tm *t, tm_s;
 	time_t midnight = (time_t)0L;
-	time_t day_range_start = (time_t)0L;
-	time_t day_range_end = (time_t)0L;
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_time_against_period()\n");
 
-	t = localtime_r((time_t *)&test_time, &tm_s);
-
-	t->tm_sec = 0;
-	t->tm_min = 0;
-	t->tm_hour = 0;
-	midnight = mktime(t);
+	midnight = get_midnight(test_time);
 
 	/* if no period was specified, assume the time is good */
 	if (tperiod == NULL)
 		return OK;
 
-	for (temp_timeperiodexclusion = tperiod->exclusions; temp_timeperiodexclusion != NULL; temp_timeperiodexclusion = temp_timeperiodexclusion->next) {
-		if (check_time_against_period(test_time, temp_timeperiodexclusion->timeperiod_ptr) == OK) {
-			return ERROR;
-		}
-	}
+	if (is_time_excluded(test_time, tperiod))
+		return ERROR;
 
 	for (temp_timerange = _get_matching_timerange(test_time, tperiod); temp_timerange != NULL; temp_timerange = temp_timerange->next) {
-
-		day_range_start = (time_t)(midnight + temp_timerange->range_start);
-		day_range_end = (time_t)(midnight + temp_timerange->range_end);
-
-		if (test_time >= day_range_start && test_time <= day_range_end)
+		if (timerange_includes_time(temp_timerange, test_time - midnight))
 			return OK;
 	}
 	return ERROR;
