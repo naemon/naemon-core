@@ -1876,7 +1876,12 @@ int write_hosts_configuration(FILE *file) {
                        "notification_interval",
                        "first_notification_delay",  // 15
                        "custom_variable_names",
-                       "custom_variable_values"
+                       "custom_variable_values",
+                       "notes",
+                       "notes_url",
+                       "action_url"                 // 20
+                       "icon_image",
+                       "icon_image_alt",
     };
     int columns_size = sizeof(columns)/sizeof(columns[0]);
     num = livestatus_query(&answer, (char*)input_source, query, columns, columns_size);
@@ -1903,6 +1908,16 @@ int write_hosts_configuration(FILE *file) {
             fprintf(file,"    check_freshness            %s\n", row->set[13]);
             fprintf(file,"    notification_interval      %s\n", row->set[14]);
             fprintf(file,"    first_notification_delay   %s\n", row->set[15]);
+            if(strcmp(row->set[18], ""))
+                fprintf(file,"    notes                 %s\n", row->set[18]);
+            if(strcmp(row->set[19], ""))
+                fprintf(file,"    notes_url             %s\n", row->set[19]);
+            if(strcmp(row->set[20], ""))
+                fprintf(file,"    action_url            %s\n", row->set[20]);
+            if(strcmp(row->set[21], ""))
+                fprintf(file,"    icon_image            %s\n", row->set[21]);
+            if(strcmp(row->set[22], ""))
+                fprintf(file,"    icon_image_alt        %s\n", row->set[22]);
             write_custom_variables(file, row->set[16], row->set[17]);
             fprintf(file,"}\n");
             row = row->next;
@@ -1935,7 +1950,13 @@ int write_services_configuration(FILE *file) {
                        "notification_interval",
                        "first_notification_delay",
                        "custom_variable_names",     // 15
-                       "custom_variable_values"
+                       "custom_variable_values",
+                       "notes",
+                       "notes_url",
+                       "action_url"
+                       "icon_image",                // 20
+                       "icon_image_alt",
+
     };
     int columns_size = sizeof(columns)/sizeof(columns[0]);
     num = livestatus_query(&answer, (char*)input_source, query, columns, columns_size);
@@ -1958,6 +1979,16 @@ int write_services_configuration(FILE *file) {
             fprintf(file,"    check_freshness            %s\n", row->set[12]);
             fprintf(file,"    notification_interval      %s\n", row->set[13]);
             fprintf(file,"    first_notification_delay   %s\n", row->set[14]);
+            if(strcmp(row->set[17], ""))
+                fprintf(file,"    notes                 %s\n", row->set[17]);
+            if(strcmp(row->set[18], ""))
+                fprintf(file,"    notes_url             %s\n", row->set[18]);
+            if(strcmp(row->set[19], ""))
+                fprintf(file,"    action_url            %s\n", row->set[19]);
+            if(strcmp(row->set[20], ""))
+                fprintf(file,"    icon_image            %s\n", row->set[20]);
+            if(strcmp(row->set[21], ""))
+                fprintf(file,"    icon_image_alt        %s\n", row->set[21]);
             write_custom_variables(file, row->set[15], row->set[16]);
             fprintf(file,"}\n");
             row = row->next;
