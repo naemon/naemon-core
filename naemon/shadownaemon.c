@@ -645,6 +645,8 @@ int livestatus_query_socket(result_list **result, char *socket_path, char *query
         }
     }
 
+    if(verbose)
+        logit(NSLOG_PROCESS_INFO, TRUE, "query: %s\n", query);
     size = send(input_socket, query, strlen(query), 0);
     if( size <= 0) {
         logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "sending to socket failed : %s\n", strerror(errno));
@@ -669,7 +671,11 @@ int livestatus_query_socket(result_list **result, char *socket_path, char *query
     }
     strcat(columnsheader, "\n");
     size = send(input_socket, columnsheader, strlen(columnsheader), 0);
+    if(verbose)
+        logit(NSLOG_PROCESS_INFO, TRUE, "query: %s\n", columnsheader);
     size = send(input_socket, send_header, strlen(send_header), 0);
+    if(verbose)
+        logit(NSLOG_PROCESS_INFO, TRUE, "query: %s\n", send_header);
     my_free(columnsheader);
     size = read(input_socket, header, 16);
     if( size < 16) {
@@ -1881,7 +1887,7 @@ int write_hosts_configuration(FILE *file) {
                        "custom_variable_values",
                        "notes",
                        "notes_url",
-                       "action_url"                 // 20
+                       "action_url",                // 20
                        "icon_image",
                        "icon_image_alt",
     };
@@ -1955,7 +1961,7 @@ int write_services_configuration(FILE *file) {
                        "custom_variable_values",
                        "notes",
                        "notes_url",
-                       "action_url"
+                       "action_url",
                        "icon_image",                // 20
                        "icon_image_alt",
 
