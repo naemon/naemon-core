@@ -154,7 +154,8 @@
 #define NEBATTR_DOWNTIME_STOP_NORMAL          1
 #define NEBATTR_DOWNTIME_STOP_CANCELLED       2
 
-#define NEBATTR_CHECK_ALERT					  1
+#define NEBATTR_CHECK_ALERT                   1
+#define NEBATTR_CHECK_FIRST                   2
 
 
 /****** EVENT BROKER FUNCTIONS *************/
