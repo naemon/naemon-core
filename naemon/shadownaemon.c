@@ -701,9 +701,11 @@ int livestatus_query_socket(result_list **result, char *socket_path, char *query
     result_string_c = result_string;
     total_read      = 0;
     size            = 0;
-    while(total_read < result_size && size >= 0) {
+    while(total_read < result_size) {
         size = read(input_socket, result_string+total_read, (result_size - total_read));
         total_read += size;
+        if(size == 0)
+            break;
     }
     if( size <= 0 || total_read != result_size) {
         logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "reading socket failed (%d bytes read, expected %d): %s\n", total_read, result_size, strerror(errno));
