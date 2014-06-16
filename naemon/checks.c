@@ -307,7 +307,8 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	int first_host_check_initiated = FALSE;
 	int route_result = HOST_UP;
 	time_t current_time = 0L;
-	int alert_recorded = FALSE;
+	int alert_recorded = NEBATTR_NONE;
+	int first_recorded_state = NEBATTR_NONE;
 	char *old_plugin_output = NULL;
 	char *old_long_plugin_output = NULL;
 	char *temp_plugin_output = NULL;
@@ -374,6 +375,8 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		temp_service->execution_time = 0.0;
 
 	/* get the last check time */
+	if (!temp_service->last_check)
+		first_recorded_state = NEBATTR_CHECK_FIRST;
 	temp_service->last_check = queued_check_result->start_time.tv_sec;
 
 	/* was this check passive or active? */
@@ -640,7 +643,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 			/* log the service recovery */
 			log_service_event(temp_service);
-			alert_recorded = TRUE;
+			alert_recorded = NEBATTR_CHECK_ALERT;
 
 			/* 10/04/07 check to see if the service and/or associate host is flapping */
 			/* this should be done before a notification is sent out to ensure the host didn't just start flapping */
@@ -665,7 +668,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 			/* log the soft recovery */
 			log_service_event(temp_service);
-			alert_recorded = TRUE;
+			alert_recorded = NEBATTR_CHECK_ALERT;
 
 			/* run the service event handler to handle the soft state change */
 			handle_service_event(temp_service);
@@ -813,7 +816,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 				/* log the problem as a hard state if the host just went down */
 				if (hard_state_change == TRUE) {
 					log_service_event(temp_service);
-					alert_recorded = TRUE;
+					alert_recorded = NEBATTR_CHECK_ALERT;
 
 					/* run the service event handler to handle the hard state */
 					handle_service_event(temp_service);
@@ -830,7 +833,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 				/* log the service check retry */
 				log_service_event(temp_service);
-				alert_recorded = TRUE;
+				alert_recorded = NEBATTR_CHECK_ALERT;
 
 				/* run the service event handler to handle the soft state */
 				handle_service_event(temp_service);
@@ -880,13 +883,13 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 				/* log the service problem (even if host is not up, which is new in 0.0.5) */
 				log_service_event(temp_service);
-				alert_recorded = TRUE;
+				alert_recorded = NEBATTR_CHECK_ALERT;
 			}
 
 			/* else log the problem (again) if this service is flagged as being volatile */
 			else if (temp_service->is_volatile == TRUE) {
 				log_service_event(temp_service);
-				alert_recorded = TRUE;
+				alert_recorded = NEBATTR_CHECK_ALERT;
 			}
 
 			/* check for start of flexible (non-fixed) scheduled downtime if we just had a hard error */
@@ -938,16 +941,32 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	}
 
 	/* if we're stalking this state type and state was not already logged AND the plugin output changed since last check, log it now.. */
-	if (temp_service->state_type == HARD_STATE && state_change == FALSE && alert_recorded == FALSE && (compare_strings(old_plugin_output, temp_service->plugin_output) || compare_strings(old_long_plugin_output, temp_service->long_plugin_output))) {
+	if (temp_service->state_type == HARD_STATE && state_change == FALSE && !alert_recorded && (compare_strings(old_plugin_output, temp_service->plugin_output) || compare_strings(old_long_plugin_output, temp_service->long_plugin_output))) {
 		if (should_stalk(temp_service)) {
 			log_service_event(temp_service);
-			alert_recorded = TRUE;
+			alert_recorded = NEBATTR_CHECK_ALERT;
 		}
 	}
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
-	broker_service_check(NEBTYPE_SERVICECHECK_PROCESSED, NEBFLAG_NONE, (alert_recorded ? NEBATTR_CHECK_ALERT : NEBATTR_NONE), temp_service, temp_service->check_type, queued_check_result->start_time, queued_check_result->finish_time, NULL, temp_service->latency, temp_service->execution_time, service_check_timeout, queued_check_result->early_timeout, queued_check_result->return_code, NULL, NULL, queued_check_result);
+	broker_service_check(
+		NEBTYPE_SERVICECHECK_PROCESSED,
+		NEBFLAG_NONE,
+		alert_recorded | first_recorded_state,
+		temp_service,
+		temp_service->check_type,
+		queued_check_result->start_time,
+		queued_check_result->finish_time,
+		NULL,
+		temp_service->latency,
+		temp_service->execution_time,
+		service_check_timeout,
+		queued_check_result->early_timeout,
+		queued_check_result->return_code,
+		NULL,
+		NULL,
+		queued_check_result);
 #endif
 
 	/* set the checked flag */
@@ -2042,7 +2061,8 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 	char *temp_ptr = NULL;
 	struct timeval start_time_hires;
 	struct timeval end_time_hires;
-	int alert_recorded = FALSE;
+	int alert_recorded = NEBATTR_NONE;
+	int first_recorded_state = NEBATTR_NONE;
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "handle_async_host_check_result(%s ...)\n", temp_host ? temp_host->name : "(NULL host!)");
 
@@ -2119,6 +2139,8 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 		temp_host->is_executing = FALSE;
 
 	/* get the last check time */
+	if (!temp_host->last_check)
+		first_recorded_state = NEBATTR_CHECK_FIRST;
 	temp_host->last_check = queued_check_result->start_time.tv_sec;
 
 	/* was this check passive or active? */
@@ -2248,7 +2270,28 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
-	broker_host_check(NEBTYPE_HOSTCHECK_PROCESSED, NEBFLAG_NONE, (alert_recorded ? NEBATTR_CHECK_ALERT : NEBATTR_NONE), temp_host, temp_host->check_type, temp_host->current_state, temp_host->state_type, start_time_hires, end_time_hires, temp_host->check_command, temp_host->latency, temp_host->execution_time, host_check_timeout, queued_check_result->early_timeout, queued_check_result->return_code, NULL, temp_host->plugin_output, temp_host->long_plugin_output, temp_host->perf_data, NULL, queued_check_result);
+	broker_host_check(
+		NEBTYPE_HOSTCHECK_PROCESSED,
+		NEBFLAG_NONE,
+		alert_recorded + first_recorded_state,
+		temp_host,
+		temp_host->check_type,
+		temp_host->current_state,
+		temp_host->state_type,
+		start_time_hires,
+		end_time_hires,
+		temp_host->check_command,
+		temp_host->latency,
+		temp_host->execution_time,
+		host_check_timeout,
+		queued_check_result->early_timeout,
+		queued_check_result->return_code,
+		NULL,
+		temp_host->plugin_output,
+		temp_host->long_plugin_output,
+		temp_host->perf_data,
+		NULL,
+		queued_check_result);
 #endif
 
 	return OK;
@@ -2504,7 +2547,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 	/* if the plugin output differs from previous check and no state change, log the current state/output if state stalking is enabled */
 	if (hst->last_state == hst->current_state && should_stalk(hst) && (compare_strings(old_plugin_output, hst->plugin_output) || compare_strings(old_long_plugin_output, hst->long_plugin_output))) {
 		log_host_event(hst);
-		*alert_recorded = TRUE;
+		*alert_recorded = NEBATTR_CHECK_ALERT;
 	}
 
 	/* check to see if the associated host is flapping */
@@ -2793,7 +2836,7 @@ int handle_host_state(host *hst, int *alert_recorded)
 		/* write the host state change to the main log file */
 		if (hst->state_type == HARD_STATE || (hst->state_type == SOFT_STATE && log_host_retries == TRUE)) {
 			log_host_event(hst);
-			*alert_recorded = TRUE;
+			*alert_recorded = NEBATTR_CHECK_ALERT;
 		}
 
 		/* check for start of flexible (non-fixed) scheduled downtime */
@@ -2828,7 +2871,7 @@ int handle_host_state(host *hst, int *alert_recorded)
 		/* if we're in a soft state and we should log host retries, do so now... */
 		if (hst->state_type == SOFT_STATE && log_host_retries == TRUE) {
 			log_host_event(hst);
-			*alert_recorded = TRUE;
+			*alert_recorded = NEBATTR_CHECK_ALERT;
 		}
 	}
 

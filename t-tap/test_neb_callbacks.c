@@ -96,6 +96,12 @@ int test_cb_service_check_processed(void)
 	ok(ds->attr != NEBATTR_CHECK_ALERT, "nebstruct DOES NOT have NEBATTR_CHECK_ALERT attribute set (stalking, but no output changed)");
 	clear_callback_data();
 
+	/* test first check */
+	svc->last_check = 0;
+	assert(OK == handle_async_service_check_result(svc, cr));
+	ds = (nebstruct_service_check_data *) received_callback_data[NEBCALLBACK_SERVICE_CHECK_DATA][NEBTYPE_SERVICECHECK_PROCESSED];
+	ok(ds->attr == NEBATTR_CHECK_FIRST, "nebstruct has NEBATTR_CHECK_FIRST attribute set for first check");
+	clear_callback_data();
 
 	check_result_destroy(cr);
 	service_destroy(svc);
@@ -150,6 +156,13 @@ int test_cb_host_check_processed(void)
 	ok(ds->attr != NEBATTR_CHECK_ALERT, "nebstruct DOES NOT have NEBATTR_CHECK_ALERT attribute set (stalking, but no output changed)");
 	clear_callback_data();
 
+	/* test first check */
+	hst->last_check = 0;
+	assert(OK == handle_async_host_check_result(hst, cr));
+	ds = (nebstruct_host_check_data *) received_callback_data[NEBCALLBACK_HOST_CHECK_DATA][NEBTYPE_HOSTCHECK_PROCESSED];
+	ok(ds->attr == NEBATTR_CHECK_FIRST, "nebstruct has NEBATTR_CHECK_FIRST attribute set for first check");
+	clear_callback_data();
+
 	check_result_destroy(cr);
 	host_destroy(hst);
 	return 0;
@@ -157,7 +170,7 @@ int test_cb_host_check_processed(void)
 
 int main(int argc, char **argv)
 {
-	plan_tests(17);
+	plan_tests(19);
 	assert(OK == neb_init_callback_list());
 	test_nebmodule = malloc(sizeof(nebmodule));
 	neb_add_core_module(test_nebmodule);
