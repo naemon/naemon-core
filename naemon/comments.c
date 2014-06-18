@@ -6,6 +6,7 @@
 #include "broker.h"
 #include "events.h"
 #include "globals.h"
+#include "nm_alloc.h"
 
 comment *comment_list = NULL;
 int defer_comment_sorting = 0;
@@ -340,9 +341,7 @@ int add_comment_to_hashlist(comment *new_comment)
 	if (comment_hashlist == NULL) {
 		int i;
 
-		comment_hashlist = (comment **)malloc(sizeof(comment *) * COMMENT_HASHSLOTS);
-		if (comment_hashlist == NULL)
-			return 0;
+		comment_hashlist = nm_malloc(sizeof(comment *) * COMMENT_HASHSLOTS);
 
 		for (i = 0; i < COMMENT_HASHSLOTS; i++)
 			comment_hashlist[i] = NULL;
@@ -409,20 +408,15 @@ int add_comment(int comment_type, int entry_type, char *host_name, char *svc_des
 		return ERROR;
 
 	/* allocate memory for the comment */
-	if ((new_comment = (comment *)calloc(1, sizeof(comment))) == NULL)
-		return ERROR;
+	new_comment = nm_calloc(1, sizeof(comment));
 
 	/* duplicate vars */
-	if ((new_comment->host_name = (char *)strdup(host_name)) == NULL)
-		result = ERROR;
+	new_comment->host_name = nm_strdup(host_name);
 	if (comment_type == SERVICE_COMMENT) {
-		if ((new_comment->service_description = (char *)strdup(svc_description)) == NULL)
-			result = ERROR;
+		new_comment->service_description = nm_strdup(svc_description);
 	}
-	if ((new_comment->author = (char *)strdup(author)) == NULL)
-		result = ERROR;
-	if ((new_comment->comment_data = (char *)strdup(comment_data)) == NULL)
-		result = ERROR;
+	new_comment->author = nm_strdup(author);
+	new_comment->comment_data = nm_strdup(comment_data);
 
 	new_comment->comment_type = comment_type;
 	new_comment->entry_type = entry_type;
@@ -510,8 +504,7 @@ int sort_comments(void)
 	if (!unsorted_comments)
 		return OK;
 
-	if (!(array = malloc(sizeof(*array) * unsorted_comments)))
-		return ERROR;
+	array = nm_malloc(sizeof(*array) * unsorted_comments);
 	while (comment_list) {
 		array[i++] = comment_list;
 		comment_list = comment_list->next;

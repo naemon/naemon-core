@@ -21,6 +21,7 @@
 #include "loadctl.h"
 #include "globals.h"
 #include "logging.h"
+#include "nm_alloc.h"
 #include <getopt.h>
 #include <string.h>
 
@@ -91,7 +92,7 @@ static int test_path_access(const char *program, int mode)
 		colon = strchr(p, ':');
 		if (colon)
 			*colon = 0;
-		asprintf(&path, "%s/%s", p, program);
+		nm_asprintf(&path, "%s/%s", p, program);
 		ret = access(path, mode);
 		free(path);
 		if (!ret)
@@ -505,7 +506,7 @@ int main(int argc, char **argv)
 	if (strchr(argv[0], '/'))
 		naemon_binary_path = nspath_absolute(argv[0], NULL);
 	else
-		naemon_binary_path = strdup(argv[0]);
+		naemon_binary_path = nm_strdup(argv[0]);
 
 	if (!naemon_binary_path) {
 		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to allocate memory for naemon_binary_path\n");
@@ -544,7 +545,7 @@ int main(int argc, char **argv)
 		/* get program (re)start time and save as macro */
 		program_start = time(NULL);
 		my_free(mac->x[MACRO_PROCESSSTARTTIME]);
-		asprintf(&mac->x[MACRO_PROCESSSTARTTIME], "%lu", (unsigned long)program_start);
+		nm_asprintf(&mac->x[MACRO_PROCESSSTARTTIME], "%lu", (unsigned long)program_start);
 
 		/* drop privileges */
 		if (drop_privileges(naemon_user, naemon_group) == ERROR) {
@@ -762,7 +763,7 @@ int main(int argc, char **argv)
 		/* get event start time and save as macro */
 		event_start = time(NULL);
 		my_free(mac->x[MACRO_EVENTSTARTTIME]);
-		asprintf(&mac->x[MACRO_EVENTSTARTTIME], "%lu", (unsigned long)event_start);
+		nm_asprintf(&mac->x[MACRO_EVENTSTARTTIME], "%lu", (unsigned long)event_start);
 
 		timing_point("Entering event execution loop\n");
 		/***** start monitoring all services *****/

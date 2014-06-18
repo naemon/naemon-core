@@ -6,6 +6,7 @@
  */
 
 #include "shadownaemon.h"
+#include "nm_alloc.h"
 #include <libgen.h>
 
 static int verbose                         = FALSE;
@@ -96,7 +97,7 @@ int main(int argc, char **argv) {
 #define getopt(a, b, c) getopt_long(a, b, c, long_options, &option_index)
 #endif
 
-    self_name = strdup(basename(argv[0]));
+    self_name = nm_strdup(basename(argv[0]));
     shadow_program_restart = time(NULL);
 
     enable_timing_point = 0;
@@ -159,21 +160,21 @@ int main(int argc, char **argv) {
 
     /* required before daemonizing, because we need full pid path */
     my_free(output_socket_path);
-    output_socket_path = malloc(sizeof(char) * 250);
+    output_socket_path = nm_malloc(250);
     snprintf(output_socket_path, 249, "%s/%s", output_folder, "live");
     output_folder   = nspath_absolute_dirname(output_socket_path, NULL);
     config_file_dir = nspath_absolute_dirname(output_socket_path, NULL);
     my_free(tmp_folder);
-    tmp_folder = malloc(sizeof(char) * 250);
+    tmp_folder = nm_malloc(250);
     snprintf(tmp_folder, 249, "%s/%s", output_folder, "tmp");
     nspath_mkdir_p(output_folder, 0700, 0);
     nspath_mkdir_p(tmp_folder, 0700, 0);
     my_free(log_file);
-    log_file = malloc(sizeof(char) * 250);
+    log_file = nm_malloc(250);
     snprintf(log_file, 249, "%s/%s", tmp_folder, "shadownaemon.log");
 
     if(daemonmode == TRUE) {
-        lock_file = malloc(sizeof(char) * 250);
+        lock_file = nm_malloc(250);
         snprintf(lock_file, 249, "%s/shadownaemon.pid", tmp_folder);
         // daemon init changes to wrong folder otherwise
 #ifdef HAVE_GET_CURRENT_DIR_NAME
@@ -185,10 +186,7 @@ int main(int argc, char **argv) {
             size_t size = 50;
             errno = 0;
             do {
-                cwd = malloc(size);
-                if (!cwd) {
-                    goto error_out;
-                }
+                cwd = nm_malloc(size);
                 if (getcwd(cwd, size) == cwd) {
                     break;
                 }
@@ -273,7 +271,7 @@ error_out:
 
 /* return path to default livestatus */
 char *get_default_livestatus_module() {
-    char *livestatus_path = malloc(sizeof(char) * 250);
+    char *livestatus_path = nm_malloc(250);
     struct stat st;
 
     snprintf(livestatus_path, 249, "%s/lib/naemon/naemon-livestatus/livestatus.so", getenv("HOME"));
@@ -334,30 +332,30 @@ int write_config_files() {
     /* set our file locations */
     config_file_dir = nspath_absolute_dirname(output_socket_path, NULL);
     my_free(config_file);
-    config_file = malloc(sizeof(char) * 250);
+    config_file = nm_malloc(250);
     snprintf(config_file, 249, "%s/%s", tmp_folder, "naemon.cfg");
     my_free(resource_config);
-    resource_config = malloc(sizeof(char) * 250);
+    resource_config = nm_malloc(250);
     snprintf(resource_config, 249, "%s/%s", tmp_folder, "resource.cfg");
     my_free(objects_file);
-    objects_file = malloc(sizeof(char) * 250);
+    objects_file = nm_malloc(250);
     snprintf(objects_file, 249, "%s/%s", tmp_folder, "objects.cfg");
     my_free(retention_file);
-    retention_file = malloc(sizeof(char) * 250);
+    retention_file = nm_malloc(250);
     snprintf(retention_file, 249, "%s/%s", tmp_folder, "retention.dat");
     my_free(livestatus_log);
-    livestatus_log = malloc(sizeof(char) * 250);
+    livestatus_log = nm_malloc(250);
     snprintf(livestatus_log, 249, "%s/%s", tmp_folder, "livestatus.log");
     my_free(check_result_path);
-    check_result_path = strdup(tmp_folder);
+    check_result_path = nm_strdup(tmp_folder);
     my_free(log_file);
-    log_file = malloc(sizeof(char) * 250);
+    log_file = nm_malloc(250);
     snprintf(log_file, 249, "%s/%s", tmp_folder, "shadownaemon.log");
     my_free(cmds_pattern);
-    cmds_pattern = malloc(sizeof(char) * 250);
+    cmds_pattern = nm_malloc(250);
     snprintf(cmds_pattern, 249, "%s/*.cmds", tmp_folder);
     my_free(archive_folder);
-    archive_folder = malloc(sizeof(char) * 250);
+    archive_folder = nm_malloc(250);
     snprintf(archive_folder, 249, "%s/%s", tmp_folder, "archives");
 
     if(should_write_config == FALSE) {
@@ -661,7 +659,7 @@ int livestatus_query_socket(result_list **result, char *socket_path, char *query
     for(x=0; x<columnssize; x++)
         columnslength += strlen(columns[x]);
     columnslength += 20 + columnssize;
-    columnsheader = malloc(sizeof(char) * columnslength);
+    columnsheader = nm_malloc(columnslength);
     columnsheader[0] = '\0';
     strcat(columnsheader, "Columns: ");
     for(x=0; x<columnssize; x++) {
@@ -703,7 +701,7 @@ int livestatus_query_socket(result_list **result, char *socket_path, char *query
         return(row_size);
     }
 
-    result_string   = malloc(sizeof(char*)*result_size+1);
+    result_string   = nm_malloc(sizeof(char*)*result_size+1);
     result_string_c = result_string;
     total_read      = 0;
     size            = 0;
@@ -726,14 +724,14 @@ int livestatus_query_socket(result_list **result, char *socket_path, char *query
     while((ptr = strsep( &result_string, "\x1")) != NULL) {
         if(!strcmp(ptr, "")) break;
         if(row_size > 0) {
-            curr->next = malloc(sizeof(result_list));
+            curr->next = nm_malloc(sizeof(result_list));
             curr = curr->next;
             curr->next = NULL;
         }
-        curr->set  = malloc(columnssize*sizeof(char*));
+        curr->set  = nm_malloc(columnssize*sizeof(char*));
         for(x=0;x<columnssize;x++) {
             cell = strsep( &ptr, "\x2");
-            curr->set[x] = strdup(cell);
+            curr->set[x] = nm_strdup(cell);
         }
         row_size++;
     }
@@ -800,7 +798,7 @@ int open_tcp_socket(char *connection_string) {
     tv.tv_sec  = 30;  /* 30 Secs Timeout */
     tv.tv_usec = 0;
 
-    server   = strdup(connection_string);
+    server   = nm_strdup(connection_string);
     server_c = server;
     hostname = strsep(&server, ":");
     port_val = strsep(&server, "\x0");
@@ -839,7 +837,7 @@ int open_tcp_socket(char *connection_string) {
 /* updates program status based on remote sites data */
 int update_program_status_data() {
     int num;
-    result_list *answer = malloc(sizeof(result_list));
+    result_list *answer = nm_malloc(sizeof(result_list));
     char *query = "GET status";
     char *columns[] = {"accept_passive_host_checks",        // 0
                        "accept_passive_service_checks",
@@ -923,7 +921,7 @@ int update_program_status_data() {
             process_performance_data        = atoi(answer->set[14]);
             program_start                   = atoi(answer->set[15]);
             if(program_version == NULL)
-                program_version             = strdup(answer->set[16]);
+                program_version             = nm_strdup(answer->set[16]);
             interval_length                 = atoi(answer->set[17]);
 
             /* update livestatus counter */
@@ -976,7 +974,7 @@ int update_host_status_data() {
     int num, running, len;
     host *hst = NULL;
     result_list *row = NULL;
-    result_list *answer = malloc(sizeof(result_list));
+    result_list *answer = nm_malloc(sizeof(result_list));
     char *query  = "GET hosts";
     char *filtered_query;
     char *columns[] = {"name",                          // 0
@@ -1017,7 +1015,7 @@ int update_host_status_data() {
     int columns_size = sizeof(columns)/sizeof(columns[0]);
 
     /* add filter by last_refresh and is_executing and all our hosts which are marked as currently running */
-    filtered_query = malloc(sizeof(char) * 50 * get_host_count());
+    filtered_query = nm_calloc(get_host_count(), 50);
     len = sprintf(filtered_query, "%s\nFilter: is_executing = 1\nFilter: last_check >= %d\nOr: 2\n", query, (int)last_refresh);
 
     /* linear search to get all hosts currently running */
@@ -1038,7 +1036,7 @@ int update_host_status_data() {
     /* too many running hosts would blow off our filter, so just fetch everything if we hit the limit */
     if(full_refresh_required || running > max_number_of_executing_objects) {
         my_free(filtered_query);
-        filtered_query = strdup(query);
+        filtered_query = nm_strdup(query);
     }
     num = livestatus_query(&answer, (char*)input_source, filtered_query, columns, columns_size);
     my_free(filtered_query);
@@ -1069,15 +1067,15 @@ int update_host_status_data() {
             hst->last_state_change              = atoi(row->set[15]);
             hst->latency                        = atof(row->set[16]);
             my_free(hst->long_plugin_output);
-            hst->long_plugin_output             = strdup(row->set[17]);
+            hst->long_plugin_output             = nm_strdup(row->set[17]);
             hst->next_check                     = atoi(row->set[18]);
             hst->notifications_enabled          = atoi(row->set[19]);
             hst->obsess                         = atoi(row->set[20]);
             hst->percent_state_change           = atoi(row->set[21]);
             my_free(hst->perf_data);
-            hst->perf_data                      = strdup(row->set[22]);
+            hst->perf_data                      = nm_strdup(row->set[22]);
             my_free(hst->plugin_output);
-            hst->plugin_output                  = strdup(row->set[23]);
+            hst->plugin_output                  = nm_strdup(row->set[23]);
             hst->process_performance_data       = atoi(row->set[24]);
             hst->scheduled_downtime_depth       = atoi(row->set[25]);
             hst->current_state                  = atoi(row->set[26]);
@@ -1105,7 +1103,7 @@ int update_service_status_data() {
     int num, running, len;
     service *svc = NULL;
     result_list *row = NULL;
-    result_list *answer = malloc(sizeof(result_list));
+    result_list *answer = nm_malloc(sizeof(result_list));
     char *query  = "GET services";
     char *filtered_query;
     char *columns[] = {"host_name",                     // 0
@@ -1148,7 +1146,7 @@ int update_service_status_data() {
     int columns_size = sizeof(columns)/sizeof(columns[0]);
 
     /* add filter by last_refresh and is_executing and all our services which are marked as currently running */
-    filtered_query = malloc(sizeof(char) * 50 * get_service_count());
+    filtered_query = nm_calloc(get_service_count(), 50);
     len = sprintf(filtered_query, "%s\nFilter: is_executing = 1\nFilter: last_check >= %d\nOr: 2\n", query, (int)last_refresh);
 
     /* linear search to get all services currently running */
@@ -1169,7 +1167,7 @@ int update_service_status_data() {
     /* too many running services would blow off our filter, so just fetch everything if we hit the limit */
     if(full_refresh_required || running > max_number_of_executing_objects) {
         my_free(filtered_query);
-        filtered_query = strdup(query);
+        filtered_query = nm_strdup(query);
     }
     num = livestatus_query(&answer, (char*)input_source, filtered_query, columns, columns_size);
     my_free(filtered_query);
@@ -1199,15 +1197,15 @@ int update_service_status_data() {
             svc->last_state_change              = atoi(row->set[16]);
             svc->latency                        = atof(row->set[17]);
             my_free(svc->long_plugin_output);
-            svc->long_plugin_output             = strdup(row->set[18]);
+            svc->long_plugin_output             = nm_strdup(row->set[18]);
             svc->next_check                     = atoi(row->set[19]);
             svc->notifications_enabled          = atoi(row->set[20]);
             svc->obsess                         = atoi(row->set[21]);
             svc->percent_state_change           = atoi(row->set[22]);
             my_free(svc->perf_data);
-            svc->perf_data                      = strdup(row->set[23]);
+            svc->perf_data                      = nm_strdup(row->set[23]);
             my_free(svc->plugin_output);
-            svc->plugin_output                  = strdup(row->set[24]);
+            svc->plugin_output                  = nm_strdup(row->set[24]);
             svc->process_performance_data       = atoi(row->set[25]);
             svc->scheduled_downtime_depth       = atoi(row->set[26]);
             svc->current_state                  = atoi(row->set[27]);
@@ -1252,7 +1250,7 @@ int update_downtime_data() {
     int num, result;
     unsigned long current_id;
     result_list *row = NULL;
-    result_list *answer = malloc(sizeof(result_list));
+    result_list *answer = nm_malloc(sizeof(result_list));
     host *hst = NULL;
     service *svc = NULL;
     char *query  = "GET downtimes";
@@ -1273,7 +1271,7 @@ int update_downtime_data() {
     int columns_size = sizeof(columns)/sizeof(columns[0]);
 
     /* add filter by highest downtime id, we only need new ones */
-    filtered_query = malloc(sizeof(char) * 50 * get_service_count());
+    filtered_query = nm_calloc(get_service_count(), 50);
     sprintf(filtered_query, "%s\nFilter: id > %lu\n", query, highest_downtime_id);
 
     num = livestatus_query(&answer, (char*)input_source, filtered_query, columns, columns_size);
@@ -1348,7 +1346,7 @@ int remove_old_downtimes() {
     int num, result, removed, found;
     unsigned long current_id;
     result_list *row = NULL;
-    result_list *answer = malloc(sizeof(result_list));
+    result_list *answer = nm_malloc(sizeof(result_list));
     scheduled_downtime *temp_downtime, *curr_downtime;
     host *hst = NULL;
     service *svc = NULL;
@@ -1412,7 +1410,7 @@ int update_comment_data() {
     int num, result;
     unsigned long current_id;
     result_list *row = NULL;
-    result_list *answer = malloc(sizeof(result_list));
+    result_list *answer = nm_malloc(sizeof(result_list));
     char *query  = "GET comments";
     char *filtered_query;
     char *columns[] = {"id",                            // 0
@@ -1430,7 +1428,7 @@ int update_comment_data() {
     int columns_size = sizeof(columns)/sizeof(columns[0]);
 
     /* add filter by highest comment id, we only need new ones */
-    filtered_query = malloc(sizeof(char) * 50 * get_service_count());
+    filtered_query = nm_calloc(get_service_count(), 50);
     sprintf(filtered_query, "%s\nFilter: id > %lu\n", query, highest_comment_id);
 
     num = livestatus_query(&answer, (char*)input_source, filtered_query, columns, columns_size);
@@ -1495,7 +1493,7 @@ int remove_old_comments() {
     int num, result, removed, found;
     unsigned long current_id;
     result_list *row = NULL;
-    result_list *answer = malloc(sizeof(result_list));
+    result_list *answer = nm_malloc(sizeof(result_list));
     comment *temp_comment, *curr_comment;
     char *query  = "GET comments";
     char *columns[] = {"id"};
@@ -1662,7 +1660,7 @@ int run_refresh_loop() {
 int write_commands_configuration(FILE *file) {
     int num;
     result_list *row = NULL;
-    result_list *answer = malloc(sizeof(result_list));
+    result_list *answer = nm_malloc(sizeof(result_list));
     char *query = "GET commands";
     char *columns[] = {"name",
                        "line",
@@ -1673,7 +1671,7 @@ int write_commands_configuration(FILE *file) {
         row = answer;
         while(row != NULL) {
             if(dummy_command == NULL)
-                dummy_command = strdup(row->set[0]);
+                dummy_command = nm_strdup(row->set[0]);
             fprintf(file,"define command {\n");
             fprintf(file,"    command_name          %s\n",   row->set[0]);
             fprintf(file,"    command_line          %s\n\n", row->set[1]); /* extra new line ensures trailing backslashes don't break anything */
@@ -1693,7 +1691,7 @@ int write_commands_configuration(FILE *file) {
 int write_timeperiods_configuration(FILE *file) {
     int num;
     result_list *row = NULL;
-    result_list *answer = malloc(sizeof(result_list));
+    result_list *answer = nm_malloc(sizeof(result_list));
     char *query = "GET timeperiods";
     char *columns[] = {"name",
                        "alias",
@@ -1719,7 +1717,7 @@ int write_timeperiods_configuration(FILE *file) {
 int write_contactgroups_configuration(FILE *file) {
     int num;
     result_list *row = NULL;
-    result_list *answer = malloc(sizeof(result_list));
+    result_list *answer = nm_malloc(sizeof(result_list));
     char *query = "GET contactgroups";
     char *columns[] = {"name",
                        "alias",
@@ -1747,7 +1745,7 @@ int write_contactgroups_configuration(FILE *file) {
 int write_hostgroups_configuration(FILE *file) {
     int num;
     result_list *row = NULL;
-    result_list *answer = malloc(sizeof(result_list));
+    result_list *answer = nm_malloc(sizeof(result_list));
     char *query = "GET hostgroups";
     char *columns[] = {"name",
                        "alias",
@@ -1784,7 +1782,7 @@ int write_hostgroups_configuration(FILE *file) {
 int write_servicegroups_configuration(FILE *file) {
     int num;
     result_list *row = NULL;
-    result_list *answer = malloc(sizeof(result_list));
+    result_list *answer = nm_malloc(sizeof(result_list));
     char *query = "GET servicegroups";
     char *columns[] = {"name",
                        "alias",
@@ -1821,7 +1819,7 @@ int write_servicegroups_configuration(FILE *file) {
 int write_contacts_configuration(FILE *file) {
     int num;
     result_list *row = NULL;
-    result_list *answer = malloc(sizeof(result_list));
+    result_list *answer = nm_malloc(sizeof(result_list));
     char *query = "GET contacts";
     char *columns[] = {"name",
                        "alias",
@@ -1865,7 +1863,7 @@ int write_contacts_configuration(FILE *file) {
 int write_hosts_configuration(FILE *file) {
     int num;
     result_list *row = NULL;
-    result_list *answer = malloc(sizeof(result_list));
+    result_list *answer = nm_malloc(sizeof(result_list));
     char *query = "GET hosts";
     char *columns[] = {"name",                      // 0
                        "alias",
@@ -1940,7 +1938,7 @@ int write_hosts_configuration(FILE *file) {
 int write_services_configuration(FILE *file) {
     int num;
     result_list *row = NULL;
-    result_list *answer = malloc(sizeof(result_list));
+    result_list *answer = nm_malloc(sizeof(result_list));
     char *query = "GET services";
     char *columns[] = {"host_name",                 // 0
                        "description",
@@ -2014,7 +2012,7 @@ int write_list_attribute(FILE *file, char* attr, char* rawlist) {
     int i = -1;
     if(!strcmp(rawlist, ""))
         return(OK);
-    tmpstr = strdup(rawlist);
+    tmpstr = nm_strdup(rawlist);
     while(tmpstr[++i] != 0) {
         if(tmpstr[i] == 5 || tmpstr[i] == 6)
             tmpstr[i] = 44;
@@ -2029,8 +2027,8 @@ int write_custom_variables(FILE *file, char* rawnames, char* rawvalues) {
     char *names, *name, *namesp, *values, *value, *valuesp;
     if(!strcmp(rawnames, ""))
         return(OK);
-    names   = strdup(rawnames);
-    values  = strdup(rawvalues);
+    names   = nm_strdup(rawnames);
+    values  = nm_strdup(rawvalues);
     namesp  = names;
     valuesp = values;
     while((name = strsep(&names, "\x5")) != NULL) {

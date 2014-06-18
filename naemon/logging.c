@@ -6,6 +6,7 @@
 #include "broker.h"
 #include "utils.h"
 #include "globals.h"
+#include "nm_alloc.h"
 #include <string.h>
 #include <fcntl.h>
 #include <syslog.h>
@@ -235,7 +236,7 @@ int log_service_event(service *svc)
 	if ((temp_host = svc->host_ptr) == NULL)
 		return ERROR;
 
-	asprintf(&temp_buffer, "SERVICE ALERT: %s;%s;%s;%s;%d;%s\n",
+	nm_asprintf(&temp_buffer, "SERVICE ALERT: %s;%s;%s;%s;%d;%s\n",
 	         svc->host_name, svc->description,
 	         service_state_name(svc->current_state),
 	         state_type_name(svc->state_type),
@@ -263,7 +264,7 @@ int log_host_event(host *hst)
 	else
 		log_options = NSLOG_HOST_UP;
 
-	asprintf(&temp_buffer, "HOST ALERT: %s;%s;%s;%d;%s\n",
+	nm_asprintf(&temp_buffer, "HOST ALERT: %s;%s;%s;%d;%s\n",
 	         hst->name,
 	         host_state_name(hst->current_state),
 	         state_type_name(hst->state_type),
@@ -290,7 +291,7 @@ int log_host_states(int type, time_t *timestamp)
 
 	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
 
-		asprintf(&temp_buffer, "%s HOST STATE: %s;%s;%s;%d;%s\n", (type == INITIAL_STATES) ? "INITIAL" : "CURRENT",
+		nm_asprintf(&temp_buffer, "%s HOST STATE: %s;%s;%s;%d;%s\n", (type == INITIAL_STATES) ? "INITIAL" : "CURRENT",
 		         temp_host->name,
 		         host_state_name(temp_host->current_state),
 		         state_type_name(temp_host->state_type),
@@ -323,7 +324,7 @@ int log_service_states(int type, time_t *timestamp)
 		if ((temp_host = temp_service->host_ptr) == NULL)
 			continue;
 
-		asprintf(&temp_buffer, "%s SERVICE STATE: %s;%s;%s;%s;%d;%s\n",
+		nm_asprintf(&temp_buffer, "%s SERVICE STATE: %s;%s;%s;%s;%d;%s\n",
 		         (type == INITIAL_STATES) ? "INITIAL" : "CURRENT",
 		         temp_service->host_name, temp_service->description,
 		         service_state_name(temp_service->current_state),
@@ -378,7 +379,7 @@ int write_log_file_info(time_t *timestamp)
 	char *temp_buffer = NULL;
 
 	/* write log version */
-	asprintf(&temp_buffer, "LOG VERSION: %s\n", LOG_VERSION_2);
+	nm_asprintf(&temp_buffer, "LOG VERSION: %s\n", LOG_VERSION_2);
 	write_to_all_logs_with_timestamp(temp_buffer, NSLOG_PROCESS_INFO, timestamp);
 	my_free(temp_buffer);
 
@@ -455,7 +456,7 @@ int log_debug_info(int level, int verbosity, const char *fmt, ...)
 		close_debug_log();
 
 		/* rotate the log file */
-		asprintf(&tmppath, "%s.old", debug_file);
+		nm_asprintf(&tmppath, "%s.old", debug_file);
 		if (tmppath) {
 
 			/* unlink the old debug file */

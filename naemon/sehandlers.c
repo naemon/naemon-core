@@ -11,6 +11,7 @@
 #include "utils.h"
 #include "logging.h"
 #include "globals.h"
+#include "nm_alloc.h"
 #include <string.h>
 
 #ifdef USE_EVENT_BROKER
@@ -95,16 +96,12 @@ int obsessive_compulsive_service_check_processor(service *svc)
 	log_debug_info(DEBUGL_CHECKS, 2, "Processed obsessive compulsive service processor command line: %s\n", processed_command);
 
 	/* run the command through a worker */
-	ocj = (struct obsessive_compulsive_job*)calloc(1,sizeof(struct obsessive_compulsive_job));
-	if(ocj == NULL) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Allocating storage for OCSP job\n");
-	} else {
-		ocj->hst = svc->host_ptr;
-		ocj->svc = svc;
-		if(ERROR == wproc_run_callback(processed_command, ocsp_timeout, obsessive_compulsive_job_handler, ocj, &mac)) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to start OCSP job for service '%s on host '%s' to worker\n", svc->description, svc->host_ptr->name);
-			free(ocj);
-		}
+	ocj = nm_calloc(1,sizeof(struct obsessive_compulsive_job));
+	ocj->hst = svc->host_ptr;
+	ocj->svc = svc;
+	if(ERROR == wproc_run_callback(processed_command, ocsp_timeout, obsessive_compulsive_job_handler, ocj, &mac)) {
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to start OCSP job for service '%s on host '%s' to worker\n", svc->description, svc->host_ptr->name);
+		free(ocj);
 	}
 
 	/* free memory */
@@ -161,16 +158,12 @@ int obsessive_compulsive_host_check_processor(host *hst)
 	log_debug_info(DEBUGL_CHECKS, 2, "Processed obsessive compulsive host processor command line: %s\n", processed_command);
 
 	/* run the command through a worker */
-	ocj = (struct obsessive_compulsive_job*)calloc(1,sizeof(struct obsessive_compulsive_job));
-	if(ocj == NULL) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Allocating storage for OCHP job\n");
-	} else {
-		ocj->hst = hst;
-		ocj->svc = NULL;
-		if(ERROR == wproc_run_callback(processed_command, ochp_timeout, obsessive_compulsive_job_handler, ocj, &mac)) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to start OCHP job for host '%s' to worker\n", hst->name);
-			free(ocj);
-		}
+	ocj = nm_calloc(1,sizeof(struct obsessive_compulsive_job));
+	ocj->hst = hst;
+	ocj->svc = NULL;
+	if(ERROR == wproc_run_callback(processed_command, ochp_timeout, obsessive_compulsive_job_handler, ocj, &mac)) {
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to start OCHP job for host '%s' to worker\n", hst->name);
+		free(ocj);
 	}
 
 	/* free memory */
@@ -295,7 +288,7 @@ int run_global_service_event_handler(nagios_macros *mac, service *svc)
 	log_debug_info(DEBUGL_EVENTHANDLERS, 2, "Processed global service event handler command line: %s\n", processed_command);
 
 	if (log_event_handlers == TRUE) {
-		asprintf(&raw_logentry, "GLOBAL SERVICE EVENT HANDLER: %s;%s;$SERVICESTATE$;$SERVICESTATETYPE$;$SERVICEATTEMPT$;%s\n", svc->host_name, svc->description, global_service_event_handler);
+		nm_asprintf(&raw_logentry, "GLOBAL SERVICE EVENT HANDLER: %s;%s;$SERVICESTATE$;$SERVICESTATETYPE$;$SERVICEATTEMPT$;%s\n", svc->host_name, svc->description, global_service_event_handler);
 		process_macros_r(mac, raw_logentry, &processed_logentry, macro_options);
 		logit(NSLOG_EVENT_HANDLER, FALSE, "%s", processed_logentry);
 	}
@@ -394,7 +387,7 @@ int run_service_event_handler(nagios_macros *mac, service *svc)
 	log_debug_info(DEBUGL_EVENTHANDLERS, 2, "Processed service event handler command line: %s\n", processed_command);
 
 	if (log_event_handlers == TRUE) {
-		asprintf(&raw_logentry, "SERVICE EVENT HANDLER: %s;%s;$SERVICESTATE$;$SERVICESTATETYPE$;$SERVICEATTEMPT$;%s\n", svc->host_name, svc->description, svc->event_handler);
+		nm_asprintf(&raw_logentry, "SERVICE EVENT HANDLER: %s;%s;$SERVICESTATE$;$SERVICESTATETYPE$;$SERVICEATTEMPT$;%s\n", svc->host_name, svc->description, svc->event_handler);
 		process_macros_r(mac, raw_logentry, &processed_logentry, macro_options);
 		logit(NSLOG_EVENT_HANDLER, FALSE, "%s", processed_logentry);
 	}
@@ -536,7 +529,7 @@ int run_global_host_event_handler(nagios_macros *mac, host *hst)
 	log_debug_info(DEBUGL_EVENTHANDLERS, 2, "Processed global host event handler command line: %s\n", processed_command);
 
 	if (log_event_handlers == TRUE) {
-		asprintf(&raw_logentry, "GLOBAL HOST EVENT HANDLER: %s;$HOSTSTATE$;$HOSTSTATETYPE$;$HOSTATTEMPT$;%s\n", hst->name, global_host_event_handler);
+		nm_asprintf(&raw_logentry, "GLOBAL HOST EVENT HANDLER: %s;$HOSTSTATE$;$HOSTSTATETYPE$;$HOSTATTEMPT$;%s\n", hst->name, global_host_event_handler);
 		process_macros_r(mac, raw_logentry, &processed_logentry, macro_options);
 		logit(NSLOG_EVENT_HANDLER, FALSE, "%s", processed_logentry);
 	}
@@ -634,7 +627,7 @@ int run_host_event_handler(nagios_macros *mac, host *hst)
 	log_debug_info(DEBUGL_EVENTHANDLERS, 2, "Processed host event handler command line: %s\n", processed_command);
 
 	if (log_event_handlers == TRUE) {
-		asprintf(&raw_logentry, "HOST EVENT HANDLER: %s;$HOSTSTATE$;$HOSTSTATETYPE$;$HOSTATTEMPT$;%s\n", hst->name, hst->event_handler);
+		nm_asprintf(&raw_logentry, "HOST EVENT HANDLER: %s;$HOSTSTATE$;$HOSTSTATETYPE$;$HOSTATTEMPT$;%s\n", hst->name, hst->event_handler);
 		process_macros_r(mac, raw_logentry, &processed_logentry, macro_options);
 		logit(NSLOG_EVENT_HANDLER, FALSE, "%s", processed_logentry);
 	}
