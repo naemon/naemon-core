@@ -21,7 +21,7 @@ pkginclude_HEADERS = \
 	configuration.h  macros.h       nebstructs.h     sretention.h \
 	defaults.h       naemon.h       nerd.h           statusdata.h \
 	downtime.h       naemonstats.h  notifications.h  utils.h \
-	buildopts.h
+	buildopts.h      nm_alloc.h
 
 all-local: manpages
 
@@ -60,6 +60,7 @@ common_sources = \
 	nebmods.c nebmods.h \
 	nebmodules.h nebstructs.h \
 	nerd.c nerd.h \
+	nm_alloc.c nm_alloc.h \
 	notifications.c notifications.h \
 	objects.c objects.h \
 	perfdata.c perfdata.h \

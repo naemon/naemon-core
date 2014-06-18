@@ -15,6 +15,7 @@
 #include "logging.h"
 #include "globals.h"
 #include "defaults.h"
+#include "nm_alloc.h"
 
 #include "loadctl.h"
 
@@ -163,10 +164,7 @@ static struct wproc_list *get_wproc_list(const char *cmd)
 	/* first, look for a specialized worker for this command */
 	if ((space = strchr(cmd, ' ')) != NULL) {
 		int namelen = (unsigned long)space - (unsigned long)cmd;
-		cmd_name = calloc(1, namelen + 1);
-		/* not exactly optimal, but what the hells */
-		if (!cmd_name)
-			return &workers;
+		cmd_name = nm_calloc(1, namelen + 1);
 		memcpy(cmd_name, cmd, namelen);
 		slash = strrchr(cmd_name, '/');
 	}
@@ -544,9 +542,9 @@ static int handle_worker_result(int sd, int events, void *arg)
 		}
 
 		if (wpres.early_timeout) {
-			asprintf(&error_reason, "timed out after %.2fs", tv_delta_f(&wpres.start, &wpres.stop));
+			nm_asprintf(&error_reason, "timed out after %.2fs", tv_delta_f(&wpres.start, &wpres.stop));
 		} else if (WIFSIGNALED(wpres.wait_status)) {
-			asprintf(&error_reason, "died by signal %d%s after %.2f seconds",
+			nm_asprintf(&error_reason, "died by signal %d%s after %.2f seconds",
 			         WTERMSIG(wpres.wait_status),
 			         WCOREDUMP(wpres.wait_status) ? " (core dumped)" : "",
 			         tv_delta_f(&wpres.start, &wpres.stop));
@@ -591,11 +589,7 @@ static int register_worker(int sd, char *buf, unsigned int len)
 	struct wproc_worker *worker;
 
 	logit(NSLOG_INFO_MESSAGE, TRUE, "wproc: Registry request: %s\n", buf);
-	if (!(worker = calloc(1, sizeof(*worker)))) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "wproc: Failed to allocate worker: %s\n", strerror(errno));
-		return 500;
-	}
-
+	worker = nm_calloc(1, sizeof(*worker));
 	info = buf2kvvec(buf, len, '=', ';', 0);
 	if (info == NULL) {
 		free(worker);
@@ -612,7 +606,7 @@ static int register_worker(int sd, char *buf, unsigned int len)
 	for (i = 0; i < info->kv_pairs; i++) {
 		struct key_value *kv = &info->kv[i];
 		if (!strcmp(kv->key, "name")) {
-			worker->name = strdup(kv->value);
+			worker->name = nm_strdup(kv->value);
 		} else if (!strcmp(kv->key, "pid")) {
 			worker->pid = atoi(kv->value);
 		} else if (!strcmp(kv->key, "max_jobs")) {
@@ -621,14 +615,14 @@ static int register_worker(int sd, char *buf, unsigned int len)
 			struct wproc_list *command_handlers;
 			is_global = 0;
 			if (!(command_handlers = dkhash_get(specialized_workers, kv->value, NULL))) {
-				command_handlers = calloc(1, sizeof(struct wproc_list));
-				command_handlers->wps = calloc(1, sizeof(struct wproc_worker **));
+				command_handlers = nm_calloc(1, sizeof(struct wproc_list));
+				command_handlers->wps = nm_calloc(1, sizeof(struct wproc_worker **));
 				command_handlers->len = 1;
 				command_handlers->wps[0] = worker;
-				dkhash_insert(specialized_workers, strdup(kv->value), NULL, command_handlers);
+				dkhash_insert(specialized_workers, nm_strdup(kv->value), NULL, command_handlers);
 			} else {
 				command_handlers->len++;
-				command_handlers->wps = realloc(command_handlers->wps, command_handlers->len * sizeof(struct wproc_worker **));
+				command_handlers->wps = nm_realloc(command_handlers->wps, command_handlers->len * sizeof(struct wproc_worker **));
 				command_handlers->wps[command_handlers->len - 1] = worker;
 			}
 			worker->wp_list = command_handlers;
@@ -648,7 +642,7 @@ static int register_worker(int sd, char *buf, unsigned int len)
 
 	if (is_global) {
 		workers.len++;
-		workers.wps = realloc(workers.wps, workers.len * sizeof(struct wproc_worker *));
+		workers.wps = nm_realloc(workers.wps, workers.len * sizeof(struct wproc_worker *));
 		workers.wps[workers.len - 1] = worker;
 		worker->wp_list = &workers;
 	}
@@ -767,18 +761,13 @@ static struct wproc_job *create_job(void (*callback)(struct wproc_result *, void
 	if (!wp)
 		return NULL;
 
-	job = calloc(1, sizeof(*job));
-	if (!job) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to allocate memory for worker job: %s\n", strerror(errno));
-		return NULL;
-	}
-
+	job = nm_calloc(1, sizeof(*job));
 	job->wp = wp;
 	job->id = get_job_id(wp);
 	job->callback = callback;
 	job->data = data;
 	job->timeout = timeout;
-	if (fanout_add(wp->jobs, job->id, job) < 0 || !(job->command = strdup(cmd))) {
+	if (fanout_add(wp->jobs, job->id, job) < 0 || !(job->command = nm_strdup(cmd))) {
 		free(job);
 		return NULL;
 	}

@@ -15,6 +15,7 @@
 #include "globals.h"
 #include "defaults.h"
 #include "loadctl.h"
+#include "nm_alloc.h"
 #include <math.h>
 #include <string.h>
 
@@ -761,7 +762,7 @@ timed_event *schedule_new_event(int event_type, int high_priority, time_t run_ti
 	log_debug_info(DEBUGL_EVENTS, 0, " Event Options:              %d\n",
 	               event_options);
 
-	new_event = (timed_event *)calloc(1, sizeof(timed_event));
+	new_event = nm_calloc(1, sizeof(timed_event));
 	if (new_event != NULL) {
 		new_event->event_type = event_type;
 		new_event->event_data = event_data;

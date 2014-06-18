@@ -9,6 +9,7 @@
 #include "globals.h"
 #include "logging.h"
 #include "defaults.h"
+#include "nm_alloc.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -58,9 +59,9 @@ int xpddefault_initialize_performance_data(const char *cfgfile)
 
 	/* make sure we have some templates defined */
 	if (host_perfdata_file_template == NULL)
-		host_perfdata_file_template = (char *)strdup(DEFAULT_HOST_PERFDATA_FILE_TEMPLATE);
+		host_perfdata_file_template = nm_strdup(DEFAULT_HOST_PERFDATA_FILE_TEMPLATE);
 	if (service_perfdata_file_template == NULL)
-		service_perfdata_file_template = (char *)strdup(DEFAULT_SERVICE_PERFDATA_FILE_TEMPLATE);
+		service_perfdata_file_template = nm_strdup(DEFAULT_SERVICE_PERFDATA_FILE_TEMPLATE);
 
 	/* process special chars in templates */
 	xpddefault_preprocess_file_templates(host_perfdata_file_template);
@@ -72,7 +73,7 @@ int xpddefault_initialize_performance_data(const char *cfgfile)
 
 	/* verify that performance data commands are valid */
 	if (host_perfdata_command != NULL) {
-		temp_buffer = (char *)strdup(host_perfdata_command);
+		temp_buffer = nm_strdup(host_perfdata_command);
 		if ((temp_command = find_bang_command(temp_buffer)) == NULL) {
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Host performance command '%s' was not found - host performance data will not be processed!\n", host_perfdata_command);
 			my_free(host_perfdata_command);
@@ -85,7 +86,7 @@ int xpddefault_initialize_performance_data(const char *cfgfile)
 	}
 
 	if (service_perfdata_command != NULL) {
-		temp_buffer = (char *)strdup(service_perfdata_command);
+		temp_buffer = nm_strdup(service_perfdata_command);
 		if ((temp_command = find_bang_command(temp_buffer)) == NULL) {
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Service performance command '%s' was not found - service performance data will not be processed!\n", service_perfdata_command);
 			my_free(service_perfdata_command);
@@ -98,7 +99,7 @@ int xpddefault_initialize_performance_data(const char *cfgfile)
 	}
 
 	if (host_perfdata_file_processing_command != NULL) {
-		temp_buffer = (char *)strdup(host_perfdata_file_processing_command);
+		temp_buffer = nm_strdup(host_perfdata_file_processing_command);
 		if ((temp_command = find_bang_command(temp_buffer)) == NULL) {
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Host performance file processing command '%s' was not found - host performance data file will not be processed!\n", host_perfdata_file_processing_command);
 			my_free(host_perfdata_file_processing_command);
@@ -112,7 +113,7 @@ int xpddefault_initialize_performance_data(const char *cfgfile)
 	}
 
 	if (service_perfdata_file_processing_command != NULL) {
-		temp_buffer = (char *)strdup(service_perfdata_file_processing_command);
+		temp_buffer = nm_strdup(service_perfdata_file_processing_command);
 		if ((temp_command = find_bang_command(temp_buffer)) == NULL) {
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Service performance file processing command '%s' was not found - service performance data file will not be processed!\n", service_perfdata_file_processing_command);
 			my_free(service_perfdata_file_processing_command);
@@ -133,15 +134,15 @@ int xpddefault_initialize_performance_data(const char *cfgfile)
 	/* save the host perf data file macro */
 	my_free(mac->x[MACRO_HOSTPERFDATAFILE]);
 	if (host_perfdata_file != NULL) {
-		if ((mac->x[MACRO_HOSTPERFDATAFILE] = (char *)strdup(host_perfdata_file)))
-			strip(mac->x[MACRO_HOSTPERFDATAFILE]);
+		mac->x[MACRO_HOSTPERFDATAFILE] = nm_strdup(host_perfdata_file);
+		strip(mac->x[MACRO_HOSTPERFDATAFILE]);
 	}
 
 	/* save the service perf data file macro */
 	my_free(mac->x[MACRO_SERVICEPERFDATAFILE]);
 	if (service_perfdata_file != NULL) {
-		if ((mac->x[MACRO_SERVICEPERFDATAFILE] = (char *)strdup(service_perfdata_file)))
-			strip(mac->x[MACRO_SERVICEPERFDATAFILE]);
+		mac->x[MACRO_SERVICEPERFDATAFILE] = nm_strdup(service_perfdata_file);
+		strip(mac->x[MACRO_SERVICEPERFDATAFILE]);
 	}
 
 	/* free memory */
@@ -446,9 +447,7 @@ int xpddefault_preprocess_file_templates(char *template)
 		return OK;
 
 	/* allocate temporary buffer */
-	tempbuf = (char *)malloc(strlen(template) + 1);
-	if (tempbuf == NULL)
-		return ERROR;
+	tempbuf = nm_malloc(strlen(template) + 1);
 	strcpy(tempbuf, "");
 
 	for (x = 0, y = 0; x < strlen(template); x++, y++) {
@@ -493,7 +492,7 @@ int xpddefault_update_service_performance_data_file(nagios_macros *mac, service 
 		return OK;
 
 	/* get the raw line to write */
-	raw_output = (char *)strdup(service_perfdata_file_template);
+	raw_output = nm_strdup(service_perfdata_file_template);
 
 	log_debug_info(DEBUGL_PERFDATA, 2, "Raw service performance data file output: %s\n", raw_output);
 
@@ -534,7 +533,7 @@ int xpddefault_update_host_performance_data_file(nagios_macros *mac, host *hst)
 		return OK;
 
 	/* get the raw output */
-	raw_output = (char *)strdup(host_perfdata_file_template);
+	raw_output = nm_strdup(host_perfdata_file_template);
 
 	log_debug_info(DEBUGL_PERFDATA, 2, "Raw host performance file output: %s\n", raw_output);
 

@@ -27,6 +27,7 @@
 #include "logging.h"
 #include "nerd.h"
 #include "globals.h"
+#include "nm_alloc.h"
 
 struct nerd_channel {
 	const char *name; /* name of this channel */
@@ -111,12 +112,10 @@ static int subscribe(int sd, struct nerd_channel *chan, char *fmt)
 {
 	struct nerd_subscription *subscr;
 
-	if (!(subscr = calloc(1, sizeof(*subscr))))
-		return -1;
-
+	subscr = nm_calloc(1, sizeof(*subscr));
 	subscr->sd = sd;
 	subscr->chan = chan;
-	subscr->format = fmt ? strdup(fmt) : NULL;
+	subscr->format = fmt ? nm_strdup(fmt) : NULL;
 
 	if (!chan->subscriptions) {
 		nerd_register_channel_callbacks(chan);
@@ -238,7 +237,6 @@ static int chan_host_checks(int cb, void *data)
 	check_result *cr = (check_result *)ds->check_result_ptr;
 	host *h;
 	char *buf;
-	int len;
 
 	if (ds->type != NEBTYPE_HOSTCHECK_PROCESSED)
 		return 0;
@@ -247,8 +245,8 @@ static int chan_host_checks(int cb, void *data)
 		return 0;
 
 	h = (host *)ds->object_ptr;
-	len = asprintf(&buf, "%s from %d -> %d: %s\n", h->name, h->last_state, h->current_state, cr->output);
-	nerd_broadcast(chan_host_checks_id, buf, len);
+	nm_asprintf(&buf, "%s from %d -> %d: %s\n", h->name, h->last_state, h->current_state, cr->output);
+	nerd_broadcast(chan_host_checks_id, buf, strlen(buf));
 	free(buf);
 	return 0;
 }
@@ -259,13 +257,12 @@ static int chan_service_checks(int cb, void *data)
 	check_result *cr = (check_result *)ds->check_result_ptr;
 	service *s;
 	char *buf;
-	int len;
 
 	if (ds->type != NEBTYPE_SERVICECHECK_PROCESSED)
 		return 0;
 	s = (service *)ds->object_ptr;
-	len = asprintf(&buf, "%s;%s from %d -> %d: %s\n", s->host_name, s->description, s->last_state, s->current_state, cr->output);
-	nerd_broadcast(chan_service_checks_id, buf, len);
+	nm_asprintf(&buf, "%s;%s from %d -> %d: %s\n", s->host_name, s->description, s->last_state, s->current_state, cr->output);
+	nerd_broadcast(chan_service_checks_id, buf, strlen(buf));
 	free(buf);
 	return 0;
 }
@@ -282,7 +279,7 @@ static const char *host_parent_path(host *leaf, char sep)
 		return h->name;
 
 	if (!host_parent_path_cache) {
-		host_parent_path_cache = calloc(num_objects.hosts, sizeof(char *));
+		host_parent_path_cache = nm_calloc(num_objects.hosts, sizeof(char *));
 	}
 	if (host_parent_path_cache[h->id]) {
 		return host_parent_path_cache[h->id];
@@ -297,7 +294,7 @@ static const char *host_parent_path(host *leaf, char sep)
 			break;
 	}
 
-	ret = malloc(len + 1);
+	ret = nm_malloc(len + 1);
 	for (list = stack; list; list = next) {
 		char *ppart = (char *)list->object_ptr;
 		next = list->next;
@@ -343,7 +340,7 @@ static int chan_opath_checks(int cb, void *data)
 	} else
 		return 0;
 
-	asprintf(&buf, "%lu|%s|M|%s/%s|%06X\n", cr->finish_time.tv_sec,
+	nm_asprintf(&buf, "%lu|%s|M|%s/%s|%06X\n", cr->finish_time.tv_sec,
 	         check_result_source(cr), host_parent_path(h, '/'), name, color);
 	nerd_broadcast(chan_opath_checks_id, buf, strlen(buf));
 	free(buf);
@@ -390,15 +387,11 @@ int nerd_mkchan(const char *name, const char *description, int (*handler)(int, v
 
 	if (num_channels + 1 >= alloc_channels) {
 		alloc_channels = alloc_nr(alloc_channels);
-		ptr = realloc(channels, alloc_channels * sizeof(struct nerd_channel *));
-		if (!ptr)
-			return -1;
+		ptr = nm_realloc(channels, alloc_channels * sizeof(struct nerd_channel *));
 		channels = ptr;
 	}
 
-	if (!(chan = calloc(1, sizeof(*chan))))
-		return -1;
-
+	chan = nm_calloc(1, sizeof(*chan));
 	chan->name = name;
 	chan->description = description;
 	chan->handler = handler;

@@ -8,7 +8,7 @@ BASE_DEPS = broker.o checks.o commands.o comments.o \
 	macros.o nebmods.o notifications.o objects.o perfdata.o \
 	query-handler.o sehandlers.o shared.o sretention.o statusdata.o \
 	workers.o xodtemplate.o xpddefault.o xrddefault.o \
-	xsddefault.o
+	xsddefault.o nm_alloc.o
 TIMEPERIODS_DEPS = $(BASE_DEPS)
 MACROS_DEPS = $(BASE_DEPS) utils.o
 CHECKS_DEPS = $(BASE_DEPS) utils.o
