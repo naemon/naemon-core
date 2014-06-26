@@ -106,6 +106,19 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 0, "Notification viability test passed.\n");
 
+#ifdef USE_EVENT_BROKER
+	/* send data to event broker */
+	end_time.tv_sec = 0L;
+	end_time.tv_usec = 0L;
+	neb_result = broker_notification_data(NEBTYPE_NOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, start_time, end_time, (void *)svc, not_author, not_data, escalated, 0, NULL);
+	if (neb_result == NEBERROR_CALLBACKCANCEL || neb_result == NEBERROR_CALLBACKOVERRIDE) {
+		log_debug_info(DEBUGL_CHECKS, 0, "Service notification to %s;%s (id=%u) was blocked by a module\n",
+		               svc->host_name, svc->description, svc->id);
+		free_notification_list();
+		return neb_result == NEBERROR_CALLBACKOVERRIDE ? OK : ERROR;
+	}
+#endif
+
 	/* should the notification number be increased? */
 	if (type == NOTIFICATION_NORMAL || (options & NOTIFICATION_OPTION_INCREMENT)) {
 		svc->current_notification_number++;
@@ -119,19 +132,6 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	next_notification_id++;
 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Creating list of contacts to be notified.\n");
-
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
-	end_time.tv_sec = 0L;
-	end_time.tv_usec = 0L;
-	neb_result = broker_notification_data(NEBTYPE_NOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, start_time, end_time, (void *)svc, not_author, not_data, escalated, 0, NULL);
-	if (neb_result == NEBERROR_CALLBACKCANCEL || neb_result == NEBERROR_CALLBACKOVERRIDE) {
-		log_debug_info(DEBUGL_CHECKS, 0, "Service notification to %s;%s (id=%u) was blocked by a module\n",
-		               svc->host_name, svc->description, svc->id);
-		free_notification_list();
-		return neb_result == NEBERROR_CALLBACKOVERRIDE ? OK : ERROR;
-	}
-#endif
 
 	/* allocate memory for macros */
 	memset(&mac, 0, sizeof(mac));
@@ -1039,7 +1039,6 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 0, "** Host Notification Attempt ** Host: '%s', Type: %s, Options: %d, Current State: %d, Last Notification: %s", hst->name, notification_reason_name(type), options, hst->current_state, ctime(&hst->last_notification));
 
-
 	/* check viability of sending out a host notification */
 	if (check_host_notification_viability(hst, type, options) == ERROR) {
 		log_debug_info(DEBUGL_NOTIFICATIONS, 0, "Notification viability test failed.  No notification will be sent out.\n");
@@ -1047,6 +1046,18 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 	}
 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 0, "Notification viability test passed.\n");
+
+#ifdef USE_EVENT_BROKER
+	/* send data to event broker */
+	end_time.tv_sec = 0L;
+	end_time.tv_usec = 0L;
+	neb_result = broker_notification_data(NEBTYPE_NOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, start_time, end_time, (void *)hst, not_author, not_data, escalated, 0, NULL);
+	if (neb_result == NEBERROR_CALLBACKCANCEL || neb_result == NEBERROR_CALLBACKOVERRIDE) {
+		log_debug_info(DEBUGL_NOTIFICATIONS, 0, "Host notification to %s (id=%u) was blocked by a module.\n", hst->name, hst->id);
+		free_notification_list();
+		return neb_result == NEBERROR_CALLBACKOVERRIDE ? OK : ERROR;
+	}
+#endif
 
 	/* should the notification number be increased? */
 	if (type == NOTIFICATION_NORMAL || (options & NOTIFICATION_OPTION_INCREMENT)) {
@@ -1061,18 +1072,6 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 	next_notification_id++;
 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Creating list of contacts to be notified.\n");
-
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
-	end_time.tv_sec = 0L;
-	end_time.tv_usec = 0L;
-	neb_result = broker_notification_data(NEBTYPE_NOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, start_time, end_time, (void *)hst, not_author, not_data, escalated, 0, NULL);
-	if (neb_result == NEBERROR_CALLBACKCANCEL || neb_result == NEBERROR_CALLBACKOVERRIDE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 0, "Host notification to %s (id=%u) was blocked by a module.\n", hst->name, hst->id);
-		free_notification_list();
-		return neb_result == NEBERROR_CALLBACKOVERRIDE ? OK : ERROR;
-	}
-#endif
 
 	/* reset memory for local macro data */
 	memset(&mac, 0, sizeof(mac));
