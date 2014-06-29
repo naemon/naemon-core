@@ -1516,6 +1516,7 @@ static int del_downtime_by_filter_handler(const struct external_command *ext_com
 	}
 }
 
+
 static int host_command_handler(const struct external_command *ext_command, time_t entry_time)
 {
 	host *target_host = NULL;
@@ -1790,6 +1791,12 @@ static int host_command_handler(const struct external_command *ext_command, time
 static int hostgroup_command_handler(const struct external_command *ext_command, time_t entry_time)
 {
 	hostgroup *target_hostgroup = GV_HOSTGROUP("hostgroup_name");
+	unsigned long downtime_id = 0L;
+	unsigned long duration = 0L;
+	hostsmember *hostsmember_p = NULL;
+	servicesmember *servicesmember_p = NULL;
+	service *service_p;
+	int ret = 0;
 	switch (ext_command->id) {
 
 		case CMD_ENABLE_HOSTGROUP_HOST_NOTIFICATIONS:
@@ -1816,6 +1823,23 @@ static int hostgroup_command_handler(const struct external_command *ext_command,
 		case CMD_DISABLE_HOSTGROUP_PASSIVE_HOST_CHECKS:
 			foreach_host_in_hostgroup(target_hostgroup, disable_passive_host_checks);
 			return OK;
+		case CMD_SCHEDULE_HOSTGROUP_HOST_DOWNTIME:
+			if (GV_BOOL("fixed") > 0) {
+				duration = (GV_TIMESTAMP("end_time")) - (GV_TIMESTAMP("start_time"));
+			}
+			else {
+				duration = GV_ULONG("duration");
+			}
+
+			for (hostsmember_p = target_hostgroup->members; hostsmember_p != NULL; hostsmember_p = hostsmember_p->next) {
+				ret = schedule_downtime(HOST_DOWNTIME, hostsmember_p->host_name, NULL, entry_time, GV("author"), GV("comment"),
+					GV_TIMESTAMP("start_time"), GV_TIMESTAMP("end_time"), GV_BOOL("fixed"),
+					GV_ULONG("trigger_id"), duration,
+					&downtime_id);
+				if (ret != 0)
+					return ERROR;
+			}
+			return OK;
 		case CMD_ENABLE_HOSTGROUP_SVC_CHECKS:
 			foreach_service_in_hostgroup(target_hostgroup, enable_service_checks);
 			return OK;
@@ -1828,8 +1852,30 @@ static int hostgroup_command_handler(const struct external_command *ext_command,
 		case CMD_DISABLE_HOSTGROUP_PASSIVE_SVC_CHECKS:
 			foreach_service_in_hostgroup(target_hostgroup, disable_passive_service_checks);
 			return OK;
+		case CMD_SCHEDULE_HOSTGROUP_SVC_DOWNTIME:
+			if (GV_BOOL("fixed") > 0) {
+				duration = (GV_TIMESTAMP("end_time")) - (GV_TIMESTAMP("start_time"));
+			}
+			else {
+				duration = GV_ULONG("duration");
+			}
+			for (hostsmember_p = target_hostgroup->members; hostsmember_p != NULL; hostsmember_p = hostsmember_p->next) {
+				for (servicesmember_p = (hostsmember_p->host_ptr)->services; servicesmember_p != NULL; servicesmember_p = servicesmember_p->next) {
+					if ((service_p = servicesmember_p->service_ptr) == NULL)
+						continue;
+					ret = schedule_downtime(SERVICE_DOWNTIME, service_p->host_name, service_p->description, entry_time, GV("author"),
+							GV("comment"), GV_TIMESTAMP("start_time"), GV_TIMESTAMP("end_time"), GV_BOOL("fixed"),
+							GV_ULONG("trigger_id"), duration,
+							&downtime_id);
+
+					if (ret != 0)
+						return ERROR;
+				}
+			}
+			return OK;
+
 		default:
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unknown hostgroup comamnd ID %d", ext_command->id);
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unknown hostgroup command ID %d", ext_command->id);
 			return ERROR;
 	}
 	return ERROR;
