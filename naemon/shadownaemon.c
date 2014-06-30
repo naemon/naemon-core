@@ -1274,6 +1274,12 @@ int update_downtime_data() {
     filtered_query = nm_calloc(get_service_count(), 50);
     sprintf(filtered_query, "%s\nFilter: id > %lu\n", query, highest_downtime_id);
 
+    /* full refresh? */
+    if(full_refresh_required) {
+        my_free(filtered_query);
+        filtered_query = strdup(query);
+    }
+
     num = livestatus_query(&answer, (char*)input_source, filtered_query, columns, columns_size);
     my_free(filtered_query);
 
@@ -1283,6 +1289,8 @@ int update_downtime_data() {
             current_id = atol(row->set[0]);
             /* host downtimes */
             if(!strcmp(row->set[2], "")) {
+                if(full_refresh_required && find_host_downtime(current_id) != NULL)
+                    continue;
                 result = add_host_downtime(row->set[1],             // host_name
                                            atoi(row->set[5]),       // entry_time
                                            row->set[3],             // author
@@ -1304,6 +1312,8 @@ int update_downtime_data() {
                     exit(EXIT_FAILURE);
                 }
             } else {
+                if(full_refresh_required && find_service_downtime(current_id) != NULL)
+                    continue;
                 result = add_service_downtime(
                                            row->set[1],             // host_name
                                            row->set[2],             // svc_description
@@ -1431,6 +1441,12 @@ int update_comment_data() {
     filtered_query = nm_calloc(get_service_count(), 50);
     sprintf(filtered_query, "%s\nFilter: id > %lu\n", query, highest_comment_id);
 
+    /* full refresh? */
+    if(full_refresh_required) {
+        my_free(filtered_query);
+        filtered_query = strdup(query);
+    }
+
     num = livestatus_query(&answer, (char*)input_source, filtered_query, columns, columns_size);
     my_free(filtered_query);
 
@@ -1440,6 +1456,8 @@ int update_comment_data() {
             current_id = atol(row->set[0]);
             /* host comments */
             if(!strcmp(row->set[2], "")) {
+                if(full_refresh_required && find_host_comment(current_id) != NULL)
+                    continue;
                 result = add_host_comment(atoi(row->set[6]),    // entry_type
                                           row->set[1],          // host_name
                                           atoi(row->set[5]),    // entry_time
@@ -1456,6 +1474,8 @@ int update_comment_data() {
                     exit(EXIT_FAILURE);
                 }
             } else {
+                if(full_refresh_required && find_service_comment(current_id) != NULL)
+                    continue;
                 result = add_service_comment(
                                           atoi(row->set[6]),    // entry_type
                                           row->set[1],          // host_name
