@@ -1678,7 +1678,11 @@ int daemon_init(void)
 
 	/* write PID to lockfile... */
 	lseek(lockfile, 0, SEEK_SET);
-	ftruncate(lockfile, 0);
+	if (ftruncate(lockfile, 0) != 0) {
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Cannot truncate lockfile '%s': %s. Bailing out...", lock_file, strerror(errno));
+		cleanup();
+		exit(ERROR);
+	}
 	sprintf(buf, "%d\n", (int)getpid());
 	write(lockfile, buf, strlen(buf));
 
