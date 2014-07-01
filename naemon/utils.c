@@ -1566,6 +1566,19 @@ static long long check_file_size(char *path, unsigned long fudge,
 /******************************************************************/
 /************************ DAEMON FUNCTIONS ************************/
 /******************************************************************/
+static void set_working_directory(void) {
+	char *working_dir = NULL;
+	/* change working directory. scuttle home if we're dumping core */
+	working_dir = getenv("HOME");
+	if (daemon_dumps_core != TRUE || working_dir == NULL)
+		working_dir = "/";
+
+	if (chdir(working_dir) != 0) {
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Aborting. Failed to set daemon working directory ('%s'): %s\n", working_dir, strerror(errno));
+		cleanup();
+		exit(ERROR);
+	}
+}
 
 int daemon_init(void)
 {
@@ -1575,19 +1588,11 @@ int daemon_init(void)
 	int val = 0;
 	char buf[256];
 	struct flock lock;
-	char *homedir = NULL;
 
 #ifdef RLIMIT_CORE
 	struct rlimit limit;
 #endif
-
-	/* change working directory. scuttle home if we're dumping core */
-	homedir = getenv("HOME");
-	if (daemon_dumps_core == TRUE && homedir != NULL)
-		chdir(homedir);
-	else
-		chdir("/");
-
+	set_working_directory();
 	umask(S_IWGRP | S_IWOTH);
 
 	/* close existing stdin, stdout, stderr */
