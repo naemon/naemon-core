@@ -1427,13 +1427,8 @@ int is_service_result_fresh(service *temp_service, time_t current_time, int log_
 	 * Only match next condition for services that
 	 * have active checks enabled...
 	 */
-	/*
-	 * CHANGED 10/07/07 EG:
-	 * Added max_service_check_spread to expiration time as suggested
-	 * by Altinity
-	 */
 	else if (temp_service->checks_enabled == TRUE && event_start > temp_service->last_check && temp_service->freshness_threshold == 0)
-		expiration_time = (time_t)(event_start + freshness_threshold + (max_service_check_spread * interval_length));
+		expiration_time = (time_t)(event_start + freshness_threshold);
 	else
 		expiration_time = (time_t)(temp_service->last_check + freshness_threshold);
 
@@ -1811,13 +1806,8 @@ int is_host_result_fresh(host *temp_host, time_t current_time, int log_this)
 	 * Problems can occur if Nagios is restarted more frequently that
 	 * freshness threshold intervals (hosts never go stale).
 	 */
-	/*
-	 * CHANGED 10/07/07 EG:
-	 * Added max_host_check_spread to expiration time as suggested by
-	 * Altinity
-	 */
 	else if (temp_host->checks_enabled == TRUE && event_start > temp_host->last_check && temp_host->freshness_threshold == 0)
-		expiration_time = (time_t)(event_start + freshness_threshold + (max_host_check_spread * interval_length));
+		expiration_time = (time_t)(event_start + freshness_threshold);
 	else
 		expiration_time = (time_t)(temp_host->last_check + freshness_threshold);
 

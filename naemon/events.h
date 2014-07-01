@@ -52,23 +52,10 @@
 	"UNKNOWN" \
 )
 
-/******* INTER-CHECK DELAY CALCULATION TYPES **********/
-
-#define ICD_NONE			0	/* no inter-check delay */
-#define ICD_DUMB			1	/* dumb delay of 1 second */
-#define ICD_SMART			2	/* smart delay */
-#define ICD_USER			3       /* user-specified delay */
-
-/******* INTERLEAVE FACTOR CALCULATION TYPES **********/
-
-#define ILF_USER			0	/* user-specified interleave factor */
-#define ILF_SMART			1	/* smart interleave */
-
 NAGIOS_BEGIN_DECL
 
 int dump_event_stats(int sd);
 void init_timing_loop(void);                         		/* setup the initial scheduling queue */
-void display_scheduling_info(void);				/* displays service check scheduling information */
 int init_event_queue(void); /* creates the queue nagios_squeue */
 timed_event *schedule_new_event(int, int, time_t, int, unsigned long, void *, int, void *, void *, int);	/* schedules a new timed event */
 void reschedule_event(squeue_t *sq, timed_event *event);   		/* reschedules an event */

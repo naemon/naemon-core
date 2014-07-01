@@ -86,12 +86,6 @@ char *global_service_event_handler = NULL;
 command *global_host_event_handler_ptr = NULL;
 command *global_service_event_handler_ptr = NULL;
 
-int service_inter_check_delay_method = ICD_SMART;
-int host_inter_check_delay_method = ICD_SMART;
-int service_interleave_factor_method = ILF_SMART;
-int max_host_check_spread = DEFAULT_HOST_CHECK_SPREAD;
-int max_service_check_spread = DEFAULT_SERVICE_CHECK_SPREAD;
-
 int check_reaper_interval = DEFAULT_CHECK_REAPER_INTERVAL;
 int max_check_reaper_time = DEFAULT_MAX_REAPER_TIME;
 int service_freshness_check_interval = DEFAULT_FRESHNESS_CHECK_INTERVAL;
@@ -151,7 +145,6 @@ int sig_id = 0;
 
 int daemon_dumps_core = TRUE;
 
-int max_parallel_service_checks = DEFAULT_MAX_PARALLEL_SERVICE_CHECKS;
 int currently_running_service_checks = 0;
 int currently_running_host_checks = 0;
 
@@ -215,8 +208,6 @@ unsigned long   max_debug_file_size = DEFAULT_MAX_DEBUG_FILE_SIZE;
 
 iobroker_set *nagios_iobs = NULL;
 squeue_t *nagios_squeue = NULL; /* our scheduling queue */
-
-sched_info scheduling_info;
 
 /* from GNU defines errno as a macro, since it's a per-thread variable */
 #ifndef errno
@@ -2909,11 +2900,6 @@ int reset_variables(void)
 	ochp_timeout = DEFAULT_OCHP_TIMEOUT;
 
 	interval_length = DEFAULT_INTERVAL_LENGTH;
-	service_inter_check_delay_method = ICD_SMART;
-	host_inter_check_delay_method = ICD_SMART;
-	service_interleave_factor_method = ILF_SMART;
-	max_service_check_spread = DEFAULT_SERVICE_CHECK_SPREAD;
-	max_host_check_spread = DEFAULT_HOST_CHECK_SPREAD;
 
 	use_aggressive_host_checking = DEFAULT_AGGRESSIVE_HOST_CHECKING;
 	cached_host_check_horizon = DEFAULT_CACHED_HOST_CHECK_HORIZON;
@@ -2953,7 +2939,6 @@ int reset_variables(void)
 
 	last_log_rotation = 0L;
 
-	max_parallel_service_checks = DEFAULT_MAX_PARALLEL_SERVICE_CHECKS;
 	currently_running_service_checks = 0;
 
 	enable_notifications = TRUE;
