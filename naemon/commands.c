@@ -680,10 +680,10 @@ static const char * arg_t2str(arg_t type)
 }
 static int parse_arguments(const char *s, struct external_command_argument **args, int argc)
 {
-	char *scopy, *next, *temp;
+	char *scopy, *next, *temp = NULL;
 	int i = 0, error = 0, ret = CMD_ERROR_OK;
 
-	temp = scopy = nm_strdup(s);
+	scopy = nm_strdup(s);
 	/* stash ptr start for free()ing, since *s is const and we copy it */
 	for (temp = scopy; temp && ret == CMD_ERROR_OK; i++, temp = next ? next + 1 : NULL) {
 		next = strchr(temp, ';');
