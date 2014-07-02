@@ -87,7 +87,11 @@ char *my_strtok(char *buffer, const char *tokens)
 	static char *my_strtok_buffer = NULL;
 	static char *original_my_strtok_buffer = NULL;
 
-	if (buffer != NULL) {
+	if (buffer == NULL) {
+		if (my_strtok_buffer == NULL)
+			return NULL; /*nothing supplied, nothing stored*/
+	}
+	else {
 		my_free(original_my_strtok_buffer);
 		my_strtok_buffer = nm_strdup(buffer);
 		original_my_strtok_buffer = my_strtok_buffer;
