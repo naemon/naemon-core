@@ -23,6 +23,7 @@
 #include "nebmods.h"
 #include "nebmodules.h"
 #include "workers.h"
+#include "nm_alloc.h"
 #include <string.h>
 #include <stdarg.h>
 #include <getopt.h>
@@ -315,7 +316,7 @@ static int nsplit_cache_stuff(const char *orig_groups)
 	if (!orig_groups)
 		return EXIT_FAILURE;
 
-	grp = groups = strdup(orig_groups);
+	grp = groups = nm_strdup(orig_groups);
 	for (grp = groups; grp != NULL; grp = comma ? comma + 1 : NULL) {
 		if ((comma = strchr(grp, ',')))
 			* comma = 0;
@@ -405,7 +406,7 @@ int main(int argc, char **argv)
 #define getopt(a, b, c) getopt_long(a, b, c, long_options, &option_index)
 #endif
 
-	self_name = strdup(basename(argv[0]));
+	self_name = nm_strdup(basename(argv[0]));
 	/* make sure we have the correct number of command line arguments */
 	if (argc < 2) {
 		usage("Not enough arguments.\n");
@@ -467,7 +468,7 @@ int main(int argc, char **argv)
 
 	if (!config_file) {
 		if (optind >= argc)
-			config_file = strdup(get_default_config_file());
+			config_file = nm_strdup(get_default_config_file());
 		else
 			config_file = argv[optind];
 	}

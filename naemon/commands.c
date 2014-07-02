@@ -15,6 +15,7 @@
 #include "notifications.h"
 #include "globals.h"
 #include "logging.h"
+#include "nm_alloc.h"
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -277,7 +278,7 @@ int launch_command_file_worker(void)
 	/* make our own process-group so we can be traced into and stuff */
 	setpgid(0, 0);
 
-	str = strdup(command_file);
+	str = nm_strdup(command_file);
 	free_memory(get_global_macros());
 	command_file = str;
 	exit(command_file_worker(sv[1]));
@@ -392,10 +393,11 @@ static service *resolve_service(char *obj)
 	char *hostname = NULL, *service_dscr = NULL;
 	char *object = NULL;
 	service *svc = NULL;
-	if ( obj==NULL || (object = strdup (obj)) == NULL) {
+	if ( obj==NULL)
 		return NULL;
-	}
-	else if ((hostname = strtok_r(object, ";", &service_dscr)) != NULL) {
+
+	object = nm_strdup (obj);
+	if ((hostname = strtok_r(object, ";", &service_dscr)) != NULL) {
 		svc = find_service(hostname, service_dscr);
 	}
 	free(object);
@@ -469,12 +471,12 @@ void * command_argument_get_value(const struct external_command * ext_command, c
 
 static struct external_command_argument * command_argument_copy(struct external_command_argument *arg) {
 	struct external_command_argument * copy;
-	copy = (struct external_command_argument *) malloc(sizeof(struct external_command_argument));
+	copy = nm_malloc(sizeof(struct external_command_argument));
 	if (!copy) {
 		log_mem_error();
 		return NULL;
 	}
-	copy->name = strdup(arg->name);
+	copy->name = nm_strdup(arg->name);
 	copy->validator = arg->validator;
 	copy->argval = arg_val_copy(arg->argval);
 	return copy;
@@ -483,21 +485,21 @@ static struct external_command_argument * command_argument_copy(struct external_
 static struct external_command * external_command_copy(struct external_command * ext_command)
 {
 	int i;
-	struct external_command * copy = malloc(sizeof(struct external_command));
+	struct external_command * copy = nm_malloc(sizeof(struct external_command));
 	if (!copy) {
 		log_mem_error();
 		return NULL;
 	}
-	copy->name = strdup(ext_command->name);
+	copy->name = nm_strdup(ext_command->name);
 	copy->id = ext_command->id;
 	copy->handler = ext_command->handler;
 	copy->argc = ext_command->argc;
-	copy->arguments = calloc(copy->argc, sizeof(struct external_command_argument *));
+	copy->arguments = nm_calloc(copy->argc, sizeof(struct external_command_argument *));
 	for ( i = 0; i < copy->argc; i++ ) {
 		copy->arguments[i] = command_argument_copy(ext_command->arguments[i]);
 	}
-	copy->description = strdup(ext_command->description);
-	copy->raw_arguments = ext_command ->raw_arguments ? strdup(ext_command->raw_arguments) : NULL;
+	copy->description = nm_strdup(ext_command->description);
+	copy->raw_arguments = ext_command ->raw_arguments ? nm_strdup(ext_command->raw_arguments) : NULL;
 	return copy;
 
 }
@@ -681,7 +683,7 @@ static int parse_arguments(const char *s, struct external_command_argument **arg
 	char *scopy, *next, *temp;
 	int i = 0, error = 0, ret = CMD_ERROR_OK;
 
-	temp = scopy = strdup(s);
+	temp = scopy = nm_strdup(s);
 	/* stash ptr start for free()ing, since *s is const and we copy it */
 	for (temp = scopy; temp && ret == CMD_ERROR_OK; i++, temp = next ? next + 1 : NULL) {
 		next = strchr(temp, ';');
@@ -718,7 +720,7 @@ static int parse_arguments(const char *s, struct external_command_argument **arg
 			/* If we don't have a default value for a non-string (strings are strdup'd) type
 			 * we need to make room for it here*/
 			if (!is_stringy(args[i]->argval->type)) {
-				args[i]->argval->val = malloc(type_sz(args[i]->argval->type));
+				args[i]->argval->val = nm_malloc(type_sz(args[i]->argval->type));
 			}
 		} else if (is_stringy(args[i]->argval->type)) {
 			free(args[i]->argval->val); /*Free before reassignment*/
@@ -733,9 +735,7 @@ static int parse_arguments(const char *s, struct external_command_argument **arg
 			case STRING:
 			case SERVICEGROUP:
 			case HOSTGROUP:
-				if ((args[i]->argval->val = strdup(temp)) == NULL){
-					ret = CMD_ERROR_INTERNAL_ERROR;
-				}
+				args[i]->argval->val = nm_strdup(temp);
 				break;
 			case SERVICE:
 				/* look-ahead for service name*/
@@ -748,10 +748,7 @@ static int parse_arguments(const char *s, struct external_command_argument **arg
 				if ((next = strchr(next + 1, ';'))) {
 					*next = '\0';
 				}
-				args[i]->argval->val = strdup(temp);
-				if(args[i]->argval->val == NULL) {
-					ret = CMD_ERROR_INTERNAL_ERROR;
-				}
+				args[i]->argval->val = nm_strdup(temp);
 				break;
 			case BOOL:
 				*(int *)(args[i]->argval->val) = parse_integer(temp, &error);
@@ -828,7 +825,7 @@ static struct external_command * parse_nokv_command(const char * cmdstr, int *er
 		*error = CMD_ERROR_MALFORMED_COMMAND;
 		return ext_command;
 	}
-	cmd = strdup(cmdstr);
+	cmd = nm_strdup(cmdstr);
 	/* get the command entry time */
 	if((temp_ptr = my_strtok(cmd, "[")) == NULL || (temp_ptr = my_strtok(NULL, "]")) == NULL) {
 		*error = CMD_ERROR_MALFORMED_COMMAND;
@@ -842,43 +839,40 @@ static struct external_command * parse_nokv_command(const char * cmdstr, int *er
 		else if((temp_ptr = my_strtok(NULL, ";")) == NULL) {
 			*error = CMD_ERROR_MALFORMED_COMMAND;
 		}
-		else if((cmd_name = (char *)strdup(temp_ptr + 1)) == NULL) {
-			*error = CMD_ERROR_INTERNAL_ERROR;
-		}
-		/* get the command arguments */
-		else if((temp_ptr = my_strtok(NULL, "")) == NULL) {
-			/*No arguments, this is (possibly) OK*/
-			if ((args = (char *)strdup("")) == NULL) {
-				log_mem_error();
-				*error = CMD_ERROR_INTERNAL_ERROR;
-			}
-		}
-		else if((args = (char *)strdup(temp_ptr)) == NULL) {
-			log_mem_error();
-			*error = CMD_ERROR_INTERNAL_ERROR;
-		}
-		else if (cmd_name[0] == '_') {
-			/*command*/
-			*error = CMD_ERROR_CUSTOM_COMMAND;
-			command2 = command_create(cmd_name, NULL, "A custom command", NULL);
-			command2->entry_time = entry_time;
-			command2->raw_arguments = strdup(args);
-		}
+		else {
+			cmd_name = nm_strdup(temp_ptr + 1);
 
-		if (*error == CMD_ERROR_OK) {
-			/* Find the command */
-			if ((ext_command = command_lookup(cmd_name)) == NULL) {
-				*error = CMD_ERROR_UNKNOWN_COMMAND;
+			/* get the command arguments */
+			if((temp_ptr = my_strtok(NULL, "")) == NULL) {
+				/*No arguments, this is (possibly) OK*/
+				args = nm_strdup("");
 			}
 			else {
-				/* Parse & verify arguments*/
-				command2 = external_command_copy(ext_command);
+				args = nm_strdup(temp_ptr);
+			}
+			if (cmd_name[0] == '_') {
+				/*command*/
+				*error = CMD_ERROR_CUSTOM_COMMAND;
+				command2 = command_create(cmd_name, NULL, "A custom command", NULL);
 				command2->entry_time = entry_time;
-				command2->raw_arguments = strdup(args);
-				*error = parse_arguments(args, command2->arguments, command2->argc);
-				if (*error != CMD_ERROR_OK) {
-					command_destroy(command2);
-					command2 = NULL;
+				command2->raw_arguments = nm_strdup(args);
+			}
+
+			if (*error == CMD_ERROR_OK) {
+				/* Find the command */
+				if ((ext_command = command_lookup(cmd_name)) == NULL) {
+					*error = CMD_ERROR_UNKNOWN_COMMAND;
+				}
+				else {
+					/* Parse & verify arguments*/
+					command2 = external_command_copy(ext_command);
+					command2->entry_time = entry_time;
+					command2->raw_arguments = nm_strdup(args);
+					*error = parse_arguments(args, command2->arguments, command2->argc);
+					if (*error != CMD_ERROR_OK) {
+						command_destroy(command2);
+						command2 = NULL;
+					}
 				}
 			}
 		}
@@ -959,7 +953,7 @@ static struct external_command_argument /*@null@*/ * command_argument_create(cha
 {
 	struct external_command_argument * arg;
 
-	arg = malloc(sizeof(struct external_command_argument));
+	arg = nm_malloc(sizeof(struct external_command_argument));
 	if (validator == NULL) {
 		arg->validator = default_validator(v->type);
 	}
@@ -975,10 +969,7 @@ static struct external_command_argument /*@null@*/ * command_argument_create(cha
 	}
 	if ( arg )
 	{
-		if (!(arg->name = strdup(name))) {
-			log_mem_error();
-			return NULL;
-		}
+		arg->name = nm_strdup(name);
 		arg->argval = v;
 		return arg;
 	}
@@ -997,17 +988,11 @@ static void arg_val_destroy(struct arg_val *argval)
 int command_argument_value_copy(void **dst, const void *src, arg_t type) {
 	if (src != NULL) {
 		if (!is_stringy(type)) {
-			if ( (*dst = malloc(type_sz(type))) == NULL ) {
-				log_mem_error();
-				return -1;
-			}
+			*dst = nm_malloc(type_sz(type));
 			memcpy(*dst, src, type_sz(type));
 		}
 		else {
-			if ((*dst = strdup(src)) == NULL) {
-				log_mem_error();
-				return -1;
-			}
+			*dst = nm_strdup(src);
 		}
 	}
 	else {
@@ -1018,7 +1003,7 @@ int command_argument_value_copy(void **dst, const void *src, arg_t type) {
 
 static struct arg_val * arg_val_create(arg_t type, void *val)
 {
-	struct arg_val *out = malloc(sizeof(struct arg_val));
+	struct arg_val *out = nm_malloc(sizeof(struct arg_val));
 
 	out->type = type;
 	if (command_argument_value_copy(&out->val, val, type) == 0) {
@@ -1044,13 +1029,7 @@ void command_argument_add(struct external_command *ext_command, char *name, arg_
 		return;
 	}
 
-	ext_command->arguments = realloc(ext_command->arguments, sizeof(struct external_command_argument) * (ext_command->argc + 1));
-	if( !ext_command->arguments ) {
-		log_mem_error();
-		arg_val_destroy(argval);
-		return;
-	}
-
+	ext_command->arguments = nm_realloc(ext_command->arguments, sizeof(struct external_command_argument) * (ext_command->argc + 1));
 	ext_command->arguments[ext_command->argc] = command_argument_create(name, argval, validator);
 	if( ext_command->arguments[ext_command->argc] == NULL) {
 		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Failed to create argument %s for command %s in %s",
@@ -1131,7 +1110,7 @@ static arg_t parse_type(const char *type_str)
 
 static int command_add_argspec(struct external_command *ext_command, const char *argspec)
 {
-	char *saveptr = NULL, *saveptr2 = NULL, *s2 = NULL, *s1 = strdup(argspec);
+	char *saveptr = NULL, *saveptr2 = NULL, *s2 = NULL, *s1 = nm_strdup(argspec);
 	char *token = NULL, *subtoken;
 	arg_t type;
 	s2 = s1;
@@ -1152,21 +1131,14 @@ struct external_command /*@null@*/ * command_create(char *cmd, ext_command_handl
 {
 	struct external_command *ext_command = NULL;
 	if ( cmd && description ) {
-
-		ext_command = (struct external_command *)malloc(sizeof(struct external_command));
-		if( ext_command )
-		{
-			ext_command->name = strdup(cmd);
-			ext_command->entry_time = -1;
-			ext_command->handler = handler;
-			ext_command->arguments = NULL;
-			ext_command->argc = 0;
-			ext_command->description = strdup(description);
-			ext_command->raw_arguments = NULL;
-		}
-		else {
-			log_mem_error();
-		}
+		ext_command = nm_malloc(sizeof(struct external_command));
+		ext_command->name = nm_strdup(cmd);
+		ext_command->entry_time = -1;
+		ext_command->handler = handler;
+		ext_command->arguments = NULL;
+		ext_command->argc = 0;
+		ext_command->description = nm_strdup(description);
+		ext_command->raw_arguments = NULL;
 	}
 	else {
 		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Null parameter passed to %s for %s", __func__, cmd ? cmd : "unknown command");
@@ -1184,7 +1156,7 @@ static void grow_registered_commands(void)
 {
 	int i;
 	int new_size = registered_commands_sz * 2;
-	registered_commands = (struct external_command **) realloc(registered_commands, sizeof(struct external_command *)  *  new_size);
+	registered_commands = nm_realloc(registered_commands, sizeof(struct external_command *)  *  new_size);
 	if (!registered_commands) {
 		log_mem_error();
 		return;
@@ -1252,7 +1224,7 @@ void registered_commands_init(int initial_size)
 		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Refusing double initialize of commands register");
 		return;
 	}
-	registered_commands = (struct external_command **)calloc((size_t)initial_size, sizeof(struct external_command *));
+	registered_commands = nm_calloc((size_t)initial_size, sizeof(struct external_command *));
 	if(!registered_commands) {
 		log_mem_error();
 		return;
@@ -1733,7 +1705,7 @@ static int host_command_handler(const struct external_command *ext_command, time
 			return OK;
 		case CMD_CHANGE_HOST_CHECK_TIMEPERIOD:
 			my_free(target_host->check_period);
-			target_host->check_period = strdup((GV_TIMEPERIOD("check_timeperiod"))->name);
+			target_host->check_period = nm_strdup((GV_TIMEPERIOD("check_timeperiod"))->name);
 			target_host->check_period_ptr = GV_TIMEPERIOD("check_timeperiod");
 			target_host->modified_attributes |= MODATTR_CHECK_TIMEPERIOD;
 #ifdef USE_EVENT_BROKER
@@ -1759,7 +1731,7 @@ static int host_command_handler(const struct external_command *ext_command, time
 			return host_notification(target_host, NOTIFICATION_CUSTOM, GV("author"), GV("comment"), GV_INT("options"));
 		case CMD_CHANGE_HOST_NOTIFICATION_TIMEPERIOD:
 			my_free(target_host->notification_period);
-			target_host->notification_period = strdup((GV_TIMEPERIOD("notification_timeperiod"))->name);
+			target_host->notification_period = nm_strdup((GV_TIMEPERIOD("notification_timeperiod"))->name);
 			target_host->notification_period_ptr = GV_TIMEPERIOD("notification_timeperiod");
 			target_host->modified_attributes |= MODATTR_NOTIFICATION_TIMEPERIOD;
 
@@ -2027,7 +1999,7 @@ static int service_command_handler(const struct external_command *ext_command, t
 			return OK;
 		case CMD_CHANGE_SVC_CHECK_TIMEPERIOD:
 			my_free(target_service->check_period);
-			target_service->check_period = strdup((GV_TIMEPERIOD("check_timeperiod"))->name);
+			target_service->check_period = nm_strdup((GV_TIMEPERIOD("check_timeperiod"))->name);
 			target_service->check_period_ptr = GV("check_timeperiod");
 			target_service->modified_attributes |= MODATTR_CHECK_TIMEPERIOD;
 
@@ -2043,7 +2015,7 @@ static int service_command_handler(const struct external_command *ext_command, t
 
 		case CMD_CHANGE_SVC_NOTIFICATION_TIMEPERIOD:
 			my_free(target_service->notification_period);
-			target_service->notification_period = strdup(GV_TIMEPERIOD("notification_timeperiod")->name);
+			target_service->notification_period = nm_strdup(GV_TIMEPERIOD("notification_timeperiod")->name);
 			target_service->notification_period_ptr = GV("notification_timeperiod");
 			target_service->modified_attributes |= MODATTR_NOTIFICATION_TIMEPERIOD;
 
@@ -2169,7 +2141,7 @@ static int contact_command_handler(const struct external_command *ext_command, t
 			return OK;
 		case CMD_CHANGE_CONTACT_HOST_NOTIFICATION_TIMEPERIOD:
 			my_free(target_contact->host_notification_period);
-			target_contact->host_notification_period = strdup(GV_TIMEPERIOD("notification_timeperiod")->name);
+			target_contact->host_notification_period = nm_strdup(GV_TIMEPERIOD("notification_timeperiod")->name);
 			target_contact->host_notification_period_ptr = GV_TIMEPERIOD("notification_timeperiod");
 			target_contact->modified_host_attributes |= MODATTR_NOTIFICATION_TIMEPERIOD;
 			target_contact->modified_service_attributes |= MODATTR_NONE;
@@ -2183,7 +2155,7 @@ static int contact_command_handler(const struct external_command *ext_command, t
 
 		case CMD_CHANGE_CONTACT_SVC_NOTIFICATION_TIMEPERIOD:
 			my_free(target_contact->service_notification_period);
-			target_contact->service_notification_period = strdup(GV_TIMEPERIOD("notification_timeperiod")->name);
+			target_contact->service_notification_period = nm_strdup(GV_TIMEPERIOD("notification_timeperiod")->name);
 			target_contact->service_notification_period_ptr = GV_TIMEPERIOD("notification_timeperiod");
 			target_contact->modified_host_attributes |= MODATTR_NONE;
 			target_contact->modified_service_attributes |= MODATTR_NOTIFICATION_TIMEPERIOD;
@@ -2243,7 +2215,7 @@ static int change_custom_var_handler(const struct external_command *ext_command,
 			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unknown custom variables modification command ID %d", (ext_command->id));
 			return ERROR;
 	}
-	varname = strdup(GV("varname"));
+	varname = nm_strdup(GV("varname"));
 	/* capitalize the custom variable name */
 	for(x = 0; varname[x] != '\x0'; x++)
 		varname[x] = toupper(varname[x]);
@@ -2257,7 +2229,7 @@ static int change_custom_var_handler(const struct external_command *ext_command,
 			/* update the value */
 			if(customvariablesmember_p->variable_value)
 				my_free(customvariablesmember_p->variable_value);
-			customvariablesmember_p->variable_value = strdup(GV("varvalue"));
+			customvariablesmember_p->variable_value = nm_strdup(GV("varvalue"));
 
 			/* mark the variable value as having been changed */
 			customvariablesmember_p->has_been_modified = TRUE;
@@ -3055,14 +3027,14 @@ int process_external_command1(char *cmd)
 	}
 	/*XXX: retain const correctness, broker_external_command below discards it though it seems to not
 	 * modify its arguments*/
-	name = strdup(command_name(parsed_command));
-	args = strdup(command_raw_arguments(parsed_command));
+	name = nm_strdup(command_name(parsed_command));
+	args = nm_strdup(command_raw_arguments(parsed_command));
 
 	/* update statistics for external commands */
 	update_check_stats(EXTERNAL_COMMAND_STATS, time(NULL));
 
 	/* log the external command */
-	asprintf(&temp_buffer, "EXTERNAL COMMAND: %s;%s\n", name, args);
+	nm_asprintf(&temp_buffer, "EXTERNAL COMMAND: %s;%s\n", name, args);
 	if (id == CMD_PROCESS_SERVICE_CHECK_RESULT || id == CMD_PROCESS_HOST_CHECK_RESULT) {
 		/* passive checks are logged in checks.c as well, as some my bypass external commands by getting dropped in checkresults dir */
 		if (log_passive_checks == TRUE)

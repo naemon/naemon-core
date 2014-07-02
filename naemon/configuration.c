@@ -10,6 +10,7 @@
 #include "events.h"
 #include "logging.h"
 #include "globals.h"
+#include "nm_alloc.h"
 #include <sys/types.h>
 #include <dirent.h>
 #include <string.h>
@@ -40,10 +41,8 @@ static objectlist *deprecated = NULL;
 static void obsoleted_warning(const char *key, const char *msg)
 {
 	char *buf;
-	asprintf(&buf, "Warning: %s is deprecated and will be removed.%s%s\n",
+	nm_asprintf(&buf, "Warning: %s is deprecated and will be removed.%s%s\n",
 	         key, msg ? " " : "", msg ? msg : "");
-	if (!buf)
-		return;
 	prepend_object_to_objectlist(&deprecated, buf);
 }
 
@@ -76,7 +75,7 @@ int read_main_config_file(const char *main_config_file)
 
 	/* save the main config file macro */
 	my_free(mac->x[MACRO_MAINCONFIGFILE]);
-	if ((mac->x[MACRO_MAINCONFIGFILE] = (char *)strdup(main_config_file)))
+	if ((mac->x[MACRO_MAINCONFIGFILE] = nm_strdup(main_config_file)))
 		strip(mac->x[MACRO_MAINCONFIGFILE]);
 
 	/* process all lines in the config file */
@@ -101,27 +100,19 @@ int read_main_config_file(const char *main_config_file)
 
 		/* get the variable name */
 		if ((temp_ptr = my_strtok(input, "=")) == NULL) {
-			asprintf(&error_message, "NULL variable");
+			nm_asprintf(&error_message, "NULL variable");
 			error = TRUE;
 			break;
 		}
-		if ((variable = (char *)strdup(temp_ptr)) == NULL) {
-			asprintf(&error_message, "malloc() error");
-			error = TRUE;
-			break;
-		}
+		variable = nm_strdup(temp_ptr);
 
 		/* get the value */
 		if ((temp_ptr = my_strtok(NULL, "\n")) == NULL) {
-			asprintf(&error_message, "NULL value");
+			nm_asprintf(&error_message, "NULL value");
 			error = TRUE;
 			break;
 		}
-		if ((value = (char *)strdup(temp_ptr)) == NULL) {
-			asprintf(&error_message, "malloc() error");
-			error = TRUE;
-			break;
-		}
+		value = (char *)nm_strdup(temp_ptr);
 		strip(variable);
 		strip(value);
 
@@ -149,7 +140,7 @@ int read_main_config_file(const char *main_config_file)
 		} else if (!strcmp(variable, "log_file")) {
 
 			if (strlen(value) > MAX_FILENAME_LENGTH - 1) {
-				asprintf(&error_message, "Log file is too long");
+				nm_asprintf(&error_message, "Log file is too long");
 				error = TRUE;
 				break;
 			}
@@ -167,7 +158,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "debug_file")) {
 
 			if (strlen(value) > MAX_FILENAME_LENGTH - 1) {
-				asprintf(&error_message, "Debug log file is too long");
+				nm_asprintf(&error_message, "Debug log file is too long");
 				error = TRUE;
 				break;
 			}
@@ -182,7 +173,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "command_file")) {
 
 			if (strlen(value) > MAX_FILENAME_LENGTH - 1) {
-				asprintf(&error_message, "Command file is too long");
+				nm_asprintf(&error_message, "Command file is too long");
 				error = TRUE;
 				break;
 			}
@@ -196,7 +187,7 @@ int read_main_config_file(const char *main_config_file)
 
 		else if (!strcmp(variable, "temp_file")) {
 			my_free(temp_file);
-			temp_file = strdup(value);
+			temp_file = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "temp_path")) {
@@ -207,7 +198,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "check_result_path")) {
 
 			if (strlen(value) > MAX_FILENAME_LENGTH - 1) {
-				asprintf(&error_message, "Check result path is too long");
+				nm_asprintf(&error_message, "Check result path is too long");
 				error = TRUE;
 				break;
 			}
@@ -219,7 +210,7 @@ int read_main_config_file(const char *main_config_file)
 				check_result_path[strlen(check_result_path) - 1] = '\x0';
 
 			if ((tmpdir = opendir(check_result_path)) == NULL) {
-				asprintf(&error_message, "Check result path '%s' is not a valid directory", check_result_path);
+				nm_asprintf(&error_message, "Check result path '%s' is not a valid directory", check_result_path);
 				error = TRUE;
 				break;
 			}
@@ -233,7 +224,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "lock_file")) {
 
 			if (strlen(value) > MAX_FILENAME_LENGTH - 1) {
-				asprintf(&error_message, "Lock file is too long");
+				nm_asprintf(&error_message, "Lock file is too long");
 				error = TRUE;
 				break;
 			}
@@ -244,52 +235,52 @@ int read_main_config_file(const char *main_config_file)
 
 		else if (!strcmp(variable, "global_host_event_handler")) {
 			my_free(global_host_event_handler);
-			global_host_event_handler = (char *)strdup(value);
+			global_host_event_handler = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "global_service_event_handler")) {
 			my_free(global_service_event_handler);
-			global_service_event_handler = (char *)strdup(value);
+			global_service_event_handler = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "ocsp_command")) {
 			my_free(ocsp_command);
-			ocsp_command = (char *)strdup(value);
+			ocsp_command = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "ochp_command")) {
 			my_free(ochp_command);
-			ochp_command = (char *)strdup(value);
+			ochp_command = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "nagios_user") || !strcmp(variable, "naemon_user")) {
 			my_free(naemon_user);
-			naemon_user = (char *)strdup(value);
+			naemon_user = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "nagios_group") || !strcmp(variable, "naemon_group")) {
 			my_free(naemon_group);
-			naemon_group = (char *)strdup(value);
+			naemon_group = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "admin_email")) {
 
 			/* save the macro */
 			my_free(mac->x[MACRO_ADMINEMAIL]);
-			mac->x[MACRO_ADMINEMAIL] = (char *)strdup(value);
+			mac->x[MACRO_ADMINEMAIL] = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "admin_pager")) {
 
 			/* save the macro */
 			my_free(mac->x[MACRO_ADMINPAGER]);
-			mac->x[MACRO_ADMINPAGER] = (char *)strdup(value);
+			mac->x[MACRO_ADMINPAGER] = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "use_syslog")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for use_syslog");
+				nm_asprintf(&error_message, "Illegal value for use_syslog");
 				error = TRUE;
 				break;
 			}
@@ -300,7 +291,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "log_notifications")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for log_notifications");
+				nm_asprintf(&error_message, "Illegal value for log_notifications");
 				error = TRUE;
 				break;
 			}
@@ -311,7 +302,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "log_service_retries")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for log_service_retries");
+				nm_asprintf(&error_message, "Illegal value for log_service_retries");
 				error = TRUE;
 				break;
 			}
@@ -322,7 +313,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "log_host_retries")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for log_host_retries");
+				nm_asprintf(&error_message, "Illegal value for log_host_retries");
 				error = TRUE;
 				break;
 			}
@@ -333,7 +324,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "log_event_handlers")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for log_event_handlers");
+				nm_asprintf(&error_message, "Illegal value for log_event_handlers");
 				error = TRUE;
 				break;
 			}
@@ -344,7 +335,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "log_external_commands")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for log_external_commands");
+				nm_asprintf(&error_message, "Illegal value for log_external_commands");
 				error = TRUE;
 				break;
 			}
@@ -355,7 +346,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "log_passive_checks")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for log_passive_checks");
+				nm_asprintf(&error_message, "Illegal value for log_passive_checks");
 				error = TRUE;
 				break;
 			}
@@ -366,7 +357,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "log_initial_states")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for log_initial_states");
+				nm_asprintf(&error_message, "Illegal value for log_initial_states");
 				error = TRUE;
 				break;
 			}
@@ -377,7 +368,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "log_current_states")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for log_current_states");
+				nm_asprintf(&error_message, "Illegal value for log_current_states");
 				error = TRUE;
 				break;
 			}
@@ -388,7 +379,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "retain_state_information")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for retain_state_information");
+				nm_asprintf(&error_message, "Illegal value for retain_state_information");
 				error = TRUE;
 				break;
 			}
@@ -400,7 +391,7 @@ int read_main_config_file(const char *main_config_file)
 
 			retention_update_interval = atoi(value);
 			if (retention_update_interval < 0) {
-				asprintf(&error_message, "Illegal value for retention_update_interval");
+				nm_asprintf(&error_message, "Illegal value for retention_update_interval");
 				error = TRUE;
 				break;
 			}
@@ -409,7 +400,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "use_retained_program_state")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for use_retained_program_state");
+				nm_asprintf(&error_message, "Illegal value for use_retained_program_state");
 				error = TRUE;
 				break;
 			}
@@ -420,7 +411,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "use_retained_scheduling_info")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for use_retained_scheduling_info");
+				nm_asprintf(&error_message, "Illegal value for use_retained_scheduling_info");
 				error = TRUE;
 				break;
 			}
@@ -433,7 +424,7 @@ int read_main_config_file(const char *main_config_file)
 			retention_scheduling_horizon = atoi(value);
 
 			if (retention_scheduling_horizon <= 0) {
-				asprintf(&error_message, "Illegal value for retention_scheduling_horizon");
+				nm_asprintf(&error_message, "Illegal value for retention_scheduling_horizon");
 				error = TRUE;
 				break;
 			}
@@ -463,7 +454,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "obsess_over_services")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for obsess_over_services");
+				nm_asprintf(&error_message, "Illegal value for obsess_over_services");
 				error = TRUE;
 				break;
 			}
@@ -474,7 +465,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "obsess_over_hosts")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for obsess_over_hosts");
+				nm_asprintf(&error_message, "Illegal value for obsess_over_hosts");
 				error = TRUE;
 				break;
 			}
@@ -485,7 +476,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "translate_passive_host_checks")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for translate_passive_host_checks");
+				nm_asprintf(&error_message, "Illegal value for translate_passive_host_checks");
 				error = TRUE;
 				break;
 			}
@@ -501,7 +492,7 @@ int read_main_config_file(const char *main_config_file)
 			service_check_timeout = atoi(value);
 
 			if (service_check_timeout <= 0) {
-				asprintf(&error_message, "Illegal value for service_check_timeout");
+				nm_asprintf(&error_message, "Illegal value for service_check_timeout");
 				error = TRUE;
 				break;
 			}
@@ -519,7 +510,7 @@ int read_main_config_file(const char *main_config_file)
 			else if (!strcmp(value, "u"))
 				service_check_timeout_state = STATE_UNKNOWN;
 			else {
-				asprintf(&error_message, "Illegal value for service_check_timeout_state");
+				nm_asprintf(&error_message, "Illegal value for service_check_timeout_state");
 				error = TRUE;
 				break;
 			}
@@ -530,7 +521,7 @@ int read_main_config_file(const char *main_config_file)
 			host_check_timeout = atoi(value);
 
 			if (host_check_timeout <= 0) {
-				asprintf(&error_message, "Illegal value for host_check_timeout");
+				nm_asprintf(&error_message, "Illegal value for host_check_timeout");
 				error = TRUE;
 				break;
 			}
@@ -541,7 +532,7 @@ int read_main_config_file(const char *main_config_file)
 			event_handler_timeout = atoi(value);
 
 			if (event_handler_timeout <= 0) {
-				asprintf(&error_message, "Illegal value for event_handler_timeout");
+				nm_asprintf(&error_message, "Illegal value for event_handler_timeout");
 				error = TRUE;
 				break;
 			}
@@ -552,7 +543,7 @@ int read_main_config_file(const char *main_config_file)
 			notification_timeout = atoi(value);
 
 			if (notification_timeout <= 0) {
-				asprintf(&error_message, "Illegal value for notification_timeout");
+				nm_asprintf(&error_message, "Illegal value for notification_timeout");
 				error = TRUE;
 				break;
 			}
@@ -563,7 +554,7 @@ int read_main_config_file(const char *main_config_file)
 			ocsp_timeout = atoi(value);
 
 			if (ocsp_timeout <= 0) {
-				asprintf(&error_message, "Illegal value for ocsp_timeout");
+				nm_asprintf(&error_message, "Illegal value for ocsp_timeout");
 				error = TRUE;
 				break;
 			}
@@ -574,7 +565,7 @@ int read_main_config_file(const char *main_config_file)
 			ochp_timeout = atoi(value);
 
 			if (ochp_timeout <= 0) {
-				asprintf(&error_message, "Illegal value for ochp_timeout");
+				nm_asprintf(&error_message, "Illegal value for ochp_timeout");
 				error = TRUE;
 				break;
 			}
@@ -583,7 +574,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "use_agressive_host_checking") || !strcmp(variable, "use_aggressive_host_checking")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for use_aggressive_host_checking");
+				nm_asprintf(&error_message, "Illegal value for use_aggressive_host_checking");
 				error = TRUE;
 				break;
 			}
@@ -605,7 +596,7 @@ int read_main_config_file(const char *main_config_file)
 
 		else if (!strcmp(variable, "soft_state_dependencies")) {
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for soft_state_dependencies");
+				nm_asprintf(&error_message, "Illegal value for soft_state_dependencies");
 				error = TRUE;
 				break;
 			}
@@ -623,7 +614,7 @@ int read_main_config_file(const char *main_config_file)
 			 * find the log archive at all.
 			 */
 			if (strlen(value) > MAX_FILENAME_LENGTH - 1) {
-				asprintf(&error_message, "Log archive path too long");
+				nm_asprintf(&error_message, "Log archive path too long");
 				error = TRUE;
 				break;
 			}
@@ -661,7 +652,7 @@ int read_main_config_file(const char *main_config_file)
 				service_inter_check_delay_method = ICD_USER;
 				scheduling_info.service_inter_check_delay = strtod(value, NULL);
 				if (scheduling_info.service_inter_check_delay <= 0.0) {
-					asprintf(&error_message, "Illegal value for service_inter_check_delay_method");
+					nm_asprintf(&error_message, "Illegal value for service_inter_check_delay_method");
 					error = TRUE;
 					break;
 				}
@@ -672,7 +663,7 @@ int read_main_config_file(const char *main_config_file)
 			strip(value);
 			max_service_check_spread = atoi(value);
 			if (max_service_check_spread < 1) {
-				asprintf(&error_message, "Illegal value for max_service_check_spread");
+				nm_asprintf(&error_message, "Illegal value for max_service_check_spread");
 				error = TRUE;
 				break;
 			}
@@ -690,7 +681,7 @@ int read_main_config_file(const char *main_config_file)
 				host_inter_check_delay_method = ICD_USER;
 				scheduling_info.host_inter_check_delay = strtod(value, NULL);
 				if (scheduling_info.host_inter_check_delay <= 0.0) {
-					asprintf(&error_message, "Illegal value for host_inter_check_delay_method");
+					nm_asprintf(&error_message, "Illegal value for host_inter_check_delay_method");
 					error = TRUE;
 					break;
 				}
@@ -701,7 +692,7 @@ int read_main_config_file(const char *main_config_file)
 
 			max_host_check_spread = atoi(value);
 			if (max_host_check_spread < 1) {
-				asprintf(&error_message, "Illegal value for max_host_check_spread");
+				nm_asprintf(&error_message, "Illegal value for max_host_check_spread");
 				error = TRUE;
 				break;
 			}
@@ -722,7 +713,7 @@ int read_main_config_file(const char *main_config_file)
 
 			max_parallel_service_checks = atoi(value);
 			if (max_parallel_service_checks < 0) {
-				asprintf(&error_message, "Illegal value for max_concurrent_checks");
+				nm_asprintf(&error_message, "Illegal value for max_concurrent_checks");
 				error = TRUE;
 				break;
 			}
@@ -732,7 +723,7 @@ int read_main_config_file(const char *main_config_file)
 
 			check_reaper_interval = atoi(value);
 			if (check_reaper_interval < 1) {
-				asprintf(&error_message, "Illegal value for check_result_reaper_frequency");
+				nm_asprintf(&error_message, "Illegal value for check_result_reaper_frequency");
 				error = TRUE;
 				break;
 			}
@@ -742,7 +733,7 @@ int read_main_config_file(const char *main_config_file)
 
 			max_check_reaper_time = atoi(value);
 			if (max_check_reaper_time < 1) {
-				asprintf(&error_message, "Illegal value for max_check_result_reaper_time");
+				nm_asprintf(&error_message, "Illegal value for max_check_result_reaper_time");
 				error = TRUE;
 				break;
 			}
@@ -756,7 +747,7 @@ int read_main_config_file(const char *main_config_file)
 
 			interval_length = atoi(value);
 			if (interval_length < 1) {
-				asprintf(&error_message, "Illegal value for interval_length");
+				nm_asprintf(&error_message, "Illegal value for interval_length");
 				error = TRUE;
 				break;
 			}
@@ -765,7 +756,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "check_external_commands")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for check_external_commands");
+				nm_asprintf(&error_message, "Illegal value for check_external_commands");
 				error = TRUE;
 				break;
 			}
@@ -781,7 +772,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "check_for_orphaned_services")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for check_for_orphaned_services");
+				nm_asprintf(&error_message, "Illegal value for check_for_orphaned_services");
 				error = TRUE;
 				break;
 			}
@@ -792,7 +783,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "check_for_orphaned_hosts")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for check_for_orphaned_hosts");
+				nm_asprintf(&error_message, "Illegal value for check_for_orphaned_hosts");
 				error = TRUE;
 				break;
 			}
@@ -803,7 +794,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "check_service_freshness")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for check_service_freshness");
+				nm_asprintf(&error_message, "Illegal value for check_service_freshness");
 				error = TRUE;
 				break;
 			}
@@ -814,7 +805,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "check_host_freshness")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for check_host_freshness");
+				nm_asprintf(&error_message, "Illegal value for check_host_freshness");
 				error = TRUE;
 				break;
 			}
@@ -826,7 +817,7 @@ int read_main_config_file(const char *main_config_file)
 
 			service_freshness_check_interval = atoi(value);
 			if (service_freshness_check_interval <= 0) {
-				asprintf(&error_message, "Illegal value for service_freshness_check_interval");
+				nm_asprintf(&error_message, "Illegal value for service_freshness_check_interval");
 				error = TRUE;
 				break;
 			}
@@ -836,7 +827,7 @@ int read_main_config_file(const char *main_config_file)
 
 			host_freshness_check_interval = atoi(value);
 			if (host_freshness_check_interval <= 0) {
-				asprintf(&error_message, "Illegal value for host_freshness_check_interval");
+				nm_asprintf(&error_message, "Illegal value for host_freshness_check_interval");
 				error = TRUE;
 				break;
 			}
@@ -856,7 +847,7 @@ int read_main_config_file(const char *main_config_file)
 
 			status_update_interval = atoi(value);
 			if (status_update_interval <= 1) {
-				asprintf(&error_message, "Illegal value for status_update_interval");
+				nm_asprintf(&error_message, "Illegal value for status_update_interval");
 				error = TRUE;
 				break;
 			}
@@ -867,7 +858,7 @@ int read_main_config_file(const char *main_config_file)
 			time_change_threshold = atoi(value);
 
 			if (time_change_threshold <= 5) {
-				asprintf(&error_message, "Illegal value for time_change_threshold");
+				nm_asprintf(&error_message, "Illegal value for time_change_threshold");
 				error = TRUE;
 				break;
 			}
@@ -886,7 +877,7 @@ int read_main_config_file(const char *main_config_file)
 
 			low_service_flap_threshold = strtod(value, NULL);
 			if (low_service_flap_threshold <= 0.0 || low_service_flap_threshold >= 100.0) {
-				asprintf(&error_message, "Illegal value for low_service_flap_threshold");
+				nm_asprintf(&error_message, "Illegal value for low_service_flap_threshold");
 				error = TRUE;
 				break;
 			}
@@ -896,7 +887,7 @@ int read_main_config_file(const char *main_config_file)
 
 			high_service_flap_threshold = strtod(value, NULL);
 			if (high_service_flap_threshold <= 0.0 ||  high_service_flap_threshold > 100.0) {
-				asprintf(&error_message, "Illegal value for high_service_flap_threshold");
+				nm_asprintf(&error_message, "Illegal value for high_service_flap_threshold");
 				error = TRUE;
 				break;
 			}
@@ -906,7 +897,7 @@ int read_main_config_file(const char *main_config_file)
 
 			low_host_flap_threshold = strtod(value, NULL);
 			if (low_host_flap_threshold <= 0.0 || low_host_flap_threshold >= 100.0) {
-				asprintf(&error_message, "Illegal value for low_host_flap_threshold");
+				nm_asprintf(&error_message, "Illegal value for low_host_flap_threshold");
 				error = TRUE;
 				break;
 			}
@@ -916,7 +907,7 @@ int read_main_config_file(const char *main_config_file)
 
 			high_host_flap_threshold = strtod(value, NULL);
 			if (high_host_flap_threshold <= 0.0 || high_host_flap_threshold > 100.0) {
-				asprintf(&error_message, "Illegal value for high_host_flap_threshold");
+				nm_asprintf(&error_message, "Illegal value for high_host_flap_threshold");
 				error = TRUE;
 				break;
 			}
@@ -936,7 +927,7 @@ int read_main_config_file(const char *main_config_file)
 
 		else if (!strcmp(variable, "use_timezone")) {
 			my_free(use_timezone);
-			use_timezone = (char *)strdup(value);
+			use_timezone = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "event_broker_options")) {
@@ -948,10 +939,10 @@ int read_main_config_file(const char *main_config_file)
 		}
 
 		else if (!strcmp(variable, "illegal_object_name_chars"))
-			illegal_object_chars = (char *)strdup(value);
+			illegal_object_chars = nm_strdup(value);
 
 		else if (!strcmp(variable, "illegal_macro_output_chars"))
-			illegal_output_chars = (char *)strdup(value);
+			illegal_output_chars = nm_strdup(value);
 
 
 		else if (!strcmp(variable, "broker_module")) {
@@ -977,7 +968,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "daemon_dumps_core")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for daemon_dumps_core");
+				nm_asprintf(&error_message, "Illegal value for daemon_dumps_core");
 				error = TRUE;
 				break;
 			}
@@ -988,7 +979,7 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "use_large_installation_tweaks")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				asprintf(&error_message, "Illegal value for use_large_installation_tweaks ");
+				nm_asprintf(&error_message, "Illegal value for use_large_installation_tweaks ");
 				error = TRUE;
 				break;
 			}
@@ -1035,13 +1026,13 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "perfdata_timeout")) {
 			perfdata_timeout = atoi(value);
 		} else if (!strcmp(variable, "host_perfdata_command"))
-			host_perfdata_command = (char *)strdup(value);
+			host_perfdata_command = nm_strdup(value);
 		else if (!strcmp(variable, "service_perfdata_command"))
-			service_perfdata_command = (char *)strdup(value);
+			service_perfdata_command = nm_strdup(value);
 		else if (!strcmp(variable, "host_perfdata_file_template"))
-			host_perfdata_file_template = (char *)strdup(value);
+			host_perfdata_file_template = nm_strdup(value);
 		else if (!strcmp(variable, "service_perfdata_file_template"))
-			service_perfdata_file_template = (char *)strdup(value);
+			service_perfdata_file_template = nm_strdup(value);
 		else if (!strcmp(variable, "host_perfdata_file"))
 			host_perfdata_file = nspath_absolute(value, config_file_dir);
 		else if (!strcmp(variable, "service_perfdata_file"))
@@ -1067,9 +1058,9 @@ int read_main_config_file(const char *main_config_file)
 		else if (!strcmp(variable, "service_perfdata_file_processing_interval"))
 			service_perfdata_file_processing_interval = strtoul(value, NULL, 0);
 		else if (!strcmp(variable, "host_perfdata_file_processing_command"))
-			host_perfdata_file_processing_command = (char *)strdup(value);
+			host_perfdata_file_processing_command = nm_strdup(value);
 		else if (!strcmp(variable, "service_perfdata_file_processing_command"))
-			service_perfdata_file_processing_command = (char *)strdup(value);
+			service_perfdata_file_processing_command = nm_strdup(value);
 		else if (!strcmp(variable, "host_perfdata_process_empty_results"))
 			host_perfdata_process_empty_results = (atoi(value) > 0) ? TRUE : FALSE;
 		else if (!strcmp(variable, "service_perfdata_process_empty_results"))
@@ -1082,7 +1073,7 @@ int read_main_config_file(const char *main_config_file)
 			my_free(object_cache_file);
 			object_cache_file = nspath_absolute(value, config_file_dir);
 			my_free(mac->x[MACRO_OBJECTCACHEFILE]);
-			mac->x[MACRO_OBJECTCACHEFILE] = strdup(object_cache_file);
+			mac->x[MACRO_OBJECTCACHEFILE] = nm_strdup(object_cache_file);
 		} else if (strstr(input, "precached_object_file=") == input) {
 			my_free(object_precache_file);
 			object_precache_file = nspath_absolute(value, config_file_dir);
@@ -1095,7 +1086,7 @@ int read_main_config_file(const char *main_config_file)
 
 		/* we don't know what this variable is... */
 		else {
-			asprintf(&error_message, "UNKNOWN VARIABLE");
+			nm_asprintf(&error_message, "UNKNOWN VARIABLE");
 			error = TRUE;
 			break;
 		}
@@ -1118,7 +1109,7 @@ int read_main_config_file(const char *main_config_file)
 		if (!temp_path)
 			temp_path = "/tmp";
 
-		temp_path = strdup(temp_path);
+		temp_path = nm_strdup(temp_path);
 	} else {
 		/* make sure we don't have a trailing slash */
 		if (temp_path[strlen(temp_path) - 1] == '/')
@@ -1245,10 +1236,7 @@ int read_resource_file(const char *resource_file)
 			error = TRUE;
 			break;
 		}
-		if ((variable = (char *)strdup(temp_ptr)) == NULL) {
-			error = TRUE;
-			break;
-		}
+		variable = (char *)nm_strdup(temp_ptr);
 
 		/* get the value */
 		if ((temp_ptr = my_strtok(NULL, "\n")) == NULL) {
@@ -1256,11 +1244,7 @@ int read_resource_file(const char *resource_file)
 			error = TRUE;
 			break;
 		}
-		if ((value = (char *)strdup(temp_ptr)) == NULL) {
-			error = TRUE;
-			break;
-		}
-
+		value = nm_strdup(temp_ptr);
 		/* what should we do with the variable/value pair? */
 
 		/* check for macro declarations */
@@ -1271,7 +1255,7 @@ int read_resource_file(const char *resource_file)
 				user_index = atoi(variable + 5) - 1;
 				if (user_index >= 0 && user_index < MAX_USER_MACROS) {
 					my_free(macro_user[user_index]);
-					macro_user[user_index] = (char *)strdup(value);
+					macro_user[user_index] = nm_strdup(value);
 				}
 			}
 		}
@@ -1375,7 +1359,7 @@ int pre_flight_check(void)
 		printf("Checking misc settings...\n");
 
 	/* check if we can write to temp_path */
-	asprintf(&buf, "%s/nagiosXXXXXX", temp_path);
+	nm_asprintf(&buf, "%s/nagiosXXXXXX", temp_path);
 	if ((temp_path_fd = mkstemp(buf)) == -1) {
 		logit(NSLOG_VERIFICATION_ERROR, TRUE, "\tError: Unable to write to temp_path ('%s') - %s\n", temp_path, strerror(errno));
 		errors++;
@@ -1386,7 +1370,7 @@ int pre_flight_check(void)
 	my_free(buf);
 
 	/* check if we can write to check_result_path */
-	asprintf(&buf, "%s/nagiosXXXXXX", check_result_path);
+	nm_asprintf(&buf, "%s/nagiosXXXXXX", check_result_path);
 	if ((temp_path_fd = mkstemp(buf)) == -1) {
 		logit(NSLOG_VERIFICATION_WARNING, TRUE, "\tError: Unable to write to check_result_path ('%s') - %s\n", check_result_path, strerror(errno));
 		errors++;
@@ -2103,14 +2087,7 @@ int pre_flight_circular_check(int *w, int *e)
 		alloc = num_objects.timeperiods;
 
 	for (i = 0; i < ARRAY_SIZE(ary); i++) {
-		if (!(ary[i] = calloc(1, alloc))) {
-			while (i) {
-				my_free(ary[--i]);
-			}
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Unable to allocate memory for circular path checks.\n");
-			errors++;
-			return ERROR;
-		}
+		ary[i] = nm_calloc(1, alloc);
 	}
 
 

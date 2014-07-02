@@ -5,6 +5,7 @@
 #include "xodtemplate.h"
 #include "logging.h"
 #include "globals.h"
+#include "nm_alloc.h"
 
 
 /*
@@ -152,8 +153,8 @@ static void post_process_object_config(void)
 	if (servicedependency_ary)
 		free(servicedependency_ary);
 
-	hostdependency_ary = calloc(num_objects.hostdependencies, sizeof(void *));
-	servicedependency_ary = calloc(num_objects.servicedependencies, sizeof(void *));
+	hostdependency_ary = nm_calloc(num_objects.hostdependencies, sizeof(void *));
+	servicedependency_ary = nm_calloc(num_objects.servicedependencies, sizeof(void *));
 
 	slot = 0;
 	for (i = 0; slot < num_objects.servicedependencies && i < num_objects.services; i++) {
@@ -279,7 +280,7 @@ static int create_object_table(const char *name, unsigned int elems, unsigned in
 		*ptr = NULL;
 		return OK;
 	}
-	ret = calloc(elems, size);
+	ret = nm_calloc(elems, size);
 	if (!ret) {
 		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Failed to allocate %s table with %u elements\n", name, elems);
 		return ERROR;
@@ -351,9 +352,7 @@ timeperiod *add_timeperiod(char *name, char *alias)
 		return NULL;
 	}
 
-	new_timeperiod = calloc(1, sizeof(*new_timeperiod));
-	if (!new_timeperiod)
-		return NULL;
+	new_timeperiod = nm_calloc(1, sizeof(*new_timeperiod));
 
 	/* copy string vars */
 	new_timeperiod->name = name;
@@ -400,10 +399,8 @@ timeperiodexclusion *add_exclusion_to_timeperiod(timeperiod *period, char *name)
 	if (period == NULL || name == NULL)
 		return NULL;
 
-	if ((new_timeperiodexclusion = (timeperiodexclusion *)malloc(sizeof(timeperiodexclusion))) == NULL)
-		return NULL;
-
-	new_timeperiodexclusion->timeperiod_name = (char *)strdup(name);
+	new_timeperiodexclusion = nm_malloc(sizeof(timeperiodexclusion));
+	new_timeperiodexclusion->timeperiod_name = nm_strdup(name);
 
 	new_timeperiodexclusion->next = period->exclusions;
 	period->exclusions = new_timeperiodexclusion;
@@ -435,9 +432,7 @@ timerange *add_timerange_to_timeperiod(timeperiod *period, int day, unsigned lon
 	}
 
 	/* allocate memory for the new time range */
-	if ((new_timerange = malloc(sizeof(timerange))) == NULL)
-		return NULL;
-
+	new_timerange = nm_malloc(sizeof(timerange));
 	new_timerange->range_start = start_time;
 	new_timerange->range_end = end_time;
 
@@ -476,9 +471,7 @@ daterange *add_exception_to_timeperiod(timeperiod *period, int type, int syear, 
 		return NULL;
 
 	/* allocate memory for the date range range */
-	if ((new_daterange = malloc(sizeof(daterange))) == NULL)
-		return NULL;
-
+	new_daterange = nm_malloc(sizeof(daterange));
 	new_daterange->times = NULL;
 	new_daterange->next = NULL;
 
@@ -522,9 +515,7 @@ timerange *add_timerange_to_daterange(daterange *drange, unsigned long start_tim
 	}
 
 	/* allocate memory for the new time range */
-	if ((new_timerange = malloc(sizeof(timerange))) == NULL)
-		return NULL;
-
+	new_timerange = nm_malloc(sizeof(timerange));
 	new_timerange->range_start = start_time;
 	new_timerange->range_end = end_time;
 
@@ -581,7 +572,7 @@ host *add_host(char *name, char *display_name, char *alias, char *address, char 
 		return NULL;
 	}
 
-	new_host = calloc(1, sizeof(*new_host));
+	new_host = nm_calloc(1, sizeof(*new_host));
 
 	/* assign string vars */
 	new_host->name = name;
@@ -693,12 +684,9 @@ hostsmember *add_parent_host_to_host(host *hst, char *host_name)
 	}
 
 	/* allocate memory */
-	if ((new_hostsmember = (hostsmember *)calloc(1, sizeof(hostsmember))) == NULL)
-		return NULL;
-
+	new_hostsmember = nm_calloc(1, sizeof(hostsmember));
 	/* duplicate string vars */
-	if ((new_hostsmember->host_name = (char *)strdup(host_name)) == NULL)
-		result = ERROR;
+	new_hostsmember->host_name = nm_strdup(host_name);
 
 	/* handle errors */
 	if (result == ERROR) {
@@ -722,16 +710,9 @@ servicesmember *add_parent_service_to_service(service *svc, char *host_name, cha
 	if (!svc || !host_name || !description || !*host_name || !*description)
 		return NULL;
 
-	if ((sm = calloc(1, sizeof(*sm))) == NULL)
-		return NULL;
+	sm = nm_calloc(1, sizeof(*sm));
 
-	if ((sm->host_name = strdup(host_name)) == NULL || (sm->service_description = strdup(description)) == NULL) {
-		/* there was an error copying (description is NULL now) */
-		my_free(sm->host_name);
-		free(sm);
-		return NULL;
-	}
-
+	sm->host_name = nm_strdup(host_name);
 	sm->next = svc->parents;
 	svc->parents = sm;
 	return sm;
@@ -747,8 +728,7 @@ hostsmember *add_child_link_to_host(host *hst, host *child_ptr)
 		return NULL;
 
 	/* allocate memory */
-	if ((new_hostsmember = (hostsmember *)malloc(sizeof(hostsmember))) == NULL)
-		return NULL;
+	new_hostsmember = nm_malloc(sizeof(hostsmember));
 
 	/* assign values */
 	new_hostsmember->host_name = child_ptr->name;
@@ -771,9 +751,7 @@ servicesmember *add_service_link_to_host(host *hst, service *service_ptr)
 		return NULL;
 
 	/* allocate memory */
-	if ((new_servicesmember = (servicesmember *)calloc(1, sizeof(servicesmember))) == NULL)
-		return NULL;
-
+	new_servicesmember = nm_calloc(1, sizeof(servicesmember));
 	/* assign values */
 	new_servicesmember->host_name = service_ptr->host_name;
 	new_servicesmember->service_description = service_ptr->description;
@@ -802,10 +780,7 @@ static contactgroupsmember *add_contactgroup_to_object(contactgroupsmember **cg_
 		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Contactgroup '%s' is not defined anywhere\n", group_name);
 		return NULL;
 	}
-	if (!(cgm = malloc(sizeof(*cgm)))) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not allocate memory for contactgroup\n");
-		return NULL;
-	}
+	cgm = nm_malloc(sizeof(*cgm));
 	cgm->group_name = cg->group_name;
 	cgm->group_ptr = cg;
 	cgm->next = *cg_list;
@@ -850,7 +825,7 @@ hostgroup *add_hostgroup(char *name, char *alias, char *notes, char *notes_url, 
 		return NULL;
 	}
 
-	new_hostgroup = calloc(1, sizeof(*new_hostgroup));
+	new_hostgroup = nm_calloc(1, sizeof(*new_hostgroup));
 
 	/* assign vars */
 	new_hostgroup->group_name = name;
@@ -910,9 +885,7 @@ hostsmember *add_host_to_hostgroup(hostgroup *temp_hostgroup, char *host_name)
 	}
 
 	/* allocate memory for a new member */
-	if ((new_member = calloc(1, sizeof(hostsmember))) == NULL)
-		return NULL;
-
+	new_member = nm_calloc(1, sizeof(hostsmember));
 	/* assign vars */
 	new_member->host_name = h->name;
 	new_member->host_ptr = h;
@@ -962,7 +935,7 @@ servicegroup *add_servicegroup(char *name, char *alias, char *notes, char *notes
 		return NULL;
 	}
 
-	new_servicegroup = calloc(1, sizeof(*new_servicegroup));
+	new_servicegroup = nm_calloc(1, sizeof(*new_servicegroup));
 
 	/* duplicate vars */
 	new_servicegroup->group_name = name;
@@ -1022,8 +995,7 @@ servicesmember *add_service_to_servicegroup(servicegroup *temp_servicegroup, cha
 	}
 
 	/* allocate memory for a new member */
-	if ((new_member = calloc(1, sizeof(servicesmember))) == NULL)
-		return NULL;
+	new_member = nm_calloc(1, sizeof(servicesmember));
 
 	/* assign vars */
 	new_member->host_name = svc->host_name;
@@ -1104,10 +1076,7 @@ contact *add_contact(char *name, char *alias, char *email, char *pager, char **a
 	}
 
 
-	new_contact = calloc(1, sizeof(*new_contact));
-	if (!new_contact)
-		return NULL;
-
+	new_contact = nm_calloc(1, sizeof(*new_contact));
 	new_contact->host_notification_period = htp ? htp->name : NULL;
 	new_contact->service_notification_period = stp ? stp->name : NULL;
 	new_contact->host_notification_period_ptr = htp;
@@ -1175,12 +1144,10 @@ commandsmember *add_host_notification_command_to_contact(contact *cntct, char *c
 	}
 
 	/* allocate memory */
-	if ((new_commandsmember = calloc(1, sizeof(commandsmember))) == NULL)
-		return NULL;
+	new_commandsmember = nm_calloc(1, sizeof(commandsmember));
 
 	/* duplicate vars */
-	if ((new_commandsmember->command = (char *)strdup(command_name)) == NULL)
-		result = ERROR;
+	new_commandsmember->command = nm_strdup(command_name);
 
 	/* handle errors */
 	if (result == ERROR) {
@@ -1210,12 +1177,10 @@ commandsmember *add_service_notification_command_to_contact(contact *cntct, char
 	}
 
 	/* allocate memory */
-	if ((new_commandsmember = calloc(1, sizeof(commandsmember))) == NULL)
-		return NULL;
+	new_commandsmember = nm_calloc(1, sizeof(commandsmember));
 
 	/* duplicate vars */
-	if ((new_commandsmember->command = (char *)strdup(command_name)) == NULL)
-		result = ERROR;
+	new_commandsmember->command = nm_strdup(command_name);
 
 	/* handle errors */
 	if (result == ERROR) {
@@ -1252,9 +1217,7 @@ contactgroup *add_contactgroup(char *name, char *alias)
 		return NULL;
 	}
 
-	new_contactgroup = calloc(1, sizeof(*new_contactgroup));
-	if (!new_contactgroup)
-		return NULL;
+	new_contactgroup = nm_calloc(1, sizeof(*new_contactgroup));
 
 	/* assign vars */
 	new_contactgroup->group_name = name;
@@ -1310,8 +1273,7 @@ contactsmember *add_contact_to_contactgroup(contactgroup *grp, char *contact_nam
 	}
 
 	/* allocate memory for a new member */
-	if ((new_contactsmember = calloc(1, sizeof(contactsmember))) == NULL)
-		return NULL;
+	new_contactsmember = nm_calloc(1, sizeof(contactsmember));
 
 	/* assign vars */
 	new_contactsmember->contact_name = c->name;
@@ -1387,9 +1349,7 @@ service *add_service(char *host_name, char *description, char *display_name, cha
 	}
 
 	/* allocate memory */
-	new_service = calloc(1, sizeof(*new_service));
-	if (!new_service)
-		return NULL;
+	new_service = nm_calloc(1, sizeof(*new_service));
 
 	/* duplicate vars, but assign what we can */
 	new_service->notification_period_ptr = np;
@@ -1398,39 +1358,30 @@ service *add_service(char *host_name, char *description, char *display_name, cha
 	new_service->check_period = cp ? cp->name : NULL;
 	new_service->notification_period = np ? np->name : NULL;
 	new_service->host_name = h->name;
-	if ((new_service->description = (char *)strdup(description)) == NULL)
-		result = ERROR;
+	new_service->description = nm_strdup(description);
 	if (display_name) {
-		if ((new_service->display_name = (char *)strdup(display_name)) == NULL)
-			result = ERROR;
+		new_service->display_name = nm_strdup(display_name);
 	} else {
 		new_service->display_name = new_service->description;
 	}
-	if ((new_service->check_command = (char *)strdup(check_command)) == NULL)
-		result = ERROR;
+	new_service->check_command = nm_strdup(check_command);
 	if (event_handler) {
-		if ((new_service->event_handler = (char *)strdup(event_handler)) == NULL)
-			result = ERROR;
+		new_service->event_handler = nm_strdup(event_handler);
 	}
 	if (notes) {
-		if ((new_service->notes = (char *)strdup(notes)) == NULL)
-			result = ERROR;
+		new_service->notes = nm_strdup(notes);
 	}
 	if (notes_url) {
-		if ((new_service->notes_url = (char *)strdup(notes_url)) == NULL)
-			result = ERROR;
+		new_service->notes_url = nm_strdup(notes_url);
 	}
 	if (action_url) {
-		if ((new_service->action_url = (char *)strdup(action_url)) == NULL)
-			result = ERROR;
+		new_service->action_url = nm_strdup(action_url);
 	}
 	if (icon_image) {
-		if ((new_service->icon_image = (char *)strdup(icon_image)) == NULL)
-			result = ERROR;
+		new_service->icon_image = nm_strdup(icon_image);
 	}
 	if (icon_image_alt) {
-		if ((new_service->icon_image_alt = (char *)strdup(icon_image_alt)) == NULL)
-			result = ERROR;
+		new_service->icon_image_alt = nm_strdup(icon_image_alt);
 	}
 
 	new_service->hourly_value = hourly_value;
@@ -1543,9 +1494,7 @@ command *add_command(char *name, char *value)
 	}
 
 	/* allocate memory for the new command */
-	new_command = calloc(1, sizeof(*new_command));
-	if (!new_command)
-		return NULL;
+	new_command = nm_calloc(1, sizeof(*new_command));
 
 	/* assign vars */
 	new_command->name = name;
@@ -1606,9 +1555,7 @@ serviceescalation *add_serviceescalation(char *host_name, char *description, int
 		return NULL ;
 	}
 
-	new_serviceescalation = calloc(1, sizeof(*new_serviceescalation));
-	if (!new_serviceescalation)
-		return NULL;
+	new_serviceescalation = nm_calloc(1, sizeof(*new_serviceescalation));
 
 	if (prepend_object_to_objectlist(&svc->escalation_list, new_serviceescalation) != OK) {
 		logit(NSLOG_CONFIG_ERROR, TRUE, "Could not add escalation to service '%s' on host '%s'\n",
@@ -1677,8 +1624,7 @@ servicedependency *add_service_dependency(char *dependent_host_name, char *depen
 	}
 
 	/* allocate memory for a new service dependency entry */
-	if ((new_servicedependency = calloc(1, sizeof(*new_servicedependency))) == NULL)
-		return NULL;
+	new_servicedependency = nm_calloc(1, sizeof(*new_servicedependency));
 
 	new_servicedependency->dependent_service_ptr = child;
 	new_servicedependency->master_service_ptr = parent;
@@ -1745,9 +1691,7 @@ hostdependency *add_host_dependency(char *dependent_host_name, char *host_name, 
 		return NULL ;
 	}
 
-	if ((new_hostdependency = calloc(1, sizeof(*new_hostdependency))) == NULL)
-		return NULL;
-
+	new_hostdependency = nm_calloc(1, sizeof(*new_hostdependency));
 	new_hostdependency->dependent_host_ptr = child;
 	new_hostdependency->master_host_ptr = parent;
 	new_hostdependency->dependency_period_ptr = tp;
@@ -1800,7 +1744,7 @@ hostescalation *add_hostescalation(char *host_name, int first_notification, int 
 		return NULL;
 	}
 
-	new_hostescalation = calloc(1, sizeof(*new_hostescalation));
+	new_hostescalation = nm_calloc(1, sizeof(*new_hostescalation));
 
 	/* add the escalation to its host */
 	if (prepend_object_to_objectlist(&h->escalation_list, new_hostescalation) != OK) {
@@ -1862,10 +1806,7 @@ contactsmember *add_contact_to_object(contactsmember **object_ptr, char *contact
 	}
 
 	/* allocate memory for a new member */
-	if ((new_contactsmember = malloc(sizeof(contactsmember))) == NULL) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not allocate memory for contact\n");
-		return NULL;
-	}
+	new_contactsmember = nm_malloc(sizeof(contactsmember));
 	new_contactsmember->contact_name = c->name;
 
 	/* set initial values */
@@ -1896,23 +1837,11 @@ customvariablesmember *add_custom_variable_to_object(customvariablesmember **obj
 	}
 
 	/* allocate memory for a new member */
-	if ((new_customvariablesmember = malloc(sizeof(customvariablesmember))) == NULL) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not allocate memory for custom variable\n");
-		return NULL;
-	}
-	if ((new_customvariablesmember->variable_name = (char *)strdup(varname)) == NULL) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not allocate memory for custom variable name\n");
-		my_free(new_customvariablesmember);
-		return NULL;
-	}
-	if (varvalue) {
-		if ((new_customvariablesmember->variable_value = (char *)strdup(varvalue)) == NULL) {
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not allocate memory for custom variable value\n");
-			my_free(new_customvariablesmember->variable_name);
-			my_free(new_customvariablesmember);
-			return NULL;
-		}
-	} else
+	new_customvariablesmember = nm_malloc(sizeof(customvariablesmember));
+	new_customvariablesmember->variable_name = nm_strdup(varname);
+	if (varvalue)
+		new_customvariablesmember->variable_value = nm_strdup(varvalue);
+	else
 		new_customvariablesmember->variable_value = NULL;
 
 	/* set initial values */
@@ -2007,9 +1936,7 @@ int add_object_to_objectlist(objectlist **list, void *object_ptr)
 		return OK;
 
 	/* allocate memory for a new list item */
-	if ((new_item = (objectlist *)malloc(sizeof(objectlist))) == NULL)
-		return ERROR;
-
+	new_item = nm_malloc(sizeof(objectlist));
 	/* initialize vars */
 	new_item->object_ptr = object_ptr;
 
@@ -2027,8 +1954,7 @@ int prepend_object_to_objectlist(objectlist **list, void *object_ptr)
 	objectlist *item;
 	if (list == NULL || object_ptr == NULL)
 		return ERROR;
-	if ((item = malloc(sizeof(*item))) == NULL)
-		return ERROR;
+	item = nm_malloc(sizeof(*item));
 	item->next = *list;
 	item->object_ptr = object_ptr;
 	*list = item;

@@ -7,6 +7,7 @@
 #include "xrddefault.h"
 #include "globals.h"
 #include "logging.h"
+#include "nm_alloc.h"
 #include <string.h>
 
 /* hosts and services before attribute modifications */
@@ -21,17 +22,9 @@ static struct contact **premod_contacts;
 /* initializes retention data at program start */
 int initialize_retention_data(const char *cfgfile)
 {
-	if (!(premod_hosts = calloc(sizeof(void *), num_objects.hosts)))
-		return ERROR;
-	if (!(premod_services = calloc(sizeof(void *), num_objects.services))) {
-		my_free(premod_hosts);
-		return ERROR;
-	}
-	if (!(premod_contacts = calloc(sizeof(void *), num_objects.contacts))) {
-		my_free(premod_hosts);
-		my_free(premod_services);
-		return ERROR;
-	}
+	premod_hosts = nm_calloc(num_objects.hosts, sizeof(void *));
+	premod_services = nm_calloc(num_objects.services, sizeof(void *));
+	premod_contacts = nm_calloc(num_objects.contacts, sizeof(void *));
 
 	return xrddefault_initialize_retention_data(cfgfile);
 }
@@ -117,7 +110,7 @@ int pre_modify_contact_attribute(struct contact *c, int attr)
 		return 0;
 	}
 
-	stash = malloc(sizeof(*stash));
+	stash = nm_malloc(sizeof(*stash));
 	memcpy(stash, c, sizeof(*stash));
 	premod_contacts[c->id] = stash;
 	return 0;
@@ -132,7 +125,7 @@ int pre_modify_service_attribute(struct service *s, int attr)
 		return 0;
 	}
 
-	stash = malloc(sizeof(*stash));
+	stash = nm_malloc(sizeof(*stash));
 	memcpy(stash, s, sizeof(*stash));
 	premod_services[s->id] = stash;
 	return 0;
@@ -147,7 +140,7 @@ int pre_modify_host_attribute(struct host *h, int attr)
 		return 0;
 	}
 
-	stash = malloc(sizeof(*stash));
+	stash = nm_malloc(sizeof(*stash));
 	memcpy(stash, h, sizeof(*stash));
 	premod_hosts[h->id] = stash;
 	return 0;

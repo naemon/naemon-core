@@ -4,6 +4,7 @@
 #include "neberrors.h"
 #include "logging.h"
 #include "globals.h"
+#include "nm_alloc.h"
 #include <string.h>
 
 #ifdef USE_EVENT_BROKER
@@ -59,13 +60,11 @@ int neb_add_module(char *filename, char *args, int should_be_loaded)
 		return ERROR;
 
 	/* allocate memory */
-	new_module = (nebmodule *)calloc(1, sizeof(nebmodule));
-	if (new_module == NULL)
-		return ERROR;
+	new_module = nm_calloc(1, sizeof(nebmodule));
 
 	/* initialize vars */
-	new_module->filename = (char *)strdup(filename);
-	new_module->args = (args == NULL) ? NULL : (char *)strdup(args);
+	new_module->filename = nm_strdup(filename);
+	new_module->args = (args == NULL) ? NULL : nm_strdup(args);
 	new_module->should_be_loaded = should_be_loaded;
 	new_module->is_currently_loaded = FALSE;
 	for (x = 0; x < NEBMODULE_MODINFO_NUMITEMS; x++)
@@ -341,9 +340,7 @@ int neb_set_module_info(void *handle, int type, char *data)
 	my_free(temp_module->info[type]);
 
 	/* allocate memory for the new data */
-	if ((temp_module->info[type] = (char *)strdup(data)) == NULL)
-		return NEBERROR_NOMEM;
-
+	temp_module->info[type] = nm_strdup(data);
 	return OK;
 }
 
@@ -385,10 +382,7 @@ int neb_register_callback(int callback_type, void *mod_handle, int priority, int
 		return NEBERROR_BADMODULEHANDLE;
 
 	/* allocate memory */
-	new_callback = (nebcallback *)malloc(sizeof(nebcallback));
-	if (new_callback == NULL)
-		return NEBERROR_NOMEM;
-
+	new_callback = nm_malloc(sizeof(nebcallback));
 	new_callback->priority = priority;
 	new_callback->module_handle = mod_handle;
 	new_callback->callback_func = callback_func;
@@ -542,9 +536,7 @@ int neb_init_callback_list(void)
 	register int x = 0;
 
 	/* allocate memory for the callback list */
-	neb_callback_list = (nebcallback **)malloc(NEBCALLBACK_NUMITEMS * sizeof(nebcallback *));
-	if (neb_callback_list == NULL)
-		return ERROR;
+	neb_callback_list = nm_calloc(NEBCALLBACK_NUMITEMS, sizeof(nebcallback *));
 
 	/* initialize list pointers */
 	for (x = 0; x < NEBCALLBACK_NUMITEMS; x++)

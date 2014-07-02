@@ -8,6 +8,7 @@
 #include "notifications.h"
 #include "sehandlers.h"
 #include "globals.h"
+#include "nm_alloc.h"
 #include <string.h>
 
 #ifdef USE_EVENT_BROKER
@@ -145,7 +146,7 @@ int broker_event_handler(int type, int flags, int attr, int eventhandler_type, v
 
 	/* get command name/args */
 	if (cmd != NULL) {
-		command_buf = (char *)strdup(cmd);
+		command_buf = nm_strdup(cmd);
 		command_name = strtok(command_buf, "!");
 		command_args = strtok(NULL, "\x0");
 	}
@@ -207,7 +208,7 @@ int broker_host_check(int type, int flags, int attr, host *hst, int check_type, 
 
 	/* get command name/args */
 	if (cmd != NULL) {
-		command_buf = (char *)strdup(cmd);
+		command_buf = nm_strdup(cmd);
 		command_name = strtok(command_buf, "!");
 		command_args = strtok(NULL, "\x0");
 	}
@@ -267,7 +268,7 @@ int broker_service_check(int type, int flags, int attr, service *svc, int check_
 
 	/* get command name/args */
 	if (cmd != NULL) {
-		command_buf = (char *)strdup(cmd);
+		command_buf = nm_strdup(cmd);
 		command_name = strtok(command_buf, "!");
 		command_args = strtok(NULL, "\x0");
 	}
@@ -644,7 +645,7 @@ int broker_contact_notification_method_data(int type, int flags, int attr, int n
 
 	/* get command name/args */
 	if (cmd != NULL) {
-		command_buf = (char *)strdup(cmd);
+		command_buf = nm_strdup(cmd);
 		command_name = strtok(command_buf, "!");
 		command_args = strtok(NULL, "\x0");
 	}

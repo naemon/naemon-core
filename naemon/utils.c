@@ -15,6 +15,7 @@
 #include "logging.h"
 #include "defaults.h"
 #include "globals.h"
+#include "nm_alloc.h"
 #include <assert.h>
 #include <limits.h>
 #include <sys/types.h>
@@ -543,7 +544,7 @@ int my_system_r(nagios_macros *mac, char *cmd, int timeout, int *early_timeout, 
 			output_dbuf.buf[max_output_length] = '\x0';
 
 		if (output != NULL && output_dbuf.buf)
-			*output = (char *)strdup(output_dbuf.buf);
+			*output = nm_strdup(output_dbuf.buf);
 
 	}
 
@@ -596,7 +597,7 @@ int get_raw_command_line_r(nagios_macros *mac, command *cmd_ptr, char *cmd, char
 	log_debug_info(DEBUGL_COMMANDS | DEBUGL_CHECKS | DEBUGL_MACROS, 2, "Raw Command Input: %s\n", cmd_ptr->command_line);
 
 	/* get the full command line */
-	*full_command = (char *)strdup((cmd_ptr->command_line == NULL) ? "" : cmd_ptr->command_line);
+	*full_command = nm_strdup((cmd_ptr->command_line == NULL) ? "" : cmd_ptr->command_line);
 
 	/* XXX: Crazy indent */
 	/* get the command arguments */
@@ -682,7 +683,7 @@ int set_environment_var(char *name, char *value, int set)
 #else
 		/* needed for Solaris and systems that don't have setenv() */
 		/* this will leak memory, but in a "controlled" way, since lost memory should be freed when the child process exits */
-		asprintf(&env_string, "%s=%s", name, (value == NULL) ? "" : value);
+		nm_asprintf(&env_string, "%s=%s", name, (value == NULL) ? "" : value);
 		if (env_string)
 			putenv(env_string);
 #endif
@@ -1863,7 +1864,7 @@ int process_check_result_queue(char *dirname)
 			}
 
 			/* can we find the associated ok-to-go file ? */
-			asprintf(&temp_buffer, "%s.ok", file);
+			nm_asprintf(&temp_buffer, "%s.ok", file);
 			result = stat(temp_buffer, &ok_stat_buf);
 			my_free(temp_buffer);
 			if (result == -1)
@@ -2009,9 +2010,9 @@ int process_check_result_file(char *fname)
 		/* else we have check result data */
 		else {
 			if (!strcmp(var, "host_name"))
-				cr.host_name = (char *)strdup(val);
+				cr.host_name = nm_strdup(val);
 			else if (!strcmp(var, "service_description")) {
-				cr.service_description = (char *)strdup(val);
+				cr.service_description = nm_strdup(val);
 				cr.object_check_type = SERVICE_CHECK;
 			} else if (!strcmp(var, "check_type"))
 				cr.check_type = atoi(val);
@@ -2044,7 +2045,7 @@ int process_check_result_file(char *fname)
 			else if (!strcmp(var, "return_code"))
 				cr.return_code = atoi(val);
 			else if (!strcmp(var, "output"))
-				cr.output = (char *)strdup(val);
+				cr.output = nm_strdup(val);
 		}
 	}
 
@@ -2077,7 +2078,7 @@ int delete_check_result_file(char *fname)
 	unlink(fname);
 
 	/* delete the ok-to-go file */
-	asprintf(&temp_buffer, "%s.ok", fname);
+	nm_asprintf(&temp_buffer, "%s.ok", fname);
 	unlink(temp_buffer);
 	my_free(temp_buffer);
 
@@ -2198,9 +2199,7 @@ char *escape_newlines(char *rawbuf)
 		return NULL;
 
 	/* allocate enough memory to escape all chars if necessary */
-	if ((newbuf = malloc((strlen(rawbuf) * 2) + 1)) == NULL)
-		return NULL;
-
+	newbuf = nm_malloc((strlen(rawbuf) * 2) + 1);
 	for (x = 0, y = 0; rawbuf[x] != (char)'\x0'; x++) {
 
 		/* escape backslashes */
@@ -2318,12 +2317,7 @@ int my_fdcopy(char *source, char *dest, int dest_fd)
 	 * cache, so larger isn't necessarily better.
 	 */
 	buf_size = st.st_size > 128 << 10 ? 128 << 10 : st.st_size;
-	buf = malloc(buf_size);
-	if (!buf) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to malloc(%d) bytes: %s\n", buf_size, strerror(errno));
-		close(source_fd);
-		return ERROR;
-	}
+	buf = nm_malloc(buf_size);
 	/* most of the times, this loop will be gone through once */
 	while (tot_written < st.st_size) {
 		int loop_wr = 0;
@@ -2452,9 +2446,7 @@ int dbuf_strcat(dbuf *db, const char *buf)
 		memory_needed = ((ceil(new_size / db->chunk_size) + 1) * db->chunk_size);
 
 		/* allocate memory to store old and new string */
-		if ((newbuf = (char *)realloc((void *)db->buf, (size_t)memory_needed)) == NULL)
-			return ERROR;
-
+		newbuf = nm_realloc((void *)db->buf, (size_t)memory_needed);
 		/* update buffer pointer */
 		db->buf = newbuf;
 
@@ -2866,23 +2858,23 @@ void free_notification_list(void)
 int reset_variables(void)
 {
 
-	log_file = (char *)strdup(get_default_log_file());
-	temp_file = (char *)strdup(get_default_temp_file());
-	temp_path = (char *)strdup(get_default_temp_path());
-	check_result_path = (char *)strdup(get_default_check_result_path());
-	command_file = (char *)strdup(get_default_command_file());
-	qh_socket_path = (char *)strdup(get_default_query_socket());
+	log_file = nm_strdup(get_default_log_file());
+	temp_file = nm_strdup(get_default_temp_file());
+	temp_path = nm_strdup(get_default_temp_path());
+	check_result_path = nm_strdup(get_default_check_result_path());
+	command_file = nm_strdup(get_default_command_file());
+	qh_socket_path = nm_strdup(get_default_query_socket());
 	if (lock_file) /* this is kept across restarts */
 		free(lock_file);
-	lock_file = (char *)strdup(get_default_lock_file());
-	log_archive_path = (char *)strdup(get_default_log_archive_path());
-	debug_file = (char *)strdup(get_default_debug_file());
+	lock_file = nm_strdup(get_default_lock_file());
+	log_archive_path = nm_strdup(get_default_log_archive_path());
+	debug_file = nm_strdup(get_default_debug_file());
 
-	object_cache_file = (char *)strdup(get_default_object_cache_file());
-	object_precache_file = (char *)strdup(get_default_precached_object_file());
+	object_cache_file = nm_strdup(get_default_object_cache_file());
+	object_precache_file = nm_strdup(get_default_precached_object_file());
 
-	naemon_user = (char *)strdup(DEFAULT_NAEMON_USER);
-	naemon_group = (char *)strdup(DEFAULT_NAEMON_GROUP);
+	naemon_user = nm_strdup(DEFAULT_NAEMON_USER);
+	naemon_group = nm_strdup(DEFAULT_NAEMON_GROUP);
 
 	use_regexp_matches = FALSE;
 	use_true_regexp_matching = FALSE;

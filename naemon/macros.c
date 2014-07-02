@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "logging.h"
 #include "globals.h"
+#include "nm_alloc.h"
 #include <string.h>
 
 static char *macro_x_names[MACRO_X_COUNT]; /* the macro names */
@@ -95,24 +96,17 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "process_macros_r()\n");
 
-	if (output_buffer == NULL)
+	if (output_buffer == NULL || input_buffer == NULL)
 		return ERROR;
 
-	*output_buffer = (char *)strdup("");
-
-	if (input_buffer == NULL)
-		return ERROR;
-
+	*output_buffer = nm_strdup("");
 	in_macro = FALSE;
 
 	log_debug_info(DEBUGL_MACROS, 1, "**** BEGIN MACRO PROCESSING ***********\n");
 	log_debug_info(DEBUGL_MACROS, 1, "Processing: '%s'\n", input_buffer);
 
 	/* use a duplicate of original buffer, so we don't modify the original */
-	save_buffer = buf_ptr = strdup(input_buffer);
-	if (buf_ptr == NULL)
-		return ERROR;
-
+	save_buffer = buf_ptr = nm_strdup(input_buffer);
 	while (buf_ptr) {
 
 		/* save pointer to this working part of buffer */
@@ -133,7 +127,7 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 		if (in_macro == FALSE) {
 
 			/* add the plain text to the end of the already processed buffer */
-			*output_buffer = (char *)realloc(*output_buffer, strlen(*output_buffer) + strlen(temp_buffer) + 1);
+			*output_buffer = nm_realloc(*output_buffer, strlen(*output_buffer) + strlen(temp_buffer) + 1);
 			strcat(*output_buffer, temp_buffer);
 
 			log_debug_info(DEBUGL_MACROS, 2, "  Not currently in macro.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
@@ -144,7 +138,7 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 		/* an escaped $ is done by specifying two $$ next to each other */
 		if (!strcmp(temp_buffer, "")) {
 			log_debug_info(DEBUGL_MACROS, 2, "  Escaped $.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
-			*output_buffer = (char *)realloc(*output_buffer, strlen(*output_buffer) + 2);
+			*output_buffer = nm_realloc(*output_buffer, strlen(*output_buffer) + 2);
 			strcat(*output_buffer, "$");
 			in_macro = FALSE;
 			continue;
@@ -166,7 +160,7 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 				my_free(selected_macro);
 
 			/* add the plain text to the end of the already processed buffer */
-			*output_buffer = (char *)realloc(*output_buffer, strlen(*output_buffer) + strlen(temp_buffer) + 3);
+			*output_buffer = nm_realloc(*output_buffer, strlen(*output_buffer) + strlen(temp_buffer) + 3);
 			strcat(*output_buffer, "$");
 			strcat(*output_buffer, temp_buffer);
 
@@ -198,7 +192,7 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 
 				/* add the (cleaned) processed macro to the end of the already processed buffer */
 				if (selected_macro != NULL && (cleaned_macro = clean_macro_chars(selected_macro, options)) != NULL) {
-					*output_buffer = (char *)realloc(*output_buffer, strlen(*output_buffer) + strlen(cleaned_macro) + 1);
+					*output_buffer = nm_realloc(*output_buffer, strlen(*output_buffer) + strlen(cleaned_macro) + 1);
 					strcat(*output_buffer, cleaned_macro);
 					if (*cleaned_macro)
 						free(cleaned_macro);
@@ -211,7 +205,7 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 			else {
 				/* add the processed macro to the end of the already processed buffer */
 				if (selected_macro != NULL) {
-					*output_buffer = (char *)realloc(*output_buffer, strlen(*output_buffer) + strlen(selected_macro) + 1);
+					*output_buffer = nm_realloc(*output_buffer, strlen(*output_buffer) + strlen(selected_macro) + 1);
 					strcat(*output_buffer, selected_macro);
 
 					log_debug_info(DEBUGL_MACROS, 2, "  Uncleaned macro.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
@@ -447,9 +441,7 @@ int grab_macro_value_r(nagios_macros *mac, char *macro_buffer, char **output, in
 	}
 
 	/* work with a copy of the original buffer */
-	if ((buf = (char *)strdup(macro_buffer)) == NULL)
-		return ERROR;
-
+	buf = nm_strdup(macro_buffer);
 	/* macro name is at start of buffer */
 	macro_name = buf;
 
@@ -531,10 +523,9 @@ int grab_macro_value_r(nagios_macros *mac, char *macro_buffer, char **output, in
 
 					/* add macro value to already running macro */
 					if (*output == NULL)
-						*output = (char *)strdup(temp_buffer);
+						*output = nm_strdup(temp_buffer);
 					else {
-						if ((*output = (char *)realloc(*output, strlen(*output) + strlen(temp_buffer) + delimiter_len + 1)) == NULL)
-							continue;
+						*output = nm_realloc(*output, strlen(*output) + strlen(temp_buffer) + delimiter_len + 1);
 						strcat(*output, arg[1]);
 						strcat(*output, temp_buffer);
 					}
@@ -715,10 +706,9 @@ int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, char *ar
 
 				/* add macro value to already running macro */
 				if (*output == NULL)
-					*output = (char *)strdup(temp_buffer);
+					*output = nm_strdup(temp_buffer);
 				else {
-					if ((*output = (char *)realloc(*output, strlen(*output) + strlen(temp_buffer) + delimiter_len + 1)) == NULL)
-						continue;
+					*output = nm_realloc(*output, strlen(*output) + strlen(temp_buffer) + delimiter_len + 1);
 					strcat(*output, arg2);
 					strcat(*output, temp_buffer);
 				}
@@ -857,10 +847,9 @@ int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, char *ar
 
 					/* add macro value to already running macro */
 					if (*output == NULL)
-						*output = (char *)strdup(temp_buffer);
+						*output = nm_strdup(temp_buffer);
 					else {
-						if ((*output = (char *)realloc(*output, strlen(*output) + strlen(temp_buffer) + delimiter_len + 1)) == NULL)
-							continue;
+						*output = nm_realloc(*output, strlen(*output) + strlen(temp_buffer) + delimiter_len + 1);
 						strcat(*output, arg2);
 						strcat(*output, temp_buffer);
 					}
@@ -948,10 +937,9 @@ int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, char *ar
 
 				/* add macro value to already running macro */
 				if (*output == NULL)
-					*output = (char *)strdup(temp_buffer);
+					*output = nm_strdup(temp_buffer);
 				else {
-					if ((*output = (char *)realloc(*output, strlen(*output) + strlen(temp_buffer) + delimiter_len + 1)) == NULL)
-						continue;
+					*output = nm_realloc(*output, strlen(*output) + strlen(temp_buffer) + delimiter_len + 1);
 					strcat(*output, arg2);
 					strcat(*output, temp_buffer);
 				}
@@ -1163,22 +1151,22 @@ int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, char *ar
 			/* these macros are time-intensive to compute, and will likely be used together, so save them all for future use */
 			for (x = MACRO_TOTALHOSTSUP; x <= MACRO_TOTALSERVICEPROBLEMSUNHANDLED; x++)
 				my_free(mac->x[x]);
-			asprintf(&mac->x[MACRO_TOTALHOSTSUP], "%d", hosts_up);
-			asprintf(&mac->x[MACRO_TOTALHOSTSDOWN], "%d", hosts_down);
-			asprintf(&mac->x[MACRO_TOTALHOSTSUNREACHABLE], "%d", hosts_unreachable);
-			asprintf(&mac->x[MACRO_TOTALHOSTSDOWNUNHANDLED], "%d", hosts_down_unhandled);
-			asprintf(&mac->x[MACRO_TOTALHOSTSUNREACHABLEUNHANDLED], "%d", hosts_unreachable_unhandled);
-			asprintf(&mac->x[MACRO_TOTALHOSTPROBLEMS], "%d", host_problems);
-			asprintf(&mac->x[MACRO_TOTALHOSTPROBLEMSUNHANDLED], "%d", host_problems_unhandled);
-			asprintf(&mac->x[MACRO_TOTALSERVICESOK], "%d", services_ok);
-			asprintf(&mac->x[MACRO_TOTALSERVICESWARNING], "%d", services_warning);
-			asprintf(&mac->x[MACRO_TOTALSERVICESCRITICAL], "%d", services_critical);
-			asprintf(&mac->x[MACRO_TOTALSERVICESUNKNOWN], "%d", services_unknown);
-			asprintf(&mac->x[MACRO_TOTALSERVICESWARNINGUNHANDLED], "%d", services_warning_unhandled);
-			asprintf(&mac->x[MACRO_TOTALSERVICESCRITICALUNHANDLED], "%d", services_critical_unhandled);
-			asprintf(&mac->x[MACRO_TOTALSERVICESUNKNOWNUNHANDLED], "%d", services_unknown_unhandled);
-			asprintf(&mac->x[MACRO_TOTALSERVICEPROBLEMS], "%d", service_problems);
-			asprintf(&mac->x[MACRO_TOTALSERVICEPROBLEMSUNHANDLED], "%d", service_problems_unhandled);
+			nm_asprintf(&mac->x[MACRO_TOTALHOSTSUP], "%d", hosts_up);
+			nm_asprintf(&mac->x[MACRO_TOTALHOSTSDOWN], "%d", hosts_down);
+			nm_asprintf(&mac->x[MACRO_TOTALHOSTSUNREACHABLE], "%d", hosts_unreachable);
+			nm_asprintf(&mac->x[MACRO_TOTALHOSTSDOWNUNHANDLED], "%d", hosts_down_unhandled);
+			nm_asprintf(&mac->x[MACRO_TOTALHOSTSUNREACHABLEUNHANDLED], "%d", hosts_unreachable_unhandled);
+			nm_asprintf(&mac->x[MACRO_TOTALHOSTPROBLEMS], "%d", host_problems);
+			nm_asprintf(&mac->x[MACRO_TOTALHOSTPROBLEMSUNHANDLED], "%d", host_problems_unhandled);
+			nm_asprintf(&mac->x[MACRO_TOTALSERVICESOK], "%d", services_ok);
+			nm_asprintf(&mac->x[MACRO_TOTALSERVICESWARNING], "%d", services_warning);
+			nm_asprintf(&mac->x[MACRO_TOTALSERVICESCRITICAL], "%d", services_critical);
+			nm_asprintf(&mac->x[MACRO_TOTALSERVICESUNKNOWN], "%d", services_unknown);
+			nm_asprintf(&mac->x[MACRO_TOTALSERVICESWARNINGUNHANDLED], "%d", services_warning_unhandled);
+			nm_asprintf(&mac->x[MACRO_TOTALSERVICESCRITICALUNHANDLED], "%d", services_critical_unhandled);
+			nm_asprintf(&mac->x[MACRO_TOTALSERVICESUNKNOWNUNHANDLED], "%d", services_unknown_unhandled);
+			nm_asprintf(&mac->x[MACRO_TOTALSERVICEPROBLEMS], "%d", service_problems);
+			nm_asprintf(&mac->x[MACRO_TOTALSERVICEPROBLEMSUNHANDLED], "%d", service_problems_unhandled);
 		}
 
 		/* return only the macro the user requested */
@@ -1264,10 +1252,9 @@ int grab_custom_macro_value_r(nagios_macros *mac, char *macro_name, char *arg1, 
 
 				/* add macro value to already running macro */
 				if (*output == NULL)
-					*output = (char *)strdup(temp_buffer);
+					*output = nm_strdup(temp_buffer);
 				else {
-					if ((*output = (char *)realloc(*output, strlen(*output) + strlen(temp_buffer) + delimiter_len + 1)) == NULL)
-						continue;
+					*output = nm_realloc(*output, strlen(*output) + strlen(temp_buffer) + delimiter_len + 1);
 					strcat(*output, arg2);
 					strcat(*output, temp_buffer);
 				}
@@ -1323,10 +1310,9 @@ int grab_custom_macro_value_r(nagios_macros *mac, char *macro_name, char *arg1, 
 
 					/* add macro value to already running macro */
 					if (*output == NULL)
-						*output = (char *)strdup(temp_buffer);
+						*output = nm_strdup(temp_buffer);
 					else {
-						if ((*output = (char *)realloc(*output, strlen(*output) + strlen(temp_buffer) + delimiter_len + 1)) == NULL)
-							continue;
+						*output = nm_realloc(*output, strlen(*output) + strlen(temp_buffer) + delimiter_len + 1);
 						strcat(*output, arg2);
 						strcat(*output, temp_buffer);
 					}
@@ -1378,10 +1364,9 @@ int grab_custom_macro_value_r(nagios_macros *mac, char *macro_name, char *arg1, 
 
 				/* add macro value to already running macro */
 				if (*output == NULL)
-					*output = (char *)strdup(temp_buffer);
+					*output = nm_strdup(temp_buffer);
 				else {
-					if ((*output = (char *)realloc(*output, strlen(*output) + strlen(temp_buffer) + delimiter_len + 1)) == NULL)
-						continue;
+					*output = nm_realloc(*output, strlen(*output) + strlen(temp_buffer) + delimiter_len + 1);
 					strcat(*output, arg2);
 					strcat(*output, temp_buffer);
 				}
@@ -1442,28 +1427,28 @@ int grab_datetime_macro_r(nagios_macros *mac, int macro_type, char *arg1, char *
 
 	case MACRO_LONGDATETIME:
 		if (*output == NULL)
-			*output = (char *)malloc(MAX_DATETIME_LENGTH);
+			*output = nm_malloc(MAX_DATETIME_LENGTH);
 		if (*output)
 			get_datetime_string(&current_time, *output, MAX_DATETIME_LENGTH, LONG_DATE_TIME);
 		break;
 
 	case MACRO_SHORTDATETIME:
 		if (*output == NULL)
-			*output = (char *)malloc(MAX_DATETIME_LENGTH);
+			*output = nm_malloc(MAX_DATETIME_LENGTH);
 		if (*output)
 			get_datetime_string(&current_time, *output, MAX_DATETIME_LENGTH, SHORT_DATE_TIME);
 		break;
 
 	case MACRO_DATE:
 		if (*output == NULL)
-			*output = (char *)malloc(MAX_DATETIME_LENGTH);
+			*output = nm_malloc(MAX_DATETIME_LENGTH);
 		if (*output)
 			get_datetime_string(&current_time, *output, MAX_DATETIME_LENGTH, SHORT_DATE);
 		break;
 
 	case MACRO_TIME:
 		if (*output == NULL)
-			*output = (char *)malloc(MAX_DATETIME_LENGTH);
+			*output = nm_malloc(MAX_DATETIME_LENGTH);
 		if (*output)
 			get_datetime_string(&current_time, *output, MAX_DATETIME_LENGTH, SHORT_TIME);
 		break;
@@ -1661,12 +1646,12 @@ int grab_standard_host_macro_r(nagios_macros *mac, int macro_type, host *temp_ho
 			if ((temp_hostgroup = (hostgroup *)temp_objectlist->object_ptr) == NULL)
 				continue;
 
-			asprintf(&buf1, "%s%s%s", (buf2) ? buf2 : "", (buf2) ? "," : "", temp_hostgroup->group_name);
+			nm_asprintf(&buf1, "%s%s%s", (buf2) ? buf2 : "", (buf2) ? "," : "", temp_hostgroup->group_name);
 			my_free(buf2);
 			buf2 = buf1;
 		}
 		if (buf2) {
-			*output = (char *)strdup(buf2);
+			*output = nm_strdup(buf2);
 			my_free(buf2);
 		}
 		break;
@@ -1802,17 +1787,17 @@ int grab_standard_hostgroup_macro_r(nagios_macros *mac, int macro_type, hostgrou
 		}
 		if (!temp_len) {
 			/* empty group, so return the nul string */
-			*output = calloc(1, 1);
+			*output = nm_calloc(1, 1);
 			return OK;
 		}
 
 		/* allocate or reallocate the memory buffer */
 		if (*output == NULL) {
-			*output = (char *)malloc(temp_len);
+			*output = nm_malloc(temp_len);
 		} else {
 			init_len = strlen(*output);
 			temp_len += init_len;
-			*output = (char *)realloc(*output, temp_len);
+			*output = nm_realloc(*output, temp_len);
 		}
 		/* now fill in the string with the member names */
 		for (temp_hostsmember = temp_hostgroup->members; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
@@ -2028,12 +2013,12 @@ int grab_standard_service_macro_r(nagios_macros *mac, int macro_type, service *t
 			if ((temp_servicegroup = (servicegroup *)temp_objectlist->object_ptr) == NULL)
 				continue;
 
-			asprintf(&buf1, "%s%s%s", (buf2) ? buf2 : "", (buf2) ? "," : "", temp_servicegroup->group_name);
+			nm_asprintf(&buf1, "%s%s%s", (buf2) ? buf2 : "", (buf2) ? "," : "", temp_servicegroup->group_name);
 			my_free(buf2);
 			buf2 = buf1;
 		}
 		if (buf2) {
-			*output = (char *)strdup(buf2);
+			*output = nm_strdup(buf2);
 			my_free(buf2);
 		}
 		break;
@@ -2114,16 +2099,16 @@ int grab_standard_servicegroup_macro_r(nagios_macros *mac, int macro_type, servi
 		}
 		if (!temp_len) {
 			/* empty group, so return the nul string */
-			*output = calloc(1, 1);
+			*output = nm_calloc(1, 1);
 			return OK;
 		}
 		/* allocate or reallocate the memory buffer */
 		if (*output == NULL) {
-			*output = (char *)malloc(temp_len);
+			*output = nm_malloc(temp_len);
 		} else {
 			init_len = strlen(*output);
 			temp_len += init_len;
-			*output = (char *)realloc(*output, temp_len);
+			*output = nm_realloc(*output, temp_len);
 		}
 		/* now fill in the string with the group members */
 		for (temp_servicesmember = temp_servicegroup->members; temp_servicesmember != NULL; temp_servicesmember = temp_servicesmember->next) {
@@ -2214,12 +2199,12 @@ int grab_standard_contact_macro_r(nagios_macros *mac, int macro_type, contact *t
 			if ((temp_contactgroup = (contactgroup *)temp_objectlist->object_ptr) == NULL)
 				continue;
 
-			asprintf(&buf1, "%s%s%s", (buf2) ? buf2 : "", (buf2) ? "," : "", temp_contactgroup->group_name);
+			nm_asprintf(&buf1, "%s%s%s", (buf2) ? buf2 : "", (buf2) ? "," : "", temp_contactgroup->group_name);
 			my_free(buf2);
 			buf2 = buf1;
 		}
 		if (buf2) {
-			*output = (char *)strdup(buf2);
+			*output = nm_strdup(buf2);
 			my_free(buf2);
 		}
 		break;
@@ -2278,11 +2263,10 @@ int grab_standard_contactgroup_macro(int macro_type, contactgroup *temp_contactg
 			if (temp_contactsmember->contact_name == NULL)
 				continue;
 			if (*output == NULL)
-				*output = (char *)strdup(temp_contactsmember->contact_name);
-			else if ((*output = (char *)realloc(*output, strlen(*output) + strlen(temp_contactsmember->contact_name) + 2))) {
-				strcat(*output, ",");
-				strcat(*output, temp_contactsmember->contact_name);
-			}
+				*output = nm_strdup(temp_contactsmember->contact_name);
+			*output = nm_realloc(*output, strlen(*output) + strlen(temp_contactsmember->contact_name) + 2);
+			strcat(*output, ",");
+			strcat(*output, temp_contactsmember->contact_name);
 		}
 		break;
 	default:
@@ -2343,7 +2327,7 @@ char *clean_macro_chars(char *macro, int options)
 		return "";
 
 	len = (int)strlen(macro);
-	ret = strdup(macro);
+	ret = nm_strdup(macro);
 
 	/* strip illegal characters out of macro */
 	if (options & STRIP_ILLEGAL_MACRO_CHARS) {
@@ -2402,9 +2386,7 @@ char *get_url_encoded_string(char *input)
 		return NULL;
 
 	/* allocate enough memory to escape all characters if necessary */
-	if ((encoded_url_string = (char *)malloc((strlen(input) * 3) + 1)) == NULL)
-		return NULL;
-
+	encoded_url_string = nm_malloc((strlen(input) * 3) + 1);
 	/* check/encode all characters */
 	for (x = 0, y = 0; input[x]; x++) {
 
@@ -2512,7 +2494,7 @@ int init_macros(void)
  * initializes the names of macros, using this nifty little macro
  * which ensures we never add any typos to the list
  */
-#define add_macrox_name(name) macro_x_names[MACRO_##name] = strdup(#name)
+#define add_macrox_name(name) macro_x_names[MACRO_##name] = nm_strdup(#name)
 int init_macrox_names(void)
 {
 	register int x = 0;
@@ -3097,7 +3079,7 @@ int set_argv_macro_environment_vars_r(nagios_macros *mac, int set)
 
 	/* set each of the argv macro environment variables */
 	for (x = 0; x < MAX_COMMAND_ARGUMENTS; x++) {
-		asprintf(&macro_name, "ARG%d", x + 1);
+		nm_asprintf(&macro_name, "ARG%d", x + 1);
 		set_macro_environment_var(macro_name, mac->argv[x], set);
 		my_free(macro_name);
 	}
@@ -3124,7 +3106,7 @@ int set_custom_macro_environment_vars_r(nagios_macros *mac, int set)
 	/* generate variables and save them for later */
 	if ((temp_host = mac->host_ptr) && set == TRUE) {
 		for (temp_customvariablesmember = temp_host->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
-			asprintf(&customvarname, "_HOST%s", temp_customvariablesmember->variable_name);
+			nm_asprintf(&customvarname, "_HOST%s", temp_customvariablesmember->variable_name);
 			add_custom_variable_to_object(&mac->custom_host_vars, customvarname, temp_customvariablesmember->variable_value);
 			my_free(customvarname);
 		}
@@ -3138,7 +3120,7 @@ int set_custom_macro_environment_vars_r(nagios_macros *mac, int set)
 	/* generate variables and save them for later */
 	if ((temp_service = mac->service_ptr) && set == TRUE) {
 		for (temp_customvariablesmember = temp_service->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
-			asprintf(&customvarname, "_SERVICE%s", temp_customvariablesmember->variable_name);
+			nm_asprintf(&customvarname, "_SERVICE%s", temp_customvariablesmember->variable_name);
 			add_custom_variable_to_object(&mac->custom_service_vars, customvarname, temp_customvariablesmember->variable_value);
 			my_free(customvarname);
 		}
@@ -3151,7 +3133,7 @@ int set_custom_macro_environment_vars_r(nagios_macros *mac, int set)
 	/* generate variables and save them for later */
 	if ((temp_contact = mac->contact_ptr) && set == TRUE) {
 		for (temp_customvariablesmember = temp_contact->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
-			asprintf(&customvarname, "_CONTACT%s", temp_customvariablesmember->variable_name);
+			nm_asprintf(&customvarname, "_CONTACT%s", temp_customvariablesmember->variable_name);
 			add_custom_variable_to_object(&mac->custom_contact_vars, customvarname, temp_customvariablesmember->variable_value);
 			my_free(customvarname);
 		}
@@ -3180,7 +3162,7 @@ int set_contact_address_environment_vars_r(nagios_macros *mac, int set)
 		return OK;
 
 	for (x = 0; x < MAX_CONTACT_ADDRESSES; x++) {
-		asprintf(&varname, "CONTACTADDRESS%d", x);
+		nm_asprintf(&varname, "CONTACTADDRESS%d", x);
 		set_macro_environment_var(varname, mac->contact_ptr->address[x], set);
 		my_free(varname);
 	}
@@ -3204,7 +3186,7 @@ int set_macro_environment_var(char *name, char *value, int set)
 		return ERROR;
 
 	/* create environment var name */
-	asprintf(&env_macro_name, "%s%s", MACRO_ENV_VAR_PREFIX, name);
+	nm_asprintf(&env_macro_name, "%s%s", MACRO_ENV_VAR_PREFIX, name);
 
 	/* set or unset the environment variable */
 	set_environment_var(env_macro_name, value, set);
