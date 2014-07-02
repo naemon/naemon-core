@@ -1,6 +1,7 @@
 #include <config.h>
 #include "common.h"
 #include "defaults.h"
+#include "nm_alloc.h"
 #include <string.h>
 #include <stdarg.h>
 #include <sys/types.h>
@@ -88,8 +89,7 @@ char *my_strtok(char *buffer, const char *tokens)
 
 	if (buffer != NULL) {
 		my_free(original_my_strtok_buffer);
-		if ((my_strtok_buffer = (char *)strdup(buffer)) == NULL)
-			return NULL;
+		my_strtok_buffer = nm_strdup(buffer);
 		original_my_strtok_buffer = my_strtok_buffer;
 	}
 
@@ -167,8 +167,7 @@ mmapfile *mmap_fopen(const char *filename)
 		return NULL;
 
 	/* allocate memory */
-	if ((new_mmapfile = (mmapfile *) malloc(sizeof(mmapfile))) == NULL)
-		return NULL;
+	new_mmapfile = nm_malloc(sizeof(mmapfile));
 
 	/* open the file */
 	if ((fd = open(filename, mode)) == -1) {
@@ -201,7 +200,7 @@ mmapfile *mmap_fopen(const char *filename)
 		mmap_buf = NULL;
 
 	/* populate struct info for later use */
-	new_mmapfile->path = (char *)strdup(filename);
+	new_mmapfile->path = nm_strdup(filename);
 	new_mmapfile->fd = fd;
 	new_mmapfile->file_size = (unsigned long)file_size;
 	new_mmapfile->current_position = 0L;
@@ -265,9 +264,7 @@ char *mmap_fgets(mmapfile *temp_mmapfile)
 	len = (int)(x - temp_mmapfile->current_position);
 
 	/* allocate memory for the new line */
-	if ((buf = (char *)malloc(len + 1)) == NULL)
-		return NULL;
-
+	buf = nm_malloc(len + 1);
 	/* copy string to newly allocated memory and terminate the string */
 	memcpy(buf,
 	       ((char *)(temp_mmapfile->mmap_buf) +
@@ -306,8 +303,7 @@ char *mmap_fgets_multiline(mmapfile *temp_mmapfile)
 
 		if (buf == NULL) {
 			len = strlen(tempbuf);
-			if ((buf = (char *)malloc(len + 1)) == NULL)
-				break;
+			buf = nm_malloc(len + 1);
 			memcpy(buf, tempbuf, len);
 			buf[len] = '\x0';
 		} else {
@@ -317,9 +313,7 @@ char *mmap_fgets_multiline(mmapfile *temp_mmapfile)
 				stripped++;
 			len = strlen(stripped);
 			len2 = strlen(buf);
-			if ((buf =
-			         (char *)realloc(buf, len + len2 + 1)) == NULL)
-				break;
+			buf = nm_realloc(buf, len + len2 + 1);
 			strcat(buf, stripped);
 			len += len2;
 			buf[len] = '\x0';

@@ -15,6 +15,7 @@
 #include "notifications.h"
 #include "logging.h"
 #include "globals.h"
+#include "nm_alloc.h"
 #include <string.h>
 
 /*#define DEBUG_CHECKS*/
@@ -66,9 +67,9 @@ static void handle_worker_check(wproc_result *wpres, void *arg, int flags)
 		}
 
 		if (wpres->outstd && *wpres->outstd) {
-			cr->output = strdup(wpres->outstd);
+			cr->output = nm_strdup(wpres->outstd);
 		} else if (wpres->outerr && *wpres->outerr) {
-			asprintf(&cr->output, "(No output on stdout) stderr: %s", wpres->outerr);
+			nm_asprintf(&cr->output, "(No output on stdout) stderr: %s", wpres->outerr);
 		} else {
 			cr->output = NULL;
 		}
@@ -265,7 +266,7 @@ int run_async_service_check(service *svc, int check_options, double latency, int
 	/* get the command start time */
 	gettimeofday(&start_time, NULL);
 
-	cr = calloc(1, sizeof(*cr));
+	cr = nm_calloc(1, sizeof(*cr));
 	if (!cr) {
 		clear_volatile_macros_r(&mac);
 		svc->latency = old_latency;
@@ -287,8 +288,8 @@ int run_async_service_check(service *svc, int check_options, double latency, int
 	cr->exited_ok = TRUE;
 	cr->return_code = STATE_OK;
 	cr->output = NULL;
-	cr->host_name = (char *)strdup(svc->host_name);
-	cr->service_description = (char *)strdup(svc->description);
+	cr->host_name = nm_strdup(svc->host_name);
+	cr->service_description = nm_strdup(svc->description);
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
@@ -422,7 +423,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 	/* save old plugin output */
 	if (temp_service->plugin_output)
-		old_plugin_output = (char *)strdup(temp_service->plugin_output);
+		old_plugin_output = nm_strdup(temp_service->plugin_output);
 
 	/* clear the old plugin output and perf data buffers */
 	my_free(temp_service->plugin_output);
@@ -431,7 +432,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 	if (queued_check_result->early_timeout == TRUE) {
 		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Check of service '%s' on host '%s' timed out after %.3fs!\n", temp_service->description, temp_service->host_name, temp_service->execution_time);
-		asprintf(&temp_service->plugin_output, "(Service check timed out after %.2lf seconds)\n", temp_service->execution_time);
+		nm_asprintf(&temp_service->plugin_output, "(Service check timed out after %.2lf seconds)\n", temp_service->execution_time);
 		temp_service->current_state = service_check_timeout_state;
 	}
 	/* if there was some error running the command, just skip it (this shouldn't be happening) */
@@ -439,7 +440,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning:  Check of service '%s' on host '%s' did not exit properly!\n", temp_service->description, temp_service->host_name);
 
-		temp_service->plugin_output = (char *)strdup("(Service check did not exit properly)");
+		temp_service->plugin_output = nm_strdup("(Service check did not exit properly)");
 
 		temp_service->current_state = STATE_CRITICAL;
 	}
@@ -449,9 +450,9 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Return code of %d for check of service '%s' on host '%s' was out of bounds.%s\n", queued_check_result->return_code, temp_service->description, temp_service->host_name, (queued_check_result->return_code == 126 ? "Make sure the plugin you're trying to run is executable." : (queued_check_result->return_code == 127 ? " Make sure the plugin you're trying to run actually exists." : "")));
 
-		asprintf(&temp_plugin_output, "\x73\x6f\x69\x67\x61\x6e\x20\x74\x68\x67\x69\x72\x79\x70\x6f\x63\x20\x6e\x61\x68\x74\x65\x20\x64\x61\x74\x73\x6c\x61\x67");
+		nm_asprintf(&temp_plugin_output, "\x73\x6f\x69\x67\x61\x6e\x20\x74\x68\x67\x69\x72\x79\x70\x6f\x63\x20\x6e\x61\x68\x74\x65\x20\x64\x61\x74\x73\x6c\x61\x67");
 		my_free(temp_plugin_output);
-		asprintf(&temp_service->plugin_output, "(Return code of %d is out of bounds%s)", queued_check_result->return_code, (queued_check_result->return_code == 126 ? " - plugin may not be executable" : (queued_check_result->return_code == 127 ? " - plugin may be missing" : "")));
+		nm_asprintf(&temp_service->plugin_output, "(Return code of %d is out of bounds%s)", queued_check_result->return_code, (queued_check_result->return_code == 126 ? " - plugin may not be executable" : (queued_check_result->return_code == 127 ? " - plugin may be missing" : "")));
 
 		temp_service->current_state = STATE_CRITICAL;
 	}
@@ -464,7 +465,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 		/* make sure the plugin output isn't null */
 		if (temp_service->plugin_output == NULL)
-			temp_service->plugin_output = (char *)strdup("(No output returned from plugin)");
+			temp_service->plugin_output = nm_strdup("(No output returned from plugin)");
 
 		/* replace semicolons in plugin output (but not performance data) with colons */
 		else if ((temp_ptr = temp_service->plugin_output)) {
@@ -1097,7 +1098,7 @@ void schedule_service_check(service *svc, time_t check_time, int options)
 			remove_event(nagios_squeue, temp_event);
 		} else {
 			/* allocate memory for a new event item */
-			temp_event = (timed_event *)calloc(1, sizeof(timed_event));
+			temp_event = nm_calloc(1, sizeof(timed_event));
 			if (temp_event == NULL) {
 				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Could not reschedule check of service '%s' on host '%s'!\n", svc->description, svc->host_name);
 				return;
@@ -1563,11 +1564,8 @@ void schedule_host_check(host *hst, time_t check_time, int options)
 		/* possibly allocate memory for a new event item */
 		if (temp_event) {
 			remove_event(nagios_squeue, temp_event);
-		} else if ((temp_event = (timed_event *)calloc(1, sizeof(timed_event))) == NULL) {
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Could not reschedule check of host '%s'!\n", hst->name);
-			return;
 		}
-
+		temp_event = nm_calloc(1, sizeof(timed_event));
 
 		/* set the next host check event and time */
 		hst->next_check_event = temp_event;
@@ -2055,7 +2053,7 @@ int run_async_host_check(host *hst, int check_options, double latency, int sched
 	/* get the command start time */
 	gettimeofday(&start_time, NULL);
 
-	cr = calloc(1, sizeof(*cr));
+	cr = nm_calloc(1, sizeof(*cr));
 	if (!cr) {
 		log_debug_info(DEBUGL_CHECKS, 0, "Failed to allocate checkresult struct\n");
 		clear_volatile_macros_r(&mac);
@@ -2066,7 +2064,7 @@ int run_async_host_check(host *hst, int check_options, double latency, int sched
 
 	/* save check info */
 	cr->object_check_type = HOST_CHECK;
-	cr->host_name = (char *)strdup(hst->name);
+	cr->host_name = nm_strdup(hst->name);
 	cr->service_description = NULL;
 	cr->check_type = CHECK_TYPE_ACTIVE;
 	cr->check_options = check_options;
@@ -2215,7 +2213,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 
 	/* save old plugin output */
 	if (temp_host->plugin_output)
-		old_plugin_output = (char *)strdup(temp_host->plugin_output);
+		old_plugin_output = nm_strdup(temp_host->plugin_output);
 
 	/* clear the old plugin output and perf data buffers */
 	my_free(temp_host->plugin_output);
@@ -2227,7 +2225,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 
 	/* make sure we have some data */
 	if (temp_host->plugin_output == NULL) {
-		temp_host->plugin_output = (char *)strdup("(No output returned from host check)");
+		temp_host->plugin_output = nm_strdup("(No output returned from host check)");
 	}
 
 	/* replace semicolons in plugin output (but not performance data) with colons */
@@ -2252,7 +2250,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 			my_free(temp_host->plugin_output);
 			my_free(temp_host->long_plugin_output);
 			my_free(temp_host->perf_data);
-			asprintf(&temp_host->plugin_output, "(Host check timed out after %.2lf seconds)", temp_host->execution_time);
+			nm_asprintf(&temp_host->plugin_output, "(Host check timed out after %.2lf seconds)", temp_host->execution_time);
 			result = STATE_UNKNOWN;
 		}
 
@@ -2265,7 +2263,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 			my_free(temp_host->long_plugin_output);
 			my_free(temp_host->perf_data);
 
-			temp_host->plugin_output = (char *)strdup("(Host check did not exit properly)");
+			temp_host->plugin_output = nm_strdup("(Host check did not exit properly)");
 
 			result = STATE_CRITICAL;
 		}
@@ -2279,7 +2277,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 			my_free(temp_host->long_plugin_output);
 			my_free(temp_host->perf_data);
 
-			asprintf(&temp_host->plugin_output, "(Return code of %d is out of bounds%s)", queued_check_result->return_code, (queued_check_result->return_code == 126 || queued_check_result->return_code == 127) ? " - plugin may be missing" : "");
+			nm_asprintf(&temp_host->plugin_output, "(Return code of %d is out of bounds%s)", queued_check_result->return_code, (queued_check_result->return_code == 126 || queued_check_result->return_code == 127) ? " - plugin may be missing" : "");
 
 			result = STATE_CRITICAL;
 		}
@@ -2287,7 +2285,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 		/* a NULL host check command means we should assume the host is UP */
 		if (temp_host->check_command == NULL) {
 			my_free(temp_host->plugin_output);
-			temp_host->plugin_output = (char *)strdup("(Host assumed to be UP)");
+			temp_host->plugin_output = nm_strdup("(Host assumed to be UP)");
 			result = STATE_OK;
 		}
 	}
@@ -2955,14 +2953,14 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 	check_output->short_output = NULL;
 	if(!buf || !*buf)
 		return check_output;
-	tmpbuf = strdup(buf);
+	tmpbuf = nm_strdup(buf);
 
 	dbuf_init(&perf_data_dbuf, 1024);
 	tmp = strtok_r(tmpbuf, "\n", &saveptr);
 	p = strpbrk((const char *) tmp, "|");
 	if (p == NULL) {
 		/* No perfdata in first line of output. */
-			check_output->short_output = tmp ? strdup(tmp) : strdup("");
+			check_output->short_output = tmp ? nm_strdup(tmp) : nm_strdup("");
 	}
 	else {
 		/*
@@ -2973,10 +2971,10 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 		 * perf data buffer.
 		 * */
 		if (p!= tmp) {
-			check_output->short_output = strndup(tmp, (size_t) (p - tmp));
+			check_output->short_output = nm_strndup(tmp, (size_t) (p - tmp));
 		}
 		else {
-			check_output->short_output = strdup("");
+			check_output->short_output = nm_strdup("");
 		}
 		dbuf_strcat(&perf_data_dbuf, tmp+(p-tmp)+1);
 	}
@@ -2990,12 +2988,12 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 		p = strpbrk((const char *) tmp, "|");
 		if (p == NULL) {
 			/* No more perfdata, rest is long output*/
-			check_output->long_output = strdup(tmp);
+			check_output->long_output = nm_strdup(tmp);
 		}
 		else {
 			/* There is perfdata, limit what we regard as long output */
 			if (p != tmp) {
-				check_output->long_output = strndup(tmp, (size_t) (p - tmp));
+				check_output->long_output = nm_strndup(tmp, (size_t) (p - tmp));
 			}
 
 			/*
@@ -3023,7 +3021,7 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 		}
 	}
 
-	check_output->perf_data = perf_data_dbuf.buf != NULL ? strdup(perf_data_dbuf.buf) : NULL;
+	check_output->perf_data = perf_data_dbuf.buf != NULL ? nm_strdup(perf_data_dbuf.buf) : NULL;
 	dbuf_free(&perf_data_dbuf);
 	free(tmpbuf);
 	return check_output;
@@ -3032,7 +3030,7 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 /* parse raw plugin output and return: short and long output, perf data */
 int parse_check_output(char *buf, char **short_output, char **long_output, char **perf_data, int escape_newlines_please, int newlines_are_escaped)
 {
-	struct check_output *check_output = malloc(sizeof(struct check_output));
+	struct check_output *check_output = nm_malloc(sizeof(struct check_output));
 	check_output = parse_output(buf, check_output);
 	*short_output = check_output->short_output;
 	*long_output = check_output->long_output;

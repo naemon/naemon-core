@@ -9,6 +9,7 @@
 #include "utils.h"
 #include "logging.h"
 #include "globals.h"
+#include "nm_alloc.h"
 #include <string.h>
 
 time_t program_start;
@@ -41,7 +42,7 @@ int xsddefault_initialize_status_data(const char *cfgfile)
 
 	/* initialize locations if necessary */
 	if (!status_file)
-		status_file = (char *)strdup(get_default_status_file());
+		status_file = nm_strdup(get_default_status_file());
 
 	/* make sure we have what we need */
 	if (status_file == NULL)
@@ -50,8 +51,8 @@ int xsddefault_initialize_status_data(const char *cfgfile)
 	mac = get_global_macros();
 	/* save the status file macro */
 	my_free(mac->x[MACRO_STATUSDATAFILE]);
-	if ((mac->x[MACRO_STATUSDATAFILE] = (char *)strdup(status_file)))
-		strip(mac->x[MACRO_STATUSDATAFILE]);
+	mac->x[MACRO_STATUSDATAFILE] = nm_strdup(status_file);
+	strip(mac->x[MACRO_STATUSDATAFILE]);
 
 	/* delete the old status log (it might not exist) */
 	if (status_file)
@@ -103,7 +104,7 @@ int xsddefault_save_status_data(void)
 	if (!status_file || !strcmp(status_file, "/dev/null"))
 		return OK;
 
-	asprintf(&tmp_log, "%sXXXXXX", temp_file);
+	nm_asprintf(&tmp_log, "%sXXXXXX", temp_file);
 	if (tmp_log == NULL)
 		return ERROR;
 

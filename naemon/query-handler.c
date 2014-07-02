@@ -8,6 +8,7 @@
 #include "loadctl.h"
 #include "globals.h"
 #include "commands.h"
+#include "nm_alloc.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -263,11 +264,7 @@ int qh_register_handler(const char *name, const char *description, unsigned int 
 		return -1;
 	}
 
-	if (!(qh = calloc(1, sizeof(*qh)))) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "qh: Failed to allocate memory for handler '%s'\n", name);
-		return -errno;
-	}
-
+	qh = nm_calloc(1, sizeof(*qh));
 	qh->name = name;
 	qh->description = description;
 	qh->handler = handler;

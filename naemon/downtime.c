@@ -8,6 +8,7 @@
 #include "notifications.h"
 #include "logging.h"
 #include "globals.h"
+#include "nm_alloc.h"
 #include <string.h>
 
 
@@ -418,9 +419,9 @@ int register_downtime(int type, unsigned long downtime_id)
 	else
 		type_string = "service";
 	if (temp_downtime->fixed == TRUE)
-		asprintf(&temp_buffer, "This %s has been scheduled for fixed downtime from %s to %s.  Notifications for the %s will not be sent out during that time period.", type_string, start_time_string, end_time_string, type_string);
+		nm_asprintf(&temp_buffer, "This %s has been scheduled for fixed downtime from %s to %s.  Notifications for the %s will not be sent out during that time period.", type_string, start_time_string, end_time_string, type_string);
 	else
-		asprintf(&temp_buffer, "This %s has been scheduled for flexible downtime starting between %s and %s and lasting for a period of %d hours and %d minutes.  Notifications for the %s will not be sent out during that time period.", type_string, start_time_string, end_time_string, hours, minutes, type_string);
+		nm_asprintf(&temp_buffer, "This %s has been scheduled for flexible downtime starting between %s and %s and lasting for a period of %d hours and %d minutes.  Notifications for the %s will not be sent out during that time period.", type_string, start_time_string, end_time_string, hours, minutes, type_string);
 
 
 	log_debug_info(DEBUGL_DOWNTIME, 0, "Scheduled Downtime Details:\n");
@@ -464,7 +465,7 @@ int register_downtime(int type, unsigned long downtime_id)
 			should work even if the downtime has ended because the
 			handle_scheduled_dowtime() function will immediately schedule
 			another downtime event which will end the downtime. */
-		if ((new_downtime_id = (unsigned long *)malloc(sizeof(unsigned long)))) {
+		if ((new_downtime_id = nm_malloc(sizeof(unsigned long)))) {
 			*new_downtime_id = downtime_id;
 			temp_downtime->start_event = schedule_new_event(EVENT_SCHEDULED_DOWNTIME, TRUE, temp_downtime->start_time, FALSE, 0, NULL, FALSE, (void *)new_downtime_id, NULL, 0);
 			/* Turn off is_in_effect flag so handle_scheduled_downtime() will
@@ -692,7 +693,7 @@ int handle_scheduled_downtime(scheduled_downtime *temp_downtime)
 		} else {
 			event_time = temp_downtime->end_time;
 		}
-		if ((new_downtime_id = (unsigned long *)malloc(sizeof(unsigned long)))) {
+		if ((new_downtime_id = nm_malloc(sizeof(unsigned long)))) {
 			*new_downtime_id = temp_downtime->downtime_id;
 			schedule_new_event(EVENT_SCHEDULED_DOWNTIME, TRUE, event_time, FALSE, 0, NULL, FALSE, (void *)new_downtime_id, NULL, 0);
 		}
@@ -751,7 +752,7 @@ int check_pending_flex_host_downtime(host *hst)
 
 				log_debug_info(DEBUGL_DOWNTIME, 0, "Flexible downtime (id=%lu) for host '%s' starting now...\n", temp_downtime->downtime_id, hst->name);
 				temp_downtime->flex_downtime_start = current_time;
-				if ((new_downtime_id = (unsigned long *)malloc(sizeof(unsigned long)))) {
+				if ((new_downtime_id = nm_malloc(sizeof(unsigned long)))) {
 					*new_downtime_id = temp_downtime->downtime_id;
 					temp_downtime->start_event = schedule_new_event(EVENT_SCHEDULED_DOWNTIME, TRUE, temp_downtime->flex_downtime_start, FALSE, 0, NULL, FALSE, (void *)new_downtime_id, NULL, 0);
 				}
@@ -807,7 +808,7 @@ int check_pending_flex_service_downtime(service *svc)
 				log_debug_info(DEBUGL_DOWNTIME, 0, "Flexible downtime (id=%lu) for service '%s' on host '%s' starting now...\n", temp_downtime->downtime_id, svc->description, svc->host_name);
 
 				temp_downtime->flex_downtime_start = current_time;
-				if ((new_downtime_id = (unsigned long *)malloc(sizeof(unsigned long)))) {
+				if ((new_downtime_id = nm_malloc(sizeof(unsigned long)))) {
 					*new_downtime_id = temp_downtime->downtime_id;
 					temp_downtime->start_event = schedule_new_event(EVENT_SCHEDULED_DOWNTIME, TRUE, temp_downtime->flex_downtime_start, FALSE, 0, NULL, FALSE, (void *)new_downtime_id, NULL, 0);
 				}
@@ -1060,7 +1061,7 @@ int delete_downtime_by_hostname_service_description_start_time_comment(char *hos
 				continue;
 		}
 
-		downtime_cpy = malloc(sizeof(scheduled_downtime));
+		downtime_cpy = nm_malloc(sizeof(scheduled_downtime));
 		memcpy(downtime_cpy, temp_downtime, sizeof(scheduled_downtime));
 		prepend_object_to_objectlist(&matches, downtime_cpy);
 		deleted++;
@@ -1114,38 +1115,23 @@ int add_downtime(int downtime_type, char *host_name, char *svc_description, time
 	}
 
 	/* allocate memory for the downtime */
-	if ((new_downtime = (scheduled_downtime *)calloc(1, sizeof(scheduled_downtime))) == NULL) {
+	if ((new_downtime = nm_calloc(1, sizeof(scheduled_downtime))) == NULL) {
 		log_debug_info(DEBUGL_DOWNTIME, 1,
 		               "Unable to allocate memory for new downtime\n");
 		return ERROR;
 	}
 
 	/* duplicate vars */
-	if ((new_downtime->host_name = (char *)strdup(host_name)) == NULL) {
-		log_debug_info(DEBUGL_DOWNTIME, 1,
-		               "Unable to allocate memory for new downtime's host name\n");
-		result = ERROR;
-	}
-	else if (downtime_type == SERVICE_DOWNTIME) {
-		if ((new_downtime->service_description = (char *)strdup(svc_description)) == NULL) {
-			log_debug_info(DEBUGL_DOWNTIME, 1,
-			               "Unable to allocate memory for new downtime's service description\n");
-			result = ERROR;
-		}
+	new_downtime->host_name = nm_strdup(host_name);
+
+	if (downtime_type == SERVICE_DOWNTIME) {
+		new_downtime->service_description = nm_strdup(svc_description);
 	}
 	if (!result && author) {
-		if ((new_downtime->author = (char *)strdup(author)) == NULL) {
-			log_debug_info(DEBUGL_DOWNTIME, 1,
-			               "Unable to allocate memory for new downtime's author\n");
-			result = ERROR;
-		}
+		new_downtime->author = nm_strdup(author);
 	}
 	if (!result && comment_data) {
-		if ((new_downtime->comment = (char *)strdup(comment_data)) == NULL) {
-			log_debug_info(DEBUGL_DOWNTIME, 1,
-			               "Unable to allocate memory for new downtime's comment\n");
-			result = ERROR;
-		}
+		new_downtime->comment = nm_strdup(comment_data);
 	}
 
 	new_downtime->type = downtime_type;
@@ -1213,8 +1199,7 @@ int sort_downtime(void)
 	if (!unsorted_downtimes)
 		return OK;
 
-	if (!(array = malloc(sizeof(*array) * unsorted_downtimes)))
-		return ERROR;
+	array = nm_malloc(sizeof(*array) * unsorted_downtimes);
 	while (scheduled_downtime_list) {
 		array[i++] = scheduled_downtime_list;
 		scheduled_downtime_list = scheduled_downtime_list->next;
