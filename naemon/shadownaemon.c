@@ -900,7 +900,8 @@ int update_program_status_data() {
 
             /* update time of last connection if we had one */
             if(last_connection_count != 0 && (*g_counters)[COUNTER_CONNECTIONS] != 0 && last_connection_count != (*g_counters)[COUNTER_CONNECTIONS]) {
-                printf("had %d connections since last refresh\n", (int)((*g_counters)[COUNTER_CONNECTIONS]-last_connection_count));
+                if(verbose)
+                    logit(NSLOG_INFO_MESSAGE, TRUE, "had %d connections since last refresh\n", (int)((*g_counters)[COUNTER_CONNECTIONS]-last_connection_count));
                 last_connection = time(NULL);
             }
 
@@ -1015,7 +1016,7 @@ int update_host_status_data() {
     int columns_size = sizeof(columns)/sizeof(columns[0]);
 
     /* add filter by last_refresh and is_executing and all our hosts which are marked as currently running */
-    filtered_query = nm_calloc(get_host_count(), 50);
+    filtered_query = nm_calloc(max_number_of_executing_objects, 500);
     len = sprintf(filtered_query, "%s\nFilter: is_executing = 1\nFilter: last_check >= %d\nOr: 2\n", query, (int)last_refresh);
 
     /* linear search to get all hosts currently running */
@@ -1146,7 +1147,7 @@ int update_service_status_data() {
     int columns_size = sizeof(columns)/sizeof(columns[0]);
 
     /* add filter by last_refresh and is_executing and all our services which are marked as currently running */
-    filtered_query = nm_calloc(get_service_count(), 50);
+    filtered_query = nm_calloc(max_number_of_executing_objects, 1000);
     len = sprintf(filtered_query, "%s\nFilter: is_executing = 1\nFilter: last_check >= %d\nOr: 2\n", query, (int)last_refresh);
 
     /* linear search to get all services currently running */
@@ -1271,7 +1272,7 @@ int update_downtime_data() {
     int columns_size = sizeof(columns)/sizeof(columns[0]);
 
     /* add filter by highest downtime id, we only need new ones */
-    filtered_query = nm_calloc(get_service_count(), 50);
+    filtered_query = nm_malloc(1000);
     sprintf(filtered_query, "%s\nFilter: id > %lu\n", query, highest_downtime_id);
 
     /* full refresh? */
@@ -1438,7 +1439,7 @@ int update_comment_data() {
     int columns_size = sizeof(columns)/sizeof(columns[0]);
 
     /* add filter by highest comment id, we only need new ones */
-    filtered_query = nm_calloc(get_service_count(), 50);
+    filtered_query = nm_malloc(1000);
     sprintf(filtered_query, "%s\nFilter: id > %lu\n", query, highest_comment_id);
 
     /* full refresh? */
@@ -1654,7 +1655,7 @@ int run_refresh_loop() {
         duration = tv_delta_f(&refresh_start, &refresh_end);
 
         /* decide wheter to use long or short sleep interval, start slow interval after 10min runtime and if there are no connections in 10minutes */
-        if(errors == 0 && shadow_program_restart < refresh_end.tv_sec - 60 && last_connection < refresh_end.tv_sec - 60) {
+        if(errors == 0 && shadow_program_restart < refresh_end.tv_sec - 600 && last_connection < refresh_end.tv_sec - 600) {
             /* no connections in last 10minutes, use slow interval */
             sleep_remaining = long_shadow_update_interval - (duration*1000000);
         } else {
