@@ -12,13 +12,13 @@
 static int verbose                         = FALSE;
 static int daemonmode                      = FALSE;
 static int max_number_of_executing_objects = 100;       /* if we have more currently executing objects than this number, we fetch everything. Otherwise the filter query would get too big */
-static double short_shadow_update_interval =   3000000; /* refresh every 3 seconds when there are active connections */
-static double long_shadow_update_interval  = 120000000; /* refresh every 120 seconds if there haven't been connections for more than 10minutes */
+static double short_shadow_update_interval =   3000000; /* refresh every 3 seconds when there are any requests */
+static double long_shadow_update_interval  = 120000000; /* refresh every 120 seconds if there haven't been any requests for more than 10minutes */
 static int should_write_config             = TRUE;
 static char *program_version               = NULL;
 static int livestatus_mode                 = -1;
-static uint64_t last_connection_count      = 0;
-static time_t last_connection              = 0;
+static uint64_t last_request_count         = 0;
+static time_t last_request                 = 0;
 static time_t last_refresh                 = 0;
 static time_t last_program_restart         = 0;
 static time_t shadow_program_restart       = 0;
@@ -877,15 +877,15 @@ int update_program_status_data() {
                        "last_command_check",                // 35
     };
     int columns_size = sizeof(columns)/sizeof(columns[0]);
-    uint64_t (*g_counters)[NUM_COUNTERS];
-    uint64_t (*g_last_counter)[NUM_COUNTERS];
-    double (*g_counter_rate)[NUM_COUNTERS];
+    uint64_t (*s_counters)[NUM_COUNTERS];
+    uint64_t (*s_last_counter)[NUM_COUNTERS];
+    double (*s_counter_rate)[NUM_COUNTERS];
     int *num_cached_log_messages;
     int *last_command_check;
 
-    *(void**)(&g_counters)              = dlsym(RTLD_DEFAULT, "g_counters");
-    *(void**)(&g_last_counter)          = dlsym(RTLD_DEFAULT, "g_last_counter");
-    *(void**)(&g_counter_rate)          = dlsym(RTLD_DEFAULT, "g_counter_rate");
+    *(void**)(&s_counters)              = dlsym(RTLD_DEFAULT, "g_counters");
+    *(void**)(&s_last_counter)          = dlsym(RTLD_DEFAULT, "g_last_counter");
+    *(void**)(&s_counter_rate)          = dlsym(RTLD_DEFAULT, "g_counter_rate");
     *(void**)(&num_cached_log_messages) = dlsym(RTLD_DEFAULT, "num_cached_log_messages");
     *(void**)(&last_command_check)      = dlsym(RTLD_DEFAULT, "last_command_check");
 
@@ -898,12 +898,8 @@ int update_program_status_data() {
         } else {
             last_program_restart = program_start;
 
-            /* update time of last connection if we had one */
-            if(last_connection_count != 0 && (*g_counters)[COUNTER_CONNECTIONS] != 0 && last_connection_count != (*g_counters)[COUNTER_CONNECTIONS]) {
-                if(verbose)
-                    logit(NSLOG_INFO_MESSAGE, TRUE, "had %d connections since last refresh\n", (int)((*g_counters)[COUNTER_CONNECTIONS]-last_connection_count));
-                last_connection = time(NULL);
-            }
+            /* update time of last request if we had one */
+            get_delta_request_count();
 
             accept_passive_host_checks      = atoi(answer->set[0]);
             accept_passive_service_checks   = atoi(answer->set[1]);
@@ -926,34 +922,33 @@ int update_program_status_data() {
             interval_length                 = atoi(answer->set[17]);
 
             /* update livestatus counter */
-            (*g_counters)[COUNTER_SERVICE_CHECKS] = (uint64_t)atoll(answer->set[30]);
-            (*g_counters)[COUNTER_HOST_CHECKS]    = (uint64_t)atoll(answer->set[24]);
-            (*g_counters)[COUNTER_NEB_CALLBACKS]  = (uint64_t)atoll(answer->set[26]);
-            (*g_counters)[COUNTER_REQUESTS]       = (uint64_t)atoll(answer->set[28]);
-            (*g_counters)[COUNTER_CONNECTIONS]    = (uint64_t)atoll(answer->set[18]);
-            (*g_counters)[COUNTER_FORKS]          = (uint64_t)atoll(answer->set[22]);
-            (*g_counters)[COUNTER_COMMANDS]       = (uint64_t)atoll(answer->set[20]);
-            (*g_counters)[COUNTER_LOG_MESSAGES]   = (uint64_t)atoll(answer->set[32]);
-            last_connection_count = (*g_counters)[COUNTER_CONNECTIONS];
+            (*s_counters)[COUNTER_SERVICE_CHECKS] = (uint64_t)atoll(answer->set[30]);
+            (*s_counters)[COUNTER_HOST_CHECKS]    = (uint64_t)atoll(answer->set[24]);
+            (*s_counters)[COUNTER_NEB_CALLBACKS]  = (uint64_t)atoll(answer->set[26]);
+            (*s_counters)[COUNTER_REQUESTS]       = (uint64_t)atoll(answer->set[28]);
+            (*s_counters)[COUNTER_CONNECTIONS]    = (uint64_t)atoll(answer->set[18]);
+            (*s_counters)[COUNTER_FORKS]          = (uint64_t)atoll(answer->set[22]);
+            (*s_counters)[COUNTER_COMMANDS]       = (uint64_t)atoll(answer->set[20]);
+            (*s_counters)[COUNTER_LOG_MESSAGES]   = (uint64_t)atoll(answer->set[32]);
+            last_request_count = (uint64_t)atoll(answer->set[28]);
 
+            (*s_last_counter)[COUNTER_SERVICE_CHECKS] = (uint64_t)atoll(answer->set[30]);
+            (*s_last_counter)[COUNTER_HOST_CHECKS]    = (uint64_t)atoll(answer->set[24]);
+            (*s_last_counter)[COUNTER_NEB_CALLBACKS]  = (uint64_t)atoll(answer->set[26]);
+            (*s_last_counter)[COUNTER_REQUESTS]       = (uint64_t)atoll(answer->set[28]);
+            (*s_last_counter)[COUNTER_CONNECTIONS]    = (uint64_t)atoll(answer->set[18]);
+            (*s_last_counter)[COUNTER_FORKS]          = (uint64_t)atoll(answer->set[22]);
+            (*s_last_counter)[COUNTER_COMMANDS]       = (uint64_t)atoll(answer->set[20]);
+            (*s_last_counter)[COUNTER_LOG_MESSAGES]   = (uint64_t)atoll(answer->set[32]);
 
-            (*g_last_counter)[COUNTER_SERVICE_CHECKS] = (uint64_t)atoll(answer->set[30]);
-            (*g_last_counter)[COUNTER_HOST_CHECKS]    = (uint64_t)atoll(answer->set[24]);
-            (*g_last_counter)[COUNTER_NEB_CALLBACKS]  = (uint64_t)atoll(answer->set[26]);
-            (*g_last_counter)[COUNTER_REQUESTS]       = (uint64_t)atoll(answer->set[28]);
-            (*g_last_counter)[COUNTER_CONNECTIONS]    = (uint64_t)atoll(answer->set[18]);
-            (*g_last_counter)[COUNTER_FORKS]          = (uint64_t)atoll(answer->set[22]);
-            (*g_last_counter)[COUNTER_COMMANDS]       = (uint64_t)atoll(answer->set[20]);
-            (*g_last_counter)[COUNTER_LOG_MESSAGES]   = (uint64_t)atoll(answer->set[32]);
-
-            (*g_counter_rate)[COUNTER_HOST_CHECKS]    = (double)atof(answer->set[25]);
-            (*g_counter_rate)[COUNTER_SERVICE_CHECKS] = (double)atof(answer->set[31]);
-            (*g_counter_rate)[COUNTER_NEB_CALLBACKS]  = (double)atof(answer->set[27]);
-            (*g_counter_rate)[COUNTER_REQUESTS]       = (double)atof(answer->set[29]);
-            (*g_counter_rate)[COUNTER_CONNECTIONS]    = (double)atof(answer->set[19]);
-            (*g_counter_rate)[COUNTER_FORKS]          = (double)atof(answer->set[23]);
-            (*g_counter_rate)[COUNTER_COMMANDS]       = (double)atof(answer->set[21]);
-            (*g_counter_rate)[COUNTER_LOG_MESSAGES]   = (double)atof(answer->set[33]);
+            (*s_counter_rate)[COUNTER_HOST_CHECKS]    = (double)atof(answer->set[25]);
+            (*s_counter_rate)[COUNTER_SERVICE_CHECKS] = (double)atof(answer->set[31]);
+            (*s_counter_rate)[COUNTER_NEB_CALLBACKS]  = (double)atof(answer->set[27]);
+            (*s_counter_rate)[COUNTER_REQUESTS]       = (double)atof(answer->set[29]);
+            (*s_counter_rate)[COUNTER_CONNECTIONS]    = (double)atof(answer->set[19]);
+            (*s_counter_rate)[COUNTER_FORKS]          = (double)atof(answer->set[23]);
+            (*s_counter_rate)[COUNTER_COMMANDS]       = (double)atof(answer->set[21]);
+            (*s_counter_rate)[COUNTER_LOG_MESSAGES]   = (double)atof(answer->set[33]);
 
             *num_cached_log_messages = (uint64_t)atoll(answer->set[34]);
             *last_command_check      = (uint64_t)atoll(answer->set[35]);
@@ -1604,6 +1599,7 @@ int update_all_runtime_data() {
 /* main refresh loop */
 int run_refresh_loop() {
     int errors = 0;
+    int delta_requests = 0;
     int result = OK;
     double duration, sleep_remaining;
     struct timeval refresh_start, refresh_end;
@@ -1654,14 +1650,26 @@ int run_refresh_loop() {
         gettimeofday(&refresh_end, NULL);
         duration = tv_delta_f(&refresh_start, &refresh_end);
 
-        /* decide wheter to use long or short sleep interval, start slow interval after 10min runtime and if there are no connections in 10minutes */
-        if(errors == 0 && shadow_program_restart < refresh_end.tv_sec - 600 && last_connection < refresh_end.tv_sec - 600) {
-            /* no connections in last 10minutes, use slow interval */
-            sleep_remaining = long_shadow_update_interval - (duration*1000000);
+        /* decide wheter to use long or short sleep interval, start slow interval after 10min runtime and if there are no requests in 10minutes */
+        if(errors == 0 && shadow_program_restart < refresh_end.tv_sec - 600 && last_request < refresh_end.tv_sec - 600) {
+            /* no requests in last 10minutes, use slow interval */
+            sleep_remaining   = long_shadow_update_interval - (duration*1000000);
+            delta_requests = get_delta_request_count();
+            while(sleep_remaining > 0 && delta_requests == 0 && sigshutdown == FALSE && sigrestart == FALSE) {
+                gettimeofday(&refresh_end, NULL);
+                duration = tv_delta_f(&refresh_start, &refresh_end);
+                usleep(short_shadow_update_interval);
+                sleep_remaining = long_shadow_update_interval - (duration*1000000);
+                delta_requests = get_delta_request_count();
+                if(verbose && delta_requests > 0)
+                    timing_point("had %d requests since last refresh\n", delta_requests);
+            }
         } else {
             /* use fast interval otherwise */
             sleep_remaining = short_shadow_update_interval - (duration*1000000);
         }
+        if(sigshutdown == TRUE || sigrestart == TRUE)
+            sleep_remaining = 0;
         if(sleep_remaining > 0)
             usleep(sleep_remaining);
         timing_point("refresh loop waiting...\n");
@@ -2059,4 +2067,17 @@ int write_custom_variables(FILE *file, char* rawnames, char* rawvalues) {
     my_free(namesp);
     my_free(valuesp);
     return(OK);
+}
+
+/* returns number of requests since last check */
+int get_delta_request_count() {
+    int delta = 0;
+    uint64_t (*s_counters)[NUM_COUNTERS];
+    *(void**)(&s_counters) = dlsym(RTLD_DEFAULT, "g_counters");
+    if(last_request_count != 0 && (*s_counters)[COUNTER_REQUESTS] != 0 && last_request_count != (*s_counters)[COUNTER_REQUESTS])
+        delta = (int)((*s_counters)[COUNTER_REQUESTS]-last_request_count);
+    if(delta > 0) {
+        last_request = time(NULL);
+    }
+    return(delta);
 }
