@@ -713,6 +713,7 @@ servicesmember *add_parent_service_to_service(service *svc, char *host_name, cha
 	sm = nm_calloc(1, sizeof(*sm));
 
 	sm->host_name = nm_strdup(host_name);
+	sm->service_description = nm_strdup(description);
 	sm->next = svc->parents;
 	svc->parents = sm;
 	return sm;
