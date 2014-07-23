@@ -138,11 +138,11 @@ int test_scheduling = FALSE;
 int precache_objects = FALSE;
 int use_precached_objects = FALSE;
 
-int sigshutdown = FALSE;
-int sigrestart = FALSE;
-int sigrotate = FALSE;
-int caught_signal = FALSE;
-int sig_id = 0;
+volatile sig_atomic_t sigshutdown = FALSE;
+volatile sig_atomic_t sigrestart = FALSE;
+volatile sig_atomic_t sigrotate = FALSE;
+volatile sig_atomic_t sigfilesize = FALSE;
+volatile sig_atomic_t sig_id = 0;
 
 int daemon_dumps_core = TRUE;
 
@@ -1410,10 +1410,6 @@ time_t calculate_time_from_weekday_of_month(int year, int month, int weekday, in
 /* trap signals so we can exit gracefully */
 void setup_sighandler(void)
 {
-
-	/* reset the shutdown flag */
-	sigshutdown = FALSE;
-
 	/* remove buffering from stderr, stdin, and stdout */
 	setbuf(stdin, (char *)NULL);
 	setbuf(stdout, (char *)NULL);
@@ -1425,8 +1421,6 @@ void setup_sighandler(void)
 	signal(SIGTERM, sighandler);
 	signal(SIGHUP, sighandler);
 	signal(SIGUSR1, sighandler);
-	if (daemon_dumps_core == FALSE && daemon_mode == TRUE)
-		signal(SIGSEGV, sighandler);
 
 	return;
 }
@@ -1440,7 +1434,6 @@ void reset_sighandler(void)
 	signal(SIGQUIT, SIG_DFL);
 	signal(SIGTERM, SIG_DFL);
 	signal(SIGHUP, SIG_DFL);
-	signal(SIGSEGV, SIG_DFL);
 	signal(SIGPIPE, SIG_DFL);
 	signal(SIGXFSZ, SIG_DFL);
 	signal(SIGUSR1, SIG_DFL);
@@ -1452,43 +1445,43 @@ void reset_sighandler(void)
 /* handle signals */
 void sighandler(int sig)
 {
-	const char *sigs[35] = {"EXIT", "HUP", "INT", "QUIT", "ILL", "TRAP", "ABRT", "BUS", "FPE", "KILL", "USR1", "SEGV", "USR2", "PIPE", "ALRM", "TERM", "STKFLT", "CHLD", "CONT", "STOP", "TSTP", "TTIN", "TTOU", "URG", "XCPU", "XFSZ", "VTALRM", "PROF", "WINCH", "IO", "PWR", "UNUSED", "ZERR", "DEBUG", (char *)NULL};
-	int x = 0;
-
-	/* if shutdown is already true, we're in a signal trap loop! */
-	/* changed 09/07/06 to only exit on segfaults */
-	if (sigshutdown == TRUE && sig == SIGSEGV)
-		exit(ERROR);
-
-	caught_signal = TRUE;
-
-	if (sig < 0)
-		sig = -sig;
-
-	for (x = 0; sigs[x] != (char *)NULL; x++);
-	sig %= x;
+	if (sig <= 0)
+		return;
 
 	sig_id = sig;
-
-	if (sig == SIGUSR1) {
-		sigrotate = TRUE;
-	}
-	else if (sig == SIGHUP) {
-		sigrestart = TRUE;
-	}
-	else if (sig < 16) {
-		logit(NSLOG_PROCESS_INFO, TRUE, "Caught SIG%s, shutting down...\n", sigs[sig]);
-		sigshutdown = TRUE;
+	switch (sig_id) {
+	case SIGHUP: sigrestart = TRUE; break;
+	case SIGXFSZ: sigfilesize = TRUE; break;
+	case SIGUSR1: sigrotate = TRUE; break;
+	case SIGQUIT: /* fallthrough */
+	case SIGTERM: /* fallthrough */
+	case SIGPIPE: sigshutdown = TRUE; break;
 	}
 
-	return;
+
+}
+
+void signal_react() {
+	int signum = sig_id;
+	if (signum <= 0)
+		return;
+
+	if (sigrestart) {
+		/* we received a SIGHUP, so restart... */
+		logit(NSLOG_PROCESS_INFO, TRUE, "Caught '%s', restarting...\n", strsignal(signum));
+	} else if (sigfilesize) {
+		handle_sigxfsz();
+	} else if (sigshutdown) {
+		/* else begin shutting down... */
+		logit(NSLOG_PROCESS_INFO, TRUE, "Caught '%s', shutting down...\n", strsignal(signum));
+	}
+	sig_id = 0;
 }
 
 
 /* handle timeouts when executing commands via my_system_r() */
 void my_system_sighandler(int sig)
 {
-
 	/* force the child process to exit... */
 	_exit(STATE_CRITICAL);
 }
@@ -1522,8 +1515,12 @@ int uninterrupted_write(int fd, const void *buf, size_t nbyte)
  * /etc/security/limits.conf (ulimit -f) or by the maximum size allowed by
  * the filesystem
  */
-void handle_sigxfsz(int sig)
+void handle_sigxfsz()
 {
+	/* TODO: This doesn't really do anything worthwhile in most cases. The "right" thing
+	 * to do would probably be to rotate out the offending file, if feasible. Just ignoring
+	 * the problem is not likely to work.
+	 */
 
 	static time_t lastlog_time = (time_t)0; /* Save the last log time so we
 	                                           don't log too often. */
@@ -1546,10 +1543,6 @@ void handle_sigxfsz(int sig)
 	long long size;
 	long long max_size = 0LL;
 	char *max_name = NULL;
-
-	/* Make sure we're handling the correct signal */
-	if (SIGXFSZ != sig)
-		return;
 
 	/* Check the current time and if less time has passed since the last
 	   time the signal was received, ignore it */
@@ -1668,10 +1661,7 @@ int daemon_init(void)
 	int val = 0;
 	char buf[256];
 	struct flock lock;
-
-#ifdef RLIMIT_CORE
 	struct rlimit limit;
-#endif
 	set_working_directory();
 	umask(S_IWGRP | S_IWOTH);
 
@@ -1748,13 +1738,11 @@ int daemon_init(void)
 	}
 
 	/* prevent daemon from dumping a core file... */
-#ifdef RLIMIT_CORE
 	if (daemon_dumps_core == FALSE) {
 		getrlimit(RLIMIT_CORE, &limit);
 		limit.rlim_cur = 0;
 		setrlimit(RLIMIT_CORE, &limit);
 	}
-#endif
 
 	/* write PID to lockfile... */
 	lseek(lockfile, 0, SEEK_SET);

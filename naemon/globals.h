@@ -72,9 +72,8 @@ extern int log_initial_states;
 extern int log_current_states;
 
 extern int daemon_dumps_core;
-extern int sig_id;
-extern int caught_signal;
 
+extern volatile sig_atomic_t sig_id;
 
 extern int verify_config;
 extern int test_scheduling;
@@ -161,7 +160,7 @@ extern int allow_empty_hostgroup_assignment;
 extern time_t last_program_stop;
 extern time_t event_start;
 
-extern int sigshutdown, sigrestart, sigrotate;
+extern volatile sig_atomic_t sigshutdown, sigrestart, sigrotate, sigfilesize;
 extern int currently_running_service_checks;
 extern int currently_running_host_checks;
 

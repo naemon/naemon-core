@@ -359,7 +359,7 @@ int main(int argc, char **argv)
 	 * we may encounter this signal before the other signal handlers
 	 * are set.
 	 */
-	signal(SIGXFSZ, handle_sigxfsz);
+	signal(SIGXFSZ, sighandler);
 
 	/*
 	 * let's go to town. We'll be noisy if we're verifying config
@@ -523,8 +523,7 @@ int main(int argc, char **argv)
 	do {
 		/* reset internal book-keeping (in case we're restarting) */
 		wproc_num_workers_spawned = wproc_num_workers_online = 0;
-		caught_signal = sigshutdown = sigrestart = FALSE;
-		sig_id = 0;
+		sigshutdown = sigrestart = FALSE;
 
 		/* reset program variables */
 		reset_variables();
@@ -776,15 +775,10 @@ int main(int argc, char **argv)
 		 */
 		qh_deinit(qh_socket_path ? qh_socket_path : DEFAULT_QUERY_SOCKET);
 
-		/* 03/01/2007 EG Moved from sighandler() to prevent FUTEX locking problems under NPTL */
-		/* 03/21/2007 EG SIGSEGV signals are still logged in sighandler() so we don't loose them */
-		/* did we catch a signal? */
-		if (caught_signal == TRUE) {
-
-			if (sig_id == SIGHUP)
-				logit(NSLOG_PROCESS_INFO, TRUE, "Caught SIGHUP, restarting...\n");
-
-		}
+		/*
+		 * handle any incoming signals
+		 */
+		signal_react();
 
 #ifdef USE_EVENT_BROKER
 		/* send program data to broker */
