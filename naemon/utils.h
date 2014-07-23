@@ -16,7 +16,8 @@ int set_loadctl_options(char *opts, unsigned int len);
 
 void setup_sighandler(void);                         		/* trap signals */
 void reset_sighandler(void);                         		/* reset signals to default action */
-void handle_sigxfsz(int);				/* handle SIGXFSZ */
+void signal_react(void);				/* General signal reaction routines */
+void handle_sigxfsz(void);				/* handle SIGXFSZ */
 int daemon_init(void);				     		/* switches to daemon mode */
 int drop_privileges(char *, char *);				/* drops privileges before startup */
 
