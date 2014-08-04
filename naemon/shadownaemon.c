@@ -1229,15 +1229,20 @@ int update_service_status_data() {
 int update_external_commands() {
     glob_t globbuf;
     unsigned int i;
+    struct stat st;
+
     if(glob(cmds_pattern, 0, NULL, &globbuf) == 0) {
         for(i=0; i<globbuf.gl_pathc;i++) {
-            printf("found file: %s\n", globbuf.gl_pathv[i]);
             process_external_commands_from_file(globbuf.gl_pathv[i], TRUE);
             timing_point("processed external commands from %s\n", globbuf.gl_pathv[i]);
+            if(stat(globbuf.gl_pathv[i], &st) == 0 && !unlink(globbuf.gl_pathv[i])) {
+                logit(NSLOG_INFO_MESSAGE, TRUE, "cannot remove %s: %s\n", globbuf.gl_pathv[i], strerror(errno));
+            }
         }
         globfree(&globbuf);
         full_refresh_required = TRUE;
     }
+
     return(OK);
 }
 
