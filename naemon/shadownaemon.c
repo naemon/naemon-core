@@ -783,6 +783,7 @@ int open_local_socket(char *socket_path) {
 
     if(!connect(input_socket, (struct sockaddr *) &address, sizeof (address)) == 0) {
         logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "connecting socket failed: %s\n", strerror(errno));
+        close(input_socket);
         return(-1);
     }
     return(input_socket);
@@ -827,6 +828,7 @@ int open_tcp_socket(char *connection_string) {
 
     if(!connect(input_socket, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) == 0) {
         logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "connecting to %s:%d failed: %s\n", hostname, port, strerror(errno));
+        close(input_socket);
         my_free(server_c);
         return(-1);
     }
