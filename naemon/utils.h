@@ -48,6 +48,13 @@ int my_fdcopy(char *, char *, int);                     /* copies a named source
 /* thread-safe version of get_raw_command_line_r() */
 int get_raw_command_line_r(nagios_macros *mac, command *, char *, char **, int);
 
+/**
+ * Write all of nbyte bytes of buf to fd, and don't let EINTR/EAGAIN stop you.
+ * Returns 0 on success. On error, returns -1 and errno is set to indicate the
+ * error
+ */
+int uninterrupted_write(int fd, const void *buf, size_t nbyte);
+
 /*
  * given a raw command line, determine the actual command to run
  * Manipulates global_macros.argv and is thus not threadsafe
