@@ -733,6 +733,14 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	else {
 
 		log_debug_info(DEBUGL_CHECKS, 1, "Service is in a non-OK state!\n");
+		/*
+		 * the route-result is always the current host state, since we
+		 * run checks asynchronously. The optimal solution would be to
+		 * queue up services for notification once the host/route check
+		 * is completed, but assuming max_attempts > 1, this will work
+		 * just as well in practice
+		 */
+		route_result = temp_host->current_state;
 
 		/* check the route to the host if its up right now... */
 		if (temp_host->current_state == HOST_UP) {
@@ -744,7 +752,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 				schedule_host_check(temp_host, current_time, CHECK_OPTION_DEPENDENCY_CHECK);
 			} else {
 				log_debug_info(DEBUGL_CHECKS, 1, "* Using cached host state: %d\n", temp_host->current_state);
-				route_result = temp_host->current_state;
 				update_check_stats(ACTIVE_ONDEMAND_HOST_CHECK_STATS, current_time);
 				update_check_stats(ACTIVE_CACHED_HOST_CHECK_STATS, current_time);
 			}
