@@ -188,9 +188,7 @@ int run_async_service_check(service *svc, int check_options, double latency, int
 	if (check_service_check_viability(svc, check_options, time_is_valid, preferred_time) == ERROR)
 		return ERROR;
 
-	/* find the host associated with this service */
-	if ((temp_host = svc->host_ptr) == NULL)
-		return ERROR;
+	temp_host = svc->host_ptr;
 
 	/******** GOOD TO GO FOR A REAL SERVICE CHECK AT THIS POINT ********/
 
@@ -507,8 +505,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 			logit(NSLOG_PASSIVE_CHECK, FALSE, "PASSIVE SERVICE CHECK: %s;%s;%d;%s\n", temp_service->host_name, temp_service->description, temp_service->current_state, temp_service->plugin_output);
 	}
 
-	/* get the host that this service runs on */
-	temp_host = (host *)temp_service->host_ptr;
+	temp_host = temp_service->host_ptr;
 
 	/* if the service check was okay... */
 	if (temp_service->current_state == STATE_OK) {

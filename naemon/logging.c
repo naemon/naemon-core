@@ -216,7 +216,6 @@ int log_service_event(service *svc)
 {
 	char *temp_buffer = NULL;
 	unsigned long log_options = 0L;
-	host *temp_host = NULL;
 
 	/* don't log soft errors if the user doesn't want to */
 	if (svc->state_type == SOFT_STATE && !log_service_retries)
@@ -231,10 +230,6 @@ int log_service_event(service *svc)
 		log_options = NSLOG_SERVICE_CRITICAL;
 	else
 		log_options = NSLOG_SERVICE_OK;
-
-	/* find the associated host */
-	if ((temp_host = svc->host_ptr) == NULL)
-		return ERROR;
 
 	nm_asprintf(&temp_buffer, "SERVICE ALERT: %s;%s;%s;%s;%d;%s\n",
 	         svc->host_name, svc->description,
@@ -312,17 +307,12 @@ int log_service_states(int type, time_t *timestamp)
 {
 	char *temp_buffer = NULL;
 	service *temp_service = NULL;
-	host *temp_host = NULL;;
 
 	/* bail if we shouldn't be logging initial states */
 	if (type == INITIAL_STATES && log_initial_states == FALSE)
 		return OK;
 
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
-
-		/* find the associated host */
-		if ((temp_host = temp_service->host_ptr) == NULL)
-			continue;
 
 		nm_asprintf(&temp_buffer, "%s SERVICE STATE: %s;%s;%s;%s;%d;%s\n",
 		         (type == INITIAL_STATES) ? "INITIAL" : "CURRENT",
