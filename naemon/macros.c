@@ -151,9 +151,9 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 		result = grab_macro_value_r(mac, temp_buffer, &selected_macro, &macro_options, &free_macro);
 		log_debug_info(DEBUGL_MACROS, 2, "  Processed '%s', Free: %d\n", temp_buffer, free_macro);
 
-		/** 
-		 * we couldn't parse the macro cause the macro 
-		 * doesn't exist, so continue on 
+		/**
+		 * we couldn't parse the macro cause the macro
+		 * doesn't exist, so continue on
 		 */
 		if (result != OK) {
 			if (free_macro == TRUE)
@@ -695,8 +695,7 @@ int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, char *ar
 			/* concatenate macro values for all hostgroup members */
 			for (temp_hostsmember = temp_hostgroup->members; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
 
-				if ((temp_host = temp_hostsmember->host_ptr) == NULL)
-					continue;
+				temp_host = temp_hostsmember->host_ptr;
 
 				/* get the macro value for this host */
 				grab_standard_host_macro_r(mac, macro_type, temp_host, &temp_buffer, &free_sub_macro);
@@ -836,8 +835,7 @@ int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, char *ar
 				/* concatenate macro values for all servicegroup members */
 				for (temp_servicesmember = temp_servicegroup->members; temp_servicesmember != NULL; temp_servicesmember = temp_servicesmember->next) {
 
-					if ((temp_service = temp_servicesmember->service_ptr) == NULL)
-						continue;
+					temp_service = temp_servicesmember->service_ptr;
 
 					/* get the macro value for this service */
 					grab_standard_service_macro_r(mac, macro_type, temp_service, &temp_buffer, &free_sub_macro);
@@ -1241,8 +1239,7 @@ int grab_custom_macro_value_r(nagios_macros *mac, char *macro_name, char *arg1, 
 			/* concatenate macro values for all hostgroup members */
 			for (temp_hostsmember = temp_hostgroup->members; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
 
-				if ((temp_host = temp_hostsmember->host_ptr) == NULL)
-					continue;
+				temp_host = temp_hostsmember->host_ptr;
 
 				/* get the macro value for this host */
 				grab_custom_macro_value_r(mac, macro_name, temp_host->name, NULL, &temp_buffer);
@@ -1299,8 +1296,7 @@ int grab_custom_macro_value_r(nagios_macros *mac, char *macro_name, char *arg1, 
 				/* concatenate macro values for all servicegroup members */
 				for (temp_servicesmember = temp_servicegroup->members; temp_servicesmember != NULL; temp_servicesmember = temp_servicesmember->next) {
 
-					if ((temp_service = temp_servicesmember->service_ptr) == NULL)
-						continue;
+					temp_service = temp_servicesmember->service_ptr;
 
 					/* get the macro value for this service */
 					grab_custom_macro_value_r(mac, macro_name, temp_service->host_name, temp_service->description, &temp_buffer);
@@ -1665,8 +1661,7 @@ int grab_standard_host_macro_r(nagios_macros *mac, int macro_type, host *temp_ho
 		if (mac->x[MACRO_TOTALHOSTSERVICES] == NULL) {
 
 			for (temp_servicesmember = temp_host->services; temp_servicesmember != NULL; temp_servicesmember = temp_servicesmember->next) {
-				if ((temp_service = temp_servicesmember->service_ptr) == NULL)
-					continue;
+				temp_service = temp_servicesmember->service_ptr;
 
 				total_host_services++;
 

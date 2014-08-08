@@ -96,11 +96,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 0, "** Service Notification Attempt ** Host: '%s', Service: '%s', Type: %s, Options: %d, Current State: %d, Last Notification: %s", svc->host_name, svc->description, notification_reason_name(type), options, svc->current_state, ctime(&svc->last_notification));
 
-	/* if we couldn't find the host, return an error */
-	if ((temp_host = svc->host_ptr) == NULL) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 0, "Couldn't find the host associated with this service, so we won't send a notification!\n");
-		return ERROR;
-	}
+	temp_host = svc->host_ptr;
 
 	/* check the viability of sending out a service notification */
 	if (check_service_notification_viability(svc, type, options) == ERROR) {
@@ -357,15 +353,7 @@ int check_service_notification_viability(service *svc, int type, int options)
 		return ERROR;
 	}
 
-	/* find the host this service is associated with */
-	if ((temp_host = (host *)svc->host_ptr) == NULL)
-		return ERROR;
-
-	/* if we couldn't find the host, return an error */
-	if (temp_host == NULL) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Couldn't find the host associated with this service, so we won't send a notification.\n");
-		return ERROR;
-	}
+	temp_host = svc->host_ptr;
 
 	/* if all parents are bad (usually just one), we shouldn't notify */
 	if (svc->parents) {

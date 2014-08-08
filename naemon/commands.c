@@ -3499,8 +3499,7 @@ void enable_and_propagate_notifications(host *hst, int level, int affect_top_hos
 	/* check all child hosts... */
 	for (temp_hostsmember = hst->child_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
 
-		if ((child_host = temp_hostsmember->host_ptr) == NULL)
-			continue;
+		child_host = temp_hostsmember->host_ptr;
 
 		/* recurse... */
 		enable_and_propagate_notifications(child_host, level + 1, affect_top_host, affect_hosts, affect_services);
@@ -3541,8 +3540,7 @@ void disable_and_propagate_notifications(host *hst, int level, int affect_top_ho
 	/* check all child hosts... */
 	for (temp_hostsmember = hst->child_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
 
-		if ((child_host = temp_hostsmember->host_ptr) == NULL)
-			continue;
+		child_host = temp_hostsmember->host_ptr;
 
 		/* recurse... */
 		disable_and_propagate_notifications(child_host, level + 1, affect_top_host, affect_hosts, affect_services);
@@ -3690,8 +3688,7 @@ void schedule_and_propagate_downtime(host *temp_host, time_t entry_time, char *a
 	/* check all child hosts... */
 	for (temp_hostsmember = temp_host->child_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
 
-		if ((child_host = temp_hostsmember->host_ptr) == NULL)
-			continue;
+		child_host = temp_hostsmember->host_ptr;
 
 		/* recurse... */
 		schedule_and_propagate_downtime(child_host, entry_time, author, comment_data, start_time, end_time, fixed, triggered_by, duration);
