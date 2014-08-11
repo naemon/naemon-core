@@ -612,6 +612,7 @@ int livestatus_query(result_list **answer, char *source, char *query, char *colu
             exit(EXIT_FAILURE);
             break;
     }
+    timing_point("got %d rows\n", result);
     return result;
 }
 
@@ -1292,8 +1293,10 @@ int update_downtime_data() {
             current_id = atol(row->set[0]);
             /* host downtimes */
             if(!strcmp(row->set[2], "")) {
-                if(full_refresh_required && find_host_downtime(current_id) != NULL)
+                if(full_refresh_required && find_host_downtime(current_id) != NULL) {
+                    row = row->next;
                     continue;
+                }
                 result = add_host_downtime(row->set[1],             // host_name
                                            atoi(row->set[5]),       // entry_time
                                            row->set[3],             // author
@@ -1315,8 +1318,10 @@ int update_downtime_data() {
                     exit(EXIT_FAILURE);
                 }
             } else {
-                if(full_refresh_required && find_service_downtime(current_id) != NULL)
+                if(full_refresh_required && find_service_downtime(current_id) != NULL) {
+                    row = row->next;
                     continue;
+                }
                 result = add_service_downtime(
                                            row->set[1],             // host_name
                                            row->set[2],             // svc_description
@@ -1455,12 +1460,14 @@ int update_comment_data() {
 
     if(num > 0) {
         row = answer;
-        while(row != NULL) {
+        while(row != NULL && row->set != NULL) {
             current_id = atol(row->set[0]);
             /* host comments */
             if(!strcmp(row->set[2], "")) {
-                if(full_refresh_required && find_host_comment(current_id) != NULL)
+                if(full_refresh_required && find_host_comment(current_id) != NULL) {
+                    row = row->next;
                     continue;
+                }
                 result = add_host_comment(atoi(row->set[6]),    // entry_type
                                           row->set[1],          // host_name
                                           atoi(row->set[5]),    // entry_time
@@ -1477,8 +1484,10 @@ int update_comment_data() {
                     exit(EXIT_FAILURE);
                 }
             } else {
-                if(full_refresh_required && find_service_comment(current_id) != NULL)
+                if(full_refresh_required && find_service_comment(current_id) != NULL) {
+                    row = row->next;
                     continue;
+                }
                 result = add_service_comment(
                                           atoi(row->set[6]),    // entry_type
                                           row->set[1],          // host_name
