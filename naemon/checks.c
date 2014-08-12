@@ -92,9 +92,7 @@ static void handle_worker_check(wproc_result *wpres, void *arg, int flags)
 int run_scheduled_service_check(service *svc, int check_options, double latency)
 {
 	int result = OK;
-	time_t current_time = 0L;
 	time_t preferred_time = 0L;
-	time_t next_valid_time = 0L;
 	int time_is_valid = TRUE;
 
 	if (svc == NULL)
@@ -123,36 +121,7 @@ int run_scheduled_service_check(service *svc, int check_options, double latency)
 		return ERROR;
 
 	/* reschedule */
-	/* get current time */
-	time(&current_time);
-
-	/* determine next time we should check the service if needed */
-	/* if service has no check interval, schedule it again for 5 minutes from now */
-	if (current_time >= preferred_time)
-		preferred_time = current_time + ((svc->check_interval <= 0) ? 300 : (svc->check_interval * interval_length));
-
-	/* make sure we rescheduled the next service check at a valid time */
-	get_next_valid_time(preferred_time, &next_valid_time, svc->check_period_ptr);
-
-	/*
-	 * If we really can't reschedule the service properly, we
-	 * just push the check to preferred_time and try again then.
-	 */
-	if (time_is_valid == FALSE &&  check_time_against_period(next_valid_time, svc->check_period_ptr) == ERROR) {
-
-		svc->next_check = preferred_time;
-
-		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Check of service '%s' on host '%s' could not be rescheduled properly.  Scheduling check for %s...\n", svc->description, svc->host_name, ctime(&preferred_time));
-
-		log_debug_info(DEBUGL_CHECKS, 1, "Unable to find any valid times to reschedule the next service check!\n");
-	}
-
-	/* this service could be rescheduled... */
-	else {
-		svc->next_check = next_valid_time;
-		log_debug_info(DEBUGL_CHECKS, 1, "Rescheduled next service check for %s", ctime(&next_valid_time));
-	}
-
+	svc->next_check = next_check_time(svc);
 	schedule_service_check(svc, svc->next_check, check_options);
 
 	/* update the status log */
@@ -330,8 +299,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 {
 	host *temp_host = NULL;
 	time_t next_service_check = 0L;
-	time_t preferred_time = 0L;
-	time_t next_valid_time = 0L;
 	int reschedule_check = FALSE;
 	int state_change = FALSE;
 	int hard_state_change = FALSE;
@@ -864,7 +831,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 				handle_service_event(temp_service);
 
 				if (reschedule_check == TRUE)
-					next_service_check = (time_t)(temp_service->last_check + (temp_service->retry_interval * interval_length));
+					next_service_check = next_check_time(temp_service);
 			}
 
 			/* perform dependency checks on the second to last check of the service */
@@ -940,7 +907,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 			/* reschedule the next check at the regular interval */
 			if (reschedule_check == TRUE)
-				next_service_check = (time_t)(temp_service->last_check + (temp_service->check_interval * interval_length));
+				next_service_check = next_check_time(temp_service);
 		}
 
 
@@ -950,46 +917,27 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	}
 
 	/* reschedule the next service check ONLY for active, scheduled checks */
-	if (reschedule_check == TRUE) {
-
-		log_debug_info(DEBUGL_CHECKS, 1, "Rescheduling next check of service at %s", ctime(&next_service_check));
-
-		/* default is to reschedule service check unless a test below fails... */
+	if (reschedule_check == TRUE && temp_service->check_interval != 0
+	    && temp_service->checks_enabled)
+	{
+		temp_service->next_check = next_check_time(temp_service);
+		log_debug_info(DEBUGL_CHECKS, 1, "Rescheduling next check of service at %s", ctime(&temp_service->next_check));
 		temp_service->should_be_scheduled = TRUE;
 
-		/* next check time was calculated above */
+		/* push the check to its next alotted time */
 		temp_service->next_check = next_service_check;
-
-		/* make sure we don't get ourselves into too much trouble... */
 		if (current_time > temp_service->next_check)
 			temp_service->next_check = current_time;
 
-		/* make sure we rescheduled the next service check at a valid time */
-		preferred_time = temp_service->next_check;
-		get_next_valid_time(preferred_time, &next_valid_time, temp_service->check_period_ptr);
-		temp_service->next_check = next_valid_time;
-
-		/* services with non-recurring intervals do not get rescheduled */
-		if (temp_service->check_interval == 0)
-			temp_service->should_be_scheduled = FALSE;
-
-		/* services with active checks disabled do not get rescheduled */
-		if (temp_service->checks_enabled == FALSE)
-			temp_service->should_be_scheduled = FALSE;
-
-		/* schedule a non-forced check if we can */
-		if (temp_service->should_be_scheduled == TRUE)
-			schedule_service_check(temp_service, temp_service->next_check, CHECK_OPTION_NONE);
+		schedule_service_check(temp_service, temp_service->next_check, CHECK_OPTION_NONE);
 	}
 
 	/* if we're stalking this state type and state was not already logged AND the plugin output changed since last check, log it now.. */
 	if (temp_service->state_type == HARD_STATE && state_change == FALSE && alert_recorded == FALSE && compare_strings(old_plugin_output, temp_service->plugin_output)) {
-
 		if (should_stalk(temp_service)) {
 			log_service_event(temp_service);
 			alert_recorded = TRUE;
 		}
-
 	}
 
 #ifdef USE_EVENT_BROKER
@@ -1858,7 +1806,6 @@ int run_scheduled_host_check(host *hst, int check_options, double latency)
 	int result = OK;
 	time_t current_time = 0L;
 	time_t preferred_time = 0L;
-	time_t next_valid_time = 0L;
 	int time_is_valid = TRUE;
 
 
@@ -1885,45 +1832,15 @@ int run_scheduled_host_check(host *hst, int check_options, double latency)
 
 		/* only attempt to (re)schedule checks that should get checked... */
 		if (hst->should_be_scheduled == TRUE) {
-
-			/* get current time */
 			time(&current_time);
-
-			/* determine next time we should check the host if needed */
-			/* if host has no check interval, schedule it again for 5 minutes from now */
-			if (current_time >= preferred_time)
-				preferred_time = current_time + ((hst->check_interval <= 0) ? 300 : (hst->check_interval * interval_length));
-
-			/* make sure we rescheduled the next host check at a valid time */
-			get_next_valid_time(preferred_time, &next_valid_time, hst->check_period_ptr);
-
-			/*
-			 * If the host really can't be rescheduled properly we
-			 * set next check time to preferred_time and try again then
-			 */
-			if (time_is_valid == FALSE && check_time_against_period(next_valid_time, hst->check_period_ptr) == ERROR) {
-
-				hst->next_check = preferred_time;
-
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Check of host '%s' could not be rescheduled properly.  Scheduling check for %s...\n", hst->name, ctime(&preferred_time));
-
-				log_debug_info(DEBUGL_CHECKS, 1, "Unable to find any valid times to reschedule the next host check!\n");
-			}
-
-			/* this service could be rescheduled... */
-			else {
-				hst->next_check = next_valid_time;
-				hst->should_be_scheduled = TRUE;
-
-				log_debug_info(DEBUGL_CHECKS, 1, "Rescheduled next host check for %s", ctime(&next_valid_time));
-			}
+			hst->next_check = current_time + retry_check_window(hst);
+			log_debug_info(DEBUGL_CHECKS, 1, "Rescheduled next host check for %s", ctime(&hst->next_check));
 		}
 
 		/* update the status log */
 		update_host_status(hst, FALSE);
 
 		/* reschedule the next host check - unless we couldn't find a valid next check time */
-		/* 10/19/07 EG - keep original check options */
 		if (hst->should_be_scheduled == TRUE)
 			schedule_host_check(hst, hst->next_check, check_options);
 
@@ -2336,8 +2253,6 @@ int process_host_check_result(host *hst, int new_state, char *old_plugin_output,
 	host *master_host = NULL;
 	time_t current_time = 0L;
 	time_t next_check = 0L;
-	time_t preferred_time = 0L;
-	time_t next_valid_time = 0L;
 
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "process_host_check_result()\n");
@@ -2384,7 +2299,6 @@ int process_host_check_result(host *hst, int new_state, char *old_plugin_output,
 
 			/* reschedule the next check of the host at the normal interval */
 			reschedule_check = TRUE;
-			next_check = (unsigned long)(current_time + (hst->check_interval * interval_length));
 
 			/* propagate checks to immediate parents if they are not already UP */
 			/* we do this because a parent host (or grandparent) may have recovered somewhere and we should catch the recovery as soon as possible */
@@ -2452,17 +2366,9 @@ int process_host_check_result(host *hst, int new_state, char *old_plugin_output,
 
 				reschedule_check = TRUE;
 
-				/* schedule a re-check of the host at the retry interval because we can't determine its final state yet... */
-				if (hst->state_type == SOFT_STATE)
-					next_check = (unsigned long)(current_time + (hst->retry_interval * interval_length));
-
-				/* host has maxed out on retries (or was previously in a hard problem state), so reschedule the next check at the normal interval */
-				else
-					next_check = (unsigned long)(current_time + (hst->check_interval * interval_length));
+				next_check = current_time + check_window(hst);
 			}
-
 		}
-
 	}
 
 	/******* HOST WAS UP INITIALLY *******/
@@ -2476,15 +2382,11 @@ int process_host_check_result(host *hst, int new_state, char *old_plugin_output,
 
 			log_debug_info(DEBUGL_CHECKS, 1, "Host is still UP.\n");
 
-			/* set the current state */
+			/* set current state and state type */
 			hst->current_state = HOST_UP;
-
-			/* set the state type */
 			hst->state_type = HARD_STATE;
 
-			/* reschedule the next check at the normal interval */
-			if (reschedule_check == TRUE)
-				next_check = (unsigned long)(current_time + (hst->check_interval * interval_length));
+			next_check = current_time + check_window(hst);
 		}
 
 		/***** HOST IS NOW DOWN/UNREACHABLE *****/
@@ -2605,19 +2507,12 @@ int process_host_check_result(host *hst, int new_state, char *old_plugin_output,
 		/* default is to reschedule host check unless a test below fails... */
 		hst->should_be_scheduled = TRUE;
 
-		/* get the new current time */
-		time(&current_time);
-
 		/* make sure we don't get ourselves into too much trouble... */
+		next_check = next_check_time(hst);
 		if (current_time > next_check)
 			hst->next_check = current_time;
 		else
 			hst->next_check = next_check;
-
-		/* make sure we rescheduled the next service check at a valid time */
-		preferred_time = hst->next_check;
-		get_next_valid_time(preferred_time, &next_valid_time, hst->check_period_ptr);
-		hst->next_check = next_valid_time;
 
 		/* hosts with non-recurring intervals do not get rescheduled if we're in a HARD or UP state */
 		if (hst->check_interval == 0 && (hst->state_type == HARD_STATE || hst->current_state == HOST_UP))
