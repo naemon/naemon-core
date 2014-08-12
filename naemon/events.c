@@ -65,9 +65,6 @@ void init_timing_loop(void)
 	host *temp_host = NULL;
 	service *temp_service = NULL;
 	time_t current_time = 0L;
-	int is_valid_time = 0;
-	time_t next_valid_time = 0L;
-	int schedule_check = 0;
 	struct timeval tv[9];
 	double runtime[9];
 	struct timeval now;
@@ -89,69 +86,33 @@ void init_timing_loop(void)
 
 	/* get info on service checks to be scheduled */
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
-
-		schedule_check = TRUE;
-
-		/* service has no check interval */
-		if (temp_service->check_interval == 0)
-			schedule_check = FALSE;
-
-		/* active checks are disabled */
-		if (temp_service->checks_enabled == FALSE)
-			schedule_check = FALSE;
-
-		/* are there any valid times this service can be checked? */
-		is_valid_time = check_time_against_period(current_time, temp_service->check_period_ptr);
-		if (is_valid_time == ERROR) {
-			get_next_valid_time(current_time, &next_valid_time, temp_service->check_period_ptr);
-			if (current_time == next_valid_time)
-				schedule_check = FALSE;
-		}
-
-		if (schedule_check != TRUE) {
-			temp_service->should_be_scheduled = FALSE;
-
-			log_debug_info(DEBUGL_EVENTS, 1, "Service '%s' on host '%s' should not be scheduled.\n", temp_service->description, temp_service->host_name);
-		} else {
-			scheduling_info.total_scheduled_services++;
-		}
-
 		scheduling_info.total_services++;
+
+		/* maybe we shouldn't schedule this check */
+		if (temp_service->check_interval == 0 || !temp_service->checks_enabled) {
+			log_debug_info(DEBUGL_EVENTS, 1, "Service '%s' on host '%s' should not be scheduled.\n", temp_service->description, temp_service->host_name);
+			temp_service->should_be_scheduled = FALSE;
+			continue;
+		}
+
+		scheduling_info.total_scheduled_services++;
 	}
 
 	if (test_scheduling == TRUE)
 		gettimeofday(&tv[1], NULL);
 
 	/* get info on host checks to be scheduled */
-	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
-
-		schedule_check = TRUE;
+	for (temp_host = host_list; temp_host; temp_host = temp_host->next) {
+		scheduling_info.total_hosts++;
 
 		/* host has no check interval */
-		if (temp_host->check_interval == 0)
-			schedule_check = FALSE;
-
-		/* active checks are disabled */
-		if (temp_host->checks_enabled == FALSE)
-			schedule_check = FALSE;
-
-		/* are there any valid times this host can be checked? */
-		is_valid_time = check_time_against_period(current_time, temp_host->check_period_ptr);
-		if (is_valid_time == ERROR) {
-			get_next_valid_time(current_time, &next_valid_time, temp_host->check_period_ptr);
-			if (current_time == next_valid_time)
-				schedule_check = FALSE;
-		}
-
-		if (schedule_check != TRUE) {
-			temp_host->should_be_scheduled = FALSE;
-
+		if (temp_host->check_interval == 0 || !temp_host->checks_enabled) {
 			log_debug_info(DEBUGL_EVENTS, 1, "Host '%s' should not be scheduled.\n", temp_host->name);
-		} else {
-			scheduling_info.total_scheduled_hosts++;
+			temp_host->should_be_scheduled = FALSE;
+			continue;
 		}
 
-		scheduling_info.total_hosts++;
+		scheduling_info.total_scheduled_hosts++;
 	}
 
 	if (test_scheduling == TRUE)
@@ -174,30 +135,14 @@ void init_timing_loop(void)
 	log_debug_info(DEBUGL_EVENTS, 2, "Scheduling service checks...");
 
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
-		int check_delay;
 		log_debug_info(DEBUGL_EVENTS, 2, "Service '%s' on host '%s'\n", temp_service->description, temp_service->host_name);
 		/* skip this service if it shouldn't be scheduled */
 		if (temp_service->should_be_scheduled == FALSE) {
-			log_debug_info(DEBUGL_EVENTS, 2, "Service check should not be scheduled.\n");
 			continue;
 		}
 
-		/*
-		 * skip services that are already scheduled for the (near)
-		 * future from retention data, but reschedule ones that
-		 * were supposed to happen while we weren't running...
-		 * We check to make sure the check isn't scheduled to run
-		 * far in the future to make sure checks who've hade their
-		 * timeperiods changed during the restart aren't left
-		 * hanging too long without being run.
-		 */
-		check_delay = temp_service->next_check - current_time;
-		if (check_delay > 0 && check_delay < check_window(temp_service)) {
-			log_debug_info(DEBUGL_EVENTS, 2, "Service is already scheduled to be checked in the future: %s\n", ctime(&temp_service->next_check));
-			continue;
-		}
+		temp_service->next_check = current_time + ranged_urand(0, check_window(temp_service));
 
-		get_next_valid_time(temp_service->last_check + check_window(temp_service), &temp_service->next_check, temp_service->check_period_ptr);
 		if (scheduling_info.last_service_check < temp_service->next_check)
 			scheduling_info.last_service_check = temp_service->next_check;
 		if (!scheduling_info.first_service_check || scheduling_info.first_service_check > temp_service->next_check)
@@ -212,14 +157,13 @@ void init_timing_loop(void)
 	/* add scheduled service checks to event queue */
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
 
-		/* Nagios XI/NDOUtils MOD */
 		/* update status of all services (scheduled or not) */
 		update_service_status(temp_service, FALSE);
 
 		/* skip most services that shouldn't be scheduled */
 		if (temp_service->should_be_scheduled == FALSE) {
 
-			/* passive checks are an exception if a forced check was scheduled before Nagios was restarted */
+			/* passive checks are an exception if a forced check was scheduled before we restarted */
 			if (!(temp_service->checks_enabled == FALSE && temp_service->next_check != (time_t)0L && (temp_service->check_options & CHECK_OPTION_FORCE_EXECUTION)))
 				continue;
 		}
@@ -247,17 +191,11 @@ void init_timing_loop(void)
 
 		/* skip hosts that shouldn't be scheduled */
 		if (temp_host->should_be_scheduled == FALSE) {
-			log_debug_info(DEBUGL_EVENTS, 2, "Host check should not be scheduled.\n");
 			continue;
 		}
 
-		/* skip hosts that are already scheduled for the future (from retention data), but reschedule ones that were supposed to be checked before we started */
-		if (temp_host->next_check > current_time) {
-			log_debug_info(DEBUGL_EVENTS, 2, "Host is already scheduled to be checked in the future: %s\n", ctime(&temp_host->next_check));
-			continue;
-		}
+		temp_host->next_check = current_time + ranged_urand(0, check_window(temp_host));
 
-		get_next_valid_time(temp_host->last_check + check_window(temp_host), &temp_host->next_check, temp_host->check_period_ptr);
 		log_debug_info(DEBUGL_EVENTS, 2, "Check Time: %lu --> %s", (unsigned long)temp_host->next_check, ctime(&temp_host->next_check));
 		if (temp_host->next_check > scheduling_info.last_host_check)
 			scheduling_info.last_host_check = temp_host->next_check;
@@ -271,7 +209,6 @@ void init_timing_loop(void)
 	/* add scheduled host checks to event queue */
 	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
 
-		/* Nagios XI/NDOUtils Mod */
 		/* update status of all hosts (scheduled or not) */
 		update_host_status(temp_host, FALSE);
 
