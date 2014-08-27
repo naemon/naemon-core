@@ -2252,29 +2252,346 @@ int is_escalated_contact_for_service(service *svc, contact *cntct)
 /******************* OBJECT DELETION FUNCTIONS ********************/
 /******************************************************************/
 
+static void destroy_timeperiod(struct timeperiod *this_timeperiod)
+{
+	int x;
+	struct daterange *this_daterange, *next_daterange;
+	struct timerange *this_timerange, *next_timerange;
+	struct timeperiodexclusion *this_timeperiodexclusion;
+	struct timeperiodexclusion *next_timeperiodexclusion;
+
+	/* free the exception time ranges contained in this timeperiod */
+	for (x = 0; x < DATERANGE_TYPES; x++) {
+
+		for (this_daterange = this_timeperiod->exceptions[x]; this_daterange != NULL; this_daterange = next_daterange) {
+			next_daterange = this_daterange->next;
+			for (this_timerange = this_daterange->times; this_timerange != NULL; this_timerange = next_timerange) {
+				next_timerange = this_timerange->next;
+				nm_free(this_timerange);
+			}
+			nm_free(this_daterange);
+		}
+	}
+
+	/* free the day time ranges contained in this timeperiod */
+	for (x = 0; x < 7; x++) {
+		for (this_timerange = this_timeperiod->days[x]; this_timerange != NULL; this_timerange = next_timerange) {
+			next_timerange = this_timerange->next;
+			nm_free(this_timerange);
+		}
+	}
+
+	/* free exclusions */
+	for (this_timeperiodexclusion = this_timeperiod->exclusions; this_timeperiodexclusion != NULL; this_timeperiodexclusion = next_timeperiodexclusion) {
+		next_timeperiodexclusion = this_timeperiodexclusion->next;
+		nm_free(this_timeperiodexclusion->timeperiod_name);
+		nm_free(this_timeperiodexclusion);
+	}
+
+	if (this_timeperiod->alias != this_timeperiod->name)
+		nm_free(this_timeperiod->alias);
+	nm_free(this_timeperiod->name);
+	nm_free(this_timeperiod);
+}
+
+static void destroy_hostsmember(struct hostsmember *cur)
+{
+	struct hostsmember *next;
+
+	while (cur) {
+		next = cur->next;
+		nm_free(cur);
+		cur = next;
+	}
+}
+
+static void destroy_customvars(struct customvariablesmember *cur)
+{
+	struct customvariablesmember *next;
+
+	while (cur) {
+		next = cur->next;
+		nm_free(cur->variable_name);
+		nm_free(cur->variable_value);
+		nm_free(cur);
+		cur = next;
+	}
+}
+
+
+static void destroy_contactsmember(struct contactsmember *cur)
+{
+	struct contactsmember *next;
+
+	while (cur) {
+		next = cur->next;
+		nm_free(cur->contact_name);
+		nm_free(cur);
+		cur = next;
+	}
+}
+
+
+static void destroy_contactgroupsmember(struct contactgroupsmember *cur)
+{
+	struct contactgroupsmember *next;
+
+	for (; cur; cur = next) {
+		next = cur->next;
+		nm_free(cur);
+	}
+}
+
+
+static void destroy_servicesmember(struct servicesmember *cur)
+{
+	struct servicesmember *next;
+	while (cur) {
+		next = cur->next;
+		nm_free(cur);
+		cur = next;
+	}
+}
+
+
+static void destroy_host(struct host *this_host)
+{
+	destroy_hostsmember(this_host->parent_hosts);
+	destroy_hostsmember(this_host->child_hosts);
+	destroy_servicesmember(this_host->services);
+	destroy_contactgroupsmember(this_host->contact_groups);
+	destroy_contactsmember(this_host->contacts);
+	destroy_customvars(this_host->custom_variables);
+
+	if (this_host->display_name != this_host->name)
+		nm_free(this_host->display_name);
+	if (this_host->alias != this_host->name)
+		nm_free(this_host->alias);
+	if (this_host->address != this_host->name)
+		nm_free(this_host->address);
+	nm_free(this_host->name);
+	nm_free(this_host->plugin_output);
+	nm_free(this_host->long_plugin_output);
+	nm_free(this_host->perf_data);
+	free_objectlist(&this_host->hostgroups_ptr);
+	free_objectlist(&this_host->notify_deps);
+	free_objectlist(&this_host->exec_deps);
+	free_objectlist(&this_host->escalation_list);
+	nm_free(this_host->check_command);
+	nm_free(this_host->event_handler);
+	nm_free(this_host->notes);
+	nm_free(this_host->notes_url);
+	nm_free(this_host->action_url);
+	nm_free(this_host->icon_image);
+	nm_free(this_host->icon_image_alt);
+	nm_free(this_host->vrml_image);
+	nm_free(this_host->statusmap_image);
+	nm_free(this_host);
+}
+
+static void destroy_hostgroup(struct hostgroup *this_hostgroup)
+{
+	struct hostsmember *this_hostsmember, *next_hostsmember;
+
+	this_hostsmember = this_hostgroup->members;
+	while (this_hostsmember != NULL) {
+		next_hostsmember = this_hostsmember->next;
+		nm_free(this_hostsmember);
+		this_hostsmember = next_hostsmember;
+	}
+
+	if (this_hostgroup->alias != this_hostgroup->group_name)
+		nm_free(this_hostgroup->alias);
+	nm_free(this_hostgroup->group_name);
+	nm_free(this_hostgroup->notes);
+	nm_free(this_hostgroup->notes_url);
+	nm_free(this_hostgroup->action_url);
+	nm_free(this_hostgroup);
+}
+
+static void destroy_servicegroup(struct servicegroup *this_servicegroup)
+{
+	struct servicesmember *this_servicesmember, *next_servicesmember;
+
+	this_servicesmember = this_servicegroup->members;
+	while (this_servicesmember != NULL) {
+		next_servicesmember = this_servicesmember->next;
+		nm_free(this_servicesmember);
+		this_servicesmember = next_servicesmember;
+	}
+
+	if (this_servicegroup->alias != this_servicegroup->group_name)
+		nm_free(this_servicegroup->alias);
+	nm_free(this_servicegroup->group_name);
+	nm_free(this_servicegroup->notes);
+	nm_free(this_servicegroup->notes_url);
+	nm_free(this_servicegroup->action_url);
+	nm_free(this_servicegroup);
+}
+
+static void destroy_contact(struct contact *this_contact)
+{
+	struct commandsmember *this_commandsmember, *next_commandsmember;
+	struct customvariablesmember *this_customvariablesmember;
+	struct customvariablesmember *next_customvariablesmember;
+	int j;
+
+	/* free memory for the host notification commands */
+	this_commandsmember = this_contact->host_notification_commands;
+	while (this_commandsmember != NULL) {
+		next_commandsmember = this_commandsmember->next;
+		if (this_commandsmember->command != NULL)
+			nm_free(this_commandsmember->command);
+		nm_free(this_commandsmember);
+		this_commandsmember = next_commandsmember;
+	}
+
+	/* free memory for the service notification commands */
+	this_commandsmember = this_contact->service_notification_commands;
+	while (this_commandsmember != NULL) {
+		next_commandsmember = this_commandsmember->next;
+		if (this_commandsmember->command != NULL)
+			nm_free(this_commandsmember->command);
+		nm_free(this_commandsmember);
+		this_commandsmember = next_commandsmember;
+	}
+
+	/* free memory for custom variables */
+	this_customvariablesmember = this_contact->custom_variables;
+	while (this_customvariablesmember != NULL) {
+		next_customvariablesmember = this_customvariablesmember->next;
+		nm_free(this_customvariablesmember->variable_name);
+		nm_free(this_customvariablesmember->variable_value);
+		nm_free(this_customvariablesmember);
+		this_customvariablesmember = next_customvariablesmember;
+	}
+
+	if (this_contact->alias != this_contact->name)
+		nm_free(this_contact->alias);
+	nm_free(this_contact->name);
+	nm_free(this_contact->email);
+	nm_free(this_contact->pager);
+	for (j = 0; j < MAX_CONTACT_ADDRESSES; j++)
+		nm_free(this_contact->address[j]);
+	free_objectlist(&this_contact->contactgroups_ptr);
+	nm_free(this_contact);
+}
+
+static void destroy_contactgroup(struct contactgroup *this_contactgroup)
+{
+	struct contactsmember *this_contactsmember, *next_contactsmember;
+
+	/* free memory for the group members */
+	this_contactsmember = this_contactgroup->members;
+	while (this_contactsmember != NULL) {
+		next_contactsmember = this_contactsmember->next;
+		nm_free(this_contactsmember);
+		this_contactsmember = next_contactsmember;
+	}
+
+	if (this_contactgroup->alias != this_contactgroup->group_name)
+		nm_free(this_contactgroup->alias);
+	nm_free(this_contactgroup->group_name);
+	nm_free(this_contactgroup);
+}
+
+static void destroy_service(struct service *this_service)
+{
+	destroy_contactgroupsmember(this_service->contact_groups);
+	destroy_contactsmember(this_service->contacts);
+	destroy_customvars(this_service->custom_variables);
+
+	if (this_service->display_name != this_service->description)
+		nm_free(this_service->display_name);
+	nm_free(this_service->description);
+	nm_free(this_service->check_command);
+	nm_free(this_service->plugin_output);
+	nm_free(this_service->long_plugin_output);
+	nm_free(this_service->perf_data);
+	nm_free(this_service->event_handler_args);
+	nm_free(this_service->check_command_args);
+	free_objectlist(&this_service->servicegroups_ptr);
+	free_objectlist(&this_service->notify_deps);
+	free_objectlist(&this_service->exec_deps);
+	free_objectlist(&this_service->escalation_list);
+	nm_free(this_service->event_handler);
+	nm_free(this_service->notes);
+	nm_free(this_service->notes_url);
+	nm_free(this_service->action_url);
+	nm_free(this_service->icon_image);
+	nm_free(this_service->icon_image_alt);
+	nm_free(this_service);
+}
+
+static void destroy_command(struct command *this_command)
+{
+	nm_free(this_command->name);
+	nm_free(this_command->command_line);
+	nm_free(this_command);
+}
+
+static void destroy_serviceescalation(struct serviceescalation *this_serviceescalation)
+{
+	struct contactgroupsmember *this_contactgroupsmember;
+	struct contactgroupsmember *next_contactgroupsmember;
+	struct contactsmember *this_contactsmember, *next_contactsmember;
+
+	/* free memory for the contact group members */
+	this_contactgroupsmember = this_serviceescalation->contact_groups;
+	while (this_contactgroupsmember != NULL) {
+		next_contactgroupsmember = this_contactgroupsmember->next;
+		nm_free(this_contactgroupsmember);
+		this_contactgroupsmember = next_contactgroupsmember;
+	}
+
+	/* free memory for contacts */
+	this_contactsmember = this_serviceescalation->contacts;
+	while (this_contactsmember != NULL) {
+		next_contactsmember = this_contactsmember->next;
+		nm_free(this_contactsmember);
+		this_contactsmember = next_contactsmember;
+	}
+	nm_free(this_serviceescalation);
+}
+
+static void destroy_hostescalation(struct hostescalation *this_hostescalation)
+{
+	struct contactgroupsmember *this_contactgroupsmember;
+	struct contactgroupsmember *next_contactgroupsmember;
+	struct contactsmember *this_contactsmember, *next_contactsmember;
+
+	/* free memory for the contact group members */
+	this_contactgroupsmember = this_hostescalation->contact_groups;
+	while (this_contactgroupsmember != NULL) {
+		next_contactgroupsmember = this_contactgroupsmember->next;
+		nm_free(this_contactgroupsmember);
+		this_contactgroupsmember = next_contactgroupsmember;
+	}
+
+	/* free memory for contacts */
+	this_contactsmember = this_hostescalation->contacts;
+	while (this_contactsmember != NULL) {
+		next_contactsmember = this_contactsmember->next;
+		nm_free(this_contactsmember);
+		this_contactsmember = next_contactsmember;
+	}
+	nm_free(this_hostescalation);
+}
+
+static void destroy_servicedependency(struct servicedependency *svc_dep)
+{
+	free(svc_dep);
+}
+
+static void destroy_hostdependency(struct hostdependency *host_dep)
+{
+	free(host_dep);
+}
+
 /* free all allocated memory for objects */
 int free_object_data(void)
 {
-	daterange *this_daterange = NULL;
-	daterange *next_daterange = NULL;
-	timerange *this_timerange = NULL;
-	timerange *next_timerange = NULL;
-	timeperiodexclusion *this_timeperiodexclusion = NULL;
-	timeperiodexclusion *next_timeperiodexclusion = NULL;
-	hostsmember *this_hostsmember = NULL;
-	hostsmember *next_hostsmember = NULL;
-	servicesmember *this_servicesmember = NULL;
-	servicesmember *next_servicesmember = NULL;
-	contactsmember *this_contactsmember = NULL;
-	contactsmember *next_contactsmember = NULL;
-	contactgroupsmember *this_contactgroupsmember = NULL;
-	contactgroupsmember *next_contactgroupsmember = NULL;
-	customvariablesmember *this_customvariablesmember = NULL;
-	customvariablesmember *next_customvariablesmember = NULL;
-	commandsmember *this_commandsmember = NULL;
-	commandsmember *next_commandsmember = NULL;
-	unsigned int i = 0, x = 0;
-
+	unsigned int i = 0;
 
 	/*
 	 * kill off hash tables so lingering modules don't look stuff up
@@ -2288,386 +2605,76 @@ int free_object_data(void)
 
 	/**** free memory for the timeperiod list ****/
 	for (i = 0; i < num_objects.timeperiods; i++) {
-		timeperiod *this_timeperiod = timeperiod_ary[i];
-
-		/* free the exception time ranges contained in this timeperiod */
-		for (x = 0; x < DATERANGE_TYPES; x++) {
-
-			for (this_daterange = this_timeperiod->exceptions[x]; this_daterange != NULL; this_daterange = next_daterange) {
-				next_daterange = this_daterange->next;
-				for (this_timerange = this_daterange->times; this_timerange != NULL; this_timerange = next_timerange) {
-					next_timerange = this_timerange->next;
-					nm_free(this_timerange);
-				}
-				nm_free(this_daterange);
-			}
-		}
-
-		/* free the day time ranges contained in this timeperiod */
-		for (x = 0; x < 7; x++) {
-
-			for (this_timerange = this_timeperiod->days[x]; this_timerange != NULL; this_timerange = next_timerange) {
-				next_timerange = this_timerange->next;
-				nm_free(this_timerange);
-			}
-		}
-
-		/* free exclusions */
-		for (this_timeperiodexclusion = this_timeperiod->exclusions; this_timeperiodexclusion != NULL; this_timeperiodexclusion = next_timeperiodexclusion) {
-			next_timeperiodexclusion = this_timeperiodexclusion->next;
-			nm_free(this_timeperiodexclusion->timeperiod_name);
-			nm_free(this_timeperiodexclusion);
-		}
-
-		if (this_timeperiod->alias != this_timeperiod->name)
-			nm_free(this_timeperiod->alias);
-		nm_free(this_timeperiod->name);
-		nm_free(this_timeperiod);
+		destroy_timeperiod(timeperiod_ary[i]);
 	}
-
-	/* reset pointers */
 	nm_free(timeperiod_ary);
-
 
 	/**** free memory for the host list ****/
 	for (i = 0; i < num_objects.hosts; i++) {
-		host *this_host = host_ary[i];
-
-		/* free memory for parent hosts */
-		this_hostsmember = this_host->parent_hosts;
-		while (this_hostsmember != NULL) {
-			next_hostsmember = this_hostsmember->next;
-			nm_free(this_hostsmember->host_name);
-			nm_free(this_hostsmember);
-			this_hostsmember = next_hostsmember;
-		}
-
-		/* free memory for child host links */
-		this_hostsmember = this_host->child_hosts;
-		while (this_hostsmember != NULL) {
-			next_hostsmember = this_hostsmember->next;
-			nm_free(this_hostsmember);
-			this_hostsmember = next_hostsmember;
-		}
-
-		/* free memory for service links */
-		this_servicesmember = this_host->services;
-		while (this_servicesmember != NULL) {
-			next_servicesmember = this_servicesmember->next;
-			nm_free(this_servicesmember);
-			this_servicesmember = next_servicesmember;
-		}
-
-		/* free memory for contact groups */
-		this_contactgroupsmember = this_host->contact_groups;
-		while (this_contactgroupsmember != NULL) {
-			next_contactgroupsmember = this_contactgroupsmember->next;
-			nm_free(this_contactgroupsmember);
-			this_contactgroupsmember = next_contactgroupsmember;
-		}
-
-		/* free memory for contacts */
-		this_contactsmember = this_host->contacts;
-		while (this_contactsmember != NULL) {
-			next_contactsmember = this_contactsmember->next;
-			nm_free(this_contactsmember);
-			this_contactsmember = next_contactsmember;
-		}
-
-		/* free memory for custom variables */
-		this_customvariablesmember = this_host->custom_variables;
-		while (this_customvariablesmember != NULL) {
-			next_customvariablesmember = this_customvariablesmember->next;
-			nm_free(this_customvariablesmember->variable_name);
-			nm_free(this_customvariablesmember->variable_value);
-			nm_free(this_customvariablesmember);
-			this_customvariablesmember = next_customvariablesmember;
-		}
-
-		if (this_host->display_name != this_host->name)
-			nm_free(this_host->display_name);
-		if (this_host->alias != this_host->name)
-			nm_free(this_host->alias);
-		if (this_host->address != this_host->name)
-			nm_free(this_host->address);
-		nm_free(this_host->name);
-		nm_free(this_host->plugin_output);
-		nm_free(this_host->long_plugin_output);
-		nm_free(this_host->perf_data);
-		free_objectlist(&this_host->hostgroups_ptr);
-		free_objectlist(&this_host->notify_deps);
-		free_objectlist(&this_host->exec_deps);
-		free_objectlist(&this_host->escalation_list);
-		nm_free(this_host->check_command);
-		nm_free(this_host->event_handler);
-		nm_free(this_host->notes);
-		nm_free(this_host->notes_url);
-		nm_free(this_host->action_url);
-		nm_free(this_host->icon_image);
-		nm_free(this_host->icon_image_alt);
-		nm_free(this_host->vrml_image);
-		nm_free(this_host->statusmap_image);
-		nm_free(this_host);
+		destroy_host(host_ary[i]);
 	}
-
-	/* reset pointers */
 	nm_free(host_ary);
-
 
 	/**** free memory for the host group list ****/
 	for (i = 0; i < num_objects.hostgroups; i++) {
-		hostgroup *this_hostgroup = hostgroup_ary[i];
-
-		/* free memory for the group members */
-		this_hostsmember = this_hostgroup->members;
-		while (this_hostsmember != NULL) {
-			next_hostsmember = this_hostsmember->next;
-			nm_free(this_hostsmember);
-			this_hostsmember = next_hostsmember;
-		}
-
-		if (this_hostgroup->alias != this_hostgroup->group_name)
-			nm_free(this_hostgroup->alias);
-		nm_free(this_hostgroup->group_name);
-		nm_free(this_hostgroup->notes);
-		nm_free(this_hostgroup->notes_url);
-		nm_free(this_hostgroup->action_url);
-		nm_free(this_hostgroup);
+		destroy_hostgroup(hostgroup_ary[i]);
 	}
-
-	/* reset pointers */
 	nm_free(hostgroup_ary);
 
 	/**** free memory for the service group list ****/
 	for (i = 0; i < num_objects.servicegroups; i++) {
-		servicegroup *this_servicegroup = servicegroup_ary[i];
-
-		/* free memory for the group members */
-		this_servicesmember = this_servicegroup->members;
-		while (this_servicesmember != NULL) {
-			next_servicesmember = this_servicesmember->next;
-			nm_free(this_servicesmember);
-			this_servicesmember = next_servicesmember;
-		}
-
-		if (this_servicegroup->alias != this_servicegroup->group_name)
-			nm_free(this_servicegroup->alias);
-		nm_free(this_servicegroup->group_name);
-		nm_free(this_servicegroup->notes);
-		nm_free(this_servicegroup->notes_url);
-		nm_free(this_servicegroup->action_url);
-		nm_free(this_servicegroup);
+		destroy_servicegroup(servicegroup_ary[i]);
 	}
-
-	/* reset pointers */
 	nm_free(servicegroup_ary);
 
 	/**** free memory for the contact list ****/
 	for (i = 0; i < num_objects.contacts; i++) {
-		int j;
-		contact *this_contact = contact_ary[i];
-
-		/* free memory for the host notification commands */
-		this_commandsmember = this_contact->host_notification_commands;
-		while (this_commandsmember != NULL) {
-			next_commandsmember = this_commandsmember->next;
-			if (this_commandsmember->command != NULL)
-				nm_free(this_commandsmember->command);
-			nm_free(this_commandsmember);
-			this_commandsmember = next_commandsmember;
-		}
-
-		/* free memory for the service notification commands */
-		this_commandsmember = this_contact->service_notification_commands;
-		while (this_commandsmember != NULL) {
-			next_commandsmember = this_commandsmember->next;
-			if (this_commandsmember->command != NULL)
-				nm_free(this_commandsmember->command);
-			nm_free(this_commandsmember);
-			this_commandsmember = next_commandsmember;
-		}
-
-		/* free memory for custom variables */
-		this_customvariablesmember = this_contact->custom_variables;
-		while (this_customvariablesmember != NULL) {
-			next_customvariablesmember = this_customvariablesmember->next;
-			nm_free(this_customvariablesmember->variable_name);
-			nm_free(this_customvariablesmember->variable_value);
-			nm_free(this_customvariablesmember);
-			this_customvariablesmember = next_customvariablesmember;
-		}
-
-		if (this_contact->alias != this_contact->name)
-			nm_free(this_contact->alias);
-		nm_free(this_contact->name);
-		nm_free(this_contact->email);
-		nm_free(this_contact->pager);
-		for (j = 0; j < MAX_CONTACT_ADDRESSES; j++)
-			nm_free(this_contact->address[j]);
-
-		free_objectlist(&this_contact->contactgroups_ptr);
-		nm_free(this_contact);
+		destroy_contact(contact_ary[i]);
 	}
-
-	/* reset pointers */
 	nm_free(contact_ary);
-
 
 	/**** free memory for the contact group list ****/
 	for (i = 0; i < num_objects.contactgroups; i++) {
-		contactgroup *this_contactgroup = contactgroup_ary[i];
-
-		/* free memory for the group members */
-		this_contactsmember = this_contactgroup->members;
-		while (this_contactsmember != NULL) {
-			next_contactsmember = this_contactsmember->next;
-			nm_free(this_contactsmember);
-			this_contactsmember = next_contactsmember;
-		}
-
-		if (this_contactgroup->alias != this_contactgroup->group_name)
-			nm_free(this_contactgroup->alias);
-		nm_free(this_contactgroup->group_name);
-		nm_free(this_contactgroup);
+		destroy_contactgroup(contactgroup_ary[i]);
 	}
-
-	/* reset pointers */
 	nm_free(contactgroup_ary);
-
 
 	/**** free memory for the service list ****/
 	for (i = 0; i < num_objects.services; i++) {
-		service *this_service = service_ary[i];
-
-		/* free memory for contact groups */
-		this_contactgroupsmember = this_service->contact_groups;
-		while (this_contactgroupsmember != NULL) {
-			next_contactgroupsmember = this_contactgroupsmember->next;
-			nm_free(this_contactgroupsmember);
-			this_contactgroupsmember = next_contactgroupsmember;
-		}
-
-		/* free memory for contacts */
-		this_contactsmember = this_service->contacts;
-		while (this_contactsmember != NULL) {
-			next_contactsmember = this_contactsmember->next;
-			nm_free(this_contactsmember);
-			this_contactsmember = next_contactsmember;
-		}
-
-		/* free memory for custom variables */
-		this_customvariablesmember = this_service->custom_variables;
-		while (this_customvariablesmember != NULL) {
-			next_customvariablesmember = this_customvariablesmember->next;
-			nm_free(this_customvariablesmember->variable_name);
-			nm_free(this_customvariablesmember->variable_value);
-			nm_free(this_customvariablesmember);
-			this_customvariablesmember = next_customvariablesmember;
-		}
-
-		if (this_service->display_name != this_service->description)
-			nm_free(this_service->display_name);
-		nm_free(this_service->description);
-		nm_free(this_service->check_command);
-		nm_free(this_service->plugin_output);
-		nm_free(this_service->long_plugin_output);
-		nm_free(this_service->perf_data);
-		nm_free(this_service->event_handler_args);
-		nm_free(this_service->check_command_args);
-		free_objectlist(&this_service->servicegroups_ptr);
-		free_objectlist(&this_service->notify_deps);
-		free_objectlist(&this_service->exec_deps);
-		free_objectlist(&this_service->escalation_list);
-		nm_free(this_service->event_handler);
-		nm_free(this_service->notes);
-		nm_free(this_service->notes_url);
-		nm_free(this_service->action_url);
-		nm_free(this_service->icon_image);
-		nm_free(this_service->icon_image_alt);
-		nm_free(this_service);
+		destroy_service(service_ary[i]);
 	}
-
-	/* reset pointers */
 	nm_free(service_ary);
-
 
 	/**** free command memory ****/
 	for (i = 0; i < num_objects.commands; i++) {
-		command *this_command = command_ary[i];
-		nm_free(this_command->name);
-		nm_free(this_command->command_line);
-		nm_free(this_command);
+		destroy_command(command_ary[i]);
 	}
-
-	/* reset pointers */
 	nm_free(command_ary);
-
 
 	/**** free service escalation memory ****/
 	for (i = 0; i < num_objects.serviceescalations; i++) {
-		serviceescalation *this_serviceescalation = serviceescalation_ary[i];
-
-		/* free memory for the contact group members */
-		this_contactgroupsmember = this_serviceescalation->contact_groups;
-		while (this_contactgroupsmember != NULL) {
-			next_contactgroupsmember = this_contactgroupsmember->next;
-			nm_free(this_contactgroupsmember);
-			this_contactgroupsmember = next_contactgroupsmember;
-		}
-
-		/* free memory for contacts */
-		this_contactsmember = this_serviceescalation->contacts;
-		while (this_contactsmember != NULL) {
-			next_contactsmember = this_contactsmember->next;
-			nm_free(this_contactsmember);
-			this_contactsmember = next_contactsmember;
-		}
-		nm_free(this_serviceescalation);
+		destroy_serviceescalation(serviceescalation_ary[i]);
 	}
-
-	/* reset pointers */
 	nm_free(serviceescalation_ary);
-
 
 	/**** free service dependency memory ****/
 	if (servicedependency_ary) {
 		for (i = 0; i < num_objects.servicedependencies; i++)
-			nm_free(servicedependency_ary[i]);
+			destroy_servicedependency(servicedependency_ary[i]);
 		nm_free(servicedependency_ary);
 	}
-
 
 	/**** free host dependency memory ****/
 	if (hostdependency_ary) {
 		for (i = 0; i < num_objects.hostdependencies; i++)
-			nm_free(hostdependency_ary[i]);
+			destroy_hostdependency(hostdependency_ary[i]);
 		nm_free(hostdependency_ary);
 	}
 
-
 	/**** free host escalation memory ****/
 	for (i = 0; i < num_objects.hostescalations; i++) {
-		hostescalation *this_hostescalation = hostescalation_ary[i];
-
-		/* free memory for the contact group members */
-		this_contactgroupsmember = this_hostescalation->contact_groups;
-		while (this_contactgroupsmember != NULL) {
-			next_contactgroupsmember = this_contactgroupsmember->next;
-			nm_free(this_contactgroupsmember);
-			this_contactgroupsmember = next_contactgroupsmember;
-		}
-
-		/* free memory for contacts */
-		this_contactsmember = this_hostescalation->contacts;
-		while (this_contactsmember != NULL) {
-			next_contactsmember = this_contactsmember->next;
-			nm_free(this_contactsmember);
-			this_contactsmember = next_contactsmember;
-		}
-		nm_free(this_hostescalation);
+		destroy_hostescalation(hostescalation_ary[i]);
 	}
-
-	/* reset pointers */
 	nm_free(hostescalation_ary);
 
 	/* we no longer have any objects */
