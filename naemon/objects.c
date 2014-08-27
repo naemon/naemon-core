@@ -149,6 +149,17 @@ static void post_process_hosts(void)
 	for (i = 0; slot < num_objects.hostdependencies && i < num_objects.hosts; i++) {
 		objectlist *list;
 		host *h = host_ary[i];
+		struct hostsmember *pm;
+
+		for (pm = h->parent_hosts; pm; pm = pm->next) {
+			struct host *parent;
+			parent = find_host(pm->host_name);
+			/* may already be resolved */
+			if (pm->host_name == parent->name)
+				continue;
+			free(pm->host_name);
+			pm->host_name = parent->name;
+		}
 		for (list = h->notify_deps; list; list = list->next)
 			hostdependency_ary[slot++] = (hostdependency *)list->object_ptr;
 		for (list = h->exec_deps; list; list = list->next)
@@ -691,7 +702,8 @@ hostsmember *add_parent_host_to_host(host *hst, char *host_name)
 
 	/* allocate memory */
 	new_hostsmember = nm_calloc(1, sizeof(hostsmember));
-	/* duplicate string vars */
+
+	/* duplicate string vars (we may not have the host in hash yet) */
 	new_hostsmember->host_name = nm_strdup(host_name);
 
 	/* handle errors */
