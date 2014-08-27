@@ -142,6 +142,19 @@ static int cmp_hostesc(const void *a_, const void *b_)
 	return a->host_ptr->id - b->host_ptr->id;
 }
 
+static void post_process_hosts(void)
+{
+	unsigned int i, slot = 0;
+
+	for (i = 0; slot < num_objects.hostdependencies && i < num_objects.hosts; i++) {
+		objectlist *list;
+		host *h = host_ary[i];
+		for (list = h->notify_deps; list; list = list->next)
+			hostdependency_ary[slot++] = (hostdependency *)list->object_ptr;
+		for (list = h->exec_deps; list; list = list->next)
+			hostdependency_ary[slot++] = (hostdependency *)list->object_ptr;
+	}
+}
 
 static void post_process_object_config(void)
 {
@@ -166,14 +179,7 @@ static void post_process_object_config(void)
 	}
 	timing_point("Done post-processing servicedependencies\n");
 
-	slot = 0;
-	for (i = 0; slot < num_objects.hostdependencies && i < num_objects.hosts; i++) {
-		host *h = host_ary[i];
-		for (list = h->notify_deps; list; list = list->next)
-			hostdependency_ary[slot++] = (hostdependency *)list->object_ptr;
-		for (list = h->exec_deps; list; list = list->next)
-			hostdependency_ary[slot++] = (hostdependency *)list->object_ptr;
-	}
+	post_process_hosts();
 	timing_point("Done post-processing host dependencies\n");
 
 	if (servicedependency_ary)
