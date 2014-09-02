@@ -164,6 +164,20 @@ void kvvec_free_kvpairs(struct kvvec *kvv, int flags)
 	kvv->kv_pairs = 0;
 }
 
+char *kvvec_get_value(struct kvvec *kvv, const char *key)
+{
+	int i;
+
+	if (!key || !kvv || !kvv->kv_pairs)
+		return NULL;
+
+	for (i = 0; i < kvv->kv_pairs; i++) {
+		if (!strcmp(key, kvv->kv[i].key))
+			return kvv->kv[i].value;
+	}
+
+	return NULL;
+}
 
 int kvvec_destroy(struct kvvec *kvv, int flags)
 {

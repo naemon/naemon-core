@@ -169,6 +169,18 @@ extern int kvvec_destroy(struct kvvec *kvv, int flags);
 void kvvec_free_kvpairs(struct kvvec *kvv, int flags);
 
 /**
+ * Locates and returns the value associated with the key *key
+ * This is a clumsy function that should only be used when you
+ * need to grab one or a few variables before you parse the
+ * rest of them.
+ *
+ * @param kvv The key/value vector to search
+ * @param key The key whose value will be returned
+ * @return NULL on errors. The value on success
+ */
+char *kvvec_get_value(struct kvvec *kvv, const char *key);
+
+/**
  * Create a linear buffer of all the key/value pairs and
  * return it as a kvvec_buf. The caller must free() all
  * pointers in the returned kvvec_buf

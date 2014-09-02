@@ -73,6 +73,7 @@ static void add_vars(struct kvvec *kvv, const char **ary, int len)
 int main(int argc, char **argv)
 {
 	int i, j;
+	const char *value;
 	struct kvvec *kvv, *kvv2, *kvv3;
 	struct kvvec_buf *kvvb, *kvvb2;
 	struct kvvec k = KVVEC_INITIALIZER;
@@ -86,6 +87,12 @@ int main(int argc, char **argv)
 	kvv3 = kvvec_create(1);
 	add_vars(kvv, test_data, 1239819);
 	add_vars(kvv, (const char **)argv + 1, argc - 1);
+
+	/* test kvvec_get_value() briefly while we're at it */
+	value = kvvec_get_value(kvv, "foo");
+	test(!strcmp(value, "bar"), "kvvec_get_value() must yield right value on good key");
+	value = kvvec_get_value(kvv, "BAD KEY");
+	test(value == NULL, "kvvec_get_value() must yield NULL on bad key");
 
 	kvvec_sort(kvv);
 	kvvec_foreach(kvv, NULL, walker);
