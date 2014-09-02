@@ -90,6 +90,21 @@ const char *qh_strerror(int code)
 	return "Unknown error";
 }
 
+void qh_error(int sd, int code, const char *fmt, ...)
+{
+	char *msg = NULL;
+	va_list ap;
+	int ret;
+
+	va_start(ap, fmt);
+	ret = vasprintf(&msg, fmt, ap);
+	if (ret < 0 || !msg) {
+		return;
+	}
+	nsock_printf_nul(sd, "%d: %s\n%s", code, qh_strerror(code), msg);
+	free(msg);
+}
+
 static int qh_input(int sd, int events, void *ioc_)
 {
 	iocache *ioc = (iocache *)ioc_;
