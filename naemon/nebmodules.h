@@ -1,6 +1,10 @@
 #ifndef _NEBMODULES_H
 #define _NEBMODULES_H
 
+#if !defined (_NAEMON_H_INSIDE) && !defined (NAEMON_COMPILATION)
+#error "Only <naemon/naemon.h> can be included directly."
+#endif
+
 #include "common.h"
 NAGIOS_BEGIN_DECL
 

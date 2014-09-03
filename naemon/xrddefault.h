@@ -1,6 +1,10 @@
 #ifndef _XRDDEFAULT_H
 #define _XRDDEFAULT_H
 
+#if !defined (_NAEMON_H_INSIDE) && !defined (NAEMON_COMPILATION)
+#error "Only <naemon/naemon.h> can be included directly."
+#endif
+
 #define XRDDEFAULT_NO_DATA               0
 #define XRDDEFAULT_INFO_DATA             1
 #define XRDDEFAULT_PROGRAMSTATUS_DATA    2

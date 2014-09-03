@@ -1,6 +1,10 @@
 #ifndef INCLUDE__shared_h__
 #define INCLUDE__shared_h__
 
+#if !defined (_NAEMON_H_INSIDE) && !defined (NAEMON_COMPILATION)
+#error "Only <naemon/naemon.h> can be included directly."
+#endif
+
 #include <time.h>
 #include "lib/libnaemon.h"
 

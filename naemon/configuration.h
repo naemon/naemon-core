@@ -1,6 +1,10 @@
 #ifndef _CONFIGURATION_H
 #define _CONFIGURATION_H
 
+#if !defined (_NAEMON_H_INSIDE) && !defined (NAEMON_COMPILATION)
+#error "Only <naemon/naemon.h> can be included directly."
+#endif
+
 #include "lib/lnae-utils.h"
 
 NAGIOS_BEGIN_DECL

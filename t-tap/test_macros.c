@@ -30,7 +30,8 @@
 
 #include <string.h>
 #include "naemon/objects.h"
-#include "naemon/nagios.h"
+#include "naemon/macros.h"
+#include "naemon/utils.h"
 #include "tap.h"
 
 /*****************************************************************************/

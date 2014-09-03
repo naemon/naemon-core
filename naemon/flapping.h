@@ -1,6 +1,10 @@
 #ifndef _FLAPPING_H
 #define _FLAPPING_H
 
+#if !defined (_NAEMON_H_INSIDE) && !defined (NAEMON_COMPILATION)
+#error "Only <naemon/naemon.h> can be included directly."
+#endif
+
 #include "objects.h"
 
 
