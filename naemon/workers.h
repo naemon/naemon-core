@@ -1,5 +1,10 @@
 #ifndef INCLUDE_workers_h__
 #define INCLUDE_workers_h__
+
+#if !defined (_NAEMON_H_INSIDE) && !defined (NAEMON_COMPILATION)
+#error "Only <naemon/naemon.h> can be included directly."
+#endif
+
 #include "lib/libnagios.h"
 #include "macros.h"
 

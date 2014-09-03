@@ -1,6 +1,9 @@
 #ifndef _QUERY_HANDLER_H
 #define _QUERY_HANDLER_H
 
+#if !defined (_NAEMON_H_INSIDE) && !defined (NAEMON_COMPILATION)
+#error "Only <naemon/naemon.h> can be included directly."
+#endif
 
 /* return codes for query_handlers() */
 #define QH_OK        0  /* keep listening */

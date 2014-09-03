@@ -1,6 +1,10 @@
 #ifndef INCLUDE_logging_h__
 #define INCLUDE_logging_h__
 
+#if !defined (_NAEMON_H_INSIDE) && !defined (NAEMON_COMPILATION)
+#error "Only <naemon/naemon.h> can be included directly."
+#endif
+
 #include "objects.h"
 
 /******************* LOGGING TYPES ********************/

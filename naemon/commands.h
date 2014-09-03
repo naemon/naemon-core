@@ -1,6 +1,10 @@
 #ifndef _COMMANDS_H
 #define _COMMANDS_H
 
+#if !defined (_NAEMON_H_INSIDE) && !defined (NAEMON_COMPILATION)
+#error "Only <naemon/naemon.h> can be included directly."
+#endif
+
 NAGIOS_BEGIN_DECL
 #include <time.h>
 

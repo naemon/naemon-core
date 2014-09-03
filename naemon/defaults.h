@@ -1,5 +1,10 @@
 #ifndef INCLUDE_defaults_h__
 #define INCLUDE_defaults_h__
+
+#if !defined (_NAEMON_H_INSIDE) && !defined (NAEMON_COMPILATION)
+#error "Only <naemon/naemon.h> can be included directly."
+#endif
+
 #include "buildopts.h"
 
 /******************* DEFAULT VALUES *******************/

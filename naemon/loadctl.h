@@ -1,6 +1,10 @@
 #ifndef LOADCTL_H_
 #define LOADCTL_H_
 
+#if !defined (_NAEMON_H_INSIDE) && !defined (NAEMON_COMPILATION)
+#error "Only <naemon/naemon.h> can be included directly."
+#endif
+
 /* options for load control */
 #define LOADCTL_ENABLED    (1 << 0)
 

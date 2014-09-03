@@ -1,7 +1,7 @@
 EXTRA_DIST = configs/recursive configs/services
 if HAVE_CHECK
 LDADD = @CHECK_LIBS@ $(top_builddir)/naemon/lib/libnaemon.la -lm -ldl
-AM_CPPFLAGS += -I$(top_srcdir) '-DSYSCONFDIR="$(abs_srcdir)/configs/"'
+AM_CPPFLAGS += -I$(top_srcdir) '-DSYSCONFDIR="$(abs_srcdir)/configs/"' -DNAEMON_COMPILATION
 AM_CFLAGS += @CHECK_CFLAGS@
 TESTS = test-checks test-utils test-log test-config
 TEST_CHECKS_DEPS = nebmods.o commands.o broker.o query-handler.o utils.o events.o notifications.o \

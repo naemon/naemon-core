@@ -8,7 +8,6 @@
 #include "lib/nspath.h"
 #include "config.h"
 #include "common.h"
-#include "naemon.h"
 #include "defaults.h"
 
 #define STATUS_NO_DATA             0
