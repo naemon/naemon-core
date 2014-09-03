@@ -3,6 +3,8 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
+mainconf=@sysconfdir@/naemon.cfg
+
 Name: Naemon
 Description: Naemon network monitoring
 Version: @VERSION@
