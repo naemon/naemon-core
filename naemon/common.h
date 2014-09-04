@@ -1,6 +1,10 @@
 #ifndef INCLUDE_COMMON_H
 #define INCLUDE_COMMON_H
 
+#if !defined (_NAEMON_H_INSIDE) && !defined (NAEMON_COMPILATION)
+#error "Only <naemon/naemon.h> can be included directly."
+#endif
+
 #include "shared.h"
 
 #define PROGRAM_VERSION "0.8.0"

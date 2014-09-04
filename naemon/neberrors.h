@@ -1,6 +1,10 @@
 #ifndef _NEBERRORS_H
 #define _NEBERRORS_H
 
+#if !defined (_NAEMON_H_INSIDE) && !defined (NAEMON_COMPILATION)
+#error "Only <naemon/naemon.h> can be included directly."
+#endif
+
 
 /***** GENERIC DEFINES *****/
 #define NEB_OK                      0

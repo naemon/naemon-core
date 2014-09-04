@@ -1,6 +1,10 @@
 #ifndef LIBNAEMON_lnag_utils_h__
 #define LIBNAEMON_lnag_utils_h__
 
+#if !defined (_NAEMON_H_INSIDE) && !defined (NAEMON_COMPILATION)
+#error "Only <naemon/naemon.h> can be included directly."
+#endif
+
 #include <unistd.h> /* for sysconf() */
 #include <stdlib.h> /* for rand() */
 

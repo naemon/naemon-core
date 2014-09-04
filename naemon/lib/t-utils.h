@@ -1,5 +1,10 @@
 #ifndef INCLUDE_test_utils_h__
 #define INCLUDE_test_utils_h__
+
+#if !defined (_NAEMON_H_INSIDE) && !defined (NAEMON_COMPILATION)
+#error "Only <naemon/naemon.h> can be included directly."
+#endif
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
