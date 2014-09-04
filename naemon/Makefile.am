@@ -1,5 +1,5 @@
 SUBDIRS = lib
-AM_CPPFLAGS += -I$(top_builddir)
+AM_CPPFLAGS += -I$(top_builddir) -DNAEMON_COMPILATION
 BUILT_SOURCES = wpres-phash.h buildopts.h
 EXTRA_DIST = buildopts.h.in
 

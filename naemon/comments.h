@@ -1,5 +1,10 @@
 #ifndef _COMMENTS_H
 #define _COMMENTS_H
+
+#if !defined (_NAEMON_H_INSIDE) && !defined (NAEMON_COMPILATION)
+#error "Only <naemon/naemon.h> can be included directly."
+#endif
+
 #include "common.h"
 #include "objects.h"
 

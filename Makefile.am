@@ -1,7 +1,10 @@
 SUBDIRS = naemon tests sample-config t t-tap tap
 AM_CPPFLAGS += -I$(top_builddir)
 
-EXTRA_DIST = contrib
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = naemon.pc
+
+EXTRA_DIST = contrib naemon-uninstalled.pc.in naemon.pc.in
 
 test: check
 

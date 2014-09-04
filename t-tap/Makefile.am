@@ -1,6 +1,6 @@
 BROKEN = test_downtime test_events test_nagios_config test_xsddefault
 
-AM_CPPFLAGS += -I$(top_srcdir) -I$(top_srcdir)/tap/src -I$(top_builddir) -DNAEMON_BUILDOPTS_H__ '-DNAEMON_SYSCONFDIR="$(abs_builddir)/smallconfig/"' '-DNAEMON_LOCALSTATEDIR="$(abs_builddir)"' '-DNAEMON_LOGDIR="$(abs_builddir)/"' '-DNAEMON_LOCKFILE="$(lockfile)"'
+AM_CPPFLAGS += -I$(top_srcdir) -I$(top_srcdir)/tap/src -I$(top_builddir) -DNAEMON_BUILDOPTS_H__ '-DNAEMON_SYSCONFDIR="$(abs_builddir)/smallconfig/"' '-DNAEMON_LOCALSTATEDIR="$(abs_builddir)"' '-DNAEMON_LOGDIR="$(abs_builddir)/"' '-DNAEMON_LOCKFILE="$(lockfile)"' -DNAEMON_COMPILATION
 AM_CFLAGS += -Wno-error
 LDADD = -ltap -L$(top_builddir)/tap/src -lnaemon -L$(top_builddir)/naemon/lib -ldl -lm
 BASE_DEPS = broker.o checks.o commands.o comments.o \

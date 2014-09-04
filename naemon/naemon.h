@@ -1,18 +1,13 @@
 #ifndef _NAEMON_H
 #define _NAEMON_H
 
-/*
- * NEVER INCLUDE THIS FILE WITHIN A FILE IN THE NAEMON PROJECT
- *
- * ONLY FOR USE FROM BROKER MODULES
- *
- * This file includes everything in naemon, which means, if included in naemon,
- * this will make it impossible to track dependenceies within the naemon project
- * itself. Using this as the entrypoint in broker modules will however make it
- * possible to move methods around within naemon, and still maintain API
- * compatiblity.
- */
+#if defined (NAEMON_COMPILATION)
+#error "Never include naemon/naemon.h within a file in the naemon project - it's for broker modules."
+#endif
 
+#define _NAEMON_H_INSIDE
+
+#include "lib/libnaemon.h"
 #include "broker.h"
 #include "checks.h"
 #include "commands.h"
@@ -44,6 +39,8 @@
 #include "statusdata.h"
 #include "utils.h"
 #include "workers.h"
+
+#undef _NAEMON_H_INSIDE
 
 /*
  * Defines below is kept pruely of backward compatibility purposes. They aren't
