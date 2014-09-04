@@ -322,7 +322,8 @@ void test_parsing(void)
 }
 
 void test_global_commands(void) {
-	ok(CMD_ERROR_OK == process_external_command1("[1234567890] SAVE_STATE_INFORMATION"), "core command: SAVE_STATE_INFORMATION");
+	/* avoid updating the checked-in retention data file when testing */
+	/* ok(CMD_ERROR_OK == process_external_command1("[1234567890] SAVE_STATE_INFORMATION"), "core command: SAVE_STATE_INFORMATION"); */
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] READ_STATE_INFORMATION"), "core command: READ_STATE_INFORMATION");
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] DISABLE_NOTIFICATIONS"), "core command: DISABLE_NOTIFICATIONS");
 
@@ -561,7 +562,7 @@ void test_core_commands(void) {
 int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 {
 	const char *test_config_file = get_default_config_file();
-	plan_tests(490);
+	plan_tests(489);
 	init_event_queue();
 
 	config_file_dir = nspath_absolute_dirname(test_config_file, NULL);
@@ -569,7 +570,6 @@ int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 	assert(OK == read_all_object_data(test_config_file));
 	assert(OK == initialize_downtime_data());
 	assert(OK == initialize_retention_data(get_default_config_file()));
-	assert(OK == read_initial_state_information());
 	test_register();
 	test_parsing();
 	test_core_commands();

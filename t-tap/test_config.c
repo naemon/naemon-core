@@ -46,6 +46,12 @@ int main(int argc, char **argv)
 	/* reset program variables */
 	reset_variables();
 
+	/*
+	 * avoid updating the checked-in retention data
+	 * file when testing
+	 */
+	retain_state_information = FALSE;
+
 	printf("Reading configuration data...\n");
 
 	config_file = strdup(get_default_config_file());
