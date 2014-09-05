@@ -3,8 +3,9 @@ prefix=
 exec_prefix=
 libdir=@abs_top_builddir@/naemon/lib
 includedir=@abs_top_builddir@
+sysconfdir=@sysconfdir@
 
-mainconf=@sysconfdir@/naemon.cfg
+mainconf=@pkgconfdir@/naemon.cfg
 
 Name: Naemon Uninstalled
 Description: Naemon network monitoring, Not Installed

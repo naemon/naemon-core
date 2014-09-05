@@ -136,6 +136,14 @@ AC_ARG_WITH([initdir],
 initrddir="$with_initdir"
 AC_SUBST(initrddir)
 
+# Determine the configuration directory
+AC_ARG_WITH([pkgconfdir],
+[AS_HELP_STRING([--with-pkgconfdir],
+[specify the naemon configuration directory @<:@default="${sysconfdir}/naemon"@:>@])],
+[], [with_pkgconfdir="\${sysconfdir}/naemon"])
+pkgconfdir="$with_pkgconfdir"
+AC_SUBST(pkgconfdir)
+
 # Determine the temp directory
 AC_ARG_WITH([tempdir],
 [AS_HELP_STRING([--with-tempdir],

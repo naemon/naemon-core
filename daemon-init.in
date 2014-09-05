@@ -5,7 +5,7 @@
 # chkconfig:    - 85 15
 # description:  Naemon is a service monitoring system
 # processname:  naemon
-# config:       @sysconfdir@/naemon.cfg
+# config:       @pkgconfdir@/naemon.cfg
 # pidfile:      @lockfile@
 #
 ### BEGIN INIT INFO
@@ -29,7 +29,8 @@ prefix="@prefix@"
 exec_prefix="@exec_prefix@"
 exec="@bindir@/naemon"
 prog="naemon"
-config="@sysconfdir@/naemon.cfg"
+sysconfdir="@sysconfdir@"
+config="@pkgconfdir@/naemon.cfg"
 pidfile="@lockfile@"
 pidfolder="`dirname $pidfile`"
 user="naemon"
