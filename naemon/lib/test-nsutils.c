@@ -4,6 +4,7 @@
 #include "t-utils.h"
 #include <sys/time.h>
 #include <time.h>
+#include <errno.h>
 
 int main(int argc, char **argv)
 {
@@ -28,7 +29,10 @@ int main(int argc, char **argv)
 	memcpy(&stop, &start, sizeof(start));
 	stop.tv_sec += 100;
 
-	asprintf(&s1, "arg varg foo %d", 12);
+	if (asprintf(&s1, "arg varg foo %d", 12) < 0) {
+		t_fail("write returned failure: %s", strerror(errno));
+		return t_end();
+	}
 	s2 = mkstr("arg varg foo %d", 12);
 	ok_str(s1, s2, "mkstr() must build proper strings");
 	if (real_online_cpus() > 0) {
