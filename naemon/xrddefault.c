@@ -131,7 +131,7 @@ int xrddefault_save_state_information(void)
 	/* write file info */
 	fprintf(fp, "info {\n");
 	fprintf(fp, "created=%lu\n", current_time);
-	fprintf(fp, "version=%s\n", PROGRAM_VERSION);
+	fprintf(fp, "version=" VERSION "\n");
 	fprintf(fp, "}\n");
 
 	/* save program state information */

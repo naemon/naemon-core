@@ -2727,7 +2727,7 @@ int generate_check_stats(void)
 char *get_program_version(void)
 {
 
-	return (char *)PROGRAM_VERSION;
+	return (char *)VERSION;
 }
 
 
