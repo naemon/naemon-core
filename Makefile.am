@@ -6,6 +6,8 @@ pkgconfig_DATA = naemon.pc
 
 EXTRA_DIST = contrib naemon-uninstalled.pc.in naemon.pc.in
 
+CLEANFILES = naemon-uninstalled.pc naemon.pc
+
 test: check
 
 install-exec-hook:
