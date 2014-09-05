@@ -1,5 +1,6 @@
 #define _GNU_SOURCE 1
 #include <stdio.h>
+#include <errno.h>
 #include "fanout.c"
 #include "t-utils.h"
 
@@ -90,8 +91,10 @@ int main(int argc, char **argv)
 	for (k = 0; k < 16385; k++) {
 		struct test_data *tdata = calloc(1, sizeof(*td));
 		tdata->key = k;
-		asprintf(&tdata->name, "%lu", k);
-		fanout_add(fot, k, tdata);
+		if (asprintf(&tdata->name, "%lu", k) < 0)
+			t_fail("asprintf returned failure: %s", strerror(errno));
+		else
+			fanout_add(fot, k, tdata);
 	}
 	td = fanout_get(fot, k - 1);
 	ok_int(td != NULL, 1, "get must get what add inserts");
