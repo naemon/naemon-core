@@ -132,7 +132,7 @@ AC_CHECK_FUNCS([dup2 floor ftruncate get_current_dir_name initgroups \
 AC_ARG_WITH([initdir],
 [AS_HELP_STRING([--with-initdir],
 [specify the system init script directory @<:@default="${sysconfdir}/init.d"@:>@])],
-[], [with_initdir="${sysconfdir}/init.d"])
+[], [with_initdir="\${sysconfdir}/init.d"])
 initrddir="$with_initdir"
 AC_SUBST(initrddir)
 
@@ -140,7 +140,7 @@ AC_SUBST(initrddir)
 AC_ARG_WITH([tempdir],
 [AS_HELP_STRING([--with-tempdir],
 [specify the temp directory @<:@default="${localstatedir}/cache/naemon"@:>@])],
-[], [with_tempdir="${localstatedir}/cache/naemon"])
+[], [with_tempdir="\${localstatedir}/cache/naemon"])
 TMPDIR="$with_tempdir"
 AC_SUBST(TMPDIR)
 
@@ -148,7 +148,7 @@ AC_SUBST(TMPDIR)
 AC_ARG_WITH([checkresultdir],
 [AS_HELP_STRING([--with-checkresultdir],
 [specify the checkresults directory @<:@default="${localstatedir}/cache/naemon/checkresults"@:>@])],
-[], [with_checkresultdir="${localstatedir}/cache/naemon/checkresults"])
+[], [with_checkresultdir="\${localstatedir}/cache/naemon/checkresults"])
 CHECKRESULTDIR="$with_checkresultdir"
 AC_SUBST(CHECKRESULTDIR)
 
@@ -172,7 +172,7 @@ AC_SUBST(naemon_grp)
 AC_ARG_WITH([lockfile],
 [AS_HELP_STRING([--with-lockfile],
 [specify the naemon lockfile @<:@default="${localstatedir}/cache/naemon/naemon.pid"@:>@])],
-[], [with_lockfile="${localstatedir}/cache/naemon/naemon.pid"])
+[], [with_lockfile="\${localstatedir}/cache/naemon/naemon.pid"])
 lockfile="$with_lockfile"
 AC_SUBST(lockfile)
 
@@ -180,7 +180,7 @@ AC_SUBST(lockfile)
 AC_ARG_WITH([logdir],
 [AS_HELP_STRING([--with-logdir],
 [specify the naemon log directory @<:@default="${localstatedir}/log/naemon"@:>@])],
-[], [with_logdir="${localstatedir}/log/naemon"])
+[], [with_logdir="\${localstatedir}/log/naemon"])
 logdir="$with_logdir"
 AC_SUBST(logdir)
 
