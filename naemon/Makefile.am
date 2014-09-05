@@ -33,7 +33,7 @@ wpres-phash.h: wpres.gperf
 	$< > $@
 
 buildopts.h: buildopts.h.in
-	sed -e 's,@@NAEMON_SYSCONFDIR@@,$(sysconfdir),' \
+	sed -e 's,@@NAEMON_SYSCONFDIR@@,$(pkgconfdir),' \
 	 -e 's,@@NAEMON_LOCALSTATEDIR@@,$(localstatedir),' \
 	 -e 's,@@NAEMON_LOGDIR@@,$(logdir),' \
 	 -e 's,@@NAEMON_LOCKFILE@@,$(lockfile),' \

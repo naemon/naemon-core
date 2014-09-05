@@ -26,16 +26,16 @@ log_file=@logdir@/naemon.log
 # if you wish (as shown below), or keep them all in a single config file.
 
 # You can specify individual object config files as shown below:
-#cfg_file=@sysconfdir@/objects/commands.cfg
-#cfg_file=@sysconfdir@/objects/contacts.cfg
-#cfg_file=@sysconfdir@/objects/timeperiods.cfg
-#cfg_file=@sysconfdir@/objects/templates.cfg
+#cfg_file=@pkgconfdir@/objects/commands.cfg
+#cfg_file=@pkgconfdir@/objects/contacts.cfg
+#cfg_file=@pkgconfdir@/objects/timeperiods.cfg
+#cfg_file=@pkgconfdir@/objects/templates.cfg
 
 
 # You can also tell naemon to process all config files (with a .cfg
 # extension) in a particular directory by using the cfg_dir
 # directive as shown below:
-cfg_dir=@sysconfdir@/conf.d
+cfg_dir=@pkgconfdir@/conf.d
 
 
 
@@ -76,7 +76,7 @@ precached_object_file=@localstatedir@/objects.precache
 # defined as macros in this file and restrictive permissions (600)
 # can be placed on this file.
 
-resource_file=@sysconfdir@/resource.cfg
+resource_file=@pkgconfdir@/resource.cfg
 
 
 

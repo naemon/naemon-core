@@ -2,8 +2,9 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
+sysconfdir=@sysconfdir@
 
-mainconf=@sysconfdir@/naemon.cfg
+mainconf=@pkgconfdir@/naemon.cfg
 
 Name: Naemon
 Description: Naemon network monitoring
