@@ -43,3 +43,5 @@ libtool
 ltmain.sh
 naemon/defaults.h
 m4/
+naemon-uninstalled.pc
+naemon.pc
