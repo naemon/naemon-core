@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
 
         switch (c) {
             case 'V':
-                printf("%s version %s", self_name, PROGRAM_VERSION);
+                printf("%s version " VERSION, self_name);
                 break;
             case 'h': case '?':
                 usage(NULL);

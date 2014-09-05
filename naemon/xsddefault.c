@@ -151,7 +151,7 @@ int xsddefault_save_status_data(void)
 	/* write file info */
 	fprintf(fp, "info {\n");
 	fprintf(fp, "\tcreated=%lu\n", current_time);
-	fprintf(fp, "\tversion=%s\n", PROGRAM_VERSION);
+	fprintf(fp, "\tversion=" VERSION "\n");
 	fprintf(fp, "\t}\n\n");
 
 	/* save program status data */

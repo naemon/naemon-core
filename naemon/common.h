@@ -7,7 +7,6 @@
 
 #include "shared.h"
 
-#define PROGRAM_VERSION "0.8.0"
 #define PROGRAM_MODIFICATION_DATE "02-13-2014"
 
 NAGIOS_BEGIN_DECL

@@ -249,7 +249,7 @@ int main(int argc, char **argv)
 	}
 
 	if (mrtg_mode == FALSE) {
-		printf("\nNaemon Stats %s\n", PROGRAM_VERSION);
+		printf("\nNaemon Stats " VERSION "\n");
 		printf("Copyright (c) 2013-present Naemon Development Team (www.naemon.org)\n");
 		printf("Copyright (c) 2003-2008 Ethan Galstad (www.nagios.org)\n");
 		printf("Last Modified: %s\n", PROGRAM_MODIFICATION_DATE);
