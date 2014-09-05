@@ -28,34 +28,34 @@ $(CONFIG_FILES) : % : %.in
 		-e 's,@logdir[@],$(logdir),g' \
 		-e 's,@naemon_grp[@],$(naemon_grp),g' \
 		-e 's,@naemon_user[@],$(naemon_user),g' \
-		-e 's,@sysconfdir[@],$(sysconfdir),g' \
+		-e 's,@pkgconfdir[@],$(pkgconfdir),g' \
 		-e 's,@CHECKRESULTDIR[@],$(CHECKRESULTDIR),g' \
 		-e 's,@TMPDIR[@],$(TMPDIR),g' \
 		-e 's,@VERSION[@],$(VERSION),g' \
 		-e 's,@MAIL_PROG[@],$(MAIL_PROG),g' \
 		$< > $@
 
-# not install-share-hook, because sysconfdir is usually part of install-exec
+# not install-share-hook, because sysconfdir - which defines pkgconfdir - is usually part of install-exec
 install-exec-hook: $(CONFIG_FILES)
-	if [ ! -d $(DESTDIR)$(sysconfdir) ]; then \
-		$(install_sh_PROGRAM) -d $(DESTDIR)$(sysconfdir)/conf.d; \
-		$(install_sh_PROGRAM) -m 644 naemon.cfg    $(DESTDIR)$(sysconfdir)/naemon.cfg; \
-		$(install_sh_PROGRAM) -m 640 resource.cfg  $(DESTDIR)$(sysconfdir)/resource.cfg; \
-		$(install_sh_PROGRAM) -d $(DESTDIR)$(sysconfdir)/conf.d; \
-		$(install_sh_PROGRAM) -m 644 conf.d/commands.cfg            $(DESTDIR)$(sysconfdir)/conf.d; \
-		$(install_sh_PROGRAM) -m 644 conf.d/printer.cfg             $(DESTDIR)$(sysconfdir)/conf.d; \
-		$(install_sh_PROGRAM) -m 644 conf.d/switch.cfg              $(DESTDIR)$(sysconfdir)/conf.d; \
-		$(install_sh_PROGRAM) -m 644 conf.d/timeperiods.cfg         $(DESTDIR)$(sysconfdir)/conf.d; \
-		$(install_sh_PROGRAM) -m 644 conf.d/localhost.cfg           $(DESTDIR)$(sysconfdir)/conf.d; \
-		$(install_sh_PROGRAM) -m 644 conf.d/contacts.cfg            $(DESTDIR)$(sysconfdir)/conf.d; \
-		$(install_sh_PROGRAM) -m 644 conf.d/windows.cfg             $(DESTDIR)$(sysconfdir)/conf.d; \
-		$(install_sh_PROGRAM) -d $(DESTDIR)$(sysconfdir)/conf.d/templates; \
-		$(install_sh_PROGRAM) -m 644 conf.d/templates/services.cfg  $(DESTDIR)$(sysconfdir)/conf.d/templates; \
-		$(install_sh_PROGRAM) -m 644 conf.d/templates/hosts.cfg     $(DESTDIR)$(sysconfdir)/conf.d/templates; \
-		$(install_sh_PROGRAM) -m 644 conf.d/templates/contacts.cfg  $(DESTDIR)$(sysconfdir)/conf.d/templates; \
+	if [ ! -d $(DESTDIR)$(pkgconfdir) ]; then \
+		$(install_sh_PROGRAM) -d $(DESTDIR)$(pkgconfdir)/conf.d; \
+		$(install_sh_PROGRAM) -m 644 naemon.cfg    $(DESTDIR)$(pkgconfdir)/naemon.cfg; \
+		$(install_sh_PROGRAM) -m 640 resource.cfg  $(DESTDIR)$(pkgconfdir)/resource.cfg; \
+		$(install_sh_PROGRAM) -d $(DESTDIR)$(pkgconfdir)/conf.d; \
+		$(install_sh_PROGRAM) -m 644 conf.d/commands.cfg            $(DESTDIR)$(pkgconfdir)/conf.d; \
+		$(install_sh_PROGRAM) -m 644 conf.d/printer.cfg             $(DESTDIR)$(pkgconfdir)/conf.d; \
+		$(install_sh_PROGRAM) -m 644 conf.d/switch.cfg              $(DESTDIR)$(pkgconfdir)/conf.d; \
+		$(install_sh_PROGRAM) -m 644 conf.d/timeperiods.cfg         $(DESTDIR)$(pkgconfdir)/conf.d; \
+		$(install_sh_PROGRAM) -m 644 conf.d/localhost.cfg           $(DESTDIR)$(pkgconfdir)/conf.d; \
+		$(install_sh_PROGRAM) -m 644 conf.d/contacts.cfg            $(DESTDIR)$(pkgconfdir)/conf.d; \
+		$(install_sh_PROGRAM) -m 644 conf.d/windows.cfg             $(DESTDIR)$(pkgconfdir)/conf.d; \
+		$(install_sh_PROGRAM) -d $(DESTDIR)$(pkgconfdir)/conf.d/templates; \
+		$(install_sh_PROGRAM) -m 644 conf.d/templates/services.cfg  $(DESTDIR)$(pkgconfdir)/conf.d/templates; \
+		$(install_sh_PROGRAM) -m 644 conf.d/templates/hosts.cfg     $(DESTDIR)$(pkgconfdir)/conf.d/templates; \
+		$(install_sh_PROGRAM) -m 644 conf.d/templates/contacts.cfg  $(DESTDIR)$(pkgconfdir)/conf.d/templates; \
 	fi
 
 uninstall-hook:
-	rm $(DESTDIR)$(sysconfdir)/naemon.cfg
-	rm $(DESTDIR)$(sysconfdir)/resource.cfg
-	rm -r $(DESTDIR)$(sysconfdir)/conf.d
+	rm $(DESTDIR)$(pkgconfdir)/naemon.cfg
+	rm $(DESTDIR)$(pkgconfdir)/resource.cfg
+	rm -r $(DESTDIR)$(pkgconfdir)/conf.d
