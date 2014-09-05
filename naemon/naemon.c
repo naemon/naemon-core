@@ -290,7 +290,7 @@ int main(int argc, char **argv)
 	}
 
 	if (daemon_mode == FALSE) {
-		printf("\nNaemon Core %s\n", PROGRAM_VERSION);
+		printf("\nNaemon Core " VERSION "\n");
 		printf("Copyright (c) 2013-present Naemon Core Development Team and Community Contributors\n");
 		printf("Copyright (c) 2009-2013 Nagios Core Development Team and Community Contributors\n");
 		printf("Copyright (c) 1999-2009 Ethan Galstad\n");
@@ -586,7 +586,7 @@ int main(int argc, char **argv)
 		}
 
 		/* this must be logged after we read config data, as user may have changed location of main log file */
-		logit(NSLOG_PROCESS_INFO, TRUE, "Naemon %s starting... (PID=%d)\n", PROGRAM_VERSION, (int)getpid());
+		logit(NSLOG_PROCESS_INFO, TRUE, "Naemon " VERSION " starting... (PID=%d)\n", (int)getpid());
 
 		/* log the local time - may be different than clock time due to timezone offset */
 		now = time(NULL);

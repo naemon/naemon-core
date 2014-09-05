@@ -426,7 +426,7 @@ int main(int argc, char **argv)
 
 		switch (c) {
 		case 'v': case 'V':
-			printf("oconfsplit version %s", PROGRAM_VERSION);
+			printf("oconfsplit version " VERSION);
 			break;
 		case 'h': case '?':
 			usage(NULL);
