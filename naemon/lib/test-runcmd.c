@@ -103,9 +103,15 @@ int main(int argc, char **argv)
 			int fd;
 			char *cmd;
 			memset(out, 0, BUF_SIZE);
-			asprintf(&cmd, "/bin/echo -n %s", cases[i].input);
+			if (asprintf(&cmd, "/bin/echo -n %s", cases[i].input) < 0) {
+				t_fail("asprintf returned failure: %s", strerror(errno));
+				continue;
+			}
 			fd = runcmd_open(cmd, pfd, pfderr, NULL);
-			read(pfd[0], out, BUF_SIZE);
+			if (read(pfd[0], out, BUF_SIZE) < 0) {
+				t_fail("read returned failure: %s", strerror(errno));
+				continue;
+			}
 			ok_str(cases[i].output, out, "Echoing a command should give expected output");
 			close(pfd[0]);
 			close(pfderr[0]);

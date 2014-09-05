@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #include "iobroker.c"
 #include "t-utils.h"
@@ -40,7 +41,8 @@ static int echo_service(int fd, int events, void *arg)
 		return 0;
 	}
 
-	write(fd, buf, len);
+	if (write(fd, buf, len) < 0)
+		t_fail("write returned failure: %s", strerror(errno));
 
 	return 0;
 }
@@ -74,7 +76,8 @@ static int connected_handler(int fd, int events, void *arg)
 		return 0;
 	}
 
-	write(fd, msg[i], strlen(msg[i]));
+	if (write(fd, msg[i], strlen(msg[i])) < 0)
+		t_fail("write returned failure: %s", strerror(errno));
 	*counter = i;
 
 	return 0;
@@ -98,7 +101,8 @@ static int listen_handler(int fd, int events, void *arg)
 		return -1;
 	}
 
-	write(sock, msg[0], strlen(msg[0]));
+	if (write(sock, msg[0], strlen(msg[0])) < 0)
+		t_fail("write returned failure: %s", strerror(errno));
 	iobroker_register(iobs, sock, iobs, echo_service);
 	ok_int(iobroker_is_registered(iobs, sock), 1, "is_registered must be true");
 	return 0;
