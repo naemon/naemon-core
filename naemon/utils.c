@@ -919,7 +919,7 @@ static timerange *_get_matching_timerange(time_t test_time, timeperiod *tperiod)
 #ifdef TEST_TIMEPERIODS_A
 			printf("NEW START:    %lu = %s", (unsigned long)start_time, ctime(&start_time));
 			printf("NEW END:      %lu = %s", (unsigned long)end_time, ctime(&end_time));
-			printf("%d DAYS PASSED\n", days);
+			printf("%lu DAYS PASSED\n", days);
 			printf("DLST SHIFT:   %i\n", shift);
 #endif
 
@@ -1006,16 +1006,32 @@ static void _get_next_invalid_time(time_t pref_time, time_t *invalid_time, timep
 	time_t midnight = (time_t)0L;
 	time_t day_range_start = (time_t)0L;
 	time_t day_range_end = (time_t)0L;
-	timerange *temp_timerange = NULL;
+	time_t potential_time = 0;
+	time_t excluded_time = 0;
+	time_t last_range_end = 0;
+	int have_earliest_time = FALSE;
+	timerange *last_range = NULL, *temp_timerange = NULL;
 
 	/* if no period was specified, assume the time is good */
-	if (tperiod == NULL) {
+	if (tperiod == NULL || check_time_against_period(pref_time, tperiod) == ERROR) {
 		*invalid_time = pref_time;
 		return;
 	}
 
+	/* first excluded time may well be the time we're looking for */
+	for (temp_timeperiodexclusion = tperiod->exclusions; temp_timeperiodexclusion != NULL; temp_timeperiodexclusion = temp_timeperiodexclusion->next) {
+		/* if pref_time is excluded, we're done */
+		if (check_time_against_period(pref_time, temp_timeperiodexclusion->timeperiod_ptr) != ERROR) {
+			*invalid_time = pref_time;
+			return;
+		}
+		_get_next_valid_time(pref_time, &potential_time, temp_timeperiodexclusion->timeperiod_ptr);
+		if (!excluded_time || excluded_time > potential_time)
+			excluded_time = potential_time;
+	}
+
 	while (earliest_time != last_earliest_time && depth < max_depth) {
-		time_t potential_time = 0;
+		have_earliest_time = FALSE;
 		depth++;
 		last_earliest_time = earliest_time;
 
@@ -1027,10 +1043,8 @@ static void _get_next_invalid_time(time_t pref_time, time_t *invalid_time, timep
 
 		temp_timerange = _get_matching_timerange(earliest_time, tperiod);
 
-		for (; temp_timerange != NULL; temp_timerange = temp_timerange->next) {
+		for (; temp_timerange; last_range = temp_timerange, temp_timerange = temp_timerange->next) {
 			/* ranges with start/end of zero mean exlude this day */
-			if (temp_timerange->range_start == 0 && temp_timerange->range_end == 0)
-				continue;
 
 			day_range_start = (time_t)(midnight + temp_timerange->range_start);
 			day_range_end = (time_t)(midnight + temp_timerange->range_end);
@@ -1040,24 +1054,49 @@ static void _get_next_invalid_time(time_t pref_time, time_t *invalid_time, timep
 			printf("  INVALID RANGE END:   %lu (%lu) = %s", temp_timerange->range_end, (unsigned long)day_range_end, ctime(&day_range_end));
 #endif
 
-			if (day_range_start <= earliest_time && day_range_end > earliest_time)
-				potential_time = day_range_end;
-			else
-				potential_time = earliest_time;
+			if (temp_timerange->range_start == 0 && temp_timerange->range_end == 0)
+				continue;
 
-			if (potential_time > earliest_time) {
-				earliest_time = potential_time;
+			if (excluded_time && day_range_end > excluded_time) {
+				earliest_time = excluded_time;
+				have_earliest_time = TRUE;
+				break;
+			}
+
+			/*
+			 * Unless two consecutive days have adjoining timeranges,
+			 * the end of the last period is the start of the first
+			 * invalid time. This only needs special-casing when the
+			 * last range of the previous day ends at midnight, and
+			 * also catches the special case when there are only
+			 * exceptions in a timeperiod and some days are skipped
+			 * entirely.
+			 */
+			if (last_range && last_range->range_end == SECS_PER_DAY && last_range_end && day_range_start != last_range_end) {
+				earliest_time = last_range_end;
+				have_earliest_time = TRUE;
+				break;
+			}
+
+			/* stash this day_range_end in case we skip a day */
+			last_range_end = day_range_end;
+
+			if (pref_time <= day_range_end && temp_timerange->range_end != SECS_PER_DAY) {
+				earliest_time = day_range_end;
+				have_earliest_time = TRUE;
 #ifdef TEST_TIMEPERIODS_B
 				printf("    EARLIEST INVALID TIME: %lu = %s", (unsigned long)earliest_time, ctime(&earliest_time));
 #endif
+				break;
 			}
 		}
 
-		for (temp_timeperiodexclusion = tperiod->exclusions; temp_timeperiodexclusion != NULL; temp_timeperiodexclusion = temp_timeperiodexclusion->next) {
-			_get_next_valid_time(last_earliest_time, &potential_time, temp_timeperiodexclusion->timeperiod_ptr);
-			if (potential_time + 60 < earliest_time)
-				earliest_time = potential_time + 60;
+		/* if we found this in the exclusions, we're done */
+		if (have_earliest_time == TRUE) {
+			break;
 		}
+
+		earliest_time = midnight + SECS_PER_DAY;
 	}
 #ifdef TEST_TIMEPERIODS_B
 	printf("    FINAL EARLIEST INVALID TIME: %lu = %s", (unsigned long)earliest_time, ctime(&earliest_time));
@@ -1092,7 +1131,7 @@ void _get_next_valid_time(time_t pref_time, time_t *valid_time, timeperiod *tper
 	}
 
 	while (earliest_time != last_earliest_time && depth < max_depth) {
-		time_t potential_time = 0;
+		time_t potential_time = pref_time;
 		have_earliest_time = FALSE;
 		depth++;
 		last_earliest_time = earliest_time;
@@ -1110,9 +1149,11 @@ void _get_next_valid_time(time_t pref_time, time_t *valid_time, timeperiod *tper
 #endif
 
 		for (; temp_timerange != NULL; temp_timerange = temp_timerange->next) {
+			depth++;
 			/* ranges with start/end of zero mean exlude this day */
-			if (temp_timerange->range_start == 0 && temp_timerange->range_end == 0)
+			if (temp_timerange->range_start == 0 && temp_timerange->range_end == 0) {
 				continue;
+			}
 
 			day_range_start = (time_t)(midnight + temp_timerange->range_start);
 			day_range_end = (time_t)(midnight + temp_timerange->range_end);
@@ -1123,8 +1164,9 @@ void _get_next_valid_time(time_t pref_time, time_t *valid_time, timeperiod *tper
 #endif
 
 			/* range is out of bounds */
-			if (day_range_end < last_earliest_time)
+			if (day_range_end <= last_earliest_time) {
 				continue;
+			}
 
 			/* preferred time occurs before range start, so use range start time as earliest potential time */
 			if (day_range_start >= last_earliest_time)
@@ -1136,22 +1178,32 @@ void _get_next_valid_time(time_t pref_time, time_t *valid_time, timeperiod *tper
 			/* is this the earliest time found thus far? */
 			if (have_earliest_time == FALSE || potential_time < earliest_time) {
 				earliest_time = potential_time;
+				have_earliest_time = TRUE;
 #ifdef TEST_TIMEPERIODS_B
 				printf("    EARLIEST TIME: %lu = %s", (unsigned long)earliest_time, ctime(&earliest_time));
 #endif
 			}
-			have_earliest_time = TRUE;
 		}
 
 		if (have_earliest_time == FALSE) {
 			earliest_time = midnight + SECS_PER_DAY;
 		} else {
+			time_t max_excluded = 0, excluded_time = 0;
 			for (temp_timeperiodexclusion = tperiod->exclusions; temp_timeperiodexclusion != NULL; temp_timeperiodexclusion = temp_timeperiodexclusion->next) {
-				_get_next_invalid_time(earliest_time, &earliest_time, temp_timeperiodexclusion->timeperiod_ptr);
-#ifdef TEST_TIMEPERIODS_B
-				printf("    FINAL EARLIEST TIME: %lu = %s", (unsigned long)earliest_time, ctime(&earliest_time));
-#endif
+				if (check_time_against_period(earliest_time, temp_timeperiodexclusion->timeperiod_ptr) == ERROR) {
+					continue;
+				}
+				_get_next_invalid_time(earliest_time, &excluded_time, temp_timeperiodexclusion->timeperiod_ptr);
+				if (!max_excluded || max_excluded < excluded_time) {
+					max_excluded = excluded_time;
+					earliest_time = excluded_time;
+				}
 			}
+			if (max_excluded)
+				earliest_time = max_excluded;
+#ifdef TEST_TIMEPERIODS_B
+			printf("    FINAL EARLIEST TIME: %lu = %s", (unsigned long)earliest_time, ctime(&earliest_time));
+#endif
 		}
 	}
 
