@@ -9302,7 +9302,7 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 
 	if (use_precached_objects == FALSE) {
 		if (result == OK)
-			result = xodtemplate_duplicate_services();
+			xodtemplate_duplicate_services();
 		if (test_scheduling == TRUE)
 			gettimeofday(&tv[5], NULL);
 		timing_point("Created %u services (dupes possible)\n", xodcount.services);
