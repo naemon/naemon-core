@@ -107,8 +107,6 @@ else
 fi
 
 AC_DEFINE(NAEMON_PROCESS_NAME, "Naemon Process", [Process name for naemon])
-AC_DEFINE(DEFAULT_NAEMON_USER, "naemon", [Default user name to run naemon as])
-AC_DEFINE(DEFAULT_NAEMON_GROUP, "naemon", [Default group name to run naemon as])
 AC_DEFINE(USE_EVENT_BROKER, 1, [Use event brokers])
 
 # Checks for library functions.
@@ -167,6 +165,7 @@ AC_ARG_WITH([naemon-user],
 [], [with_naemon_user="naemon"])
 naemon_user="$with_naemon_user"
 AC_SUBST(naemon_user)
+AC_DEFINE_UNQUOTED(DEFAULT_NAEMON_USER, "$naemon_user", [Default user name to run naemon as])
 
 # Determine the naemon group
 AC_ARG_WITH([naemon-group],
@@ -175,6 +174,7 @@ AC_ARG_WITH([naemon-group],
 [], [with_naemon_group="naemon"])
 naemon_grp="$with_naemon_group"
 AC_SUBST(naemon_grp)
+AC_DEFINE_UNQUOTED(DEFAULT_NAEMON_GROUP, "$naemon_grp", [Default group name to run naemon as])
 
 # Determine the lockfile
 AC_ARG_WITH([lockfile],
