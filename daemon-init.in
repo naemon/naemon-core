@@ -27,6 +27,7 @@ fi
 
 prefix="@prefix@"
 exec_prefix="@exec_prefix@"
+localstatedir="@localstatedir@"
 exec="@bindir@/naemon"
 prog="naemon"
 sysconfdir="@sysconfdir@"
