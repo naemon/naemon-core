@@ -196,7 +196,7 @@ AC_SUBST(logdir)
 AC_ARG_WITH([logrotatedir],
 [AS_HELP_STRING([--with-logrotatedir],
 [specify the log rotate directory])],
-[], [with_logrotatedir=""])
+[], [with_logrotatedir="\${sysconfdir}/logrotate.d"])
 logrotatedir="$with_logrotatedir"
 AC_SUBST(logrotatedir)
 
