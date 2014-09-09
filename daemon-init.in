@@ -67,7 +67,7 @@ check_config() {
     WARN=`grep ^"Total Warnings:" "$TMPFILE" |awk -F: '{print \$2}' |sed s/' '//g`
     ERR=`grep ^"Total Errors:" "$TMPFILE" |awk -F: '{print \$2}' |sed s/' '//g`
 
-    if test "$WARN" = "0" && test "${ERR}" = "0"; then
+    if test "${ERR}" = "0"; then
         echo "OK - Configuration check verified" > @TMPDIR@/naemon.configtest
         chmod 0644 @TMPDIR@/naemon.configtest
         /bin/rm "$TMPFILE"
