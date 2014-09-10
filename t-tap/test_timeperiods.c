@@ -53,6 +53,7 @@ int main(int argc, char **argv)
 	printf("Reading configuration data...\n");
 
 	config_file = strdup(get_default_config_file());
+	config_file_dir = nspath_absolute_dirname(config_file, NULL);
 	/* read in the configuration files (main config file, resource and object config files) */
 	result = read_main_config_file(config_file);
 	ok(result == OK, "Read main configuration file okay - if fails, use nagios -v to check");
