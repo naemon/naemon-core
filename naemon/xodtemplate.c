@@ -9114,13 +9114,7 @@ static int xodtemplate_process_config_dir(char *dir_name, int options)
 /* process all config files - both core and CGIs pass in name of main config file */
 int xodtemplate_read_config_data(const char *main_config_file, int options)
 {
-	char *cfgfile = NULL;
-	char *config_base_dir = NULL;
-	char *input = NULL;
-	char *var = NULL;
-	char *val = NULL;
 	double runtime[11];
-	mmapfile *thefile = NULL;
 	struct timeval tv[12];
 	int result = OK;
 
@@ -9169,92 +9163,13 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 
 	/* process object config files normally... */
 	else {
-		/* determine the directory of the main config file */
-		if ((cfgfile = nm_strdup(main_config_file)) == NULL) {
-			my_free(xodtemplate_config_files);
-			printf("Unable to allocate memory!\n");
-			return ERROR;
+		objectlist *entry;
+		for (entry = objcfg_files; entry; entry = entry->next) {
+			result |= xodtemplate_process_config_file(entry->object_ptr, options);
 		}
-		config_base_dir = nm_strdup(dirname(cfgfile));
-		my_free(cfgfile);
-
-		/* open the main config file for reading (we need to find all the config files to read) */
-		if ((thefile = mmap_fopen(main_config_file)) == NULL) {
-			my_free(config_base_dir);
-			my_free(xodtemplate_config_files);
-			printf("Unable to open main config file '%s'\n", main_config_file);
-			return ERROR;
+		for (entry = objcfg_dirs; entry; entry = entry->next) {
+			result = xodtemplate_process_config_dir(entry->object_ptr, options);
 		}
-
-		/* daemon reads all config files/dirs specified in the main config file */
-		/* read in all lines from the main config file */
-		while (1) {
-
-			/* free memory */
-			my_free(input);
-
-			/* get the next line */
-			if ((input = mmap_fgets_multiline(thefile)) == NULL)
-				break;
-
-			/* strip input */
-			strip(input);
-
-			/* skip blank lines and comments */
-			if (input[0] == '#' || input[0] == ';' || input[0] == '\x0')
-				continue;
-
-			if ((var = strtok(input, "=")) == NULL)
-				continue;
-
-			if ((val = strtok(NULL, "\n")) == NULL)
-				continue;
-
-			/* process a single config file */
-			if (!strcmp(var, "xodtemplate_config_file") || !strcmp(var, "cfg_file")) {
-
-				if (config_base_dir != NULL && val[0] != '/') {
-					nm_asprintf(&cfgfile, "%s/%s", config_base_dir, val);
-				} else
-					cfgfile = nm_strdup(val);
-
-				/* process the config file... */
-				result = xodtemplate_process_config_file(cfgfile, options);
-
-				my_free(cfgfile);
-
-				/* if there was an error processing the config file, break out of loop */
-				if (result == ERROR)
-					break;
-			}
-
-			/* process all files in a config directory */
-			else if (!strcmp(var, "xodtemplate_config_dir") || !strcmp(var, "cfg_dir")) {
-
-				if (config_base_dir != NULL && val[0] != '/') {
-					nm_asprintf(&cfgfile, "%s/%s", config_base_dir, val);
-				} else
-					cfgfile = nm_strdup(val);
-
-				/* strip trailing / if necessary */
-				if (cfgfile != NULL && cfgfile[strlen(cfgfile) - 1] == '/')
-					cfgfile[strlen(cfgfile) - 1] = '\x0';
-
-				/* process the config directory... */
-				result = xodtemplate_process_config_dir(cfgfile, options);
-
-				my_free(cfgfile);
-
-				/* if there was an error processing the config file, break out of loop */
-				if (result == ERROR)
-					break;
-			}
-		}
-
-		/* free memory and close the file */
-		my_free(config_base_dir);
-		my_free(input);
-		mmap_fclose(thefile);
 	}
 
 	if (test_scheduling == TRUE)

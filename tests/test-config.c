@@ -1,5 +1,7 @@
 #include "naemon/configuration.h"
 #include "naemon/utils.h"
+#include "naemon/globals.h"
+#include "naemon/defaults.h"
 
 #include <check.h>
 
@@ -11,8 +13,11 @@ START_TEST(services)
 {
 	int res, hits, s5_hits = 0;
 	service *s;
+	objcfg_files = NULL;
+	objcfg_dirs = NULL;
 	res = reset_variables();
 	ck_assert_int_eq(OK, res);
+	config_file_dir = nspath_absolute_dirname(SYSCONFDIR "services/naemon.cfg", NULL);
 	res = read_main_config_file(SYSCONFDIR "services/naemon.cfg");
 	ck_assert_int_eq(OK, res);
 	res = read_all_object_data(SYSCONFDIR "services/naemon.cfg");
@@ -39,8 +44,11 @@ START_TEST(recursive)
 {
 	int res, hits;
 	host *h;
+	objcfg_files = NULL;
+	objcfg_dirs = NULL;
 	res = reset_variables();
 	ck_assert_int_eq(OK, res);
+	config_file_dir = nspath_absolute_dirname(SYSCONFDIR "recursive/naemon.cfg", NULL);
 	res = read_main_config_file(SYSCONFDIR "recursive/naemon.cfg");
 	ck_assert_int_eq(OK, res);
 	res = read_all_object_data(SYSCONFDIR "recursive/naemon.cfg");
@@ -59,6 +67,29 @@ START_TEST(recursive)
 }
 END_TEST
 
+START_TEST(main_include)
+{
+	int res;
+	char *file_cfg = nspath_normalize(SYSCONFDIR "includes/a_file.cfg");
+	char *dir_cfg = nspath_normalize(SYSCONFDIR "includes/a_dir");
+	objcfg_files = NULL;
+	objcfg_dirs = NULL;
+	config_file_dir = nspath_absolute_dirname(SYSCONFDIR "includes/naemon.cfg", NULL);
+	res = read_main_config_file(SYSCONFDIR "includes/naemon.cfg");
+	ck_assert_int_eq(OK, res);
+	ck_assert_int_eq(1448, event_handler_timeout);
+	// leave files without .cfg suffix alone:
+	ck_assert_int_eq(DEFAULT_HOST_CHECK_TIMEOUT, host_check_timeout);
+	ck_assert_int_eq(1338, notification_timeout);
+	ck_assert(NULL != objcfg_files);
+	ck_assert_str_eq(file_cfg, objcfg_files->object_ptr);
+	ck_assert(NULL != objcfg_dirs);
+	ck_assert_str_eq(dir_cfg, objcfg_dirs->object_ptr);
+	my_free(file_cfg);
+	my_free(dir_cfg);
+}
+END_TEST
+
 Suite*
 config_suite(void)
 {
@@ -66,6 +97,7 @@ config_suite(void)
 	TCase *parse = tcase_create("Parse configuration");
 	tcase_add_test(parse, recursive);
 	tcase_add_test(parse, services);
+	tcase_add_test(parse, main_include);
 	suite_add_tcase(s, parse);
 	return s;
 }

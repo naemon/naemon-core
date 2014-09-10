@@ -40,6 +40,8 @@ char *temp_file = NULL;
 char *temp_path = NULL;
 char *check_result_path = NULL;
 char *lock_file = NULL;
+objectlist *objcfg_files = NULL;
+objectlist *objcfg_dirs = NULL;
 
 int num_check_workers = 0; /* auto-decide */
 char *qh_socket_path = NULL; /* disabled */

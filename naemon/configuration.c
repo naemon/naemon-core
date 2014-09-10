@@ -46,37 +46,26 @@ static void obsoleted_warning(const char *key, const char *msg)
 	prepend_object_to_objectlist(&deprecated, buf);
 }
 
-
-/* process the main configuration file */
-int read_main_config_file(const char *main_config_file)
+static int
+read_config_file(const char *main_config_file, nagios_macros *mac)
 {
+	int error = FALSE;
+	char *temp_ptr = NULL;
+	int current_line = 0;
+	char *error_message = NULL;
+	char *value = NULL;
 	char *input = NULL;
 	char *variable = NULL;
-	char *value = NULL;
-	char *error_message = NULL;
-	char *temp_ptr = NULL;
-	mmapfile *thefile = NULL;
-	int current_line = 0;
-	int error = FALSE;
 	char *modptr = NULL;
 	char *argptr = NULL;
+	mmapfile *thefile = NULL;
 	DIR *tmpdir = NULL;
-	nagios_macros *mac;
-	objectlist *list;
-
-	mac = get_global_macros();
-
 
 	/* open the config file for reading */
 	if ((thefile = mmap_fopen(main_config_file)) == NULL) {
 		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Cannot open main configuration file '%s' for reading!", main_config_file);
 		return ERROR;
 	}
-
-	/* save the main config file macro */
-	my_free(mac->x[MACRO_MAINCONFIGFILE]);
-	if ((mac->x[MACRO_MAINCONFIGFILE] = nm_strdup(main_config_file)))
-		strip(mac->x[MACRO_MAINCONFIGFILE]);
 
 	/* process all lines in the config file */
 	while (1) {
@@ -1067,8 +1056,38 @@ int read_main_config_file(const char *main_config_file)
 			service_perfdata_process_empty_results = (atoi(value) > 0) ? TRUE : FALSE;
 		/*** END perfdata variables */
 
-		else if (strstr(input, "cfg_file=") == input || strstr(input, "cfg_dir=") == input)
-			continue;
+		else if (!strcmp(variable, "cfg_file")) {
+			add_object_to_objectlist(&objcfg_files, nspath_absolute(value, config_file_dir));
+		} else if (!strcmp(variable, "cfg_dir")) {
+			add_object_to_objectlist(&objcfg_dirs, nspath_absolute(value, config_file_dir));
+		} else if (!strcmp(variable, "include_file")) {
+			char *include_file = nspath_absolute(value, config_file_dir);
+			error |= read_config_file(include_file, mac);
+			my_free(include_file);
+		} else if (!strcmp(variable, "include_dir")) {
+			char *include_dir = nspath_absolute(value, config_file_dir);
+			DIR *dirp = NULL;
+			struct dirent *dirfile = NULL;
+
+			dirp = opendir(include_dir);
+			while ((dirfile = readdir(dirp)) != NULL) {
+				char file[MAX_FILENAME_LENGTH];
+
+				/* skip hidden files and directories, current and parent dir, and non-config files */
+				if (dirfile->d_name[0] == '.')
+					continue;
+				if (strcmp(dirfile->d_name + strlen(dirfile->d_name) - 4, ".cfg"))
+					continue;
+
+				/* create /path/to/file */
+				snprintf(file, sizeof(file), "%s/%s", include_dir, dirfile->d_name);
+				file[sizeof(file) - 1] = '\x0';
+
+				error |= read_config_file(file, mac);
+			}
+			closedir(dirp);
+			my_free(include_dir);
+		}
 		else if (strstr(input, "object_cache_file=") == input) {
 			my_free(object_cache_file);
 			object_cache_file = nspath_absolute(value, config_file_dir);
@@ -1090,10 +1109,16 @@ int read_main_config_file(const char *main_config_file)
 			error = TRUE;
 			break;
 		}
+	}
 
+	/* handle errors */
+	if (error == TRUE) {
+		logit(NSLOG_CONFIG_ERROR, TRUE, "Error in configuration file '%s' - Line %d (%s)", main_config_file, current_line, (error_message == NULL) ? "NULL" : error_message);
+		return ERROR;
 	}
 
 	if (deprecated) {
+		objectlist *list;
 		for (list = deprecated; list; list = list->next) {
 			logit(NSLOG_CONFIG_WARNING, TRUE, "%s", (char *)list->object_ptr);
 			free(list->object_ptr);
@@ -1101,6 +1126,30 @@ int read_main_config_file(const char *main_config_file)
 		free_objectlist(&deprecated);
 		deprecated = NULL;
 	}
+
+	mmap_fclose(thefile);
+	my_free(input);
+	my_free(variable);
+	my_free(value);
+	my_free(error_message);
+
+	return OK;
+}
+
+/* process the main configuration file */
+int read_main_config_file(const char *main_config_file)
+{
+	DIR *tmpdir = NULL;
+	nagios_macros *mac;
+
+	mac = get_global_macros();
+
+	/* save the main config file macro */
+	my_free(mac->x[MACRO_MAINCONFIGFILE]);
+	if ((mac->x[MACRO_MAINCONFIGFILE] = nm_strdup(main_config_file)))
+		strip(mac->x[MACRO_MAINCONFIGFILE]);
+
+	read_config_file(main_config_file, mac);
 
 	if (!temp_path) {
 		temp_path = getenv("TMPDIR");
@@ -1164,26 +1213,9 @@ int read_main_config_file(const char *main_config_file)
 	if (child_processes_fork_twice == -1)
 		child_processes_fork_twice = (use_large_installation_tweaks == TRUE) ? FALSE : TRUE;
 
-
-	/* handle errors */
-	if (error == TRUE) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error in configuration file '%s' - Line %d (%s)", main_config_file, current_line, (error_message == NULL) ? "NULL" : error_message);
-		return ERROR;
-	}
-
-	/* free leftover memory and close the file */
-	my_free(input);
-	mmap_fclose(thefile);
-
-	/* free memory */
-	my_free(error_message);
-	my_free(input);
-	my_free(variable);
-	my_free(value);
-
 	/* make sure a log file has been specified */
 	strip(log_file);
-	if (!strcmp(log_file, "")) {
+	if (!log_file || !strcmp(log_file, "")) {
 		if (daemon_mode == FALSE)
 			printf("Error: Log file is not specified anywhere in main config file '%s'!\n", main_config_file);
 		return ERROR;
