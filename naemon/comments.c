@@ -65,7 +65,7 @@ int add_new_host_comment(int entry_type, char *host_name, time_t entry_time, cha
 	int result = OK;
 
 	/* find the next valid comment id */
-	while (find_host_comment(next_comment_id) != NULL)
+	while (find_comment(next_comment_id, HOST_COMMENT | SERVICE_COMMENT) != NULL)
 		next_comment_id++;
 
 	/* add comment to list in memory */
@@ -92,7 +92,7 @@ int add_new_host_comment(int entry_type, char *host_name, time_t entry_time, cha
 int add_new_service_comment(int entry_type, char *host_name, char *svc_description, time_t entry_time, char *author_name, char *comment_data, int persistent, int source, int expires, time_t expire_time, unsigned long *comment_id)
 {
 	/* find the next valid comment id */
-	while (find_service_comment(next_comment_id) != NULL)
+	while (find_comment(next_comment_id, HOST_COMMENT | SERVICE_COMMENT) != NULL)
 		next_comment_id++;
 
 	/* add comment to list in memory */
@@ -650,7 +650,7 @@ comment *find_comment(unsigned long comment_id, int comment_type)
 	comment *temp_comment = NULL;
 
 	for (temp_comment = comment_list; temp_comment != NULL; temp_comment = temp_comment->next) {
-		if (temp_comment->comment_id == comment_id && temp_comment->comment_type == comment_type)
+		if (temp_comment->comment_id == comment_id && (temp_comment->comment_type & comment_type))
 			return temp_comment;
 	}
 
