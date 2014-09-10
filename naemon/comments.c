@@ -71,6 +71,9 @@ int add_new_host_comment(int entry_type, char *host_name, time_t entry_time, cha
 	/* add comment to list in memory */
 	add_host_comment(entry_type, host_name, entry_time, author_name, comment_data, next_comment_id, persistent, expires, expire_time, source);
 
+	if (comment_id != NULL)
+		*comment_id = next_comment_id;
+
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
 	broker_comment_data(NEBTYPE_COMMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, HOST_COMMENT, entry_type, host_name, NULL, entry_time, author_name, comment_data, persistent, source, expires, expire_time, next_comment_id, NULL);
