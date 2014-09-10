@@ -22,6 +22,8 @@ extern char *temp_path;
 extern char *check_result_path;
 extern char *lock_file;
 extern char *object_precache_file;
+extern objectlist *objcfg_files;
+extern objectlist *objcfg_dirs;
 
 extern unsigned int nofile_limit, nproc_limit, max_apps;
 
