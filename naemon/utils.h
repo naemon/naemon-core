@@ -79,8 +79,8 @@ int dbuf_free(dbuf *);
 int dbuf_strcat(dbuf *, const char *);
 int set_environment_var(char *, char *, int);           /* sets/clears and environment variable */
 
-char *get_program_version(void);
-char *get_program_modification_date(void);
+const char *get_program_version(void);
+const char *get_program_modification_date(void);
 
 void cleanup(void);                                  	/* cleanup after ourselves (before quitting or restarting) */
 

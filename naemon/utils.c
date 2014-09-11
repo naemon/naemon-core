@@ -2726,18 +2726,18 @@ int generate_check_stats(void)
 /******************************************************************/
 
 /* returns Naemon version */
-char *get_program_version(void)
+const char *get_program_version(void)
 {
 
-	return (char *)VERSION;
+	return (const char *)VERSION;
 }
 
 
 /* returns Naemon modification date */
-char *get_program_modification_date(void)
+const char *get_program_modification_date(void)
 {
 
-	return (char *)PROGRAM_MODIFICATION_DATE;
+	return (const char *)PROGRAM_MODIFICATION_DATE;
 }
 
 
