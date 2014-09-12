@@ -1070,22 +1070,27 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			struct dirent *dirfile = NULL;
 
 			dirp = opendir(include_dir);
-			while ((dirfile = readdir(dirp)) != NULL) {
-				char file[MAX_FILENAME_LENGTH];
+			if (!dirp) {
+				logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Cannot open main configuration file '%s' for reading!", main_config_file);
+				error |= ERROR;
+			} else {
+				while ((dirfile = readdir(dirp)) != NULL) {
+					char file[MAX_FILENAME_LENGTH];
 
-				/* skip hidden files and directories, current and parent dir, and non-config files */
-				if (dirfile->d_name[0] == '.')
-					continue;
-				if (strcmp(dirfile->d_name + strlen(dirfile->d_name) - 4, ".cfg"))
-					continue;
+					/* skip hidden files and directories, current and parent dir, and non-config files */
+					if (dirfile->d_name[0] == '.')
+						continue;
+					if (strcmp(dirfile->d_name + strlen(dirfile->d_name) - 4, ".cfg"))
+						continue;
 
-				/* create /path/to/file */
-				snprintf(file, sizeof(file), "%s/%s", include_dir, dirfile->d_name);
-				file[sizeof(file) - 1] = '\x0';
+					/* create /path/to/file */
+					snprintf(file, sizeof(file), "%s/%s", include_dir, dirfile->d_name);
+					file[sizeof(file) - 1] = '\x0';
 
-				error |= read_config_file(file, mac);
+					error |= read_config_file(file, mac);
+				}
+				closedir(dirp);
 			}
-			closedir(dirp);
 			my_free(include_dir);
 		}
 		else if (strstr(input, "object_cache_file=") == input) {
