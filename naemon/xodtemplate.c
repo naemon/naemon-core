@@ -3496,6 +3496,9 @@ static int xodtemplate_inherit_object_properties(void)
 		/* services inherit notification period from host if not already specified */
 		xod_inherit_str(temp_service, temp_host, notification_period);
 
+		/* services inherit check period from host if not already specified */
+		xod_inherit_str(temp_service, temp_host, check_period);
+
 		/* if notification options are missing, assume all */
 		if (temp_service->have_notification_options == FALSE) {
 			temp_service->notification_options = OPT_ALL;
