@@ -42,6 +42,8 @@ void sighandler(int);                                	/* handles signals */
 void my_system_sighandler(int);				/* handles timeouts when executing commands via my_system() */
 /* FIXME: unused? */
 char *get_next_string_from_buf(char *buf, int *start_index, int bufsize);
+int compare_strings(char *, char *);                    /* compares two strings for equality */
+/* FIXME: unused? */
 char *escape_newlines(char *);
 int contains_illegal_object_chars(char *);		/* tests whether or not an object name (host, service, etc.) contains illegal characters */
 int my_rename(char *, char *);                          /* renames a file - works across filesystems */

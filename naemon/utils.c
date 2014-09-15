@@ -2292,6 +2292,15 @@ char *escape_newlines(char *rawbuf)
 }
 
 
+/* compares strings */
+int compare_strings(char *val1a, char *val2a)
+{
+
+	/* use the compare_hashdata() function */
+	return compare_hashdata(val1a, NULL, val2a, NULL);
+}
+
+
 /******************************************************************/
 /************************* FILE FUNCTIONS *************************/
 /******************************************************************/
