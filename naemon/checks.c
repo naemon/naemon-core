@@ -941,7 +941,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	}
 
 	/* if we're stalking this state type and state was not already logged AND the plugin output changed since last check, log it now.. */
-	if (temp_service->state_type == HARD_STATE && state_change == FALSE && !alert_recorded && (compare_strings(old_plugin_output, temp_service->plugin_output) || compare_strings(old_long_plugin_output, temp_service->long_plugin_output))) {
+	if (temp_service->state_type == HARD_STATE && state_change == FALSE && !alert_recorded && (strcmp(old_plugin_output, temp_service->plugin_output) || strcmp(old_long_plugin_output, temp_service->long_plugin_output))) {
 		if (should_stalk(temp_service)) {
 			log_service_event(temp_service);
 			alert_recorded = NEBATTR_CHECK_ALERT;
@@ -2545,7 +2545,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 	/******************** POST-PROCESSING STUFF *********************/
 
 	/* if the plugin output differs from previous check and no state change, log the current state/output if state stalking is enabled */
-	if (hst->last_state == hst->current_state && should_stalk(hst) && (compare_strings(old_plugin_output, hst->plugin_output) || compare_strings(old_long_plugin_output, hst->long_plugin_output))) {
+	if (hst->last_state == hst->current_state && should_stalk(hst) && (strcmp(old_plugin_output, hst->plugin_output) || strcmp(old_long_plugin_output, hst->long_plugin_output))) {
 		log_host_event(hst);
 		*alert_recorded = NEBATTR_CHECK_ALERT;
 	}

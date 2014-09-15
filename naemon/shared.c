@@ -442,8 +442,6 @@ int compare_hashdata(const char *val1a, const char *val1b, const char *val2a,
 {
 	int result = 0;
 
-	/* NOTE: If hash calculation changes, update the compare_strings() function! */
-
 	/* check first name */
 	if (val1a == NULL && val2a == NULL)
 		result = 0;
