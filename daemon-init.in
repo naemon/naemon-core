@@ -71,15 +71,20 @@ check_config() {
         echo "OK - Configuration check verified" > @TMPDIR@/naemon.configtest
         chmod 0644 @TMPDIR@/naemon.configtest
         /bin/rm "$TMPFILE"
-    return 0
-    else
+        return 0
+    else if test "$WARN" = "0"; then
         # We'll write out the errors to a file we can have a
         # script watching for
         echo "WARNING: Errors in config files - see log for details: $TMPFILE" > @TMPDIR@/naemon.configtest
-        egrep -i "(^warning|^error)" "$TMPFILE" >> @TMPDIR@/naemon.configtest
+        grep -i ^error "$TMPFILE" >> @TMPDIR@/naemon.configtest
         chmod 0644 @TMPDIR@/naemon.configtest
         cat "$TMPFILE"
-    exit 8
+        exit 8
+    else
+        # Warnings don't need to be saved, so just print them and
+        # be done with it.
+        echo "WARNING: Warnings in config files - see log for details: $TMPFILE" > @TMPDIR@/naemon.configtest
+        cat "$TMPFILE"
     fi
 }
 
