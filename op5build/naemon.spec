@@ -138,6 +138,10 @@ service naemon start || :
 # I don't want to support this:
 %exclude %_bindir/shadownaemon
 %exclude %_mandir/man8/shadownaemon*
+# https://fedoraproject.org/wiki/Packaging:Guidelines hates on static
+# libraries, so I do, too
+%exclude %_libdir/libnaemon.a
+%exclude %_libdir/libnaemon.la
 
 %files devel
 %defattr(-,root,root)
