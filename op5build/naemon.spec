@@ -124,7 +124,7 @@ service naemon start || :
 %doc README LEGAL UPGRADING
 %_sysconfdir/op5kad/conf.d/naemon.kad
 %_sysconfdir/security/limits.d/*.conf
-%_libdir/libnaemon.*
+%_libdir/libnaemon.so.*
 %_bindir/naemon
 %_bindir/naemonstats
 %_bindir/oconfsplit
@@ -143,6 +143,7 @@ service naemon start || :
 %defattr(-,root,root)
 %_includedir/naemon
 %_libdir/pkgconfig/naemon.pc
+%_libdir/libnaemon.so
 
 %clean
 rm -rf %buildroot
