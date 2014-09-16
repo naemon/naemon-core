@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT([naemon], [0.8.0], [naemon-dev@monitoring-lists.org])
+AC_INIT([naemon], m4_esyscmd([op5build/generate_version_number.sh]), [dev@op5.org])
 AC_CONFIG_SRCDIR([naemon/naemon.c])
 AM_INIT_AUTOMAKE
 
