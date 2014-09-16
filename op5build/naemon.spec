@@ -77,7 +77,7 @@ develop eventbroker modules and Nagios addons.
 %build
 echo %{version} > .version_number
 autoreconf -i -s
-%configure --with-naemon-user=monitor --with-naemon-group=monitor --with-pkgconfdir=/opt/monitor/etc --with-logdir=/opt/monitor/var
+%configure --with-naemon-user=%daemon_user --with-naemon-group=%daemon_group --with-pkgconfdir=/opt/monitor/etc --with-logdir=/opt/monitor/var
 
 # autofix modification time and program version with each package
 sed -i \
