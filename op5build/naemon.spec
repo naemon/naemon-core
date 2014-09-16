@@ -32,6 +32,8 @@ Provides: monitor = 6
 Obsoletes: op5-nagios <= 0:4
 Provides: op5-nagios = 1:%version
 Provides: naemon = %version
+Obsoletes: monitor-command < 0.0.4
+Provides: monitor-command = 0.0.4
 BuildRequires: autoconf, automake, libtool
 BuildRequires: gperf, help2man
 BuildRequires: perl(Test::Simple)
