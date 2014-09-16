@@ -27,9 +27,9 @@ Source0: %name-%version.tar.gz
 Requires: sed >= 4.0.9
 Requires: monitor-config
 BuildRoot: %{_tmppath}/%{name}-%{version}
-Obsoletes: monitor <= 4.99.0
-Provides: monitor = 6
-Obsoletes: op5-nagios <= 0:4
+Obsoletes: monitor <= 6
+Provides: monitor = 7
+Obsoletes: op5-nagios <= 0:4.1
 Provides: op5-nagios = 1:%version
 Provides: naemon = %version
 Obsoletes: monitor-command < 0.0.4
