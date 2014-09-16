@@ -1,20 +1,9 @@
 %if 0%{?suse_version}
 %define daemon_group www
-%define apache_service apache2
-%define htmlroot /srv/www/htdocs
-%define httpconfdir apache2/conf.d
 %else
 %define daemon_group apache
-%define apache_service httpd
-%define htmlroot /var/www/html
-%define httpconfdir httpd/conf.d
 %endif
-
 %define daemon_user monitor
-%define daemon_shell /bin/bash
-%define daemon_uid 299
-%define daemon_group2 sysmon
-%define daemon_gid 48
 
 Summary: Core scheduling and checking engine for op5 Monitor
 Name: op5-naemon
