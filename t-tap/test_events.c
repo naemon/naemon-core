@@ -16,7 +16,6 @@
 *
 *****************************************************************************/
 
-#define NSCORE 1
 #include "config.h"
 #include "common.h"
 #include "downtime.h"

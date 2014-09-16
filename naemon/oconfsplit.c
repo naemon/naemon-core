@@ -5,10 +5,6 @@
  * so that all objects are cached after the objects they refer to.
  */
 
-#ifndef NSCORE
-# define NSCORE 1
-#endif
-
 #include "config.h"
 #include "common.h"
 #include "configuration.h"
