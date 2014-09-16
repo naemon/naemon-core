@@ -1071,7 +1071,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 
 			dirp = opendir(include_dir);
 			if (!dirp) {
-				logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Cannot open main configuration file '%s' for reading!", main_config_file);
+				logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Cannot open sub-configuration directory '%s' for reading!", include_dir);
 				error |= ERROR;
 			} else {
 				while ((dirfile = readdir(dirp)) != NULL) {
