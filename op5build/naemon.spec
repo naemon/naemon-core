@@ -53,6 +53,9 @@ core scheduling, checking and notification logic.
 %package devel
 Summary: Header files and static library stuff for developers
 Group: op5/Devel
+# Automatic on rhel, because libnaemon.so in this package symlinks to
+# libnaemon.so.0.0.0. But sles doesn't figure that out.
+Requires: op5-naemon = %version
 
 %description devel
 This package contains header files and static libraries used to
