@@ -346,7 +346,13 @@ static int qh_command(int sd, char *buf, unsigned int len)
 		* (space++) = 0;
 	if (space) {
 		if (!strcmp(buf, "run")) {
-			return process_external_command1(space) == OK ? 200 : 400;
+			int res = process_external_command1(space);
+			if (res == OK) {
+				return 200;
+			} else {
+				nsock_printf_nul(sd, "400: %s", cmd_error_strerror(res));
+				return 0;
+			}
 		}
 	}
 
