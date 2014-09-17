@@ -109,7 +109,7 @@ chkconfig --add naemon
 service naemon start || :
 
 %files
-%defattr(-,%daemon_user,%daemon_group)
+%defattr(-,root,root)
 %_sysconfdir/init.d/naemon
 %_sysconfdir/init.d/monitor
 %_sysconfdir/logrotate.d/naemon
@@ -123,7 +123,7 @@ service naemon start || :
 %_mandir/man8/naemon*
 %_mandir/man8/oconfsplit*
 /opt/monitor/bin/monitor
-%dir %_localstatedir/cache/naemon/
+%attr(-,%daemon_user,%daemon_group) %dir %_localstatedir/cache/naemon/
 
 # these are replaced by monitor-config:
 %exclude /opt/monitor/etc
