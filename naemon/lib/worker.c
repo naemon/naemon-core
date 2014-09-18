@@ -28,7 +28,6 @@ static iobroker_set *iobs;
 static squeue_t *sq;
 static unsigned int started, running_jobs, timeouts, reapable;
 static int master_sd;
-static int parent_pid;
 static fanout_table *ptab;
 
 static void exit_worker(int code, const char *msg)
@@ -683,7 +682,6 @@ void enter_worker(int sd, int (*cb)(child_process *))
 {
 	/* created with socketpair(), usually */
 	master_sd = sd;
-	parent_pid = getppid();
 	if (!chdir("/")) {
 		// now what?
 	}
