@@ -681,15 +681,11 @@ int set_socket_options(int sd, int bufsize)
 
 void enter_worker(int sd, int (*cb)(child_process *))
 {
-	struct passwd *pwd;
 	/* created with socketpair(), usually */
 	master_sd = sd;
 	parent_pid = getppid();
-	pwd = getpwuid(getuid());
-	if (!pwd || !chdir(pwd->pw_dir)) {
-		if (!chdir("/")) {
-			// now what?
-		}
+	if (!chdir("/")) {
+		// now what?
 	}
 
 	ptab = fanout_create(4096);

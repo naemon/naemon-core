@@ -1642,14 +1642,8 @@ static long long check_file_size(char *path, unsigned long fudge,
 /************************ DAEMON FUNCTIONS ************************/
 /******************************************************************/
 static void set_working_directory(void) {
-	char *working_dir = NULL;
-	/* change working directory. scuttle home if we're dumping core */
-	working_dir = getenv("HOME");
-	if (daemon_dumps_core != TRUE || working_dir == NULL)
-		working_dir = "/";
-
-	if (chdir(working_dir) != 0) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Aborting. Failed to set daemon working directory ('%s'): %s\n", working_dir, strerror(errno));
+	if (chdir("/") != 0) {
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Aborting. Failed to set daemon working directory (/): %s\n", strerror(errno));
 		cleanup();
 		exit(ERROR);
 	}
