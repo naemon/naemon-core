@@ -103,6 +103,15 @@ if [ $1 -eq 0 ]; then
 	service naemon stop || :
 fi
 
+%pre
+%if 0%{?suse_version}
+if chkconfig --check monitor; then
+%else
+if chkconfig --list monitor &>/dev/null; then
+%endif
+	chkconfig --del monitor
+fi
+
 %post
 chkconfig --add naemon
 
