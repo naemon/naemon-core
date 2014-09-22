@@ -2823,6 +2823,7 @@ void cleanup(void)
 void free_memory(nagios_macros *mac)
 {
 	int i;
+	objectlist *entry, *next;
 
 	/* free all allocated memory for the object definitions */
 	free_object_data();
@@ -2859,6 +2860,19 @@ void free_memory(nagios_macros *mac)
 	clear_volatile_macros_r(mac);
 
 	free_macrox_names();
+
+	for (entry = objcfg_files; entry; entry = next) {
+		next = entry->next;
+		my_free(entry->object_ptr);
+		my_free(entry);
+	}
+	objcfg_files = NULL;
+	for (entry = objcfg_dirs; entry; entry = next) {
+		next = entry->next;
+		my_free(entry->object_ptr);
+		my_free(entry);
+	}
+	objcfg_dirs = NULL;
 
 	/* free illegal char strings */
 	my_free(illegal_object_chars);
