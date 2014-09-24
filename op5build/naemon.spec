@@ -98,13 +98,6 @@ mkdir -p %buildroot/opt/monitor/bin
 ln -s ../../../%_bindir/naemon %buildroot/opt/monitor/bin/monitor
 ln -s naemon %buildroot/etc/init.d/monitor
 
-if grep -q 'broker_module.*command\.so' /opt/monitor/etc/naemon.cfg; then
-	sed --follow-symlinks -i \
-		-e '/broker_module.*command\.so/d' \
-		/opt/monitor/etc/naemon.cfg
-fi
-
-
 %preun
 if [ $1 -eq 0 ]; then
 	service naemon stop || :
@@ -120,6 +113,12 @@ if chkconfig --list monitor &>/dev/null; then
 fi
 
 %post
+if grep -q 'broker_module.*command\.so' /opt/monitor/etc/naemon.cfg; then
+	sed --follow-symlinks -i \
+		-e '/broker_module.*command\.so/d' \
+		/opt/monitor/etc/naemon.cfg
+fi
+
 chkconfig --add naemon
 
 service naemon start || :
