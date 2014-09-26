@@ -81,9 +81,9 @@ START_TEST(main_include)
 	// leave files without .cfg suffix alone:
 	ck_assert_int_eq(DEFAULT_HOST_CHECK_TIMEOUT, host_check_timeout);
 	ck_assert_int_eq(1338, notification_timeout);
-	ck_assert(NULL != objcfg_files);
+	ck_assert_ptr_ne(NULL, objcfg_files);
 	ck_assert_str_eq(file_cfg, objcfg_files->object_ptr);
-	ck_assert(NULL != objcfg_dirs);
+	ck_assert_ptr_ne(NULL, objcfg_dirs);
 	ck_assert_str_eq(dir_cfg, objcfg_dirs->object_ptr);
 	my_free(file_cfg);
 	my_free(dir_cfg);
