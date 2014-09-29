@@ -2883,6 +2883,7 @@ void free_memory(nagios_macros *mac)
 	my_free(naemon_group);
 
 	/* free file/path variables */
+	my_free(status_file);
 	my_free(debug_file);
 	my_free(log_file);
 	mac->x[MACRO_LOGFILE] = NULL; /* assigned from 'log_file' */
