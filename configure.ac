@@ -4,7 +4,7 @@
 AC_PREREQ([2.59])
 AC_INIT([naemon], [0.8.0], [naemon-dev@monitoring-lists.org])
 AC_CONFIG_SRCDIR([naemon/naemon.c])
-AM_INIT_AUTOMAKE([subdir-objects])
+AM_INIT_AUTOMAKE
 
 AC_CONFIG_HEADERS([config.h naemon/lib/snprintf.h])
 
