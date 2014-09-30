@@ -213,7 +213,6 @@ int main(int argc, char **argv)
 		{"license", no_argument, 0, 'V'},
 		{"verify-config", no_argument, 0, 'v'},
 		{"daemon", no_argument, 0, 'd'},
-		{"test-scheduling", no_argument, 0, 's'},
 		{"precache-objects", no_argument, 0, 'p'},
 		{"use-precached-objects", no_argument, 0, 'u'},
 		{"enable-timing-point", no_argument, 0, 'T'},
@@ -253,7 +252,7 @@ int main(int argc, char **argv)
 			break;
 
 		case 's': /* scheduling check */
-			test_scheduling = TRUE;
+			printf("Warning: -s is deprecated and will be removed\n");
 			break;
 
 		case 'd': /* daemon mode */
@@ -328,8 +327,6 @@ int main(int argc, char **argv)
 		printf("Options:\n");
 		printf("\n");
 		printf("  -v, --verify-config          Verify all configuration data (-v -v for more info)\n");
-		printf("  -s, --test-scheduling        Shows projected/recommended check scheduling and other\n");
-		printf("                               diagnostic info based on the current configuration files.\n");
 		printf("  -T, --enable-timing-point    Enable timed commentary on initialization\n");
 		printf("  -x, --dont-verify-paths      Deprecated (Don't check for circular object paths)\n");
 		printf("  -p, --precache-objects       Precache object configuration\n");
@@ -368,7 +365,7 @@ int main(int argc, char **argv)
 	 * let's go to town. We'll be noisy if we're verifying config
 	 * or running scheduling tests.
 	 */
-	if (verify_config || test_scheduling || precache_objects) {
+	if (verify_config || precache_objects) {
 		reset_variables();
 		/*
 		 * if we don't beef up our resource limits as much as
@@ -452,23 +449,6 @@ int main(int argc, char **argv)
 
 		if (verify_config) {
 			printf("\nThings look okay - No serious problems were detected during the pre-flight check\n");
-		}
-
-		/* scheduling tests need a bit more than config verifications */
-		if (test_scheduling == TRUE) {
-
-			/* we'll need the event queue here so we can time insertions */
-			init_event_queue();
-			timing_point("Done initializing event queue\n");
-
-			/* read initial service and host state information */
-			initialize_retention_data(config_file);
-			read_initial_state_information();
-			timing_point("Retention data and initial state parsed\n");
-
-			/* initialize the event timing loop */
-			init_timing_loop();
-			timing_point("Timing loop initialized\n");
 		}
 
 		if (precache_objects) {

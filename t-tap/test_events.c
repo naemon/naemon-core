@@ -27,7 +27,6 @@
 #include "tap.h"
 
 char *config_file = "etc/nagios.cfg";
-int      test_scheduling;
 
 time_t   program_start;
 time_t   event_start;

@@ -1275,29 +1275,18 @@ int pre_flight_check(void)
 	char *buf = NULL;
 	int warnings = 0;
 	int errors = 0;
-	struct timeval tv[4];
-	double runtime[4];
 	int temp_path_fd = -1;
 
-
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[0], NULL);
 
 	/********************************************/
 	/* check object relationships               */
 	/********************************************/
 	pre_flight_object_check(&warnings, &errors);
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[1], NULL);
-
 
 	/********************************************/
 	/* check for circular paths between hosts   */
 	/********************************************/
 	pre_flight_circular_check(&warnings, &errors);
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[2], NULL);
-
 
 	/********************************************/
 	/* check global event handler commands...   */
@@ -1384,28 +1373,6 @@ int pre_flight_check(void)
 		printf("\n");
 		printf("Total Warnings: %d\n", warnings);
 		printf("Total Errors:   %d\n", errors);
-	}
-
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[3], NULL);
-
-	if (test_scheduling == TRUE) {
-
-		runtime[0] = tv_delta_f(&tv[0], &tv[1]);
-		runtime[1] = tv_delta_f(&tv[1], &tv[2]);
-		runtime[2] = (double)((double)(tv[3].tv_sec - tv[2].tv_sec) + (double)((tv[3].tv_usec - tv[2].tv_usec) / 1000.0) / 1000.0);
-		runtime[3] = runtime[0] + runtime[1] + runtime[2];
-
-		printf("Timing information on configuration verification is listed below.\n\n");
-
-		printf("CONFIG VERIFICATION TIMES\n");
-		printf("----------------------------------\n");
-		printf("Object Relationships: %.6lf sec\n", runtime[0]);
-		printf("Circular Paths:       %.6lf sec\n", runtime[1]);
-		printf("Misc:                 %.6lf sec\n", runtime[2]);
-		printf("                      ============\n");
-		printf("TOTAL:                %.6lf sec\n", runtime[3]);
-		printf("\n\n");
 	}
 
 	return (errors > 0) ? ERROR : OK;

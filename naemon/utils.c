@@ -136,7 +136,6 @@ unsigned long next_comment_id = 0L;
 unsigned long next_notification_id = 0L;
 
 int verify_config = FALSE;
-int test_scheduling = FALSE;
 int precache_objects = FALSE;
 int use_precached_objects = FALSE;
 
@@ -2801,7 +2800,7 @@ void cleanup(void)
 
 #ifdef USE_EVENT_BROKER
 	/* unload modules */
-	if (test_scheduling == FALSE && verify_config == FALSE) {
+	if (verify_config == FALSE) {
 		neb_free_callback_list();
 		neb_unload_all_modules(NEBMODULE_FORCE_UNLOAD, (sigshutdown == TRUE) ? NEBMODULE_NEB_SHUTDOWN : NEBMODULE_NEB_RESTART);
 		neb_free_module_list();

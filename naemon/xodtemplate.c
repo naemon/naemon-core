@@ -9117,8 +9117,6 @@ static int xodtemplate_process_config_dir(char *dir_name, int options)
 /* process all config files - both core and CGIs pass in name of main config file */
 int xodtemplate_read_config_data(const char *main_config_file, int options)
 {
-	double runtime[11];
-	struct timeval tv[12];
 	int result = OK;
 
 
@@ -9157,9 +9155,6 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 	/* are the objects we're reading already pre-sorted? */
 	presorted_objects = (use_precached_objects == TRUE) ? TRUE : FALSE;
 
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[0], NULL);
-
 	/* only process the precached object file as long as we're not regenerating it and we're not verifying the config */
 	if (use_precached_objects == TRUE)
 		result = xodtemplate_process_config_file(object_precache_file, options);
@@ -9175,9 +9170,6 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 		}
 	}
 
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[1], NULL);
-
 	timing_point("Done parsing config files\n");
 
 	/* only perform intensive operations if we're not using the precached object file */
@@ -9190,9 +9182,6 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 
 		/* these are no longer needed */
 		xodtemplate_free_template_trees();
-
-		if (test_scheduling == TRUE)
-			gettimeofday(&tv[2], NULL);
 
 		/* cleanup some additive inheritance stuff... */
 		xodtemplate_clean_additive_strings();
@@ -9208,21 +9197,18 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 
 	if (result == OK)
 		result = xodtemplate_recombobulate_contactgroups();
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[3], NULL);
+
 	timing_point("Done recombobulating contactgroups\n");
 
 	if (result == OK)
 		result = xodtemplate_recombobulate_hostgroups();
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[4], NULL);
+
 	timing_point("Done recombobulating hostgroups\n");
 
 	if (use_precached_objects == FALSE) {
 		if (result == OK)
 			xodtemplate_duplicate_services();
-		if (test_scheduling == TRUE)
-			gettimeofday(&tv[5], NULL);
+
 		timing_point("Created %u services (dupes possible)\n", xodcount.services);
 	}
 
@@ -9235,87 +9221,25 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 
 	if (result == OK)
 		result = xodtemplate_recombobulate_servicegroups();
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[6], NULL);
+
 	timing_point("Done recombobulating servicegroups\n");
 
 	if (use_precached_objects == FALSE) {
 		if (result == OK)
 			result = xodtemplate_duplicate_objects();
-		if (test_scheduling == TRUE)
-			gettimeofday(&tv[7], NULL);
 
 		/* NOTE: some missing defaults (notification options, etc.) are also applied here */
 		if (result == OK)
 			result = xodtemplate_inherit_object_properties();
 		timing_point("Done propagating inherited object properties\n");
-		if (test_scheduling == TRUE)
-			gettimeofday(&tv[8], NULL);
 	}
-
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[9], NULL);
-
 
 	/* register objects */
 	if (result == OK)
 		result = xodtemplate_register_objects();
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[10], NULL);
 
 	/* cleanup */
 	xodtemplate_free_memory();
-	if (test_scheduling == TRUE) {
-		gettimeofday(&tv[11], NULL);
-
-		runtime[0] = (double)((double)(tv[1].tv_sec - tv[0].tv_sec) + (double)((tv[1].tv_usec - tv[0].tv_usec) / 1000.0) / 1000.0);
-		if (use_precached_objects == FALSE) {
-			runtime[1] = (double)((double)(tv[2].tv_sec - tv[1].tv_sec) + (double)((tv[2].tv_usec - tv[1].tv_usec) / 1000.0) / 1000.0);
-			runtime[2] = (double)((double)(tv[3].tv_sec - tv[2].tv_sec) + (double)((tv[3].tv_usec - tv[2].tv_usec) / 1000.0) / 1000.0);
-			runtime[3] = (double)((double)(tv[4].tv_sec - tv[3].tv_sec) + (double)((tv[4].tv_usec - tv[3].tv_usec) / 1000.0) / 1000.0);
-			runtime[4] = (double)((double)(tv[5].tv_sec - tv[4].tv_sec) + (double)((tv[5].tv_usec - tv[4].tv_usec) / 1000.0) / 1000.0);
-			runtime[5] = (double)((double)(tv[6].tv_sec - tv[5].tv_sec) + (double)((tv[6].tv_usec - tv[5].tv_usec) / 1000.0) / 1000.0);
-			runtime[6] = (double)((double)(tv[7].tv_sec - tv[6].tv_sec) + (double)((tv[7].tv_usec - tv[6].tv_usec) / 1000.0) / 1000.0);
-			runtime[7] = (double)((double)(tv[8].tv_sec - tv[7].tv_sec) + (double)((tv[8].tv_usec - tv[7].tv_usec) / 1000.0) / 1000.0);
-			runtime[8] = (double)((double)(tv[10].tv_sec - tv[9].tv_sec) + (double)((tv[10].tv_usec - tv[9].tv_usec) / 1000.0) / 1000.0);
-		} else {
-			runtime[1] = 0.0;
-			runtime[2] = 0.0;
-			runtime[3] = 0.0;
-			runtime[4] = 0.0;
-			runtime[5] = 0.0;
-			runtime[6] = 0.0;
-			runtime[7] = 0.0;
-			runtime[8] = (double)((double)(tv[10].tv_sec - tv[1].tv_sec) + (double)((tv[10].tv_usec - tv[1].tv_usec) / 1000.0) / 1000.0);
-		}
-		runtime[9] = (double)((double)(tv[11].tv_sec - tv[10].tv_sec) + (double)((tv[11].tv_usec - tv[10].tv_usec) / 1000.0) / 1000.0);
-		runtime[10] = (double)((double)(tv[11].tv_sec - tv[0].tv_sec) + (double)((tv[11].tv_usec - tv[0].tv_usec) / 1000.0) / 1000.0);
-
-		printf("Timing information on object configuration processing is listed\n");
-		printf("below.  You can use this information to see if precaching your\n");
-		printf("object configuration would be useful.\n\n");
-
-		printf("Object Config Source: %s\n\n", (use_precached_objects == TRUE) ? "Pre-cached config file" : "Config files (uncached)");
-
-		printf("OBJECT CONFIG PROCESSING TIMES      (* = Potential for precache savings with -u option)\n");
-		printf("----------------------------------\n");
-		printf("Read:                 %.6lf sec\n", runtime[0]);
-		printf("Resolve:              %.6lf sec  *\n", runtime[1]);
-		printf("Recomb Contactgroups: %.6lf sec  *\n", runtime[2]);
-		printf("Recomb Hostgroups:    %.6lf sec  *\n", runtime[3]);
-		printf("Dup Services:         %.6lf sec  *\n", runtime[4]);
-		printf("Recomb Servicegroups: %.6lf sec  *\n", runtime[5]);
-		printf("Duplicate:            %.6lf sec  *\n", runtime[6]);
-		printf("Inherit:              %.6lf sec  *\n", runtime[7]);
-		printf("Register:             %.6lf sec\n", runtime[8]);
-		printf("Free:                 %.6lf sec\n", runtime[9]);
-		printf("                      ============\n");
-		printf("TOTAL:                %.6lf sec  ", runtime[10]);
-		if (use_precached_objects == FALSE)
-			printf("* = %.6lf sec (%.2f%%) estimated savings", (runtime[10] - runtime[9] - runtime[8] - runtime[0]) / 4, ((runtime[10] - runtime[9] - runtime[8] - runtime[0]) / runtime[10]) * 25.0);
-		printf("\n");
-		printf("\n\n");
-	}
 
 	bitmap_destroy(contact_map);
 	bitmap_destroy(host_map);

@@ -65,8 +65,6 @@ void init_timing_loop(void)
 	host *temp_host = NULL;
 	service *temp_service = NULL;
 	time_t current_time = 0L;
-	struct timeval tv[9];
-	double runtime[9];
 	struct timeval now;
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "init_timing_loop() start\n");
@@ -79,9 +77,6 @@ void init_timing_loop(void)
 
 	/******** GET BASIC HOST/SERVICE INFO  ********/
 
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[0], NULL);
-
 	/* get info on service checks to be scheduled */
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
 
@@ -93,9 +88,6 @@ void init_timing_loop(void)
 		}
 	}
 
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[1], NULL);
-
 	/* get info on host checks to be scheduled */
 	for (temp_host = host_list; temp_host; temp_host = temp_host->next) {
 		/* host has no check interval */
@@ -105,12 +97,6 @@ void init_timing_loop(void)
 			continue;
 		}
 	}
-
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[2], NULL);
-
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[3], NULL);
 
 	/******** SCHEDULE SERVICE CHECKS  ********/
 
@@ -127,9 +113,6 @@ void init_timing_loop(void)
 
 		log_debug_info(DEBUGL_EVENTS, 2, "Check Time: %lu --> %s", (unsigned long)temp_service->next_check, ctime(&temp_service->next_check));
 	}
-
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[4], NULL);
 
 	/* add scheduled service checks to event queue */
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
@@ -148,13 +131,6 @@ void init_timing_loop(void)
 		/* create a new service check event */
 		temp_service->next_check_event = schedule_new_event(EVENT_SERVICE_CHECK, FALSE, temp_service->next_check, FALSE, 0, NULL, TRUE, (void *)temp_service, NULL, temp_service->check_options);
 	}
-
-
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[5], NULL);
-
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[6], NULL);
 
 
 	/******** SCHEDULE HOST CHECKS  ********/
@@ -176,9 +152,6 @@ void init_timing_loop(void)
 		log_debug_info(DEBUGL_EVENTS, 2, "Check Time: %lu --> %s", (unsigned long)temp_host->next_check, ctime(&temp_host->next_check));
 	}
 
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[7], NULL);
-
 	/* add scheduled host checks to event queue */
 	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
 
@@ -196,10 +169,6 @@ void init_timing_loop(void)
 		/* schedule a new host check event */
 		temp_host->next_check_event = schedule_new_event(EVENT_HOST_CHECK, FALSE, temp_host->next_check, FALSE, 0, NULL, TRUE, (void *)temp_host, NULL, temp_host->check_options);
 	}
-
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[8], NULL);
-
 
 	/******** SCHEDULE MISC EVENTS ********/
 
@@ -224,34 +193,6 @@ void init_timing_loop(void)
 	/* add a retention data save event if needed */
 	if (retain_state_information == TRUE && retention_update_interval > 0)
 		schedule_new_event(EVENT_RETENTION_SAVE, TRUE, current_time + (retention_update_interval * 60), TRUE, (retention_update_interval * 60), NULL, TRUE, NULL, NULL, 0);
-
-	if (test_scheduling == TRUE) {
-
-		runtime[0] = (double)((double)(tv[1].tv_sec - tv[0].tv_sec) + (double)((tv[1].tv_usec - tv[0].tv_usec) / 1000.0) / 1000.0);
-		runtime[1] = (double)((double)(tv[2].tv_sec - tv[1].tv_sec) + (double)((tv[2].tv_usec - tv[1].tv_usec) / 1000.0) / 1000.0);
-		runtime[2] = (double)((double)(tv[3].tv_sec - tv[2].tv_sec) + (double)((tv[3].tv_usec - tv[2].tv_usec) / 1000.0) / 1000.0);
-		runtime[3] = (double)((double)(tv[4].tv_sec - tv[3].tv_sec) + (double)((tv[4].tv_usec - tv[3].tv_usec) / 1000.0) / 1000.0);
-		runtime[4] = (double)((double)(tv[5].tv_sec - tv[4].tv_sec) + (double)((tv[5].tv_usec - tv[4].tv_usec) / 1000.0) / 1000.0);
-		runtime[5] = (double)((double)(tv[6].tv_sec - tv[5].tv_sec) + (double)((tv[6].tv_usec - tv[5].tv_usec) / 1000.0) / 1000.0);
-		runtime[6] = (double)((double)(tv[7].tv_sec - tv[6].tv_sec) + (double)((tv[7].tv_usec - tv[6].tv_usec) / 1000.0) / 1000.0);
-		runtime[7] = (double)((double)(tv[8].tv_sec - tv[7].tv_sec) + (double)((tv[8].tv_usec - tv[7].tv_usec) / 1000.0) / 1000.0);
-
-		runtime[8] = (double)((double)(tv[8].tv_sec - tv[0].tv_sec) + (double)((tv[8].tv_usec - tv[0].tv_usec) / 1000.0) / 1000.0);
-
-		printf("EVENT SCHEDULING TIMES\n");
-		printf("-------------------------------------\n");
-		printf("Get service info:        %.6lf sec\n", runtime[0]);
-		printf("Get host info info:      %.6lf sec\n", runtime[1]);
-		printf("Get service params:      %.6lf sec\n", runtime[2]);
-		printf("Schedule service times:  %.6lf sec\n", runtime[3]);
-		printf("Schedule service events: %.6lf sec\n", runtime[4]);
-		printf("Get host params:         %.6lf sec\n", runtime[5]);
-		printf("Schedule host times:     %.6lf sec\n", runtime[6]);
-		printf("Schedule host events:    %.6lf sec\n", runtime[7]);
-		printf("                         ============\n");
-		printf("TOTAL:                   %.6lf sec\n", runtime[8]);
-		printf("\n\n");
-	}
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "init_timing_loop() end\n");
 
