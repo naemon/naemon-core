@@ -213,8 +213,6 @@ unsigned long   max_debug_file_size = DEFAULT_MAX_DEBUG_FILE_SIZE;
 iobroker_set *nagios_iobs = NULL;
 squeue_t *nagios_squeue = NULL; /* our scheduling queue */
 
-sched_info scheduling_info;
-
 /* from GNU defines errno as a macro, since it's a per-thread variable */
 #ifndef errno
 extern int errno;

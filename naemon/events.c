@@ -79,14 +79,11 @@ void init_timing_loop(void)
 
 	/******** GET BASIC HOST/SERVICE INFO  ********/
 
-	memset(&scheduling_info, 0, sizeof(scheduling_info));
-
 	if (test_scheduling == TRUE)
 		gettimeofday(&tv[0], NULL);
 
 	/* get info on service checks to be scheduled */
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
-		scheduling_info.total_services++;
 
 		/* maybe we shouldn't schedule this check */
 		if (temp_service->check_interval == 0 || !temp_service->checks_enabled) {
@@ -94,8 +91,6 @@ void init_timing_loop(void)
 			temp_service->should_be_scheduled = FALSE;
 			continue;
 		}
-
-		scheduling_info.total_scheduled_services++;
 	}
 
 	if (test_scheduling == TRUE)
@@ -103,29 +98,16 @@ void init_timing_loop(void)
 
 	/* get info on host checks to be scheduled */
 	for (temp_host = host_list; temp_host; temp_host = temp_host->next) {
-		scheduling_info.total_hosts++;
-
 		/* host has no check interval */
 		if (temp_host->check_interval == 0 || !temp_host->checks_enabled) {
 			log_debug_info(DEBUGL_EVENTS, 1, "Host '%s' should not be scheduled.\n", temp_host->name);
 			temp_host->should_be_scheduled = FALSE;
 			continue;
 		}
-
-		scheduling_info.total_scheduled_hosts++;
 	}
 
 	if (test_scheduling == TRUE)
 		gettimeofday(&tv[2], NULL);
-
-	scheduling_info.average_services_per_host = (double)((double)scheduling_info.total_services / (double)scheduling_info.total_hosts);
-	scheduling_info.average_scheduled_services_per_host = (double)((double)scheduling_info.total_scheduled_services / (double)scheduling_info.total_hosts);
-
-	/* adjust the check interval total to correspond to the interval length */
-	scheduling_info.service_check_interval_total = (scheduling_info.service_check_interval_total * interval_length);
-
-	/* calculate the average check interval for services */
-	scheduling_info.average_service_check_interval = (double)((double)scheduling_info.service_check_interval_total / (double)scheduling_info.total_scheduled_services);
 
 	if (test_scheduling == TRUE)
 		gettimeofday(&tv[3], NULL);
@@ -142,11 +124,6 @@ void init_timing_loop(void)
 		}
 
 		temp_service->next_check = current_time + ranged_urand(0, check_window(temp_service));
-
-		if (scheduling_info.last_service_check < temp_service->next_check)
-			scheduling_info.last_service_check = temp_service->next_check;
-		if (!scheduling_info.first_service_check || scheduling_info.first_service_check > temp_service->next_check)
-			scheduling_info.first_service_check = temp_service->next_check;
 
 		log_debug_info(DEBUGL_EVENTS, 2, "Check Time: %lu --> %s", (unsigned long)temp_service->next_check, ctime(&temp_service->next_check));
 	}
@@ -197,10 +174,6 @@ void init_timing_loop(void)
 		temp_host->next_check = current_time + ranged_urand(0, check_window(temp_host));
 
 		log_debug_info(DEBUGL_EVENTS, 2, "Check Time: %lu --> %s", (unsigned long)temp_host->next_check, ctime(&temp_host->next_check));
-		if (temp_host->next_check > scheduling_info.last_host_check)
-			scheduling_info.last_host_check = temp_host->next_check;
-		if (!scheduling_info.first_host_check || scheduling_info.first_host_check > temp_host->next_check)
-			scheduling_info.first_host_check = temp_host->next_check;
 	}
 
 	if (test_scheduling == TRUE)
@@ -281,98 +254,6 @@ void init_timing_loop(void)
 	}
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "init_timing_loop() end\n");
-
-	return;
-}
-
-
-/* displays service check scheduling information */
-void display_scheduling_info(void)
-{
-	float minimum_concurrent_checks = 0.0;
-	int suggestions = 0;
-
-	printf("Projected scheduling information for host and service checks\n");
-	printf("is listed below.  This information assumes that you are going\n");
-	printf("to start running Nagios with your current config files.\n\n");
-
-	printf("HOST SCHEDULING INFORMATION\n");
-	printf("---------------------------\n");
-	printf("Total hosts:                     %d\n", scheduling_info.total_hosts);
-	printf("Total scheduled hosts:           %d\n", scheduling_info.total_scheduled_hosts);
-
-	printf("Host inter-check delay:          %.2f sec\n", scheduling_info.host_inter_check_delay);
-	printf("Max host check spread:           %d min\n", scheduling_info.max_host_check_spread);
-	printf("First scheduled check:           %s", (scheduling_info.total_scheduled_hosts == 0) ? "N/A\n" : ctime(&scheduling_info.first_host_check));
-	printf("Last scheduled check:            %s", (scheduling_info.total_scheduled_hosts == 0) ? "N/A\n" : ctime(&scheduling_info.last_host_check));
-	printf("\n\n");
-
-	printf("SERVICE SCHEDULING INFORMATION\n");
-	printf("-------------------------------\n");
-	printf("Total services:                     %d\n", scheduling_info.total_services);
-	printf("Total scheduled services:           %d\n", scheduling_info.total_scheduled_services);
-	printf("Service interleave factor:          %d\n", scheduling_info.service_interleave_factor);
-	printf("Max service check spread:           %d min\n", scheduling_info.max_service_check_spread);
-	printf("First scheduled check:              %s", ctime(&scheduling_info.first_service_check));
-	printf("Last scheduled check:               %s", ctime(&scheduling_info.last_service_check));
-	printf("\n\n");
-
-	/***** MINIMUM CONCURRENT CHECKS RECOMMENDATION *****/
-	minimum_concurrent_checks = ceil((((scheduling_info.total_scheduled_services / scheduling_info.average_service_check_interval)
-	                                   + (scheduling_info.total_scheduled_hosts / scheduling_info.average_host_check_interval))
-	                                  * 1.4 * scheduling_info.average_service_execution_time));
-
-	printf("CHECK PROCESSING INFORMATION\n");
-	printf("----------------------------\n");
-	printf("Average check execution time:    %.2fs%s",
-	       scheduling_info.average_service_execution_time,
-	       scheduling_info.average_service_execution_time == 2.0 ? " (pessimistic guesstimate)\n" : "\n");
-	printf("Estimated concurrent checks:     %.0f (%.2f per cpu core)\n",
-	       minimum_concurrent_checks, (float)minimum_concurrent_checks / (float)online_cpus());
-	printf("Max concurrent service checks:   ");
-	if (max_parallel_service_checks == 0)
-		printf("Unlimited\n");
-	else
-		printf("%d\n", max_parallel_service_checks);
-	printf("\n\n");
-
-	printf("PERFORMANCE SUGGESTIONS\n");
-	printf("-----------------------\n");
-
-
-	/* compare with configured value */
-	if (((int)minimum_concurrent_checks > max_parallel_service_checks) && max_parallel_service_checks != 0) {
-		printf("* Value for 'max_concurrent_checks' option should be >= %d\n", (int)minimum_concurrent_checks);
-		suggestions++;
-	}
-	if (loadctl.nofile_limit * 0.4 < minimum_concurrent_checks) {
-		printf("* Increase the \"open files\" ulimit for user '%s'\n", naemon_user);
-		printf(" - You can do this by adding\n      %s hard nofiles %d\n   to /etc/security/limits.conf\n",
-		       naemon_user, rup2pof2(minimum_concurrent_checks * 2));
-		suggestions++;
-	}
-	if (loadctl.nproc_limit * 0.75 < minimum_concurrent_checks) {
-		printf("* Increase the \"max user processes\" ulimit for user '%s'\n", naemon_user);
-		printf(" - You can do this by adding\n      %s hard nproc %d\n   to /etc/security/limits.conf\n",
-		       naemon_user, rup2pof2(minimum_concurrent_checks));
-		suggestions++;
-	}
-
-	if (minimum_concurrent_checks > online_cpus() * 75) {
-		printf("* Aim for a max of 50 concurrent checks / cpu core (current: %.2f)\n",
-		       (float)minimum_concurrent_checks / (float)online_cpus());
-		suggestions++;
-	}
-
-	if (suggestions) {
-		printf("\nNOTE: These are just guidelines and *not* hard numbers.\n\n");
-		printf("Ultimately, only testing will tell if your settings and hardware are\n");
-		printf("suitable for the types and number of checks you're planning to run.\n");
-	} else {
-		printf("I have no suggestions - things look okay.\n");
-	}
-
-	printf("\n");
 
 	return;
 }

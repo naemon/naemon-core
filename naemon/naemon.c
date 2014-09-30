@@ -469,9 +469,6 @@ int main(int argc, char **argv)
 			/* initialize the event timing loop */
 			init_timing_loop();
 			timing_point("Timing loop initialized\n");
-
-			/* display scheduling information */
-			display_scheduling_info();
 		}
 
 		if (precache_objects) {
