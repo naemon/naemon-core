@@ -82,8 +82,6 @@ extern int test_scheduling;
 extern int precache_objects;
 extern int use_precached_objects;
 
-extern sched_info scheduling_info;
-
 extern int max_parallel_service_checks;
 
 extern int check_reaper_interval;

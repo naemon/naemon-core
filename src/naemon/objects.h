@@ -169,33 +169,6 @@ typedef struct check_result {
 } check_result;
 
 
-/* SCHED_INFO structure */
-typedef struct sched_info {
-	int total_services;
-	int total_scheduled_services;
-	int total_hosts;
-	int total_scheduled_hosts;
-	double average_services_per_host;
-	double average_scheduled_services_per_host;
-	unsigned long service_check_interval_total;
-	unsigned long host_check_interval_total;
-	double average_service_execution_time;
-	double average_service_check_interval;
-	double average_host_check_interval;
-	double average_service_inter_check_delay;
-	double average_host_inter_check_delay;
-	double service_inter_check_delay;
-	double host_inter_check_delay;
-	int service_interleave_factor;
-	int max_service_check_spread;
-	int max_host_check_spread;
-	time_t first_service_check;
-	time_t last_service_check;
-	time_t first_host_check;
-	time_t last_host_check;
-} sched_info;
-
-
 /* DBUF structure - dynamic string storage */
 typedef struct dbuf {
 	char *buf;
