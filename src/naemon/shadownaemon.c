@@ -584,7 +584,6 @@ int deinitialize_core() {
     cleanup_status_data(TRUE);
 
     /* clean up after ourselves */
-    test_scheduling = FALSE;
     verify_config   = FALSE;
     cleanup();
 

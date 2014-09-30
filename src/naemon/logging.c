@@ -53,7 +53,7 @@ static int write_to_syslog(char *buffer, unsigned long data_type)
 		return ERROR;
 
 	/* don't log anything if we're not actually running... */
-	if (verify_config || test_scheduling == TRUE)
+	if (verify_config)
 		return OK;
 
 	/* bail out if we shouldn't write to syslog */
@@ -80,7 +80,7 @@ static int write_to_log(char *buffer, unsigned long data_type, time_t *timestamp
 		return ERROR;
 
 	/* don't log anything if we're not actually running... */
-	if (verify_config || test_scheduling == TRUE)
+	if (verify_config)
 		return OK;
 
 	/* make sure we can log this type of entry */
@@ -149,11 +149,6 @@ static void write_to_logs_and_console(char *buffer, unsigned long data_type, int
 
 	/* write message to the console */
 	if (display == TRUE) {
-
-		/* don't display warnings if we're just testing scheduling */
-		if (test_scheduling == TRUE && data_type == NSLOG_VERIFICATION_WARNING)
-			return;
-
 		write_to_console(buffer);
 	}
 }
@@ -224,7 +219,6 @@ int close_log_file(void)
 	log_fp = NULL;
 	return 0;
 }
-
 
 /* write a service problem/recovery to the naemon log file */
 int log_service_event(service *svc)
@@ -397,7 +391,7 @@ int open_debug_log(void)
 {
 
 	/* don't do anything if we're not actually running... */
-	if (verify_config || test_scheduling == TRUE)
+	if (verify_config)
 		return OK;
 
 	/* don't do anything if we're not debugging */

@@ -78,7 +78,6 @@ extern int daemon_dumps_core;
 extern volatile sig_atomic_t sig_id;
 
 extern int verify_config;
-extern int test_scheduling;
 extern int precache_objects;
 extern int use_precached_objects;
 
