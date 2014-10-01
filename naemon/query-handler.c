@@ -395,9 +395,6 @@ static int qh_core(int sd, char *buf, unsigned int len)
 		return 0;
 	}
 
-	if (!space && !strcmp(buf, "squeuestats"))
-		return dump_event_stats(sd);
-
 	if (space) {
 		len -= (unsigned long)space - (unsigned long)buf;
 		if (!strcmp(buf, "loadctl")) {

@@ -58,7 +58,6 @@
 
 NAGIOS_BEGIN_DECL
 
-int dump_event_stats(int sd);
 void init_timing_loop(void);                         		/* setup the initial scheduling queue */
 int init_event_queue(void); /* creates the queue nagios_squeue */
 timed_event *schedule_new_event(int, int, time_t, int, unsigned long, void *, int, void *, void *, int);	/* schedules a new timed event */
