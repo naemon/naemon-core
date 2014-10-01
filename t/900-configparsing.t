@@ -10,7 +10,7 @@ my $naemon = "$ENV{builddir}/../naemon/naemon";
 my $etc = "$ENV{builddir}/etc";
 my $precache = "$ENV{builddir}/var/objects.precache";
 
-plan tests => 2;
+plan tests => 4;
 
 my $output = `$naemon -v "$etc/naemon.cfg"`;
 if ($? == 0) {
@@ -31,3 +31,8 @@ if ($? == 0) {
 	print "#$_" foreach @output;
 }	
 
+
+my $out = `$naemon -v '$etc/naemon-duplicate-service-warning.cfg' 2>&1`;
+my $rc  = $?>>8;
+is($rc, 0);
+like($out, "/Duplicate definition found for service/", "output contains warning");
