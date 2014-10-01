@@ -13,7 +13,7 @@ define timeperiod {
 
 define command {
 	command_name	check_me
-	command_line	/usr/local/nagios/libexec/check_me
+	command_line	/usr/local/naemon/libexec/check_me
 	}
 
 define command {
@@ -23,12 +23,12 @@ define command {
 
 define command {
 	command_name	notify-none
-	command_line	/usr/local/nagios/notifications/notify-none
+	command_line	/usr/local/naemon/notifications/notify-none
 	}
 
 define command {
 	command_name	set_to_stale
-	command_line	/usr/local/nagios/libexec/set_to_stale
+	command_line	/usr/local/naemon/libexec/set_to_stale
 	}
 
 define command {
@@ -39,7 +39,7 @@ define command {
 define contactgroup {
 	contactgroup_name	causetestfailure
 	alias	This causes a test failure by having a comma separated list before the empty contactgroup
-	members	second,nagiosadmin
+	members	second,naemonadmin
 	}
 
 define contactgroup {
@@ -60,8 +60,8 @@ define servicegroup {
 	}
 
 define contact {
-	contact_name	nagiosadmin
-	alias	nagiosadmin
+	contact_name	naemonadmin
+	alias	naemonadmin
 	service_notification_period	none
 	host_notification_period	none
 	service_notification_options	r,w,u,c,f,s
@@ -98,7 +98,7 @@ define host {
 	alias	host1 test
 	address	192.168.1.1
 	check_period	none
-	contacts	nagiosadmin
+	contacts	naemonadmin
 	notification_period	none
 	initial_state	o
 	hourly_value	3
@@ -130,7 +130,7 @@ define host {
 	alias	host2 test
 	address	192.168.2.2
 	check_period	none
-	contacts	nagiosadmin
+	contacts	naemonadmin
 	notification_period	none
 	initial_state	o
 	hourly_value	2
@@ -162,7 +162,7 @@ define host {
 	alias	host3 test
 	address	192.168.2.3
 	check_period	none
-	contacts	nagiosadmin
+	contacts	naemonadmin
 	notification_period	none
 	initial_state	o
 	hourly_value	3
@@ -194,7 +194,7 @@ define service {
 	service_description	Dummy service
 	check_period	none
 	check_command	check_me
-	contacts	nagiosadmin
+	contacts	naemonadmin
 	notification_period	none
 	initial_state	o
 	hourly_value	1
@@ -227,7 +227,7 @@ define service {
 	service_description	Uses important check command
 	check_period	none
 	check_command	set_to_stale
-	contacts	nagiosadmin
+	contacts	naemonadmin
 	notification_period	none
 	initial_state	o
 	hourly_value	1
@@ -260,7 +260,7 @@ define service {
 	service_description	Uses important check command
 	check_period	none
 	check_command	set_to_stale
-	contacts	nagiosadmin
+	contacts	naemonadmin
 	notification_period	none
 	initial_state	o
 	hourly_value	1
@@ -293,7 +293,7 @@ define service {
 	service_description	dependent-service
 	check_period	none
 	check_command	check_me!dependent service
-	contacts	nagiosadmin
+	contacts	naemonadmin
 	notification_period	none
 	initial_state	o
 	hourly_value	1
@@ -326,7 +326,7 @@ define service {
 	service_description	master-service
 	check_period	none
 	check_command	check_me!master service
-	contacts	nagiosadmin
+	contacts	naemonadmin
 	notification_period	none
 	initial_state	o
 	hourly_value	1
@@ -371,7 +371,7 @@ define serviceescalation {
 	notification_interval	65.000000
 	escalation_period	none
 	escalation_options	a
-	contacts	nagiosadmin
+	contacts	naemonadmin
 	}
 
 define serviceescalation {
@@ -382,7 +382,7 @@ define serviceescalation {
 	notification_interval	65.000000
 	escalation_period	none
 	escalation_options	a
-	contacts	nagiosadmin
+	contacts	naemonadmin
 	}
 
 define serviceescalation {
@@ -393,7 +393,7 @@ define serviceescalation {
 	notification_interval	65.000000
 	escalation_period	none
 	escalation_options	a
-	contacts	nagiosadmin
+	contacts	naemonadmin
 	}
 
 define serviceescalation {
@@ -404,6 +404,6 @@ define serviceescalation {
 	notification_interval	65.000000
 	escalation_period	none
 	escalation_options	a
-	contacts	nagiosadmin
+	contacts	naemonadmin
 	}
 

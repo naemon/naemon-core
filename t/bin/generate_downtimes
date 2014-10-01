@@ -25,7 +25,7 @@ servicecomment {
     entry_time=1262254781
     expires=0
     expire_time=0
-    author=Nagios Admin
+    author=Naemon Admin
     comment_data=Test Comment
     }
 
@@ -38,7 +38,7 @@ hostdowntime {
     triggered_by=0
     fixed=1
     duration=7200
-    author=nagiosadmin
+    author=naemonadmin
     comment=Future host downtime
     }
 
@@ -52,7 +52,7 @@ servicedowntime {
     triggered_by=0
     fixed=1
     duration=7200
-    author=nagiosadmin
+    author=naemonadmin
     comment=Future service downtime
     }
 
