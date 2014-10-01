@@ -1,4 +1,4 @@
-dist_check_SCRIPTS = 705nagiostats.t 900-configparsing.t 910-noservice.t 920-nocontactgroup.t 930-emptygroups.t
+dist_check_SCRIPTS = 705naemonstats.t 900-configparsing.t 910-noservice.t 920-nocontactgroup.t 930-emptygroups.t
 TESTS = $(dist_check_SCRIPTS)
 EXTRA_DIST = $(TESTS) etc/* var/*
 TESTS_ENVIRONMENT = \
