@@ -767,6 +767,7 @@ static int parse_arguments(const char *s, struct external_command_argument **arg
 				if (error) {
 					ret = CMD_ERROR_PARSE_TYPE_MISMATCH;
 				}
+				break;
 			case TIMESTAMP:
 				*(time_t *)(args[i]->argval->val) = (time_t)parse_ulong(temp, &error);
 				if (error) {
@@ -778,6 +779,7 @@ static int parse_arguments(const char *s, struct external_command_argument **arg
 				if (error) {
 					ret = CMD_ERROR_PARSE_TYPE_MISMATCH;
 				}
+				break;
 			default:
 				ret = CMD_ERROR_UNSUPPORTED_ARG_TYPE;
 				break;
