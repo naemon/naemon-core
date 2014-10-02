@@ -22,9 +22,6 @@
 #define EVENT_SCHEDULED_DOWNTIME	9	/* scheduled host or service downtime */
 #define EVENT_EXPIRE_DOWNTIME		11      /* checks for (and removes) expired scheduled downtime */
 
-/* comments.c */
-#define EVENT_EXPIRE_COMMENT            15      /* removes expired comments */
-
 /* Generic */
 #define EVENT_USER_FUNCTION             99      /* USER-defined function (modules) */
 
@@ -37,7 +34,6 @@
 	type == EVENT_EXPIRE_DOWNTIME ? "EXPIRE_DOWNTIME" : \
 	type == EVENT_HOST_CHECK ? "HOST_CHECK" : \
 	type == EVENT_HFRESHNESS_CHECK ? "HFRESHNESS_CHECK" : \
-	type == EVENT_EXPIRE_COMMENT ? "EXPIRE_COMMENT" : \
 	type == EVENT_USER_FUNCTION ? "USER_FUNCTION" : \
 	"UNKNOWN" \
 )

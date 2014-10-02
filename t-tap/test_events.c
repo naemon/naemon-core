@@ -85,7 +85,6 @@ extern timed_event *event_list_high_tail;
 host     *host_list;
 service  *service_list;
 
-int check_for_expired_comment(unsigned long temp_long) {}
 void broker_timed_event(int int1, int int2, int int3, timed_event *timed_event1, struct timeval *timeval1) {}
 int perform_scheduled_host_check(host *temp_host, int int1, double double1)
 {

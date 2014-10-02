@@ -1,7 +1,6 @@
 #include "config.h"
 #include "common.h"
 #include "downtime.h"
-#include "comments.h"
 #include "statusdata.h"
 #include "broker.h"
 #include "sretention.h"
@@ -532,14 +531,6 @@ int handle_timed_event(timed_event *event)
 
 		/* check for expired scheduled downtime entries */
 		check_for_expired_downtime();
-		break;
-
-	case EVENT_EXPIRE_COMMENT:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Expire Comment Event. Latency: %.3fs\n", latency);
-
-		/* check for expired comment */
-		check_for_expired_comment((unsigned long)event->event_data);
 		break;
 
 	case EVENT_USER_FUNCTION:
