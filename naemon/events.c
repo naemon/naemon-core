@@ -506,14 +506,6 @@ int handle_timed_event(timed_event *event)
 		save_state_information(TRUE);
 		break;
 
-	case EVENT_STATUS_SAVE:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Status Data Save Event. Latency: %.3fs\n", latency);
-
-		/* save all status data (program, host, and service) */
-		update_all_status_data();
-		break;
-
 	case EVENT_SCHEDULED_DOWNTIME:
 
 		log_debug_info(DEBUGL_EVENTS, 0, "** Scheduled Downtime Event. Latency: %.3fs\n", latency);

@@ -11,13 +11,23 @@
 /****************** TOP-LEVEL OUTPUT FUNCTIONS ********************/
 /******************************************************************/
 
+static void update_all_status_data_eventhandler(void *ptr)
+{
+	time_t current_time = time(NULL);
+
+	/* Reschedule, so it becomes recurring */
+	schedule_event(current_time + status_update_interval, update_all_status_data_eventhandler, NULL);
+
+	update_all_status_data();
+}
+
 /* initializes status data at program start */
 int initialize_status_data(const char *cfgfile)
 {
 	time_t current_time = time(NULL);
 
 	/* add a status save event */
-	schedule_new_event(EVENT_STATUS_SAVE, TRUE, current_time + status_update_interval, TRUE, status_update_interval, NULL, TRUE, NULL, NULL, 0);
+	schedule_event(current_time + status_update_interval, update_all_status_data_eventhandler, NULL);
 
 	return xsddefault_initialize_status_data(cfgfile);
 }

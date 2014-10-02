@@ -16,7 +16,6 @@
 #define EVENT_CHECK_REAPER              5       /* reaps results from host and service checks */
 #define EVENT_ORPHAN_CHECK		6	/* checks for orphaned hosts and services */
 #define EVENT_RETENTION_SAVE		7	/* save (dump) retention data */
-#define EVENT_STATUS_SAVE		8	/* save (dump) status data */
 #define EVENT_SCHEDULED_DOWNTIME	9	/* scheduled host or service downtime */
 #define EVENT_SFRESHNESS_CHECK          10      /* checks service result "freshness" */
 #define EVENT_EXPIRE_DOWNTIME		11      /* checks for (and removes) expired scheduled downtime */
@@ -33,7 +32,6 @@
 	type == EVENT_CHECK_REAPER ? "CHECK_REAPER" : \
 	type == EVENT_ORPHAN_CHECK ? "ORPHAN_CHECK" : \
 	type == EVENT_RETENTION_SAVE ? "RETENTION_SAVE" : \
-	type == EVENT_STATUS_SAVE ? "STATUS_SAVE" : \
 	type == EVENT_SCHEDULED_DOWNTIME ? "SCHEDULED_DOWNTIME" : \
 	type == EVENT_SFRESHNESS_CHECK ? "SFRESHNESS_CHECK" : \
 	type == EVENT_EXPIRE_DOWNTIME ? "EXPIRE_DOWNTIME" : \
