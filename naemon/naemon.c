@@ -22,6 +22,8 @@
 #include "globals.h"
 #include "logging.h"
 #include "nm_alloc.h"
+#include "checks.h"
+
 #include <getopt.h>
 #include <string.h>
 
@@ -360,6 +362,12 @@ int main(int argc, char **argv)
 	 * are set.
 	 */
 	signal(SIGXFSZ, sighandler);
+
+
+	/*
+	 * Setup rand and srand. Don't bother with better resolution than second
+	 */
+	srand(time(NULL));
 
 	/*
 	 * let's go to town. We'll be noisy if we're verifying config
@@ -707,6 +715,10 @@ int main(int argc, char **argv)
 		/* initialize performance data */
 		initialize_performance_data(config_file);
 		timing_point("Performance data initialized\n");
+
+		/* initialize the check execution subsystem */
+		checks_init();
+		timing_point("Check execution scheduling initialized\n");
 
 		/* initialize the event timing loop */
 		init_timing_loop();
