@@ -10,24 +10,26 @@
 
 /******************* EVENT TYPES **********************/
 
+/* checks.c */
 #define EVENT_SERVICE_CHECK		0	/* active service check */
-#define EVENT_COMMAND_CHECK		1	/* external command check */
-#define EVENT_LOG_ROTATION		2	/* log file rotation */
+#define EVENT_HOST_CHECK                12      /* active host check */
 #define EVENT_CHECK_REAPER              5       /* reaps results from host and service checks */
 #define EVENT_ORPHAN_CHECK		6	/* checks for orphaned hosts and services */
-#define EVENT_SCHEDULED_DOWNTIME	9	/* scheduled host or service downtime */
 #define EVENT_SFRESHNESS_CHECK          10      /* checks service result "freshness" */
-#define EVENT_EXPIRE_DOWNTIME		11      /* checks for (and removes) expired scheduled downtime */
-#define EVENT_HOST_CHECK                12      /* active host check */
 #define EVENT_HFRESHNESS_CHECK          13      /* checks host result "freshness" */
+
+/* downtime.c */
+#define EVENT_SCHEDULED_DOWNTIME	9	/* scheduled host or service downtime */
+#define EVENT_EXPIRE_DOWNTIME		11      /* checks for (and removes) expired scheduled downtime */
+
+/* comments.c */
 #define EVENT_EXPIRE_COMMENT            15      /* removes expired comments */
-#define EVENT_SLEEP                     98      /* asynchronous sleep event that occurs when event queues are empty */
+
+/* Generic */
 #define EVENT_USER_FUNCTION             99      /* USER-defined function (modules) */
 
 #define EVENT_TYPE_STR(type)	( \
 	type == EVENT_SERVICE_CHECK ? "SERVICE_CHECK" : \
-	type == EVENT_COMMAND_CHECK ? "COMMAND_CHECK" : \
-	type == EVENT_LOG_ROTATION ? "LOG_ROTATION" : \
 	type == EVENT_CHECK_REAPER ? "CHECK_REAPER" : \
 	type == EVENT_ORPHAN_CHECK ? "ORPHAN_CHECK" : \
 	type == EVENT_SCHEDULED_DOWNTIME ? "SCHEDULED_DOWNTIME" : \
@@ -36,7 +38,6 @@
 	type == EVENT_HOST_CHECK ? "HOST_CHECK" : \
 	type == EVENT_HFRESHNESS_CHECK ? "HFRESHNESS_CHECK" : \
 	type == EVENT_EXPIRE_COMMENT ? "EXPIRE_COMMENT" : \
-	type == EVENT_SLEEP ? "SLEEP" : \
 	type == EVENT_USER_FUNCTION ? "USER_FUNCTION" : \
 	"UNKNOWN" \
 )
