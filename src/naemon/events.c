@@ -181,6 +181,26 @@ int init_event_queue(void)
 }
 
 
+timed_event *schedule_event(time_t run_time, void (*callback)(void *), void *args)
+{
+	timed_event *new_event = nm_calloc(1, sizeof(timed_event));
+
+	new_event->event_type = EVENT_USER_FUNCTION;
+	new_event->event_data = (void*)callback;
+	new_event->event_args = args;
+	new_event->event_options = 0;
+	new_event->run_time = run_time;
+	new_event->recurring = FALSE;
+	new_event->event_interval = 0;
+	new_event->timing_func = NULL;
+	new_event->compensate_for_time_change = 0;
+	new_event->priority = 0;
+
+	add_event(nagios_squeue, new_event);
+
+	return new_event;
+}
+
 /* schedule a new timed event */
 timed_event *schedule_new_event(int event_type, int high_priority, time_t run_time, int recurring, unsigned long event_interval, void *timing_func, int compensate_for_time_change, void *event_data, void *event_args, int event_options)
 {
@@ -589,28 +609,6 @@ int handle_timed_event(timed_event *event)
 
 		/* run the host check */
 		run_scheduled_host_check(temp_host, event->event_options, latency);
-		break;
-
-	case EVENT_PROGRAM_SHUTDOWN:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Program Shutdown Event. Latency: %.3fs\n", latency);
-
-		/* set the shutdown flag */
-		sigshutdown = TRUE;
-
-		/* log the shutdown */
-		nm_log(NSLOG_PROCESS_INFO, "PROGRAM_SHUTDOWN event encountered, shutting down...\n");
-		break;
-
-	case EVENT_PROGRAM_RESTART:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Program Restart Event. Latency: %.3fs\n", latency);
-
-		/* set the restart flag */
-		sigrestart = TRUE;
-
-		/* log the restart */
-		nm_log(NSLOG_PROCESS_INFO, "PROGRAM_RESTART event encountered, restarting...\n");
 		break;
 
 	case EVENT_CHECK_REAPER:

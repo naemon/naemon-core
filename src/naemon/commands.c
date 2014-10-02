@@ -1258,17 +1258,24 @@ void command_unregister(struct external_command *ext_command)
 	--num_registered_commands;
 }
 
+static void shutdown_event_handler(void *storage) {
+	sigshutdown = TRUE;
+}
+
 static int shutdown_handler(const struct external_command *ext_command, time_t entry_time)
 {
-
-	if (!schedule_new_event(EVENT_PROGRAM_SHUTDOWN, TRUE, GV_TIMESTAMP("shutdown_time"), FALSE, 0, NULL, FALSE, NULL, NULL, 0))
+	if (!schedule_event(GV_TIMESTAMP("shutdown_time"), shutdown_event_handler, NULL))
 		return ERROR;
 	return OK;
 }
 
+static void restart_event_handler(void *storage) {
+	sigrestart = TRUE;
+}
+
 static int restart_handler(const struct external_command *ext_command, time_t entry_time)
 {
-	if (!schedule_new_event(EVENT_PROGRAM_RESTART, TRUE, GV_TIMESTAMP("restart_time"), FALSE, 0, NULL, FALSE, NULL, NULL, 0))
+	if (!schedule_event(GV_TIMESTAMP("restart_time"), restart_event_handler, NULL))
 		return ERROR;
 	return OK;
 }

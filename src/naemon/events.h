@@ -13,8 +13,6 @@
 #define EVENT_SERVICE_CHECK		0	/* active service check */
 #define EVENT_COMMAND_CHECK		1	/* external command check */
 #define EVENT_LOG_ROTATION		2	/* log file rotation */
-#define EVENT_PROGRAM_SHUTDOWN		3	/* program shutdown */
-#define EVENT_PROGRAM_RESTART		4	/* program restart */
 #define EVENT_CHECK_REAPER              5       /* reaps results from host and service checks */
 #define EVENT_ORPHAN_CHECK		6	/* checks for orphaned hosts and services */
 #define EVENT_RETENTION_SAVE		7	/* save (dump) retention data */
@@ -32,8 +30,6 @@
 	type == EVENT_SERVICE_CHECK ? "SERVICE_CHECK" : \
 	type == EVENT_COMMAND_CHECK ? "COMMAND_CHECK" : \
 	type == EVENT_LOG_ROTATION ? "LOG_ROTATION" : \
-	type == EVENT_PROGRAM_SHUTDOWN ? "PROGRAM_SHUTDOWN" : \
-	type == EVENT_PROGRAM_RESTART ? "PROGRAM_RESTART" : \
 	type == EVENT_CHECK_REAPER ? "CHECK_REAPER" : \
 	type == EVENT_ORPHAN_CHECK ? "ORPHAN_CHECK" : \
 	type == EVENT_RETENTION_SAVE ? "RETENTION_SAVE" : \
@@ -68,6 +64,12 @@ typedef struct timed_event {
 
 void init_timing_loop(void);                         		/* setup the initial scheduling queue */
 int init_event_queue(void); /* creates the queue nagios_squeue */
+
+/**
+ * Schedule a timed event. At the given time, the callback is executed
+ */
+timed_event *schedule_event(time_t run_time, void (*callback)(void *), void *args);
+
 timed_event *schedule_new_event(int, int, time_t, int, unsigned long, void *, int, void *, void *, int);	/* schedules a new timed event */
 void reschedule_event(squeue_t *sq, timed_event *event);   		/* reschedules an event */
 void add_event(squeue_t *sq, timed_event *event);     		/* adds an event to the execution queue */
