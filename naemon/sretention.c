@@ -19,6 +19,20 @@ static struct contact **premod_contacts;
 /************* TOP-LEVEL STATE INFORMATION FUNCTIONS **************/
 /******************************************************************/
 
+void save_state_information_eventhandler(void *args)
+{
+	time_t current_time = time(NULL);
+	int status;
+
+	schedule_event(current_time + (retention_update_interval * 60), save_state_information_eventhandler, args);
+
+	status = save_state_information(FALSE);
+
+	if(status == OK) {
+		logit(NSLOG_PROCESS_INFO, FALSE, "Auto-save of retention data completed successfully.\n");
+	}
+}
+
 /* initializes retention data at program start */
 int initialize_retention_data(const char *cfgfile)
 {
@@ -30,7 +44,7 @@ int initialize_retention_data(const char *cfgfile)
 
 	/* add a retention data save event if needed */
 	if (retain_state_information == TRUE && retention_update_interval > 0)
-		schedule_new_event(EVENT_RETENTION_SAVE, TRUE, current_time + (retention_update_interval * 60), TRUE, (retention_update_interval * 60), NULL, TRUE, NULL, NULL, 0);
+		schedule_event(current_time + (retention_update_interval * 60), save_state_information_eventhandler, NULL);
 
 	return xrddefault_initialize_retention_data(cfgfile);
 }
@@ -76,9 +90,6 @@ int save_state_information(int autosave)
 
 	if (result == ERROR)
 		return ERROR;
-
-	if (autosave == TRUE)
-		logit(NSLOG_PROCESS_INFO, FALSE, "Auto-save of retention data completed successfully.\n");
 
 	return OK;
 }

@@ -498,14 +498,6 @@ int handle_timed_event(timed_event *event)
 			check_for_orphaned_services();
 		break;
 
-	case EVENT_RETENTION_SAVE:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Retention Data Save Event. Latency: %.3fs\n", latency);
-
-		/* save state retention data */
-		save_state_information(TRUE);
-		break;
-
 	case EVENT_SCHEDULED_DOWNTIME:
 
 		log_debug_info(DEBUGL_EVENTS, 0, "** Scheduled Downtime Event. Latency: %.3fs\n", latency);
