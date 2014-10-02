@@ -28,7 +28,16 @@
 #endif
 
 /* forward declarations */
+static void check_orphaned_eventhandler(void *args);
+static void reap_check_results(void *arg);
+
 static int process_host_check_result(host *hst, int new_state, char *old_plugin_output, char *old_long_plugin_output, int check_options, int reschedule_check, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded);
+static void check_host_result_freshness(void *arg);
+static void check_for_orphaned_hosts(void);				/* checks for orphaned hosts */
+
+static void check_service_result_freshness(void *arg);
+static void check_for_orphaned_services(void);				/* checks for orphaned services */
+
 
 
 /******************************************************************/
@@ -157,30 +166,50 @@ void checks_init(void)
 	/******** SCHEDULE MISC EVENTS ********/
 
 	/* add a check result reaper event */
-	schedule_new_event(EVENT_CHECK_REAPER, TRUE, current_time + check_reaper_interval, TRUE, check_reaper_interval, NULL, TRUE, NULL, NULL, 0);
+	schedule_event(current_time + check_reaper_interval, reap_check_results, NULL);
 
 	/* add an orphaned check event */
-	if (check_orphaned_services == TRUE || check_orphaned_hosts == TRUE)
-		schedule_new_event(EVENT_ORPHAN_CHECK, TRUE, current_time + DEFAULT_ORPHAN_CHECK_INTERVAL, TRUE, DEFAULT_ORPHAN_CHECK_INTERVAL, NULL, TRUE, NULL, NULL, 0);
+	if (check_orphaned_services == TRUE || check_orphaned_hosts == TRUE) {
+		schedule_event(current_time + DEFAULT_ORPHAN_CHECK_INTERVAL, check_orphaned_eventhandler, NULL);
+	}
 
 	/* add a service result "freshness" check event */
-	if (check_service_freshness == TRUE)
-		schedule_new_event(EVENT_SFRESHNESS_CHECK, TRUE, current_time + service_freshness_check_interval, TRUE, service_freshness_check_interval, NULL, TRUE, NULL, NULL, 0);
-
+	if (check_service_freshness == TRUE) {
+		schedule_event(current_time + service_freshness_check_interval, check_service_result_freshness, NULL);
+	}
 	/* add a host result "freshness" check event */
-	if (check_host_freshness == TRUE)
-		schedule_new_event(EVENT_HFRESHNESS_CHECK, TRUE, current_time + host_freshness_check_interval, TRUE, host_freshness_check_interval, NULL, TRUE, NULL, NULL, 0);
-
+	if (check_host_freshness == TRUE) {
+		schedule_event(current_time + host_freshness_check_interval, check_host_result_freshness, NULL);
+	}
 }
 
 /******************************************************************/
 /********************** CHECK REAPER FUNCTIONS ********************/
 /******************************************************************/
 
+static void check_orphaned_eventhandler(void *args)
+{
+	time_t current_time = time(NULL);
+
+	/* Reschedule, since recurring */
+	schedule_event(current_time + DEFAULT_ORPHAN_CHECK_INTERVAL, check_orphaned_eventhandler, NULL);
+
+	/* check for orphaned hosts and services */
+	if (check_orphaned_hosts == TRUE)
+		check_for_orphaned_hosts();
+	if (check_orphaned_services == TRUE)
+		check_for_orphaned_services();
+}
+
 /* reaps host and service check results */
-int reap_check_results(void)
+static void reap_check_results(void *arg)
 {
 	int reaped_checks = 0;
+	time_t current_time = time(NULL);
+
+	/* Reschedule, since reccuring */
+	schedule_event(current_time + check_reaper_interval, reap_check_results, NULL);
+
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "reap_check_results() start\n");
 	log_debug_info(DEBUGL_CHECKS, 0, "Starting to reap check results.\n");
@@ -190,8 +219,6 @@ int reap_check_results(void)
 
 	log_debug_info(DEBUGL_CHECKS, 0, "Finished reaping %d check results\n", reaped_checks);
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "reap_check_results() end\n");
-
-	return OK;
 }
 
 /******************************************************************/
@@ -1384,7 +1411,7 @@ int check_service_dependencies(service *svc, int dependency_type)
 
 
 /* check for services that never returned from a check... */
-void check_for_orphaned_services(void)
+static void check_for_orphaned_services(void)
 {
 	service *temp_service = NULL;
 	time_t current_time = 0L;
@@ -1434,11 +1461,16 @@ void check_for_orphaned_services(void)
 }
 
 
-/* check freshness of service results */
-void check_service_result_freshness(void)
+/* event handler for checking freshness of service results */
+static void check_service_result_freshness(void *arg)
 {
 	service *temp_service = NULL;
 	time_t current_time = 0L;
+
+	/* get the current time */
+	time(&current_time);
+
+	schedule_event(current_time + service_freshness_check_interval, check_service_result_freshness, NULL);
 
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_service_result_freshness()\n");
@@ -1449,9 +1481,6 @@ void check_service_result_freshness(void)
 		log_debug_info(DEBUGL_CHECKS, 1, "Service freshness checking is disabled.\n");
 		return;
 	}
-
-	/* get the current time */
-	time(&current_time);
 
 	/* check all services... */
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
@@ -1772,7 +1801,7 @@ int check_host_dependencies(host *hst, int dependency_type)
 
 
 /* check for hosts that never returned from a check... */
-void check_for_orphaned_hosts(void)
+static void check_for_orphaned_hosts(void)
 {
 	host *temp_host = NULL;
 	time_t current_time = 0L;
@@ -1823,12 +1852,17 @@ void check_for_orphaned_hosts(void)
 }
 
 
-/* check freshness of host results */
-void check_host_result_freshness(void)
+/* event handler for checking freshness of host results */
+static void check_host_result_freshness(void *arg)
 {
 	host *temp_host = NULL;
 	time_t current_time = 0L;
 
+	/* get the current time */
+	time(&current_time);
+
+	/* Reschedule, since recurring */
+	schedule_event(current_time + host_freshness_check_interval, check_host_result_freshness, NULL);
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_host_result_freshness()\n");
 	log_debug_info(DEBUGL_CHECKS, 2, "Attempting to check the freshness of host check results...\n");
@@ -1839,8 +1873,6 @@ void check_host_result_freshness(void)
 		return;
 	}
 
-	/* get the current time */
-	time(&current_time);
 
 	/* check all hosts... */
 	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {

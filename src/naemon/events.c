@@ -1,7 +1,5 @@
 #include "config.h"
 #include "common.h"
-#include "downtime.h"
-#include "comments.h"
 #include "statusdata.h"
 #include "broker.h"
 #include "sretention.h"
@@ -469,85 +467,6 @@ int handle_timed_event(timed_event *event)
 
 		/* run the host check */
 		run_scheduled_host_check(temp_host, event->event_options, latency);
-		break;
-
-	case EVENT_CHECK_REAPER:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Check Result Reaper. Latency: %.3fs\n", latency);
-
-		/* reap host and service check results */
-		reap_check_results();
-		break;
-
-	case EVENT_ORPHAN_CHECK:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Orphaned Host and Service Check Event. Latency: %.3fs\n", latency);
-
-		/* check for orphaned hosts and services */
-		if (check_orphaned_hosts == TRUE)
-			check_for_orphaned_hosts();
-		if (check_orphaned_services == TRUE)
-			check_for_orphaned_services();
-		break;
-
-	case EVENT_RETENTION_SAVE:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Retention Data Save Event. Latency: %.3fs\n", latency);
-
-		/* save state retention data */
-		save_state_information(TRUE);
-		break;
-
-	case EVENT_STATUS_SAVE:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Status Data Save Event. Latency: %.3fs\n", latency);
-
-		/* save all status data (program, host, and service) */
-		update_all_status_data();
-		break;
-
-	case EVENT_SCHEDULED_DOWNTIME:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Scheduled Downtime Event. Latency: %.3fs\n", latency);
-
-		/* process scheduled downtime info */
-		if (event->event_data) {
-			handle_scheduled_downtime_by_id(*(unsigned long *)event->event_data);
-			free(event->event_data);
-			event->event_data = NULL;
-		}
-		break;
-
-	case EVENT_SFRESHNESS_CHECK:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Service Result Freshness Check Event. Latency: %.3fs\n", latency);
-
-		/* check service result freshness */
-		check_service_result_freshness();
-		break;
-
-	case EVENT_HFRESHNESS_CHECK:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Host Result Freshness Check Event. Latency: %.3fs\n", latency);
-
-		/* check host result freshness */
-		check_host_result_freshness();
-		break;
-
-	case EVENT_EXPIRE_DOWNTIME:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Expire Downtime Event. Latency: %.3fs\n", latency);
-
-		/* check for expired scheduled downtime entries */
-		check_for_expired_downtime();
-		break;
-
-	case EVENT_EXPIRE_COMMENT:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Expire Comment Event. Latency: %.3fs\n", latency);
-
-		/* check for expired comment */
-		check_for_expired_comment((unsigned long)event->event_data);
 		break;
 
 	case EVENT_USER_FUNCTION:
