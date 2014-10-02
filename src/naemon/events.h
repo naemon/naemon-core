@@ -5,7 +5,7 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
-#include "objects.h"
+#include "lib/squeue.h"
 
 
 /******************* EVENT TYPES **********************/
@@ -25,14 +25,8 @@
 #define EVENT_HOST_CHECK                12      /* active host check */
 #define EVENT_HFRESHNESS_CHECK          13      /* checks host result "freshness" */
 #define EVENT_EXPIRE_COMMENT            15      /* removes expired comments */
-#define EVENT_CHECK_PROGRAM_UPDATE      16      /* checks for new version of Nagios */
 #define EVENT_SLEEP                     98      /* asynchronous sleep event that occurs when event queues are empty */
 #define EVENT_USER_FUNCTION             99      /* USER-defined function (modules) */
-
-/*
- * VERSIONFIX: Make EVENT_SLEEP and EVENT_USER_FUNCTION appear
- * linearly in order.
- */
 
 #define EVENT_TYPE_STR(type)	( \
 	type == EVENT_SERVICE_CHECK ? "SERVICE_CHECK" : \
@@ -50,13 +44,27 @@
 	type == EVENT_HOST_CHECK ? "HOST_CHECK" : \
 	type == EVENT_HFRESHNESS_CHECK ? "HFRESHNESS_CHECK" : \
 	type == EVENT_EXPIRE_COMMENT ? "EXPIRE_COMMENT" : \
-	type == EVENT_CHECK_PROGRAM_UPDATE ? "CHECK_PROGRAM_UPDATE" : \
 	type == EVENT_SLEEP ? "SLEEP" : \
 	type == EVENT_USER_FUNCTION ? "USER_FUNCTION" : \
 	"UNKNOWN" \
 )
 
 NAGIOS_BEGIN_DECL
+
+/* TIMED_EVENT structure */
+typedef struct timed_event {
+	int event_type;
+	time_t run_time;
+	int recurring;
+	unsigned long event_interval;
+	int compensate_for_time_change;
+	void *timing_func;
+	void *event_data;
+	void *event_args;
+	int event_options;
+	unsigned int priority; /* 0 is auto, 1 is highest. n+1 < n */
+	struct squeue_event *sq_event;
+} timed_event;
 
 void init_timing_loop(void);                         		/* setup the initial scheduling queue */
 int init_event_queue(void); /* creates the queue nagios_squeue */

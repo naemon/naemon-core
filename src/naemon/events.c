@@ -692,10 +692,6 @@ int handle_timed_event(timed_event *event)
 		check_for_expired_comment((unsigned long)event->event_data);
 		break;
 
-	case EVENT_CHECK_PROGRAM_UPDATE:
-		/* this doesn't do anything anymore */
-		break;
-
 	case EVENT_USER_FUNCTION:
 
 		log_debug_info(DEBUGL_EVENTS, 0, "** User Function Event. Latency: %.3fs\n", latency);
