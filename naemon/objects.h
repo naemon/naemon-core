@@ -101,21 +101,6 @@ typedef struct host host;
 typedef struct service service;
 typedef struct contact contact;
 
-/* TIMED_EVENT structure */
-typedef struct timed_event {
-	int event_type;
-	time_t run_time;
-	int recurring;
-	unsigned long event_interval;
-	int compensate_for_time_change;
-	void *timing_func;
-	void *event_data;
-	void *event_args;
-	int event_options;
-	unsigned int priority; /* 0 is auto, 1 is highest. n+1 < n */
-	struct squeue_event *sq_event;
-} timed_event;
-
 
 /* NOTIFY_LIST structure */
 typedef struct notify_list {

@@ -6,6 +6,7 @@
 #endif
 
 #include "objects.h"
+#include "events.h"
 
 /*************** EVENT BROKER OPTIONS *****************/
 
