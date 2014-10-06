@@ -29,6 +29,9 @@
 
 /* forward declarations */
 static int process_host_check_result(host *hst, int new_state, char *old_plugin_output, char *old_long_plugin_output, int check_options, int reschedule_check, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded);
+static void check_service_result_freshness(void *arg);
+static void check_host_result_freshness(void *arg);
+
 
 
 /******************************************************************/
@@ -164,13 +167,13 @@ void checks_init(void)
 		schedule_new_event(EVENT_ORPHAN_CHECK, TRUE, current_time + DEFAULT_ORPHAN_CHECK_INTERVAL, TRUE, DEFAULT_ORPHAN_CHECK_INTERVAL, NULL, TRUE, NULL, NULL, 0);
 
 	/* add a service result "freshness" check event */
-	if (check_service_freshness == TRUE)
-		schedule_new_event(EVENT_SFRESHNESS_CHECK, TRUE, current_time + service_freshness_check_interval, TRUE, service_freshness_check_interval, NULL, TRUE, NULL, NULL, 0);
-
+	if (check_service_freshness == TRUE) {
+		schedule_event(current_time + service_freshness_check_interval, check_service_result_freshness, NULL);
+	}
 	/* add a host result "freshness" check event */
-	if (check_host_freshness == TRUE)
-		schedule_new_event(EVENT_HFRESHNESS_CHECK, TRUE, current_time + host_freshness_check_interval, TRUE, host_freshness_check_interval, NULL, TRUE, NULL, NULL, 0);
-
+	if (check_host_freshness == TRUE) {
+		schedule_event(current_time + host_freshness_check_interval, check_host_result_freshness, NULL);
+	}
 }
 
 /******************************************************************/
@@ -1434,11 +1437,16 @@ void check_for_orphaned_services(void)
 }
 
 
-/* check freshness of service results */
-void check_service_result_freshness(void)
+/* event handler for checking freshness of service results */
+static void check_service_result_freshness(void *arg)
 {
 	service *temp_service = NULL;
 	time_t current_time = 0L;
+
+	/* get the current time */
+	time(&current_time);
+
+	schedule_event(current_time + service_freshness_check_interval, check_service_result_freshness, NULL);
 
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_service_result_freshness()\n");
@@ -1449,9 +1457,6 @@ void check_service_result_freshness(void)
 		log_debug_info(DEBUGL_CHECKS, 1, "Service freshness checking is disabled.\n");
 		return;
 	}
-
-	/* get the current time */
-	time(&current_time);
 
 	/* check all services... */
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
@@ -1823,12 +1828,17 @@ void check_for_orphaned_hosts(void)
 }
 
 
-/* check freshness of host results */
-void check_host_result_freshness(void)
+/* event handler for checking freshness of host results */
+static void check_host_result_freshness(void *arg)
 {
 	host *temp_host = NULL;
 	time_t current_time = 0L;
 
+	/* get the current time */
+	time(&current_time);
+
+	/* Reschedule, since recurring */
+	schedule_event(current_time + host_freshness_check_interval, check_host_result_freshness, NULL);
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_host_result_freshness()\n");
 	log_debug_info(DEBUGL_CHECKS, 2, "Attempting to check the freshness of host check results...\n");
@@ -1839,8 +1849,6 @@ void check_host_result_freshness(void)
 		return;
 	}
 
-	/* get the current time */
-	time(&current_time);
 
 	/* check all hosts... */
 	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {

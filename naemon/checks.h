@@ -37,7 +37,6 @@ int reap_check_results(void);
 /*********************** HOSTS ************************/
 int check_host_dependencies(host *, int);                	/* checks host dependencies */
 void check_for_orphaned_hosts(void);				/* checks for orphaned hosts */
-void check_host_result_freshness(void);                 	/* checks the "freshness" of host check results */
 int is_host_result_fresh(host *, time_t, int);                  /* determines if a host's check results are fresh */
 int check_host_check_viability(host *, int, int *, time_t *);
 int adjust_host_check_attempt(host *, int);
@@ -52,7 +51,6 @@ void schedule_host_check(host *, time_t, int);		/* schedules an immediate or del
 /********************** SERVICES **********************/
 int check_service_dependencies(service *, int);          	/* checks service dependencies */
 void check_for_orphaned_services(void);				/* checks for orphaned services */
-void check_service_result_freshness(void);              	/* checks the "freshness" of service check results */
 int is_service_result_fresh(service *, time_t, int);            /* determines if a service's check results are fresh */
 int check_service_check_viability(service *, int, int *, time_t *);
 int run_scheduled_service_check(service *, int, double);

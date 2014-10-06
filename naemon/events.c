@@ -509,22 +509,6 @@ int handle_timed_event(timed_event *event)
 		}
 		break;
 
-	case EVENT_SFRESHNESS_CHECK:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Service Result Freshness Check Event. Latency: %.3fs\n", latency);
-
-		/* check service result freshness */
-		check_service_result_freshness();
-		break;
-
-	case EVENT_HFRESHNESS_CHECK:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Host Result Freshness Check Event. Latency: %.3fs\n", latency);
-
-		/* check host result freshness */
-		check_host_result_freshness();
-		break;
-
 	case EVENT_EXPIRE_DOWNTIME:
 
 		log_debug_info(DEBUGL_EVENTS, 0, "** Expire Downtime Event. Latency: %.3fs\n", latency);

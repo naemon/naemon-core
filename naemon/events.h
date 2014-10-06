@@ -15,8 +15,6 @@
 #define EVENT_HOST_CHECK                12      /* active host check */
 #define EVENT_CHECK_REAPER              5       /* reaps results from host and service checks */
 #define EVENT_ORPHAN_CHECK		6	/* checks for orphaned hosts and services */
-#define EVENT_SFRESHNESS_CHECK          10      /* checks service result "freshness" */
-#define EVENT_HFRESHNESS_CHECK          13      /* checks host result "freshness" */
 
 /* downtime.c */
 #define EVENT_SCHEDULED_DOWNTIME	9	/* scheduled host or service downtime */
@@ -30,10 +28,8 @@
 	type == EVENT_CHECK_REAPER ? "CHECK_REAPER" : \
 	type == EVENT_ORPHAN_CHECK ? "ORPHAN_CHECK" : \
 	type == EVENT_SCHEDULED_DOWNTIME ? "SCHEDULED_DOWNTIME" : \
-	type == EVENT_SFRESHNESS_CHECK ? "SFRESHNESS_CHECK" : \
 	type == EVENT_EXPIRE_DOWNTIME ? "EXPIRE_DOWNTIME" : \
 	type == EVENT_HOST_CHECK ? "HOST_CHECK" : \
-	type == EVENT_HFRESHNESS_CHECK ? "HFRESHNESS_CHECK" : \
 	type == EVENT_USER_FUNCTION ? "USER_FUNCTION" : \
 	"UNKNOWN" \
 )

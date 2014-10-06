@@ -94,14 +94,12 @@ int perform_scheduled_host_check(host *temp_host, int int1, double double1)
 }
 int check_for_expired_downtime(void) {}
 int reap_check_results(void) {}
-void check_host_result_freshness() {}
 int check_for_nagios_updates(int int1, int int2) {}
 time_t get_next_service_notification_time(service *temp_service, time_t time_t1) {}
 int save_state_information(int int1) {}
 void get_time_breakdown(unsigned long long1, int *int1, int *int2, int *int3, int *int4) {}
 int check_for_external_commands(void) {}
 void check_for_orphaned_hosts() {}
-void check_service_result_freshness() {}
 int check_time_against_period(time_t time_t1, timeperiod *timeperiod) {}
 time_t get_next_log_rotation_time(void) {}
 void check_for_orphaned_services() {}
