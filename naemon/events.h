@@ -14,15 +14,11 @@
 #define EVENT_SERVICE_CHECK		0	/* active service check */
 #define EVENT_HOST_CHECK                12      /* active host check */
 
-/* downtime.c */
-#define EVENT_SCHEDULED_DOWNTIME	9	/* scheduled host or service downtime */
-
 /* Generic */
 #define EVENT_USER_FUNCTION             99      /* USER-defined function (modules) */
 
 #define EVENT_TYPE_STR(type)	( \
 	type == EVENT_SERVICE_CHECK ? "SERVICE_CHECK" : \
-	type == EVENT_SCHEDULED_DOWNTIME ? "SCHEDULED_DOWNTIME" : \
 	type == EVENT_HOST_CHECK ? "HOST_CHECK" : \
 	type == EVENT_USER_FUNCTION ? "USER_FUNCTION" : \
 	"UNKNOWN" \

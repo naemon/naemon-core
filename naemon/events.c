@@ -1,6 +1,5 @@
 #include "config.h"
 #include "common.h"
-#include "downtime.h"
 #include "statusdata.h"
 #include "broker.h"
 #include "sretention.h"
@@ -476,18 +475,6 @@ int handle_timed_event(timed_event *event)
 
 		/* run the host check */
 		run_scheduled_host_check(temp_host, event->event_options, latency);
-		break;
-
-	case EVENT_SCHEDULED_DOWNTIME:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Scheduled Downtime Event. Latency: %.3fs\n", latency);
-
-		/* process scheduled downtime info */
-		if (event->event_data) {
-			handle_scheduled_downtime_by_id(*(unsigned long *)event->event_data);
-			free(event->event_data);
-			event->event_data = NULL;
-		}
 		break;
 
 	case EVENT_USER_FUNCTION:
