@@ -32,7 +32,6 @@ void checks_init(void); /* Init check execution, schedule events */
 
 int parse_check_output(char *, char **, char **, char **, int, int);
 struct check_output *parse_output(const char *, struct check_output *);
-int reap_check_results(void);
 
 /*********************** HOSTS ************************/
 int check_host_dependencies(host *, int);                	/* checks host dependencies */

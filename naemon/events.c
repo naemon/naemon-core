@@ -478,14 +478,6 @@ int handle_timed_event(timed_event *event)
 		run_scheduled_host_check(temp_host, event->event_options, latency);
 		break;
 
-	case EVENT_CHECK_REAPER:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Check Result Reaper. Latency: %.3fs\n", latency);
-
-		/* reap host and service check results */
-		reap_check_results();
-		break;
-
 	case EVENT_SCHEDULED_DOWNTIME:
 
 		log_debug_info(DEBUGL_EVENTS, 0, "** Scheduled Downtime Event. Latency: %.3fs\n", latency);

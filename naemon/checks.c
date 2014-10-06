@@ -29,6 +29,7 @@
 
 /* forward declarations */
 static void check_orphaned_eventhandler(void *args);
+static void reap_check_results(void *arg);
 
 static int process_host_check_result(host *hst, int new_state, char *old_plugin_output, char *old_long_plugin_output, int check_options, int reschedule_check, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded);
 static void check_host_result_freshness(void *arg);
@@ -165,7 +166,7 @@ void checks_init(void)
 	/******** SCHEDULE MISC EVENTS ********/
 
 	/* add a check result reaper event */
-	schedule_new_event(EVENT_CHECK_REAPER, TRUE, current_time + check_reaper_interval, TRUE, check_reaper_interval, NULL, TRUE, NULL, NULL, 0);
+	schedule_event(current_time + check_reaper_interval, reap_check_results, NULL);
 
 	/* add an orphaned check event */
 	if (check_orphaned_services == TRUE || check_orphaned_hosts == TRUE) {
@@ -201,9 +202,14 @@ static void check_orphaned_eventhandler(void *args)
 }
 
 /* reaps host and service check results */
-int reap_check_results(void)
+static void reap_check_results(void *arg)
 {
 	int reaped_checks = 0;
+	time_t current_time = time(NULL);
+
+	/* Reschedule, since reccuring */
+	schedule_event(current_time + check_reaper_interval, reap_check_results, NULL);
+
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "reap_check_results() start\n");
 	log_debug_info(DEBUGL_CHECKS, 0, "Starting to reap check results.\n");
@@ -213,8 +219,6 @@ int reap_check_results(void)
 
 	log_debug_info(DEBUGL_CHECKS, 0, "Finished reaping %d check results\n", reaped_checks);
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "reap_check_results() end\n");
-
-	return OK;
 }
 
 /******************************************************************/
