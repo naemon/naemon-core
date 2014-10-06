@@ -14,7 +14,6 @@
 #define EVENT_SERVICE_CHECK		0	/* active service check */
 #define EVENT_HOST_CHECK                12      /* active host check */
 #define EVENT_CHECK_REAPER              5       /* reaps results from host and service checks */
-#define EVENT_ORPHAN_CHECK		6	/* checks for orphaned hosts and services */
 
 /* downtime.c */
 #define EVENT_SCHEDULED_DOWNTIME	9	/* scheduled host or service downtime */
@@ -26,7 +25,6 @@
 #define EVENT_TYPE_STR(type)	( \
 	type == EVENT_SERVICE_CHECK ? "SERVICE_CHECK" : \
 	type == EVENT_CHECK_REAPER ? "CHECK_REAPER" : \
-	type == EVENT_ORPHAN_CHECK ? "ORPHAN_CHECK" : \
 	type == EVENT_SCHEDULED_DOWNTIME ? "SCHEDULED_DOWNTIME" : \
 	type == EVENT_EXPIRE_DOWNTIME ? "EXPIRE_DOWNTIME" : \
 	type == EVENT_HOST_CHECK ? "HOST_CHECK" : \

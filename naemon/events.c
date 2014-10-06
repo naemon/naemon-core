@@ -486,17 +486,6 @@ int handle_timed_event(timed_event *event)
 		reap_check_results();
 		break;
 
-	case EVENT_ORPHAN_CHECK:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Orphaned Host and Service Check Event. Latency: %.3fs\n", latency);
-
-		/* check for orphaned hosts and services */
-		if (check_orphaned_hosts == TRUE)
-			check_for_orphaned_hosts();
-		if (check_orphaned_services == TRUE)
-			check_for_orphaned_services();
-		break;
-
 	case EVENT_SCHEDULED_DOWNTIME:
 
 		log_debug_info(DEBUGL_EVENTS, 0, "** Scheduled Downtime Event. Latency: %.3fs\n", latency);

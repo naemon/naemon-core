@@ -28,9 +28,14 @@
 #endif
 
 /* forward declarations */
+static void check_orphaned_eventhandler(void *args);
+
 static int process_host_check_result(host *hst, int new_state, char *old_plugin_output, char *old_long_plugin_output, int check_options, int reschedule_check, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded);
-static void check_service_result_freshness(void *arg);
 static void check_host_result_freshness(void *arg);
+static void check_for_orphaned_hosts(void);				/* checks for orphaned hosts */
+
+static void check_service_result_freshness(void *arg);
+static void check_for_orphaned_services(void);				/* checks for orphaned services */
 
 
 
@@ -163,8 +168,9 @@ void checks_init(void)
 	schedule_new_event(EVENT_CHECK_REAPER, TRUE, current_time + check_reaper_interval, TRUE, check_reaper_interval, NULL, TRUE, NULL, NULL, 0);
 
 	/* add an orphaned check event */
-	if (check_orphaned_services == TRUE || check_orphaned_hosts == TRUE)
-		schedule_new_event(EVENT_ORPHAN_CHECK, TRUE, current_time + DEFAULT_ORPHAN_CHECK_INTERVAL, TRUE, DEFAULT_ORPHAN_CHECK_INTERVAL, NULL, TRUE, NULL, NULL, 0);
+	if (check_orphaned_services == TRUE || check_orphaned_hosts == TRUE) {
+		schedule_event(current_time + DEFAULT_ORPHAN_CHECK_INTERVAL, check_orphaned_eventhandler, NULL);
+	}
 
 	/* add a service result "freshness" check event */
 	if (check_service_freshness == TRUE) {
@@ -179,6 +185,20 @@ void checks_init(void)
 /******************************************************************/
 /********************** CHECK REAPER FUNCTIONS ********************/
 /******************************************************************/
+
+static void check_orphaned_eventhandler(void *args)
+{
+	time_t current_time = time(NULL);
+
+	/* Reschedule, since recurring */
+	schedule_event(current_time + DEFAULT_ORPHAN_CHECK_INTERVAL, check_orphaned_eventhandler, NULL);
+
+	/* check for orphaned hosts and services */
+	if (check_orphaned_hosts == TRUE)
+		check_for_orphaned_hosts();
+	if (check_orphaned_services == TRUE)
+		check_for_orphaned_services();
+}
 
 /* reaps host and service check results */
 int reap_check_results(void)
@@ -1387,7 +1407,7 @@ int check_service_dependencies(service *svc, int dependency_type)
 
 
 /* check for services that never returned from a check... */
-void check_for_orphaned_services(void)
+static void check_for_orphaned_services(void)
 {
 	service *temp_service = NULL;
 	time_t current_time = 0L;
@@ -1777,7 +1797,7 @@ int check_host_dependencies(host *hst, int dependency_type)
 
 
 /* check for hosts that never returned from a check... */
-void check_for_orphaned_hosts(void)
+static void check_for_orphaned_hosts(void)
 {
 	host *temp_host = NULL;
 	time_t current_time = 0L;
