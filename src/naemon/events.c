@@ -5,7 +5,6 @@
 #include "statusdata.h"
 #include "broker.h"
 #include "sretention.h"
-#include "workers.h"
 #include "lib/squeue.h"
 #include "events.h"
 #include "utils.h"
@@ -14,7 +13,6 @@
 #include "logging.h"
 #include "globals.h"
 #include "defaults.h"
-#include "loadctl.h"
 #include "nm_alloc.h"
 #include <math.h>
 #include <string.h>
@@ -345,18 +343,6 @@ void display_scheduling_info(void)
 		printf("* Value for 'max_concurrent_checks' option should be >= %d\n", (int)minimum_concurrent_checks);
 		suggestions++;
 	}
-	if (loadctl.nofile_limit * 0.4 < minimum_concurrent_checks) {
-		printf("* Increase the \"open files\" ulimit for user '%s'\n", naemon_user);
-		printf(" - You can do this by adding\n      %s hard nofiles %d\n   to /etc/security/limits.conf\n",
-		       naemon_user, rup2pof2(minimum_concurrent_checks * 2));
-		suggestions++;
-	}
-	if (loadctl.nproc_limit * 0.75 < minimum_concurrent_checks) {
-		printf("* Increase the \"max user processes\" ulimit for user '%s'\n", naemon_user);
-		printf(" - You can do this by adding\n      %s hard nproc %d\n   to /etc/security/limits.conf\n",
-		       naemon_user, rup2pof2(minimum_concurrent_checks));
-		suggestions++;
-	}
 
 	if (minimum_concurrent_checks > online_cpus() * 75) {
 		printf("* Aim for a max of 50 concurrent checks / cpu core (current: %.2f)\n",
@@ -560,12 +546,6 @@ static int should_run_event(timed_event *temp_event)
 	if (temp_event->event_type != EVENT_HOST_CHECK &&
 	    temp_event->event_type != EVENT_SERVICE_CHECK) {
 		return TRUE;
-	}
-
-	/* if we can't spawn any more jobs, don't bother */
-	if (!wproc_can_spawn(&loadctl)) {
-		wproc_reap(100, 3000);
-		return FALSE;
 	}
 
 	/* run a few checks before executing a service check... */

@@ -121,8 +121,6 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			}
 		}
 
-		else if (!strcmp(variable, "loadctl_options"))
-			error = set_loadctl_options(value, strlen(value)) != OK;
 		else if (!strcmp(variable, "check_workers"))
 			num_check_workers = atoi(value);
 		else if (!strcmp(variable, "query_socket")) {

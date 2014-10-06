@@ -22,7 +22,6 @@
 #include "events.h"
 #include "utils.h"
 #include "defaults.h"
-#include "loadctl.h"
 #include "globals.h"
 #include "logging.h"
 #include <dlfcn.h>

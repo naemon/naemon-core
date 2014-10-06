@@ -50,7 +50,7 @@ pkginclude_HEADERS = \
 	src/naemon/broker.h			src/naemon/events.h			src/naemon/nagios.h			src/naemon/objects.h \
 	src/naemon/workers.h		src/naemon/checks.h			src/naemon/flapping.h		src/naemon/nebcallbacks.h \
 	src/naemon/perfdata.h		src/naemon/commands.h		src/naemon/globals.h		src/naemon/neberrors.h \
-	src/naemon/query-handler.h  src/naemon/comments.h       src/naemon/loadctl.h		src/naemon/nebmods.h \
+	src/naemon/query-handler.h  src/naemon/comments.h		src/naemon/nebmods.h \
 	src/naemon/sehandlers.h		src/naemon/common.h         src/naemon/logging.h		src/naemon/nebmodules.h \
 	src/naemon/shared.h			src/naemon/configuration.h  src/naemon/macros.h			src/naemon/nebstructs.h \
 	src/naemon/sretention.h		src/naemon/defaults.h       src/naemon/naemon.h			src/naemon/nerd.h \
@@ -69,7 +69,6 @@ common_sources = \
 	src/naemon/events.c src/naemon/events.h \
 	src/naemon/flapping.c src/naemon/flapping.h \
 	src/naemon/globals.h \
-	src/naemon/loadctl.h \
 	src/naemon/logging.c src/naemon/logging.h \
 	src/naemon/macros.c src/naemon/macros.h \
 	src/naemon/nebcallbacks.h src/naemon/neberrors.h \

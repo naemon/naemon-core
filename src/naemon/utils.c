@@ -26,7 +26,6 @@
 #include <math.h>
 #include <poll.h>
 #include <string.h>
-#include "loadctl.h"
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif
@@ -93,8 +92,6 @@ int check_reaper_interval = DEFAULT_CHECK_REAPER_INTERVAL;
 int max_check_reaper_time = DEFAULT_MAX_REAPER_TIME;
 int service_freshness_check_interval = DEFAULT_FRESHNESS_CHECK_INTERVAL;
 int host_freshness_check_interval = DEFAULT_FRESHNESS_CHECK_INTERVAL;
-
-struct load_control loadctl;
 
 int check_orphaned_services = DEFAULT_CHECK_ORPHANED_SERVICES;
 int check_orphaned_hosts = DEFAULT_CHECK_ORPHANED_HOSTS;
@@ -249,60 +246,6 @@ const char *check_result_source(check_result *cr)
 		return cr->engine->source_name(cr->source);
 	return cr->source ? (const char *)cr->source : "(unknown engine)";
 }
-
-
-int set_loadctl_options(char *opts, unsigned int len)
-{
-	struct kvvec *kvv;
-	int i;
-
-	kvv = buf2kvvec(opts, len, '=', ';', 0);
-	for (i = 0; i < kvv->kv_pairs; i++) {
-		struct key_value *kv = &kvv->kv[i];
-
-		if (!strcmp(kv->key, "enabled")) {
-			if (*kv->value == '1') {
-				if (!(loadctl.options & LOADCTL_ENABLED))
-					nm_log(0, "Warning: Enabling experimental load control\n");
-				loadctl.options |= LOADCTL_ENABLED;
-			} else {
-				if (loadctl.options & LOADCTL_ENABLED)
-					nm_log(0, "Warning: Disabling experimental load control\n");
-				loadctl.options &= (~LOADCTL_ENABLED);
-			}
-		} else if (!strcmp(kv->key, "jobs_max")) {
-			loadctl.jobs_max = atoi(kv->value);
-		} else if (!strcmp(kv->key, "jobs_min")) {
-			loadctl.jobs_min = atoi(kv->value);
-		} else if (!strcmp(kv->key, "jobs_limit")) {
-			loadctl.jobs_limit = atoi(kv->value);
-		} else if (!strcmp(kv->key, "check_interval")) {
-			loadctl.check_interval = strtoul(kv->value, NULL, 10);
-		} else if (!strcmp(kv->key, "backoff_limit")) {
-			loadctl.backoff_limit = strtod(kv->value, NULL);
-		} else if (!strcmp(kv->key, "rampup_limit")) {
-			loadctl.rampup_limit = strtod(kv->value, NULL);
-		} else if (!strcmp(kv->key, "backoff_change")) {
-			loadctl.backoff_change = atoi(kv->value);
-		} else if (!strcmp(kv->key, "rampup_change")) {
-			loadctl.rampup_change = atoi(kv->value);
-		} else {
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Bad loadctl option; %s = %s\n", kv->key, kv->value);
-			return 400;
-		}
-	}
-
-	/* precedence order is "jobs_min -> jobs_max -> jobs_limit" */
-	if (loadctl.jobs_max < loadctl.jobs_min)
-		loadctl.jobs_max = loadctl.jobs_min;
-	if (loadctl.jobs_limit > loadctl.jobs_max)
-		loadctl.jobs_limit = loadctl.jobs_max;
-	if (loadctl.jobs_limit < loadctl.jobs_min)
-		loadctl.jobs_limit = loadctl.jobs_min;
-	kvvec_destroy(kvv, 0);
-	return 0;
-}
-
 
 /******************************************************************/
 /******************** SYSTEM COMMAND FUNCTIONS ********************/

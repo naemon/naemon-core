@@ -12,7 +12,6 @@
 NAGIOS_BEGIN_DECL
 
 const char *check_result_source(check_result *cr);
-int set_loadctl_options(char *opts, unsigned int len);
 
 void setup_sighandler(void);                         		/* trap signals */
 void reset_sighandler(void);                         		/* reset signals to default action */

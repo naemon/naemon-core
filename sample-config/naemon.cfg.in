@@ -1132,25 +1132,3 @@ allow_empty_hostgroup_assignment=0
 
 #check_workers=3
 
-
-
-# EXPERIMENTAL load controlling options
-# To get current defaults based on your system issue a command to
-# the query handler. Please note that this is an experimental feature
-# and not meant for production use. Used incorrectly it can induce
-# enormous latency.
-# #core loadctl
-#   jobs_max - The maximum amount of jobs to run at one time
-#   jobs_min - The minimum amount of jobs to run at one time
-#   jobs_limit - The maximum amount of jobs the current load lets us run
-#   backoff_limit - The minimum backoff_change
-#   backoff_change - # of jobs to remove from jobs_limit when backing off
-#   rampup_limit - Minimum rampup_change
-#   rampup_change - # of jobs to add to jobs_limit when ramping up
-# NOTE: The backoff_limit and rampup_limit are NOT used by anything currently,
-#       so if your system is under load nothing will actively modify the jobs
-#       even if you have these options enabled, they are for external
-#       connector information only.  However, if you change the jobs_max or
-#       jobs_min manually here or through the query handler interface that
-#       WILL affect your system
-#loadctl_options=jobs_max=100;backoff_limit=10;rampup_change=5
