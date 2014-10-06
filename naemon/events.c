@@ -3,7 +3,6 @@
 #include "statusdata.h"
 #include "broker.h"
 #include "sretention.h"
-#include "workers.h"
 #include "lib/squeue.h"
 #include "events.h"
 #include "utils.h"
@@ -12,7 +11,6 @@
 #include "logging.h"
 #include "globals.h"
 #include "defaults.h"
-#include "loadctl.h"
 #include "nm_alloc.h"
 #include <math.h>
 #include <string.h>
@@ -220,12 +218,6 @@ static int should_run_event(timed_event *temp_event)
 	if (temp_event->event_type != EVENT_HOST_CHECK &&
 	    temp_event->event_type != EVENT_SERVICE_CHECK) {
 		return TRUE;
-	}
-
-	/* if we can't spawn any more jobs, don't bother */
-	if (!wproc_can_spawn(&loadctl)) {
-		wproc_reap(100, 3000);
-		return FALSE;
 	}
 
 	/* run a few checks before executing a service check... */
