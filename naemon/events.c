@@ -490,14 +490,6 @@ int handle_timed_event(timed_event *event)
 		}
 		break;
 
-	case EVENT_EXPIRE_DOWNTIME:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Expire Downtime Event. Latency: %.3fs\n", latency);
-
-		/* check for expired scheduled downtime entries */
-		check_for_expired_downtime();
-		break;
-
 	case EVENT_USER_FUNCTION:
 
 		log_debug_info(DEBUGL_EVENTS, 0, "** User Function Event. Latency: %.3fs\n", latency);

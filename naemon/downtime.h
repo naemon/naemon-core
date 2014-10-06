@@ -59,8 +59,6 @@ int handle_scheduled_downtime_by_id(unsigned long);
 int check_pending_flex_host_downtime(struct host *);
 int check_pending_flex_service_downtime(struct service *);
 
-int check_for_expired_downtime(void);
-
 int add_host_downtime(char *, time_t, char *, char *, time_t, time_t, time_t, int, unsigned long, unsigned long, unsigned long, int, int);
 int add_service_downtime(char *, char *, time_t, char *, char *, time_t, time_t, time_t, int, unsigned long, unsigned long, unsigned long, int, int);
 

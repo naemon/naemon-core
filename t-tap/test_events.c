@@ -92,7 +92,6 @@ int perform_scheduled_host_check(host *temp_host, int int1, double double1)
 	time(&now);
 	temp_host->last_check = now;
 }
-int check_for_expired_downtime(void) {}
 int check_for_nagios_updates(int int1, int int2) {}
 time_t get_next_service_notification_time(service *temp_service, time_t time_t1) {}
 int save_state_information(int int1) {}

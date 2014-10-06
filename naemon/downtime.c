@@ -23,6 +23,10 @@ static fanout_table *dt_fanout;
 #define DT_ETYPE (-4)
 #define DT_ETRIGGER (-5)
 #define DT_ETIME (-6)
+
+
+static void check_for_expired_downtime(void *arg);
+
 static const char *dt_strerror(int err)
 {
 	if (err > 0)
@@ -495,7 +499,7 @@ int register_downtime(int type, unsigned long downtime_id)
 			case the event is never triggered. The expire event will NOT cancel
 			a downtime event that is in effect */
 		log_debug_info(DEBUGL_DOWNTIME, 1, "Scheduling downtime expire event in case flexible downtime is never triggered\n");
-		temp_downtime->stop_event = schedule_new_event(EVENT_EXPIRE_DOWNTIME, TRUE, (temp_downtime->end_time + 1), FALSE, 0, NULL, FALSE, NULL, NULL, 0);
+		temp_downtime->stop_event = schedule_event((temp_downtime->end_time + 1), check_for_expired_downtime, NULL);
 	}
 
 	return OK;
@@ -828,8 +832,8 @@ int check_pending_flex_service_downtime(service *svc)
 }
 
 
-/* checks for (and removes) expired downtime entries */
-int check_for_expired_downtime(void)
+/* event handler: checks for (and removes) expired downtime entries */
+static void check_for_expired_downtime(void *arg)
 {
 	scheduled_downtime *temp_downtime = NULL;
 	scheduled_downtime *next_downtime = NULL;
@@ -858,7 +862,7 @@ int check_for_expired_downtime(void)
 					log_debug_info(DEBUGL_DOWNTIME, 1,
 					               "Unable to find host (%s) for downtime\n",
 					               temp_downtime->host_name);
-					return ERROR;
+					return; /* ERROR */
 				}
 
 				/* send a notification */
@@ -872,7 +876,7 @@ int check_for_expired_downtime(void)
 					               "Unable to find service (%s) host (%s) for downtime\n",
 					               temp_downtime->service_description,
 					               temp_downtime->host_name);
-					return ERROR;
+					return; /* ERROR */
 				}
 
 				/* send a notification */
@@ -889,7 +893,7 @@ int check_for_expired_downtime(void)
 		}
 	}
 
-	return OK;
+	return; /* OK */
 }
 
 
