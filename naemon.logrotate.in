@@ -8,6 +8,7 @@
     missingok
     notifempty
     postrotate
+      localstatedir=@localstatedir@
       [ -f @lockfile@ ] && kill -s USR1 `cat @lockfile@`
     endscript
     create 0664 @naemon_user@ @naemon_grp@
