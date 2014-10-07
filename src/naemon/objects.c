@@ -275,17 +275,11 @@ int get_service_count(void)
 
 static int create_object_table(const char *name, unsigned int elems, unsigned int size, void **ptr)
 {
-	void *ret;
 	if (!elems) {
 		*ptr = NULL;
 		return OK;
 	}
-	ret = nm_calloc(elems, size);
-	if (!ret) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Failed to allocate %s table with %u elements\n", name, elems);
-		return ERROR;
-	}
-	*ptr = ret;
+	*ptr = nm_calloc(elems, size);
 	return OK;
 }
 

@@ -86,19 +86,16 @@ timed_event *schedule_new_event(int event_type, int high_priority, time_t run_ti
 	               event_options);
 
 	new_event = nm_calloc(1, sizeof(timed_event));
-	if (new_event != NULL) {
-		new_event->event_type = event_type;
-		new_event->event_data = event_data;
-		new_event->event_args = event_args;
-		new_event->event_options = event_options;
-		new_event->run_time = run_time;
-		new_event->recurring = recurring;
-		new_event->event_interval = event_interval;
-		new_event->timing_func = timing_func;
-		new_event->compensate_for_time_change = compensate_for_time_change;
-		new_event->priority = high_priority;
-	} else
-		return NULL;
+	new_event->event_type = event_type;
+	new_event->event_data = event_data;
+	new_event->event_args = event_args;
+	new_event->event_options = event_options;
+	new_event->run_time = run_time;
+	new_event->recurring = recurring;
+	new_event->event_interval = event_interval;
+	new_event->timing_func = timing_func;
+	new_event->compensate_for_time_change = compensate_for_time_change;
+	new_event->priority = high_priority;
 
 	log_debug_info(DEBUGL_EVENTS, 0, " Event ID:                   %p\n", new_event);
 

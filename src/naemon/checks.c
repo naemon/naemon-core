@@ -408,12 +408,6 @@ int run_async_service_check(service *svc, int check_options, double latency, int
 	gettimeofday(&start_time, NULL);
 
 	cr = nm_calloc(1, sizeof(*cr));
-	if (!cr) {
-		clear_volatile_macros_r(&mac);
-		svc->latency = old_latency;
-		nm_free(processed_command);
-		return ERROR;
-	}
 	init_check_result(cr);
 
 	/* save check info */
@@ -1248,10 +1242,6 @@ void schedule_service_check(service *svc, time_t check_time, int options)
 		} else {
 			/* allocate memory for a new event item */
 			temp_event = nm_calloc(1, sizeof(timed_event));
-			if (temp_event == NULL) {
-				nm_log(NSLOG_RUNTIME_WARNING, "Warning: Could not reschedule check of service '%s' on host '%s'!\n", svc->description, svc->host_name);
-				return;
-			}
 		}
 
 		log_debug_info(DEBUGL_CHECKS, 2, "Scheduling new service check event.\n");
@@ -2167,12 +2157,6 @@ int run_async_host_check(host *hst, int check_options, double latency, int sched
 	gettimeofday(&start_time, NULL);
 
 	cr = nm_calloc(1, sizeof(*cr));
-	if (!cr) {
-		log_debug_info(DEBUGL_CHECKS, 0, "Failed to allocate checkresult struct\n");
-		clear_volatile_macros_r(&mac);
-		clear_host_macros_r(&mac);
-		return ERROR;
-	}
 	init_check_result(cr);
 
 	/* save check info */
