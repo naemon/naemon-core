@@ -34,10 +34,11 @@ static void reap_check_results(void *arg);
 static int process_host_check_result(host *hst, int new_state, char *old_plugin_output, char *old_long_plugin_output, int check_options, int reschedule_check, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded);
 static void check_host_result_freshness(void *arg);
 static void check_for_orphaned_hosts(void);				/* checks for orphaned hosts */
+static void handle_host_check_event(void *arg);
 
 static void check_service_result_freshness(void *arg);
 static void check_for_orphaned_services(void);				/* checks for orphaned services */
-
+static void handle_service_check_event(void *arg);
 
 
 /******************************************************************/
@@ -95,7 +96,7 @@ static void checks_init_hosts(void)
 		}
 
 		/* schedule a new host check event */
-		temp_host->next_check_event = schedule_new_event(EVENT_HOST_CHECK, FALSE, temp_host->next_check, FALSE, 0, NULL, TRUE, (void *)temp_host, NULL, temp_host->check_options);
+		temp_host->next_check_event = schedule_event(temp_host->next_check - time(NULL), handle_host_check_event, (void *)temp_host);
 	}
 
 }
@@ -149,7 +150,7 @@ static void checks_init_services(void)
 		}
 
 		/* create a new service check event */
-		temp_service->next_check_event = schedule_new_event(EVENT_SERVICE_CHECK, FALSE, temp_service->next_check, FALSE, 0, NULL, TRUE, (void *)temp_service, NULL, temp_service->check_options);
+		temp_service->next_check_event = schedule_event(temp_service->next_check - time(NULL), handle_service_check_event, (void *)temp_service);
 	}
 
 
@@ -216,7 +217,7 @@ static void reap_check_results(void *arg)
 }
 
 /******************************************************************/
-/********************* WORKER RESULT CALLBACKS ********************/
+/************************* EVENT CALLBACKS ************************/
 /******************************************************************/
 
 static void handle_worker_check(wproc_result *wpres, void *arg, int flags)
@@ -250,6 +251,87 @@ static void handle_worker_check(wproc_result *wpres, void *arg, int flags)
 	}
 	free_check_result(cr);
 	free(cr);
+}
+
+static void handle_service_check_event(void *arg)
+{
+	service *temp_service = (service *)arg;
+	int run_event = TRUE;	/* default action is to execute the event */
+	int nudge_seconds = 0;
+	double latency;
+	struct timeval tv;
+	struct timeval event_runtime;
+
+	/* get event latency */
+	gettimeofday(&tv, NULL);
+	event_runtime.tv_sec = temp_service->next_check;
+	event_runtime.tv_usec = 0;
+	latency = (double)(tv_delta_f(&event_runtime, &tv));
+
+	/* forced checks override normal check logic */
+	if (!(temp_service->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
+		/* don't run a service check if we're already maxed out on the number of parallel service checks...  */
+		if (max_parallel_service_checks != 0 && (currently_running_service_checks >= max_parallel_service_checks)) {
+			nudge_seconds = ranged_urand(5, 17);
+			logit(NSLOG_RUNTIME_WARNING, TRUE, "\tMax concurrent service checks (%d) has been reached.  Nudging %s:%s by %d seconds...\n", max_parallel_service_checks, temp_service->host_name, temp_service->description, nudge_seconds);
+			run_event = FALSE;
+		}
+
+		/* don't run a service check if active checks are disabled */
+		if (execute_service_checks == FALSE) {
+			log_debug_info(DEBUGL_EVENTS | DEBUGL_CHECKS, 1, "We're not executing service checks right now, so we'll skip check event for service '%s;%s'.\n", temp_service->host_name, temp_service->description);
+			run_event = FALSE;
+		}
+
+	}
+
+	/* reschedule the check if we can't run it now */
+	if (run_event == FALSE) {
+		if (nudge_seconds) {
+			/* We nudge the next check time when it is due to too many concurrent service checks */
+			temp_service->next_check = (time_t)(temp_service->next_check + nudge_seconds);
+		} else {
+			temp_service->next_check += check_window(temp_service);
+		}
+		temp_service->next_check_event = schedule_event(temp_service->next_check - time(NULL), handle_service_check_event, (void*)temp_service);
+	} else {
+		/* Otherwise, run the event */
+		run_scheduled_service_check(temp_service, temp_service->check_options, latency);
+	}
+}
+
+static void handle_host_check_event(void *arg)
+{
+	host *temp_host = (host *)arg;
+	int run_event = TRUE;	/* default action is to execute the event */
+	double latency;
+	struct timeval tv;
+	struct timeval event_runtime;
+
+	/* get event latency */
+	gettimeofday(&tv, NULL);
+	event_runtime.tv_sec = temp_host->next_check;
+	event_runtime.tv_usec = 0;
+	latency = (double)(tv_delta_f(&event_runtime, &tv));
+
+	/* forced checks override normal check logic */
+	if (!(temp_host->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
+
+		/* don't run a host check if active checks are disabled */
+		if (execute_host_checks == FALSE) {
+			log_debug_info(DEBUGL_EVENTS | DEBUGL_CHECKS, 1, "We're not executing host checks right now, so we'll skip host check event for host '%s'.\n", temp_host->name);
+			run_event = FALSE;
+		}
+	}
+
+	/* reschedule the check if we can't run it now */
+	if (run_event == FALSE) {
+		temp_host->next_check += check_window(temp_host);
+		temp_host->next_check_event = schedule_event(temp_host->next_check - time(NULL), handle_host_check_event, (void*)temp_host);
+	} else {
+		/* Otherwise, run the event */
+		run_scheduled_host_check(temp_host, temp_host->check_options, latency);
+	}
 }
 
 /******************************************************************/
@@ -1157,6 +1239,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 void schedule_service_check(service *svc, time_t check_time, int options)
 {
 	timed_event *temp_event = NULL;
+	time_t next_event_time = 0;
 	int use_original_event = TRUE;
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "schedule_service_check()\n");
@@ -1184,23 +1267,23 @@ void schedule_service_check(service *svc, time_t check_time, int options)
 	use_original_event = FALSE;
 
 	temp_event = (timed_event *)svc->next_check_event;
-
 	/*
 	 * If the service already has a check scheduled,
 	 * we need to decide which of the events to use
 	 */
 	if (temp_event != NULL) {
+		next_event_time = temp_event->run_time; /* FIXME */
 
-		log_debug_info(DEBUGL_CHECKS, 2, "Found another service check event for this service @ %s", ctime(&temp_event->run_time));
+		log_debug_info(DEBUGL_CHECKS, 2, "Found another service check event for this service @ %s", ctime(&next_event_time));
 
 		/* use the originally scheduled check unless we decide otherwise */
 		use_original_event = TRUE;
 
 		/* the original event is a forced check... */
-		if ((temp_event->event_options & CHECK_OPTION_FORCE_EXECUTION)) {
+		if ((svc->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
 
 			/* the new event is also forced and its execution time is earlier than the original, so use it instead */
-			if ((options & CHECK_OPTION_FORCE_EXECUTION) && (check_time < temp_event->run_time)) {
+			if ((options & CHECK_OPTION_FORCE_EXECUTION) && (check_time < next_event_time)) {
 				use_original_event = FALSE;
 				log_debug_info(DEBUGL_CHECKS, 2, "New service check event is forced and occurs before the existing event, so the new event will be used instead.\n");
 			}
@@ -1216,7 +1299,7 @@ void schedule_service_check(service *svc, time_t check_time, int options)
 			}
 
 			/* the new event is not forced either and its execution time is earlier than the original, so use it instead */
-			else if (check_time < temp_event->run_time) {
+			else if (check_time < next_event_time) {
 				use_original_event = FALSE;
 				log_debug_info(DEBUGL_CHECKS, 2, "New service check event occurs before the existing (older) event, so it will be used instead.\n");
 			}
@@ -1233,31 +1316,19 @@ void schedule_service_check(service *svc, time_t check_time, int options)
 		/* make sure we remove the old event from the queue */
 		if (temp_event) {
 			remove_event(nagios_squeue, temp_event);
-		} else {
-			/* allocate memory for a new event item */
-			temp_event = nm_calloc(1, sizeof(timed_event));
+			my_free(temp_event);
+			svc->next_check_event = NULL;
 		}
 
 		log_debug_info(DEBUGL_CHECKS, 2, "Scheduling new service check event.\n");
 
 		/* set the next service check event and time */
-		svc->next_check_event = temp_event;
 		svc->next_check = check_time;
 
 		/* save check options for retention purposes */
 		svc->check_options = options;
 
-		/* place the new event in the event queue */
-		temp_event->event_type = EVENT_SERVICE_CHECK;
-		temp_event->event_data = (void *)svc;
-		temp_event->event_args = (void *)NULL;
-		temp_event->event_options = options;
-		temp_event->run_time = svc->next_check;
-		temp_event->recurring = FALSE;
-		temp_event->event_interval = 0L;
-		temp_event->timing_func = NULL;
-		temp_event->compensate_for_time_change = TRUE;
-		add_event(nagios_squeue, temp_event);
+		svc->next_check_event = schedule_event(svc->next_check - time(NULL), handle_service_check_event, (void*)svc);
 	}
 
 	else {
@@ -1616,6 +1687,7 @@ void schedule_host_check(host *hst, time_t check_time, int options)
 {
 	timed_event *temp_event = NULL;
 	int use_original_event = TRUE;
+	time_t next_event_time = 0;
 
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "schedule_host_check()\n");
@@ -1648,17 +1720,18 @@ void schedule_host_check(host *hst, time_t check_time, int options)
 	 * to decide which check event to use
 	 */
 	if (temp_event != NULL) {
+		next_event_time = temp_event->run_time; /* FIXME */
 
-		log_debug_info(DEBUGL_CHECKS, 2, "Found another host check event for this host @ %s", ctime(&temp_event->run_time));
+		log_debug_info(DEBUGL_CHECKS, 2, "Found another host check event for this host @ %s", ctime(&next_event_time));
 
 		/* use the originally scheduled check unless we decide otherwise */
 		use_original_event = TRUE;
 
 		/* the original event is a forced check... */
-		if ((temp_event->event_options & CHECK_OPTION_FORCE_EXECUTION)) {
+		if ((hst->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
 
 			/* the new event is also forced and its execution time is earlier than the original, so use it instead */
-			if ((options & CHECK_OPTION_FORCE_EXECUTION) && (check_time < temp_event->run_time)) {
+			if ((options & CHECK_OPTION_FORCE_EXECUTION) && (check_time < next_event_time)) {
 				log_debug_info(DEBUGL_CHECKS, 2, "New host check event is forced and occurs before the existing event, so the new event be used instead.\n");
 				use_original_event = FALSE;
 			}
@@ -1674,7 +1747,7 @@ void schedule_host_check(host *hst, time_t check_time, int options)
 			}
 
 			/* the new event is not forced either and its execution time is earlier than the original, so use it instead */
-			else if (check_time < temp_event->run_time) {
+			else if (check_time < next_event_time) {
 				use_original_event = FALSE;
 				log_debug_info(DEBUGL_CHECKS, 2, "New host check event occurs before the existing (older) event, so it will be used instead.\n");
 			}
@@ -1694,27 +1767,17 @@ void schedule_host_check(host *hst, time_t check_time, int options)
 		/* possibly allocate memory for a new event item */
 		if (temp_event) {
 			remove_event(nagios_squeue, temp_event);
+			my_free(temp_event);
+			hst->next_check_event = NULL;
 		}
-		temp_event = nm_calloc(1, sizeof(timed_event));
 
 		/* set the next host check event and time */
-		hst->next_check_event = temp_event;
 		hst->next_check = check_time;
 
 		/* save check options for retention purposes */
 		hst->check_options = options;
 
-		/* place the new event in the event queue */
-		temp_event->event_type = EVENT_HOST_CHECK;
-		temp_event->event_data = (void *)hst;
-		temp_event->event_args = (void *)NULL;
-		temp_event->event_options = options;
-		temp_event->run_time = hst->next_check;
-		temp_event->recurring = FALSE;
-		temp_event->event_interval = 0L;
-		temp_event->timing_func = NULL;
-		temp_event->compensate_for_time_change = TRUE;
-		add_event(nagios_squeue, temp_event);
+		hst->next_check_event = schedule_event(hst->next_check - time(NULL), handle_host_check_event, (void*)hst);
 	}
 
 	else {

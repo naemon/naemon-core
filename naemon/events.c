@@ -207,85 +207,6 @@ void remove_event(squeue_t *sq, timed_event *event)
 }
 
 
-static int should_run_event(timed_event *temp_event)
-{
-	int run_event = TRUE;	/* default action is to execute the event */
-	int nudge_seconds = 0;
-
-	/* we only care about jobs that cause processes to run */
-	if (temp_event->event_type != EVENT_HOST_CHECK &&
-	    temp_event->event_type != EVENT_SERVICE_CHECK) {
-		return TRUE;
-	}
-
-	/* run a few checks before executing a service check... */
-	if (temp_event->event_type == EVENT_SERVICE_CHECK) {
-		service *temp_service = (service *)temp_event->event_data;
-
-		/* forced checks override normal check logic */
-		if ((temp_service->check_options & CHECK_OPTION_FORCE_EXECUTION))
-			return TRUE;
-
-		/* don't run a service check if we're already maxed out on the number of parallel service checks...  */
-		if (max_parallel_service_checks != 0 && (currently_running_service_checks >= max_parallel_service_checks)) {
-			nudge_seconds = ranged_urand(5, 17);
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "\tMax concurrent service checks (%d) has been reached.  Nudging %s:%s by %d seconds...\n", max_parallel_service_checks, temp_service->host_name, temp_service->description, nudge_seconds);
-			run_event = FALSE;
-		}
-
-		/* don't run a service check if active checks are disabled */
-		if (execute_service_checks == FALSE) {
-			log_debug_info(DEBUGL_EVENTS | DEBUGL_CHECKS, 1, "We're not executing service checks right now, so we'll skip check event for service '%s;%s'.\n", temp_service->host_name, temp_service->description);
-			run_event = FALSE;
-		}
-
-		/* reschedule the check if we can't run it now */
-		if (run_event == FALSE) {
-			remove_event(nagios_squeue, temp_event);
-
-			if (nudge_seconds) {
-				/* We nudge the next check time when it is due to too many concurrent service checks */
-				temp_service->next_check = (time_t)(temp_service->next_check + nudge_seconds);
-			} else {
-				temp_service->next_check += check_window(temp_service);
-			}
-
-			temp_event->run_time = temp_service->next_check;
-			reschedule_event(nagios_squeue, temp_event);
-			update_service_status(temp_service, FALSE);
-
-			run_event = FALSE;
-		}
-	}
-	/* run a few checks before executing a host check... */
-	else if (temp_event->event_type == EVENT_HOST_CHECK) {
-		host *temp_host = (host *)temp_event->event_data;
-
-		/* forced checks override normal check logic */
-		if ((temp_host->check_options & CHECK_OPTION_FORCE_EXECUTION))
-			return TRUE;
-
-		/* don't run a host check if active checks are disabled */
-		if (execute_host_checks == FALSE) {
-			log_debug_info(DEBUGL_EVENTS | DEBUGL_CHECKS, 1, "We're not executing host checks right now, so we'll skip host check event for host '%s'.\n", temp_host->name);
-			run_event = FALSE;
-		}
-
-		/* reschedule the host check if we can't run it right now */
-		if (run_event == FALSE) {
-			remove_event(nagios_squeue, temp_event);
-			temp_host->next_check += check_window(temp_host);
-			temp_event->run_time = temp_host->next_check;
-			reschedule_event(nagios_squeue, temp_event);
-			update_host_status(temp_host, FALSE);
-			run_event = FALSE;
-		}
-	}
-
-	return run_event;
-}
-
-
 /* this is the main event handler loop */
 int event_execution_loop(void)
 {
@@ -388,10 +309,6 @@ int event_execution_loop(void)
 		if (tv_delta_msec(&now, event_runtime) >= 0)
 			continue;
 
-		/* move on if we shouldn't run this event */
-		if (should_run_event(temp_event) == FALSE)
-			continue;
-
 		/* handle the event */
 		handle_timed_event(temp_event);
 
@@ -420,8 +337,6 @@ int event_execution_loop(void)
 /* handles a timed event */
 int handle_timed_event(timed_event *event)
 {
-	host *temp_host = NULL;
-	service *temp_service = NULL;
 	void (*userfunc)(void *);
 	struct timeval tv;
 	const struct timeval *event_runtime;
@@ -446,26 +361,6 @@ int handle_timed_event(timed_event *event)
 
 	/* how should we handle the event? */
 	switch (event->event_type) {
-
-	case EVENT_SERVICE_CHECK:
-
-		temp_service = (service *)event->event_data;
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Service Check Event ==> Host: '%s', Service: '%s', Options: %d, Latency: %f sec\n", temp_service->host_name, temp_service->description, event->event_options, latency);
-
-		/* run the service check */
-		run_scheduled_service_check(temp_service, event->event_options, latency);
-		break;
-
-	case EVENT_HOST_CHECK:
-
-		temp_host = (host *)event->event_data;
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** Host Check Event ==> Host: '%s', Options: %d, Latency: %f sec\n", temp_host->name, event->event_options, latency);
-
-		/* run the host check */
-		run_scheduled_host_check(temp_host, event->event_options, latency);
-		break;
 
 	case EVENT_USER_FUNCTION:
 
