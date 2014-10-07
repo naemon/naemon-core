@@ -439,11 +439,6 @@ int main(int argc, char **argv)
 	else
 		naemon_binary_path = nm_strdup(argv[0]);
 
-	if (!naemon_binary_path) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to allocate memory for naemon_binary_path\n");
-		exit(EXIT_FAILURE);
-	}
-
 	if (!(nagios_iobs = iobroker_create())) {
 		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to create IO broker set: %s\n",
 		      strerror(errno));

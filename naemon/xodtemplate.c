@@ -1462,16 +1462,10 @@ static xodtemplate_customvariablesmember *xodtemplate_add_custom_variable_to_obj
 
 	/* allocate memory for a new member */
 	new_customvariablesmember = nm_malloc(sizeof(xodtemplate_customvariablesmember));
-	if ((new_customvariablesmember->variable_name = nm_strdup(varname)) == NULL) {
-		my_free(new_customvariablesmember);
-		return NULL;
-	}
+	new_customvariablesmember->variable_name = nm_strdup(varname);
+
 	if (varvalue) {
-		if ((new_customvariablesmember->variable_value = nm_strdup(varvalue)) == NULL) {
-			my_free(new_customvariablesmember->variable_name);
-			my_free(new_customvariablesmember);
-			return NULL;
-		}
+		new_customvariablesmember->variable_value = nm_strdup(varvalue);
 	} else
 		new_customvariablesmember->variable_value = NULL;
 

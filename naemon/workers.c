@@ -720,8 +720,10 @@ static struct wproc_job *create_job(void (*callback)(struct wproc_result *, void
 	job->callback = callback;
 	job->data = data;
 	job->timeout = timeout;
-	if (fanout_add(wp->jobs, job->id, job) < 0 || !(job->command = nm_strdup(cmd))) {
-		free(job);
+	job->command = nm_strdup(cmd);
+	if (fanout_add(wp->jobs, job->id, job) < 0) {
+		my_free(job->command);
+		my_free(job);
 		return NULL;
 	}
 
