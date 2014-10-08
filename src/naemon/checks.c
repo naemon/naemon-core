@@ -31,7 +31,6 @@
 
 /* forward declarations */
 static const char *spool_file_source_name(void *source);
-static void check_orphaned_eventhandler(void *args);
 static void reap_check_results(void *arg);
 
 
@@ -60,28 +59,11 @@ void checks_init(void)
 
 	/* add a check result reaper event */
 	schedule_event(check_reaper_interval, reap_check_results, NULL);
-
-	/* add an orphaned check event */
-	if (check_orphaned_services == TRUE || check_orphaned_hosts == TRUE) {
-		schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_orphaned_eventhandler, NULL);
-	}
 }
 
 /******************************************************************/
 /********************** CHECK REAPER FUNCTIONS ********************/
 /******************************************************************/
-
-static void check_orphaned_eventhandler(void *args)
-{
-	/* Reschedule, since recurring */
-	schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_orphaned_eventhandler, NULL);
-
-	/* check for orphaned hosts and services */
-	if (check_orphaned_hosts == TRUE)
-		check_for_orphaned_hosts();
-	if (check_orphaned_services == TRUE)
-		check_for_orphaned_services();
-}
 
 /* reaps host and service check results */
 static void reap_check_results(void *arg)

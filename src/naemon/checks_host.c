@@ -20,28 +20,33 @@
 #include "defaults.h"
 #include <string.h>
 
-/*#define DEBUG_CHECKS*/
-/*#define DEBUG_HOST_CHECKS 1*/
-
-
 #ifdef USE_EVENT_BROKER
 #include "neberrors.h"
 #endif
 
-
-static int process_host_check_result(host *hst, int new_state, char *old_plugin_output, char *old_long_plugin_output, int check_options, int reschedule_check, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded);
-static void check_host_result_freshness(void *arg);
+/* Scheduling (before worker job is started) */
 static void handle_host_check_event(void *arg);
+static int run_scheduled_host_check(host *hst, int check_options, double latency);
+static int run_async_host_check(host *hst, int check_options, double latency, int scheduled_check, int reschedule_check, int *time_is_valid, time_t *preferred_time);
+
+/* Result handling (After worker job is executed) */
 static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags);
+static int process_host_check_result(host *hst, int new_state, char *old_plugin_output, char *old_long_plugin_output, int check_options, int reschedule_check, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded);
+static int adjust_host_check_attempt(host *hst, int is_active);
+static int handle_host_state(host *hst, int *alert_recorded);
 
-static int is_host_result_fresh(host *, time_t, int); /* determines if a host's check results are fresh */
-static int check_host_check_viability(host *, int, int *, time_t *);
-static int adjust_host_check_attempt(host *, int);
-static int determine_host_reachability(host *);
-static int run_scheduled_host_check(host *, int, double);
-static int run_async_host_check(host *, int, double, int, int, int *, time_t *);
-static int handle_host_state(host *, int *); /* top level host state handler */
+/* Extra features */
+static void check_host_result_freshness(void *arg);
+static void check_for_orphaned_hosts_eventhandler(void *arg);
 
+/* Status functions, immutable */
+static int is_host_result_fresh(host *temp_host, time_t current_time, int log_this);
+static int check_host_check_viability(host *hst, int check_options, int *time_is_valid, time_t *new_time);
+static int determine_host_reachability(host *hst);
+
+/******************************************************************************
+ *******************************  INIT METHODS  *******************************
+ ******************************************************************************/
 
 void checks_init_hosts(void)
 {
@@ -101,78 +106,15 @@ void checks_init_hosts(void)
 	if (check_host_freshness == TRUE) {
 		schedule_event(host_freshness_check_interval, check_host_result_freshness, NULL);
 	}
-}
 
-
-
-static void handle_host_check_event(void *arg)
-{
-	host *temp_host = (host *)arg;
-	int run_event = TRUE;	/* default action is to execute the event */
-	double latency;
-	struct timeval tv;
-	struct timeval event_runtime;
-
-	/* get event latency */
-	gettimeofday(&tv, NULL);
-	event_runtime.tv_sec = temp_host->next_check;
-	event_runtime.tv_usec = 0;
-	latency = (double)(tv_delta_f(&event_runtime, &tv));
-
-	/* forced checks override normal check logic */
-	if (!(temp_host->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
-
-		/* don't run a host check if active checks are disabled */
-		if (execute_host_checks == FALSE) {
-			log_debug_info(DEBUGL_EVENTS | DEBUGL_CHECKS, 1, "We're not executing host checks right now, so we'll skip host check event for host '%s'.\n", temp_host->name);
-			run_event = FALSE;
-		}
-	}
-
-	/* reschedule the check if we can't run it now */
-	if (run_event == FALSE) {
-		temp_host->next_check += check_window(temp_host);
-		temp_host->next_check_event = schedule_event(temp_host->next_check - time(NULL), handle_host_check_event, (void*)temp_host);
-	} else {
-		/* Otherwise, run the event */
-		run_scheduled_host_check(temp_host, temp_host->check_options, latency);
+	if (check_orphaned_hosts == TRUE) {
+		schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_for_orphaned_hosts_eventhandler, NULL);
 	}
 }
 
-static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags)
-{
-	check_result *cr = (check_result *)arg;
-	if(wpres) {
-		memcpy(&cr->rusage, &wpres->rusage, sizeof(wpres->rusage));
-		cr->start_time.tv_sec = wpres->start.tv_sec;
-		cr->start_time.tv_usec = wpres->start.tv_usec;
-		cr->finish_time.tv_sec = wpres->stop.tv_sec;
-		cr->finish_time.tv_usec = wpres->stop.tv_usec;
-		if (WIFEXITED(wpres->wait_status)) {
-			cr->return_code = WEXITSTATUS(wpres->wait_status);
-		} else {
-			cr->return_code = STATE_UNKNOWN;
-		}
-
-		if (wpres->outstd && *wpres->outstd) {
-			cr->output = nm_strdup(wpres->outstd);
-		} else if (wpres->outerr && *wpres->outerr) {
-			nm_asprintf(&cr->output, "(No output on stdout) stderr: %s", wpres->outerr);
-		} else {
-			cr->output = NULL;
-		}
-
-		cr->early_timeout = wpres->early_timeout;
-		cr->exited_ok = wpres->exited_ok;
-		cr->engine = NULL;
-		cr->source = wpres->source;
-		process_check_result(cr);
-	}
-	free_check_result(cr);
-	free(cr);
-}
-
-
+/******************************************************************************
+ ********************************  SCHEDULING  ********************************
+ ******************************************************************************/
 
 /* schedules an immediate or delayed host check */
 void schedule_host_check(host *hst, time_t check_time, int options)
@@ -286,262 +228,39 @@ void schedule_host_check(host *hst, time_t check_time, int options)
 	return;
 }
 
-
-/* checks host dependencies */
-int check_host_dependencies(host *hst, int dependency_type)
+static void handle_host_check_event(void *arg)
 {
-	hostdependency *temp_dependency = NULL;
-	objectlist *list;
-	host *temp_host = NULL;
-	int state = HOST_UP;
-	time_t current_time = 0L;
+	host *temp_host = (host *)arg;
+	int run_event = TRUE;	/* default action is to execute the event */
+	double latency;
+	struct timeval tv;
+	struct timeval event_runtime;
 
+	/* get event latency */
+	gettimeofday(&tv, NULL);
+	event_runtime.tv_sec = temp_host->next_check;
+	event_runtime.tv_usec = 0;
+	latency = (double)(tv_delta_f(&event_runtime, &tv));
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_host_dependencies()\n");
+	/* forced checks override normal check logic */
+	if (!(temp_host->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
 
-	if (dependency_type == NOTIFICATION_DEPENDENCY) {
-		list = hst->notify_deps;
+		/* don't run a host check if active checks are disabled */
+		if (execute_host_checks == FALSE) {
+			log_debug_info(DEBUGL_EVENTS | DEBUGL_CHECKS, 1, "We're not executing host checks right now, so we'll skip host check event for host '%s'.\n", temp_host->name);
+			run_event = FALSE;
+		}
+	}
+
+	/* reschedule the check if we can't run it now */
+	if (run_event == FALSE) {
+		temp_host->next_check += check_window(temp_host);
+		temp_host->next_check_event = schedule_event(temp_host->next_check - time(NULL), handle_host_check_event, (void*)temp_host);
 	} else {
-		list = hst->exec_deps;
+		/* Otherwise, run the event */
+		run_scheduled_host_check(temp_host, temp_host->check_options, latency);
 	}
-
-	/* check all dependencies... */
-	for (; list; list = list->next) {
-		temp_dependency = (hostdependency *)list->object_ptr;
-
-		/* find the host we depend on... */
-		if ((temp_host = temp_dependency->master_host_ptr) == NULL)
-			continue;
-
-		/* skip this dependency if it has a timeperiod and the current time isn't valid */
-		time(&current_time);
-		if (temp_dependency->dependency_period != NULL && check_time_against_period(current_time, temp_dependency->dependency_period_ptr) == ERROR)
-			return FALSE;
-
-		/* get the status to use (use last hard state if its currently in a soft state) */
-		if (temp_host->state_type == SOFT_STATE && soft_state_dependencies == FALSE)
-			state = temp_host->last_hard_state;
-		else
-			state = temp_host->current_state;
-
-		/* is the host we depend on in state that fails the dependency tests? */
-		if (flag_isset(temp_dependency->failure_options, 1 << state))
-			return DEPENDENCIES_FAILED;
-
-		/* immediate dependencies ok at this point - check parent dependencies if necessary */
-		if (temp_dependency->inherits_parent == TRUE) {
-			if (check_host_dependencies(temp_host, dependency_type) != DEPENDENCIES_OK)
-				return DEPENDENCIES_FAILED;
-		}
-	}
-
-	return DEPENDENCIES_OK;
 }
-
-
-/* check for hosts that never returned from a check... */
-void check_for_orphaned_hosts(void)
-{
-	host *temp_host = NULL;
-	time_t current_time = 0L;
-	time_t expected_time = 0L;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_for_orphaned_hosts()\n");
-
-	/* get the current time */
-	time(&current_time);
-
-	/* check all hosts... */
-	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
-
-		/* skip hosts that don't have a set check interval (on-demand checks are missed by the orphan logic) */
-		if (temp_host->next_check == (time_t)0L)
-			continue;
-
-		/* skip hosts that are not currently executing */
-		if (temp_host->is_executing == FALSE)
-			continue;
-
-		/* determine the time at which the check results should have come in (allow 10 minutes slack time) */
-		expected_time = (time_t)(temp_host->next_check + temp_host->latency + host_check_timeout + check_reaper_interval + 600);
-
-		/* this host was supposed to have executed a while ago, but for some reason the results haven't come back in... */
-		if (expected_time < current_time) {
-
-			/* log a warning */
-			nm_log(NSLOG_RUNTIME_WARNING,
-			       "Warning: The check of host '%s' looks like it was orphaned (results never came back).  I'm scheduling an immediate check of the host...\n", temp_host->name);
-
-			log_debug_info(DEBUGL_CHECKS, 1, "Host '%s' was orphaned, so we're scheduling an immediate check...\n", temp_host->name);
-
-			/* decrement the number of running host checks */
-			if (currently_running_host_checks > 0)
-				currently_running_host_checks--;
-
-			/* disable the executing flag */
-			temp_host->is_executing = FALSE;
-
-			/* schedule an immediate check of the host */
-			schedule_host_check(temp_host, current_time, CHECK_OPTION_ORPHAN_CHECK);
-		}
-
-	}
-
-	return;
-}
-
-
-/* event handler for checking freshness of host results */
-static void check_host_result_freshness(void *arg)
-{
-	host *temp_host = NULL;
-	time_t current_time = 0L;
-
-	/* get the current time */
-	time(&current_time);
-
-	/* Reschedule, since recurring */
-	schedule_event(host_freshness_check_interval, check_host_result_freshness, NULL);
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_host_result_freshness()\n");
-	log_debug_info(DEBUGL_CHECKS, 2, "Attempting to check the freshness of host check results...\n");
-
-	/* bail out if we're not supposed to be checking freshness */
-	if (check_host_freshness == FALSE) {
-		log_debug_info(DEBUGL_CHECKS, 2, "Host freshness checking is disabled.\n");
-		return;
-	}
-
-
-	/* check all hosts... */
-	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
-
-		/* skip hosts we shouldn't be checking for freshness */
-		if (temp_host->check_freshness == FALSE)
-			continue;
-
-		/* skip hosts that have both active and passive checks disabled */
-		if (temp_host->checks_enabled == FALSE && temp_host->accept_passive_checks == FALSE)
-			continue;
-
-		/* skip hosts that are currently executing (problems here will be caught by orphaned host check) */
-		if (temp_host->is_executing == TRUE)
-			continue;
-
-		/* skip hosts that are already being freshened */
-		if (temp_host->is_being_freshened == TRUE)
-			continue;
-
-		/* see if the time is right... */
-		if (check_time_against_period(current_time, temp_host->check_period_ptr) == ERROR)
-			continue;
-
-		/* the results for the last check of this host are stale */
-		if (is_host_result_fresh(temp_host, current_time, TRUE) == FALSE) {
-
-			/* set the freshen flag */
-			temp_host->is_being_freshened = TRUE;
-
-			/* schedule an immediate forced check of the host */
-			schedule_host_check(temp_host, current_time, CHECK_OPTION_FORCE_EXECUTION | CHECK_OPTION_FRESHNESS_CHECK);
-		}
-	}
-
-	return;
-}
-
-
-/* checks to see if a hosts's check results are fresh */
-static int is_host_result_fresh(host *temp_host, time_t current_time, int log_this)
-{
-	time_t expiration_time = 0L;
-	int freshness_threshold = 0;
-	int days = 0;
-	int hours = 0;
-	int minutes = 0;
-	int seconds = 0;
-	int tdays = 0;
-	int thours = 0;
-	int tminutes = 0;
-	int tseconds = 0;
-	double interval = 0;
-
-	log_debug_info(DEBUGL_CHECKS, 2, "Checking freshness of host '%s'...\n", temp_host->name);
-
-	/* use user-supplied freshness threshold or auto-calculate a freshness threshold to use? */
-	if (temp_host->freshness_threshold == 0) {
-		if (temp_host->state_type == HARD_STATE || temp_host->current_state == STATE_OK) {
-			interval = temp_host->check_interval;
-		} else {
-			interval = temp_host->retry_interval;
-		}
-		freshness_threshold = (interval * interval_length) + temp_host->latency + additional_freshness_latency;
-	} else
-		freshness_threshold = temp_host->freshness_threshold;
-
-	log_debug_info(DEBUGL_CHECKS, 2, "Freshness thresholds: host=%d, use=%d\n", temp_host->freshness_threshold, freshness_threshold);
-
-	/* calculate expiration time */
-	/*
-	 * CHANGED 11/10/05 EG:
-	 * program start is only used in expiration time calculation
-	 * if > last check AND active checks are enabled, so active checks
-	 * can become stale immediately upon program startup
-	 */
-	if (temp_host->has_been_checked == FALSE)
-		expiration_time = (time_t)(event_start + freshness_threshold);
-	/*
-	 * CHANGED 06/19/07 EG:
-	 * Per Ton's suggestion (and user requests), only use program start
-	 * time over last check if no specific threshold has been set by user.
-	 * Problems can occur if Nagios is restarted more frequently that
-	 * freshness threshold intervals (hosts never go stale).
-	 */
-	else if (temp_host->checks_enabled == TRUE && event_start > temp_host->last_check && temp_host->freshness_threshold == 0)
-		expiration_time = (time_t)(event_start + freshness_threshold);
-	else
-		expiration_time = (time_t)(temp_host->last_check + freshness_threshold);
-
-	/*
-	 * If the check was last done passively, we assume it's going
-	 * to continue that way and we need to handle the fact that
-	 * Nagios might have been shut off for quite a long time. If so,
-	 * we mustn't spam freshness notifications but use event_start
-	 * instead of last_check to determine freshness expiration time.
-	 * The threshold for "long time" is determined as 61.8% of the normal
-	 * freshness threshold based on vast heuristical research (ie, "some
-	 * guy once told me the golden ratio is good for loads of stuff").
-	 */
-	if (temp_host->check_type == CHECK_TYPE_PASSIVE) {
-		if (temp_host->last_check < event_start &&
-		    event_start - last_program_stop > freshness_threshold * 0.618) {
-			expiration_time = event_start + freshness_threshold;
-		}
-	}
-
-	log_debug_info(DEBUGL_CHECKS, 2, "HBC: %d, PS: %lu, ES: %lu, LC: %lu, CT: %lu, ET: %lu\n", temp_host->has_been_checked, (unsigned long)program_start, (unsigned long)event_start, (unsigned long)temp_host->last_check, (unsigned long)current_time, (unsigned long)expiration_time);
-
-	/* the results for the last check of this host are stale */
-	if (expiration_time < current_time) {
-
-		get_time_breakdown((current_time - expiration_time), &days, &hours, &minutes, &seconds);
-		get_time_breakdown(freshness_threshold, &tdays, &thours, &tminutes, &tseconds);
-
-		/* log a warning */
-		if (log_this == TRUE)
-			nm_log(NSLOG_RUNTIME_WARNING,
-			       "Warning: The results of host '%s' are stale by %dd %dh %dm %ds (threshold=%dd %dh %dm %ds).  I'm forcing an immediate check of the host.\n", temp_host->name, days, hours, minutes, seconds, tdays, thours, tminutes, tseconds);
-
-		log_debug_info(DEBUGL_CHECKS, 1, "Check results for host '%s' are stale by %dd %dh %dm %ds (threshold=%dd %dh %dm %ds).  Forcing an immediate check of the host...\n", temp_host->name, days, hours, minutes, seconds, tdays, thours, tminutes, tseconds);
-
-		return FALSE;
-	} else
-		log_debug_info(DEBUGL_CHECKS, 1, "Check results for host '%s' are fresh.\n", temp_host->name);
-
-	return TRUE;
-}
-
 
 /* run a scheduled host check asynchronously */
 static int run_scheduled_host_check(host *hst, int check_options, double latency)
@@ -592,8 +311,6 @@ static int run_scheduled_host_check(host *hst, int check_options, double latency
 
 	return OK;
 }
-
-
 
 /* perform an asynchronous check of a host */
 /* scheduled host checks will use this, as will some checks that result from on-demand checks... */
@@ -762,6 +479,9 @@ static int run_async_host_check(host *hst, int check_options, double latency, in
 	return OK;
 }
 
+/******************************************************************************
+ *****************************  RESULT HANDLING  ******************************
+ ******************************************************************************/
 
 /* process results of an asynchronous host check */
 int handle_async_host_check_result(host *temp_host, check_result *queued_check_result)
@@ -1013,6 +733,38 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 	return OK;
 }
 
+static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags)
+{
+	check_result *cr = (check_result *)arg;
+	if(wpres) {
+		memcpy(&cr->rusage, &wpres->rusage, sizeof(wpres->rusage));
+		cr->start_time.tv_sec = wpres->start.tv_sec;
+		cr->start_time.tv_usec = wpres->start.tv_usec;
+		cr->finish_time.tv_sec = wpres->stop.tv_sec;
+		cr->finish_time.tv_usec = wpres->stop.tv_usec;
+		if (WIFEXITED(wpres->wait_status)) {
+			cr->return_code = WEXITSTATUS(wpres->wait_status);
+		} else {
+			cr->return_code = STATE_UNKNOWN;
+		}
+
+		if (wpres->outstd && *wpres->outstd) {
+			cr->output = nm_strdup(wpres->outstd);
+		} else if (wpres->outerr && *wpres->outerr) {
+			nm_asprintf(&cr->output, "(No output on stdout) stderr: %s", wpres->outerr);
+		} else {
+			cr->output = NULL;
+		}
+
+		cr->early_timeout = wpres->early_timeout;
+		cr->exited_ok = wpres->exited_ok;
+		cr->engine = NULL;
+		cr->source = wpres->source;
+		process_check_result(cr);
+	}
+	free_check_result(cr);
+	free(cr);
+}
 
 /* processes the result of a synchronous or asynchronous host check */
 static int process_host_check_result(host *hst, int new_state, char *old_plugin_output, char *old_long_plugin_output, int check_options, int reschedule_check, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded)
@@ -1305,74 +1057,6 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 	return OK;
 }
 
-
-/* checks viability of performing a host check */
-static int check_host_check_viability(host *hst, int check_options, int *time_is_valid, time_t *new_time)
-{
-	int result = OK;
-	int perform_check = TRUE;
-	time_t current_time = 0L;
-	time_t preferred_time = 0L;
-	int check_interval = 0;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_host_check_viability()\n");
-
-	/* make sure we have a host */
-	if (hst == NULL)
-		return ERROR;
-
-	/* get the check interval to use if we need to reschedule the check */
-	if (hst->state_type == SOFT_STATE && hst->current_state != HOST_UP)
-		check_interval = (hst->retry_interval * interval_length);
-	else
-		check_interval = (hst->check_interval * interval_length);
-
-	/* make sure check interval is positive - otherwise use 5 minutes out for next check */
-	if (check_interval <= 0)
-		check_interval = 300;
-
-	/* get the current time */
-	time(&current_time);
-
-	/* initialize the next preferred check time */
-	preferred_time = current_time;
-
-	/* can we check the host right now? */
-	if (!(check_options & CHECK_OPTION_FORCE_EXECUTION)) {
-
-		/* if checks of the host are currently disabled... */
-		if (hst->checks_enabled == FALSE) {
-			preferred_time = current_time + check_interval;
-			perform_check = FALSE;
-		}
-
-		/* make sure this is a valid time to check the host */
-		if (check_time_against_period((unsigned long)current_time, hst->check_period_ptr) == ERROR) {
-			log_debug_info(DEBUGL_CHECKS, 0, "Timeperiod check failed\n");
-			preferred_time = current_time;
-			if (time_is_valid)
-				*time_is_valid = FALSE;
-			perform_check = FALSE;
-		}
-
-		/* check host dependencies for execution */
-		if (check_host_dependencies(hst, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
-			log_debug_info(DEBUGL_CHECKS, 0, "Host check dependencies failed\n");
-			preferred_time = current_time + check_interval;
-			perform_check = FALSE;
-		}
-	}
-
-	/* pass back the next viable check time */
-	if (new_time)
-		*new_time = preferred_time;
-
-	result = (perform_check == TRUE) ? OK : ERROR;
-
-	return result;
-}
-
-
 /* adjusts current host check attempt before a new check is performed */
 static int adjust_host_check_attempt(host *hst, int is_active)
 {
@@ -1400,56 +1084,6 @@ static int adjust_host_check_attempt(host *hst, int is_active)
 
 	return OK;
 }
-
-
-/* determination of the host's state based on route availability*/
-/* used only to determine difference between DOWN and UNREACHABLE states */
-static int determine_host_reachability(host *hst)
-{
-	host *parent_host = NULL;
-	hostsmember *temp_hostsmember = NULL;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "determine_host_reachability(host=%s)\n", hst ? hst->name : "(NULL host!)");
-
-	if (hst == NULL)
-		return HOST_DOWN;
-
-	log_debug_info(DEBUGL_CHECKS, 2, "Determining state of host '%s': current state=%d (%s)\n", hst->name, hst->current_state, host_state_name(hst->current_state));
-
-	/* host is UP - no translation needed */
-	if (hst->current_state == HOST_UP) {
-		log_debug_info(DEBUGL_CHECKS, 2, "Host is UP, no state translation needed.\n");
-		return HOST_UP;
-	}
-
-	/* host has no parents, so it is DOWN */
-	if (hst->parent_hosts == NULL) {
-		log_debug_info(DEBUGL_CHECKS, 2, "Host has no parents, so it is DOWN.\n");
-		return HOST_DOWN;
-	}
-
-	/* check all parent hosts to see if we're DOWN or UNREACHABLE */
-	else {
-		for (temp_hostsmember = hst->parent_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-			parent_host = temp_hostsmember->host_ptr;
-			log_debug_info(DEBUGL_CHECKS, 2, "   Parent '%s' is %s\n", parent_host->name, host_state_name(parent_host->current_state));
-			/* bail out as soon as we find one parent host that is UP */
-			if (parent_host->current_state == HOST_UP) {
-				/* set the current state */
-				log_debug_info(DEBUGL_CHECKS, 2, "At least one parent (%s) is up, so host is DOWN.\n", parent_host->name);
-				return HOST_DOWN;
-			}
-		}
-	}
-
-	log_debug_info(DEBUGL_CHECKS, 2, "No parents were up, so host is UNREACHABLE.\n");
-	return HOST_UNREACHABLE;
-}
-
-
-/******************************************************************/
-/****************** HOST STATE HANDLER FUNCTIONS ******************/
-/******************************************************************/
 
 /* top level host state handler - occurs after every host check (soft/hard and active/passive) */
 static int handle_host_state(host *hst, int *alert_recorded)
@@ -1593,4 +1227,376 @@ static int handle_host_state(host *hst, int *alert_recorded)
 	}
 
 	return OK;
+}
+
+
+/******************************************************************************
+ ******************************  EXTRA FEATURES  ******************************
+ ******************************************************************************/
+
+/* event handler for checking freshness of host results */
+static void check_host_result_freshness(void *arg)
+{
+	host *temp_host = NULL;
+	time_t current_time = 0L;
+
+	/* get the current time */
+	time(&current_time);
+
+	/* Reschedule, since recurring */
+	schedule_event(host_freshness_check_interval, check_host_result_freshness, NULL);
+
+	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_host_result_freshness()\n");
+	log_debug_info(DEBUGL_CHECKS, 2, "Attempting to check the freshness of host check results...\n");
+
+	/* bail out if we're not supposed to be checking freshness */
+	if (check_host_freshness == FALSE) {
+		log_debug_info(DEBUGL_CHECKS, 2, "Host freshness checking is disabled.\n");
+		return;
+	}
+
+
+	/* check all hosts... */
+	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
+
+		/* skip hosts we shouldn't be checking for freshness */
+		if (temp_host->check_freshness == FALSE)
+			continue;
+
+		/* skip hosts that have both active and passive checks disabled */
+		if (temp_host->checks_enabled == FALSE && temp_host->accept_passive_checks == FALSE)
+			continue;
+
+		/* skip hosts that are currently executing (problems here will be caught by orphaned host check) */
+		if (temp_host->is_executing == TRUE)
+			continue;
+
+		/* skip hosts that are already being freshened */
+		if (temp_host->is_being_freshened == TRUE)
+			continue;
+
+		/* see if the time is right... */
+		if (check_time_against_period(current_time, temp_host->check_period_ptr) == ERROR)
+			continue;
+
+		/* the results for the last check of this host are stale */
+		if (is_host_result_fresh(temp_host, current_time, TRUE) == FALSE) {
+
+			/* set the freshen flag */
+			temp_host->is_being_freshened = TRUE;
+
+			/* schedule an immediate forced check of the host */
+			schedule_host_check(temp_host, current_time, CHECK_OPTION_FORCE_EXECUTION | CHECK_OPTION_FRESHNESS_CHECK);
+		}
+	}
+
+	return;
+}
+
+/* check for hosts that never returned from a check... */
+static void check_for_orphaned_hosts_eventhandler(void *arg)
+{
+	host *temp_host = NULL;
+	time_t current_time = 0L;
+	time_t expected_time = 0L;
+
+	schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_for_orphaned_hosts_eventhandler, arg);
+
+	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_for_orphaned_hosts()\n");
+
+	/* get the current time */
+	time(&current_time);
+
+	/* check all hosts... */
+	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
+
+		/* skip hosts that don't have a set check interval (on-demand checks are missed by the orphan logic) */
+		if (temp_host->next_check == (time_t)0L)
+			continue;
+
+		/* skip hosts that are not currently executing */
+		if (temp_host->is_executing == FALSE)
+			continue;
+
+		/* determine the time at which the check results should have come in (allow 10 minutes slack time) */
+		expected_time = (time_t)(temp_host->next_check + temp_host->latency + host_check_timeout + check_reaper_interval + 600);
+
+		/* this host was supposed to have executed a while ago, but for some reason the results haven't come back in... */
+		if (expected_time < current_time) {
+
+			/* log a warning */
+			nm_log(NSLOG_RUNTIME_WARNING,
+			       "Warning: The check of host '%s' looks like it was orphaned (results never came back).  I'm scheduling an immediate check of the host...\n", temp_host->name);
+
+			log_debug_info(DEBUGL_CHECKS, 1, "Host '%s' was orphaned, so we're scheduling an immediate check...\n", temp_host->name);
+
+			/* decrement the number of running host checks */
+			if (currently_running_host_checks > 0)
+				currently_running_host_checks--;
+
+			/* disable the executing flag */
+			temp_host->is_executing = FALSE;
+
+			/* schedule an immediate check of the host */
+			schedule_host_check(temp_host, current_time, CHECK_OPTION_ORPHAN_CHECK);
+		}
+
+	}
+
+	return;
+}
+
+/******************************************************************************
+ ****************************  STATUS / IMMUTABLE  ****************************
+ ******************************************************************************/
+
+/* checks host dependencies */
+int check_host_dependencies(host *hst, int dependency_type)
+{
+	hostdependency *temp_dependency = NULL;
+	objectlist *list;
+	host *temp_host = NULL;
+	int state = HOST_UP;
+	time_t current_time = 0L;
+
+
+	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_host_dependencies()\n");
+
+	if (dependency_type == NOTIFICATION_DEPENDENCY) {
+		list = hst->notify_deps;
+	} else {
+		list = hst->exec_deps;
+	}
+
+	/* check all dependencies... */
+	for (; list; list = list->next) {
+		temp_dependency = (hostdependency *)list->object_ptr;
+
+		/* find the host we depend on... */
+		if ((temp_host = temp_dependency->master_host_ptr) == NULL)
+			continue;
+
+		/* skip this dependency if it has a timeperiod and the current time isn't valid */
+		time(&current_time);
+		if (temp_dependency->dependency_period != NULL && check_time_against_period(current_time, temp_dependency->dependency_period_ptr) == ERROR)
+			return FALSE;
+
+		/* get the status to use (use last hard state if its currently in a soft state) */
+		if (temp_host->state_type == SOFT_STATE && soft_state_dependencies == FALSE)
+			state = temp_host->last_hard_state;
+		else
+			state = temp_host->current_state;
+
+		/* is the host we depend on in state that fails the dependency tests? */
+		if (flag_isset(temp_dependency->failure_options, 1 << state))
+			return DEPENDENCIES_FAILED;
+
+		/* immediate dependencies ok at this point - check parent dependencies if necessary */
+		if (temp_dependency->inherits_parent == TRUE) {
+			if (check_host_dependencies(temp_host, dependency_type) != DEPENDENCIES_OK)
+				return DEPENDENCIES_FAILED;
+		}
+	}
+
+	return DEPENDENCIES_OK;
+}
+
+/* checks to see if a hosts's check results are fresh */
+static int is_host_result_fresh(host *temp_host, time_t current_time, int log_this)
+{
+	time_t expiration_time = 0L;
+	int freshness_threshold = 0;
+	int days = 0;
+	int hours = 0;
+	int minutes = 0;
+	int seconds = 0;
+	int tdays = 0;
+	int thours = 0;
+	int tminutes = 0;
+	int tseconds = 0;
+	double interval = 0;
+
+	log_debug_info(DEBUGL_CHECKS, 2, "Checking freshness of host '%s'...\n", temp_host->name);
+
+	/* use user-supplied freshness threshold or auto-calculate a freshness threshold to use? */
+	if (temp_host->freshness_threshold == 0) {
+		if (temp_host->state_type == HARD_STATE || temp_host->current_state == STATE_OK) {
+			interval = temp_host->check_interval;
+		} else {
+			interval = temp_host->retry_interval;
+		}
+		freshness_threshold = (interval * interval_length) + temp_host->latency + additional_freshness_latency;
+	} else
+		freshness_threshold = temp_host->freshness_threshold;
+
+	log_debug_info(DEBUGL_CHECKS, 2, "Freshness thresholds: host=%d, use=%d\n", temp_host->freshness_threshold, freshness_threshold);
+
+	/* calculate expiration time */
+	/*
+	 * CHANGED 11/10/05 EG:
+	 * program start is only used in expiration time calculation
+	 * if > last check AND active checks are enabled, so active checks
+	 * can become stale immediately upon program startup
+	 */
+	if (temp_host->has_been_checked == FALSE)
+		expiration_time = (time_t)(event_start + freshness_threshold);
+	/*
+	 * CHANGED 06/19/07 EG:
+	 * Per Ton's suggestion (and user requests), only use program start
+	 * time over last check if no specific threshold has been set by user.
+	 * Problems can occur if Nagios is restarted more frequently that
+	 * freshness threshold intervals (hosts never go stale).
+	 */
+	else if (temp_host->checks_enabled == TRUE && event_start > temp_host->last_check && temp_host->freshness_threshold == 0)
+		expiration_time = (time_t)(event_start + freshness_threshold);
+	else
+		expiration_time = (time_t)(temp_host->last_check + freshness_threshold);
+
+	/*
+	 * If the check was last done passively, we assume it's going
+	 * to continue that way and we need to handle the fact that
+	 * Nagios might have been shut off for quite a long time. If so,
+	 * we mustn't spam freshness notifications but use event_start
+	 * instead of last_check to determine freshness expiration time.
+	 * The threshold for "long time" is determined as 61.8% of the normal
+	 * freshness threshold based on vast heuristical research (ie, "some
+	 * guy once told me the golden ratio is good for loads of stuff").
+	 */
+	if (temp_host->check_type == CHECK_TYPE_PASSIVE) {
+		if (temp_host->last_check < event_start &&
+		    event_start - last_program_stop > freshness_threshold * 0.618) {
+			expiration_time = event_start + freshness_threshold;
+		}
+	}
+
+	log_debug_info(DEBUGL_CHECKS, 2, "HBC: %d, PS: %lu, ES: %lu, LC: %lu, CT: %lu, ET: %lu\n", temp_host->has_been_checked, (unsigned long)program_start, (unsigned long)event_start, (unsigned long)temp_host->last_check, (unsigned long)current_time, (unsigned long)expiration_time);
+
+	/* the results for the last check of this host are stale */
+	if (expiration_time < current_time) {
+
+		get_time_breakdown((current_time - expiration_time), &days, &hours, &minutes, &seconds);
+		get_time_breakdown(freshness_threshold, &tdays, &thours, &tminutes, &tseconds);
+
+		/* log a warning */
+		if (log_this == TRUE)
+			nm_log(NSLOG_RUNTIME_WARNING,
+			       "Warning: The results of host '%s' are stale by %dd %dh %dm %ds (threshold=%dd %dh %dm %ds).  I'm forcing an immediate check of the host.\n", temp_host->name, days, hours, minutes, seconds, tdays, thours, tminutes, tseconds);
+
+		log_debug_info(DEBUGL_CHECKS, 1, "Check results for host '%s' are stale by %dd %dh %dm %ds (threshold=%dd %dh %dm %ds).  Forcing an immediate check of the host...\n", temp_host->name, days, hours, minutes, seconds, tdays, thours, tminutes, tseconds);
+
+		return FALSE;
+	} else
+		log_debug_info(DEBUGL_CHECKS, 1, "Check results for host '%s' are fresh.\n", temp_host->name);
+
+	return TRUE;
+}
+
+/* checks viability of performing a host check */
+static int check_host_check_viability(host *hst, int check_options, int *time_is_valid, time_t *new_time)
+{
+	int result = OK;
+	int perform_check = TRUE;
+	time_t current_time = 0L;
+	time_t preferred_time = 0L;
+	int check_interval = 0;
+
+	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_host_check_viability()\n");
+
+	/* make sure we have a host */
+	if (hst == NULL)
+		return ERROR;
+
+	/* get the check interval to use if we need to reschedule the check */
+	if (hst->state_type == SOFT_STATE && hst->current_state != HOST_UP)
+		check_interval = (hst->retry_interval * interval_length);
+	else
+		check_interval = (hst->check_interval * interval_length);
+
+	/* make sure check interval is positive - otherwise use 5 minutes out for next check */
+	if (check_interval <= 0)
+		check_interval = 300;
+
+	/* get the current time */
+	time(&current_time);
+
+	/* initialize the next preferred check time */
+	preferred_time = current_time;
+
+	/* can we check the host right now? */
+	if (!(check_options & CHECK_OPTION_FORCE_EXECUTION)) {
+
+		/* if checks of the host are currently disabled... */
+		if (hst->checks_enabled == FALSE) {
+			preferred_time = current_time + check_interval;
+			perform_check = FALSE;
+		}
+
+		/* make sure this is a valid time to check the host */
+		if (check_time_against_period((unsigned long)current_time, hst->check_period_ptr) == ERROR) {
+			log_debug_info(DEBUGL_CHECKS, 0, "Timeperiod check failed\n");
+			preferred_time = current_time;
+			if (time_is_valid)
+				*time_is_valid = FALSE;
+			perform_check = FALSE;
+		}
+
+		/* check host dependencies for execution */
+		if (check_host_dependencies(hst, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
+			log_debug_info(DEBUGL_CHECKS, 0, "Host check dependencies failed\n");
+			preferred_time = current_time + check_interval;
+			perform_check = FALSE;
+		}
+	}
+
+	/* pass back the next viable check time */
+	if (new_time)
+		*new_time = preferred_time;
+
+	result = (perform_check == TRUE) ? OK : ERROR;
+
+	return result;
+}
+
+/* determination of the host's state based on route availability*/
+/* used only to determine difference between DOWN and UNREACHABLE states */
+static int determine_host_reachability(host *hst)
+{
+	host *parent_host = NULL;
+	hostsmember *temp_hostsmember = NULL;
+
+	log_debug_info(DEBUGL_FUNCTIONS, 0, "determine_host_reachability(host=%s)\n", hst ? hst->name : "(NULL host!)");
+
+	if (hst == NULL)
+		return HOST_DOWN;
+
+	log_debug_info(DEBUGL_CHECKS, 2, "Determining state of host '%s': current state=%d (%s)\n", hst->name, hst->current_state, host_state_name(hst->current_state));
+
+	/* host is UP - no translation needed */
+	if (hst->current_state == HOST_UP) {
+		log_debug_info(DEBUGL_CHECKS, 2, "Host is UP, no state translation needed.\n");
+		return HOST_UP;
+	}
+
+	/* host has no parents, so it is DOWN */
+	if (hst->parent_hosts == NULL) {
+		log_debug_info(DEBUGL_CHECKS, 2, "Host has no parents, so it is DOWN.\n");
+		return HOST_DOWN;
+	}
+
+	/* check all parent hosts to see if we're DOWN or UNREACHABLE */
+	else {
+		for (temp_hostsmember = hst->parent_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
+			parent_host = temp_hostsmember->host_ptr;
+			log_debug_info(DEBUGL_CHECKS, 2, "   Parent '%s' is %s\n", parent_host->name, host_state_name(parent_host->current_state));
+			/* bail out as soon as we find one parent host that is UP */
+			if (parent_host->current_state == HOST_UP) {
+				/* set the current state */
+				log_debug_info(DEBUGL_CHECKS, 2, "At least one parent (%s) is up, so host is DOWN.\n", parent_host->name);
+				return HOST_DOWN;
+			}
+		}
+	}
+
+	log_debug_info(DEBUGL_CHECKS, 2, "No parents were up, so host is UNREACHABLE.\n");
+	return HOST_UNREACHABLE;
 }
