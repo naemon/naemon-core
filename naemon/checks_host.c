@@ -34,6 +34,14 @@ static void check_host_result_freshness(void *arg);
 static void handle_host_check_event(void *arg);
 static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags);
 
+static int is_host_result_fresh(host *, time_t, int); /* determines if a host's check results are fresh */
+static int check_host_check_viability(host *, int, int *, time_t *);
+static int adjust_host_check_attempt(host *, int);
+static int determine_host_reachability(host *);
+static int run_scheduled_host_check(host *, int, double);
+static int run_async_host_check(host *, int, double, int, int, int *, time_t *);
+static int handle_host_state(host *, int *); /* top level host state handler */
+
 
 void checks_init_hosts(void)
 {
@@ -444,7 +452,7 @@ static void check_host_result_freshness(void *arg)
 
 
 /* checks to see if a hosts's check results are fresh */
-int is_host_result_fresh(host *temp_host, time_t current_time, int log_this)
+static int is_host_result_fresh(host *temp_host, time_t current_time, int log_this)
 {
 	time_t expiration_time = 0L;
 	int freshness_threshold = 0;
@@ -534,7 +542,7 @@ int is_host_result_fresh(host *temp_host, time_t current_time, int log_this)
 
 
 /* run a scheduled host check asynchronously */
-int run_scheduled_host_check(host *hst, int check_options, double latency)
+static int run_scheduled_host_check(host *hst, int check_options, double latency)
 {
 	int result = OK;
 	time_t current_time = 0L;
@@ -587,7 +595,7 @@ int run_scheduled_host_check(host *hst, int check_options, double latency)
 
 /* perform an asynchronous check of a host */
 /* scheduled host checks will use this, as will some checks that result from on-demand checks... */
-int run_async_host_check(host *hst, int check_options, double latency, int scheduled_check, int reschedule_check, int *time_is_valid, time_t *preferred_time)
+static int run_async_host_check(host *hst, int check_options, double latency, int scheduled_check, int reschedule_check, int *time_is_valid, time_t *preferred_time)
 {
 	nagios_macros mac;
 	char *raw_command = NULL;
@@ -1292,7 +1300,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 
 
 /* checks viability of performing a host check */
-int check_host_check_viability(host *hst, int check_options, int *time_is_valid, time_t *new_time)
+static int check_host_check_viability(host *hst, int check_options, int *time_is_valid, time_t *new_time)
 {
 	int result = OK;
 	int perform_check = TRUE;
@@ -1359,7 +1367,7 @@ int check_host_check_viability(host *hst, int check_options, int *time_is_valid,
 
 
 /* adjusts current host check attempt before a new check is performed */
-int adjust_host_check_attempt(host *hst, int is_active)
+static int adjust_host_check_attempt(host *hst, int is_active)
 {
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "adjust_host_check_attempt()\n");
@@ -1389,7 +1397,7 @@ int adjust_host_check_attempt(host *hst, int is_active)
 
 /* determination of the host's state based on route availability*/
 /* used only to determine difference between DOWN and UNREACHABLE states */
-int determine_host_reachability(host *hst)
+static int determine_host_reachability(host *hst)
 {
 	host *parent_host = NULL;
 	hostsmember *temp_hostsmember = NULL;
@@ -1437,7 +1445,7 @@ int determine_host_reachability(host *hst)
 /******************************************************************/
 
 /* top level host state handler - occurs after every host check (soft/hard and active/passive) */
-int handle_host_state(host *hst, int *alert_recorded)
+static int handle_host_state(host *hst, int *alert_recorded)
 {
 	int state_change = FALSE;
 	int hard_state_change = FALSE;

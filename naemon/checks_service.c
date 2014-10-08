@@ -30,6 +30,11 @@ static void check_service_result_freshness(void *arg);
 static void handle_service_check_event(void *arg);
 static void handle_worker_service_check(wproc_result *wpres, void *arg, int flags);
 
+static int is_service_result_fresh(service *, time_t, int);
+static int check_service_check_viability(service *, int, int *, time_t *);
+static int run_scheduled_service_check(service *, int, double);
+static int run_async_service_check(service *, int, double, int, int, int *, time_t *);
+
 
 void checks_init_services(void)
 {
@@ -172,7 +177,7 @@ static void handle_worker_service_check(wproc_result *wpres, void *arg, int flag
 
 
 /* executes a scheduled service check */
-int run_scheduled_service_check(service *svc, int check_options, double latency)
+static int run_scheduled_service_check(service *svc, int check_options, double latency)
 {
 	int result = OK;
 	time_t preferred_time = 0L;
@@ -215,7 +220,7 @@ int run_scheduled_service_check(service *svc, int check_options, double latency)
 
 
 /* forks a child process to run a service check, but does not wait for the service check result */
-int run_async_service_check(service *svc, int check_options, double latency, int scheduled_check, int reschedule_check, int *time_is_valid, time_t *preferred_time)
+static int run_async_service_check(service *svc, int check_options, double latency, int scheduled_check, int reschedule_check, int *time_is_valid, time_t *preferred_time)
 {
 	nagios_macros mac;
 	char *raw_command = NULL;
@@ -1181,7 +1186,7 @@ void schedule_service_check(service *svc, time_t check_time, int options)
 
 
 /* checks viability of performing a service check */
-int check_service_check_viability(service *svc, int check_options, int *time_is_valid, time_t *new_time)
+static int check_service_check_viability(service *svc, int check_options, int *time_is_valid, time_t *new_time)
 {
 	int result = OK;
 	int perform_check = TRUE;
@@ -1415,7 +1420,7 @@ static void check_service_result_freshness(void *arg)
 
 
 /* tests whether or not a service's check results are fresh */
-int is_service_result_fresh(service *temp_service, time_t current_time, int log_this)
+static int is_service_result_fresh(service *temp_service, time_t current_time, int log_this)
 {
 	int freshness_threshold = 0;
 	time_t expiration_time = 0L;
