@@ -10,6 +10,8 @@
 #include "lib/libnaemon.h"
 #include "broker.h"
 #include "checks.h"
+#include "checks_service.h"
+#include "checks_host.h"
 #include "commands.h"
 #include "comments.h"
 #include "common.h"

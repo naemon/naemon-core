@@ -20,12 +20,6 @@ void handle_sigxfsz(void);				/* handle SIGXFSZ */
 int daemon_init(void);				     		/* switches to daemon mode */
 int drop_privileges(char *, char *);				/* drops privileges before startup */
 
-int process_check_result_queue(char *);
-int process_check_result_file(char *);
-int process_check_result(check_result *);
-int delete_check_result_file(char *);
-int init_check_result(check_result *);
-int free_check_result(check_result *);                  	/* frees memory associated with a host/service check result */
 int my_system(char *, int, int *, double *, char **, int);         	/* executes a command via popen(), but also protects against timeouts */
 int my_system_r(nagios_macros *mac, char *, int, int *, double *, char **, int); /* thread-safe version of the above */
 
