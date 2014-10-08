@@ -28,9 +28,6 @@ int xpddefault_open_service_perfdata_file(void);
 int xpddefault_close_host_perfdata_file(void);
 int xpddefault_close_service_perfdata_file(void);
 
-int xpddefault_process_host_perfdata_file(void);
-int xpddefault_process_service_perfdata_file(void);
-
 NAGIOS_END_DECL
 
 #endif
