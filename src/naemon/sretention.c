@@ -8,6 +8,7 @@
 #include "globals.h"
 #include "logging.h"
 #include "nm_alloc.h"
+#include "events.h"
 #include <string.h>
 
 /* hosts and services before attribute modifications */

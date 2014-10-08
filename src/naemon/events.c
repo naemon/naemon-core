@@ -17,6 +17,13 @@
 
 /* the event we're currently processing */
 static timed_event *current_event;
+static squeue_t *nagios_squeue = NULL; /* our scheduling queue */
+
+static void add_event(squeue_t *sq, timed_event *event);
+static void remove_event(squeue_t *sq, timed_event *event);
+
+static void compensate_for_system_time_change(unsigned long, unsigned long);
+static void adjust_timestamp_for_time_change(time_t last_time, time_t current_time, unsigned long time_difference, time_t *ts);
 
 /******************************************************************/
 /************ EVENT SCHEDULING/HANDLING FUNCTIONS *****************/
@@ -26,7 +33,7 @@ static timed_event *current_event;
  * Create the event queue
  * We oversize it somewhat to avoid unnecessary growing
  */
-int init_event_queue(void)
+void init_event_queue(void)
 {
 	unsigned int size;
 
@@ -35,152 +42,55 @@ int init_event_queue(void)
 		size = 4096;
 
 	nagios_squeue = squeue_create(size);
-	return 0;
 }
 
+void destroy_event_queue(void)
+{
+	/* free event queue data */
+	squeue_destroy(nagios_squeue, SQUEUE_FREE_DATA);
+	nagios_squeue = NULL;
+}
 
-timed_event *schedule_event(time_t time_left, void (*callback)(void *), void *args)
+timed_event *schedule_event(time_t time_left, void (*callback)(void *), void *storage)
 {
 	timed_event *new_event = nm_calloc(1, sizeof(timed_event));
-	time_t run_time = time_left + time(NULL);
 
-	new_event->event_type = EVENT_USER_FUNCTION;
-	new_event->event_data = (void*)callback;
-	new_event->event_args = args;
-	new_event->event_options = 0;
-	new_event->run_time = run_time;
-	new_event->recurring = FALSE;
-	new_event->event_interval = 0;
-	new_event->timing_func = NULL;
-	new_event->compensate_for_time_change = 0;
-	new_event->priority = 0;
+	new_event->run_time = time_left + time(NULL);
+	new_event->callback = callback;
+	new_event->storage = storage;
 
 	add_event(nagios_squeue, new_event);
 
 	return new_event;
-}
-
-/* schedule a new timed event */
-timed_event *schedule_new_event(int event_type, int high_priority, time_t run_time, int recurring, unsigned long event_interval, void *timing_func, int compensate_for_time_change, void *event_data, void *event_args, int event_options)
-{
-	timed_event *new_event;
-	char run_time_string[MAX_DATETIME_LENGTH] = "";
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "schedule_new_event()\n");
-
-	get_datetime_string(&run_time, run_time_string, MAX_DATETIME_LENGTH,
-	                    SHORT_DATE_TIME);
-	log_debug_info(DEBUGL_EVENTS, 0, "New Event Details:\n");
-	log_debug_info(DEBUGL_EVENTS, 0, " Type:                       EVENT_%s\n",
-	               EVENT_TYPE_STR(event_type));
-	log_debug_info(DEBUGL_EVENTS, 0, " High Priority:              %s\n",
-	               (high_priority ? "Yes" : "No"));
-	log_debug_info(DEBUGL_EVENTS, 0, " Run Time:                   %s\n",
-	               run_time_string);
-	log_debug_info(DEBUGL_EVENTS, 0, " Recurring:                  %s\n",
-	               (recurring ? "Yes" : "No"));
-	log_debug_info(DEBUGL_EVENTS, 0, " Event Interval:             %lu\n",
-	               event_interval);
-	log_debug_info(DEBUGL_EVENTS, 0, " Compensate for Time Change: %s\n",
-	               (compensate_for_time_change ? "Yes" : "No"));
-	log_debug_info(DEBUGL_EVENTS, 0, " Event Options:              %d\n",
-	               event_options);
-
-	new_event = nm_calloc(1, sizeof(timed_event));
-	new_event->event_type = event_type;
-	new_event->event_data = event_data;
-	new_event->event_args = event_args;
-	new_event->event_options = event_options;
-	new_event->run_time = run_time;
-	new_event->recurring = recurring;
-	new_event->event_interval = event_interval;
-	new_event->timing_func = timing_func;
-	new_event->compensate_for_time_change = compensate_for_time_change;
-	new_event->priority = high_priority;
-
-	log_debug_info(DEBUGL_EVENTS, 0, " Event ID:                   %p\n", new_event);
-
-	/* add the event to the event list */
-	add_event(nagios_squeue, new_event);
-
-	return new_event;
-}
-
-
-/* reschedule an event in order of execution time */
-void reschedule_event(squeue_t *sq, timed_event *event)
-{
-	time_t current_time = 0L;
-	time_t (*timingfunc)(void);
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "reschedule_event()\n");
-
-	/* reschedule recurring events... */
-	if (event->recurring == TRUE) {
-
-		/* use custom timing function */
-		if (event->timing_func != NULL) {
-			timingfunc = event->timing_func;
-			event->run_time = (*timingfunc)();
-		}
-
-		/* normal recurring events */
-		else {
-			event->run_time = event->run_time + event->event_interval;
-			time(&current_time);
-			if (event->run_time < current_time)
-				event->run_time = current_time;
-		}
-	}
-
-	/* add the event to the event list */
-	add_event(sq, event);
-
-	return;
 }
 
 
 /* add an event to list ordered by execution time */
-void add_event(squeue_t *sq, timed_event *event)
+static void add_event(squeue_t *sq, timed_event *event)
 {
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "add_event()\n");
 
 	if (event->sq_event) {
 		nm_log(NSLOG_RUNTIME_ERROR,
-		       "Error: Adding %s event that seems to already be scheduled\n",
-		       EVENT_TYPE_STR(event->event_type));
+		       "Error: Adding event that seems to already be scheduled\n");
 		remove_event(sq, event);
 	}
 
-	if (event->priority) {
-		event->sq_event = squeue_add_usec(sq, event->run_time, event->priority - 1, event);
-	} else {
-		event->sq_event = squeue_add(sq, event->run_time, event);
-	}
-	if (!event->sq_event) {
-		nm_log(NSLOG_RUNTIME_ERROR, "Error: Failed to add event to squeue '%p' with prio %u: %s\n",
-		       sq, event->priority, strerror(errno));
-	}
+	event->sq_event = squeue_add(sq, event->run_time, event);
 
-#ifdef USE_EVENT_BROKER
-	else {
-		/* send event data to broker */
-		broker_timed_event(NEBTYPE_TIMEDEVENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, event, NULL);
+	if (!event->sq_event) {
+		nm_log(NSLOG_RUNTIME_ERROR,
+		       "Error: Failed to add event to squeue '%p': %s\n", sq, strerror(errno));
 	}
-#endif
 
 	return;
 }
 
 
 /* remove an event from the queue */
-void remove_event(squeue_t *sq, timed_event *event)
+static void remove_event(squeue_t *sq, timed_event *event)
 {
-#ifdef USE_EVENT_BROKER
-	/* send event data to broker */
-	broker_timed_event(NEBTYPE_TIMEDEVENT_REMOVE, NEBFLAG_NONE, NEBATTR_NONE, event, NULL);
-#endif
 	if (!event || !event->sq_event)
 		return;
 
@@ -188,8 +98,7 @@ void remove_event(squeue_t *sq, timed_event *event)
 		squeue_remove(sq, event->sq_event);
 	else
 		nm_log(NSLOG_RUNTIME_ERROR,
-		       "Error: remove_event() called for %s event with NULL sq parameter\n",
-		       EVENT_TYPE_STR(event->event_type));
+		       "Error: remove_event() called for event with NULL sq parameter\n");
 
 	event->sq_event = NULL; /* mark this event as unscheduled */
 
@@ -206,9 +115,15 @@ void remove_event(squeue_t *sq, timed_event *event)
 	}
 }
 
+void destroy_event(timed_event *event)
+{
+	remove_event(nagios_squeue, event);
+	free(event);
+}
+
 
 /* this is the main event handler loop */
-int event_execution_loop(void)
+void event_execution_loop(void)
 {
 	timed_event *temp_event, *last_event = NULL;
 	time_t last_time = 0L;
@@ -310,7 +225,7 @@ int event_execution_loop(void)
 			continue;
 
 		/* handle the event */
-		handle_timed_event(temp_event);
+		(*temp_event->callback)(temp_event->storage);
 
 		/*
 		 * we must remove the entry we've peeked, or
@@ -319,104 +234,15 @@ int event_execution_loop(void)
 		 */
 		remove_event(nagios_squeue, temp_event);
 
-		/* reschedule the event if necessary */
-		if (temp_event->recurring == TRUE)
-			reschedule_event(nagios_squeue, temp_event);
-
-		/* else free memory associated with the event */
-		else
-			nm_free(temp_event);
+		my_free(temp_event);
 	}
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "event_execution_loop() end\n");
-
-	return OK;
-}
-
-
-/* handles a timed event */
-int handle_timed_event(timed_event *event)
-{
-	void (*userfunc)(void *);
-	struct timeval tv;
-	const struct timeval *event_runtime;
-	double latency;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "handle_timed_event() start\n");
-
-#ifdef USE_EVENT_BROKER
-	/* send event data to broker */
-	broker_timed_event(NEBTYPE_TIMEDEVENT_EXECUTE, NEBFLAG_NONE, NEBATTR_NONE, event, NULL);
-#endif
-
-	log_debug_info(DEBUGL_EVENTS, 0, "** Timed Event ** Type: EVENT_%s, Run Time: %s", EVENT_TYPE_STR(event->event_type), ctime(&event->run_time));
-
-	/* get event latency */
-	gettimeofday(&tv, NULL);
-	event_runtime = squeue_event_runtime(event->sq_event);
-	latency = (double)(tv_delta_f(event_runtime, &tv));
-	if (latency < 0.0) /* events may run up to 0.1 seconds early */
-		latency = 0.0;
-
-	/* how should we handle the event? */
-	switch (event->event_type) {
-
-	case EVENT_USER_FUNCTION:
-
-		log_debug_info(DEBUGL_EVENTS, 0, "** User Function Event. Latency: %.3fs\n", latency);
-
-		/* run a user-defined function */
-		if (event->event_data != NULL) {
-			userfunc = event->event_data;
-			(*userfunc)(event->event_args);
-		}
-		break;
-
-	default:
-
-		break;
-	}
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "handle_timed_event() end\n");
-
-	return OK;
-}
-
-static void adjust_squeue_for_time_change(squeue_t **q, int delta)
-{
-	timed_event *event;
-	squeue_t *sq_new;
-
-	/*
-	 * this is pretty inefficient in terms of free() + malloc(),
-	 * but it should be pretty rare that we have to adjust times
-	 * so we go with the well-tested codepath.
-	 */
-	sq_new = squeue_create(squeue_size(*q));
-	while ((event = squeue_pop(*q))) {
-		if (event->compensate_for_time_change == TRUE) {
-			if (event->timing_func) {
-				time_t (*timingfunc)(void);
-				timingfunc = event->timing_func;
-				event->run_time = timingfunc();
-			} else {
-				event->run_time += delta;
-			}
-		}
-		if (event->priority) {
-			event->sq_event = squeue_add_usec(sq_new, event->run_time, event->priority - 1, event);
-		} else {
-			event->sq_event = squeue_add(sq_new, event->run_time, event);
-		}
-	}
-	squeue_destroy(*q, 0);
-	*q = sq_new;
 }
 
 
 /* attempts to compensate for a change in the system time */
-void compensate_for_system_time_change(unsigned long last_time, unsigned long current_time)
+static void compensate_for_system_time_change(unsigned long last_time, unsigned long current_time)
 {
 	unsigned long time_difference = 0L;
 	service *temp_service = NULL;
@@ -454,8 +280,6 @@ void compensate_for_system_time_change(unsigned long last_time, unsigned long cu
 	nm_log(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_WARNING, "Warning: A system time change of %d seconds (%dd %dh %dm %ds %s in time) has been detected.  Compensating...\n",
 	       delta, days, hours, minutes, seconds,
 	       (last_time > current_time) ? "backwards" : "forwards");
-
-	adjust_squeue_for_time_change(&nagios_squeue, delta);
 
 	/* adjust service timestamps */
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {

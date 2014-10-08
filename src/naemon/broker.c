@@ -39,36 +39,6 @@ void broker_program_state(int type, int flags, int attr, struct timeval *timesta
 }
 
 
-/* send timed event data to broker */
-void broker_timed_event(int type, int flags, int attr, timed_event *event, struct timeval *timestamp)
-{
-	nebstruct_timed_event_data ds;
-
-	if (!(event_broker_options & BROKER_TIMED_EVENTS))
-		return;
-
-	if (event == NULL)
-		return;
-
-	/* fill struct with relevant data */
-	ds.type = type;
-	ds.flags = flags;
-	ds.attr = attr;
-	ds.timestamp = get_broker_timestamp(timestamp);
-
-	ds.event_type = event->event_type;
-	ds.recurring = event->recurring;
-	ds.run_time = event->run_time;
-	ds.event_data = event->event_data;
-	ds.event_ptr = (void *)event;
-
-	/* make callbacks */
-	neb_make_callbacks(NEBCALLBACK_TIMED_EVENT_DATA, (void *)&ds);
-
-	return;
-}
-
-
 /* send log data to broker */
 void broker_log_data(int type, int flags, int attr, char *data, unsigned long data_type, time_t entry_time, struct timeval *timestamp)
 {
