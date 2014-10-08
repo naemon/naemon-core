@@ -5,6 +5,7 @@
 #include "xsddefault.h"
 #include "broker.h"
 #include "globals.h"
+#include "events.h"
 
 
 /******************************************************************/

@@ -207,7 +207,6 @@ int debug_verbosity = DEFAULT_DEBUG_VERBOSITY;
 unsigned long   max_debug_file_size = DEFAULT_MAX_DEBUG_FILE_SIZE;
 
 iobroker_set *nagios_iobs = NULL;
-squeue_t *nagios_squeue = NULL; /* our scheduling queue */
 
 /* from GNU defines errno as a macro, since it's a per-thread variable */
 #ifndef errno
@@ -2772,8 +2771,7 @@ void free_memory(nagios_macros *mac)
 	free_comment_data();
 
 	/* free event queue data */
-	squeue_destroy(nagios_squeue, SQUEUE_FREE_DATA);
-	nagios_squeue = NULL;
+	destroy_event_queue();
 
 	/* free memory for global event handlers */
 	my_free(global_host_event_handler);

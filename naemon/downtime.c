@@ -337,12 +337,12 @@ int unschedule_downtime(int type, unsigned long downtime_id)
 
 	/* remove scheduled entries from event queue */
 	if (temp_downtime->start_event) {
-		remove_event(nagios_squeue, temp_downtime->start_event);
-		my_free(temp_downtime->start_event);
+		destroy_event(temp_downtime->start_event);
+		temp_downtime->start_event = NULL;
 	}
 	if (temp_downtime->stop_event) {
-		remove_event(nagios_squeue, temp_downtime->stop_event);
-		my_free(temp_downtime->stop_event);
+		destroy_event(temp_downtime->stop_event);
+		temp_downtime->stop_event = NULL;
 	}
 
 	/* delete downtime entry */

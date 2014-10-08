@@ -10,54 +10,29 @@
 
 /******************* EVENT TYPES **********************/
 
-/* Generic */
-#define EVENT_USER_FUNCTION             99      /* USER-defined function (modules) */
-
-#define EVENT_TYPE_STR(type)	( \
-	type == EVENT_USER_FUNCTION ? "USER_FUNCTION" : \
-	"UNKNOWN" \
-)
-
 NAGIOS_BEGIN_DECL
+
+typedef void (*event_callback)(void *);
 
 /* TIMED_EVENT structure */
 typedef struct timed_event {
-	int event_type;
 	time_t run_time;
-	int recurring;
-	unsigned long event_interval;
-	int compensate_for_time_change;
-	void *timing_func;
-	void *event_data;
-	void *event_args;
-	int event_options;
-	unsigned int priority; /* 0 is auto, 1 is highest. n+1 < n */
+	event_callback callback;
+	void *storage;
 	struct squeue_event *sq_event;
 } timed_event;
 
-int init_event_queue(void); /* creates the queue nagios_squeue */
 
 /**
  * Schedule a timed event. At the given time, the callback is executed
  */
-timed_event *schedule_event(time_t time_left, void (*callback)(void *), void *args);
-
-timed_event *schedule_new_event(int, int, time_t, int, unsigned long, void *, int, void *, void *, int);	/* schedules a new timed event */
-
-/* Only used internally */
-void reschedule_event(squeue_t *sq, timed_event *event);   		/* reschedules an event */
-
-int handle_timed_event(timed_event *);		     		/* top level handler for timed events */
-void compensate_for_system_time_change(unsigned long, unsigned long);	/* attempts to compensate for a change in the system time */
-
-/* Lowlevel interface, deprecated */
-void add_event(squeue_t *sq, timed_event *event);     		/* adds an event to the execution queue */
-void remove_event(squeue_t *sq, timed_event *event);     		/* remove an event from the execution queue */
+timed_event *schedule_event(time_t time_left, event_callback callback, void *storage);
+void destroy_event(timed_event *event);
 
 /* Main function */
-int event_execution_loop(void);                      		/* main monitoring/event handler loop */
-
-void adjust_timestamp_for_time_change(time_t, time_t, unsigned long, time_t *); /* adjusts a timestamp variable for a system time change */
+void init_event_queue(void); /* creates the queue nagios_squeue */
+void event_execution_loop(void); /* main monitoring/event handler loop */
+void destroy_event_queue(void); /* destroys the queue nagios_squeue */
 
 NAGIOS_END_DECL
 
