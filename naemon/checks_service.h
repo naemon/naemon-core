@@ -10,7 +10,6 @@
 NAGIOS_BEGIN_DECL
 
 void checks_init_services(void);
-void check_for_orphaned_services(void);	/* checks for orphaned services */
 int check_service_dependencies(service *, int); /* checks service dependencies */
 int handle_async_service_check_result(service *, check_result *);
 void schedule_service_check(service *, time_t, int); /* schedules an immediate or delayed service check */

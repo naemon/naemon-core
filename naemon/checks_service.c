@@ -30,6 +30,7 @@ static void check_service_result_freshness(void *arg);
 static void handle_service_check_event(void *arg);
 static void handle_worker_service_check(wproc_result *wpres, void *arg, int flags);
 
+static void check_for_orphaned_services_eventhandler(void *);	/* checks for orphaned services */
 static int is_service_result_fresh(service *, time_t, int);
 static int check_service_check_viability(service *, int, int *, time_t *);
 static int run_scheduled_service_check(service *, int, double);
@@ -91,6 +92,10 @@ void checks_init_services(void)
 	/* add a service result "freshness" check event */
 	if (check_service_freshness == TRUE) {
 		schedule_event(service_freshness_check_interval, check_service_result_freshness, NULL);
+	}
+
+	if(check_orphaned_services == TRUE) {
+		schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_for_orphaned_services_eventhandler, NULL);
 	}
 }
 
@@ -1304,12 +1309,13 @@ int check_service_dependencies(service *svc, int dependency_type)
 
 
 /* check for services that never returned from a check... */
-void check_for_orphaned_services(void)
+static void check_for_orphaned_services_eventhandler(void *arg)
 {
 	service *temp_service = NULL;
 	time_t current_time = 0L;
 	time_t expected_time = 0L;
 
+	schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_for_orphaned_services_eventhandler, arg);
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_for_orphaned_services()\n");
 

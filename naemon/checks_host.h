@@ -9,11 +9,17 @@
 
 NAGIOS_BEGIN_DECL
 
+/* initialize host check subsystem */
 void checks_init_hosts(void);
-void check_for_orphaned_hosts(void); /* checks for orphaned hosts */
-int check_host_dependencies(host *, int); /* checks host dependencies */
-int handle_async_host_check_result(host *, check_result *);
-void schedule_host_check(host *, time_t, int); /* schedules an immediate or delayed host check */
+
+/* Scheduling, reschedule host to be checked */
+void schedule_host_check(host *hst, time_t check_time, int options);
+
+/* Result handling, Update a host given a check result */
+int handle_async_host_check_result(host *temp_host, check_result *queued_check_result);
+
+/* Immutable, check if host is reachable */
+int check_host_dependencies(host *hst, int dependency_type);
 
 NAGIOS_END_DECL
 
