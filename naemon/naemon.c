@@ -692,11 +692,8 @@ int main(int argc, char **argv)
 		broker_program_state(NEBTYPE_PROCESS_START, NEBFLAG_NONE, NEBATTR_NONE, NULL);
 #endif
 
-		/* initialize status data unless we're starting */
-		if (sigrestart == FALSE) {
-			initialize_status_data(config_file);
-			timing_point("Status data initialized\n");
-		}
+		initialize_status_data(config_file);
+		timing_point("Status data initialized\n");
 
 		/* initialize scheduled downtime data */
 		initialize_downtime_data();
@@ -719,10 +716,6 @@ int main(int argc, char **argv)
 		/* initialize the check execution subsystem */
 		checks_init();
 		timing_point("Check execution scheduling initialized\n");
-
-		/* initialize the event timing loop */
-		init_timing_loop();
-		timing_point("Event timing loop initialized\n");
 
 		/* initialize check statistics */
 		init_check_stats();
@@ -794,9 +787,7 @@ int main(int argc, char **argv)
 		cleanup_downtime_data();
 
 		/* clean up the status data unless we're restarting */
-		if (sigrestart == FALSE) {
-			cleanup_status_data(TRUE);
-		}
+		cleanup_status_data(!sigrestart);
 
 		registered_commands_deinit();
 		free_worker_memory(WPROC_FORCE);

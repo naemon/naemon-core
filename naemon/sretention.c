@@ -22,9 +22,15 @@ static struct contact **premod_contacts;
 /* initializes retention data at program start */
 int initialize_retention_data(const char *cfgfile)
 {
+	time_t current_time = time(NULL);
+
 	premod_hosts = nm_calloc(num_objects.hosts, sizeof(void *));
 	premod_services = nm_calloc(num_objects.services, sizeof(void *));
 	premod_contacts = nm_calloc(num_objects.contacts, sizeof(void *));
+
+	/* add a retention data save event if needed */
+	if (retain_state_information == TRUE && retention_update_interval > 0)
+		schedule_new_event(EVENT_RETENTION_SAVE, TRUE, current_time + (retention_update_interval * 60), TRUE, (retention_update_interval * 60), NULL, TRUE, NULL, NULL, 0);
 
 	return xrddefault_initialize_retention_data(cfgfile);
 }
