@@ -95,9 +95,13 @@ static int map_hostgroup_hosts(const char *hg_name)
 static inline void nsplit_cache_timeperiod(struct timeperiod *tp)
 {
 	if (tp && !bitmap_isset(map.timeperiods, tp->id)) {
+		struct timeperiodexclusion *exc;
 		bitmap_set(map.timeperiods, tp->id);
 		cached.timeperiods++;
 		fcache_timeperiod(fp, tp);
+		for (exc = tp->exclusions; exc; exc = exc->next) {
+			nsplit_cache_timeperiod(exc->timeperiod_ptr);
+		}
 	}
 }
 
