@@ -62,7 +62,6 @@ typedef struct timed_event {
 	struct squeue_event *sq_event;
 } timed_event;
 
-void init_timing_loop(void);                         		/* setup the initial scheduling queue */
 int init_event_queue(void); /* creates the queue nagios_squeue */
 
 /**

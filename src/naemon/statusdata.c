@@ -4,6 +4,7 @@
 #include "statusdata.h"
 #include "xsddefault.h"
 #include "broker.h"
+#include "globals.h"
 
 
 /******************************************************************/
@@ -13,6 +14,11 @@
 /* initializes status data at program start */
 int initialize_status_data(const char *cfgfile)
 {
+	time_t current_time = time(NULL);
+
+	/* add a status save event */
+	schedule_new_event(EVENT_STATUS_SAVE, TRUE, current_time + status_update_interval, TRUE, status_update_interval, NULL, TRUE, NULL, NULL, 0);
+
 	return xsddefault_initialize_status_data(cfgfile);
 }
 

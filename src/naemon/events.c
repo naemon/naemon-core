@@ -24,26 +24,6 @@ static timed_event *current_event;
 /************ EVENT SCHEDULING/HANDLING FUNCTIONS *****************/
 /******************************************************************/
 
-/* initialize the event timing loop before we start monitoring */
-void init_timing_loop(void)
-{
-	time_t current_time = time(NULL);
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "init_timing_loop() start\n");
-
-	/* add a status save event */
-	schedule_new_event(EVENT_STATUS_SAVE, TRUE, current_time + status_update_interval, TRUE, status_update_interval, NULL, TRUE, NULL, NULL, 0);
-
-	/* add a retention data save event if needed */
-	if (retain_state_information == TRUE && retention_update_interval > 0)
-		schedule_new_event(EVENT_RETENTION_SAVE, TRUE, current_time + (retention_update_interval * 60), TRUE, (retention_update_interval * 60), NULL, TRUE, NULL, NULL, 0);
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "init_timing_loop() end\n");
-
-	return;
-}
-
 /*
  * Create the event queue
  * We oversize it somewhat to avoid unnecessary growing
