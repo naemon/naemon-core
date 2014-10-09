@@ -6,6 +6,9 @@ includedir=@abs_top_builddir@
 sysconfdir=@sysconfdir@
 
 mainconf=@pkgconfdir@/naemon.cfg
+naemon_user=@naemon_user@
+naemon_group=@naemon_grp@
+
 
 Name: Naemon Uninstalled
 Description: Naemon network monitoring, Not Installed
