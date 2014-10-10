@@ -1,4 +1,4 @@
-BROKEN = test_downtime test_events test_nagios_config test_xsddefault
+BROKEN = test_downtime test_nagios_config test_xsddefault
 
 AM_CFLAGS += -Wno-error
 
