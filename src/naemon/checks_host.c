@@ -26,7 +26,6 @@
 
 /* Scheduling (before worker job is started) */
 static void handle_host_check_event(void *arg);
-static int run_scheduled_host_check(host *hst, int check_options, double latency);
 static int run_async_host_check(host *hst, int check_options, double latency, int scheduled_check, int reschedule_check, int *time_is_valid, time_t *preferred_time);
 
 /* Result handling (After worker job is executed) */
@@ -230,53 +229,47 @@ void schedule_host_check(host *hst, time_t check_time, int options)
 
 static void handle_host_check_event(void *arg)
 {
-	host *temp_host = (host *)arg;
+	host *hst = (host *)arg;
 	int run_event = TRUE;	/* default action is to execute the event */
 	double latency;
 	struct timeval tv;
 	struct timeval event_runtime;
 
+	int result = OK;
+	time_t current_time = 0L;
+	time_t preferred_time = 0L;
+	int time_is_valid = TRUE;
+	int check_options;
+
 	/* get event latency */
 	gettimeofday(&tv, NULL);
-	event_runtime.tv_sec = temp_host->next_check;
+	event_runtime.tv_sec = hst->next_check;
 	event_runtime.tv_usec = 0;
 	latency = (double)(tv_delta_f(&event_runtime, &tv));
 
 	/* forced checks override normal check logic */
-	if (!(temp_host->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
+	if (!(hst->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
 
 		/* don't run a host check if active checks are disabled */
 		if (execute_host_checks == FALSE) {
-			log_debug_info(DEBUGL_EVENTS | DEBUGL_CHECKS, 1, "We're not executing host checks right now, so we'll skip host check event for host '%s'.\n", temp_host->name);
+			log_debug_info(DEBUGL_EVENTS | DEBUGL_CHECKS, 1, "We're not executing host checks right now, so we'll skip host check event for host '%s'.\n", hst->name);
 			run_event = FALSE;
 		}
 	}
 
 	/* reschedule the check if we can't run it now */
 	if (run_event == FALSE) {
-		temp_host->next_check += check_window(temp_host);
-		temp_host->next_check_event = schedule_event(temp_host->next_check - time(NULL), handle_host_check_event, (void*)temp_host);
-	} else {
-		/* Otherwise, run the event */
-		run_scheduled_host_check(temp_host, temp_host->check_options, latency);
+		hst->next_check += check_window(hst);
+		hst->next_check_event = schedule_event(hst->next_check - time(NULL), handle_host_check_event, (void*)hst);
+		return;
 	}
-}
 
-/* run a scheduled host check asynchronously */
-static int run_scheduled_host_check(host *hst, int check_options, double latency)
-{
-	int result = OK;
-	time_t current_time = 0L;
-	time_t preferred_time = 0L;
-	int time_is_valid = TRUE;
+	/* Otherwise, run the event */
+	check_options = hst->check_options;
 
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "run_scheduled_host_check()\n");
-
-	if (hst == NULL)
-		return ERROR;
-
-	log_debug_info(DEBUGL_CHECKS, 0, "Attempting to run scheduled check of host '%s': check options=%d, latency=%lf\n", hst->name, check_options, latency);
+	log_debug_info(DEBUGL_CHECKS, 0, "Attempting to run scheduled check of host '%s': check options=%d, latency=%lf\n", hst->name, hst->check_options, latency);
 
 	/*
 	 * reset the next_check_event so we know this host
@@ -305,11 +298,7 @@ static int run_scheduled_host_check(host *hst, int check_options, double latency
 		/* reschedule the next host check - unless we couldn't find a valid next check time */
 		if (hst->should_be_scheduled == TRUE)
 			schedule_host_check(hst, hst->next_check, check_options);
-
-		return ERROR;
 	}
-
-	return OK;
 }
 
 /* perform an asynchronous check of a host */
@@ -329,11 +318,6 @@ static int run_async_host_check(host *hst, int check_options, double latency, in
 #endif
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "run_async_host_check(%s ...)\n", hst ? hst->name : "(NULL host!)");
-
-	/* make sure we have a host */
-	if (hst == NULL)
-		return ERROR;
-
 	log_debug_info(DEBUGL_CHECKS, 0, "** Running async check of host '%s'...\n", hst->name);
 
 	/* abort if check is already running or was recently completed */
