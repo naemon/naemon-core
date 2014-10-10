@@ -75,7 +75,7 @@ check_config() {
         chmod 0644 @TMPDIR@/naemon.configtest
         cat "$TMPFILE"
         exit 8
-    else if test "${WARN}" != "0"; then
+    elif test "${WARN}" != "0"; then
         # Warnings don't need to be saved, so just print them and
         # be done with it.
         echo "WARNING: Warnings in config files - see log for details: $TMPFILE" > @TMPDIR@/naemon.configtest
