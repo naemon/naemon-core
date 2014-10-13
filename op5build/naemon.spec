@@ -109,7 +109,7 @@ fi
 # otherwise be shut down without issuing "killall" or by
 # looking up its pid. Since we start unconditionally too,
 # it also provides a nice symmetry
-service monitor stop 2>&1 >/dev/null || :
+service monitor stop >/dev/null 2>&1 || :
 
 %if 0%{?suse_version}
 if chkconfig --check monitor; then
