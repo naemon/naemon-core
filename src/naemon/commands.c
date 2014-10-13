@@ -11,6 +11,8 @@
 #include "events.h"
 #include "utils.h"
 #include "checks.h"
+#include "checks_service.h"
+#include "checks_host.h"
 #include "flapping.h"
 #include "notifications.h"
 #include "globals.h"

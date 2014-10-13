@@ -4,7 +4,7 @@ AM_CFLAGS += -Wno-error
 
 T_TAP_AM_CPPFLAGS = $(AM_CPPFLAGS) -I$(abs_srcdir)/tap/src -DNAEMON_BUILDOPTS_H__ '-DNAEMON_SYSCONFDIR="$(abs_builddir)/t-tap/smallconfig/"' '-DNAEMON_LOCALSTATEDIR="$(abs_builddir)/t-tap/"' '-DNAEMON_LOGDIR="$(abs_builddir)/t-tap/"' '-DNAEMON_LOCKFILE="$(lockfile)"' -DNAEMON_COMPILATION
 T_TAP_LDADD = -ltap -L$(top_builddir)/tap/src -L$(top_builddir)/lib -lnaemon -ldl -lm
-BASE_DEPS = broker.o checks.o commands.o comments.o \
+BASE_DEPS = broker.o checks.o checks_host.o checks_service.o commands.o comments.o \
 	configuration.o downtime.o events.o flapping.o logging.o \
 	macros.o nebmods.o notifications.o objects.o perfdata.o \
 	query-handler.o sehandlers.o shared.o sretention.o statusdata.o \
@@ -69,21 +69,25 @@ GENERAL_DEPS = nebmods.o commands.o broker.o query-handler.o utils.o events.o no
 			  macros.o statusdata.o xrddefault.o xsddefault.o xpddefault.o perfdata.o xodtemplate.o nm_alloc.o
 
 TEST_CHECKS_DEPS = $(GENERAL_DEPS) logging.o
-tests_test_checks_SOURCES	= tests/test-checks.c src/naemon/checks.h src/naemon/checks.c src/naemon/defaults.c
+tests_test_checks_SOURCES	= tests/test-checks.c \
+	src/naemon/checks.h src/naemon/checks.c \
+	src/naemon/checks_host.h src/naemon/checks_host.c \
+	src/naemon/checks_service.h src/naemon/checks_service.c \
+	src/naemon/defaults.c
 tests_test_checks_LDADD =  $(TEST_CHECKS_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
 tests_test_checks_CPPFLAGS = $(TESTS_AM_CPPFLAGS)
 
-TEST_UTILS_DEPS = $(GENERAL_DEPS) checks.o logging.o
+TEST_UTILS_DEPS = $(GENERAL_DEPS) checks.o checks_host.o checks_service.o logging.o
 tests_test_utils_SOURCES	= tests/test-utils.c src/naemon/defaults.c
 tests_test_utils_LDADD =  $(TEST_UTILS_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
 tests_test_utils_CPPFLAGS = $(TESTS_AM_CPPFLAGS)
 
-TEST_LOG_DEPS = $(GENERAL_DEPS) checks.o
+TEST_LOG_DEPS = $(GENERAL_DEPS) checks.o checks_host.o checks_service.o
 tests_test_log_SOURCES	= tests/test-log.c src/naemon/defaults.c
 tests_test_log_LDADD = $(TEST_LOG_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
 tests_test_log_CPPFLAGS = $(TESTS_AM_CPPFLAGS)
 
-TEST_CONFIG_DEPS = $(GENERAL_DEPS) checks.o configuration.o logging.o
+TEST_CONFIG_DEPS = $(GENERAL_DEPS) checks.o checks_host.o checks_service.o configuration.o logging.o
 tests_test_config_SOURCES	= tests/test-config.c src/naemon/defaults.c
 tests_test_config_LDADD = $(TEST_CONFIG_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
 tests_test_config_CPPFLAGS = $(TESTS_AM_CPPFLAGS)

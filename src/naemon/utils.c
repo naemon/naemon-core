@@ -11,6 +11,8 @@
 #include "utils.h"
 #include "commands.h"
 #include "checks.h"
+#include "checks_service.h"
+#include "checks_host.h"
 #include "events.h"
 #include "logging.h"
 #include "defaults.h"

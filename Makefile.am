@@ -49,6 +49,7 @@ nobase_pkginclude_HEADERS = \
 pkginclude_HEADERS = \
 	src/naemon/broker.h			src/naemon/events.h			src/naemon/nagios.h			src/naemon/objects.h \
 	src/naemon/workers.h		src/naemon/checks.h			src/naemon/flapping.h		src/naemon/nebcallbacks.h \
+	src/naemon/checks_host.h	src/naemon/checks_service.h \
 	src/naemon/perfdata.h		src/naemon/commands.h		src/naemon/globals.h		src/naemon/neberrors.h \
 	src/naemon/query-handler.h  src/naemon/comments.h		src/naemon/nebmods.h \
 	src/naemon/sehandlers.h		src/naemon/common.h         src/naemon/logging.h		src/naemon/nebmodules.h \
@@ -60,6 +61,8 @@ pkginclude_HEADERS = \
 common_sources = \
 	src/naemon/broker.c src/naemon/broker.h \
 	src/naemon/checks.c src/naemon/checks.h \
+	src/naemon/checks_host.c src/naemon/checks_host.h \
+	src/naemon/checks_service.c src/naemon/checks_service.h \
 	src/naemon/commands.c src/naemon/commands.h \
 	src/naemon/comments.c src/naemon/comments.h \
 	src/naemon/common.h \
