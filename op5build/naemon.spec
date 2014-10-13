@@ -104,6 +104,13 @@ if [ $1 -eq 0 ]; then
 fi
 
 %pre
+# we do this unconditionally. The pidfile has moved, so
+# an old instance of monitor may be running that can't
+# otherwise be shut down without issuing "killall" or by
+# looking up its pid. Since we start unconditionally too,
+# it also provides a nice symmetry
+service monitor stop 2>&1 >/dev/null || :
+
 %if 0%{?suse_version}
 if chkconfig --check monitor; then
 %else
