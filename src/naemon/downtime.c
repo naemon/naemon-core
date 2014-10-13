@@ -482,7 +482,7 @@ int register_downtime(int type, unsigned long downtime_id)
 		new_downtime_id = nm_malloc(sizeof(unsigned long));
 		*new_downtime_id = downtime_id;
 
-		temp_downtime->start_event = schedule_event(temp_downtime->start_time, handle_downtime_start_event, (void *)new_downtime_id);
+		temp_downtime->start_event = schedule_event(temp_downtime->start_time - time(NULL), handle_downtime_start_event, (void *)new_downtime_id);
 		/* Turn off is_in_effect flag so handle_scheduled_downtime() will
 			handle it correctly */
 		was_in_effect = temp_downtime->is_in_effect;
@@ -509,7 +509,7 @@ int register_downtime(int type, unsigned long downtime_id)
 			case the event is never triggered. The expire event will NOT cancel
 			a downtime event that is in effect */
 		log_debug_info(DEBUGL_DOWNTIME, 1, "Scheduling downtime expire event in case flexible downtime is never triggered\n");
-		temp_downtime->stop_event = schedule_event((temp_downtime->end_time + 1), check_for_expired_downtime, NULL);
+		temp_downtime->stop_event = schedule_event((temp_downtime->end_time + 1) - time(NULL), check_for_expired_downtime, NULL);
 	}
 
 	return OK;
@@ -719,7 +719,7 @@ int handle_scheduled_downtime(scheduled_downtime *temp_downtime)
 		new_downtime_id = nm_malloc(sizeof(unsigned long));
 		*new_downtime_id = temp_downtime->downtime_id;
 
-		schedule_event(event_time, handle_downtime_start_event, (void *)new_downtime_id);
+		schedule_event(event_time - time(NULL), handle_downtime_start_event, (void *)new_downtime_id);
 
 		/* handle (start) downtime that is triggered by this one */
 		for (this_downtime = scheduled_downtime_list; this_downtime != NULL; this_downtime = this_downtime->next) {
@@ -779,7 +779,7 @@ int check_pending_flex_host_downtime(host *hst)
 				new_downtime_id = nm_malloc(sizeof(unsigned long));
 				*new_downtime_id = temp_downtime->downtime_id;
 
-				temp_downtime->start_event = schedule_event(temp_downtime->flex_downtime_start, handle_downtime_start_event, (void *)new_downtime_id);
+				temp_downtime->start_event = schedule_event(temp_downtime->flex_downtime_start - time(NULL), handle_downtime_start_event, (void *)new_downtime_id);
 			}
 		}
 	}
@@ -836,7 +836,7 @@ int check_pending_flex_service_downtime(service *svc)
 				new_downtime_id = nm_malloc(sizeof(unsigned long));
 				*new_downtime_id = temp_downtime->downtime_id;
 
-				temp_downtime->start_event = schedule_event(temp_downtime->flex_downtime_start, handle_downtime_start_event, (void *)new_downtime_id);
+				temp_downtime->start_event = schedule_event(temp_downtime->flex_downtime_start - time(NULL), handle_downtime_start_event, (void *)new_downtime_id);
 			}
 		}
 	}

@@ -46,7 +46,7 @@ int init_event_queue(void); /* creates the queue nagios_squeue */
 /**
  * Schedule a timed event. At the given time, the callback is executed
  */
-timed_event *schedule_event(time_t run_time, void (*callback)(void *), void *args);
+timed_event *schedule_event(time_t time_left, void (*callback)(void *), void *args);
 
 timed_event *schedule_new_event(int, int, time_t, int, unsigned long, void *, int, void *, void *, int);	/* schedules a new timed event */
 

@@ -13,10 +13,8 @@
 
 static void update_all_status_data_eventhandler(void *ptr)
 {
-	time_t current_time = time(NULL);
-
 	/* Reschedule, so it becomes recurring */
-	schedule_event(current_time + status_update_interval, update_all_status_data_eventhandler, NULL);
+	schedule_event(status_update_interval, update_all_status_data_eventhandler, NULL);
 
 	update_all_status_data();
 }
@@ -24,10 +22,8 @@ static void update_all_status_data_eventhandler(void *ptr)
 /* initializes status data at program start */
 int initialize_status_data(const char *cfgfile)
 {
-	time_t current_time = time(NULL);
-
 	/* add a status save event */
-	schedule_event(current_time + status_update_interval, update_all_status_data_eventhandler, NULL);
+	schedule_event(status_update_interval, update_all_status_data_eventhandler, NULL);
 
 	return xsddefault_initialize_status_data(cfgfile);
 }

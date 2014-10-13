@@ -1247,7 +1247,7 @@ static void shutdown_event_handler(void *storage) {
 
 static int shutdown_handler(const struct external_command *ext_command, time_t entry_time)
 {
-	if (!schedule_event(GV_TIMESTAMP("shutdown_time"), shutdown_event_handler, NULL))
+	if (!schedule_event(GV_TIMESTAMP("shutdown_time") - time(NULL), shutdown_event_handler, NULL))
 		return ERROR;
 	return OK;
 }
@@ -1258,7 +1258,7 @@ static void restart_event_handler(void *storage) {
 
 static int restart_handler(const struct external_command *ext_command, time_t entry_time)
 {
-	if (!schedule_event(GV_TIMESTAMP("restart_time"), restart_event_handler, NULL))
+	if (!schedule_event(GV_TIMESTAMP("restart_time") - time(NULL), restart_event_handler, NULL))
 		return ERROR;
 	return OK;
 }

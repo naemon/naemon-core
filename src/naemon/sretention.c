@@ -21,10 +21,9 @@ static struct contact **premod_contacts;
 
 void save_state_information_eventhandler(void *args)
 {
-	time_t current_time = time(NULL);
 	int status;
 
-	schedule_event(current_time + (retention_update_interval * 60), save_state_information_eventhandler, args);
+	schedule_event(retention_update_interval * interval_length, save_state_information_eventhandler, args);
 
 	status = save_state_information(FALSE);
 
@@ -37,15 +36,13 @@ void save_state_information_eventhandler(void *args)
 /* initializes retention data at program start */
 int initialize_retention_data(const char *cfgfile)
 {
-	time_t current_time = time(NULL);
-
 	premod_hosts = nm_calloc(num_objects.hosts, sizeof(void *));
 	premod_services = nm_calloc(num_objects.services, sizeof(void *));
 	premod_contacts = nm_calloc(num_objects.contacts, sizeof(void *));
 
 	/* add a retention data save event if needed */
 	if (retain_state_information == TRUE && retention_update_interval > 0)
-		schedule_event(current_time + (retention_update_interval * 60), save_state_information_eventhandler, NULL);
+		schedule_event(retention_update_interval * interval_length, save_state_information_eventhandler, NULL);
 
 	return xrddefault_initialize_retention_data(cfgfile);
 }
