@@ -39,9 +39,10 @@ int init_event_queue(void)
 }
 
 
-timed_event *schedule_event(time_t run_time, void (*callback)(void *), void *args)
+timed_event *schedule_event(time_t time_left, void (*callback)(void *), void *args)
 {
 	timed_event *new_event = nm_calloc(1, sizeof(timed_event));
+	time_t run_time = time_left + time(NULL);
 
 	new_event->event_type = EVENT_USER_FUNCTION;
 	new_event->event_data = (void*)callback;

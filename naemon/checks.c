@@ -158,28 +158,26 @@ static void checks_init_services(void)
 
 void checks_init(void)
 {
-	time_t current_time = time(NULL);
-
 	checks_init_hosts();
 	checks_init_services();
 
 	/******** SCHEDULE MISC EVENTS ********/
 
 	/* add a check result reaper event */
-	schedule_event(current_time + check_reaper_interval, reap_check_results, NULL);
+	schedule_event(check_reaper_interval, reap_check_results, NULL);
 
 	/* add an orphaned check event */
 	if (check_orphaned_services == TRUE || check_orphaned_hosts == TRUE) {
-		schedule_event(current_time + DEFAULT_ORPHAN_CHECK_INTERVAL, check_orphaned_eventhandler, NULL);
+		schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_orphaned_eventhandler, NULL);
 	}
 
 	/* add a service result "freshness" check event */
 	if (check_service_freshness == TRUE) {
-		schedule_event(current_time + service_freshness_check_interval, check_service_result_freshness, NULL);
+		schedule_event(service_freshness_check_interval, check_service_result_freshness, NULL);
 	}
 	/* add a host result "freshness" check event */
 	if (check_host_freshness == TRUE) {
-		schedule_event(current_time + host_freshness_check_interval, check_host_result_freshness, NULL);
+		schedule_event(host_freshness_check_interval, check_host_result_freshness, NULL);
 	}
 }
 
@@ -189,10 +187,8 @@ void checks_init(void)
 
 static void check_orphaned_eventhandler(void *args)
 {
-	time_t current_time = time(NULL);
-
 	/* Reschedule, since recurring */
-	schedule_event(current_time + DEFAULT_ORPHAN_CHECK_INTERVAL, check_orphaned_eventhandler, NULL);
+	schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_orphaned_eventhandler, NULL);
 
 	/* check for orphaned hosts and services */
 	if (check_orphaned_hosts == TRUE)
@@ -205,10 +201,8 @@ static void check_orphaned_eventhandler(void *args)
 static void reap_check_results(void *arg)
 {
 	int reaped_checks = 0;
-	time_t current_time = time(NULL);
-
 	/* Reschedule, since reccuring */
-	schedule_event(current_time + check_reaper_interval, reap_check_results, NULL);
+	schedule_event(check_reaper_interval, reap_check_results, NULL);
 
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "reap_check_results() start\n");
@@ -1460,7 +1454,7 @@ static void check_service_result_freshness(void *arg)
 	/* get the current time */
 	time(&current_time);
 
-	schedule_event(current_time + service_freshness_check_interval, check_service_result_freshness, NULL);
+	schedule_event(service_freshness_check_interval, check_service_result_freshness, NULL);
 
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_service_result_freshness()\n");
@@ -1852,7 +1846,7 @@ static void check_host_result_freshness(void *arg)
 	time(&current_time);
 
 	/* Reschedule, since recurring */
-	schedule_event(current_time + host_freshness_check_interval, check_host_result_freshness, NULL);
+	schedule_event(host_freshness_check_interval, check_host_result_freshness, NULL);
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_host_result_freshness()\n");
 	log_debug_info(DEBUGL_CHECKS, 2, "Attempting to check the freshness of host check results...\n");
