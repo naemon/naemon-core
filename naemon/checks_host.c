@@ -26,11 +26,11 @@
 
 /* Scheduling (before worker job is started) */
 static void handle_host_check_event(void *arg);
-static int run_async_host_check(host *hst, int check_options, double latency, int scheduled_check, int reschedule_check, int *time_is_valid, time_t *preferred_time);
+static int run_async_host_check(host *hst, int check_options, double latency);
 
 /* Result handling (After worker job is executed) */
 static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags);
-static int process_host_check_result(host *hst, int new_state, char *old_plugin_output, char *old_long_plugin_output, int check_options, int reschedule_check, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded);
+static int process_host_check_result(host *hst, int new_state, char *old_plugin_output, char *old_long_plugin_output, int check_options, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded);
 static int adjust_host_check_attempt(host *hst, int is_active);
 static int handle_host_state(host *hst, int *alert_recorded);
 
@@ -40,7 +40,6 @@ static void check_for_orphaned_hosts_eventhandler(void *arg);
 
 /* Status functions, immutable */
 static int is_host_result_fresh(host *temp_host, time_t current_time, int log_this);
-static int check_host_check_viability(host *hst, int check_options, int *time_is_valid, time_t *new_time);
 static int determine_host_reachability(host *hst);
 
 /******************************************************************************
@@ -50,38 +49,10 @@ static int determine_host_reachability(host *hst);
 void checks_init_hosts(void)
 {
 	host *temp_host = NULL;
-	time_t current_time = time(NULL);
-
-	/******** GET BASIC HOST INFO  ********/
-
-	/* get info on host checks to be scheduled */
-	for (temp_host = host_list; temp_host; temp_host = temp_host->next) {
-		/* host has no check interval */
-		if (temp_host->check_interval == 0 || !temp_host->checks_enabled) {
-			log_debug_info(DEBUGL_EVENTS, 1, "Host '%s' should not be scheduled.\n", temp_host->name);
-			temp_host->should_be_scheduled = FALSE;
-			continue;
-		}
-	}
 
 	/******** SCHEDULE HOST CHECKS  ********/
 
 	log_debug_info(DEBUGL_EVENTS, 2, "Scheduling host checks...");
-
-	/* determine check times for host checks */
-	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
-
-		log_debug_info(DEBUGL_EVENTS, 2, "Host '%s'\n", temp_host->name);
-
-		/* skip hosts that shouldn't be scheduled */
-		if (temp_host->should_be_scheduled == FALSE) {
-			continue;
-		}
-
-		temp_host->next_check = current_time + ranged_urand(0, check_window(temp_host));
-
-		log_debug_info(DEBUGL_EVENTS, 2, "Check Time: %lu --> %s", (unsigned long)temp_host->next_check, ctime(&temp_host->next_check));
-	}
 
 	/* add scheduled host checks to event queue */
 	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
@@ -89,16 +60,8 @@ void checks_init_hosts(void)
 		/* update status of all hosts (scheduled or not) */
 		update_host_status(temp_host, FALSE);
 
-		/* skip most hosts that shouldn't be scheduled */
-		if (temp_host->should_be_scheduled == FALSE) {
-
-			/* passive checks are an exception if a forced check was scheduled before Nagios was restarted */
-			if (!(temp_host->checks_enabled == FALSE && temp_host->next_check != (time_t)0L && (temp_host->check_options & CHECK_OPTION_FORCE_EXECUTION)))
-				continue;
-		}
-
 		/* schedule a new host check event */
-		temp_host->next_check_event = schedule_event(temp_host->next_check - time(NULL), handle_host_check_event, (void *)temp_host);
+		schedule_next_host_check(temp_host, ranged_urand(0, temp_host->check_interval * interval_length), CHECK_OPTION_NONE);
 	}
 
 	/* add a host result "freshness" check event */
@@ -115,131 +78,43 @@ void checks_init_hosts(void)
  ********************************  SCHEDULING  ********************************
  ******************************************************************************/
 
-/* schedules an immediate or delayed host check */
+void schedule_next_host_check(host *hst, time_t time_left, int options)
+{
+	time_t current_time = time(NULL);
+
+	/* A closer check is already scheduled, skip this scheduling */
+	if(!(options & CHECK_OPTION_FORCE_EXECUTION) && hst->next_check_event != NULL && hst->next_check < time_left + current_time) {
+		return;
+	}
+
+	/* We have a scheduled check, drop that event to make space for the new event */
+	if(hst->next_check_event != NULL) {
+		destroy_event(hst->next_check_event);
+	}
+
+	/* Schedule the event */
+	hst->check_options = options;
+	hst->next_check = time_left + current_time;
+	hst->next_check_event = schedule_event(time_left, handle_host_check_event, (void*)hst);
+
+	/* update the status log, since next_check and check_options is updated */
+	update_host_status(hst, FALSE);
+}
+
+/* schedules an immediate or delayed host check, DEPRECATED */
 void schedule_host_check(host *hst, time_t check_time, int options)
 {
-	timed_event *temp_event = NULL;
-	int use_original_event = TRUE;
-	time_t next_event_time = 0;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "schedule_host_check()\n");
-
-	if (hst == NULL)
-		return;
-
-	log_debug_info(DEBUGL_CHECKS, 0, "Scheduling a %s, active check of host '%s' @ %s", (options & CHECK_OPTION_FORCE_EXECUTION) ? "forced" : "non-forced", hst->name, ctime(&check_time));
-
-	/* don't schedule a check if active checks of this host are disabled */
-	if (hst->checks_enabled == FALSE && !(options & CHECK_OPTION_FORCE_EXECUTION)) {
-		log_debug_info(DEBUGL_CHECKS, 0, "Active checks are disabled for this host.\n");
-		return;
-	}
-
-	if (options == CHECK_OPTION_DEPENDENCY_CHECK) {
-		if (hst->last_check + cached_host_check_horizon > check_time) {
-			log_debug_info(DEBUGL_CHECKS, 0, "Last check result is recent enough (%s)\n", ctime(&hst->last_check));
-			return;
-		}
-	}
-
-	/* default is to use the new event */
-	use_original_event = FALSE;
-
-	temp_event = (timed_event *)hst->next_check_event;
-
-	/*
-	 * If the host already had a check scheduled we need
-	 * to decide which check event to use
-	 */
-	if (temp_event != NULL) {
-		next_event_time = temp_event->run_time; /* FIXME */
-
-		log_debug_info(DEBUGL_CHECKS, 2, "Found another host check event for this host @ %s", ctime(&next_event_time));
-
-		/* use the originally scheduled check unless we decide otherwise */
-		use_original_event = TRUE;
-
-		/* the original event is a forced check... */
-		if ((hst->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
-
-			/* the new event is also forced and its execution time is earlier than the original, so use it instead */
-			if ((options & CHECK_OPTION_FORCE_EXECUTION) && (check_time < next_event_time)) {
-				log_debug_info(DEBUGL_CHECKS, 2, "New host check event is forced and occurs before the existing event, so the new event be used instead.\n");
-				use_original_event = FALSE;
-			}
-		}
-
-		/* the original event is not a forced check... */
-		else {
-
-			/* the new event is a forced check, so use it instead */
-			if ((options & CHECK_OPTION_FORCE_EXECUTION)) {
-				use_original_event = FALSE;
-				log_debug_info(DEBUGL_CHECKS, 2, "New host check event is forced, so it will be used instead of the existing event.\n");
-			}
-
-			/* the new event is not forced either and its execution time is earlier than the original, so use it instead */
-			else if (check_time < next_event_time) {
-				use_original_event = FALSE;
-				log_debug_info(DEBUGL_CHECKS, 2, "New host check event occurs before the existing (older) event, so it will be used instead.\n");
-			}
-
-			/* the new event is older, so override the existing one */
-			else {
-				log_debug_info(DEBUGL_CHECKS, 2, "New host check event occurs after the existing event, so we'll ignore it.\n");
-			}
-		}
-	}
-
-	/* use the new event */
-	if (use_original_event == FALSE) {
-
-		log_debug_info(DEBUGL_CHECKS, 2, "Scheduling new host check event.\n");
-
-		/* possibly allocate memory for a new event item */
-		if (temp_event) {
-			destroy_event(temp_event);
-			temp_event = NULL;
-			hst->next_check_event = NULL;
-		}
-
-		/* set the next host check event and time */
-		hst->next_check = check_time;
-
-		/* save check options for retention purposes */
-		hst->check_options = options;
-
-		hst->next_check_event = schedule_event(hst->next_check - time(NULL), handle_host_check_event, (void*)hst);
-	}
-
-	else {
-		/* reset the next check time (it may be out of sync) */
-		if (temp_event != NULL)
-			hst->next_check = temp_event->run_time;
-
-		log_debug_info(DEBUGL_CHECKS, 2, "Keeping original host check event (ignoring the new one).\n");
-	}
-
-	/* update the status log */
-	update_host_status(hst, FALSE);
-
-	return;
+	schedule_next_host_check( hst, check_time-time(NULL), options);
 }
 
 static void handle_host_check_event(void *arg)
 {
 	host *hst = (host *)arg;
-	int run_event = TRUE;	/* default action is to execute the event */
 	double latency;
 	struct timeval tv;
 	struct timeval event_runtime;
 
 	int result = OK;
-	time_t current_time = 0L;
-	time_t preferred_time = 0L;
-	int time_is_valid = TRUE;
-	int check_options;
 
 	/* get event latency */
 	gettimeofday(&tv, NULL);
@@ -247,69 +122,59 @@ static void handle_host_check_event(void *arg)
 	event_runtime.tv_usec = 0;
 	latency = (double)(tv_delta_f(&event_runtime, &tv));
 
-	/* forced checks override normal check logic */
-	if (!(hst->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
-
-		/* don't run a host check if active checks are disabled */
-		if (execute_host_checks == FALSE) {
-			log_debug_info(DEBUGL_EVENTS | DEBUGL_CHECKS, 1, "We're not executing host checks right now, so we'll skip host check event for host '%s'.\n", hst->name);
-			run_event = FALSE;
-		}
-	}
-
-	/* reschedule the check if we can't run it now */
-	if (run_event == FALSE) {
-		hst->next_check += check_window(hst);
-		hst->next_check_event = schedule_event(hst->next_check - time(NULL), handle_host_check_event, (void*)hst);
-		return;
-	}
-
-	/* Otherwise, run the event */
-	check_options = hst->check_options;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "run_scheduled_host_check()\n");
-	log_debug_info(DEBUGL_CHECKS, 0, "Attempting to run scheduled check of host '%s': check options=%d, latency=%lf\n", hst->name, hst->check_options, latency);
-
 	/*
-	 * reset the next_check_event so we know this host
-	 * check is no longer in the scheduling queue
+	 * When the callback is executed, the timed_event is considered unavailable,
+	 * drop the reference
 	 */
 	hst->next_check_event = NULL;
 
+	/*
+	 * Reschedule the next check one check interval in the future. Can be
+	 * rescheduled to a closer time later if needed (for example, using
+	 * retry_interval for problem determination)
+	 *
+	 * But this is only done if checks are recurring, that is non-zero
+	 * check_interval
+	 */
+	if (hst->check_interval != 0.0)
+		schedule_next_host_check(hst, hst->check_interval * interval_length, CHECK_OPTION_NONE);
+
+	/* Don't run checks if checks are disabled, unless foreced */
+	if (execute_host_checks == FALSE && !(hst->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
+		return;
+	}
+
+	/* Time to run event */
+	log_debug_info(DEBUGL_CHECKS, 0, "Attempting to run scheduled check of host '%s': check options=%d, latency=%lf\n", hst->name, hst->check_options, latency);
+
 	/* attempt to run the check */
-	result = run_async_host_check(hst, check_options, latency, TRUE, TRUE, &time_is_valid, &preferred_time);
+	result = run_async_host_check(hst, hst->check_options, latency);
 
 	/* an error occurred, so reschedule the check */
 	if (result == ERROR) {
-
-		log_debug_info(DEBUGL_CHECKS, 1, "Unable to run scheduled host check at this time\n");
-
-		/* only attempt to (re)schedule checks that should get checked... */
-		if (hst->should_be_scheduled == TRUE) {
-			time(&current_time);
-			hst->next_check = current_time + retry_check_window(hst);
+		/* Somethings wrong, reschedule for retry interval instead, if retry_interval is specified. */
+		if (hst->retry_interval != 0.0) {
+			schedule_next_host_check(hst, hst->retry_interval * interval_length, CHECK_OPTION_NONE);
 			log_debug_info(DEBUGL_CHECKS, 1, "Rescheduled next host check for %s", ctime(&hst->next_check));
 		}
 
 		/* update the status log */
 		update_host_status(hst, FALSE);
-
-		/* reschedule the next host check - unless we couldn't find a valid next check time */
-		if (hst->should_be_scheduled == TRUE)
-			schedule_host_check(hst, hst->next_check, check_options);
 	}
 }
 
+/******************************************************************************
+ *****************************  CHECK EXECUTION  ******************************
+ ******************************************************************************/
+
 /* perform an asynchronous check of a host */
 /* scheduled host checks will use this, as will some checks that result from on-demand checks... */
-static int run_async_host_check(host *hst, int check_options, double latency, int scheduled_check, int reschedule_check, int *time_is_valid, time_t *preferred_time)
+static int run_async_host_check(host *hst, int check_options, double latency)
 {
 	nagios_macros mac;
 	char *raw_command = NULL;
 	char *processed_command = NULL;
 	struct timeval start_time, end_time;
-	double old_latency = 0.0;
 	check_result *cr;
 	int runchk_result = OK;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
@@ -320,24 +185,44 @@ static int run_async_host_check(host *hst, int check_options, double latency, in
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "run_async_host_check(%s ...)\n", hst ? hst->name : "(NULL host!)");
 	log_debug_info(DEBUGL_CHECKS, 0, "** Running async check of host '%s'...\n", hst->name);
 
-	/* abort if check is already running or was recently completed */
+	/*
+	 * Check for reasons not to even try to execute this check.
+	 *
+	 * But if the check is forced, we should check it anyway.
+	 */
 	if (!(check_options & CHECK_OPTION_FORCE_EXECUTION)) {
+		/* abort if check is already running */
 		if (hst->is_executing == TRUE) {
 			log_debug_info(DEBUGL_CHECKS, 1, "A check of this host is already being executed, so we'll pass for the moment...\n");
 			return ERROR;
 		}
 
+		/* abort if check was recently completed (FIXME: wall clock vs. monotonic) */
 		if (hst->last_check + cached_host_check_horizon > time(NULL)) {
 			log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' was last checked within its cache horizon. Aborting check\n", hst->name);
 			return ERROR;
 		}
-	}
 
-	log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' passed first hurdle (caching/execution)\n", hst->name);
-	/* is the host check viable at this time? */
-	if (check_host_check_viability(hst, check_options, time_is_valid, preferred_time) == ERROR) {
-		log_debug_info(DEBUGL_CHECKS, 0, "Host check isn't viable at this point.\n");
-		return ERROR;
+		/* if checks of the host are currently disabled... */
+		if (hst->checks_enabled == FALSE) {
+			return ERROR;
+		}
+
+		/* Don't check to often, might happend in dependency checks */
+		if (hst->last_check + cached_host_check_horizon > time(NULL)) {
+			log_debug_info(DEBUGL_CHECKS, 0, "Last check result is recent enough (%s)\n", ctime(&hst->last_check));
+			return ERROR;
+		}
+
+		/* make sure this is a valid time to check the host */
+		if (check_time_against_period(time(NULL), hst->check_period_ptr) != OK) {
+			return ERROR;
+		}
+
+		/* check host dependencies for execution */
+		if (check_host_dependencies(hst, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
+			return ERROR;
+		}
 	}
 
 	/******** GOOD TO GO FOR A REAL HOST CHECK AT THIS POINT ********/
@@ -359,29 +244,20 @@ static int run_async_host_check(host *hst, int check_options, double latency, in
 	}
 	/* neb module wants to cancel the host check - the check will be rescheduled for a later time by the scheduling logic */
 	if (neb_result == NEBERROR_CALLBACKCANCEL) {
-		if (preferred_time)
-			*preferred_time += check_window(hst);
 		return ERROR;
 	}
 
-	/* neb module wants to override the host check - perhaps it will check the host itself */
-	/* NOTE: if a module does this, it has to do a lot of the stuff found below to make sure things don't get whacked out of shape! */
+	/* neb module wants to override the host check - perhaps it will check the host itself, no retry-check */
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE)
 		return OK;
 #endif
 
 	log_debug_info(DEBUGL_CHECKS, 0, "Checking host '%s'...\n", hst->name);
 
-	/* clear check options - we don't want old check options retained */
-	/* only clear options if this was a scheduled check - on demand check options shouldn't affect retained info */
-	if (scheduled_check == TRUE)
-		hst->check_options = CHECK_OPTION_NONE;
-
 	/* adjust host check attempt */
 	adjust_host_check_attempt(hst, TRUE);
 
-	/* set latency (temporarily) for macros and event broker */
-	old_latency = hst->latency;
+	/* set latency for macros and event broker */
 	hst->latency = latency;
 
 	/* grab the host macro variables */
@@ -417,8 +293,8 @@ static int run_async_host_check(host *hst, int check_options, double latency, in
 	cr->service_description = NULL;
 	cr->check_type = CHECK_TYPE_ACTIVE;
 	cr->check_options = check_options;
-	cr->scheduled_check = scheduled_check;
-	cr->reschedule_check = reschedule_check;
+	cr->scheduled_check = TRUE;
+	cr->reschedule_check = TRUE;
 	cr->latency = latency;
 	cr->start_time = start_time;
 	cr->finish_time = start_time;
@@ -430,9 +306,6 @@ static int run_async_host_check(host *hst, int check_options, double latency, in
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
 	neb_result = broker_host_check(NEBTYPE_HOSTCHECK_INITIATE, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, host_check_timeout, FALSE, 0, processed_command, NULL, NULL, NULL, NULL, cr);
-
-	/* reset latency (permanent value for this check will get set later) */
-	hst->latency = old_latency;
 
 	/* neb module wants to override the service check - perhaps it will check the service itself */
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
@@ -450,7 +323,7 @@ static int run_async_host_check(host *hst, int check_options, double latency, in
 		/* do the book-keeping */
 		currently_running_host_checks++;
 		hst->is_executing = TRUE;
-		update_check_stats((scheduled_check == TRUE) ? ACTIVE_SCHEDULED_HOST_CHECK_STATS : ACTIVE_ONDEMAND_HOST_CHECK_STATS, start_time.tv_sec);
+		update_check_stats(ACTIVE_SCHEDULED_HOST_CHECK_STATS, start_time.tv_sec);
 		update_check_stats(PARALLEL_HOST_CHECK_STATS, start_time.tv_sec);
 	}
 
@@ -471,7 +344,6 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 {
 	time_t current_time;
 	int result = STATE_OK;
-	int reschedule_check = FALSE;
 	char *old_plugin_output = NULL;
 	char *old_long_plugin_output = NULL;
 	char *temp_ptr = NULL;
@@ -535,9 +407,6 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 	/* update check statistics for passive results */
 	if (queued_check_result->check_type == CHECK_TYPE_PASSIVE)
 		update_check_stats(PASSIVE_HOST_CHECK_STATS, queued_check_result->start_time.tv_sec);
-
-	/* should we reschedule the next check of the host? NOTE: this might be overridden later... */
-	reschedule_check = queued_check_result->reschedule_check;
 
 	/* check latency is passed to us for both active and passive checks */
 	temp_host->latency = queued_check_result->latency;
@@ -670,7 +539,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 	/******************* PROCESS THE CHECK RESULTS ******************/
 
 	/* process the host check result */
-	process_host_check_result(temp_host, result, old_plugin_output, old_long_plugin_output, CHECK_OPTION_NONE, reschedule_check, TRUE, cached_host_check_horizon, &alert_recorded);
+	process_host_check_result(temp_host, result, old_plugin_output, old_long_plugin_output, CHECK_OPTION_NONE, TRUE, cached_host_check_horizon, &alert_recorded);
 
 	/* free memory */
 	my_free(old_plugin_output);
@@ -747,14 +616,13 @@ static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags)
 }
 
 /* processes the result of a synchronous or asynchronous host check */
-static int process_host_check_result(host *hst, int new_state, char *old_plugin_output, char *old_long_plugin_output, int check_options, int reschedule_check, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded)
+static int process_host_check_result(host *hst, int new_state, char *old_plugin_output, char *old_long_plugin_output, int check_options, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded)
 {
 	hostsmember *temp_hostsmember = NULL;
 	host *child_host = NULL;
 	host *parent_host = NULL;
 	host *master_host = NULL;
 	time_t current_time = 0L;
-	time_t next_check = 0L;
 
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "process_host_check_result()\n");
@@ -763,9 +631,6 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 
 	/* get the current time */
 	time(&current_time);
-
-	/* default next check time */
-	next_check = current_time + normal_check_window(hst);
 
 	/* we have to adjust current attempt # for passive checks, as it isn't done elsewhere */
 	if (hst->check_type == CHECK_TYPE_PASSIVE && passive_host_checks_are_soft == TRUE)
@@ -799,9 +664,6 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 
 			log_debug_info(DEBUGL_CHECKS, 1, "Host experienced a %s recovery (it's now UP).\n", (hst->state_type == HARD_STATE) ? "HARD" : "SOFT");
 
-			/* reschedule the next check of the host at the normal interval */
-			reschedule_check = TRUE;
-
 			/* propagate checks to immediate parents if they are not already UP */
 			/* we do this because a parent host (or grandparent) may have recovered somewhere and we should catch the recovery as soon as possible */
 			log_debug_info(DEBUGL_CHECKS, 1, "Propagating checks to parent host(s)...\n");
@@ -809,7 +671,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 				parent_host = temp_hostsmember->host_ptr;
 				if (parent_host->current_state != HOST_UP) {
 					log_debug_info(DEBUGL_CHECKS, 1, "Check of parent host '%s' queued.\n", parent_host->name);
-					schedule_host_check(parent_host, current_time, CHECK_OPTION_DEPENDENCY_CHECK);
+					schedule_next_host_check(parent_host, 0, CHECK_OPTION_NONE);
 				}
 			}
 
@@ -820,7 +682,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 				child_host = temp_hostsmember->host_ptr;
 				if (child_host->current_state != HOST_UP) {
 					log_debug_info(DEBUGL_CHECKS, 1, "Check of child host '%s' queued.\n", child_host->name);
-					schedule_host_check(child_host, current_time, CHECK_OPTION_DEPENDENCY_CHECK);
+					schedule_next_host_check(child_host, 0, CHECK_OPTION_NONE);
 				}
 			}
 
@@ -862,14 +724,6 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 			hst->current_state = new_state;
 			if (hst->check_type == CHECK_TYPE_ACTIVE || translate_passive_host_checks == TRUE)
 				hst->current_state = determine_host_reachability(hst);
-
-			/* reschedule the next check if the host state changed */
-			if (hst->last_state != hst->current_state || hst->last_hard_state != hst->current_state) {
-
-				reschedule_check = TRUE;
-
-				next_check = current_time + check_window(hst);
-			}
 		}
 	}
 
@@ -887,8 +741,6 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 			/* set current state and state type */
 			hst->current_state = HOST_UP;
 			hst->state_type = HARD_STATE;
-
-			next_check = current_time + check_window(hst);
 		}
 
 		/***** HOST IS NOW DOWN/UNREACHABLE *****/
@@ -919,17 +771,6 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 			if (hst->check_type == CHECK_TYPE_ACTIVE || translate_passive_host_checks == TRUE)
 				hst->current_state = determine_host_reachability(hst);
 
-			/* reschedule a check of the host */
-			reschedule_check = TRUE;
-
-			/* schedule a re-check of the host at the retry interval because we can't determine its final state yet... */
-			if (hst->check_type == CHECK_TYPE_ACTIVE || passive_host_checks_are_soft == TRUE)
-				next_check = (unsigned long)(current_time + (hst->retry_interval * interval_length));
-
-			/* schedule a re-check of the host at the normal interval */
-			else
-				next_check = (unsigned long)(current_time + (hst->check_interval * interval_length));
-
 			/* propagate checks to immediate parents if they are UP */
 			/* we do this because a parent host (or grandparent) may have gone down and blocked our route */
 			/* checking the parents ASAP will allow us to better determine the final state (DOWN/UNREACHABLE) of this host later */
@@ -938,7 +779,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 			for (temp_hostsmember = hst->parent_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
 				parent_host = temp_hostsmember->host_ptr;
 				if (parent_host->current_state == HOST_UP) {
-					schedule_host_check(parent_host, current_time, CHECK_OPTION_DEPENDENCY_CHECK);
+					schedule_next_host_check(parent_host, 0, CHECK_OPTION_NONE);
 					log_debug_info(DEBUGL_CHECKS, 1, "Check of host '%s' queued.\n", parent_host->name);
 				}
 			}
@@ -950,7 +791,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 				child_host = temp_hostsmember->host_ptr;
 				if (child_host->current_state != HOST_UNREACHABLE) {
 					log_debug_info(DEBUGL_CHECKS, 1, "Check of child host '%s' queued.\n", child_host->name);
-					schedule_host_check(child_host, current_time, CHECK_OPTION_NONE);
+					schedule_next_host_check(child_host, 0, CHECK_OPTION_NONE);
 				}
 			}
 
@@ -967,7 +808,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 					if (dep->dependent_host_ptr == hst && dep->master_host_ptr != NULL) {
 						master_host = (host *)dep->master_host_ptr;
 						log_debug_info(DEBUGL_CHECKS, 1, "Check of host '%s' queued.\n", master_host->name);
-						schedule_host_check(master_host, current_time, CHECK_OPTION_NONE);
+						schedule_next_host_check(master_host, 0, CHECK_OPTION_NONE);
 					}
 				}
 				for (list = hst->exec_deps; list; list = list->next) {
@@ -975,7 +816,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 					if (dep->dependent_host_ptr == hst && dep->master_host_ptr != NULL) {
 						master_host = (host *)dep->master_host_ptr;
 						log_debug_info(DEBUGL_CHECKS, 1, "Check of host '%s' queued.\n", master_host->name);
-						schedule_host_check(master_host, current_time, CHECK_OPTION_NONE);
+						schedule_next_host_check(master_host, 0, CHECK_OPTION_NONE);
 					}
 				}
 			}
@@ -1001,32 +842,10 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 	/* check to see if the associated host is flapping */
 	check_for_host_flapping(hst, TRUE, TRUE, TRUE);
 
-	/* reschedule the next check of the host (usually ONLY for scheduled, active checks, unless overridden above) */
-	if (reschedule_check == TRUE) {
-
-		log_debug_info(DEBUGL_CHECKS, 1, "Rescheduling next check of host at %s", ctime(&next_check));
-
-		/* default is to reschedule host check unless a test below fails... */
-		hst->should_be_scheduled = TRUE;
-
-		/* make sure we don't get ourselves into too much trouble... */
-		next_check = next_check_time(hst);
-		if (current_time > next_check)
-			hst->next_check = current_time;
-		else
-			hst->next_check = next_check;
-
-		/* hosts with non-recurring intervals do not get rescheduled if we're in a HARD or UP state */
-		if (hst->check_interval == 0 && (hst->state_type == HARD_STATE || hst->current_state == HOST_UP))
-			hst->should_be_scheduled = FALSE;
-
-		/* host with active checks disabled do not get rescheduled */
-		if (hst->checks_enabled == FALSE)
-			hst->should_be_scheduled = FALSE;
-
-		/* schedule a non-forced check if we can */
-		if (hst->should_be_scheduled == TRUE) {
-			schedule_host_check(hst, hst->next_check, CHECK_OPTION_NONE);
+	/* If there is a problem, and the state still is soft, use retry interval  */
+	if (hst->current_state != HOST_UP && hst->state_type == SOFT_STATE) {
+		if (hst->retry_interval != 0.0) {
+			schedule_next_host_check(hst, hst->retry_interval * interval_length, CHECK_OPTION_NONE);
 		}
 	}
 
@@ -1041,10 +860,6 @@ static int adjust_host_check_attempt(host *hst, int is_active)
 {
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "adjust_host_check_attempt()\n");
-
-	if (hst == NULL)
-		return ERROR;
-
 	log_debug_info(DEBUGL_CHECKS, 2, "Adjusting check attempt number for host '%s': current attempt=%d/%d, state=%d, state type=%d\n", hst->name, hst->current_attempt, hst->max_attempts, hst->current_state, hst->state_type);
 
 	/* if host is in a hard state, reset current attempt number */
@@ -1265,7 +1080,7 @@ static void check_host_result_freshness(void *arg)
 			temp_host->is_being_freshened = TRUE;
 
 			/* schedule an immediate forced check of the host */
-			schedule_host_check(temp_host, current_time, CHECK_OPTION_FORCE_EXECUTION | CHECK_OPTION_FRESHNESS_CHECK);
+			schedule_next_host_check(temp_host, 0, CHECK_OPTION_FORCE_EXECUTION);
 		}
 	}
 
@@ -1316,7 +1131,7 @@ static void check_for_orphaned_hosts_eventhandler(void *arg)
 			temp_host->is_executing = FALSE;
 
 			/* schedule an immediate check of the host */
-			schedule_host_check(temp_host, current_time, CHECK_OPTION_ORPHAN_CHECK);
+			schedule_next_host_check(temp_host, 0, CHECK_OPTION_NONE);
 		}
 
 	}
@@ -1466,72 +1281,6 @@ static int is_host_result_fresh(host *temp_host, time_t current_time, int log_th
 		log_debug_info(DEBUGL_CHECKS, 1, "Check results for host '%s' are fresh.\n", temp_host->name);
 
 	return TRUE;
-}
-
-/* checks viability of performing a host check */
-static int check_host_check_viability(host *hst, int check_options, int *time_is_valid, time_t *new_time)
-{
-	int result = OK;
-	int perform_check = TRUE;
-	time_t current_time = 0L;
-	time_t preferred_time = 0L;
-	int check_interval = 0;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_host_check_viability()\n");
-
-	/* make sure we have a host */
-	if (hst == NULL)
-		return ERROR;
-
-	/* get the check interval to use if we need to reschedule the check */
-	if (hst->state_type == SOFT_STATE && hst->current_state != HOST_UP)
-		check_interval = (hst->retry_interval * interval_length);
-	else
-		check_interval = (hst->check_interval * interval_length);
-
-	/* make sure check interval is positive - otherwise use 5 minutes out for next check */
-	if (check_interval <= 0)
-		check_interval = 300;
-
-	/* get the current time */
-	time(&current_time);
-
-	/* initialize the next preferred check time */
-	preferred_time = current_time;
-
-	/* can we check the host right now? */
-	if (!(check_options & CHECK_OPTION_FORCE_EXECUTION)) {
-
-		/* if checks of the host are currently disabled... */
-		if (hst->checks_enabled == FALSE) {
-			preferred_time = current_time + check_interval;
-			perform_check = FALSE;
-		}
-
-		/* make sure this is a valid time to check the host */
-		if (check_time_against_period((unsigned long)current_time, hst->check_period_ptr) == ERROR) {
-			log_debug_info(DEBUGL_CHECKS, 0, "Timeperiod check failed\n");
-			preferred_time = current_time;
-			if (time_is_valid)
-				*time_is_valid = FALSE;
-			perform_check = FALSE;
-		}
-
-		/* check host dependencies for execution */
-		if (check_host_dependencies(hst, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
-			log_debug_info(DEBUGL_CHECKS, 0, "Host check dependencies failed\n");
-			preferred_time = current_time + check_interval;
-			perform_check = FALSE;
-		}
-	}
-
-	/* pass back the next viable check time */
-	if (new_time)
-		*new_time = preferred_time;
-
-	result = (perform_check == TRUE) ? OK : ERROR;
-
-	return result;
 }
 
 /* determination of the host's state based on route availability*/
