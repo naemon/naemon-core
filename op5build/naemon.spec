@@ -14,7 +14,7 @@ Group: op5/Monitor
 URL: http://www.op5.se
 Source0: %name-%version.tar.gz
 Requires: sed >= 4.0.9
-Requires: monitor-config
+Requires: monitor-config >= 7.1.0
 BuildRoot: %{_tmppath}/%{name}-%{version}
 Obsoletes: monitor <= 6
 Provides: monitor = 7
