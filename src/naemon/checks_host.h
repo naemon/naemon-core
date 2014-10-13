@@ -13,7 +13,8 @@ NAGIOS_BEGIN_DECL
 void checks_init_hosts(void);
 
 /* Scheduling, reschedule host to be checked */
-void schedule_host_check(host *hst, time_t check_time, int options);
+void schedule_next_host_check(host *hst, time_t time_left, int options);
+void schedule_host_check(host *hst, time_t check_time, int options); /* DEPRECATED */
 
 /* Result handling, Update a host given a check result */
 int handle_async_host_check_result(host *temp_host, check_result *queued_check_result);
