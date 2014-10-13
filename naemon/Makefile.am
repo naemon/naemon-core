@@ -13,7 +13,7 @@ nobase_pkginclude_HEADERS = \
 
 pkginclude_HEADERS = \
 	broker.h         events.h       nagios.h         objects.h \
-	workers.h \
+	workers.h        checks_host.h  checks_service.h \
 	checks.h         flapping.h     nebcallbacks.h   perfdata.h \
 	commands.h       globals.h      neberrors.h      query-handler.h \
 	comments.h       nebmods.h      sehandlers.h \
@@ -44,6 +44,8 @@ CLEANFILES = wpres-phash.h buildopts.h naemon.8 naemonstats.8 shadownaemon.8 oco
 common_sources = \
 	broker.c broker.h \
 	checks.c checks.h \
+	checks_host.c checks_host.h \
+	checks_service.c checks_service.h \
 	commands.c commands.h \
 	comments.c comments.h \
 	common.h \

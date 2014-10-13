@@ -9,6 +9,8 @@
 #include "workers.h"
 #include "utils.h"
 #include "checks.h"
+#include "checks_service.h"
+#include "checks_host.h"
 #include "logging.h"
 #include "globals.h"
 #include "nm_alloc.h"
