@@ -17,8 +17,6 @@
 #include "defaults.h"
 #include "nm_alloc.h"
 
-#include "loadctl.h"
-
 /* perfect hash function for wproc response codes */
 #include "wpres-phash.h"
 
@@ -98,50 +96,6 @@ void wproc_reap(int jobs, int msecs)
 	} while (jobs > 0 && start + (msecs * 1000) <= now);
 }
 
-int wproc_can_spawn(struct load_control *lc)
-{
-	unsigned int old = 0;
-	time_t now;
-
-	/* if no load control is enabled, we can safely run this job */
-	if (!(lc->options & LOADCTL_ENABLED))
-		return 1;
-
-	now = time(NULL);
-	if (lc->last_check + lc->check_interval > now) {
-		lc->last_check = now;
-
-		if (getloadavg(lc->load, 3) < 0)
-			return lc->jobs_limit > lc->jobs_running;
-
-		if (lc->load[0] > lc->backoff_limit) {
-			old = lc->jobs_limit;
-			lc->jobs_limit -= lc->backoff_change;
-		} else if (lc->load[0] < lc->rampup_limit) {
-			old = lc->jobs_limit;
-			lc->jobs_limit += lc->rampup_change;
-		}
-
-		if (lc->jobs_limit > lc->jobs_max) {
-			lc->jobs_limit = lc->jobs_max;
-		} else if (lc->jobs_limit < lc->jobs_min) {
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Tried to set jobs_limit to %u, below jobs_min (%u)\n",
-			      lc->jobs_limit, lc->jobs_min);
-			lc->jobs_limit = lc->jobs_min;
-		}
-
-		if (old && old != lc->jobs_limit) {
-			if (lc->jobs_limit < old) {
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: loadctl.jobs_limit changed from %u to %u\n", old, lc->jobs_limit);
-			} else {
-				logit(NSLOG_INFO_MESSAGE, FALSE, "wproc: loadctl.jobs_limit changed from %u to %u\n", old, lc->jobs_limit);
-			}
-		}
-	}
-
-	return lc->jobs_limit > lc->jobs_running;
-}
-
 static int get_job_id(struct wproc_worker *wp)
 {
 	return wp->job_index++;
@@ -218,7 +172,6 @@ static void destroy_job(struct wproc_job *job)
 		fanout_remove(job->wp->jobs, job->id);
 		job->wp->jobs_running--;
 	}
-	loadctl.jobs_running--;
 
 	free(job);
 }
@@ -767,8 +720,10 @@ static struct wproc_job *create_job(void (*callback)(struct wproc_result *, void
 	job->callback = callback;
 	job->data = data;
 	job->timeout = timeout;
-	if (fanout_add(wp->jobs, job->id, job) < 0 || !(job->command = nm_strdup(cmd))) {
-		free(job);
+	job->command = nm_strdup(cmd);
+	if (fanout_add(wp->jobs, job->id, job) < 0) {
+		my_free(job->command);
+		my_free(job);
 		return NULL;
 	}
 
@@ -813,13 +768,11 @@ static int wproc_run_job(struct wproc_job *job, nagios_macros *mac)
 		      wp->name, ret, kvvb->bufsize, errno, strerror(errno));
 		// these two will be decremented by destroy_job, so preemptively increment them
 		wp->jobs_running++;
-		loadctl.jobs_running++;
 		destroy_job(job);
 		result = ERROR;
 	} else {
 		wp->jobs_running++;
 		wp->jobs_started++;
-		loadctl.jobs_running++;
 	}
 	free(kvvb->buf);
 	free(kvvb);

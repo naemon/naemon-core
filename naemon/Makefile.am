@@ -16,7 +16,7 @@ pkginclude_HEADERS = \
 	workers.h \
 	checks.h         flapping.h     nebcallbacks.h   perfdata.h \
 	commands.h       globals.h      neberrors.h      query-handler.h \
-	comments.h       loadctl.h      nebmods.h        sehandlers.h \
+	comments.h       nebmods.h      sehandlers.h \
 	common.h         logging.h      nebmodules.h     shared.h \
 	configuration.h  macros.h       nebstructs.h     sretention.h \
 	defaults.h       naemon.h       nerd.h           statusdata.h \
@@ -53,7 +53,6 @@ common_sources = \
 	events.c events.h \
 	flapping.c flapping.h \
 	globals.h \
-	loadctl.h \
 	logging.c logging.h \
 	macros.c macros.h \
 	nebcallbacks.h neberrors.h \

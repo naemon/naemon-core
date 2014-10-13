@@ -533,10 +533,6 @@ int initialize_core() {
     initialize_performance_data(config_file);
     timing_point("Performance data initialized\n");
 
-    /* initialize the event timing loop */
-    init_timing_loop();
-    timing_point("Event timing loop initialized\n");
-
     /* initialize check statistics */
     init_check_stats();
     timing_point("check stats initialized\n");
@@ -584,7 +580,6 @@ int deinitialize_core() {
     cleanup_status_data(TRUE);
 
     /* clean up after ourselves */
-    test_scheduling = FALSE;
     verify_config   = FALSE;
     cleanup();
 

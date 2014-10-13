@@ -331,7 +331,6 @@ static struct arg_val * arg_val_create(arg_t type, void * v);
 #  endif
 # endif
 #endif
-#define log_mem_error() logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to allocate memory in %s", __func__);
 
 static size_t type_sz(arg_t type) {
 	switch (type) {
@@ -472,10 +471,6 @@ void * command_argument_get_value(const struct external_command * ext_command, c
 static struct external_command_argument * command_argument_copy(struct external_command_argument *arg) {
 	struct external_command_argument * copy;
 	copy = nm_malloc(sizeof(struct external_command_argument));
-	if (!copy) {
-		log_mem_error();
-		return NULL;
-	}
 	copy->name = nm_strdup(arg->name);
 	copy->validator = arg->validator;
 	copy->argval = arg_val_copy(arg->argval);
@@ -486,10 +481,6 @@ static struct external_command * external_command_copy(struct external_command *
 {
 	int i;
 	struct external_command * copy = nm_malloc(sizeof(struct external_command));
-	if (!copy) {
-		log_mem_error();
-		return NULL;
-	}
 	copy->name = nm_strdup(ext_command->name);
 	copy->id = ext_command->id;
 	copy->handler = ext_command->handler;
@@ -767,6 +758,7 @@ static int parse_arguments(const char *s, struct external_command_argument **arg
 				if (error) {
 					ret = CMD_ERROR_PARSE_TYPE_MISMATCH;
 				}
+				break;
 			case TIMESTAMP:
 				*(time_t *)(args[i]->argval->val) = (time_t)parse_ulong(temp, &error);
 				if (error) {
@@ -778,6 +770,7 @@ static int parse_arguments(const char *s, struct external_command_argument **arg
 				if (error) {
 					ret = CMD_ERROR_PARSE_TYPE_MISMATCH;
 				}
+				break;
 			default:
 				ret = CMD_ERROR_UNSUPPORTED_ARG_TYPE;
 				break;
@@ -1157,10 +1150,6 @@ static void grow_registered_commands(void)
 	int i;
 	int new_size = registered_commands_sz * 2;
 	registered_commands = nm_realloc(registered_commands, sizeof(struct external_command *)  *  new_size);
-	if (!registered_commands) {
-		log_mem_error();
-		return;
-	}
 	for (i = registered_commands_sz; i < new_size; i++) {
 		registered_commands[i] = NULL;
 	}
@@ -1225,10 +1214,6 @@ void registered_commands_init(int initial_size)
 		return;
 	}
 	registered_commands = nm_calloc((size_t)initial_size, sizeof(struct external_command *));
-	if(!registered_commands) {
-		log_mem_error();
-		return;
-	}
 	registered_commands_sz = initial_size;
 	num_registered_commands = 0;
 }
@@ -1257,17 +1242,24 @@ void command_unregister(struct external_command *ext_command)
 	--num_registered_commands;
 }
 
+static void shutdown_event_handler(void *storage) {
+	sigshutdown = TRUE;
+}
+
 static int shutdown_handler(const struct external_command *ext_command, time_t entry_time)
 {
-
-	if (!schedule_new_event(EVENT_PROGRAM_SHUTDOWN, TRUE, GV_TIMESTAMP("shutdown_time"), FALSE, 0, NULL, FALSE, NULL, NULL, 0))
+	if (!schedule_event(GV_TIMESTAMP("shutdown_time") - time(NULL), shutdown_event_handler, NULL))
 		return ERROR;
 	return OK;
 }
 
+static void restart_event_handler(void *storage) {
+	sigrestart = TRUE;
+}
+
 static int restart_handler(const struct external_command *ext_command, time_t entry_time)
 {
-	if (!schedule_new_event(EVENT_PROGRAM_RESTART, TRUE, GV_TIMESTAMP("restart_time"), FALSE, 0, NULL, FALSE, NULL, NULL, 0))
+	if (!schedule_event(GV_TIMESTAMP("restart_time") - time(NULL), restart_event_handler, NULL))
 		return ERROR;
 	return OK;
 }

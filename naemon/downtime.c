@@ -23,6 +23,10 @@ static fanout_table *dt_fanout;
 #define DT_ETYPE (-4)
 #define DT_ETRIGGER (-5)
 #define DT_ETIME (-6)
+
+
+static void check_for_expired_downtime(void *arg);
+
 static const char *dt_strerror(int err)
 {
 	if (err > 0)
@@ -214,6 +218,15 @@ int cleanup_downtime_data(void)
 /********************** SCHEDULING FUNCTIONS **********************/
 /******************************************************************/
 
+static void handle_downtime_start_event(void *arg)
+{
+	/* process scheduled downtime info */
+	if (arg) {
+		handle_scheduled_downtime_by_id(*(unsigned long *)arg);
+		free(arg);
+	}
+}
+
 /* schedules a host or service downtime */
 int schedule_downtime(int type, char *host_name, char *service_description, time_t entry_time, char *author, char *comment_data, time_t start_time, time_t end_time, int fixed, unsigned long triggered_by, unsigned long duration, unsigned long *new_downtime_id)
 {
@@ -324,12 +337,12 @@ int unschedule_downtime(int type, unsigned long downtime_id)
 
 	/* remove scheduled entries from event queue */
 	if (temp_downtime->start_event) {
-		remove_event(nagios_squeue, temp_downtime->start_event);
-		my_free(temp_downtime->start_event);
+		destroy_event(temp_downtime->start_event);
+		temp_downtime->start_event = NULL;
 	}
 	if (temp_downtime->stop_event) {
-		remove_event(nagios_squeue, temp_downtime->stop_event);
-		my_free(temp_downtime->stop_event);
+		destroy_event(temp_downtime->stop_event);
+		temp_downtime->stop_event = NULL;
 	}
 
 	/* delete downtime entry */
@@ -465,14 +478,15 @@ int register_downtime(int type, unsigned long downtime_id)
 			should work even if the downtime has ended because the
 			handle_scheduled_dowtime() function will immediately schedule
 			another downtime event which will end the downtime. */
-		if ((new_downtime_id = nm_malloc(sizeof(unsigned long)))) {
-			*new_downtime_id = downtime_id;
-			temp_downtime->start_event = schedule_new_event(EVENT_SCHEDULED_DOWNTIME, TRUE, temp_downtime->start_time, FALSE, 0, NULL, FALSE, (void *)new_downtime_id, NULL, 0);
-			/* Turn off is_in_effect flag so handle_scheduled_downtime() will
-				handle it correctly */
-			was_in_effect = temp_downtime->is_in_effect;
-			temp_downtime->is_in_effect = FALSE;
-		}
+
+		new_downtime_id = nm_malloc(sizeof(unsigned long));
+		*new_downtime_id = downtime_id;
+
+		temp_downtime->start_event = schedule_event(temp_downtime->start_time - time(NULL), handle_downtime_start_event, (void *)new_downtime_id);
+		/* Turn off is_in_effect flag so handle_scheduled_downtime() will
+			handle it correctly */
+		was_in_effect = temp_downtime->is_in_effect;
+		temp_downtime->is_in_effect = FALSE;
 	}
 
 	/* If the downtime is triggered and was in effect, mark it as not in
@@ -495,7 +509,7 @@ int register_downtime(int type, unsigned long downtime_id)
 			case the event is never triggered. The expire event will NOT cancel
 			a downtime event that is in effect */
 		log_debug_info(DEBUGL_DOWNTIME, 1, "Scheduling downtime expire event in case flexible downtime is never triggered\n");
-		temp_downtime->stop_event = schedule_new_event(EVENT_EXPIRE_DOWNTIME, TRUE, (temp_downtime->end_time + 1), FALSE, 0, NULL, FALSE, NULL, NULL, 0);
+		temp_downtime->stop_event = schedule_event((temp_downtime->end_time + 1) - time(NULL), check_for_expired_downtime, NULL);
 	}
 
 	return OK;
@@ -701,10 +715,11 @@ int handle_scheduled_downtime(scheduled_downtime *temp_downtime)
 		} else {
 			event_time = temp_downtime->end_time;
 		}
-		if ((new_downtime_id = nm_malloc(sizeof(unsigned long)))) {
-			*new_downtime_id = temp_downtime->downtime_id;
-			schedule_new_event(EVENT_SCHEDULED_DOWNTIME, TRUE, event_time, FALSE, 0, NULL, FALSE, (void *)new_downtime_id, NULL, 0);
-		}
+
+		new_downtime_id = nm_malloc(sizeof(unsigned long));
+		*new_downtime_id = temp_downtime->downtime_id;
+
+		schedule_event(event_time - time(NULL), handle_downtime_start_event, (void *)new_downtime_id);
 
 		/* handle (start) downtime that is triggered by this one */
 		for (this_downtime = scheduled_downtime_list; this_downtime != NULL; this_downtime = this_downtime->next) {
@@ -760,10 +775,11 @@ int check_pending_flex_host_downtime(host *hst)
 
 				log_debug_info(DEBUGL_DOWNTIME, 0, "Flexible downtime (id=%lu) for host '%s' starting now...\n", temp_downtime->downtime_id, hst->name);
 				temp_downtime->flex_downtime_start = current_time;
-				if ((new_downtime_id = nm_malloc(sizeof(unsigned long)))) {
-					*new_downtime_id = temp_downtime->downtime_id;
-					temp_downtime->start_event = schedule_new_event(EVENT_SCHEDULED_DOWNTIME, TRUE, temp_downtime->flex_downtime_start, FALSE, 0, NULL, FALSE, (void *)new_downtime_id, NULL, 0);
-				}
+
+				new_downtime_id = nm_malloc(sizeof(unsigned long));
+				*new_downtime_id = temp_downtime->downtime_id;
+
+				temp_downtime->start_event = schedule_event(temp_downtime->flex_downtime_start - time(NULL), handle_downtime_start_event, (void *)new_downtime_id);
 			}
 		}
 	}
@@ -816,10 +832,11 @@ int check_pending_flex_service_downtime(service *svc)
 				log_debug_info(DEBUGL_DOWNTIME, 0, "Flexible downtime (id=%lu) for service '%s' on host '%s' starting now...\n", temp_downtime->downtime_id, svc->description, svc->host_name);
 
 				temp_downtime->flex_downtime_start = current_time;
-				if ((new_downtime_id = nm_malloc(sizeof(unsigned long)))) {
-					*new_downtime_id = temp_downtime->downtime_id;
-					temp_downtime->start_event = schedule_new_event(EVENT_SCHEDULED_DOWNTIME, TRUE, temp_downtime->flex_downtime_start, FALSE, 0, NULL, FALSE, (void *)new_downtime_id, NULL, 0);
-				}
+
+				new_downtime_id = nm_malloc(sizeof(unsigned long));
+				*new_downtime_id = temp_downtime->downtime_id;
+
+				temp_downtime->start_event = schedule_event(temp_downtime->flex_downtime_start - time(NULL), handle_downtime_start_event, (void *)new_downtime_id);
 			}
 		}
 	}
@@ -828,8 +845,8 @@ int check_pending_flex_service_downtime(service *svc)
 }
 
 
-/* checks for (and removes) expired downtime entries */
-int check_for_expired_downtime(void)
+/* event handler: checks for (and removes) expired downtime entries */
+static void check_for_expired_downtime(void *arg)
 {
 	scheduled_downtime *temp_downtime = NULL;
 	scheduled_downtime *next_downtime = NULL;
@@ -858,7 +875,7 @@ int check_for_expired_downtime(void)
 					log_debug_info(DEBUGL_DOWNTIME, 1,
 					               "Unable to find host (%s) for downtime\n",
 					               temp_downtime->host_name);
-					return ERROR;
+					return; /* ERROR */
 				}
 
 				/* send a notification */
@@ -872,7 +889,7 @@ int check_for_expired_downtime(void)
 					               "Unable to find service (%s) host (%s) for downtime\n",
 					               temp_downtime->service_description,
 					               temp_downtime->host_name);
-					return ERROR;
+					return; /* ERROR */
 				}
 
 				/* send a notification */
@@ -889,7 +906,7 @@ int check_for_expired_downtime(void)
 		}
 	}
 
-	return OK;
+	return; /* OK */
 }
 
 
@@ -1123,11 +1140,7 @@ int add_downtime(int downtime_type, char *host_name, char *svc_description, time
 	}
 
 	/* allocate memory for the downtime */
-	if ((new_downtime = nm_calloc(1, sizeof(scheduled_downtime))) == NULL) {
-		log_debug_info(DEBUGL_DOWNTIME, 1,
-		               "Unable to allocate memory for new downtime\n");
-		return ERROR;
-	}
+	new_downtime = nm_calloc(1, sizeof(scheduled_downtime));
 
 	/* duplicate vars */
 	new_downtime->host_name = nm_strdup(host_name);

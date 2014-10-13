@@ -26,7 +26,6 @@
 #include <math.h>
 #include <poll.h>
 #include <string.h>
-#include "loadctl.h"
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif
@@ -94,8 +93,6 @@ int max_check_reaper_time = DEFAULT_MAX_REAPER_TIME;
 int service_freshness_check_interval = DEFAULT_FRESHNESS_CHECK_INTERVAL;
 int host_freshness_check_interval = DEFAULT_FRESHNESS_CHECK_INTERVAL;
 
-struct load_control loadctl;
-
 int check_orphaned_services = DEFAULT_CHECK_ORPHANED_SERVICES;
 int check_orphaned_hosts = DEFAULT_CHECK_ORPHANED_HOSTS;
 int check_service_freshness = DEFAULT_CHECK_SERVICE_FRESHNESS;
@@ -136,7 +133,6 @@ unsigned long next_comment_id = 0L;
 unsigned long next_notification_id = 0L;
 
 int verify_config = FALSE;
-int test_scheduling = FALSE;
 int precache_objects = FALSE;
 int use_precached_objects = FALSE;
 
@@ -211,9 +207,6 @@ int debug_verbosity = DEFAULT_DEBUG_VERBOSITY;
 unsigned long   max_debug_file_size = DEFAULT_MAX_DEBUG_FILE_SIZE;
 
 iobroker_set *nagios_iobs = NULL;
-squeue_t *nagios_squeue = NULL; /* our scheduling queue */
-
-sched_info scheduling_info;
 
 /* from GNU defines errno as a macro, since it's a per-thread variable */
 #ifndef errno
@@ -249,60 +242,6 @@ const char *check_result_source(check_result *cr)
 		return cr->engine->source_name(cr->source);
 	return cr->source ? (const char *)cr->source : "(unknown engine)";
 }
-
-
-int set_loadctl_options(char *opts, unsigned int len)
-{
-	struct kvvec *kvv;
-	int i;
-
-	kvv = buf2kvvec(opts, len, '=', ';', 0);
-	for (i = 0; i < kvv->kv_pairs; i++) {
-		struct key_value *kv = &kvv->kv[i];
-
-		if (!strcmp(kv->key, "enabled")) {
-			if (*kv->value == '1') {
-				if (!(loadctl.options & LOADCTL_ENABLED))
-					logit(0, 0, "Warning: Enabling experimental load control\n");
-				loadctl.options |= LOADCTL_ENABLED;
-			} else {
-				if (loadctl.options & LOADCTL_ENABLED)
-					logit(0, 0, "Warning: Disabling experimental load control\n");
-				loadctl.options &= (~LOADCTL_ENABLED);
-			}
-		} else if (!strcmp(kv->key, "jobs_max")) {
-			loadctl.jobs_max = atoi(kv->value);
-		} else if (!strcmp(kv->key, "jobs_min")) {
-			loadctl.jobs_min = atoi(kv->value);
-		} else if (!strcmp(kv->key, "jobs_limit")) {
-			loadctl.jobs_limit = atoi(kv->value);
-		} else if (!strcmp(kv->key, "check_interval")) {
-			loadctl.check_interval = strtoul(kv->value, NULL, 10);
-		} else if (!strcmp(kv->key, "backoff_limit")) {
-			loadctl.backoff_limit = strtod(kv->value, NULL);
-		} else if (!strcmp(kv->key, "rampup_limit")) {
-			loadctl.rampup_limit = strtod(kv->value, NULL);
-		} else if (!strcmp(kv->key, "backoff_change")) {
-			loadctl.backoff_change = atoi(kv->value);
-		} else if (!strcmp(kv->key, "rampup_change")) {
-			loadctl.rampup_change = atoi(kv->value);
-		} else {
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Bad loadctl option; %s = %s\n", kv->key, kv->value);
-			return 400;
-		}
-	}
-
-	/* precedence order is "jobs_min -> jobs_max -> jobs_limit" */
-	if (loadctl.jobs_max < loadctl.jobs_min)
-		loadctl.jobs_max = loadctl.jobs_min;
-	if (loadctl.jobs_limit > loadctl.jobs_max)
-		loadctl.jobs_limit = loadctl.jobs_max;
-	if (loadctl.jobs_limit < loadctl.jobs_min)
-		loadctl.jobs_limit = loadctl.jobs_min;
-	kvvec_destroy(kvv, 0);
-	return 0;
-}
-
 
 /******************************************************************/
 /******************** SYSTEM COMMAND FUNCTIONS ********************/
@@ -2803,7 +2742,7 @@ void cleanup(void)
 
 #ifdef USE_EVENT_BROKER
 	/* unload modules */
-	if (test_scheduling == FALSE && verify_config == FALSE) {
+	if (verify_config == FALSE) {
 		neb_free_callback_list();
 		neb_unload_all_modules(NEBMODULE_FORCE_UNLOAD, (sigshutdown == TRUE) ? NEBMODULE_NEB_SHUTDOWN : NEBMODULE_NEB_RESTART);
 		neb_free_module_list();
@@ -2832,8 +2771,7 @@ void free_memory(nagios_macros *mac)
 	free_comment_data();
 
 	/* free event queue data */
-	squeue_destroy(nagios_squeue, SQUEUE_FREE_DATA);
-	nagios_squeue = NULL;
+	destroy_event_queue();
 
 	/* free memory for global event handlers */
 	my_free(global_host_event_handler);

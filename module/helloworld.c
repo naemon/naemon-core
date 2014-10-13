@@ -36,6 +36,7 @@
 /* specify event broker API version (required) */
 NEB_API_VERSION(CURRENT_NEB_API_VERSION);
 
+#define REMINDER_INTERVAL 900
 
 void *helloworld_module_handle = NULL;
 
@@ -47,7 +48,6 @@ int helloworld_handle_data(int, void *);
 int nebmodule_init(int flags, char *args, nebmodule *handle) {
 	char temp_buffer[1024];
 	time_t current_time;
-	unsigned long interval;
 
 	/* save our handle */
 	helloworld_module_handle = handle;
@@ -70,8 +70,7 @@ int nebmodule_init(int flags, char *args, nebmodule *handle) {
 
 	/* log a reminder message every 15 minutes (how's that for annoying? :-)) */
 	time(&current_time);
-	interval = 900;
-	schedule_new_event(EVENT_USER_FUNCTION, TRUE, current_time + interval, TRUE, interval, NULL, TRUE, (void *)helloworld_reminder_message, "How about you?", 0);
+	schedule_event(REMINDER_INTERVAL, helloworld_reminder_message, (void *)"How about you?");
 
 	/* register to be notified of certain events... */
 	neb_register_callback(NEBCALLBACK_AGGREGATED_STATUS_DATA, helloworld_module_handle, 0, helloworld_handle_data);
@@ -99,6 +98,9 @@ int nebmodule_deinit(int flags, int reason) {
 /* gets called every X minutes by an event in the scheduling queue */
 void helloworld_reminder_message(char *message) {
 	char temp_buffer[1024];
+
+	/* Event should be recurring */
+	schedule_event(REMINDER_INTERVAL, helloworld_reminder_message, message);
 
 	/* log a message to the Nagios log file */
 	snprintf(temp_buffer, sizeof(temp_buffer) - 1, "helloworld: I'm still here! %s", message);

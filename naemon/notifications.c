@@ -1695,16 +1695,13 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 
 		/* run the notification command */
 		nj = nm_calloc(1,sizeof(struct notification_job));
-		if(nj == NULL) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Allocating storage for notification job\n");
-		} else {
-			nj->ctc = cntct;
-			nj->hst = hst;
-			nj->svc = NULL;
-			if(ERROR == wproc_run_callback(processed_command, notification_timeout, notification_handle_job_result, nj, mac)) {
-				logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to send notification for host '%s' to worker\n", hst->name);
-				free(nj);
-			}
+
+		nj->ctc = cntct;
+		nj->hst = hst;
+		nj->svc = NULL;
+		if(ERROR == wproc_run_callback(processed_command, notification_timeout, notification_handle_job_result, nj, mac)) {
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to send notification for host '%s' to worker\n", hst->name);
+			free(nj);
 		}
 
 		/* @todo Handle nebmod stuff when getting results from workers */

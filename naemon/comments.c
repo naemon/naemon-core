@@ -45,16 +45,26 @@ int initialize_comment_data(void)
 /* adds a new host or service comment */
 int add_new_comment(int type, int entry_type, char *host_name, char *svc_description, time_t entry_time, char *author_name, char *comment_data, int persistent, int source, int expires, time_t expire_time, unsigned long *comment_id)
 {
+	/*
+	 * Regarding the "expires" field.
+	 *
+	 * If expires==TRUE, a event to remove the comment was created earlier. This
+	 * didn't happen, since expires was never set to anything else than FALSE.
+	 *
+	 * If expires was set to TRUE in the retention data, the comment still
+	 * didn't pass through this method, making the expires-functionality borken
+	 * anyway.
+	 *
+	 * Therefore: Treat expires functionality just as a API-compatiblity parameter
+	 * for now, but the expires-feature is removed.
+	 */
+
 	int result;
 
 	if (type == HOST_COMMENT)
 		result = add_new_host_comment(entry_type, host_name, entry_time, author_name, comment_data, persistent, source, expires, expire_time, comment_id);
 	else
 		result = add_new_service_comment(entry_type, host_name, svc_description, entry_time, author_name, comment_data, persistent, source, expires, expire_time, comment_id);
-
-	/* add an event to expire comment data if necessary... */
-	if (expires == TRUE)
-		schedule_new_event(EVENT_EXPIRE_COMMENT, FALSE, expire_time, FALSE, 0, NULL, TRUE, (void *)comment_id, NULL, 0);
 
 	return result;
 }
@@ -307,25 +317,6 @@ int delete_service_acknowledgement_comments(service *svc)
 	}
 
 	return result;
-}
-
-
-/* checks for an expired comment (and removes it) */
-int check_for_expired_comment(unsigned long comment_id)
-{
-	comment *temp_comment = NULL;
-
-	/* check all comments */
-	for (temp_comment = comment_list; temp_comment != NULL; temp_comment = temp_comment->next) {
-
-		/* delete the now expired comment */
-		if (temp_comment->comment_id == comment_id && temp_comment->expires == TRUE && temp_comment->expire_time < time(NULL)) {
-			delete_comment(temp_comment->comment_type, comment_id);
-			break;
-		}
-	}
-
-	return OK;
 }
 
 

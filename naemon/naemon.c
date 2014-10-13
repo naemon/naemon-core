@@ -18,60 +18,15 @@
 #include "events.h"
 #include "utils.h"
 #include "defaults.h"
-#include "loadctl.h"
 #include "globals.h"
 #include "logging.h"
 #include "nm_alloc.h"
+#include "checks.h"
+
 #include <getopt.h>
 #include <string.h>
 
 static int is_worker;
-
-static void set_loadctl_defaults(void)
-{
-	struct rlimit rlim;
-
-	/* Workers need to up 'em, master needs to know 'em */
-	getrlimit(RLIMIT_NOFILE, &rlim);
-	rlim.rlim_cur = rlim.rlim_max;
-	setrlimit(RLIMIT_NOFILE, &rlim);
-	loadctl.nofile_limit = rlim.rlim_max;
-#ifdef RLIMIT_NPROC
-	getrlimit(RLIMIT_NPROC, &rlim);
-	rlim.rlim_cur = rlim.rlim_max;
-	setrlimit(RLIMIT_NPROC, &rlim);
-	loadctl.nproc_limit = rlim.rlim_max;
-#else
-	loadctl.nproc_limit = loadctl.nofile_limit / 2;
-#endif
-
-	/*
-	 * things may have been configured already. Otherwise we
-	 * set some sort of sane defaults here
-	 */
-	if (!loadctl.jobs_max) {
-		loadctl.jobs_max = loadctl.nproc_limit - 100;
-		if (!is_worker && loadctl.jobs_max > (loadctl.nofile_limit - 50) * wproc_num_workers_online) {
-			loadctl.jobs_max = (loadctl.nofile_limit - 50) * wproc_num_workers_online;
-		}
-	}
-
-	if (!loadctl.jobs_limit)
-		loadctl.jobs_limit = loadctl.jobs_max;
-
-	if (!loadctl.backoff_limit)
-		loadctl.backoff_limit = online_cpus() * 2.5;
-	if (!loadctl.rampup_limit)
-		loadctl.rampup_limit = online_cpus() * 0.8;
-	if (!loadctl.backoff_change)
-		loadctl.backoff_change = loadctl.jobs_limit * 0.3;
-	if (!loadctl.rampup_change)
-		loadctl.rampup_change = loadctl.backoff_change * 0.25;
-	if (!loadctl.check_interval)
-		loadctl.check_interval = 60;
-	if (!loadctl.jobs_min)
-		loadctl.jobs_min = online_cpus() * 20; /* pessimistic */
-}
 
 static int test_path_access(const char *program, int mode)
 {
@@ -124,8 +79,6 @@ static int nagios_core_worker(const char *path)
 	char response[128];
 
 	is_worker = 1;
-
-	set_loadctl_defaults();
 
 	sd = nsock_unix(path, NSOCK_TCP | NSOCK_CONNECT);
 	if (sd < 0) {
@@ -213,7 +166,6 @@ int main(int argc, char **argv)
 		{"license", no_argument, 0, 'V'},
 		{"verify-config", no_argument, 0, 'v'},
 		{"daemon", no_argument, 0, 'd'},
-		{"test-scheduling", no_argument, 0, 's'},
 		{"precache-objects", no_argument, 0, 'p'},
 		{"use-precached-objects", no_argument, 0, 'u'},
 		{"enable-timing-point", no_argument, 0, 'T'},
@@ -223,7 +175,6 @@ int main(int argc, char **argv)
 #define getopt(argc, argv, o) getopt_long(argc, argv, o, long_options, &option_index)
 #endif
 
-	memset(&loadctl, 0, sizeof(loadctl));
 	mac = get_global_macros();
 
 	/* make sure we have the correct number of command line arguments */
@@ -253,7 +204,7 @@ int main(int argc, char **argv)
 			break;
 
 		case 's': /* scheduling check */
-			test_scheduling = TRUE;
+			printf("Warning: -s is deprecated and will be removed\n");
 			break;
 
 		case 'd': /* daemon mode */
@@ -328,8 +279,6 @@ int main(int argc, char **argv)
 		printf("Options:\n");
 		printf("\n");
 		printf("  -v, --verify-config          Verify all configuration data (-v -v for more info)\n");
-		printf("  -s, --test-scheduling        Shows projected/recommended check scheduling and other\n");
-		printf("                               diagnostic info based on the current configuration files.\n");
 		printf("  -T, --enable-timing-point    Enable timed commentary on initialization\n");
 		printf("  -x, --dont-verify-paths      Deprecated (Don't check for circular object paths)\n");
 		printf("  -p, --precache-objects       Precache object configuration\n");
@@ -364,19 +313,18 @@ int main(int argc, char **argv)
 	 */
 	signal(SIGXFSZ, sighandler);
 
+
+	/*
+	 * Setup rand and srand. Don't bother with better resolution than second
+	 */
+	srand(time(NULL));
+
 	/*
 	 * let's go to town. We'll be noisy if we're verifying config
 	 * or running scheduling tests.
 	 */
-	if (verify_config || test_scheduling || precache_objects) {
+	if (verify_config || precache_objects) {
 		reset_variables();
-		/*
-		 * if we don't beef up our resource limits as much as
-		 * we can, it's quite possible we'll run headlong into
-		 * EAGAIN due to too many processes when we try to
-		 * drop privileges later.
-		 */
-		set_loadctl_defaults();
 
 		if (verify_config)
 			printf("Reading configuration data...\n");
@@ -454,26 +402,6 @@ int main(int argc, char **argv)
 			printf("\nThings look okay - No serious problems were detected during the pre-flight check\n");
 		}
 
-		/* scheduling tests need a bit more than config verifications */
-		if (test_scheduling == TRUE) {
-
-			/* we'll need the event queue here so we can time insertions */
-			init_event_queue();
-			timing_point("Done initializing event queue\n");
-
-			/* read initial service and host state information */
-			initialize_retention_data(config_file);
-			read_initial_state_information();
-			timing_point("Retention data and initial state parsed\n");
-
-			/* initialize the event timing loop */
-			init_timing_loop();
-			timing_point("Timing loop initialized\n");
-
-			/* display scheduling information */
-			display_scheduling_info();
-		}
-
 		if (precache_objects) {
 			result = fcache_objects(object_precache_file);
 			timing_point("Done precaching objects\n");
@@ -510,11 +438,6 @@ int main(int argc, char **argv)
 		naemon_binary_path = nspath_absolute(argv[0], NULL);
 	else
 		naemon_binary_path = nm_strdup(argv[0]);
-
-	if (!naemon_binary_path) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to allocate memory for naemon_binary_path\n");
-		exit(EXIT_FAILURE);
-	}
 
 	if (!(nagios_iobs = iobroker_create())) {
 		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to create IO broker set: %s\n",
@@ -635,9 +558,6 @@ int main(int argc, char **argv)
 		}
 		timing_point("%u workers connected\n", wproc_num_workers_online);
 
-		/* now that workers have arrived we can set the defaults */
-		set_loadctl_defaults();
-
 		/* read in all object config data */
 		if (result == OK)
 			result = read_all_object_data(config_file);
@@ -707,11 +627,8 @@ int main(int argc, char **argv)
 		broker_program_state(NEBTYPE_PROCESS_START, NEBFLAG_NONE, NEBATTR_NONE, NULL);
 #endif
 
-		/* initialize status data unless we're starting */
-		if (sigrestart == FALSE) {
-			initialize_status_data(config_file);
-			timing_point("Status data initialized\n");
-		}
+		initialize_status_data(config_file);
+		timing_point("Status data initialized\n");
 
 		/* initialize scheduled downtime data */
 		initialize_downtime_data();
@@ -731,9 +648,9 @@ int main(int argc, char **argv)
 		initialize_performance_data(config_file);
 		timing_point("Performance data initialized\n");
 
-		/* initialize the event timing loop */
-		init_timing_loop();
-		timing_point("Event timing loop initialized\n");
+		/* initialize the check execution subsystem */
+		checks_init();
+		timing_point("Check execution scheduling initialized\n");
 
 		/* initialize check statistics */
 		init_check_stats();
@@ -805,9 +722,7 @@ int main(int argc, char **argv)
 		cleanup_downtime_data();
 
 		/* clean up the status data unless we're restarting */
-		if (sigrestart == FALSE) {
-			cleanup_status_data(TRUE);
-		}
+		cleanup_status_data(!sigrestart);
 
 		registered_commands_deinit();
 		free_worker_memory(WPROC_FORCE);

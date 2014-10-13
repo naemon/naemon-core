@@ -13,7 +13,7 @@
 #define BROKER_EVERYTHING	 	1048575
 
 #define BROKER_PROGRAM_STATE            1	/* DONE */
-#define BROKER_TIMED_EVENTS             2	/* DONE */
+#define BROKER_TIMED_EVENTS             2	/* DONE, DEPRECATED */
 #define BROKER_SERVICE_CHECKS           4	/* DONE */
 #define BROKER_HOST_CHECKS              8	/* DONE */
 #define BROKER_EVENT_HANDLERS   	16	/* DONE */
@@ -165,7 +165,6 @@ NAGIOS_BEGIN_DECL
 
 struct timeval get_broker_timestamp(struct timeval *);
 void broker_program_state(int, int, int, struct timeval *);
-void broker_timed_event(int, int, int, timed_event *, struct timeval *);
 void broker_log_data(int, int, int, char *, unsigned long, time_t, struct timeval *);
 int broker_event_handler(int, int, int, int, void *, int, int, struct timeval, struct timeval, double, int, int, int, char *, char *, char *, struct timeval *);
 void broker_system_command(int, int, int, struct timeval, struct timeval, double, int, int, int, char *, char *, struct timeval *);
