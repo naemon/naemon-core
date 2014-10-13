@@ -5,6 +5,8 @@ includedir=@includedir@
 sysconfdir=@sysconfdir@
 
 mainconf=@pkgconfdir@/naemon.cfg
+naemon_user=@naemon_user@
+naemon_group=@naemon_grp@
 
 Name: Naemon
 Description: Naemon network monitoring
