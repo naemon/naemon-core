@@ -37,6 +37,10 @@ static int run_scheduled_service_check(service *, int, double);
 static int run_async_service_check(service *, int, double, int, int, int *, time_t *);
 
 
+/******************************************************************************
+ *******************************  INIT METHODS  *******************************
+ ******************************************************************************/
+
 void checks_init_services(void)
 {
 	service *temp_service = NULL;
@@ -100,6 +104,124 @@ void checks_init_services(void)
 }
 
 
+/******************************************************************************
+ ********************************  SCHEDULING  ********************************
+ ******************************************************************************/
+
+
+
+/* schedules an immediate or delayed service check */
+void schedule_service_check(service *svc, time_t check_time, int options)
+{
+	timed_event *temp_event = NULL;
+	time_t next_event_time = 0;
+	int use_original_event = TRUE;
+
+	log_debug_info(DEBUGL_FUNCTIONS, 0, "schedule_service_check()\n");
+
+	if (svc == NULL)
+		return;
+
+	log_debug_info(DEBUGL_CHECKS, 0, "Scheduling a %s, active check of service '%s' on host '%s' @ %s", (options & CHECK_OPTION_FORCE_EXECUTION) ? "forced" : "non-forced", svc->description, svc->host_name, ctime(&check_time));
+
+	/* don't schedule a check if active checks of this service are disabled */
+	if (svc->checks_enabled == FALSE && !(options & CHECK_OPTION_FORCE_EXECUTION)) {
+		log_debug_info(DEBUGL_CHECKS, 0, "Active checks of this service are disabled.\n");
+		return;
+	}
+
+	/* we may have to nudge this check a bit */
+	if (options == CHECK_OPTION_DEPENDENCY_CHECK) {
+		if (svc->last_check + cached_service_check_horizon > check_time) {
+			log_debug_info(DEBUGL_CHECKS, 0, "Last check result is recent enough (%s)", ctime(&svc->last_check));
+			return;
+		}
+	}
+
+	/* default is to use the new event */
+	use_original_event = FALSE;
+
+	temp_event = (timed_event *)svc->next_check_event;
+	/*
+	 * If the service already has a check scheduled,
+	 * we need to decide which of the events to use
+	 */
+	if (temp_event != NULL) {
+		next_event_time = temp_event->run_time; /* FIXME */
+
+		log_debug_info(DEBUGL_CHECKS, 2, "Found another service check event for this service @ %s", ctime(&next_event_time));
+
+		/* use the originally scheduled check unless we decide otherwise */
+		use_original_event = TRUE;
+
+		/* the original event is a forced check... */
+		if ((svc->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
+
+			/* the new event is also forced and its execution time is earlier than the original, so use it instead */
+			if ((options & CHECK_OPTION_FORCE_EXECUTION) && (check_time < next_event_time)) {
+				use_original_event = FALSE;
+				log_debug_info(DEBUGL_CHECKS, 2, "New service check event is forced and occurs before the existing event, so the new event will be used instead.\n");
+			}
+		}
+
+		/* the original event is not a forced check... */
+		else {
+
+			/* the new event is a forced check, so use it instead */
+			if ((options & CHECK_OPTION_FORCE_EXECUTION)) {
+				use_original_event = FALSE;
+				log_debug_info(DEBUGL_CHECKS, 2, "New service check event is forced, so it will be used instead of the existing event.\n");
+			}
+
+			/* the new event is not forced either and its execution time is earlier than the original, so use it instead */
+			else if (check_time < next_event_time) {
+				use_original_event = FALSE;
+				log_debug_info(DEBUGL_CHECKS, 2, "New service check event occurs before the existing (older) event, so it will be used instead.\n");
+			}
+
+			/* the new event is older, so override the existing one */
+			else {
+				log_debug_info(DEBUGL_CHECKS, 2, "New service check event occurs after the existing event, so we'll ignore it.\n");
+			}
+		}
+	}
+
+	/* schedule a new event */
+	if (use_original_event == FALSE) {
+		/* make sure we remove the old event from the queue */
+		if (temp_event) {
+			destroy_event(temp_event);
+			temp_event = NULL;
+			svc->next_check_event = NULL;
+		}
+
+		log_debug_info(DEBUGL_CHECKS, 2, "Scheduling new service check event.\n");
+
+		/* set the next service check event and time */
+		svc->next_check = check_time;
+
+		/* save check options for retention purposes */
+		svc->check_options = options;
+
+		svc->next_check_event = schedule_event(svc->next_check - time(NULL), handle_service_check_event, (void*)svc);
+	}
+
+	else {
+		/* reset the next check time (it may be out of sync) */
+		if (temp_event != NULL)
+			svc->next_check = temp_event->run_time;
+
+		log_debug_info(DEBUGL_CHECKS, 2, "Keeping original service check event (ignoring the new one).\n");
+	}
+
+
+	/* update the status log */
+	update_service_status(svc, FALSE);
+
+	return;
+}
+
+
 static void handle_service_check_event(void *arg)
 {
 	service *temp_service = (service *)arg;
@@ -148,39 +270,10 @@ static void handle_service_check_event(void *arg)
 	}
 }
 
-static void handle_worker_service_check(wproc_result *wpres, void *arg, int flags)
-{
-	check_result *cr = (check_result *)arg;
-	if(wpres) {
-		memcpy(&cr->rusage, &wpres->rusage, sizeof(wpres->rusage));
-		cr->start_time.tv_sec = wpres->start.tv_sec;
-		cr->start_time.tv_usec = wpres->start.tv_usec;
-		cr->finish_time.tv_sec = wpres->stop.tv_sec;
-		cr->finish_time.tv_usec = wpres->stop.tv_usec;
-		if (WIFEXITED(wpres->wait_status)) {
-			cr->return_code = WEXITSTATUS(wpres->wait_status);
-		} else {
-			cr->return_code = STATE_UNKNOWN;
-		}
 
-		if (wpres->outstd && *wpres->outstd) {
-			cr->output = nm_strdup(wpres->outstd);
-		} else if (wpres->outerr && *wpres->outerr) {
-			nm_asprintf(&cr->output, "(No output on stdout) stderr: %s", wpres->outerr);
-		} else {
-			cr->output = NULL;
-		}
-
-		cr->early_timeout = wpres->early_timeout;
-		cr->exited_ok = wpres->exited_ok;
-		cr->engine = NULL;
-		cr->source = wpres->source;
-		process_check_result(cr);
-	}
-	free_check_result(cr);
-	free(cr);
-}
-
+/******************************************************************************
+ *****************************  CHECK EXECUTION  ******************************
+ ******************************************************************************/
 
 /* executes a scheduled service check */
 static int run_scheduled_service_check(service *svc, int check_options, double latency)
@@ -380,6 +473,45 @@ static int run_async_service_check(service *svc, int check_options, double laten
 	clear_volatile_macros_r(&mac);
 
 	return OK;
+}
+
+
+/******************************************************************************
+ *****************************  RESULT HANDLING  ******************************
+ ******************************************************************************/
+
+
+static void handle_worker_service_check(wproc_result *wpres, void *arg, int flags)
+{
+	check_result *cr = (check_result *)arg;
+	if(wpres) {
+		memcpy(&cr->rusage, &wpres->rusage, sizeof(wpres->rusage));
+		cr->start_time.tv_sec = wpres->start.tv_sec;
+		cr->start_time.tv_usec = wpres->start.tv_usec;
+		cr->finish_time.tv_sec = wpres->stop.tv_sec;
+		cr->finish_time.tv_usec = wpres->stop.tv_usec;
+		if (WIFEXITED(wpres->wait_status)) {
+			cr->return_code = WEXITSTATUS(wpres->wait_status);
+		} else {
+			cr->return_code = STATE_UNKNOWN;
+		}
+
+		if (wpres->outstd && *wpres->outstd) {
+			cr->output = nm_strdup(wpres->outstd);
+		} else if (wpres->outerr && *wpres->outerr) {
+			nm_asprintf(&cr->output, "(No output on stdout) stderr: %s", wpres->outerr);
+		} else {
+			cr->output = NULL;
+		}
+
+		cr->early_timeout = wpres->early_timeout;
+		cr->exited_ok = wpres->exited_ok;
+		cr->engine = NULL;
+		cr->source = wpres->source;
+		process_check_result(cr);
+	}
+	free_check_result(cr);
+	free(cr);
 }
 
 
@@ -1084,234 +1216,9 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 }
 
 
-/* schedules an immediate or delayed service check */
-void schedule_service_check(service *svc, time_t check_time, int options)
-{
-	timed_event *temp_event = NULL;
-	time_t next_event_time = 0;
-	int use_original_event = TRUE;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "schedule_service_check()\n");
-
-	if (svc == NULL)
-		return;
-
-	log_debug_info(DEBUGL_CHECKS, 0, "Scheduling a %s, active check of service '%s' on host '%s' @ %s", (options & CHECK_OPTION_FORCE_EXECUTION) ? "forced" : "non-forced", svc->description, svc->host_name, ctime(&check_time));
-
-	/* don't schedule a check if active checks of this service are disabled */
-	if (svc->checks_enabled == FALSE && !(options & CHECK_OPTION_FORCE_EXECUTION)) {
-		log_debug_info(DEBUGL_CHECKS, 0, "Active checks of this service are disabled.\n");
-		return;
-	}
-
-	/* we may have to nudge this check a bit */
-	if (options == CHECK_OPTION_DEPENDENCY_CHECK) {
-		if (svc->last_check + cached_service_check_horizon > check_time) {
-			log_debug_info(DEBUGL_CHECKS, 0, "Last check result is recent enough (%s)", ctime(&svc->last_check));
-			return;
-		}
-	}
-
-	/* default is to use the new event */
-	use_original_event = FALSE;
-
-	temp_event = (timed_event *)svc->next_check_event;
-	/*
-	 * If the service already has a check scheduled,
-	 * we need to decide which of the events to use
-	 */
-	if (temp_event != NULL) {
-		next_event_time = temp_event->run_time; /* FIXME */
-
-		log_debug_info(DEBUGL_CHECKS, 2, "Found another service check event for this service @ %s", ctime(&next_event_time));
-
-		/* use the originally scheduled check unless we decide otherwise */
-		use_original_event = TRUE;
-
-		/* the original event is a forced check... */
-		if ((svc->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
-
-			/* the new event is also forced and its execution time is earlier than the original, so use it instead */
-			if ((options & CHECK_OPTION_FORCE_EXECUTION) && (check_time < next_event_time)) {
-				use_original_event = FALSE;
-				log_debug_info(DEBUGL_CHECKS, 2, "New service check event is forced and occurs before the existing event, so the new event will be used instead.\n");
-			}
-		}
-
-		/* the original event is not a forced check... */
-		else {
-
-			/* the new event is a forced check, so use it instead */
-			if ((options & CHECK_OPTION_FORCE_EXECUTION)) {
-				use_original_event = FALSE;
-				log_debug_info(DEBUGL_CHECKS, 2, "New service check event is forced, so it will be used instead of the existing event.\n");
-			}
-
-			/* the new event is not forced either and its execution time is earlier than the original, so use it instead */
-			else if (check_time < next_event_time) {
-				use_original_event = FALSE;
-				log_debug_info(DEBUGL_CHECKS, 2, "New service check event occurs before the existing (older) event, so it will be used instead.\n");
-			}
-
-			/* the new event is older, so override the existing one */
-			else {
-				log_debug_info(DEBUGL_CHECKS, 2, "New service check event occurs after the existing event, so we'll ignore it.\n");
-			}
-		}
-	}
-
-	/* schedule a new event */
-	if (use_original_event == FALSE) {
-		/* make sure we remove the old event from the queue */
-		if (temp_event) {
-			destroy_event(temp_event);
-			temp_event = NULL;
-			svc->next_check_event = NULL;
-		}
-
-		log_debug_info(DEBUGL_CHECKS, 2, "Scheduling new service check event.\n");
-
-		/* set the next service check event and time */
-		svc->next_check = check_time;
-
-		/* save check options for retention purposes */
-		svc->check_options = options;
-
-		svc->next_check_event = schedule_event(svc->next_check - time(NULL), handle_service_check_event, (void*)svc);
-	}
-
-	else {
-		/* reset the next check time (it may be out of sync) */
-		if (temp_event != NULL)
-			svc->next_check = temp_event->run_time;
-
-		log_debug_info(DEBUGL_CHECKS, 2, "Keeping original service check event (ignoring the new one).\n");
-	}
-
-
-	/* update the status log */
-	update_service_status(svc, FALSE);
-
-	return;
-}
-
-
-/* checks viability of performing a service check */
-static int check_service_check_viability(service *svc, int check_options, int *time_is_valid, time_t *new_time)
-{
-	int result = OK;
-	int perform_check = TRUE;
-	time_t current_time = 0L;
-	time_t preferred_time = 0L;
-	int check_interval = 0;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_service_check_viability()\n");
-
-	/* make sure we have a service */
-	if (svc == NULL)
-		return ERROR;
-
-	/* get the check interval to use if we need to reschedule the check */
-	if (svc->state_type == SOFT_STATE && svc->current_state != STATE_OK)
-		check_interval = (svc->retry_interval * interval_length);
-	else
-		check_interval = (svc->check_interval * interval_length);
-
-	/* get the current time */
-	time(&current_time);
-
-	/* initialize the next preferred check time */
-	preferred_time = current_time;
-
-	/* can we check the host right now? */
-	if (!(check_options & CHECK_OPTION_FORCE_EXECUTION)) {
-
-		/* if checks of the service are currently disabled... */
-		if (svc->checks_enabled == FALSE) {
-			preferred_time = current_time + check_interval;
-			perform_check = FALSE;
-
-			log_debug_info(DEBUGL_CHECKS, 2, "Active checks of the service are currently disabled.\n");
-		}
-
-		/* make sure this is a valid time to check the service */
-		if (check_time_against_period((unsigned long)current_time, svc->check_period_ptr) == ERROR) {
-			preferred_time = current_time;
-			if (time_is_valid)
-				*time_is_valid = FALSE;
-			perform_check = FALSE;
-
-			log_debug_info(DEBUGL_CHECKS, 2, "This is not a valid time for this service to be actively checked.\n");
-		}
-
-		/* check service dependencies for execution */
-		if (check_service_dependencies(svc, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
-			preferred_time = current_time + check_interval;
-			perform_check = FALSE;
-
-			log_debug_info(DEBUGL_CHECKS, 2, "Execution dependencies for this service failed, so it will not be actively checked.\n");
-		}
-	}
-
-	/* pass back the next viable check time */
-	if (new_time)
-		*new_time = preferred_time;
-
-	result = (perform_check == TRUE) ? OK : ERROR;
-
-	return result;
-}
-
-
-/* checks service dependencies */
-int check_service_dependencies(service *svc, int dependency_type)
-{
-	objectlist *list;
-	int state = STATE_OK;
-	time_t current_time = 0L;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_service_dependencies()\n");
-
-	/* only check dependencies of the desired type */
-	if (dependency_type == NOTIFICATION_DEPENDENCY)
-		list = svc->notify_deps;
-	else
-		list = svc->exec_deps;
-
-	/* check all dependencies of the desired type... */
-	for (; list; list = list->next) {
-		service *temp_service;
-		servicedependency *temp_dependency = (servicedependency *)list->object_ptr;
-
-		/* find the service we depend on... */
-		if ((temp_service = temp_dependency->master_service_ptr) == NULL)
-			continue;
-
-		/* skip this dependency if it has a timeperiod and the current time isn't valid */
-		time(&current_time);
-		if (temp_dependency->dependency_period != NULL && check_time_against_period(current_time, temp_dependency->dependency_period_ptr) == ERROR)
-			return FALSE;
-
-		/* get the status to use (use last hard state if its currently in a soft state) */
-		if (temp_service->state_type == SOFT_STATE && soft_state_dependencies == FALSE)
-			state = temp_service->last_hard_state;
-		else
-			state = temp_service->current_state;
-
-		/* is the service we depend on in state that fails the dependency tests? */
-		if (flag_isset(temp_dependency->failure_options, 1 << state))
-			return DEPENDENCIES_FAILED;
-
-		/* immediate dependencies ok at this point - check parent dependencies if necessary */
-		if (temp_dependency->inherits_parent == TRUE) {
-			if (check_service_dependencies(temp_service, dependency_type) != DEPENDENCIES_OK)
-				return DEPENDENCIES_FAILED;
-		}
-	}
-
-	return DEPENDENCIES_OK;
-}
+/******************************************************************************
+ ******************************  EXTRA FEATURES  ******************************
+ ******************************************************************************/
 
 
 /* check for services that never returned from a check... */
@@ -1431,6 +1338,128 @@ static void check_service_result_freshness(void *arg)
 	return;
 }
 
+
+/******************************************************************************
+ ****************************  STATUS / IMMUTABLE  ****************************
+ ******************************************************************************/
+
+
+/* checks viability of performing a service check */
+static int check_service_check_viability(service *svc, int check_options, int *time_is_valid, time_t *new_time)
+{
+	int result = OK;
+	int perform_check = TRUE;
+	time_t current_time = 0L;
+	time_t preferred_time = 0L;
+	int check_interval = 0;
+
+	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_service_check_viability()\n");
+
+	/* make sure we have a service */
+	if (svc == NULL)
+		return ERROR;
+
+	/* get the check interval to use if we need to reschedule the check */
+	if (svc->state_type == SOFT_STATE && svc->current_state != STATE_OK)
+		check_interval = (svc->retry_interval * interval_length);
+	else
+		check_interval = (svc->check_interval * interval_length);
+
+	/* get the current time */
+	time(&current_time);
+
+	/* initialize the next preferred check time */
+	preferred_time = current_time;
+
+	/* can we check the host right now? */
+	if (!(check_options & CHECK_OPTION_FORCE_EXECUTION)) {
+
+		/* if checks of the service are currently disabled... */
+		if (svc->checks_enabled == FALSE) {
+			preferred_time = current_time + check_interval;
+			perform_check = FALSE;
+
+			log_debug_info(DEBUGL_CHECKS, 2, "Active checks of the service are currently disabled.\n");
+		}
+
+		/* make sure this is a valid time to check the service */
+		if (check_time_against_period((unsigned long)current_time, svc->check_period_ptr) == ERROR) {
+			preferred_time = current_time;
+			if (time_is_valid)
+				*time_is_valid = FALSE;
+			perform_check = FALSE;
+
+			log_debug_info(DEBUGL_CHECKS, 2, "This is not a valid time for this service to be actively checked.\n");
+		}
+
+		/* check service dependencies for execution */
+		if (check_service_dependencies(svc, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
+			preferred_time = current_time + check_interval;
+			perform_check = FALSE;
+
+			log_debug_info(DEBUGL_CHECKS, 2, "Execution dependencies for this service failed, so it will not be actively checked.\n");
+		}
+	}
+
+	/* pass back the next viable check time */
+	if (new_time)
+		*new_time = preferred_time;
+
+	result = (perform_check == TRUE) ? OK : ERROR;
+
+	return result;
+}
+
+
+/* checks service dependencies */
+int check_service_dependencies(service *svc, int dependency_type)
+{
+	objectlist *list;
+	int state = STATE_OK;
+	time_t current_time = 0L;
+
+
+	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_service_dependencies()\n");
+
+	/* only check dependencies of the desired type */
+	if (dependency_type == NOTIFICATION_DEPENDENCY)
+		list = svc->notify_deps;
+	else
+		list = svc->exec_deps;
+
+	/* check all dependencies of the desired type... */
+	for (; list; list = list->next) {
+		service *temp_service;
+		servicedependency *temp_dependency = (servicedependency *)list->object_ptr;
+
+		/* find the service we depend on... */
+		if ((temp_service = temp_dependency->master_service_ptr) == NULL)
+			continue;
+
+		/* skip this dependency if it has a timeperiod and the current time isn't valid */
+		time(&current_time);
+		if (temp_dependency->dependency_period != NULL && check_time_against_period(current_time, temp_dependency->dependency_period_ptr) == ERROR)
+			return FALSE;
+
+		/* get the status to use (use last hard state if its currently in a soft state) */
+		if (temp_service->state_type == SOFT_STATE && soft_state_dependencies == FALSE)
+			state = temp_service->last_hard_state;
+		else
+			state = temp_service->current_state;
+
+		/* is the service we depend on in state that fails the dependency tests? */
+		if (flag_isset(temp_dependency->failure_options, 1 << state))
+			return DEPENDENCIES_FAILED;
+
+		/* immediate dependencies ok at this point - check parent dependencies if necessary */
+		if (temp_dependency->inherits_parent == TRUE) {
+			if (check_service_dependencies(temp_service, dependency_type) != DEPENDENCIES_OK)
+				return DEPENDENCIES_FAILED;
+		}
+	}
+
+	return DEPENDENCIES_OK;
+}
 
 /* tests whether or not a service's check results are fresh */
 static int is_service_result_fresh(service *temp_service, time_t current_time, int log_this)

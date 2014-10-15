@@ -9,10 +9,17 @@
 
 NAGIOS_BEGIN_DECL
 
+/* initialize service check subsystem */
 void checks_init_services(void);
-int check_service_dependencies(service *, int); /* checks service dependencies */
+
+/* Scheduling, reschedule service to be checked */
+void schedule_service_check(service *, time_t, int);
+
+/* Result handling, Update a service given a check result */
 int handle_async_service_check_result(service *, check_result *);
-void schedule_service_check(service *, time_t, int); /* schedules an immediate or delayed service check */
+
+/* Immutable, check if service is reachable */
+int check_service_dependencies(service *, int);
 
 NAGIOS_END_DECL
 
