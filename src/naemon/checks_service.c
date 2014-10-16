@@ -117,8 +117,6 @@ void schedule_service_check(service *svc, time_t check_time, int options)
 	time_t next_event_time = 0;
 	int use_original_event = TRUE;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "schedule_service_check()\n");
-
 	if (svc == NULL)
 		return;
 
@@ -285,7 +283,6 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	if (svc == NULL)
 		return ERROR;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "run_scheduled_service_check() start\n");
 	log_debug_info(DEBUGL_CHECKS, 0, "Attempting to run scheduled check of service '%s' on host '%s': check options=%d, latency=%lf\n", svc->description, svc->host_name, check_options, latency);
 
 	/*
@@ -333,8 +330,6 @@ static int run_async_service_check(service *svc, int check_options, double laten
 #ifdef USE_EVENT_BROKER
 	int neb_result = OK;
 #endif
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "run_async_service_check()\n");
 
 	/* make sure we have something */
 	if (svc == NULL)
@@ -536,9 +531,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	service *master_service = NULL;
 	int state_changes_use_cached_state = TRUE; /* TODO - 09/23/07 move this to a global variable */
 	int flapping_check_done = FALSE;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "handle_async_service_check_result()\n");
 
 	/* make sure we have what we need */
 	if (temp_service == NULL || queued_check_result == NULL)
@@ -1230,8 +1222,6 @@ static void check_for_orphaned_services_eventhandler(void *arg)
 
 	schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_for_orphaned_services_eventhandler, arg);
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_for_orphaned_services()\n");
-
 	/* get the current time */
 	time(&current_time);
 
@@ -1286,7 +1276,6 @@ static void check_service_result_freshness(void *arg)
 	schedule_event(service_freshness_check_interval, check_service_result_freshness, NULL);
 
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_service_result_freshness()\n");
 	log_debug_info(DEBUGL_CHECKS, 1, "Checking the freshness of service check results...\n");
 
 	/* bail out if we're not supposed to be checking freshness */
@@ -1353,8 +1342,6 @@ static int check_service_check_viability(service *svc, int check_options, int *t
 	time_t preferred_time = 0L;
 	int check_interval = 0;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_service_check_viability()\n");
-
 	/* make sure we have a service */
 	if (svc == NULL)
 		return ERROR;
@@ -1417,9 +1404,6 @@ int check_service_dependencies(service *svc, int dependency_type)
 	objectlist *list;
 	int state = STATE_OK;
 	time_t current_time = 0L;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_service_dependencies()\n");
 
 	/* only check dependencies of the desired type */
 	if (dependency_type == NOTIFICATION_DEPENDENCY)

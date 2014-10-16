@@ -198,7 +198,6 @@ static void downtime_remove(scheduled_downtime *dt)
 /* initializes scheduled downtime data */
 int initialize_downtime_data(void)
 {
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "initialize_downtime_data()\n");
 	dt_fanout = fanout_create(16384);
 	next_downtime_id = 1;
 	return dt_fanout ? OK : ERROR;
@@ -232,8 +231,6 @@ int schedule_downtime(int type, char *host_name, char *service_description, time
 {
 	unsigned long downtime_id = 0L;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "schedule_downtime()\n");
-
 	/* don't add old or invalid downtimes */
 	if (start_time >= end_time || end_time <= time(NULL)) {
 		log_debug_info(DEBUGL_DOWNTIME, 1, "Invalid start (%lu) or end (%lu) times\n",
@@ -265,8 +262,6 @@ int unschedule_downtime(int type, unsigned long downtime_id)
 #ifdef USE_EVENT_BROKER
 	int attr = 0;
 #endif
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "unschedule_downtime()\n");
 
 	/* find the downtime entry in the list in memory */
 	if ((temp_downtime = find_downtime(type, downtime_id)) == NULL)
@@ -391,9 +386,6 @@ int register_downtime(int type, unsigned long downtime_id)
 	int seconds = 0;
 	unsigned long *new_downtime_id = NULL;
 	int was_in_effect = FALSE;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "register_downtime( %d, %lu)\n", type,
-	               downtime_id);
 
 	/* find the downtime entry in memory */
 	temp_downtime = find_downtime(type, downtime_id);
@@ -521,8 +513,6 @@ int handle_scheduled_downtime_by_id(unsigned long downtime_id)
 {
 	scheduled_downtime *temp_downtime = NULL;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "handle_scheduled_downtime_by_id()\n");
-
 	/* find the downtime entry */
 	if ((temp_downtime = find_downtime(ANY_DOWNTIME, downtime_id)) == NULL) {
 		log_debug_info(DEBUGL_DOWNTIME, 1, "Unable to find downtime id: %lu\n",
@@ -553,8 +543,6 @@ int handle_scheduled_downtime(scheduled_downtime *temp_downtime)
 #ifdef USE_EVENT_BROKER
 	int attr = 0;
 #endif
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "handle_scheduled_downtime()\n");
 
 	if (temp_downtime == NULL)
 		return ERROR;
@@ -739,9 +727,6 @@ int check_pending_flex_host_downtime(host *hst)
 	time_t current_time = 0L;
 	unsigned long *new_downtime_id = NULL;
 
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_pending_flex_host_downtime()\n");
-
 	if (hst == NULL)
 		return ERROR;
 
@@ -794,9 +779,6 @@ int check_pending_flex_service_downtime(service *svc)
 	scheduled_downtime *temp_downtime = NULL;
 	time_t current_time = 0L;
 	unsigned long *new_downtime_id = NULL;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_pending_flex_service_downtime()\n");
 
 	if (svc == NULL)
 		return ERROR;
@@ -853,9 +835,6 @@ static void check_for_expired_downtime(void *arg)
 	time_t current_time = 0L;
 	service *svc = NULL;
 	host *hst = NULL;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_for_expired_downtime()\n");
 
 	time(&current_time);
 
@@ -950,7 +929,6 @@ int add_new_host_downtime(char *host_name, time_t entry_time, char *author, char
 	if (host_name == NULL)
 		return ERROR;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "cleanup_downtime_data()\n");
 	new_downtime_id = get_next_downtime_id();
 	result = add_host_downtime(host_name, entry_time, author, comment_data, start_time, 0, end_time, fixed, triggered_by, duration, new_downtime_id, is_in_effect, start_notification_sent);
 
@@ -972,8 +950,6 @@ int add_new_service_downtime(char *host_name, char *service_description, time_t 
 {
 	int result = OK;
 	unsigned long new_downtime_id = 0L;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "add_new_service_downtime()\n");
 
 	if (host_name == NULL || service_description == NULL) {
 		log_debug_info(DEBUGL_DOWNTIME, 1,
@@ -1128,8 +1104,6 @@ int add_downtime(int downtime_type, char *host_name, char *svc_description, time
 	scheduled_downtime *new_downtime = NULL;
 	int result = OK;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "add_downtime()\n");
-
 	/* we don't have enough info */
 	if (host_name == NULL || (downtime_type == SERVICE_DOWNTIME && svc_description == NULL)) {
 		log_debug_info(DEBUGL_DOWNTIME, 1,
@@ -1205,8 +1179,6 @@ int sort_downtime(void)
 	scheduled_downtime **array, *temp_downtime;
 	unsigned long i = 0, unsorted_downtimes = 0;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "sort_downtime()\n");
-
 	if (!defer_downtime_sorting)
 		return OK;
 	defer_downtime_sorting = 0;
@@ -1248,8 +1220,6 @@ int sort_downtime(void)
 scheduled_downtime *find_downtime(int type, unsigned long downtime_id)
 {
 	scheduled_downtime *dt = NULL;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "find_downtime()\n");
 
 	dt = fanout_get(dt_fanout, downtime_id);
 	if (dt && (type == ANY_DOWNTIME || type == dt->type))

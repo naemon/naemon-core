@@ -250,9 +250,6 @@ int my_system_r(nagios_macros *mac, char *cmd, int timeout, int *early_timeout, 
 	int dbuf_chunk = 1024;
 	int flags;
 
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "my_system_r()\n");
-
 	/* initialize return variables */
 	if (output != NULL)
 		*output = NULL;
@@ -508,8 +505,6 @@ int get_raw_command_line_r(nagios_macros *mac, command *cmd_ptr, char *cmd, char
 	register int y = 0;
 	register int arg_index = 0;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "get_raw_command_line_r()\n");
-
 	/* clear the argv macros */
 	clear_argv_macros_r(mac);
 
@@ -664,8 +659,6 @@ static timerange *_get_matching_timerange(time_t test_time, timeperiod *tperiod)
 	int test_time_year = 0;
 	int test_time_mon = 0;
 	int test_time_wday = 0;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "_get_matching_timerange()\n");
 
 	if (tperiod == NULL)
 		return NULL;
@@ -901,8 +894,6 @@ int check_time_against_period(time_t test_time, timeperiod *tperiod)
 {
 	timerange *temp_timerange = NULL;
 	time_t midnight = (time_t)0L;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_time_against_period()\n");
 
 	midnight = get_midnight(test_time);
 
@@ -1147,8 +1138,6 @@ void _get_next_valid_time(time_t pref_time, time_t *valid_time, timeperiod *tper
 void get_next_valid_time(time_t pref_time, time_t *valid_time, timeperiod *tperiod)
 {
 	time_t current_time = (time_t)0L;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "get_next_valid_time()\n");
 
 	/* get time right now, preferred time must be now or in the future */
 	time(&current_time);

@@ -78,9 +78,6 @@ int xrddefault_save_state_information(void)
 	unsigned long process_host_attribute_mask = 0L;
 	unsigned long process_service_attribute_mask = 0L;
 
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "xrddefault_save_state_information()\n");
-
 	/* make sure we have everything */
 	if (retention_file == NULL || temp_file == NULL) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Error: We don't have the required file names to store retention data!\n");
@@ -526,9 +523,6 @@ int xrddefault_read_state_information(void)
 	int start_notification_sent = FALSE;
 	struct host conf, have;
 	struct contact cont_conf, cont_have;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "xrddefault_read_state_information() start\n");
 
 	/* make sure we have what we need */
 	if (retention_file == NULL) {

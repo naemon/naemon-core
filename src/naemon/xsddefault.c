@@ -99,8 +99,6 @@ int xsddefault_save_status_data(void)
 	FILE *fp = NULL;
 	int result = OK;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "save_status_data()\n");
-
 	/* users may not want us to write status data */
 	if (!status_file || !strcmp(status_file, "/dev/null"))
 		return OK;

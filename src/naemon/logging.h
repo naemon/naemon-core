@@ -43,7 +43,6 @@
 
 #define DEBUGL_ALL                      -1
 #define DEBUGL_NONE                     0
-#define DEBUGL_FUNCTIONS                1
 #define DEBUGL_CONFIG			2
 #define DEBUGL_PROCESS                  4
 #define DEBUGL_STATUSDATA               4
