@@ -15,12 +15,8 @@ NAGIOS_BEGIN_DECL
 typedef void (*event_callback)(void *);
 
 /* TIMED_EVENT structure */
-typedef struct timed_event {
-	time_t run_time;
-	event_callback callback;
-	void *storage;
-	struct squeue_event *sq_event;
-} timed_event;
+struct timed_event;
+typedef struct timed_event timed_event;
 
 
 /**

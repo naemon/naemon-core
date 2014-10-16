@@ -15,6 +15,13 @@
 #include <math.h>
 #include <string.h>
 
+struct timed_event {
+	time_t run_time;
+	event_callback callback;
+	void *storage;
+	struct squeue_event *sq_event;
+};
+
 /* the event we're currently processing */
 static timed_event *current_event;
 static squeue_t *nagios_squeue = NULL; /* our scheduling queue */
