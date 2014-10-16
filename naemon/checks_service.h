@@ -12,7 +12,10 @@ NAGIOS_BEGIN_DECL
 /* initialize service check subsystem */
 void checks_init_services(void);
 
-/* Scheduling, reschedule service to be checked */
+/* Schedule next service check */
+void schedule_next_service_check(service *svc, time_t time_left, int options);
+
+/* Scheduling, reschedule service to be checked, DEPRECATED */
 void schedule_service_check(service *, time_t, int);
 
 /* Result handling, Update a service given a check result */

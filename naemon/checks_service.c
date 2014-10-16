@@ -25,16 +25,21 @@
 #include "neberrors.h"
 #endif
 
-
-static void check_service_result_freshness(void *arg);
+/* Scheduling (before worker job is started) */
 static void handle_service_check_event(void *arg);
+
+/* Check exeuction */
+static int run_scheduled_service_check(service *, int, double);
+
+/* Result handling (After worker job is executed) */
 static void handle_worker_service_check(wproc_result *wpres, void *arg, int flags);
 
-static void check_for_orphaned_services_eventhandler(void *);	/* checks for orphaned services */
+/* Extra features */
+static void check_service_result_freshness(void *arg);
+static void check_for_orphaned_services_eventhandler(void *);
+
+/* Status functions, immutable */
 static int is_service_result_fresh(service *, time_t, int);
-static int check_service_check_viability(service *, int, int *, time_t *);
-static int run_scheduled_service_check(service *, int, double);
-static int run_async_service_check(service *, int, double, int, int, int *, time_t *);
 
 
 /******************************************************************************
@@ -44,36 +49,8 @@ static int run_async_service_check(service *, int, double, int, int, int *, time
 void checks_init_services(void)
 {
 	service *temp_service = NULL;
-	time_t current_time = time(NULL);
-
-	/******** GET BASIC SERVICE INFO  ********/
-
-	/* get info on service checks to be scheduled */
-	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
-
-		/* maybe we shouldn't schedule this check */
-		if (temp_service->check_interval == 0 || !temp_service->checks_enabled) {
-			log_debug_info(DEBUGL_EVENTS, 1, "Service '%s' on host '%s' should not be scheduled.\n", temp_service->description, temp_service->host_name);
-			temp_service->should_be_scheduled = FALSE;
-			continue;
-		}
-	}
-
-	/******** SCHEDULE SERVICE CHECKS  ********/
 
 	log_debug_info(DEBUGL_EVENTS, 2, "Scheduling service checks...");
-
-	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
-		log_debug_info(DEBUGL_EVENTS, 2, "Service '%s' on host '%s'\n", temp_service->description, temp_service->host_name);
-		/* skip this service if it shouldn't be scheduled */
-		if (temp_service->should_be_scheduled == FALSE) {
-			continue;
-		}
-
-		temp_service->next_check = current_time + ranged_urand(0, check_window(temp_service));
-
-		log_debug_info(DEBUGL_EVENTS, 2, "Check Time: %lu --> %s", (unsigned long)temp_service->next_check, ctime(&temp_service->next_check));
-	}
 
 	/* add scheduled service checks to event queue */
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
@@ -81,16 +58,9 @@ void checks_init_services(void)
 		/* update status of all services (scheduled or not) */
 		update_service_status(temp_service, FALSE);
 
-		/* skip most services that shouldn't be scheduled */
-		if (temp_service->should_be_scheduled == FALSE) {
-
-			/* passive checks are an exception if a forced check was scheduled before we restarted */
-			if (!(temp_service->checks_enabled == FALSE && temp_service->next_check != (time_t)0L && (temp_service->check_options & CHECK_OPTION_FORCE_EXECUTION)))
-				continue;
-		}
-
 		/* create a new service check event */
-		temp_service->next_check_event = schedule_event(temp_service->next_check - time(NULL), handle_service_check_event, (void *)temp_service);
+		if (temp_service->check_interval != 0.0)
+			schedule_next_service_check(temp_service, ranged_urand(0, temp_service->check_interval * interval_length), 0);
 	}
 
 	/* add a service result "freshness" check event */
@@ -109,121 +79,38 @@ void checks_init_services(void)
  ******************************************************************************/
 
 
+void schedule_next_service_check(service *svc, time_t time_left, int options)
+{
+	time_t current_time = time(NULL);
+
+	/* A closer check is already scheduled, skip this scheduling */
+	if(!(options & CHECK_OPTION_FORCE_EXECUTION) && svc->next_check_event != NULL && svc->next_check < time_left + current_time) {
+		return;
+	}
+
+	/* We have a scheduled check, drop that event to make space for the new event */
+	if(svc->next_check_event != NULL) {
+		destroy_event(svc->next_check_event);
+	}
+
+	/* Schedule the event */
+	svc->check_options = options;
+	svc->next_check = time_left + current_time;
+	svc->next_check_event = schedule_event(time_left, handle_service_check_event, (void*)svc);
+
+	/* update the status log, since next_check and check_options is updated */
+	update_service_status(svc, FALSE);
+}
 
 /* schedules an immediate or delayed service check */
 void schedule_service_check(service *svc, time_t check_time, int options)
 {
-	timed_event *temp_event = NULL;
-	time_t next_event_time = 0;
-	int use_original_event = TRUE;
-
-	if (svc == NULL)
-		return;
-
-	log_debug_info(DEBUGL_CHECKS, 0, "Scheduling a %s, active check of service '%s' on host '%s' @ %s", (options & CHECK_OPTION_FORCE_EXECUTION) ? "forced" : "non-forced", svc->description, svc->host_name, ctime(&check_time));
-
-	/* don't schedule a check if active checks of this service are disabled */
-	if (svc->checks_enabled == FALSE && !(options & CHECK_OPTION_FORCE_EXECUTION)) {
-		log_debug_info(DEBUGL_CHECKS, 0, "Active checks of this service are disabled.\n");
-		return;
-	}
-
-	/* we may have to nudge this check a bit */
-	if (options == CHECK_OPTION_DEPENDENCY_CHECK) {
-		if (svc->last_check + cached_service_check_horizon > check_time) {
-			log_debug_info(DEBUGL_CHECKS, 0, "Last check result is recent enough (%s)", ctime(&svc->last_check));
-			return;
-		}
-	}
-
-	/* default is to use the new event */
-	use_original_event = FALSE;
-
-	temp_event = (timed_event *)svc->next_check_event;
-	/*
-	 * If the service already has a check scheduled,
-	 * we need to decide which of the events to use
-	 */
-	if (temp_event != NULL) {
-		next_event_time = temp_event->run_time; /* FIXME */
-
-		log_debug_info(DEBUGL_CHECKS, 2, "Found another service check event for this service @ %s", ctime(&next_event_time));
-
-		/* use the originally scheduled check unless we decide otherwise */
-		use_original_event = TRUE;
-
-		/* the original event is a forced check... */
-		if ((svc->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
-
-			/* the new event is also forced and its execution time is earlier than the original, so use it instead */
-			if ((options & CHECK_OPTION_FORCE_EXECUTION) && (check_time < next_event_time)) {
-				use_original_event = FALSE;
-				log_debug_info(DEBUGL_CHECKS, 2, "New service check event is forced and occurs before the existing event, so the new event will be used instead.\n");
-			}
-		}
-
-		/* the original event is not a forced check... */
-		else {
-
-			/* the new event is a forced check, so use it instead */
-			if ((options & CHECK_OPTION_FORCE_EXECUTION)) {
-				use_original_event = FALSE;
-				log_debug_info(DEBUGL_CHECKS, 2, "New service check event is forced, so it will be used instead of the existing event.\n");
-			}
-
-			/* the new event is not forced either and its execution time is earlier than the original, so use it instead */
-			else if (check_time < next_event_time) {
-				use_original_event = FALSE;
-				log_debug_info(DEBUGL_CHECKS, 2, "New service check event occurs before the existing (older) event, so it will be used instead.\n");
-			}
-
-			/* the new event is older, so override the existing one */
-			else {
-				log_debug_info(DEBUGL_CHECKS, 2, "New service check event occurs after the existing event, so we'll ignore it.\n");
-			}
-		}
-	}
-
-	/* schedule a new event */
-	if (use_original_event == FALSE) {
-		/* make sure we remove the old event from the queue */
-		if (temp_event) {
-			destroy_event(temp_event);
-			temp_event = NULL;
-			svc->next_check_event = NULL;
-		}
-
-		log_debug_info(DEBUGL_CHECKS, 2, "Scheduling new service check event.\n");
-
-		/* set the next service check event and time */
-		svc->next_check = check_time;
-
-		/* save check options for retention purposes */
-		svc->check_options = options;
-
-		svc->next_check_event = schedule_event(svc->next_check - time(NULL), handle_service_check_event, (void*)svc);
-	}
-
-	else {
-		/* reset the next check time (it may be out of sync) */
-		if (temp_event != NULL)
-			svc->next_check = temp_event->run_time;
-
-		log_debug_info(DEBUGL_CHECKS, 2, "Keeping original service check event (ignoring the new one).\n");
-	}
-
-
-	/* update the status log */
-	update_service_status(svc, FALSE);
-
-	return;
+	schedule_next_service_check(svc, check_time - time(NULL), options);
 }
-
 
 static void handle_service_check_event(void *arg)
 {
 	service *temp_service = (service *)arg;
-	int run_event = TRUE;	/* default action is to execute the event */
 	int nudge_seconds = 0;
 	double latency;
 	struct timeval tv;
@@ -235,36 +122,56 @@ static void handle_service_check_event(void *arg)
 	event_runtime.tv_usec = 0;
 	latency = (double)(tv_delta_f(&event_runtime, &tv));
 
+	/* When the callback is called, the pointer to the timed event is invalid */
+	temp_service->next_check_event = NULL;
+
+	/* Reschedule next check directly, might be replaced later */
+	if (temp_service->check_interval != 0.0) {
+		schedule_next_service_check(temp_service, temp_service->check_interval * interval_length, 0);
+	}
+
 	/* forced checks override normal check logic */
 	if (!(temp_service->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
 		/* don't run a service check if we're already maxed out on the number of parallel service checks...  */
 		if (max_parallel_service_checks != 0 && (currently_running_service_checks >= max_parallel_service_checks)) {
-			nudge_seconds = ranged_urand(5, 17);
 			logit(NSLOG_RUNTIME_WARNING, TRUE, "\tMax concurrent service checks (%d) has been reached.  Nudging %s:%s by %d seconds...\n", max_parallel_service_checks, temp_service->host_name, temp_service->description, nudge_seconds);
-			run_event = FALSE;
+			/* Simply reschedule at retry_interval instead, if defined (otherwise keep scheduling at normal interval) */
+			if (temp_service->retry_interval != 0.0) {
+				schedule_next_service_check(temp_service, temp_service->retry_interval * interval_length, 0);
+			}
+			return;
 		}
 
 		/* don't run a service check if active checks are disabled */
 		if (execute_service_checks == FALSE) {
-			log_debug_info(DEBUGL_EVENTS | DEBUGL_CHECKS, 1, "We're not executing service checks right now, so we'll skip check event for service '%s;%s'.\n", temp_service->host_name, temp_service->description);
-			run_event = FALSE;
+			return;
+		}
+
+		/* Don't execute check if already executed close enough */
+		if (temp_service->last_check + cached_service_check_horizon > time(NULL)) {
+			log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' was last checked within its cache horizon. Aborting check\n", temp_service->description, temp_service->host_name);
+			return;
+		}
+
+		/* if checks of the service are currently disabled... */
+		if (temp_service->checks_enabled == FALSE) {
+			return;
+		}
+
+		/* make sure this is a valid time to check the service */
+		if (check_time_against_period(time(NULL), temp_service->check_period_ptr) == ERROR) {
+			return;
+		}
+
+		/* check service dependencies for execution */
+		if (check_service_dependencies(temp_service, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
+			return;
 		}
 
 	}
 
-	/* reschedule the check if we can't run it now */
-	if (run_event == FALSE) {
-		if (nudge_seconds) {
-			/* We nudge the next check time when it is due to too many concurrent service checks */
-			temp_service->next_check = (time_t)(temp_service->next_check + nudge_seconds);
-		} else {
-			temp_service->next_check += check_window(temp_service);
-		}
-		temp_service->next_check_event = schedule_event(temp_service->next_check - time(NULL), handle_service_check_event, (void*)temp_service);
-	} else {
-		/* Otherwise, run the event */
-		run_scheduled_service_check(temp_service, temp_service->check_options, latency);
-	}
+	/* Otherwise, run the event */
+	run_scheduled_service_check(temp_service, temp_service->check_options, latency);
 }
 
 
@@ -272,57 +179,14 @@ static void handle_service_check_event(void *arg)
  *****************************  CHECK EXECUTION  ******************************
  ******************************************************************************/
 
-/* executes a scheduled service check */
-static int run_scheduled_service_check(service *svc, int check_options, double latency)
-{
-	int result = OK;
-	time_t preferred_time = 0L;
-	int time_is_valid = TRUE;
-
-	if (svc == NULL)
-		return ERROR;
-
-	log_debug_info(DEBUGL_CHECKS, 0, "Attempting to run scheduled check of service '%s' on host '%s': check options=%d, latency=%lf\n", svc->description, svc->host_name, check_options, latency);
-
-	/*
-	 * reset the next_check_event so we know it's
-	 * no longer in the scheduling queue
-	 */
-	svc->next_check_event = NULL;
-
-	/* attempt to run the check */
-	result = run_async_service_check(svc, check_options, latency, TRUE, TRUE, &time_is_valid, &preferred_time);
-
-	if (result == OK)
-		return OK;
-
-	/* an error occurred, so reschedule the check */
-	log_debug_info(DEBUGL_CHECKS, 1, "Unable to run scheduled service check at this time\n");
-
-	/* only attempt to (re)schedule checks that should get checked... */
-	if (svc->should_be_scheduled == FALSE)
-		return ERROR;
-
-	/* reschedule */
-	svc->next_check = next_check_time(svc);
-	schedule_service_check(svc, svc->next_check, check_options);
-
-	/* update the status log */
-	update_service_status(svc, FALSE);
-
-	return ERROR;
-}
-
-
 /* forks a child process to run a service check, but does not wait for the service check result */
-static int run_async_service_check(service *svc, int check_options, double latency, int scheduled_check, int reschedule_check, int *time_is_valid, time_t *preferred_time)
+static int run_scheduled_service_check(service *svc, int check_options, double latency)
 {
 	nagios_macros mac;
 	char *raw_command = NULL;
 	char *processed_command = NULL;
 	struct timeval start_time, end_time;
 	host *temp_host = NULL;
-	double old_latency = 0.0;
 	check_result *cr;
 	int runchk_result = OK;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
@@ -330,13 +194,8 @@ static int run_async_service_check(service *svc, int check_options, double laten
 	int neb_result = OK;
 #endif
 
-	/* make sure we have something */
-	if (svc == NULL)
-		return ERROR;
-
-	/* is the service check viable at this time? */
-	if (check_service_check_viability(svc, check_options, time_is_valid, preferred_time) == ERROR)
-		return ERROR;
+	/* latency is how long the event lagged behind the event queue */
+	svc->latency = latency;
 
 	temp_host = svc->host_ptr;
 
@@ -359,8 +218,6 @@ static int run_async_service_check(service *svc, int check_options, double laten
 	}
 	/* neb module wants to cancel the service check - the check will be rescheduled for a later time by the scheduling logic */
 	if (neb_result == NEBERROR_CALLBACKCANCEL) {
-		if (preferred_time)
-			*preferred_time += (svc->check_interval * interval_length);
 		return ERROR;
 	}
 
@@ -374,15 +231,6 @@ static int run_async_service_check(service *svc, int check_options, double laten
 
 	log_debug_info(DEBUGL_CHECKS, 0, "Checking service '%s' on host '%s'...\n", svc->description, svc->host_name);
 
-	/* clear check options - we don't want old check options retained */
-	/* only clear check options for scheduled checks - ondemand checks shouldn't affected retained check options */
-	if (scheduled_check == TRUE)
-		svc->check_options = CHECK_OPTION_NONE;
-
-	/* update latency for macros, event broker, save old value for later */
-	old_latency = svc->latency;
-	svc->latency = latency;
-
 	/* grab the host and service macro variables */
 	memset(&mac, 0, sizeof(mac));
 	grab_host_macros_r(&mac, temp_host);
@@ -393,9 +241,6 @@ static int run_async_service_check(service *svc, int check_options, double laten
 	if (raw_command == NULL) {
 		clear_volatile_macros_r(&mac);
 		log_debug_info(DEBUGL_CHECKS, 0, "Raw check command for service '%s' on host '%s' was NULL - aborting.\n", svc->description, svc->host_name);
-		if (preferred_time)
-			*preferred_time += (svc->check_interval * interval_length);
-		svc->latency = old_latency;
 		return ERROR;
 	}
 
@@ -405,9 +250,6 @@ static int run_async_service_check(service *svc, int check_options, double laten
 	if (processed_command == NULL) {
 		clear_volatile_macros_r(&mac);
 		log_debug_info(DEBUGL_CHECKS, 0, "Processed check command for service '%s' on host '%s' was NULL - aborting.\n", svc->description, svc->host_name);
-		if (preferred_time)
-			*preferred_time += (svc->check_interval * interval_length);
-		svc->latency = old_latency;
 		return ERROR;
 	}
 
@@ -421,8 +263,8 @@ static int run_async_service_check(service *svc, int check_options, double laten
 	cr->object_check_type = SERVICE_CHECK;
 	cr->check_type = CHECK_TYPE_ACTIVE;
 	cr->check_options = check_options;
-	cr->scheduled_check = scheduled_check;
-	cr->reschedule_check = reschedule_check;
+	cr->scheduled_check = TRUE;
+	cr->reschedule_check = TRUE;
 	cr->latency = latency;
 	cr->start_time = start_time;
 	cr->finish_time = start_time;
@@ -440,15 +282,11 @@ static int run_async_service_check(service *svc, int check_options, double laten
 	/* neb module wants to override the service check - perhaps it will check the service itself */
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
 		clear_volatile_macros_r(&mac);
-		svc->latency = old_latency;
 		free_check_result(cr);
 		my_free(processed_command);
 		return OK;
 	}
 #endif
-
-	/* reset latency (permanent value will be set later) */
-	svc->latency = old_latency;
 
 	/* paw off the check to a worker to run */
 	runchk_result = wproc_run_callback(processed_command, service_check_timeout, handle_worker_service_check, (void*)cr, &mac);
@@ -458,7 +296,7 @@ static int run_async_service_check(service *svc, int check_options, double laten
 		/* do the book-keeping */
 		currently_running_service_checks++;
 		svc->is_executing = TRUE;
-		update_check_stats((scheduled_check == TRUE) ? ACTIVE_SCHEDULED_SERVICE_CHECK_STATS : ACTIVE_ONDEMAND_SERVICE_CHECK_STATS, start_time.tv_sec);
+		update_check_stats(ACTIVE_SCHEDULED_SERVICE_CHECK_STATS, start_time.tv_sec);
 	}
 
 	/* free memory */
@@ -512,8 +350,6 @@ static void handle_worker_service_check(wproc_result *wpres, void *arg, int flag
 int handle_async_service_check_result(service *temp_service, check_result *queued_check_result)
 {
 	host *temp_host = NULL;
-	time_t next_service_check = 0L;
-	int reschedule_check = FALSE;
 	int state_change = FALSE;
 	int hard_state_change = FALSE;
 	int first_host_check_initiated = FALSE;
@@ -536,8 +372,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 	/* get the current time */
 	time(&current_time);
-
-	next_service_check = current_time + check_window(temp_service);
 
 	log_debug_info(DEBUGL_CHECKS, 0, "** Handling check result for service '%s' on host '%s' from '%s'...\n", temp_service->description, temp_service->host_name, check_result_source(queued_check_result));
 	log_debug_info(DEBUGL_CHECKS, 1, "HOST: %s, SERVICE: %s, CHECK TYPE: %s, OPTIONS: %d, SCHEDULED: %s, RESCHEDULE: %s, EXITED OK: %s, RETURN CODE: %d, OUTPUT: %s\n", temp_service->host_name, temp_service->description, (queued_check_result->check_type == CHECK_TYPE_ACTIVE) ? "Active" : "Passive", queued_check_result->check_options, (queued_check_result->scheduled_check == TRUE) ? "Yes" : "No", (queued_check_result->reschedule_check == TRUE) ? "Yes" : "No", (queued_check_result->exited_ok == TRUE) ? "Yes" : "No", queued_check_result->return_code, queued_check_result->output);
@@ -575,9 +409,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		return OK;
 	}
 
-	/* check latency is passed to us */
-	temp_service->latency = queued_check_result->latency;
-
 	/* update the execution time for this check (millisecond resolution) */
 	temp_service->execution_time = (double)((double)(queued_check_result->finish_time.tv_sec - queued_check_result->start_time.tv_sec) + (double)((queued_check_result->finish_time.tv_usec - queued_check_result->start_time.tv_usec) / 1000.0) / 1000.0);
 	if (temp_service->execution_time < 0.0)
@@ -594,9 +425,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	/* update check statistics for passive checks */
 	if (queued_check_result->check_type == CHECK_TYPE_PASSIVE)
 		update_check_stats(PASSIVE_SERVICE_CHECK_STATS, queued_check_result->start_time.tv_sec);
-
-	/* should we reschedule the next service check? NOTE: This may be overridden later... */
-	reschedule_check = queued_check_result->reschedule_check;
 
 	/* save the old service status info */
 	temp_service->last_state = temp_service->current_state;
@@ -735,9 +563,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	/* a state change occurred... */
 	/* reset last and next notification times and acknowledgement flag if necessary, misc other stuff */
 	if (state_change == TRUE || hard_state_change == TRUE) {
-
-		/* reschedule the service check */
-		reschedule_check = TRUE;
 
 		/* reset notification times */
 		temp_service->last_notification = (time_t)0;
@@ -903,9 +728,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		temp_service->problem_has_been_acknowledged = FALSE;
 		temp_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
 		temp_service->notified_on = 0;
-
-		if (reschedule_check == TRUE)
-			next_service_check = (time_t)(temp_service->last_check + (temp_service->check_interval * interval_length));
 	}
 
 
@@ -1018,10 +840,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 				log_debug_info(DEBUGL_CHECKS, 1, "Host isn't UP, so we won't retry the service check...\n");
 
-				/* the host is not up, so reschedule the next service check at regular interval */
-				if (reschedule_check == TRUE)
-					next_service_check = (time_t)(temp_service->last_check + (temp_service->check_interval * interval_length));
-
 				/* log the problem as a hard state if the host just went down */
 				if (hard_state_change == TRUE) {
 					log_service_event(temp_service);
@@ -1047,8 +865,11 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 				/* run the service event handler to handle the soft state */
 				handle_service_event(temp_service);
 
-				if (reschedule_check == TRUE)
-					next_service_check = next_check_time(temp_service);
+				if ((temp_service->current_state!=STATE_OK && temp_service->state_type == SOFT_STATE)) {
+					if (temp_service->retry_interval != 0.0) {
+						schedule_next_service_check(temp_service, temp_service->retry_interval * interval_length, 0);
+					}
+				}
 			}
 
 			/* perform dependency checks on the second to last check of the service */
@@ -1122,31 +943,12 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 			/* save the last hard state */
 			temp_service->last_hard_state = temp_service->current_state;
 
-			/* reschedule the next check at the regular interval */
-			if (reschedule_check == TRUE)
-				next_service_check = next_check_time(temp_service);
 		}
 
 
 		/* should we obsessive over service checks? */
 		if (obsess_over_services == TRUE)
 			obsessive_compulsive_service_check_processor(temp_service);
-	}
-
-	/* reschedule the next service check ONLY for active, scheduled checks */
-	if (reschedule_check == TRUE && temp_service->check_interval != 0
-	    && temp_service->checks_enabled)
-	{
-		temp_service->next_check = next_check_time(temp_service);
-		log_debug_info(DEBUGL_CHECKS, 1, "Rescheduling next check of service at %s", ctime(&temp_service->next_check));
-		temp_service->should_be_scheduled = TRUE;
-
-		/* push the check to its next alotted time */
-		temp_service->next_check = next_service_check;
-		if (current_time > temp_service->next_check)
-			temp_service->next_check = current_time;
-
-		schedule_service_check(temp_service, temp_service->next_check, CHECK_OPTION_NONE);
 	}
 
 	/* if we're stalking this state type and state was not already logged AND the plugin output changed since last check, log it now.. */
@@ -1248,7 +1050,7 @@ static void check_for_orphaned_services_eventhandler(void *arg)
 			temp_service->is_executing = FALSE;
 
 			/* schedule an immediate check of the service */
-			schedule_service_check(temp_service, current_time, CHECK_OPTION_ORPHAN_CHECK);
+			schedule_next_service_check(temp_service, 0, 0);
 		}
 
 	}
@@ -1312,7 +1114,7 @@ static void check_service_result_freshness(void *arg)
 			temp_service->is_being_freshened = TRUE;
 
 			/* schedule an immediate forced check of the service */
-			schedule_service_check(temp_service, current_time, CHECK_OPTION_FORCE_EXECUTION | CHECK_OPTION_FRESHNESS_CHECK);
+			schedule_next_service_check(temp_service, 0, CHECK_OPTION_FORCE_EXECUTION);
 		}
 
 	}
@@ -1324,71 +1126,6 @@ static void check_service_result_freshness(void *arg)
 /******************************************************************************
  ****************************  STATUS / IMMUTABLE  ****************************
  ******************************************************************************/
-
-
-/* checks viability of performing a service check */
-static int check_service_check_viability(service *svc, int check_options, int *time_is_valid, time_t *new_time)
-{
-	int result = OK;
-	int perform_check = TRUE;
-	time_t current_time = 0L;
-	time_t preferred_time = 0L;
-	int check_interval = 0;
-
-	/* make sure we have a service */
-	if (svc == NULL)
-		return ERROR;
-
-	/* get the check interval to use if we need to reschedule the check */
-	if (svc->state_type == SOFT_STATE && svc->current_state != STATE_OK)
-		check_interval = (svc->retry_interval * interval_length);
-	else
-		check_interval = (svc->check_interval * interval_length);
-
-	/* get the current time */
-	time(&current_time);
-
-	/* initialize the next preferred check time */
-	preferred_time = current_time;
-
-	/* can we check the host right now? */
-	if (!(check_options & CHECK_OPTION_FORCE_EXECUTION)) {
-
-		/* if checks of the service are currently disabled... */
-		if (svc->checks_enabled == FALSE) {
-			preferred_time = current_time + check_interval;
-			perform_check = FALSE;
-
-			log_debug_info(DEBUGL_CHECKS, 2, "Active checks of the service are currently disabled.\n");
-		}
-
-		/* make sure this is a valid time to check the service */
-		if (check_time_against_period((unsigned long)current_time, svc->check_period_ptr) == ERROR) {
-			preferred_time = current_time;
-			if (time_is_valid)
-				*time_is_valid = FALSE;
-			perform_check = FALSE;
-
-			log_debug_info(DEBUGL_CHECKS, 2, "This is not a valid time for this service to be actively checked.\n");
-		}
-
-		/* check service dependencies for execution */
-		if (check_service_dependencies(svc, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
-			preferred_time = current_time + check_interval;
-			perform_check = FALSE;
-
-			log_debug_info(DEBUGL_CHECKS, 2, "Execution dependencies for this service failed, so it will not be actively checked.\n");
-		}
-	}
-
-	/* pass back the next viable check time */
-	if (new_time)
-		*new_time = preferred_time;
-
-	result = (perform_check == TRUE) ? OK : ERROR;
-
-	return result;
-}
 
 
 /* checks service dependencies */
