@@ -54,8 +54,6 @@ int obsessive_compulsive_service_check_processor(service *svc)
 	nagios_macros mac;
 	struct obsessive_compulsive_job *ocj;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "obsessive_compulsive_service_check_processor()\n");
-
 	if (svc == NULL)
 		return ERROR;
 
@@ -120,8 +118,6 @@ int obsessive_compulsive_host_check_processor(host *hst)
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	nagios_macros mac;
 	struct obsessive_compulsive_job *ocj;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "obsessive_compulsive_host_check_processor()\n");
 
 	if (hst == NULL)
 		return ERROR;
@@ -195,8 +191,6 @@ int handle_service_event(service *svc)
 	host *temp_host = NULL;
 	nagios_macros mac;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "handle_service_event()\n");
-
 	if (svc == NULL)
 		return ERROR;
 
@@ -249,9 +243,6 @@ int run_global_service_event_handler(nagios_macros *mac, service *svc)
 	int neb_result = OK;
 #endif
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "run_global_service_event_handler()\n");
 
 	if (svc == NULL)
 		return ERROR;
@@ -353,9 +344,6 @@ int run_service_event_handler(nagios_macros *mac, service *svc)
 #endif
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "run_service_event_handler()\n");
-
 	if (svc == NULL)
 		return ERROR;
 
@@ -443,8 +431,6 @@ int handle_host_event(host *hst)
 {
 	nagios_macros mac;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "handle_host_event()\n");
-
 	if (hst == NULL)
 		return ERROR;
 
@@ -491,9 +477,6 @@ int run_global_host_event_handler(nagios_macros *mac, host *hst)
 	int neb_result = OK;
 #endif
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "run_global_host_event_handler()\n");
 
 	if (hst == NULL)
 		return ERROR;
@@ -593,9 +576,6 @@ int run_host_event_handler(nagios_macros *mac, host *hst)
 	int neb_result = OK;
 #endif
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "run_host_event_handler()\n");
 
 	if (hst == NULL)
 		return ERROR;

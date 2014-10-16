@@ -182,7 +182,6 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	int neb_result = OK;
 #endif
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "run_async_host_check(%s ...)\n", hst ? hst->name : "(NULL host!)");
 	log_debug_info(DEBUGL_CHECKS, 0, "** Running async check of host '%s'...\n", hst->name);
 
 	/*
@@ -351,8 +350,6 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 	struct timeval end_time_hires;
 	int alert_recorded = NEBATTR_NONE;
 	int first_recorded_state = NEBATTR_NONE;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "handle_async_host_check_result(%s ...)\n", temp_host ? temp_host->name : "(NULL host!)");
 
 	/* make sure we have what we need */
 	if (temp_host == NULL || queued_check_result == NULL)
@@ -624,9 +621,6 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 	host *master_host = NULL;
 	time_t current_time = 0L;
 
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "process_host_check_result()\n");
-
 	log_debug_info(DEBUGL_CHECKS, 1, "HOST: %s, ATTEMPT=%d/%d, CHECK TYPE=%s, STATE TYPE=%s, OLD STATE=%d, NEW STATE=%d\n", hst->name, hst->current_attempt, hst->max_attempts, (hst->check_type == CHECK_TYPE_ACTIVE) ? "ACTIVE" : "PASSIVE", (hst->state_type == HARD_STATE) ? "HARD" : "SOFT", hst->current_state, new_state);
 
 	/* get the current time */
@@ -859,7 +853,6 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 static int adjust_host_check_attempt(host *hst, int is_active)
 {
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "adjust_host_check_attempt()\n");
 	log_debug_info(DEBUGL_CHECKS, 2, "Adjusting check attempt number for host '%s': current attempt=%d/%d, state=%d, state type=%d\n", hst->name, hst->current_attempt, hst->max_attempts, hst->current_state, hst->state_type);
 
 	/* if host is in a hard state, reset current attempt number */
@@ -885,9 +878,6 @@ static int handle_host_state(host *hst, int *alert_recorded)
 	int state_change = FALSE;
 	int hard_state_change = FALSE;
 	time_t current_time = 0L;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "handle_host_state()\n");
 
 	/* get current time */
 	time(&current_time);
@@ -1040,7 +1030,6 @@ static void check_host_result_freshness(void *arg)
 	/* Reschedule, since recurring */
 	schedule_event(host_freshness_check_interval, check_host_result_freshness, NULL);
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_host_result_freshness()\n");
 	log_debug_info(DEBUGL_CHECKS, 2, "Attempting to check the freshness of host check results...\n");
 
 	/* bail out if we're not supposed to be checking freshness */
@@ -1096,8 +1085,6 @@ static void check_for_orphaned_hosts_eventhandler(void *arg)
 
 	schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_for_orphaned_hosts_eventhandler, arg);
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_for_orphaned_hosts()\n");
-
 	/* get the current time */
 	time(&current_time);
 
@@ -1151,9 +1138,6 @@ int check_host_dependencies(host *hst, int dependency_type)
 	host *temp_host = NULL;
 	int state = HOST_UP;
 	time_t current_time = 0L;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_host_dependencies()\n");
 
 	if (dependency_type == NOTIFICATION_DEPENDENCY) {
 		list = hst->notify_deps;
@@ -1289,8 +1273,6 @@ static int determine_host_reachability(host *hst)
 {
 	host *parent_host = NULL;
 	hostsmember *temp_hostsmember = NULL;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "determine_host_reachability(host=%s)\n", hst ? hst->name : "(NULL host!)");
 
 	if (hst == NULL)
 		return HOST_DOWN;

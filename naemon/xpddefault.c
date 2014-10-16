@@ -283,8 +283,6 @@ int xpddefault_run_service_performance_data_command(nagios_macros *mac, service 
 	int result = OK;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "run_service_performance_data_command()\n");
-
 	if (svc == NULL)
 		return ERROR;
 
@@ -324,8 +322,6 @@ int xpddefault_run_host_performance_data_command(nagios_macros *mac, host *hst)
 	char *processed_command_line = NULL;
 	int result = OK;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "run_host_performance_data_command()\n");
 
 	if (hst == NULL)
 		return ERROR;
@@ -487,8 +483,6 @@ int xpddefault_update_service_performance_data_file(nagios_macros *mac, service 
 	char *processed_output = NULL;
 	int result = OK;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "update_service_performance_data_file()\n");
-
 	if (svc == NULL)
 		return ERROR;
 
@@ -527,8 +521,6 @@ int xpddefault_update_host_performance_data_file(nagios_macros *mac, host *hst)
 	char *raw_output = NULL;
 	char *processed_output = NULL;
 	int result = OK;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "update_host_performance_data_file()\n");
 
 	if (hst == NULL)
 		return ERROR;
@@ -571,8 +563,6 @@ static void xpddefault_process_host_perfdata_file(void *arg)
 	double exectime = 0.0;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	nagios_macros mac;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "process_host_perfdata_file()\n");
 
 	/* Recurring event */
 	schedule_event(host_perfdata_file_processing_interval, xpddefault_process_host_perfdata_file, NULL);
@@ -634,8 +624,6 @@ static void xpddefault_process_service_perfdata_file(void *arg)
 	double exectime = 0.0;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	nagios_macros mac;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "process_service_perfdata_file()\n");
 
 	/* Recurring event */
 	schedule_event(service_perfdata_file_processing_interval, xpddefault_process_service_perfdata_file, NULL);

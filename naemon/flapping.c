@@ -50,8 +50,6 @@ void check_for_service_flapping(service *svc, int update, int allow_flapstart_no
 	double low_threshold = 0.0;
 	double high_threshold = 0.0;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_for_service_flapping()\n");
-
 	if (svc == NULL || !should_flap_detect(svc))
 		return;
 
@@ -124,8 +122,6 @@ void check_for_host_flapping(host *hst, int update, int actual_check, int allow_
 	time_t current_time = 0L;
 	double low_threshold = 0.0;
 	double high_threshold = 0.0;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_for_host_flapping()\n");
 
 	if (hst == NULL || !should_flap_detect(hst))
 		return;
@@ -212,8 +208,6 @@ void set_service_flap(service *svc, double percent_change, double high_threshold
 {
 	char *temp_buffer = NULL;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "set_service_flap()\n");
-
 	if (svc == NULL)
 		return;
 
@@ -252,8 +246,6 @@ void set_service_flap(service *svc, double percent_change, double high_threshold
 /* handles a service that has stopped flapping */
 void clear_service_flap(service *svc, double percent_change, double high_threshold, double low_threshold)
 {
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "clear_service_flap()\n");
 
 	if (svc == NULL)
 		return;
@@ -295,8 +287,6 @@ void set_host_flap(host *hst, double percent_change, double high_threshold, doub
 {
 	char *temp_buffer = NULL;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "set_host_flap()\n");
-
 	if (hst == NULL)
 		return;
 
@@ -335,8 +325,6 @@ void set_host_flap(host *hst, double percent_change, double high_threshold, doub
 /* handles a host that has stopped flapping */
 void clear_host_flap(host *hst, double percent_change, double high_threshold, double low_threshold)
 {
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "clear_host_flap()\n");
 
 	if (hst == NULL)
 		return;
@@ -383,8 +371,6 @@ void enable_flap_detection_routines(void)
 	unsigned int i;
 	unsigned long attr = MODATTR_FLAP_DETECTION_ENABLED;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "enable_flap_detection_routines()\n");
-
 	/* bail out if we're already set */
 	if (enable_flap_detection == TRUE)
 		return;
@@ -419,8 +405,6 @@ void disable_flap_detection_routines(void)
 	unsigned int i;
 	unsigned long attr = MODATTR_FLAP_DETECTION_ENABLED;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "disable_flap_detection_routines()\n");
-
 	/* bail out if we're already set */
 	if (enable_flap_detection == FALSE)
 		return;
@@ -454,8 +438,6 @@ void disable_flap_detection_routines(void)
 void enable_host_flap_detection(host *hst)
 {
 	unsigned long attr = MODATTR_FLAP_DETECTION_ENABLED;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "enable_host_flap_detection()\n");
 
 	if (hst == NULL)
 		return;
@@ -492,8 +474,6 @@ void disable_host_flap_detection(host *hst)
 {
 	unsigned long attr = MODATTR_FLAP_DETECTION_ENABLED;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "disable_host_flap_detection()\n");
-
 	if (hst == NULL)
 		return;
 
@@ -524,8 +504,6 @@ void disable_host_flap_detection(host *hst)
 /* handles the details for a host when flap detection is disabled (globally or per-host) */
 void handle_host_flap_detection_disabled(host *hst)
 {
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "handle_host_flap_detection_disabled()\n");
 
 	if (hst == NULL)
 		return;
@@ -571,8 +549,6 @@ void enable_service_flap_detection(service *svc)
 {
 	unsigned long attr = MODATTR_FLAP_DETECTION_ENABLED;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "enable_service_flap_detection()\n");
-
 	if (svc == NULL)
 		return;
 
@@ -608,8 +584,6 @@ void disable_service_flap_detection(service *svc)
 {
 	unsigned long attr = MODATTR_FLAP_DETECTION_ENABLED;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "disable_service_flap_detection()\n");
-
 	if (svc == NULL)
 		return;
 
@@ -640,8 +614,6 @@ void disable_service_flap_detection(service *svc)
 /* handles the details for a service when flap detection is disabled (globally or per-service) */
 void handle_service_flap_detection_disabled(service *svc)
 {
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "handle_service_flap_detection_disabled()\n");
 
 	if (svc == NULL)
 		return;

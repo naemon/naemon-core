@@ -94,8 +94,6 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 	int free_macro = FALSE;
 	int macro_options = 0;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "process_macros_r()\n");
-
 	if (output_buffer == NULL || input_buffer == NULL)
 		return ERROR;
 

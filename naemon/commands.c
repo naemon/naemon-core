@@ -2952,8 +2952,6 @@ int process_external_commands_from_file(char *fname, int delete_file)
 	mmapfile *thefile = NULL;
 	char *input = NULL;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "process_external_commands_from_file()\n");
-
 	if (fname == NULL)
 		return ERROR;
 
@@ -2999,8 +2997,6 @@ int process_external_command1(char *cmd)
 	int id = CMD_NONE;
 	int external_command_ret = OK;
 	struct external_command *parsed_command;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "process_external_command1()\n");
 
 	if (cmd == NULL)
 		return CMD_ERROR_MALFORMED_COMMAND;
@@ -3072,7 +3068,6 @@ int process_external_command2(int cmd, time_t entry_time, char *args)
 {
 	struct external_command *ext_command = NULL;
 	int ret = CMD_ERROR_OK;
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "process_external_command1()\n");
 	log_debug_info(DEBUGL_EXTERNALCOMMANDS, 1, "External Command Type: %d\n", cmd);
 	log_debug_info(DEBUGL_EXTERNALCOMMANDS, 1, "Command Entry Time: %lu\n", (unsigned long)entry_time);
 	log_debug_info(DEBUGL_EXTERNALCOMMANDS, 1, "Command Arguments: %s\n", (args == NULL) ? "" : args);

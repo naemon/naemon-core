@@ -69,8 +69,6 @@ timed_event *schedule_event(time_t time_left, void (*callback)(void *), void *st
 static void add_event(squeue_t *sq, timed_event *event)
 {
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "add_event()\n");
-
 	if (event->sq_event) {
 		logit(NSLOG_RUNTIME_ERROR, TRUE,
 		      "Error: Adding event that seems to already be scheduled\n");
@@ -130,8 +128,6 @@ void event_execution_loop(void)
 	time_t current_time = 0L;
 	time_t last_status_update = 0L;
 	int poll_time_ms;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "event_execution_loop() start\n");
 
 	time(&last_time);
 
@@ -236,8 +232,6 @@ void event_execution_loop(void)
 
 		my_free(temp_event);
 	}
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "event_execution_loop() end\n");
 }
 
 
@@ -252,9 +246,6 @@ static void compensate_for_system_time_change(unsigned long last_time, unsigned 
 	int minutes = 0;
 	int seconds = 0;
 	int delta = 0;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "compensate_for_system_time_change() start\n");
 
 	/*
 	 * if current_time < last_time, delta will be negative so we can
@@ -328,8 +319,6 @@ static void compensate_for_system_time_change(unsigned long last_time, unsigned 
 /* adjusts a timestamp variable in accordance with a system time change */
 void adjust_timestamp_for_time_change(time_t last_time, time_t current_time, unsigned long time_difference, time_t *ts)
 {
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "adjust_timestamp_for_time_change()\n");
 
 	/* we shouldn't do anything with epoch values */
 	if (*ts == (time_t)0)
