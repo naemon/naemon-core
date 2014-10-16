@@ -128,7 +128,13 @@ fi
 
 chkconfig --add naemon
 
+
+%posttrans
+# this is run after all other transactions, which means we
+# *always* start the service even if it gets stopped by
+# the "postun" scriptlet of an earlier package
 service naemon start || :
+
 
 %files
 %defattr(-,root,root)
