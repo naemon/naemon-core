@@ -79,12 +79,12 @@ void checks_init_services(void)
  ******************************************************************************/
 
 
-void schedule_next_service_check(service *svc, time_t time_left, int options)
+void schedule_next_service_check(service *svc, time_t delay, int options)
 {
 	time_t current_time = time(NULL);
 
 	/* A closer check is already scheduled, skip this scheduling */
-	if(!(options & CHECK_OPTION_FORCE_EXECUTION) && svc->next_check_event != NULL && svc->next_check < time_left + current_time) {
+	if(!(options & CHECK_OPTION_FORCE_EXECUTION) && svc->next_check_event != NULL && svc->next_check < delay + current_time) {
 		return;
 	}
 
@@ -95,8 +95,8 @@ void schedule_next_service_check(service *svc, time_t time_left, int options)
 
 	/* Schedule the event */
 	svc->check_options = options;
-	svc->next_check = time_left + current_time;
-	svc->next_check_event = schedule_event(time_left, handle_service_check_event, (void*)svc);
+	svc->next_check = delay + current_time;
+	svc->next_check_event = schedule_event(delay, handle_service_check_event, (void*)svc);
 
 	/* update the status log, since next_check and check_options is updated */
 	update_service_status(svc, FALSE);
