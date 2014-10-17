@@ -31,7 +31,7 @@ typedef void (*event_callback)(struct timed_event_properties *);
 /**
  * Schedule a timed event. At the given time, the callback is executed
  */
-timed_event *schedule_event(time_t time_left, event_callback callback, void *user_data);
+timed_event *schedule_event(time_t delay, event_callback callback, void *user_data);
 void destroy_event(timed_event *event);
 
 /* Main function */

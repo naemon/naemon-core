@@ -70,11 +70,11 @@ void destroy_event_queue(void)
 	nagios_squeue = NULL;
 }
 
-timed_event *schedule_event(time_t time_left, event_callback callback, void *user_data)
+timed_event *schedule_event(time_t delay, event_callback callback, void *user_data)
 {
 	timed_event *new_event = nm_calloc(1, sizeof(timed_event));
 
-	new_event->run_time = time_left + time(NULL);
+	new_event->run_time = delay + time(NULL);
 	new_event->callback = callback;
 	new_event->user_data = user_data;
 

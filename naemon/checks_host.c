@@ -78,12 +78,12 @@ void checks_init_hosts(void)
  ********************************  SCHEDULING  ********************************
  ******************************************************************************/
 
-void schedule_next_host_check(host *hst, time_t time_left, int options)
+void schedule_next_host_check(host *hst, time_t delay, int options)
 {
 	time_t current_time = time(NULL);
 
 	/* A closer check is already scheduled, skip this scheduling */
-	if(!(options & CHECK_OPTION_FORCE_EXECUTION) && hst->next_check_event != NULL && hst->next_check < time_left + current_time) {
+	if(!(options & CHECK_OPTION_FORCE_EXECUTION) && hst->next_check_event != NULL && hst->next_check < delay + current_time) {
 		return;
 	}
 
@@ -94,8 +94,8 @@ void schedule_next_host_check(host *hst, time_t time_left, int options)
 
 	/* Schedule the event */
 	hst->check_options = options;
-	hst->next_check = time_left + current_time;
-	hst->next_check_event = schedule_event(time_left, handle_host_check_event, (void*)hst);
+	hst->next_check = delay + current_time;
+	hst->next_check_event = schedule_event(delay, handle_host_check_event, (void*)hst);
 
 	/* update the status log, since next_check and check_options is updated */
 	update_host_status(hst, FALSE);
