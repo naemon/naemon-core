@@ -20,11 +20,19 @@ static void update_all_status_data_eventhandler(void *ptr)
 	update_all_status_data();
 }
 
+static void update_status_data_eventhandler(void *ptr)
+{
+	/* Reschedule, so it becomes recurring */
+	schedule_event(5, update_status_data_eventhandler, NULL);
+	update_program_status(FALSE);
+}
+
 /* initializes status data at program start */
 int initialize_status_data(const char *cfgfile)
 {
 	/* add a status save event */
 	schedule_event(status_update_interval, update_all_status_data_eventhandler, NULL);
+	schedule_event(5, update_status_data_eventhandler, NULL);
 
 	return xsddefault_initialize_status_data(cfgfile);
 }

@@ -23,14 +23,26 @@ struct timed_event {
 };
 
 /* the event we're currently processing */
-static timed_event *current_event;
 static squeue_t *nagios_squeue = NULL; /* our scheduling queue */
 
 static void add_event(squeue_t *sq, timed_event *event);
 static void remove_event(squeue_t *sq, timed_event *event);
 
+
+#if 0
+/*
+ * Disable this feature for now, during conversion to monotonic time.
+ *
+ * Identifying time change can be implemented much better by storing the time
+ * difference between monotonic time and wall time, and when that difference
+ * is over a threshold (a second or so), the compensation should be executed.
+ *
+ * The compensation is still a hack for not using monotonic time internally, and
+ * should be removed later, but until then, do the hack.
+ */
 static void compensate_for_system_time_change(unsigned long, unsigned long);
 static void adjust_timestamp_for_time_change(time_t last_time, time_t current_time, unsigned long time_difference, time_t *ts);
+#endif
 
 /******************************************************************/
 /************ EVENT SCHEDULING/HANDLING FUNCTIONS *****************/
@@ -106,18 +118,6 @@ static void remove_event(squeue_t *sq, timed_event *event)
 		      "Error: remove_event() called for event with NULL sq parameter\n");
 
 	event->sq_event = NULL; /* mark this event as unscheduled */
-
-	/*
-	 * if we catch an event from the queue which gets removed when
-	 * we go polling for input (as might happen with f.e. downtime
-	 * events that we get "cancel" commands for just as they are
-	 * about to start or expire), we must make sure we mark the
-	 * current event as no longer scheduled, or we'll run into
-	 * segfaults and memory corruptions for sure.
-	 */
-	if (event == current_event) {
-		current_event = NULL;
-	}
 }
 
 void destroy_event(timed_event *event)
@@ -130,24 +130,14 @@ void destroy_event(timed_event *event)
 /* this is the main event handler loop */
 void event_execution_loop(void)
 {
-	timed_event *temp_event, *last_event = NULL;
-	time_t last_time = 0L;
+	timed_event *evt;
 	time_t current_time = 0L;
-	time_t last_status_update = 0L;
 	int poll_time_ms;
 
-	time(&last_time);
-
-	while (1) {
+	while (!sigshutdown && !sigrestart) {
 		struct timeval now;
 		const struct timeval *event_runtime;
 		int inputs;
-
-		/* super-priority (hardcoded) events come first */
-
-		/* see if we should exit or restart (a signal was encountered) */
-		if (sigshutdown == TRUE || sigrestart == TRUE)
-			break;
 
 		/* get the current time */
 		time(&current_time);
@@ -157,42 +147,16 @@ void event_execution_loop(void)
 			update_program_status(FALSE);
 		}
 
-		/* hey, wait a second...  we traveled back in time! */
-		if (current_time < last_time)
-			compensate_for_system_time_change((unsigned long)last_time, (unsigned long)current_time);
-
-		/* else if the time advanced over the specified threshold, try and compensate... */
-		else if ((current_time - last_time) >= time_change_threshold)
-			compensate_for_system_time_change((unsigned long)last_time, (unsigned long)current_time);
-
 		/* get next scheduled event */
-		current_event = temp_event = (timed_event *)squeue_peek(nagios_squeue);
+		evt = (timed_event *)squeue_peek(nagios_squeue);
 
 		/* if we don't have any events to handle, exit */
-		if (!temp_event) {
+		if (!evt) {
 			log_debug_info(DEBUGL_EVENTS, 0, "There aren't any events that need to be handled! Exiting...\n");
 			break;
 		}
 
-		/* keep track of the last time */
-		last_time = current_time;
-
-		/* update status information occassionally - NagVis watches the NDOUtils DB to see if Nagios is alive */
-		if ((unsigned long)(current_time - last_status_update) > 5) {
-			last_status_update = current_time;
-			update_program_status(FALSE);
-		}
-
-		event_runtime = squeue_event_runtime(temp_event->sq_event);
-		if (temp_event != last_event) {
-			log_debug_info(DEBUGL_EVENTS, 1, "** Event Check Loop\n");
-			log_debug_info(DEBUGL_EVENTS, 1, "Next Event Time: %s", ctime(&temp_event->run_time));
-			log_debug_info(DEBUGL_EVENTS, 1, "Current/Max Service Checks: %d/%d (%.3lf%% saturation)\n",
-			               currently_running_service_checks, max_parallel_service_checks,
-			               ((float)currently_running_service_checks / (float)max_parallel_service_checks) * 100);
-		}
-
-		last_event = temp_event;
+		event_runtime = squeue_event_runtime(evt->sq_event);
 
 		gettimeofday(&now, NULL);
 		poll_time_ms = tv_delta_msec(&now, event_runtime);
@@ -209,38 +173,46 @@ void event_execution_loop(void)
 			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Polling for input on %p failed: %s", nagios_iobs, iobroker_strerror(inputs));
 			break;
 		}
+		if (inputs < 0 ) {
+			/*
+			 * errno is EINTR, which means it isn't a timed event, thus don't
+			 * continue below
+			 */
+			continue;
+		}
 
 		log_debug_info(DEBUGL_IPC, 2, "## %d descriptors had input\n", inputs);
 
 		/*
-		 * if the event we peaked was removed from the queue from
-		 * one of the I/O operations, we must take care not to
-		 * try to run at, as we're (almost) sure to access free'd
-		 * or invalid memory if we do.
+		 * Since we got input on one of the file descriptors, this wakeup wans't
+		 * about a timed event, so start the main loop over.
 		 */
-		if (!current_event) {
+		if (inputs > 0) {
 			log_debug_info(DEBUGL_EVENTS, 0, "Event was cancelled by iobroker input\n");
 			continue;
 		}
 
+		/*
+		 * Might have been a timeout just because the max time of polling
+		 */
 		gettimeofday(&now, NULL);
 		if (tv_delta_msec(&now, event_runtime) >= 0)
 			continue;
 
 		/* handle the event */
-		(*temp_event->callback)(temp_event->storage);
+		(*evt->callback)(evt->storage);
 
 		/*
 		 * we must remove the entry we've peeked, or
 		 * we'll keep getting the same one over and over.
 		 * This also maintains sync with broker modules.
 		 */
-		remove_event(nagios_squeue, temp_event);
-
-		my_free(temp_event);
+		remove_event(nagios_squeue, evt);
+		my_free(evt);
 	}
 }
 
+#if 0
 
 /* attempts to compensate for a change in the system time */
 static void compensate_for_system_time_change(unsigned long last_time, unsigned long current_time)
@@ -347,3 +319,5 @@ void adjust_timestamp_for_time_change(time_t last_time, time_t current_time, uns
 
 	return;
 }
+
+#endif
