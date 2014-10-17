@@ -5,15 +5,13 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
-#include "lib/squeue.h"
-
-
 /******************* EVENT TYPES **********************/
 
 NAGIOS_BEGIN_DECL
 
 /* Set if execution of the callback is done normally because of timed event */
-#define EVENT_EXEC_FLAG_TIMED	1
+#define EVENT_EXEC_FLAG_ABORT	1
+#define EVENT_EXEC_FLAG_TIMED	2
 
 /* TIMED_EVENT structure */
 struct timed_event;
