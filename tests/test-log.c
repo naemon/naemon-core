@@ -10,6 +10,7 @@
 START_TEST(common_case)
 {
 	int fd, ret;
+	size_t len;
 	char active_contents[1024], rotated_contents[1024];
 	time_t rotate_time = 1234, log_ts1 = 5678, log_ts2 = 9012;
 	char workdir[1024], *rotated_file;
@@ -36,10 +37,12 @@ START_TEST(common_case)
 	ck_assert_int_eq(0, access(log_file, R_OK));
 	ck_assert_int_eq(0, access(rotated_file, R_OK));
 	fd = open(log_file, O_RDONLY);
-	read(fd, active_contents, 1024);
+	len = read(fd, active_contents, 1024);
+	active_contents[len] = '\0';
 	close(fd);
 	fd = open(rotated_file, O_RDONLY);
-	read(fd, rotated_contents, 1024);
+	len = read(fd, rotated_contents, 1024);
+	rotated_contents[len] = '\0';
 	close(fd);
 	ck_assert_str_eq("[1234] LOG ROTATION: EXTERNAL\n[1234] LOG VERSION: 2.0\n[9012] New log information\n", active_contents);
 	ck_assert_str_eq("[5678] Log information\n", rotated_contents);
