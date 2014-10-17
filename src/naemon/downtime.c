@@ -25,7 +25,7 @@ static fanout_table *dt_fanout;
 #define DT_ETIME (-6)
 
 
-static void check_for_expired_downtime(void *arg);
+static void check_for_expired_downtime(struct timed_event_properties *evprop);
 
 static const char *dt_strerror(int err)
 {
@@ -217,12 +217,14 @@ int cleanup_downtime_data(void)
 /********************** SCHEDULING FUNCTIONS **********************/
 /******************************************************************/
 
-static void handle_downtime_start_event(void *arg)
+static void handle_downtime_start_event(struct timed_event_properties *evprop)
 {
-	/* process scheduled downtime info */
-	if (arg) {
-		handle_scheduled_downtime_by_id(*(unsigned long *)arg);
-		free(arg);
+	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+		/* process scheduled downtime info */
+		if (evprop->user_data) {
+			handle_scheduled_downtime_by_id(*(unsigned long *)evprop->user_data);
+			free(evprop->user_data);
+		}
 	}
 }
 
@@ -828,7 +830,7 @@ int check_pending_flex_service_downtime(service *svc)
 
 
 /* event handler: checks for (and removes) expired downtime entries */
-static void check_for_expired_downtime(void *arg)
+static void check_for_expired_downtime(struct timed_event_properties *evprop)
 {
 	scheduled_downtime *temp_downtime = NULL;
 	scheduled_downtime *next_downtime = NULL;
@@ -836,56 +838,56 @@ static void check_for_expired_downtime(void *arg)
 	service *svc = NULL;
 	host *hst = NULL;
 
-	time(&current_time);
+	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+		time(&current_time);
 
-	/* check all downtime entries... */
-	for (temp_downtime = scheduled_downtime_list; temp_downtime != NULL; temp_downtime = next_downtime) {
+		/* check all downtime entries... */
+		for (temp_downtime = scheduled_downtime_list; temp_downtime != NULL; temp_downtime = next_downtime) {
 
-		next_downtime = temp_downtime->next;
+			next_downtime = temp_downtime->next;
 
-		/* this entry should be removed */
-		if (temp_downtime->is_in_effect == FALSE && temp_downtime->end_time <= current_time) {
+			/* this entry should be removed */
+			if (temp_downtime->is_in_effect == FALSE && temp_downtime->end_time <= current_time) {
 
-			log_debug_info(DEBUGL_DOWNTIME, 0, "Expiring %s downtime (id=%lu)...\n", (temp_downtime->type == HOST_DOWNTIME) ? "host" : "service", temp_downtime->downtime_id);
+				log_debug_info(DEBUGL_DOWNTIME, 0, "Expiring %s downtime (id=%lu)...\n", (temp_downtime->type == HOST_DOWNTIME) ? "host" : "service", temp_downtime->downtime_id);
 
-			/* find the host or service associated with this downtime */
-			if (temp_downtime->type == HOST_DOWNTIME) {
-				if ((hst = find_host(temp_downtime->host_name)) == NULL) {
-					log_debug_info(DEBUGL_DOWNTIME, 1,
-					               "Unable to find host (%s) for downtime\n",
-					               temp_downtime->host_name);
-					return; /* ERROR */
+				/* find the host or service associated with this downtime */
+				if (temp_downtime->type == HOST_DOWNTIME) {
+					if ((hst = find_host(temp_downtime->host_name)) == NULL) {
+						log_debug_info(DEBUGL_DOWNTIME, 1,
+									   "Unable to find host (%s) for downtime\n",
+									   temp_downtime->host_name);
+						return; /* ERROR */
+					}
+
+					/* send a notification */
+					host_notification(hst, NOTIFICATION_DOWNTIMEEND,
+									  temp_downtime->author, temp_downtime->comment,
+									  NOTIFICATION_OPTION_NONE);
+				} else {
+					if ((svc = find_service(temp_downtime->host_name,
+											temp_downtime->service_description)) == NULL) {
+						log_debug_info(DEBUGL_DOWNTIME, 1,
+									   "Unable to find service (%s) host (%s) for downtime\n",
+									   temp_downtime->service_description,
+									   temp_downtime->host_name);
+						return; /* ERROR */
+					}
+
+					/* send a notification */
+					service_notification(svc, NOTIFICATION_DOWNTIMEEND,
+										 temp_downtime->author, temp_downtime->comment,
+										 NOTIFICATION_OPTION_NONE);
 				}
 
-				/* send a notification */
-				host_notification(hst, NOTIFICATION_DOWNTIMEEND,
-				                  temp_downtime->author, temp_downtime->comment,
-				                  NOTIFICATION_OPTION_NONE);
-			} else {
-				if ((svc = find_service(temp_downtime->host_name,
-				                        temp_downtime->service_description)) == NULL) {
-					log_debug_info(DEBUGL_DOWNTIME, 1,
-					               "Unable to find service (%s) host (%s) for downtime\n",
-					               temp_downtime->service_description,
-					               temp_downtime->host_name);
-					return; /* ERROR */
-				}
-
-				/* send a notification */
-				service_notification(svc, NOTIFICATION_DOWNTIMEEND,
-				                     temp_downtime->author, temp_downtime->comment,
-				                     NOTIFICATION_OPTION_NONE);
+				/* delete the downtime entry */
+				if (temp_downtime->type == HOST_DOWNTIME)
+					delete_host_downtime(temp_downtime->downtime_id);
+				else
+					delete_service_downtime(temp_downtime->downtime_id);
 			}
-
-			/* delete the downtime entry */
-			if (temp_downtime->type == HOST_DOWNTIME)
-				delete_host_downtime(temp_downtime->downtime_id);
-			else
-				delete_service_downtime(temp_downtime->downtime_id);
 		}
 	}
-
-	return; /* OK */
 }
 
 
