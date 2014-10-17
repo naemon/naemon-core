@@ -25,8 +25,8 @@ static FILE    *service_perfdata_fp = NULL;
 static int     host_perfdata_fd = -1;
 static int     service_perfdata_fd = -1;
 
-static void xpddefault_process_host_perfdata_file(void *arg);
-static void xpddefault_process_service_perfdata_file(void *arg);
+static void xpddefault_process_host_perfdata_file(struct timed_event_properties *evprop);
+static void xpddefault_process_service_perfdata_file(struct timed_event_properties *evprop);
 
 
 /******************************************************************/
@@ -555,7 +555,7 @@ int xpddefault_update_host_performance_data_file(nagios_macros *mac, host *hst)
 
 
 /* periodically process the host perf data file */
-static void xpddefault_process_host_perfdata_file(void *arg)
+static void xpddefault_process_host_perfdata_file(struct timed_event_properties *evprop)
 {
 	char *raw_command_line = NULL;
 	char *processed_command_line = NULL;
@@ -564,59 +564,61 @@ static void xpddefault_process_host_perfdata_file(void *arg)
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	nagios_macros mac;
 
-	/* Recurring event */
-	schedule_event(host_perfdata_file_processing_interval, xpddefault_process_host_perfdata_file, NULL);
+	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+		/* Recurring event */
+		schedule_event(host_perfdata_file_processing_interval, xpddefault_process_host_perfdata_file, NULL);
 
-	/* we don't have a command */
-	if (host_perfdata_file_processing_command == NULL)
-		return; /* OK */
+		/* we don't have a command */
+		if (host_perfdata_file_processing_command == NULL)
+			return; /* OK */
 
-	/* init macros */
-	memset(&mac, 0, sizeof(mac));
+		/* init macros */
+		memset(&mac, 0, sizeof(mac));
 
-	/* get the raw command line */
-	get_raw_command_line_r(&mac, host_perfdata_file_processing_command_ptr, host_perfdata_file_processing_command, &raw_command_line, macro_options);
-	if (raw_command_line == NULL) {
+		/* get the raw command line */
+		get_raw_command_line_r(&mac, host_perfdata_file_processing_command_ptr, host_perfdata_file_processing_command, &raw_command_line, macro_options);
+		if (raw_command_line == NULL) {
+			clear_volatile_macros_r(&mac);
+			return; /* ERROR */
+		}
+
+		log_debug_info(DEBUGL_PERFDATA, 2, "Raw host performance data file processing command line: %s\n", raw_command_line);
+
+		/* process any macros in the raw command line */
+		process_macros_r(&mac, raw_command_line, &processed_command_line, macro_options);
+		my_free(raw_command_line);
+		if (processed_command_line == NULL) {
+			clear_volatile_macros_r(&mac);
+			return; /* ERROR */
+		}
+
+		log_debug_info(DEBUGL_PERFDATA, 2, "Processed host performance data file processing command line: %s\n", processed_command_line);
+
+		/* close the performance data file */
+		xpddefault_close_host_perfdata_file();
+
+		/* run the command */
+		my_system_r(&mac, processed_command_line, perfdata_timeout, &early_timeout, &exectime, NULL, 0);
 		clear_volatile_macros_r(&mac);
-		return; /* ERROR */
+
+		/* re-open the performance data file */
+		xpddefault_open_host_perfdata_file();
+
+		/* check to see if the command timed out */
+		if (early_timeout == TRUE)
+			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Host performance data file processing command '%s' timed out after %d seconds\n", processed_command_line, perfdata_timeout);
+
+
+		/* free memory */
+		my_free(processed_command_line);
+
+		/* return OK */
 	}
-
-	log_debug_info(DEBUGL_PERFDATA, 2, "Raw host performance data file processing command line: %s\n", raw_command_line);
-
-	/* process any macros in the raw command line */
-	process_macros_r(&mac, raw_command_line, &processed_command_line, macro_options);
-	my_free(raw_command_line);
-	if (processed_command_line == NULL) {
-		clear_volatile_macros_r(&mac);
-		return; /* ERROR */
-	}
-
-	log_debug_info(DEBUGL_PERFDATA, 2, "Processed host performance data file processing command line: %s\n", processed_command_line);
-
-	/* close the performance data file */
-	xpddefault_close_host_perfdata_file();
-
-	/* run the command */
-	my_system_r(&mac, processed_command_line, perfdata_timeout, &early_timeout, &exectime, NULL, 0);
-	clear_volatile_macros_r(&mac);
-
-	/* re-open the performance data file */
-	xpddefault_open_host_perfdata_file();
-
-	/* check to see if the command timed out */
-	if (early_timeout == TRUE)
-		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Host performance data file processing command '%s' timed out after %d seconds\n", processed_command_line, perfdata_timeout);
-
-
-	/* free memory */
-	my_free(processed_command_line);
-
-	/* return OK */
 }
 
 
 /* periodically process the service perf data file */
-static void xpddefault_process_service_perfdata_file(void *arg)
+static void xpddefault_process_service_perfdata_file(struct timed_event_properties *evprop)
 {
 	char *raw_command_line = NULL;
 	char *processed_command_line = NULL;
@@ -625,52 +627,54 @@ static void xpddefault_process_service_perfdata_file(void *arg)
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	nagios_macros mac;
 
-	/* Recurring event */
-	schedule_event(service_perfdata_file_processing_interval, xpddefault_process_service_perfdata_file, NULL);
+	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+		/* Recurring event */
+		schedule_event(service_perfdata_file_processing_interval, xpddefault_process_service_perfdata_file, NULL);
 
-	/* we don't have a command */
-	if (service_perfdata_file_processing_command == NULL)
-		return; /* OK */
+		/* we don't have a command */
+		if (service_perfdata_file_processing_command == NULL)
+			return; /* OK */
 
-	/* init macros */
-	memset(&mac, 0, sizeof(mac));
+		/* init macros */
+		memset(&mac, 0, sizeof(mac));
 
-	/* get the raw command line */
-	get_raw_command_line_r(&mac, service_perfdata_file_processing_command_ptr, service_perfdata_file_processing_command, &raw_command_line, macro_options);
-	if (raw_command_line == NULL) {
+		/* get the raw command line */
+		get_raw_command_line_r(&mac, service_perfdata_file_processing_command_ptr, service_perfdata_file_processing_command, &raw_command_line, macro_options);
+		if (raw_command_line == NULL) {
+			clear_volatile_macros_r(&mac);
+			return; /* ERROR */
+		}
+
+		log_debug_info(DEBUGL_PERFDATA, 2, "Raw service performance data file processing command line: %s\n", raw_command_line);
+
+		/* process any macros in the raw command line */
+		process_macros_r(&mac, raw_command_line, &processed_command_line, macro_options);
+		my_free(raw_command_line);
+		if (processed_command_line == NULL) {
+			clear_volatile_macros_r(&mac);
+			return; /* ERROR */
+		}
+
+		log_debug_info(DEBUGL_PERFDATA, 2, "Processed service performance data file processing command line: %s\n", processed_command_line);
+
+		/* close the performance data file */
+		xpddefault_close_service_perfdata_file();
+
+		/* run the command */
+		my_system_r(&mac, processed_command_line, perfdata_timeout, &early_timeout, &exectime, NULL, 0);
+
+		/* re-open the performance data file */
+		xpddefault_open_service_perfdata_file();
+
 		clear_volatile_macros_r(&mac);
-		return; /* ERROR */
+
+		/* check to see if the command timed out */
+		if (early_timeout == TRUE)
+			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Service performance data file processing command '%s' timed out after %d seconds\n", processed_command_line, perfdata_timeout);
+
+		/* free memory */
+		my_free(processed_command_line);
+
+		/* return OK */
 	}
-
-	log_debug_info(DEBUGL_PERFDATA, 2, "Raw service performance data file processing command line: %s\n", raw_command_line);
-
-	/* process any macros in the raw command line */
-	process_macros_r(&mac, raw_command_line, &processed_command_line, macro_options);
-	my_free(raw_command_line);
-	if (processed_command_line == NULL) {
-		clear_volatile_macros_r(&mac);
-		return; /* ERROR */
-	}
-
-	log_debug_info(DEBUGL_PERFDATA, 2, "Processed service performance data file processing command line: %s\n", processed_command_line);
-
-	/* close the performance data file */
-	xpddefault_close_service_perfdata_file();
-
-	/* run the command */
-	my_system_r(&mac, processed_command_line, perfdata_timeout, &early_timeout, &exectime, NULL, 0);
-
-	/* re-open the performance data file */
-	xpddefault_open_service_perfdata_file();
-
-	clear_volatile_macros_r(&mac);
-
-	/* check to see if the command timed out */
-	if (early_timeout == TRUE)
-		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Service performance data file processing command '%s' timed out after %d seconds\n", processed_command_line, perfdata_timeout);
-
-	/* free memory */
-	my_free(processed_command_line);
-
-	/* return OK */
 }

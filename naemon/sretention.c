@@ -20,16 +20,18 @@ static struct contact **premod_contacts;
 /************* TOP-LEVEL STATE INFORMATION FUNCTIONS **************/
 /******************************************************************/
 
-void save_state_information_eventhandler(void *args)
+void save_state_information_eventhandler(struct timed_event_properties *evprop)
 {
 	int status;
 
-	schedule_event(retention_update_interval * 60, save_state_information_eventhandler, args);
+	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+		schedule_event(retention_update_interval * 60, save_state_information_eventhandler, evprop->user_data);
 
-	status = save_state_information(FALSE);
+		status = save_state_information(FALSE);
 
-	if(status == OK) {
-		logit(NSLOG_PROCESS_INFO, FALSE, "Auto-save of retention data completed successfully.\n");
+		if(status == OK) {
+			logit(NSLOG_PROCESS_INFO, FALSE, "Auto-save of retention data completed successfully.\n");
+		}
 	}
 }
 

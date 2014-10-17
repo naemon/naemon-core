@@ -31,7 +31,7 @@
 
 /* forward declarations */
 static const char *spool_file_source_name(void *source);
-static void reap_check_results(void *arg);
+static void reap_check_results(struct timed_event_properties *evprop);
 
 
 static struct check_engine nagios_spool_check_engine = {
@@ -66,19 +66,22 @@ void checks_init(void)
 /******************************************************************/
 
 /* reaps host and service check results */
-static void reap_check_results(void *arg)
+static void reap_check_results(struct timed_event_properties *evprop)
 {
 	int reaped_checks = 0;
-	/* Reschedule, since reccuring */
-	schedule_event(check_reaper_interval, reap_check_results, NULL);
+
+	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+		/* Reschedule, since reccuring */
+		schedule_event(check_reaper_interval, reap_check_results, NULL);
 
 
-	log_debug_info(DEBUGL_CHECKS, 0, "Starting to reap check results.\n");
+		log_debug_info(DEBUGL_CHECKS, 0, "Starting to reap check results.\n");
 
-	/* process files in the check result queue */
-	reaped_checks = process_check_result_queue(check_result_path);
+		/* process files in the check result queue */
+		reaped_checks = process_check_result_queue(check_result_path);
 
-	log_debug_info(DEBUGL_CHECKS, 0, "Finished reaping %d check results\n", reaped_checks);
+		log_debug_info(DEBUGL_CHECKS, 0, "Finished reaping %d check results\n", reaped_checks);
+	}
 }
 
 /******************************************************************/

@@ -1244,8 +1244,10 @@ void command_unregister(struct external_command *ext_command)
 	--num_registered_commands;
 }
 
-static void shutdown_event_handler(void *storage) {
-	sigshutdown = TRUE;
+static void shutdown_event_handler(struct timed_event_properties *evprop) {
+	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+		sigshutdown = TRUE;
+	}
 }
 
 static int shutdown_handler(const struct external_command *ext_command, time_t entry_time)
@@ -1255,8 +1257,10 @@ static int shutdown_handler(const struct external_command *ext_command, time_t e
 	return OK;
 }
 
-static void restart_event_handler(void *storage) {
-	sigrestart = TRUE;
+static void restart_event_handler(struct timed_event_properties *evprop) {
+	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+		sigrestart = TRUE;
+	}
 }
 
 static int restart_handler(const struct external_command *ext_command, time_t entry_time)

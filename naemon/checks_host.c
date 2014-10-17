@@ -25,7 +25,7 @@
 #endif
 
 /* Scheduling (before worker job is started) */
-static void handle_host_check_event(void *arg);
+static void handle_host_check_event(struct timed_event_properties *evprop);
 static int run_async_host_check(host *hst, int check_options, double latency);
 
 /* Result handling (After worker job is executed) */
@@ -35,8 +35,8 @@ static int adjust_host_check_attempt(host *hst, int is_active);
 static int handle_host_state(host *hst, int *alert_recorded);
 
 /* Extra features */
-static void check_host_result_freshness(void *arg);
-static void check_for_orphaned_hosts_eventhandler(void *arg);
+static void check_host_result_freshness(struct timed_event_properties *evprop);
+static void check_for_orphaned_hosts_eventhandler(struct timed_event_properties *evprop);
 
 /* Status functions, immutable */
 static int is_host_result_fresh(host *temp_host, time_t current_time, int log_this);
@@ -107,59 +107,61 @@ void schedule_host_check(host *hst, time_t check_time, int options)
 	schedule_next_host_check( hst, check_time-time(NULL), options);
 }
 
-static void handle_host_check_event(void *arg)
+static void handle_host_check_event(struct timed_event_properties *evprop)
 {
-	host *hst = (host *)arg;
+	host *hst = (host *)evprop->user_data;
 	double latency;
 	struct timeval tv;
 	struct timeval event_runtime;
 
 	int result = OK;
 
-	/* get event latency */
-	gettimeofday(&tv, NULL);
-	event_runtime.tv_sec = hst->next_check;
-	event_runtime.tv_usec = 0;
-	latency = (double)(tv_delta_f(&event_runtime, &tv));
+	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+		/* get event latency */
+		gettimeofday(&tv, NULL);
+		event_runtime.tv_sec = hst->next_check;
+		event_runtime.tv_usec = 0;
+		latency = (double)(tv_delta_f(&event_runtime, &tv));
 
-	/*
-	 * When the callback is executed, the timed_event is considered unavailable,
-	 * drop the reference
-	 */
-	hst->next_check_event = NULL;
+		/*
+		 * When the callback is executed, the timed_event is considered unavailable,
+		 * drop the reference
+		 */
+		hst->next_check_event = NULL;
 
-	/*
-	 * Reschedule the next check one check interval in the future. Can be
-	 * rescheduled to a closer time later if needed (for example, using
-	 * retry_interval for problem determination)
-	 *
-	 * But this is only done if checks are recurring, that is non-zero
-	 * check_interval
-	 */
-	if (hst->check_interval != 0.0)
-		schedule_next_host_check(hst, hst->check_interval * interval_length, CHECK_OPTION_NONE);
+		/*
+		 * Reschedule the next check one check interval in the future. Can be
+		 * rescheduled to a closer time later if needed (for example, using
+		 * retry_interval for problem determination)
+		 *
+		 * But this is only done if checks are recurring, that is non-zero
+		 * check_interval
+		 */
+		if (hst->check_interval != 0.0)
+			schedule_next_host_check(hst, hst->check_interval * interval_length, CHECK_OPTION_NONE);
 
-	/* Don't run checks if checks are disabled, unless foreced */
-	if (execute_host_checks == FALSE && !(hst->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
-		return;
-	}
-
-	/* Time to run event */
-	log_debug_info(DEBUGL_CHECKS, 0, "Attempting to run scheduled check of host '%s': check options=%d, latency=%lf\n", hst->name, hst->check_options, latency);
-
-	/* attempt to run the check */
-	result = run_async_host_check(hst, hst->check_options, latency);
-
-	/* an error occurred, so reschedule the check */
-	if (result == ERROR) {
-		/* Somethings wrong, reschedule for retry interval instead, if retry_interval is specified. */
-		if (hst->retry_interval != 0.0) {
-			schedule_next_host_check(hst, hst->retry_interval * interval_length, CHECK_OPTION_NONE);
-			log_debug_info(DEBUGL_CHECKS, 1, "Rescheduled next host check for %s", ctime(&hst->next_check));
+		/* Don't run checks if checks are disabled, unless foreced */
+		if (execute_host_checks == FALSE && !(hst->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
+			return;
 		}
 
-		/* update the status log */
-		update_host_status(hst, FALSE);
+		/* Time to run event */
+		log_debug_info(DEBUGL_CHECKS, 0, "Attempting to run scheduled check of host '%s': check options=%d, latency=%lf\n", hst->name, hst->check_options, latency);
+
+		/* attempt to run the check */
+		result = run_async_host_check(hst, hst->check_options, latency);
+
+		/* an error occurred, so reschedule the check */
+		if (result == ERROR) {
+			/* Somethings wrong, reschedule for retry interval instead, if retry_interval is specified. */
+			if (hst->retry_interval != 0.0) {
+				schedule_next_host_check(hst, hst->retry_interval * interval_length, CHECK_OPTION_NONE);
+				log_debug_info(DEBUGL_CHECKS, 1, "Rescheduled next host check for %s", ctime(&hst->next_check));
+			}
+
+			/* update the status log */
+			update_host_status(hst, FALSE);
+		}
 	}
 }
 
@@ -1019,111 +1021,111 @@ static int handle_host_state(host *hst, int *alert_recorded)
  ******************************************************************************/
 
 /* event handler for checking freshness of host results */
-static void check_host_result_freshness(void *arg)
+static void check_host_result_freshness(struct timed_event_properties *evprop)
 {
 	host *temp_host = NULL;
 	time_t current_time = 0L;
 
-	/* get the current time */
-	time(&current_time);
+	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+		/* get the current time */
+		time(&current_time);
 
-	/* Reschedule, since recurring */
-	schedule_event(host_freshness_check_interval, check_host_result_freshness, NULL);
+		/* Reschedule, since recurring */
+		schedule_event(host_freshness_check_interval, check_host_result_freshness, evprop->user_data);
 
-	log_debug_info(DEBUGL_CHECKS, 2, "Attempting to check the freshness of host check results...\n");
+		log_debug_info(DEBUGL_CHECKS, 2, "Attempting to check the freshness of host check results...\n");
 
-	/* bail out if we're not supposed to be checking freshness */
-	if (check_host_freshness == FALSE) {
-		log_debug_info(DEBUGL_CHECKS, 2, "Host freshness checking is disabled.\n");
-		return;
-	}
+		/* bail out if we're not supposed to be checking freshness */
+		if (check_host_freshness == FALSE) {
+			log_debug_info(DEBUGL_CHECKS, 2, "Host freshness checking is disabled.\n");
+			return;
+		}
 
 
-	/* check all hosts... */
-	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
+		/* check all hosts... */
+		for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
 
-		/* skip hosts we shouldn't be checking for freshness */
-		if (temp_host->check_freshness == FALSE)
-			continue;
+			/* skip hosts we shouldn't be checking for freshness */
+			if (temp_host->check_freshness == FALSE)
+				continue;
 
-		/* skip hosts that have both active and passive checks disabled */
-		if (temp_host->checks_enabled == FALSE && temp_host->accept_passive_checks == FALSE)
-			continue;
+			/* skip hosts that have both active and passive checks disabled */
+			if (temp_host->checks_enabled == FALSE && temp_host->accept_passive_checks == FALSE)
+				continue;
 
-		/* skip hosts that are currently executing (problems here will be caught by orphaned host check) */
-		if (temp_host->is_executing == TRUE)
-			continue;
+			/* skip hosts that are currently executing (problems here will be caught by orphaned host check) */
+			if (temp_host->is_executing == TRUE)
+				continue;
 
-		/* skip hosts that are already being freshened */
-		if (temp_host->is_being_freshened == TRUE)
-			continue;
+			/* skip hosts that are already being freshened */
+			if (temp_host->is_being_freshened == TRUE)
+				continue;
 
-		/* see if the time is right... */
-		if (check_time_against_period(current_time, temp_host->check_period_ptr) == ERROR)
-			continue;
+			/* see if the time is right... */
+			if (check_time_against_period(current_time, temp_host->check_period_ptr) == ERROR)
+				continue;
 
-		/* the results for the last check of this host are stale */
-		if (is_host_result_fresh(temp_host, current_time, TRUE) == FALSE) {
+			/* the results for the last check of this host are stale */
+			if (is_host_result_fresh(temp_host, current_time, TRUE) == FALSE) {
 
-			/* set the freshen flag */
-			temp_host->is_being_freshened = TRUE;
+				/* set the freshen flag */
+				temp_host->is_being_freshened = TRUE;
 
-			/* schedule an immediate forced check of the host */
-			schedule_next_host_check(temp_host, 0, CHECK_OPTION_FORCE_EXECUTION);
+				/* schedule an immediate forced check of the host */
+				schedule_next_host_check(temp_host, 0, CHECK_OPTION_FORCE_EXECUTION);
+			}
 		}
 	}
-
-	return;
 }
 
 /* check for hosts that never returned from a check... */
-static void check_for_orphaned_hosts_eventhandler(void *arg)
+static void check_for_orphaned_hosts_eventhandler(struct timed_event_properties *evprop)
 {
 	host *temp_host = NULL;
 	time_t current_time = 0L;
 	time_t expected_time = 0L;
 
-	schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_for_orphaned_hosts_eventhandler, arg);
+	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+		schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_for_orphaned_hosts_eventhandler, evprop->user_data);
 
-	/* get the current time */
-	time(&current_time);
+		/* get the current time */
+		time(&current_time);
 
-	/* check all hosts... */
-	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
+		/* check all hosts... */
+		for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
 
-		/* skip hosts that don't have a set check interval (on-demand checks are missed by the orphan logic) */
-		if (temp_host->next_check == (time_t)0L)
-			continue;
+			/* skip hosts that don't have a set check interval (on-demand checks are missed by the orphan logic) */
+			if (temp_host->next_check == (time_t)0L)
+				continue;
 
-		/* skip hosts that are not currently executing */
-		if (temp_host->is_executing == FALSE)
-			continue;
+			/* skip hosts that are not currently executing */
+			if (temp_host->is_executing == FALSE)
+				continue;
 
-		/* determine the time at which the check results should have come in (allow 10 minutes slack time) */
-		expected_time = (time_t)(temp_host->next_check + temp_host->latency + host_check_timeout + check_reaper_interval + 600);
+			/* determine the time at which the check results should have come in (allow 10 minutes slack time) */
+			expected_time = (time_t)(temp_host->next_check + temp_host->latency + host_check_timeout + check_reaper_interval + 600);
 
-		/* this host was supposed to have executed a while ago, but for some reason the results haven't come back in... */
-		if (expected_time < current_time) {
+			/* this host was supposed to have executed a while ago, but for some reason the results haven't come back in... */
+			if (expected_time < current_time) {
 
-			/* log a warning */
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: The check of host '%s' looks like it was orphaned (results never came back).  I'm scheduling an immediate check of the host...\n", temp_host->name);
+				/* log a warning */
+				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: The check of host '%s' looks like it was orphaned (results never came back).  I'm scheduling an immediate check of the host...\n", temp_host->name);
 
-			log_debug_info(DEBUGL_CHECKS, 1, "Host '%s' was orphaned, so we're scheduling an immediate check...\n", temp_host->name);
+				log_debug_info(DEBUGL_CHECKS, 1, "Host '%s' was orphaned, so we're scheduling an immediate check...\n", temp_host->name);
 
-			/* decrement the number of running host checks */
-			if (currently_running_host_checks > 0)
-				currently_running_host_checks--;
+				/* decrement the number of running host checks */
+				if (currently_running_host_checks > 0)
+					currently_running_host_checks--;
 
-			/* disable the executing flag */
-			temp_host->is_executing = FALSE;
+				/* disable the executing flag */
+				temp_host->is_executing = FALSE;
 
-			/* schedule an immediate check of the host */
-			schedule_next_host_check(temp_host, 0, CHECK_OPTION_NONE);
+				/* schedule an immediate check of the host */
+				schedule_next_host_check(temp_host, 0, CHECK_OPTION_NONE);
+			}
+
 		}
-
 	}
-
-	return;
 }
 
 /******************************************************************************

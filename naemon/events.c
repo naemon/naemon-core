@@ -18,7 +18,7 @@
 struct timed_event {
 	time_t run_time;
 	event_callback callback;
-	void *storage;
+	void *user_data;
 	struct squeue_event *sq_event;
 };
 
@@ -70,13 +70,13 @@ void destroy_event_queue(void)
 	nagios_squeue = NULL;
 }
 
-timed_event *schedule_event(time_t time_left, void (*callback)(void *), void *storage)
+timed_event *schedule_event(time_t time_left, event_callback callback, void *user_data)
 {
 	timed_event *new_event = nm_calloc(1, sizeof(timed_event));
 
 	new_event->run_time = time_left + time(NULL);
 	new_event->callback = callback;
-	new_event->storage = storage;
+	new_event->user_data = user_data;
 
 	add_event(nagios_squeue, new_event);
 
@@ -133,6 +133,7 @@ void event_execution_loop(void)
 	timed_event *evt;
 	time_t current_time = 0L;
 	int poll_time_ms;
+	struct timed_event_properties ev_prop;
 
 	while (!sigshutdown && !sigrestart) {
 		struct timeval now;
@@ -199,8 +200,13 @@ void event_execution_loop(void)
 		if (tv_delta_msec(&now, event_runtime) >= 0)
 			continue;
 
+		ev_prop.event = evt;
+		ev_prop.flags = EVENT_EXEC_FLAG_TIMED;
+		ev_prop.latency = 0.0; /* FIXME */
+		ev_prop.user_data = evt->user_data;
+
 		/* handle the event */
-		(*evt->callback)(evt->storage);
+		(*evt->callback)(&ev_prop);
 
 		/*
 		 * we must remove the entry we've peeked, or

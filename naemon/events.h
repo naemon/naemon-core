@@ -12,17 +12,26 @@
 
 NAGIOS_BEGIN_DECL
 
-typedef void (*event_callback)(void *);
+/* Set if execution of the callback is done normally because of timed event */
+#define EVENT_EXEC_FLAG_TIMED	1
 
 /* TIMED_EVENT structure */
 struct timed_event;
 typedef struct timed_event timed_event;
 
+struct timed_event_properties {
+	void *user_data;
+	timed_event *event;
+	double latency;
+	int flags;
+};
+
+typedef void (*event_callback)(struct timed_event_properties *);
 
 /**
  * Schedule a timed event. At the given time, the callback is executed
  */
-timed_event *schedule_event(time_t time_left, event_callback callback, void *storage);
+timed_event *schedule_event(time_t time_left, event_callback callback, void *user_data);
 void destroy_event(timed_event *event);
 
 /* Main function */

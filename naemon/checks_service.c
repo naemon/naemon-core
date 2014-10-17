@@ -26,7 +26,7 @@
 #endif
 
 /* Scheduling (before worker job is started) */
-static void handle_service_check_event(void *arg);
+static void handle_service_check_event(struct timed_event_properties *evprop);
 
 /* Check exeuction */
 static int run_scheduled_service_check(service *, int, double);
@@ -35,8 +35,8 @@ static int run_scheduled_service_check(service *, int, double);
 static void handle_worker_service_check(wproc_result *wpres, void *arg, int flags);
 
 /* Extra features */
-static void check_service_result_freshness(void *arg);
-static void check_for_orphaned_services_eventhandler(void *);
+static void check_service_result_freshness(struct timed_event_properties *evprop);
+static void check_for_orphaned_services_eventhandler(struct timed_event_properties *evprop);
 
 /* Status functions, immutable */
 static int is_service_result_fresh(service *, time_t, int);
@@ -108,70 +108,73 @@ void schedule_service_check(service *svc, time_t check_time, int options)
 	schedule_next_service_check(svc, check_time - time(NULL), options);
 }
 
-static void handle_service_check_event(void *arg)
+static void handle_service_check_event(struct timed_event_properties *evprop)
 {
-	service *temp_service = (service *)arg;
+	service *temp_service = (service *)evprop->user_data;
 	int nudge_seconds = 0;
 	double latency;
 	struct timeval tv;
 	struct timeval event_runtime;
 
-	/* get event latency */
-	gettimeofday(&tv, NULL);
-	event_runtime.tv_sec = temp_service->next_check;
-	event_runtime.tv_usec = 0;
-	latency = (double)(tv_delta_f(&event_runtime, &tv));
+	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
 
-	/* When the callback is called, the pointer to the timed event is invalid */
-	temp_service->next_check_event = NULL;
+		/* get event latency */
+		gettimeofday(&tv, NULL);
+		event_runtime.tv_sec = temp_service->next_check;
+		event_runtime.tv_usec = 0;
+		latency = (double)(tv_delta_f(&event_runtime, &tv));
 
-	/* Reschedule next check directly, might be replaced later */
-	if (temp_service->check_interval != 0.0) {
-		schedule_next_service_check(temp_service, temp_service->check_interval * interval_length, 0);
-	}
+		/* When the callback is called, the pointer to the timed event is invalid */
+		temp_service->next_check_event = NULL;
 
-	/* forced checks override normal check logic */
-	if (!(temp_service->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
-		/* don't run a service check if we're already maxed out on the number of parallel service checks...  */
-		if (max_parallel_service_checks != 0 && (currently_running_service_checks >= max_parallel_service_checks)) {
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "\tMax concurrent service checks (%d) has been reached.  Nudging %s:%s by %d seconds...\n", max_parallel_service_checks, temp_service->host_name, temp_service->description, nudge_seconds);
-			/* Simply reschedule at retry_interval instead, if defined (otherwise keep scheduling at normal interval) */
-			if (temp_service->retry_interval != 0.0) {
-				schedule_next_service_check(temp_service, temp_service->retry_interval * interval_length, 0);
+		/* Reschedule next check directly, might be replaced later */
+		if (temp_service->check_interval != 0.0) {
+			schedule_next_service_check(temp_service, temp_service->check_interval * interval_length, 0);
+		}
+
+		/* forced checks override normal check logic */
+		if (!(temp_service->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
+			/* don't run a service check if we're already maxed out on the number of parallel service checks...  */
+			if (max_parallel_service_checks != 0 && (currently_running_service_checks >= max_parallel_service_checks)) {
+				logit(NSLOG_RUNTIME_WARNING, TRUE, "\tMax concurrent service checks (%d) has been reached.  Nudging %s:%s by %d seconds...\n", max_parallel_service_checks, temp_service->host_name, temp_service->description, nudge_seconds);
+				/* Simply reschedule at retry_interval instead, if defined (otherwise keep scheduling at normal interval) */
+				if (temp_service->retry_interval != 0.0) {
+					schedule_next_service_check(temp_service, temp_service->retry_interval * interval_length, 0);
+				}
+				return;
 			}
-			return;
+
+			/* don't run a service check if active checks are disabled */
+			if (execute_service_checks == FALSE) {
+				return;
+			}
+
+			/* Don't execute check if already executed close enough */
+			if (temp_service->last_check + cached_service_check_horizon > time(NULL)) {
+				log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' was last checked within its cache horizon. Aborting check\n", temp_service->description, temp_service->host_name);
+				return;
+			}
+
+			/* if checks of the service are currently disabled... */
+			if (temp_service->checks_enabled == FALSE) {
+				return;
+			}
+
+			/* make sure this is a valid time to check the service */
+			if (check_time_against_period(time(NULL), temp_service->check_period_ptr) == ERROR) {
+				return;
+			}
+
+			/* check service dependencies for execution */
+			if (check_service_dependencies(temp_service, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
+				return;
+			}
+
 		}
 
-		/* don't run a service check if active checks are disabled */
-		if (execute_service_checks == FALSE) {
-			return;
-		}
-
-		/* Don't execute check if already executed close enough */
-		if (temp_service->last_check + cached_service_check_horizon > time(NULL)) {
-			log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' was last checked within its cache horizon. Aborting check\n", temp_service->description, temp_service->host_name);
-			return;
-		}
-
-		/* if checks of the service are currently disabled... */
-		if (temp_service->checks_enabled == FALSE) {
-			return;
-		}
-
-		/* make sure this is a valid time to check the service */
-		if (check_time_against_period(time(NULL), temp_service->check_period_ptr) == ERROR) {
-			return;
-		}
-
-		/* check service dependencies for execution */
-		if (check_service_dependencies(temp_service, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
-			return;
-		}
-
+		/* Otherwise, run the event */
+		run_scheduled_service_check(temp_service, temp_service->check_options, latency);
 	}
-
-	/* Otherwise, run the event */
-	run_scheduled_service_check(temp_service, temp_service->check_options, latency);
 }
 
 
@@ -1010,116 +1013,117 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 
 /* check for services that never returned from a check... */
-static void check_for_orphaned_services_eventhandler(void *arg)
+static void check_for_orphaned_services_eventhandler(struct timed_event_properties *evprop)
 {
 	service *temp_service = NULL;
 	time_t current_time = 0L;
 	time_t expected_time = 0L;
 
-	schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_for_orphaned_services_eventhandler, arg);
+	if (evprop->flags & EVENT_EXEC_FLAG_TIMED) {
 
-	/* get the current time */
-	time(&current_time);
+		schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_for_orphaned_services_eventhandler, evprop->user_data);
 
-	/* check all services... */
-	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
+		/* get the current time */
+		time(&current_time);
 
-		/* skip services that are not currently executing */
-		if (temp_service->is_executing == FALSE)
-			continue;
+		/* check all services... */
+		for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
 
-		/* determine the time at which the check results should have come in (allow 10 minutes slack time) */
-		expected_time = (time_t)(temp_service->next_check + temp_service->latency + service_check_timeout + check_reaper_interval + 600);
+			/* skip services that are not currently executing */
+			if (temp_service->is_executing == FALSE)
+				continue;
 
-		/* this service was supposed to have executed a while ago, but for some reason the results haven't come back in... */
-		if (expected_time < current_time) {
+			/* determine the time at which the check results should have come in (allow 10 minutes slack time) */
+			expected_time = (time_t)(temp_service->next_check + temp_service->latency + service_check_timeout + check_reaper_interval + 600);
 
-			/* log a warning */
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: The check of service '%s' on host '%s' looks like it was orphaned (results never came back; last_check=%lu; next_check=%lu).  I'm scheduling an immediate check of the service...\n", temp_service->description, temp_service->host_name, temp_service->last_check, temp_service->next_check);
+			/* this service was supposed to have executed a while ago, but for some reason the results haven't come back in... */
+			if (expected_time < current_time) {
 
-			log_debug_info(DEBUGL_CHECKS, 1, "Service '%s' on host '%s' was orphaned, so we're scheduling an immediate check...\n", temp_service->description, temp_service->host_name);
-			log_debug_info(DEBUGL_CHECKS, 1, "  next_check=%lu (%s); last_check=%lu (%s);\n",
-			               temp_service->next_check, ctime(&temp_service->next_check),
-			               temp_service->last_check, ctime(&temp_service->last_check));
+				/* log a warning */
+				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: The check of service '%s' on host '%s' looks like it was orphaned (results never came back; last_check=%lu; next_check=%lu).  I'm scheduling an immediate check of the service...\n", temp_service->description, temp_service->host_name, temp_service->last_check, temp_service->next_check);
 
-			/* decrement the number of running service checks */
-			if (currently_running_service_checks > 0)
-				currently_running_service_checks--;
+				log_debug_info(DEBUGL_CHECKS, 1, "Service '%s' on host '%s' was orphaned, so we're scheduling an immediate check...\n", temp_service->description, temp_service->host_name);
+				log_debug_info(DEBUGL_CHECKS, 1, "  next_check=%lu (%s); last_check=%lu (%s);\n",
+							   temp_service->next_check, ctime(&temp_service->next_check),
+							   temp_service->last_check, ctime(&temp_service->last_check));
 
-			/* disable the executing flag */
-			temp_service->is_executing = FALSE;
+				/* decrement the number of running service checks */
+				if (currently_running_service_checks > 0)
+					currently_running_service_checks--;
 
-			/* schedule an immediate check of the service */
-			schedule_next_service_check(temp_service, 0, 0);
+				/* disable the executing flag */
+				temp_service->is_executing = FALSE;
+
+				/* schedule an immediate check of the service */
+				schedule_next_service_check(temp_service, 0, 0);
+			}
+
 		}
-
 	}
-
-	return;
 }
 
 
 /* event handler for checking freshness of service results */
-static void check_service_result_freshness(void *arg)
+static void check_service_result_freshness(struct timed_event_properties *evprop)
 {
 	service *temp_service = NULL;
 	time_t current_time = 0L;
 
-	/* get the current time */
-	time(&current_time);
+	if (evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+		/* get the current time */
+		time(&current_time);
 
-	schedule_event(service_freshness_check_interval, check_service_result_freshness, NULL);
+		schedule_event(service_freshness_check_interval, check_service_result_freshness, evprop->user_data);
 
 
-	log_debug_info(DEBUGL_CHECKS, 1, "Checking the freshness of service check results...\n");
+		log_debug_info(DEBUGL_CHECKS, 1, "Checking the freshness of service check results...\n");
 
-	/* bail out if we're not supposed to be checking freshness */
-	if (check_service_freshness == FALSE) {
-		log_debug_info(DEBUGL_CHECKS, 1, "Service freshness checking is disabled.\n");
-		return;
-	}
-
-	/* check all services... */
-	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
-
-		/* skip services we shouldn't be checking for freshness */
-		if (temp_service->check_freshness == FALSE)
-			continue;
-
-		/* skip services that are currently executing (problems here will be caught by orphaned service check) */
-		if (temp_service->is_executing == TRUE)
-			continue;
-
-		/* skip services that have both active and passive checks disabled */
-		if (temp_service->checks_enabled == FALSE && temp_service->accept_passive_checks == FALSE)
-			continue;
-
-		/* skip services that are already being freshened */
-		if (temp_service->is_being_freshened == TRUE)
-			continue;
-
-		/* see if the time is right... */
-		if (check_time_against_period(current_time, temp_service->check_period_ptr) == ERROR)
-			continue;
-
-		/* EXCEPTION */
-		/* don't check freshness of services without regular check intervals if we're using auto-freshness threshold */
-		if (temp_service->check_interval == 0 && temp_service->freshness_threshold == 0)
-			continue;
-
-		/* the results for the last check of this service are stale! */
-		if (is_service_result_fresh(temp_service, current_time, TRUE) == FALSE) {
-
-			/* set the freshen flag */
-			temp_service->is_being_freshened = TRUE;
-
-			/* schedule an immediate forced check of the service */
-			schedule_next_service_check(temp_service, 0, CHECK_OPTION_FORCE_EXECUTION);
+		/* bail out if we're not supposed to be checking freshness */
+		if (check_service_freshness == FALSE) {
+			log_debug_info(DEBUGL_CHECKS, 1, "Service freshness checking is disabled.\n");
+			return;
 		}
 
-	}
+		/* check all services... */
+		for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
 
-	return;
+			/* skip services we shouldn't be checking for freshness */
+			if (temp_service->check_freshness == FALSE)
+				continue;
+
+			/* skip services that are currently executing (problems here will be caught by orphaned service check) */
+			if (temp_service->is_executing == TRUE)
+				continue;
+
+			/* skip services that have both active and passive checks disabled */
+			if (temp_service->checks_enabled == FALSE && temp_service->accept_passive_checks == FALSE)
+				continue;
+
+			/* skip services that are already being freshened */
+			if (temp_service->is_being_freshened == TRUE)
+				continue;
+
+			/* see if the time is right... */
+			if (check_time_against_period(current_time, temp_service->check_period_ptr) == ERROR)
+				continue;
+
+			/* EXCEPTION */
+			/* don't check freshness of services without regular check intervals if we're using auto-freshness threshold */
+			if (temp_service->check_interval == 0 && temp_service->freshness_threshold == 0)
+				continue;
+
+			/* the results for the last check of this service are stale! */
+			if (is_service_result_fresh(temp_service, current_time, TRUE) == FALSE) {
+
+				/* set the freshen flag */
+				temp_service->is_being_freshened = TRUE;
+
+				/* schedule an immediate forced check of the service */
+				schedule_next_service_check(temp_service, 0, CHECK_OPTION_FORCE_EXECUTION);
+			}
+
+		}
+	}
 }
 
 
