@@ -23,11 +23,7 @@ struct timed_event {
 };
 
 /* the event we're currently processing */
-static squeue_t *nagios_squeue = NULL; /* our scheduling queue */
-
-static void add_event(squeue_t *sq, timed_event *event);
-static void remove_event(squeue_t *sq, timed_event *event);
-
+static squeue_t *event_queue = NULL; /* our scheduling queue */
 
 #if 0
 /*
@@ -60,70 +56,50 @@ void init_event_queue(void)
 	if (size < 4096)
 		size = 4096;
 
-	nagios_squeue = squeue_create(size);
+	event_queue = squeue_create(size);
 }
 
 void destroy_event_queue(void)
 {
 	/* free event queue data */
-	squeue_destroy(nagios_squeue, SQUEUE_FREE_DATA);
-	nagios_squeue = NULL;
+	squeue_destroy(event_queue, SQUEUE_FREE_DATA);
+	event_queue = NULL;
 }
 
 timed_event *schedule_event(time_t delay, event_callback callback, void *user_data)
 {
-	timed_event *new_event = nm_calloc(1, sizeof(timed_event));
+	timed_event *event = nm_calloc(1, sizeof(timed_event));
 
-	new_event->run_time = delay + time(NULL);
-	new_event->callback = callback;
-	new_event->user_data = user_data;
-
-	add_event(nagios_squeue, new_event);
-
-	return new_event;
-}
-
-
-/* add an event to list ordered by execution time */
-static void add_event(squeue_t *sq, timed_event *event)
-{
-
-	if (event->sq_event) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE,
-		      "Error: Adding event that seems to already be scheduled\n");
-		remove_event(sq, event);
-	}
-
-	event->sq_event = squeue_add(sq, event->run_time, event);
+	event->run_time = delay + time(NULL);
+	event->callback = callback;
+	event->user_data = user_data;
+	event->sq_event = squeue_add(event_queue, event->run_time, event);
 
 	if (!event->sq_event) {
 		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to add event to squeue '%p': %s\n",
-		      sq, strerror(errno));
+		      event_queue, strerror(errno));
 	}
 
-	return;
+	return event;
 }
 
+/* Unschedule, execute and destroy event, given parameters of evprop */
+static void execute_and_destroy_event(struct timed_event_properties *evprop)
+{
+	squeue_remove(event_queue, evprop->event->sq_event);
+	(*evprop->event->callback)(evprop);
+	free(evprop->event);
+}
 
 /* remove an event from the queue */
-static void remove_event(squeue_t *sq, timed_event *event)
-{
-	if (!event || !event->sq_event)
-		return;
-
-	if (sq)
-		squeue_remove(sq, event->sq_event);
-	else
-		logit(NSLOG_RUNTIME_ERROR, TRUE,
-		      "Error: remove_event() called for event with NULL sq parameter\n");
-
-	event->sq_event = NULL; /* mark this event as unscheduled */
-}
-
 void destroy_event(timed_event *event)
 {
-	remove_event(nagios_squeue, event);
-	free(event);
+	struct timed_event_properties evprop;
+	evprop.event = event;
+	evprop.flags = EVENT_EXEC_FLAG_ABORT;
+	evprop.latency = 0.0;
+	evprop.user_data = event->user_data;
+	execute_and_destroy_event(&evprop);
 }
 
 
@@ -133,7 +109,7 @@ void event_execution_loop(void)
 	timed_event *evt;
 	time_t current_time = 0L;
 	int poll_time_ms;
-	struct timed_event_properties ev_prop;
+	struct timed_event_properties evprop;
 
 	while (!sigshutdown && !sigrestart) {
 		struct timeval now;
@@ -149,7 +125,7 @@ void event_execution_loop(void)
 		}
 
 		/* get next scheduled event */
-		evt = (timed_event *)squeue_peek(nagios_squeue);
+		evt = (timed_event *)squeue_peek(event_queue);
 
 		/* if we don't have any events to handle, exit */
 		if (!evt) {
@@ -168,7 +144,7 @@ void event_execution_loop(void)
 
 		log_debug_info(DEBUGL_SCHEDULING, 2, "## Polling %dms; sockets=%d; events=%u; iobs=%p\n",
 		               poll_time_ms, iobroker_get_num_fds(nagios_iobs),
-		               squeue_size(nagios_squeue), nagios_iobs);
+		               squeue_size(event_queue), nagios_iobs);
 		inputs = iobroker_poll(nagios_iobs, poll_time_ms);
 		if (inputs < 0 && errno != EINTR) {
 			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Polling for input on %p failed: %s", nagios_iobs, iobroker_strerror(inputs));
@@ -200,21 +176,14 @@ void event_execution_loop(void)
 		if (tv_delta_msec(&now, event_runtime) >= 0)
 			continue;
 
-		ev_prop.event = evt;
-		ev_prop.flags = EVENT_EXEC_FLAG_TIMED;
-		ev_prop.latency = 0.0; /* FIXME */
-		ev_prop.user_data = evt->user_data;
-
-		/* handle the event */
-		(*evt->callback)(&ev_prop);
-
 		/*
-		 * we must remove the entry we've peeked, or
-		 * we'll keep getting the same one over and over.
-		 * This also maintains sync with broker modules.
+		 * It isn't any special cases, so it's time to run the event
 		 */
-		remove_event(nagios_squeue, evt);
-		my_free(evt);
+		evprop.event = evt;
+		evprop.flags = EVENT_EXEC_FLAG_TIMED;
+		evprop.latency = 0.0; /* FIXME */
+		evprop.user_data = evt->user_data;
+		execute_and_destroy_event(&evprop);
 	}
 }
 
