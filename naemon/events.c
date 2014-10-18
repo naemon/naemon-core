@@ -3,7 +3,6 @@
 #include "statusdata.h"
 #include "broker.h"
 #include "sretention.h"
-#include "lib/squeue.h"
 #include "events.h"
 #include "utils.h"
 #include "checks.h"
@@ -14,16 +13,26 @@
 #include "nm_alloc.h"
 #include <math.h>
 #include <string.h>
+#include <time.h>
+
+/* Which clock should be used for events? */
+#define EVENT_CLOCK_ID CLOCK_MONOTONIC
 
 struct timed_event {
-	time_t run_time;
+	size_t pos;
+	struct timespec event_time;
 	event_callback callback;
 	void *user_data;
-	struct squeue_event *sq_event;
+};
+
+struct timed_event_queue {
+	struct timed_event **queue;
+	size_t count;
+	size_t size;
 };
 
 /* the event we're currently processing */
-static squeue_t *event_queue = NULL; /* our scheduling queue */
+struct timed_event_queue *event_queue = NULL; /* our scheduling queue */
 
 #if 0
 /*
@@ -41,44 +50,170 @@ static void adjust_timestamp_for_time_change(time_t last_time, time_t current_ti
 #endif
 
 /******************************************************************/
+/************************** TIME HELEPERS *************************/
+/******************************************************************/
+
+static inline long timespec_msdiff(struct timespec *a, struct timespec *b)
+{
+	long diff = 0;
+	diff += a->tv_sec * 1000;
+	diff -= b->tv_sec * 1000;
+	diff += a->tv_nsec / 1000000;
+	diff -= b->tv_nsec / 1000000;
+	return diff;
+}
+
+/******************************************************************/
+/************************** HEAP METHODS **************************/
+/******************************************************************/
+
+static inline int evheap_compare(struct timed_event *eva, struct timed_event *evb)
+{
+	if (eva->event_time.tv_sec < evb->event_time.tv_sec)
+		return -1;
+	if (eva->event_time.tv_sec > evb->event_time.tv_sec)
+		return 1;
+	if (eva->event_time.tv_nsec < evb->event_time.tv_nsec)
+		return -1;
+	if (eva->event_time.tv_nsec > evb->event_time.tv_nsec)
+		return 1;
+	return 0;
+}
+
+static void evheap_set_size(struct timed_event_queue *q, size_t new_size)
+{
+	size_t size = q->size;
+
+	q->count = new_size;
+
+	if(new_size < 1)
+		new_size = 1;
+
+	while (size < new_size) {
+		size *= 2;
+	}
+	/* If to big, shrink, but have some hysteresis */
+	while (size >= new_size * 3) {
+		size /= 2;
+	}
+	if(new_size != size) {
+		q->size = size;
+		q->queue = nm_realloc(q->queue, q->size * sizeof(struct timed_event *));
+	}
+}
+
+static int evheap_cond_swap(struct timed_event_queue *q, size_t idx_low, size_t idx_high)
+{
+	struct timed_event *ev_low, *ev_high;
+
+	if(idx_low == idx_high)
+		return 0;
+
+	/* Assume we need to swap */
+	ev_low = q->queue[idx_high];
+	ev_high = q->queue[idx_low];
+
+	/* If assumption isn't correct, bail out */
+	if(evheap_compare(ev_high, ev_low) < 0)
+		return 0;
+
+	/* Assumption were correct, save */
+	q->queue[idx_low] = ev_low;
+	q->queue[idx_high] = ev_high;
+
+	/* Update positions */
+	ev_low->pos = idx_low;
+	ev_high->pos = idx_high;
+
+	return 1;
+}
+
+static void evheap_bubble_up(struct timed_event_queue *q, size_t idx)
+{
+	size_t parent;
+	while(idx>0) {
+		parent = (idx-1)>>1;
+		if(!evheap_cond_swap(q, parent, idx))
+			break;
+		idx = parent;
+	}
+}
+
+static void evheap_bubble_down(struct timed_event_queue *q, size_t idx)
+{
+	size_t child;
+	while ((child = (idx<<1)+1) < q->count) {
+		if (child+1 < q->count)
+			if(evheap_compare(q->queue[child], q->queue[child+1]) > 0)
+				child++;
+		if(!evheap_cond_swap(q, idx, child))
+			break;
+		idx = child;
+	}
+}
+
+static struct timed_event *evheap_head(struct timed_event_queue *q)
+{
+	if (q->count == 0)
+		return NULL;
+	return q->queue[0];
+}
+
+static void evheap_remove(struct timed_event_queue *q, struct timed_event *ev)
+{
+	q->queue[ev->pos] = q->queue[q->count-1];
+	q->queue[ev->pos]->pos = ev->pos;
+	evheap_set_size(q, q->count-1);
+	/* If it wasn't the last node, bubble */
+	if (ev->pos <= q->count) {
+		evheap_bubble_down(q, ev->pos);
+		evheap_bubble_up(q, ev->pos);
+	}
+}
+
+static void evheap_add(struct timed_event_queue *q, struct timed_event *ev)
+{
+	evheap_set_size(q, q->count+1);
+	ev->pos = q->count-1;
+	q->queue[ev->pos] = ev;
+	evheap_bubble_up(q, ev->pos);
+}
+
+static struct timed_event_queue *evheap_create(size_t initial_size)
+{
+	struct timed_event_queue *q;
+	q = nm_calloc(1, sizeof(struct timed_event_queue));
+	q->size = initial_size;
+	q->queue = nm_calloc(q->size, sizeof(struct timed_event *));
+	q->count = 0;
+	return q;
+}
+
+static void evheap_destroy(struct timed_event_queue *q) {
+	/* It must be empty... TODO: verify it is empty */
+	if(q==NULL)
+		return;
+	free(q->queue);
+	free(q);
+}
+
+
+
+/******************************************************************/
 /************ EVENT SCHEDULING/HANDLING FUNCTIONS *****************/
 /******************************************************************/
 
-/*
- * Create the event queue
- * We oversize it somewhat to avoid unnecessary growing
- */
-void init_event_queue(void)
-{
-	unsigned int size;
-
-	size = num_objects.hosts + num_objects.services;
-	if (size < 4096)
-		size = 4096;
-
-	event_queue = squeue_create(size);
-}
-
-void destroy_event_queue(void)
-{
-	/* free event queue data */
-	squeue_destroy(event_queue, SQUEUE_FREE_DATA);
-	event_queue = NULL;
-}
-
 timed_event *schedule_event(time_t delay, event_callback callback, void *user_data)
 {
-	timed_event *event = nm_calloc(1, sizeof(timed_event));
+	timed_event *event = nm_calloc(1, sizeof(struct timed_event));
 
-	event->run_time = delay + time(NULL);
+	clock_gettime(EVENT_CLOCK_ID, &event->event_time);
+	event->event_time.tv_sec += delay;
+
 	event->callback = callback;
 	event->user_data = user_data;
-	event->sq_event = squeue_add(event_queue, event->run_time, event);
 
-	if (!event->sq_event) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to add event to squeue '%p': %s\n",
-		      event_queue, strerror(errno));
-	}
+	evheap_add(event_queue, event);
 
 	return event;
 }
@@ -86,7 +221,7 @@ timed_event *schedule_event(time_t delay, event_callback callback, void *user_da
 /* Unschedule, execute and destroy event, given parameters of evprop */
 static void execute_and_destroy_event(struct timed_event_properties *evprop)
 {
-	squeue_remove(event_queue, evprop->event->sq_event);
+	evheap_remove(event_queue, evprop->event);
 	(*evprop->event->callback)(evprop);
 	free(evprop->event);
 }
@@ -102,30 +237,49 @@ void destroy_event(timed_event *event)
 	execute_and_destroy_event(&evprop);
 }
 
+void init_event_queue(void)
+{
+	event_queue = evheap_create(4096);
+}
+
+void destroy_event_queue(void)
+{
+	struct timed_event *ev;
+	/*
+	 * Since naemon doesn't know if things is started, we can't trust that
+	 * destroy event queue actually means we have an event queue to destroy
+	 */
+	if(event_queue == NULL)
+		return;
+
+	while((ev = evheap_head(event_queue)) != NULL) {
+		destroy_event(ev);
+	}
+	evheap_destroy(event_queue);
+}
 
 /* this is the main event handler loop */
 void event_execution_loop(void)
 {
 	timed_event *evt;
-	time_t current_time = 0L;
-	int poll_time_ms;
+	struct timespec current_time;
+	long time_diff;
 	struct timed_event_properties evprop;
+	int inputs;
 
 	while (!sigshutdown && !sigrestart) {
-		struct timeval now;
-		const struct timeval *event_runtime;
-		int inputs;
 
 		/* get the current time */
-		time(&current_time);
+		clock_gettime(EVENT_CLOCK_ID, &current_time);
 
 		if (sigrotate == TRUE) {
-			rotate_log_file(current_time);
+			sigrotate = FALSE;
+			rotate_log_file(time(NULL));
 			update_program_status(FALSE);
 		}
 
 		/* get next scheduled event */
-		evt = (timed_event *)squeue_peek(event_queue);
+		evt = evheap_head(event_queue);
 
 		/* if we don't have any events to handle, exit */
 		if (!evt) {
@@ -133,19 +287,13 @@ void event_execution_loop(void)
 			break;
 		}
 
-		event_runtime = squeue_event_runtime(evt->sq_event);
+		time_diff = timespec_msdiff(&evt->event_time, &current_time);
+		if (time_diff < 0)
+			time_diff = 0;
+		else if (time_diff >= 1500)
+			time_diff = 1500;
 
-		gettimeofday(&now, NULL);
-		poll_time_ms = tv_delta_msec(&now, event_runtime);
-		if (poll_time_ms < 0)
-			poll_time_ms = 0;
-		else if (poll_time_ms >= 1500)
-			poll_time_ms = 1500;
-
-		log_debug_info(DEBUGL_SCHEDULING, 2, "## Polling %dms; sockets=%d; events=%u; iobs=%p\n",
-		               poll_time_ms, iobroker_get_num_fds(nagios_iobs),
-		               squeue_size(event_queue), nagios_iobs);
-		inputs = iobroker_poll(nagios_iobs, poll_time_ms);
+		inputs = iobroker_poll(nagios_iobs, time_diff);
 		if (inputs < 0 && errno != EINTR) {
 			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Polling for input on %p failed: %s", nagios_iobs, iobroker_strerror(inputs));
 			break;
@@ -172,8 +320,9 @@ void event_execution_loop(void)
 		/*
 		 * Might have been a timeout just because the max time of polling
 		 */
-		gettimeofday(&now, NULL);
-		if (tv_delta_msec(&now, event_runtime) >= 0)
+		clock_gettime(EVENT_CLOCK_ID, &current_time);
+		time_diff = timespec_msdiff(&evt->event_time, &current_time);
+		if (time_diff > 0)
 			continue;
 
 		/*
@@ -181,7 +330,7 @@ void event_execution_loop(void)
 		 */
 		evprop.event = evt;
 		evprop.flags = EVENT_EXEC_FLAG_TIMED;
-		evprop.latency = 0.0; /* FIXME */
+		evprop.latency = -time_diff/1000.0;
 		evprop.user_data = evt->user_data;
 		execute_and_destroy_event(&evprop);
 	}

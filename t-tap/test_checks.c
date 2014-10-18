@@ -98,6 +98,8 @@ int main(int argc, char **argv)
 
 	plan_tests(35);
 
+	init_event_queue();
+
 	time(&now);
 
 
@@ -361,6 +363,7 @@ int main(int argc, char **argv)
 	ok(host1->current_attempt == 1, "Attempts reset") || diag("current_attempt=%d", host1->current_attempt);
 	ok(strcmp(host1->plugin_output, "UP again") == 0, "output set") || diag("plugin_output=%s", host1->plugin_output);
 
+	destroy_event_queue();
 
 	return exit_status();
 }
