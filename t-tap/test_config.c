@@ -90,9 +90,11 @@ int main(int argc, char **argv)
 	ok(host1->notifications_enabled == 1, "host1 notifications_enabled set from config");
 	ok(host2->notifications_enabled == 1, "host2 notifications_enabled set from config");
 
+	init_event_queue();
+
 	initialize_retention_data(NULL);
 	initialize_downtime_data();
-	init_event_queue();
+
 	ok(xrddefault_read_state_information() == OK, "Reading retention data");
 
 	ok(host1->current_state == 1, "State changed due to retention file settings");

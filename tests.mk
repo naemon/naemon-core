@@ -92,7 +92,12 @@ tests_test_config_SOURCES	= tests/test-config.c src/naemon/defaults.c
 tests_test_config_LDADD = $(TEST_CONFIG_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
 tests_test_config_CPPFLAGS = $(TESTS_AM_CPPFLAGS)
 
-check_PROGRAMS += tests/test-checks tests/test-utils tests/test-log tests/test-config
+TEST_EVENT_HEAP_DEPS = $(filter-out events.o,$(GENERAL_DEPS)) checks.o checks_host.o checks_service.o logging.o
+tests_test_event_heap_SOURCES	= tests/test-event-heap.c src/naemon/defaults.c
+tests_test_event_heap_LDADD = $(TEST_EVENT_HEAP_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
+tests_test_event_heap_CPPFLAGS = $(TESTS_AM_CPPFLAGS)
+
+check_PROGRAMS += tests/test-checks tests/test-utils tests/test-log tests/test-config tests/test-event-heap
 endif
 TEST_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
 	build-aux/tap-driver.sh

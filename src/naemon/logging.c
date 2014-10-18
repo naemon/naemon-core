@@ -345,8 +345,6 @@ int rotate_log_file(time_t rotation_time)
 {
 	char *temp_buffer = NULL;
 
-	sigrotate = FALSE;
-
 	/* update the last log rotation time and status log */
 	last_log_rotation = time(NULL);
 

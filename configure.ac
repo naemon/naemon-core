@@ -116,6 +116,8 @@ AC_FUNC_FORK
 AC_FUNC_MMAP
 AC_FUNC_WAIT3
 
+AC_SEARCH_LIBS([clock_gettime],[rt posix4])
+
 # We expect full C89 and almost-full POSIX.1-2001 compliance where
 # we're compiled. That covers all linuxes, bsd's and solaris boxen
 # in use today, and saves us the hassle of bothering about Irix,
