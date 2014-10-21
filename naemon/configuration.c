@@ -15,6 +15,8 @@
 #include <dirent.h>
 #include <string.h>
 
+static objectlist *maincfg_files = NULL;
+static objectlist *maincfg_dirs = NULL;
 
 /******************************************************************/
 /************** CONFIGURATION INPUT FUNCTIONS *********************/
@@ -1014,6 +1016,11 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			add_object_to_objectlist(&objcfg_dirs, nspath_absolute(value, config_file_dir));
 		} else if (!strcmp(variable, "include_file")) {
 			char *include_file = nspath_absolute(value, config_file_dir);
+			if (prepend_unique_object_to_objectlist(&maincfg_files, include_file, (int (*)(const void *, const void*))strcmp) == OBJECTLIST_DUPE) {
+				error = TRUE;
+				nm_asprintf(&error_message, "Error: File %s explicitly included more than once", include_file);
+				break;
+			}
 			error |= read_config_file(include_file, mac);
 			my_free(include_file);
 		} else if (!strcmp(variable, "include_dir")) {
@@ -1021,10 +1028,16 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			DIR *dirp = NULL;
 			struct dirent *dirfile = NULL;
 
+			if (prepend_unique_object_to_objectlist(&maincfg_dirs, include_dir, (int (*)(const void *, const void*))strcmp) == OBJECTLIST_DUPE) {
+				error = TRUE;
+				nm_asprintf(&error_message, "Error: Directory %s explicitly included more than once", include_dir);
+				break;
+			}
 			dirp = opendir(include_dir);
 			if (!dirp) {
-				logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Cannot open sub-configuration directory '%s' for reading!", include_dir);
-				error |= ERROR;
+				nm_asprintf(&error_message, "Error: Cannot open sub-configuration directory '%s' for reading!", include_dir);
+				error = TRUE;
+				break;
 			} else {
 				while ((dirfile = readdir(dirp)) != NULL) {
 					char file[MAX_FILENAME_LENGTH];
@@ -1107,6 +1120,8 @@ int read_main_config_file(const char *main_config_file)
 		strip(mac->x[MACRO_MAINCONFIGFILE]);
 
 	read_config_file(main_config_file, mac);
+	free_objectlist(&maincfg_files);
+	free_objectlist(&maincfg_dirs);
 
 	if (!temp_path) {
 		temp_path = getenv("TMPDIR");
