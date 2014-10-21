@@ -98,16 +98,15 @@ common_sources = \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = naemon.pc
 
-bin_PROGRAMS = src/naemon/naemon src/naemon/naemonstats src/naemon/oconfsplit src/naemon/shadownaemon
+bin_PROGRAMS = src/naemon/naemon src/naemon/naemonstats src/naemon/shadownaemon
 manpages: $(bin_PROGRAMS)
 	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "monitoring core"                          ./src/naemon/naemon       > naemon.8
 	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "gather statistics from naemon core"       ./src/naemon/naemonstats  > naemonstats.8
 	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "shadow remote cores via livestatus"       ./src/naemon/shadownaemon > shadownaemon.8
-	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "split naemon configuration by hostgroups" ./src/naemon/oconfsplit   > oconfsplit.8
 
 all-local: manpages
 
-CLEANFILES = naemon-uninstalled.pc naemon.pc naemon.8 naemonstats.8 shadownaemon.8 oconfsplit.8
+CLEANFILES = naemon-uninstalled.pc naemon.pc naemon.8 naemonstats.8 shadownaemon.8
 CLEANFILES += src/naemon/wpres-phash.h src/naemon/buildopts.h
 CLEANFILES += $(CONFIG_FILES)
 
@@ -122,9 +121,6 @@ src_naemon_naemonstats_LDADD = libnaemon.la
 src_naemon_shadownaemon_SOURCES = src/naemon/shadownaemon.c src/naemon/shadownaemon.h $(common_sources)
 src_naemon_shadownaemon_LDADD = libnaemon.la -lm -ldl
 src_naemon_shadownaemon_LDFLAGS = -rdynamic
-
-src_naemon_oconfsplit_LDADD = libnaemon.la -lm -ldl
-src_naemon_oconfsplit_SOURCES = src/naemon/oconfsplit.c $(common_sources)
 
 LDADD = -lnaemon
 lib_LTLIBRARIES = libnaemon.la
@@ -204,7 +200,6 @@ install-data-local:
 	install -m 644 naemon.8       $(DESTDIR)$(mandir)/man8/
 	install -m 644 naemonstats.8  $(DESTDIR)$(mandir)/man8/
 	install -m 644 shadownaemon.8 $(DESTDIR)$(mandir)/man8/
-	install -m 644 oconfsplit.8   $(DESTDIR)$(mandir)/man8/
 
 uninstall-hook:
 	[ -z $(logrotatedir) ] || rm $(DESTDIR)$(logrotatedir)/naemon
@@ -212,7 +207,6 @@ uninstall-hook:
 	rm $(DESTDIR)$(mandir)/man8/naemon.8
 	rm $(DESTDIR)$(mandir)/man8/naemonstats.8
 	rm $(DESTDIR)$(mandir)/man8/shadownaemon.8
-	rm $(DESTDIR)$(mandir)/man8/oconfsplit.8
 	rm $(DESTDIR)$(pkgconfdir)/naemon.cfg
 	rm $(DESTDIR)$(pkgconfdir)/resource.cfg
 	rm -r $(DESTDIR)$(pkgconfdir)/conf.d
