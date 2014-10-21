@@ -1596,6 +1596,10 @@ contactsmember *add_contact_to_serviceescalation(serviceescalation *se, char *co
 	return add_contact_to_object(&se->contacts, contact_name);
 }
 
+static int compare_objects(const void *a, const void *b, void *user_data)
+{
+	return memcmp(a, b, *(size_t *)(user_data));
+}
 
 /* adds a service dependency definition */
 servicedependency *add_service_dependency(char *dependent_host_name, char *dependent_service_description, char *host_name, char *service_description, int dependency_type, int inherits_parent, int failure_options, char *dependency_period)
@@ -1604,6 +1608,7 @@ servicedependency *add_service_dependency(char *dependent_host_name, char *depen
 	service *parent, *child;
 	timeperiod *tp = NULL;
 	int result;
+	size_t sdep_size = sizeof(*new_servicedependency);
 
 	/* make sure we have what we need */
 	parent = find_service(host_name, service_description);
@@ -1650,9 +1655,9 @@ servicedependency *add_service_dependency(char *dependent_host_name, char *depen
 	 * apparently get zillion's and zillion's of them.
 	 */
 	if (dependency_type == NOTIFICATION_DEPENDENCY)
-		result = prepend_unique_object_to_objectlist(&child->notify_deps, new_servicedependency, sizeof(*new_servicedependency));
+		result = prepend_unique_object_to_objectlist_ptr(&child->notify_deps, new_servicedependency, &compare_objects, &sdep_size);
 	else
-		result = prepend_unique_object_to_objectlist(&child->exec_deps, new_servicedependency, sizeof(*new_servicedependency));
+		result = prepend_unique_object_to_objectlist_ptr(&child->exec_deps, new_servicedependency, &compare_objects, &sdep_size);
 
 	if (result != OK) {
 		free(new_servicedependency);
@@ -1672,6 +1677,7 @@ hostdependency *add_host_dependency(char *dependent_host_name, char *host_name, 
 	host *parent, *child;
 	timeperiod *tp = NULL;
 	int result;
+	size_t hdep_size = sizeof(*new_hostdependency);
 
 	/* make sure we have what we need */
 	parent = find_host(host_name);
@@ -1708,9 +1714,9 @@ hostdependency *add_host_dependency(char *dependent_host_name, char *host_name, 
 	new_hostdependency->failure_options = failure_options;
 
 	if (dependency_type == NOTIFICATION_DEPENDENCY)
-		result = prepend_unique_object_to_objectlist(&child->notify_deps, new_hostdependency, sizeof(*new_hostdependency));
+		result = prepend_unique_object_to_objectlist_ptr(&child->notify_deps, new_hostdependency, *compare_objects, &hdep_size);
 	else
-		result = prepend_unique_object_to_objectlist(&child->exec_deps, new_hostdependency, sizeof(*new_hostdependency));
+		result = prepend_unique_object_to_objectlist_ptr(&child->exec_deps, new_hostdependency, *compare_objects, &hdep_size);
 
 	if (result != OK) {
 		free(new_hostdependency);
@@ -1964,16 +1970,26 @@ int prepend_object_to_objectlist(objectlist **list, void *object_ptr)
 
 
 /* useful for adding dependencies to master objects */
-int prepend_unique_object_to_objectlist(objectlist **list, void *object_ptr, size_t size)
+int prepend_unique_object_to_objectlist_ptr(objectlist **list, void *object_ptr, int (*comparator)(const void *a, const void *b, void *user_data), void *user_data)
 {
 	objectlist *l;
 	if (list == NULL || object_ptr == NULL)
 		return ERROR;
 	for (l = *list; l; l = l->next) {
-		if (!memcmp(l->object_ptr, object_ptr, size))
+		if (!comparator(l->object_ptr, object_ptr, user_data))
 			return OBJECTLIST_DUPE;
 	}
 	return prepend_object_to_objectlist(list, object_ptr);
+}
+
+static int comparator_helper(const void *a, const void *b, void *user_data)
+{
+	return ((int (*)(const void *, const void *))user_data)(a, b);
+}
+
+int prepend_unique_object_to_objectlist(objectlist **list, void *object_ptr, int (*comparator)(const void *a, const void *b))
+{
+	return prepend_unique_object_to_objectlist_ptr(list, object_ptr, *comparator_helper, comparator);
 }
 
 
