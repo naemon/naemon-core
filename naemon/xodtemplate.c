@@ -3482,11 +3482,18 @@ static int xodtemplate_inherit_object_properties(void)
 			continue;
 
 		/*
+		 * if the service has no contact groups specified, it will inherit
+		 * them from the host
+		 */
+		if(temp_service->have_contact_groups == FALSE) {
+			xod_inherit_str(temp_service, temp_host, contact_groups);
+		}
+		
+		/*
 		 * if the service has no contacts specified, it will inherit
 		 * them from the host
 		 */
-		if (temp_service->have_contact_groups == FALSE && temp_service->have_contacts == FALSE) {
-			xod_inherit_str(temp_service, temp_host, contact_groups);
+		if(temp_service->have_contacts == FALSE && temp_host->have_contacts == TRUE) {
 			xod_inherit_str(temp_service, temp_host, contacts);
 		}
 
