@@ -363,7 +363,7 @@ int my_system_r(nagios_macros *mac, char *cmd, int timeout, int *early_timeout, 
 
 	/* return an error if we couldn't fork */
 	if (pid == -1) {
-		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: fork() in my_system_r() failed for command \"%s\"\n", cmd);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: fork() in my_system_r() failed for command \"%s\": %s\n", cmd, strerror(errno));
 
 		/* close both ends of the pipe */
 		close(fd[0]);
@@ -2883,6 +2883,7 @@ void free_memory(nagios_macros *mac)
 	my_free(naemon_group);
 
 	/* free file/path variables */
+	my_free(status_file);
 	my_free(debug_file);
 	my_free(log_file);
 	mac->x[MACRO_LOGFILE] = NULL; /* assigned from 'log_file' */
