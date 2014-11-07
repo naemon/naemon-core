@@ -268,7 +268,7 @@ int log_host_event(host *hst)
 
 	write_to_all_logs(temp_buffer, log_options);
 
-	my_free(temp_buffer);
+	nm_free(temp_buffer);
 
 	return OK;
 }
@@ -295,7 +295,7 @@ int log_host_states(int type, time_t *timestamp)
 
 		write_to_all_logs_with_timestamp(temp_buffer, NSLOG_INFO_MESSAGE, timestamp);
 
-		my_free(temp_buffer);
+		nm_free(temp_buffer);
 	}
 
 	return OK;
@@ -324,7 +324,7 @@ int log_service_states(int type, time_t *timestamp)
 
 		write_to_all_logs_with_timestamp(temp_buffer, NSLOG_INFO_MESSAGE, timestamp);
 
-		my_free(temp_buffer);
+		nm_free(temp_buffer);
 	}
 
 	return OK;
@@ -371,7 +371,7 @@ int write_log_file_info(time_t *timestamp)
 	/* write log version */
 	nm_asprintf(&temp_buffer, "LOG VERSION: %s\n", LOG_VERSION_2);
 	write_to_all_logs_with_timestamp(temp_buffer, NSLOG_PROCESS_INFO, timestamp);
-	my_free(temp_buffer);
+	nm_free(temp_buffer);
 
 	return OK;
 }
@@ -456,7 +456,7 @@ int log_debug_info(int level, int verbosity, const char *fmt, ...)
 			my_rename(debug_file, tmppath);
 
 			/* free memory */
-			my_free(tmppath);
+			nm_free(tmppath);
 		}
 
 		/* open a new file */

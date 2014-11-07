@@ -87,7 +87,7 @@ int obsessive_compulsive_service_check_processor(service *svc)
 
 	/* process any macros in the raw command line */
 	process_macros_r(&mac, raw_command, &processed_command, macro_options);
-	my_free(raw_command);
+	nm_free(raw_command);
 	if (processed_command == NULL) {
 		clear_volatile_macros_r(&mac);
 		return ERROR;
@@ -106,7 +106,7 @@ int obsessive_compulsive_service_check_processor(service *svc)
 
 	/* free memory */
 	clear_volatile_macros_r(&mac);
-	my_free(processed_command);
+	nm_free(processed_command);
 
 	return OK;
 }
@@ -149,7 +149,7 @@ int obsessive_compulsive_host_check_processor(host *hst)
 
 	/* process any macros in the raw command line */
 	process_macros_r(&mac, raw_command, &processed_command, macro_options);
-	my_free(raw_command);
+	nm_free(raw_command);
 	if (processed_command == NULL) {
 		clear_volatile_macros_r(&mac);
 		return ERROR;
@@ -168,7 +168,7 @@ int obsessive_compulsive_host_check_processor(host *hst)
 
 	/* free memory */
 	clear_volatile_macros_r(&mac);
-	my_free(processed_command);
+	nm_free(processed_command);
 
 	return OK;
 }
@@ -281,7 +281,7 @@ int run_global_service_event_handler(nagios_macros *mac, service *svc)
 
 	/* process any macros in the raw command line */
 	process_macros_r(mac, raw_command, &processed_command, macro_options);
-	my_free(raw_command);
+	nm_free(raw_command);
 	if (processed_command == NULL)
 		return ERROR;
 
@@ -301,9 +301,9 @@ int run_global_service_event_handler(nagios_macros *mac, service *svc)
 
 	/* neb module wants to override (or cancel) the event handler - perhaps it will run the eventhandler itself */
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
-		my_free(processed_command);
-		my_free(raw_logentry);
-		my_free(processed_logentry);
+		nm_free(processed_command);
+		nm_free(raw_logentry);
+		nm_free(processed_logentry);
 		return OK;
 	}
 #endif
@@ -326,10 +326,10 @@ int run_global_service_event_handler(nagios_macros *mac, service *svc)
 #endif
 
 	/* free memory */
-	my_free(command_output);
-	my_free(processed_command);
-	my_free(raw_logentry);
-	my_free(processed_logentry);
+	nm_free(command_output);
+	nm_free(processed_command);
+	nm_free(raw_logentry);
+	nm_free(processed_logentry);
 
 	return OK;
 }
@@ -380,7 +380,7 @@ int run_service_event_handler(nagios_macros *mac, service *svc)
 
 	/* process any macros in the raw command line */
 	process_macros_r(mac, raw_command, &processed_command, macro_options);
-	my_free(raw_command);
+	nm_free(raw_command);
 	if (processed_command == NULL)
 		return ERROR;
 
@@ -400,9 +400,9 @@ int run_service_event_handler(nagios_macros *mac, service *svc)
 
 	/* neb module wants to override (or cancel) the event handler - perhaps it will run the eventhandler itself */
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
-		my_free(processed_command);
-		my_free(raw_logentry);
-		my_free(processed_logentry);
+		nm_free(processed_command);
+		nm_free(raw_logentry);
+		nm_free(processed_logentry);
 		return OK;
 	}
 #endif
@@ -425,10 +425,10 @@ int run_service_event_handler(nagios_macros *mac, service *svc)
 #endif
 
 	/* free memory */
-	my_free(command_output);
-	my_free(processed_command);
-	my_free(raw_logentry);
-	my_free(processed_logentry);
+	nm_free(command_output);
+	nm_free(processed_command);
+	nm_free(raw_logentry);
+	nm_free(processed_logentry);
 
 	return OK;
 }
@@ -522,7 +522,7 @@ int run_global_host_event_handler(nagios_macros *mac, host *hst)
 
 	/* process any macros in the raw command line */
 	process_macros_r(mac, raw_command, &processed_command, macro_options);
-	my_free(raw_command);
+	nm_free(raw_command);
 	if (processed_command == NULL)
 		return ERROR;
 
@@ -542,9 +542,9 @@ int run_global_host_event_handler(nagios_macros *mac, host *hst)
 
 	/* neb module wants to override (or cancel) the event handler - perhaps it will run the eventhandler itself */
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
-		my_free(processed_command);
-		my_free(raw_logentry);
-		my_free(processed_logentry);
+		nm_free(processed_command);
+		nm_free(raw_logentry);
+		nm_free(processed_logentry);
 		return OK;
 	}
 #endif
@@ -567,10 +567,10 @@ int run_global_host_event_handler(nagios_macros *mac, host *hst)
 #endif
 
 	/* free memory */
-	my_free(command_output);
-	my_free(processed_command);
-	my_free(raw_logentry);
-	my_free(processed_logentry);
+	nm_free(command_output);
+	nm_free(processed_command);
+	nm_free(raw_logentry);
+	nm_free(processed_logentry);
 
 	return OK;
 }
@@ -620,7 +620,7 @@ int run_host_event_handler(nagios_macros *mac, host *hst)
 
 	/* process any macros in the raw command line */
 	process_macros_r(mac, raw_command, &processed_command, macro_options);
-	my_free(raw_command);
+	nm_free(raw_command);
 	if (processed_command == NULL)
 		return ERROR;
 
@@ -640,9 +640,9 @@ int run_host_event_handler(nagios_macros *mac, host *hst)
 
 	/* neb module wants to override (or cancel) the event handler - perhaps it will run the eventhandler itself */
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
-		my_free(processed_command);
-		my_free(raw_logentry);
-		my_free(processed_logentry);
+		nm_free(processed_command);
+		nm_free(raw_logentry);
+		nm_free(processed_logentry);
 		return OK;
 	}
 #endif
@@ -665,10 +665,10 @@ int run_host_event_handler(nagios_macros *mac, host *hst)
 #endif
 
 	/* free memory */
-	my_free(command_output);
-	my_free(processed_command);
-	my_free(raw_logentry);
-	my_free(processed_logentry);
+	nm_free(command_output);
+	nm_free(processed_command);
+	nm_free(raw_logentry);
+	nm_free(processed_logentry);
 
 	return OK;
 }

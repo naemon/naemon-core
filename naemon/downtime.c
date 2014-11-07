@@ -325,11 +325,11 @@ int unschedule_downtime(int type, unsigned long downtime_id)
 	/* remove scheduled entries from event queue */
 	if (temp_downtime->start_event) {
 		remove_event(nagios_squeue, temp_downtime->start_event);
-		my_free(temp_downtime->start_event);
+		nm_free(temp_downtime->start_event);
 	}
 	if (temp_downtime->stop_event) {
 		remove_event(nagios_squeue, temp_downtime->stop_event);
-		my_free(temp_downtime->stop_event);
+		nm_free(temp_downtime->stop_event);
 	}
 
 	/* delete downtime entry */
@@ -450,7 +450,7 @@ int register_downtime(int type, unsigned long downtime_id)
 	else
 		add_new_comment(HOST_COMMENT, DOWNTIME_COMMENT, hst->name, NULL, time(NULL), (NULL == temp_downtime->author ? "(Nagios Process)" : temp_downtime->author), temp_buffer, 0, COMMENTSOURCE_INTERNAL, FALSE, (time_t)0, &(temp_downtime->comment_id));
 
-	my_free(temp_buffer);
+	nm_free(temp_buffer);
 
 	/* only non-triggered downtime is scheduled... */
 	if ((temp_downtime->triggered_by == 0) && ((TRUE == temp_downtime->fixed) ||
@@ -1010,11 +1010,11 @@ int delete_downtime(int type, unsigned long downtime_id)
 #endif
 
 	/* free memory */
-	my_free(this_downtime->host_name);
-	my_free(this_downtime->service_description);
-	my_free(this_downtime->author);
-	my_free(this_downtime->comment);
-	my_free(this_downtime);
+	nm_free(this_downtime->host_name);
+	nm_free(this_downtime->service_description);
+	nm_free(this_downtime->author);
+	nm_free(this_downtime->comment);
+	nm_free(this_downtime);
 	return OK;
 }
 
@@ -1078,7 +1078,7 @@ int delete_downtime_by_hostname_service_description_start_time_comment(char *hos
 	for (tmp_match = matches; tmp_match != NULL; tmp_match = tmp_match->next) {
 		temp_downtime = (scheduled_downtime *)tmp_match->object_ptr;
 		unschedule_downtime(temp_downtime->type, temp_downtime->downtime_id);
-		my_free(temp_downtime);
+		nm_free(temp_downtime);
 	}
 
 	free_objectlist(&matches);
@@ -1170,11 +1170,11 @@ int add_downtime(int downtime_type, char *host_name, char *svc_description, time
 
 	/* handle errors */
 	if (result == ERROR) {
-		my_free(new_downtime->comment);
-		my_free(new_downtime->author);
-		my_free(new_downtime->service_description);
-		my_free(new_downtime->host_name);
-		my_free(new_downtime);
+		nm_free(new_downtime->comment);
+		nm_free(new_downtime->author);
+		nm_free(new_downtime->service_description);
+		nm_free(new_downtime->host_name);
+		nm_free(new_downtime);
 		return ERROR;
 	}
 
@@ -1222,7 +1222,7 @@ int sort_downtime(void)
 		temp_downtime->prev = array[i - 1];
 	}
 	temp_downtime->next = NULL;
-	my_free(array);
+	nm_free(array);
 	return OK;
 }
 
@@ -1275,11 +1275,11 @@ void free_downtime_data(void)
 	/* free memory for the scheduled_downtime list */
 	for (this_downtime = scheduled_downtime_list; this_downtime != NULL; this_downtime = next_downtime) {
 		next_downtime = this_downtime->next;
-		my_free(this_downtime->host_name);
-		my_free(this_downtime->service_description);
-		my_free(this_downtime->author);
-		my_free(this_downtime->comment);
-		my_free(this_downtime);
+		nm_free(this_downtime->host_name);
+		nm_free(this_downtime->service_description);
+		nm_free(this_downtime->author);
+		nm_free(this_downtime->comment);
+		nm_free(this_downtime);
 	}
 
 	/* reset list pointer */

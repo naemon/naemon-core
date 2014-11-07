@@ -32,7 +32,7 @@ int xrddefault_initialize_retention_data(const char *cfgfile)
 	mac = get_global_macros();
 
 	/* save the retention file macro */
-	my_free(mac->x[MACRO_RETENTIONDATAFILE]);
+	nm_free(mac->x[MACRO_RETENTIONDATAFILE]);
 	mac->x[MACRO_RETENTIONDATAFILE] = retention_file;
 	mac->x[MACRO_RETENTIONDATAFILE] = nm_strdup(retention_file);
 	strip(mac->x[MACRO_RETENTIONDATAFILE]);
@@ -46,7 +46,7 @@ int xrddefault_cleanup_retention_data(void)
 {
 
 	/* free memory */
-	my_free(retention_file);
+	nm_free(retention_file);
 
 	return OK;
 }
@@ -104,7 +104,7 @@ int xrddefault_save_state_information(void)
 
 		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Could not open temp state retention file '%s' for writing!\n", tmp_file);
 
-		my_free(tmp_file);
+		nm_free(tmp_file);
 
 		return ERROR;
 	}
@@ -451,7 +451,7 @@ int xrddefault_save_state_information(void)
 	}
 
 	/* free memory */
-	my_free(tmp_file);
+	nm_free(tmp_file);
 
 	return result;
 }
@@ -563,7 +563,7 @@ int xrddefault_read_state_information(void)
 	/* read all lines in the retention file */
 	while (1) {
 		/* free memory */
-		my_free(inputbuf);
+		nm_free(inputbuf);
 
 		/* read the next line */
 		if ((inputbuf = mmap_fgets(thefile)) == NULL)
@@ -750,7 +750,7 @@ int xrddefault_read_state_information(void)
 				was_flapping = FALSE;
 				allow_flapstart_notification = TRUE;
 
-				my_free(host_name);
+				nm_free(host_name);
 				temp_service = NULL;
 				break;
 
@@ -777,7 +777,7 @@ int xrddefault_read_state_information(void)
 					update_contact_status(temp_contact, FALSE);
 				}
 
-				my_free(contact_name);
+				nm_free(contact_name);
 				temp_contact = NULL;
 				break;
 
@@ -814,10 +814,10 @@ int xrddefault_read_state_information(void)
 					delete_comment((data_type == XRDDEFAULT_HOSTCOMMENT_DATA) ? HOST_COMMENT : SERVICE_COMMENT, comment_id);
 
 				/* free temp memory */
-				my_free(host_name);
-				my_free(service_description);
-				my_free(author);
-				my_free(comment_data);
+				nm_free(host_name);
+				nm_free(service_description);
+				nm_free(author);
+				nm_free(comment_data);
 
 				/* reset defaults */
 				entry_type = USER_COMMENT;
@@ -843,10 +843,10 @@ int xrddefault_read_state_information(void)
 				register_downtime((data_type == XRDDEFAULT_HOSTDOWNTIME_DATA) ? HOST_DOWNTIME : SERVICE_DOWNTIME, downtime_id);
 
 				/* free temp memory */
-				my_free(host_name);
-				my_free(service_description);
-				my_free(author);
-				my_free(comment_data);
+				nm_free(host_name);
+				nm_free(service_description);
+				nm_free(author);
+				nm_free(comment_data);
 
 				/* reset defaults */
 				downtime_id = 0;
@@ -954,7 +954,7 @@ int xrddefault_read_state_information(void)
 							tempval = nm_strdup(val);
 							temp_command = find_bang_command(tempval);
 							if (temp_command && tempval) {
-								my_free(global_host_event_handler);
+								nm_free(global_host_event_handler);
 								global_host_event_handler = tempval;
 							}
 						}
@@ -966,7 +966,7 @@ int xrddefault_read_state_information(void)
 							temp_command = find_bang_command(tempval);
 
 							if (temp_command && tempval) {
-								my_free(global_service_event_handler);
+								nm_free(global_service_event_handler);
 								global_service_event_handler = tempval;
 							}
 						}
@@ -1016,13 +1016,13 @@ int xrddefault_read_state_information(void)
 						else if (!strcmp(var, "last_hard_state"))
 							temp_host->last_hard_state = atoi(val);
 						else if (!strcmp(var, "plugin_output")) {
-							my_free(temp_host->plugin_output);
+							nm_free(temp_host->plugin_output);
 							temp_host->plugin_output = nm_strdup(val);
 						} else if (!strcmp(var, "long_plugin_output")) {
-							my_free(temp_host->long_plugin_output);
+							nm_free(temp_host->long_plugin_output);
 							temp_host->long_plugin_output = nm_strdup(val);
 						} else if (!strcmp(var, "performance_data")) {
-							my_free(temp_host->perf_data);
+							nm_free(temp_host->perf_data);
 							temp_host->perf_data = nm_strdup(val);
 						} else if (!strcmp(var, "last_check"))
 							temp_host->last_check = strtoul(val, NULL, 10);
@@ -1131,7 +1131,7 @@ int xrddefault_read_state_information(void)
 								tempval = nm_strdup(val);
 								temp_command = find_bang_command(tempval);
 								if (temp_command && tempval) {
-									my_free(temp_host->check_command);
+									nm_free(temp_host->check_command);
 									temp_host->check_command = tempval;
 								} else
 									temp_host->modified_attributes &= ~MODATTR_CHECK_COMMAND;
@@ -1167,7 +1167,7 @@ int xrddefault_read_state_information(void)
 								tempval = nm_strdup(val);
 								temp_command = find_bang_command(tempval);
 								if (temp_command && tempval) {
-									my_free(temp_host->event_handler);
+									nm_free(temp_host->event_handler);
 									temp_host->event_handler = tempval;
 								} else
 									temp_host->modified_attributes &= ~MODATTR_EVENT_HANDLER_COMMAND;
@@ -1200,7 +1200,7 @@ int xrddefault_read_state_information(void)
 								for (temp_customvariablesmember = temp_host->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 									if (!strcmp(customvarname, temp_customvariablesmember->variable_name)) {
 										if ((x = atoi(val)) > 0 && strlen(val) > 3) {
-											my_free(temp_customvariablesmember->variable_value);
+											nm_free(temp_customvariablesmember->variable_value);
 											temp_customvariablesmember->variable_value = nm_strdup(val + 2);
 											temp_customvariablesmember->has_been_modified = (x > 0) ? TRUE : FALSE;
 										}
@@ -1209,7 +1209,7 @@ int xrddefault_read_state_information(void)
 								}
 
 								/* free memory */
-								my_free(customvarname);
+								nm_free(customvarname);
 							}
 
 						}
@@ -1298,13 +1298,13 @@ int xrddefault_read_state_information(void)
 						else if (!strcmp(var, "last_time_critical"))
 							temp_service->last_time_critical = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "plugin_output")) {
-							my_free(temp_service->plugin_output);
+							nm_free(temp_service->plugin_output);
 							temp_service->plugin_output = nm_strdup(val);
 						} else if (!strcmp(var, "long_plugin_output")) {
-							my_free(temp_service->long_plugin_output);
+							nm_free(temp_service->long_plugin_output);
 							temp_service->long_plugin_output = nm_strdup(val);
 						} else if (!strcmp(var, "performance_data")) {
-							my_free(temp_service->perf_data);
+							nm_free(temp_service->perf_data);
 							temp_service->perf_data = nm_strdup(val);
 						} else if (!strcmp(var, "last_check"))
 							temp_service->last_check = strtoul(val, NULL, 10);
@@ -1393,7 +1393,7 @@ int xrddefault_read_state_information(void)
 								tempval = nm_strdup(val);
 								temp_command = find_bang_command(tempval);
 								if (temp_command && tempval) {
-									my_free(temp_service->check_command);
+									nm_free(temp_service->check_command);
 									temp_service->check_command = tempval;
 								} else {
 									temp_service->modified_attributes &= ~MODATTR_CHECK_COMMAND;
@@ -1430,7 +1430,7 @@ int xrddefault_read_state_information(void)
 								tempval = nm_strdup(val);
 								temp_command = find_bang_command(temp_ptr);
 								if (temp_command && tempval) {
-									my_free(temp_service->event_handler);
+									nm_free(temp_service->event_handler);
 									temp_service->event_handler = tempval;
 								} else {
 									temp_service->modified_attributes &= ~MODATTR_EVENT_HANDLER_COMMAND;
@@ -1463,7 +1463,7 @@ int xrddefault_read_state_information(void)
 								for (temp_customvariablesmember = temp_service->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 									if (!strcmp(customvarname, temp_customvariablesmember->variable_name)) {
 										if ((x = atoi(val)) > 0 && strlen(val) > 3) {
-											my_free(temp_customvariablesmember->variable_value);
+											nm_free(temp_customvariablesmember->variable_value);
 											temp_customvariablesmember->variable_value = nm_strdup(val + 2);
 											temp_customvariablesmember->has_been_modified = (x > 0) ? TRUE : FALSE;
 										}
@@ -1472,7 +1472,7 @@ int xrddefault_read_state_information(void)
 								}
 
 								/* free memory */
-								my_free(customvarname);
+								nm_free(customvarname);
 							}
 						}
 					}
@@ -1572,7 +1572,7 @@ int xrddefault_read_state_information(void)
 								for (temp_customvariablesmember = temp_contact->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 									if (!strcmp(customvarname, temp_customvariablesmember->variable_name)) {
 										if ((x = atoi(val)) > 0 && strlen(val) > 3) {
-											my_free(temp_customvariablesmember->variable_value);
+											nm_free(temp_customvariablesmember->variable_value);
 											temp_customvariablesmember->variable_value = nm_strdup(val + 2);
 											temp_customvariablesmember->has_been_modified = (x > 0) ? TRUE : FALSE;
 										}
@@ -1581,7 +1581,7 @@ int xrddefault_read_state_information(void)
 								}
 
 								/* free memory */
-								my_free(customvarname);
+								nm_free(customvarname);
 							}
 						}
 					}
@@ -1655,7 +1655,7 @@ int xrddefault_read_state_information(void)
 	}
 
 	/* free memory and close the file */
-	my_free(inputbuf);
+	nm_free(inputbuf);
 	mmap_fclose(thefile);
 
 	if (sort_downtime() != OK)

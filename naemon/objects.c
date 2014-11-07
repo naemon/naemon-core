@@ -654,7 +654,7 @@ host *add_host(char *name, char *display_name, char *alias, char *address, char 
 
 	/* handle errors */
 	if (result == ERROR) {
-		my_free(new_host);
+		nm_free(new_host);
 		return NULL;
 	}
 
@@ -690,8 +690,8 @@ hostsmember *add_parent_host_to_host(host *hst, char *host_name)
 
 	/* handle errors */
 	if (result == ERROR) {
-		my_free(new_hostsmember->host_name);
-		my_free(new_hostsmember);
+		nm_free(new_hostsmember->host_name);
+		nm_free(new_hostsmember);
 		return NULL;
 	}
 
@@ -965,7 +965,7 @@ servicegroup *add_servicegroup(char *name, char *alias, char *notes, char *notes
 
 	/* handle errors */
 	if (result == ERROR) {
-		my_free(new_servicegroup);
+		nm_free(new_servicegroup);
 		return NULL;
 	}
 
@@ -1152,8 +1152,8 @@ commandsmember *add_host_notification_command_to_contact(contact *cntct, char *c
 
 	/* handle errors */
 	if (result == ERROR) {
-		my_free(new_commandsmember->command);
-		my_free(new_commandsmember);
+		nm_free(new_commandsmember->command);
+		nm_free(new_commandsmember);
 		return NULL;
 	}
 
@@ -1185,8 +1185,8 @@ commandsmember *add_service_notification_command_to_contact(contact *cntct, char
 
 	/* handle errors */
 	if (result == ERROR) {
-		my_free(new_commandsmember->command);
-		my_free(new_commandsmember);
+		nm_free(new_commandsmember->command);
+		nm_free(new_commandsmember);
 		return NULL;
 	}
 
@@ -1438,14 +1438,14 @@ service *add_service(char *host_name, char *description, char *display_name, cha
 
 	/* handle errors */
 	if (result == ERROR) {
-		my_free(new_service->perf_data);
-		my_free(new_service->plugin_output);
-		my_free(new_service->long_plugin_output);
-		my_free(new_service->event_handler);
-		my_free(new_service->check_command);
-		my_free(new_service->description);
+		nm_free(new_service->perf_data);
+		nm_free(new_service->plugin_output);
+		nm_free(new_service->long_plugin_output);
+		nm_free(new_service->event_handler);
+		nm_free(new_service->check_command);
+		nm_free(new_service->description);
 		if (display_name)
-			my_free(new_service->display_name);
+			nm_free(new_service->display_name);
 		return NULL;
 	}
 
@@ -1521,7 +1521,7 @@ command *add_command(char *name, char *value)
 
 	/* handle errors */
 	if (result == ERROR) {
-		my_free(new_command);
+		nm_free(new_command);
 		return NULL;
 	}
 
@@ -2005,7 +2005,7 @@ int free_objectlist(objectlist **temp_list)
 	/* free memory allocated to object list */
 	for (this_objectlist = *temp_list; this_objectlist != NULL; this_objectlist = next_objectlist) {
 		next_objectlist = this_objectlist->next;
-		my_free(this_objectlist);
+		nm_free(this_objectlist);
 	}
 
 	*temp_list = NULL;
@@ -2298,9 +2298,9 @@ int free_object_data(void)
 				next_daterange = this_daterange->next;
 				for (this_timerange = this_daterange->times; this_timerange != NULL; this_timerange = next_timerange) {
 					next_timerange = this_timerange->next;
-					my_free(this_timerange);
+					nm_free(this_timerange);
 				}
-				my_free(this_daterange);
+				nm_free(this_daterange);
 			}
 		}
 
@@ -2309,25 +2309,25 @@ int free_object_data(void)
 
 			for (this_timerange = this_timeperiod->days[x]; this_timerange != NULL; this_timerange = next_timerange) {
 				next_timerange = this_timerange->next;
-				my_free(this_timerange);
+				nm_free(this_timerange);
 			}
 		}
 
 		/* free exclusions */
 		for (this_timeperiodexclusion = this_timeperiod->exclusions; this_timeperiodexclusion != NULL; this_timeperiodexclusion = next_timeperiodexclusion) {
 			next_timeperiodexclusion = this_timeperiodexclusion->next;
-			my_free(this_timeperiodexclusion->timeperiod_name);
-			my_free(this_timeperiodexclusion);
+			nm_free(this_timeperiodexclusion->timeperiod_name);
+			nm_free(this_timeperiodexclusion);
 		}
 
 		if (this_timeperiod->alias != this_timeperiod->name)
-			my_free(this_timeperiod->alias);
-		my_free(this_timeperiod->name);
-		my_free(this_timeperiod);
+			nm_free(this_timeperiod->alias);
+		nm_free(this_timeperiod->name);
+		nm_free(this_timeperiod);
 	}
 
 	/* reset pointers */
-	my_free(timeperiod_ary);
+	nm_free(timeperiod_ary);
 
 
 	/**** free memory for the host list ****/
@@ -2338,8 +2338,8 @@ int free_object_data(void)
 		this_hostsmember = this_host->parent_hosts;
 		while (this_hostsmember != NULL) {
 			next_hostsmember = this_hostsmember->next;
-			my_free(this_hostsmember->host_name);
-			my_free(this_hostsmember);
+			nm_free(this_hostsmember->host_name);
+			nm_free(this_hostsmember);
 			this_hostsmember = next_hostsmember;
 		}
 
@@ -2347,7 +2347,7 @@ int free_object_data(void)
 		this_hostsmember = this_host->child_hosts;
 		while (this_hostsmember != NULL) {
 			next_hostsmember = this_hostsmember->next;
-			my_free(this_hostsmember);
+			nm_free(this_hostsmember);
 			this_hostsmember = next_hostsmember;
 		}
 
@@ -2355,7 +2355,7 @@ int free_object_data(void)
 		this_servicesmember = this_host->services;
 		while (this_servicesmember != NULL) {
 			next_servicesmember = this_servicesmember->next;
-			my_free(this_servicesmember);
+			nm_free(this_servicesmember);
 			this_servicesmember = next_servicesmember;
 		}
 
@@ -2363,7 +2363,7 @@ int free_object_data(void)
 		this_contactgroupsmember = this_host->contact_groups;
 		while (this_contactgroupsmember != NULL) {
 			next_contactgroupsmember = this_contactgroupsmember->next;
-			my_free(this_contactgroupsmember);
+			nm_free(this_contactgroupsmember);
 			this_contactgroupsmember = next_contactgroupsmember;
 		}
 
@@ -2371,7 +2371,7 @@ int free_object_data(void)
 		this_contactsmember = this_host->contacts;
 		while (this_contactsmember != NULL) {
 			next_contactsmember = this_contactsmember->next;
-			my_free(this_contactsmember);
+			nm_free(this_contactsmember);
 			this_contactsmember = next_contactsmember;
 		}
 
@@ -2379,40 +2379,40 @@ int free_object_data(void)
 		this_customvariablesmember = this_host->custom_variables;
 		while (this_customvariablesmember != NULL) {
 			next_customvariablesmember = this_customvariablesmember->next;
-			my_free(this_customvariablesmember->variable_name);
-			my_free(this_customvariablesmember->variable_value);
-			my_free(this_customvariablesmember);
+			nm_free(this_customvariablesmember->variable_name);
+			nm_free(this_customvariablesmember->variable_value);
+			nm_free(this_customvariablesmember);
 			this_customvariablesmember = next_customvariablesmember;
 		}
 
 		if (this_host->display_name != this_host->name)
-			my_free(this_host->display_name);
+			nm_free(this_host->display_name);
 		if (this_host->alias != this_host->name)
-			my_free(this_host->alias);
+			nm_free(this_host->alias);
 		if (this_host->address != this_host->name)
-			my_free(this_host->address);
-		my_free(this_host->name);
-		my_free(this_host->plugin_output);
-		my_free(this_host->long_plugin_output);
-		my_free(this_host->perf_data);
+			nm_free(this_host->address);
+		nm_free(this_host->name);
+		nm_free(this_host->plugin_output);
+		nm_free(this_host->long_plugin_output);
+		nm_free(this_host->perf_data);
 		free_objectlist(&this_host->hostgroups_ptr);
 		free_objectlist(&this_host->notify_deps);
 		free_objectlist(&this_host->exec_deps);
 		free_objectlist(&this_host->escalation_list);
-		my_free(this_host->check_command);
-		my_free(this_host->event_handler);
-		my_free(this_host->notes);
-		my_free(this_host->notes_url);
-		my_free(this_host->action_url);
-		my_free(this_host->icon_image);
-		my_free(this_host->icon_image_alt);
-		my_free(this_host->vrml_image);
-		my_free(this_host->statusmap_image);
-		my_free(this_host);
+		nm_free(this_host->check_command);
+		nm_free(this_host->event_handler);
+		nm_free(this_host->notes);
+		nm_free(this_host->notes_url);
+		nm_free(this_host->action_url);
+		nm_free(this_host->icon_image);
+		nm_free(this_host->icon_image_alt);
+		nm_free(this_host->vrml_image);
+		nm_free(this_host->statusmap_image);
+		nm_free(this_host);
 	}
 
 	/* reset pointers */
-	my_free(host_ary);
+	nm_free(host_ary);
 
 
 	/**** free memory for the host group list ****/
@@ -2423,21 +2423,21 @@ int free_object_data(void)
 		this_hostsmember = this_hostgroup->members;
 		while (this_hostsmember != NULL) {
 			next_hostsmember = this_hostsmember->next;
-			my_free(this_hostsmember);
+			nm_free(this_hostsmember);
 			this_hostsmember = next_hostsmember;
 		}
 
 		if (this_hostgroup->alias != this_hostgroup->group_name)
-			my_free(this_hostgroup->alias);
-		my_free(this_hostgroup->group_name);
-		my_free(this_hostgroup->notes);
-		my_free(this_hostgroup->notes_url);
-		my_free(this_hostgroup->action_url);
-		my_free(this_hostgroup);
+			nm_free(this_hostgroup->alias);
+		nm_free(this_hostgroup->group_name);
+		nm_free(this_hostgroup->notes);
+		nm_free(this_hostgroup->notes_url);
+		nm_free(this_hostgroup->action_url);
+		nm_free(this_hostgroup);
 	}
 
 	/* reset pointers */
-	my_free(hostgroup_ary);
+	nm_free(hostgroup_ary);
 
 	/**** free memory for the service group list ****/
 	for (i = 0; i < num_objects.servicegroups; i++) {
@@ -2447,21 +2447,21 @@ int free_object_data(void)
 		this_servicesmember = this_servicegroup->members;
 		while (this_servicesmember != NULL) {
 			next_servicesmember = this_servicesmember->next;
-			my_free(this_servicesmember);
+			nm_free(this_servicesmember);
 			this_servicesmember = next_servicesmember;
 		}
 
 		if (this_servicegroup->alias != this_servicegroup->group_name)
-			my_free(this_servicegroup->alias);
-		my_free(this_servicegroup->group_name);
-		my_free(this_servicegroup->notes);
-		my_free(this_servicegroup->notes_url);
-		my_free(this_servicegroup->action_url);
-		my_free(this_servicegroup);
+			nm_free(this_servicegroup->alias);
+		nm_free(this_servicegroup->group_name);
+		nm_free(this_servicegroup->notes);
+		nm_free(this_servicegroup->notes_url);
+		nm_free(this_servicegroup->action_url);
+		nm_free(this_servicegroup);
 	}
 
 	/* reset pointers */
-	my_free(servicegroup_ary);
+	nm_free(servicegroup_ary);
 
 	/**** free memory for the contact list ****/
 	for (i = 0; i < num_objects.contacts; i++) {
@@ -2473,8 +2473,8 @@ int free_object_data(void)
 		while (this_commandsmember != NULL) {
 			next_commandsmember = this_commandsmember->next;
 			if (this_commandsmember->command != NULL)
-				my_free(this_commandsmember->command);
-			my_free(this_commandsmember);
+				nm_free(this_commandsmember->command);
+			nm_free(this_commandsmember);
 			this_commandsmember = next_commandsmember;
 		}
 
@@ -2483,8 +2483,8 @@ int free_object_data(void)
 		while (this_commandsmember != NULL) {
 			next_commandsmember = this_commandsmember->next;
 			if (this_commandsmember->command != NULL)
-				my_free(this_commandsmember->command);
-			my_free(this_commandsmember);
+				nm_free(this_commandsmember->command);
+			nm_free(this_commandsmember);
 			this_commandsmember = next_commandsmember;
 		}
 
@@ -2492,26 +2492,26 @@ int free_object_data(void)
 		this_customvariablesmember = this_contact->custom_variables;
 		while (this_customvariablesmember != NULL) {
 			next_customvariablesmember = this_customvariablesmember->next;
-			my_free(this_customvariablesmember->variable_name);
-			my_free(this_customvariablesmember->variable_value);
-			my_free(this_customvariablesmember);
+			nm_free(this_customvariablesmember->variable_name);
+			nm_free(this_customvariablesmember->variable_value);
+			nm_free(this_customvariablesmember);
 			this_customvariablesmember = next_customvariablesmember;
 		}
 
 		if (this_contact->alias != this_contact->name)
-			my_free(this_contact->alias);
-		my_free(this_contact->name);
-		my_free(this_contact->email);
-		my_free(this_contact->pager);
+			nm_free(this_contact->alias);
+		nm_free(this_contact->name);
+		nm_free(this_contact->email);
+		nm_free(this_contact->pager);
 		for (j = 0; j < MAX_CONTACT_ADDRESSES; j++)
-			my_free(this_contact->address[j]);
+			nm_free(this_contact->address[j]);
 
 		free_objectlist(&this_contact->contactgroups_ptr);
-		my_free(this_contact);
+		nm_free(this_contact);
 	}
 
 	/* reset pointers */
-	my_free(contact_ary);
+	nm_free(contact_ary);
 
 
 	/**** free memory for the contact group list ****/
@@ -2522,18 +2522,18 @@ int free_object_data(void)
 		this_contactsmember = this_contactgroup->members;
 		while (this_contactsmember != NULL) {
 			next_contactsmember = this_contactsmember->next;
-			my_free(this_contactsmember);
+			nm_free(this_contactsmember);
 			this_contactsmember = next_contactsmember;
 		}
 
 		if (this_contactgroup->alias != this_contactgroup->group_name)
-			my_free(this_contactgroup->alias);
-		my_free(this_contactgroup->group_name);
-		my_free(this_contactgroup);
+			nm_free(this_contactgroup->alias);
+		nm_free(this_contactgroup->group_name);
+		nm_free(this_contactgroup);
 	}
 
 	/* reset pointers */
-	my_free(contactgroup_ary);
+	nm_free(contactgroup_ary);
 
 
 	/**** free memory for the service list ****/
@@ -2544,7 +2544,7 @@ int free_object_data(void)
 		this_contactgroupsmember = this_service->contact_groups;
 		while (this_contactgroupsmember != NULL) {
 			next_contactgroupsmember = this_contactgroupsmember->next;
-			my_free(this_contactgroupsmember);
+			nm_free(this_contactgroupsmember);
 			this_contactgroupsmember = next_contactgroupsmember;
 		}
 
@@ -2552,7 +2552,7 @@ int free_object_data(void)
 		this_contactsmember = this_service->contacts;
 		while (this_contactsmember != NULL) {
 			next_contactsmember = this_contactsmember->next;
-			my_free(this_contactsmember);
+			nm_free(this_contactsmember);
 			this_contactsmember = next_contactsmember;
 		}
 
@@ -2560,48 +2560,48 @@ int free_object_data(void)
 		this_customvariablesmember = this_service->custom_variables;
 		while (this_customvariablesmember != NULL) {
 			next_customvariablesmember = this_customvariablesmember->next;
-			my_free(this_customvariablesmember->variable_name);
-			my_free(this_customvariablesmember->variable_value);
-			my_free(this_customvariablesmember);
+			nm_free(this_customvariablesmember->variable_name);
+			nm_free(this_customvariablesmember->variable_value);
+			nm_free(this_customvariablesmember);
 			this_customvariablesmember = next_customvariablesmember;
 		}
 
 		if (this_service->display_name != this_service->description)
-			my_free(this_service->display_name);
-		my_free(this_service->description);
-		my_free(this_service->check_command);
-		my_free(this_service->plugin_output);
-		my_free(this_service->long_plugin_output);
-		my_free(this_service->perf_data);
-		my_free(this_service->event_handler_args);
-		my_free(this_service->check_command_args);
+			nm_free(this_service->display_name);
+		nm_free(this_service->description);
+		nm_free(this_service->check_command);
+		nm_free(this_service->plugin_output);
+		nm_free(this_service->long_plugin_output);
+		nm_free(this_service->perf_data);
+		nm_free(this_service->event_handler_args);
+		nm_free(this_service->check_command_args);
 		free_objectlist(&this_service->servicegroups_ptr);
 		free_objectlist(&this_service->notify_deps);
 		free_objectlist(&this_service->exec_deps);
 		free_objectlist(&this_service->escalation_list);
-		my_free(this_service->event_handler);
-		my_free(this_service->notes);
-		my_free(this_service->notes_url);
-		my_free(this_service->action_url);
-		my_free(this_service->icon_image);
-		my_free(this_service->icon_image_alt);
-		my_free(this_service);
+		nm_free(this_service->event_handler);
+		nm_free(this_service->notes);
+		nm_free(this_service->notes_url);
+		nm_free(this_service->action_url);
+		nm_free(this_service->icon_image);
+		nm_free(this_service->icon_image_alt);
+		nm_free(this_service);
 	}
 
 	/* reset pointers */
-	my_free(service_ary);
+	nm_free(service_ary);
 
 
 	/**** free command memory ****/
 	for (i = 0; i < num_objects.commands; i++) {
 		command *this_command = command_ary[i];
-		my_free(this_command->name);
-		my_free(this_command->command_line);
-		my_free(this_command);
+		nm_free(this_command->name);
+		nm_free(this_command->command_line);
+		nm_free(this_command);
 	}
 
 	/* reset pointers */
-	my_free(command_ary);
+	nm_free(command_ary);
 
 
 	/**** free service escalation memory ****/
@@ -2612,7 +2612,7 @@ int free_object_data(void)
 		this_contactgroupsmember = this_serviceescalation->contact_groups;
 		while (this_contactgroupsmember != NULL) {
 			next_contactgroupsmember = this_contactgroupsmember->next;
-			my_free(this_contactgroupsmember);
+			nm_free(this_contactgroupsmember);
 			this_contactgroupsmember = next_contactgroupsmember;
 		}
 
@@ -2620,29 +2620,29 @@ int free_object_data(void)
 		this_contactsmember = this_serviceescalation->contacts;
 		while (this_contactsmember != NULL) {
 			next_contactsmember = this_contactsmember->next;
-			my_free(this_contactsmember);
+			nm_free(this_contactsmember);
 			this_contactsmember = next_contactsmember;
 		}
-		my_free(this_serviceescalation);
+		nm_free(this_serviceescalation);
 	}
 
 	/* reset pointers */
-	my_free(serviceescalation_ary);
+	nm_free(serviceescalation_ary);
 
 
 	/**** free service dependency memory ****/
 	if (servicedependency_ary) {
 		for (i = 0; i < num_objects.servicedependencies; i++)
-			my_free(servicedependency_ary[i]);
-		my_free(servicedependency_ary);
+			nm_free(servicedependency_ary[i]);
+		nm_free(servicedependency_ary);
 	}
 
 
 	/**** free host dependency memory ****/
 	if (hostdependency_ary) {
 		for (i = 0; i < num_objects.hostdependencies; i++)
-			my_free(hostdependency_ary[i]);
-		my_free(hostdependency_ary);
+			nm_free(hostdependency_ary[i]);
+		nm_free(hostdependency_ary);
 	}
 
 
@@ -2654,7 +2654,7 @@ int free_object_data(void)
 		this_contactgroupsmember = this_hostescalation->contact_groups;
 		while (this_contactgroupsmember != NULL) {
 			next_contactgroupsmember = this_contactgroupsmember->next;
-			my_free(this_contactgroupsmember);
+			nm_free(this_contactgroupsmember);
 			this_contactgroupsmember = next_contactgroupsmember;
 		}
 
@@ -2662,14 +2662,14 @@ int free_object_data(void)
 		this_contactsmember = this_hostescalation->contacts;
 		while (this_contactsmember != NULL) {
 			next_contactsmember = this_contactsmember->next;
-			my_free(this_contactsmember);
+			nm_free(this_contactsmember);
 			this_contactsmember = next_contactsmember;
 		}
-		my_free(this_hostescalation);
+		nm_free(this_hostescalation);
 	}
 
 	/* reset pointers */
-	my_free(hostescalation_ary);
+	nm_free(hostescalation_ary);
 
 	/* we no longer have any objects */
 	memset(&num_objects, 0, sizeof(num_objects));

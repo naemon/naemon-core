@@ -1929,7 +1929,7 @@ int process_check_result_queue(char *dirname)
 			/* can we find the associated ok-to-go file ? */
 			nm_asprintf(&temp_buffer, "%s.ok", file);
 			result = stat(temp_buffer, &ok_stat_buf);
-			my_free(temp_buffer);
+			nm_free(temp_buffer);
 			if (result == -1)
 				continue;
 
@@ -2028,7 +2028,7 @@ int process_check_result_file(char *fname)
 	while (1) {
 
 		/* free memory */
-		my_free(input);
+		nm_free(input);
 
 		/* read the next line */
 		if ((input = mmap_fgets_multiline(thefile)) == NULL)
@@ -2122,7 +2122,7 @@ int process_check_result_file(char *fname)
 	free_check_result(&cr);
 
 	/* free memory and close file */
-	my_free(input);
+	nm_free(input);
 	mmap_fclose(thefile);
 
 	/* delete the file (as well its ok-to-go file) */
@@ -2143,7 +2143,7 @@ int delete_check_result_file(char *fname)
 	/* delete the ok-to-go file */
 	nm_asprintf(&temp_buffer, "%s.ok", fname);
 	unlink(temp_buffer);
-	my_free(temp_buffer);
+	nm_free(temp_buffer);
 
 	return OK;
 }
@@ -2188,9 +2188,9 @@ int free_check_result(check_result *info)
 	if (info == NULL)
 		return OK;
 
-	my_free(info->host_name);
-	my_free(info->service_description);
-	my_free(info->output);
+	nm_free(info->host_name);
+	nm_free(info->service_description);
+	nm_free(info->output);
 
 	return OK;
 }
@@ -2479,7 +2479,7 @@ int dbuf_free(dbuf *db)
 		return ERROR;
 
 	if (db->buf != NULL)
-		my_free(db->buf);
+		nm_free(db->buf);
 	db->buf = NULL;
 	db->used_size = 0L;
 	db->allocated_size = 0L;
@@ -2836,18 +2836,18 @@ void free_memory(nagios_macros *mac)
 	nagios_squeue = NULL;
 
 	/* free memory for global event handlers */
-	my_free(global_host_event_handler);
-	my_free(global_service_event_handler);
+	nm_free(global_host_event_handler);
+	nm_free(global_service_event_handler);
 
 	/* free any notification list that may have been overlooked */
 	free_notification_list();
 
 	/* free obsessive compulsive commands */
-	my_free(ocsp_command);
-	my_free(ochp_command);
+	nm_free(ocsp_command);
+	nm_free(ochp_command);
 
-	my_free(object_cache_file);
-	my_free(object_precache_file);
+	nm_free(object_cache_file);
+	nm_free(object_precache_file);
 
 	/*
 	 * free memory associated with macros.
@@ -2863,50 +2863,50 @@ void free_memory(nagios_macros *mac)
 
 	for (entry = objcfg_files; entry; entry = next) {
 		next = entry->next;
-		my_free(entry->object_ptr);
-		my_free(entry);
+		nm_free(entry->object_ptr);
+		nm_free(entry);
 	}
 	objcfg_files = NULL;
 	for (entry = objcfg_dirs; entry; entry = next) {
 		next = entry->next;
-		my_free(entry->object_ptr);
-		my_free(entry);
+		nm_free(entry->object_ptr);
+		nm_free(entry);
 	}
 	objcfg_dirs = NULL;
 
 	/* free illegal char strings */
-	my_free(illegal_object_chars);
-	my_free(illegal_output_chars);
+	nm_free(illegal_object_chars);
+	nm_free(illegal_output_chars);
 
 	/* free naemon user and group */
-	my_free(naemon_user);
-	my_free(naemon_group);
+	nm_free(naemon_user);
+	nm_free(naemon_group);
 
 	/* free file/path variables */
-	my_free(status_file);
-	my_free(debug_file);
-	my_free(log_file);
+	nm_free(status_file);
+	nm_free(debug_file);
+	nm_free(log_file);
 	mac->x[MACRO_LOGFILE] = NULL; /* assigned from 'log_file' */
-	my_free(temp_file);
+	nm_free(temp_file);
 	mac->x[MACRO_TEMPFILE] = NULL; /* assigned from temp_file */
-	my_free(temp_path);
+	nm_free(temp_path);
 	mac->x[MACRO_TEMPPATH] = NULL; /*assigned from temp_path */
-	my_free(check_result_path);
-	my_free(command_file);
-	my_free(qh_socket_path);
+	nm_free(check_result_path);
+	nm_free(command_file);
+	nm_free(qh_socket_path);
 	mac->x[MACRO_COMMANDFILE] = NULL; /* assigned from command_file */
-	my_free(log_archive_path);
+	nm_free(log_archive_path);
 
 	for (i = 0; i < MAX_USER_MACROS; i++) {
-		my_free(macro_user[i]);
+		nm_free(macro_user[i]);
 	}
 
 	/* these have no other reference */
-	my_free(mac->x[MACRO_ADMINEMAIL]);
-	my_free(mac->x[MACRO_ADMINPAGER]);
-	my_free(mac->x[MACRO_RESOURCEFILE]);
-	my_free(mac->x[MACRO_OBJECTCACHEFILE]);
-	my_free(mac->x[MACRO_MAINCONFIGFILE]);
+	nm_free(mac->x[MACRO_ADMINEMAIL]);
+	nm_free(mac->x[MACRO_ADMINPAGER]);
+	nm_free(mac->x[MACRO_RESOURCEFILE]);
+	nm_free(mac->x[MACRO_OBJECTCACHEFILE]);
+	nm_free(mac->x[MACRO_MAINCONFIGFILE]);
 
 	return;
 }
@@ -2921,7 +2921,7 @@ void free_notification_list(void)
 	temp_notification = notification_list;
 	while (temp_notification != NULL) {
 		next_notification = temp_notification->next;
-		my_free(temp_notification);
+		nm_free(temp_notification);
 		temp_notification = next_notification;
 	}
 

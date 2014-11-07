@@ -73,9 +73,9 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 	while (1) {
 
 		/* free memory */
-		my_free(input);
-		my_free(variable);
-		my_free(value);
+		nm_free(input);
+		nm_free(variable);
+		nm_free(value);
 
 		/* read the next line */
 		if ((input = mmap_fgets_multiline(thefile)) == NULL)
@@ -112,7 +112,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		if (!strcmp(variable, "resource_file")) {
 
 			/* save the macro */
-			my_free(mac->x[MACRO_RESOURCEFILE]);
+			nm_free(mac->x[MACRO_RESOURCEFILE]);
 			mac->x[MACRO_RESOURCEFILE] = nspath_absolute(value, config_file_dir);
 
 			/* process the resource file */
@@ -126,7 +126,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		else if (!strcmp(variable, "check_workers"))
 			num_check_workers = atoi(value);
 		else if (!strcmp(variable, "query_socket")) {
-			my_free(qh_socket_path);
+			nm_free(qh_socket_path);
 			qh_socket_path = nspath_absolute(value, config_file_dir);
 		} else if (!strcmp(variable, "log_file")) {
 
@@ -136,7 +136,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 				break;
 			}
 
-			my_free(log_file);
+			nm_free(log_file);
 			log_file = nspath_absolute(value, config_file_dir);
 			/* make sure the configured logfile takes effect */
 			close_log_file();
@@ -154,7 +154,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 				break;
 			}
 
-			my_free(debug_file);
+			nm_free(debug_file);
 			debug_file = nspath_absolute(value, config_file_dir);
 		}
 
@@ -169,7 +169,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 				break;
 			}
 
-			my_free(command_file);
+			nm_free(command_file);
 			command_file = nspath_absolute(value, config_file_dir);
 
 			/* save the macro */
@@ -177,12 +177,12 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		}
 
 		else if (!strcmp(variable, "temp_file")) {
-			my_free(temp_file);
+			nm_free(temp_file);
 			temp_file = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "temp_path")) {
-			my_free(temp_path);
+			nm_free(temp_path);
 			temp_path = nspath_absolute(value, config_file_dir);
 		}
 
@@ -194,7 +194,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 				break;
 			}
 
-			my_free(check_result_path);
+			nm_free(check_result_path);
 			check_result_path = nspath_absolute(value, config_file_dir);
 			/* make sure we don't have a trailing slash */
 			if (check_result_path[strlen(check_result_path) - 1] == '/')
@@ -220,51 +220,51 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 				break;
 			}
 
-			my_free(lock_file);
+			nm_free(lock_file);
 			lock_file = nspath_absolute(value, config_file_dir);
 		}
 
 		else if (!strcmp(variable, "global_host_event_handler")) {
-			my_free(global_host_event_handler);
+			nm_free(global_host_event_handler);
 			global_host_event_handler = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "global_service_event_handler")) {
-			my_free(global_service_event_handler);
+			nm_free(global_service_event_handler);
 			global_service_event_handler = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "ocsp_command")) {
-			my_free(ocsp_command);
+			nm_free(ocsp_command);
 			ocsp_command = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "ochp_command")) {
-			my_free(ochp_command);
+			nm_free(ochp_command);
 			ochp_command = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "nagios_user") || !strcmp(variable, "naemon_user")) {
-			my_free(naemon_user);
+			nm_free(naemon_user);
 			naemon_user = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "nagios_group") || !strcmp(variable, "naemon_group")) {
-			my_free(naemon_group);
+			nm_free(naemon_group);
 			naemon_group = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "admin_email")) {
 
 			/* save the macro */
-			my_free(mac->x[MACRO_ADMINEMAIL]);
+			nm_free(mac->x[MACRO_ADMINEMAIL]);
 			mac->x[MACRO_ADMINEMAIL] = nm_strdup(value);
 		}
 
 		else if (!strcmp(variable, "admin_pager")) {
 
 			/* save the macro */
-			my_free(mac->x[MACRO_ADMINPAGER]);
+			nm_free(mac->x[MACRO_ADMINPAGER]);
 			mac->x[MACRO_ADMINPAGER] = nm_strdup(value);
 		}
 
@@ -610,7 +610,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 				break;
 			}
 
-			my_free(log_archive_path);
+			nm_free(log_archive_path);
 			log_archive_path = nspath_absolute(value, config_file_dir);
 		}
 
@@ -869,7 +869,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		}
 
 		else if (!strcmp(variable, "use_timezone")) {
-			my_free(use_timezone);
+			nm_free(use_timezone);
 			use_timezone = nm_strdup(value);
 		}
 
@@ -1022,7 +1022,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 				break;
 			}
 			error |= read_config_file(include_file, mac);
-			my_free(include_file);
+			nm_free(include_file);
 		} else if (!strcmp(variable, "include_dir")) {
 			char *include_dir = nspath_absolute(value, config_file_dir);
 			DIR *dirp = NULL;
@@ -1056,15 +1056,15 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 				}
 				closedir(dirp);
 			}
-			my_free(include_dir);
+			nm_free(include_dir);
 		}
 		else if (strstr(input, "object_cache_file=") == input) {
-			my_free(object_cache_file);
+			nm_free(object_cache_file);
 			object_cache_file = nspath_absolute(value, config_file_dir);
-			my_free(mac->x[MACRO_OBJECTCACHEFILE]);
+			nm_free(mac->x[MACRO_OBJECTCACHEFILE]);
 			mac->x[MACRO_OBJECTCACHEFILE] = nm_strdup(object_cache_file);
 		} else if (strstr(input, "precached_object_file=") == input) {
-			my_free(object_precache_file);
+			nm_free(object_precache_file);
 			object_precache_file = nspath_absolute(value, config_file_dir);
 		} else if (!strcmp(variable, "allow_empty_hostgroup_assignment")) {
 			allow_empty_hostgroup_assignment = (atoi(value) > 0) ? TRUE : FALSE;
@@ -1098,10 +1098,10 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 	}
 
 	mmap_fclose(thefile);
-	my_free(input);
-	my_free(variable);
-	my_free(value);
-	my_free(error_message);
+	nm_free(input);
+	nm_free(variable);
+	nm_free(value);
+	nm_free(error_message);
 
 	return OK;
 }
@@ -1115,7 +1115,7 @@ int read_main_config_file(const char *main_config_file)
 	mac = get_global_macros();
 
 	/* save the main config file macro */
-	my_free(mac->x[MACRO_MAINCONFIGFILE]);
+	nm_free(mac->x[MACRO_MAINCONFIGFILE]);
 	if ((mac->x[MACRO_MAINCONFIGFILE] = nm_strdup(main_config_file)))
 		strip(mac->x[MACRO_MAINCONFIGFILE]);
 
@@ -1218,9 +1218,9 @@ int read_resource_file(const char *resource_file)
 	while (1) {
 
 		/* free memory */
-		my_free(input);
-		my_free(variable);
-		my_free(value);
+		nm_free(input);
+		nm_free(variable);
+		nm_free(value);
 
 		/* read the next line */
 		if ((input = mmap_fgets_multiline(thefile)) == NULL)
@@ -1258,7 +1258,7 @@ int read_resource_file(const char *resource_file)
 			if (strstr(variable, "$USER") == variable  && strlen(variable) > 5) {
 				user_index = atoi(variable + 5) - 1;
 				if (user_index >= 0 && user_index < MAX_USER_MACROS) {
-					my_free(macro_user[user_index]);
+					nm_free(macro_user[user_index]);
 					macro_user[user_index] = nm_strdup(value);
 				}
 			}
@@ -1266,12 +1266,12 @@ int read_resource_file(const char *resource_file)
 	}
 
 	/* free leftover memory and close the file */
-	my_free(input);
+	nm_free(input);
 	mmap_fclose(thefile);
 
 	/* free memory */
-	my_free(variable);
-	my_free(value);
+	nm_free(variable);
+	nm_free(value);
 
 	if (error == TRUE)
 		return ERROR;
@@ -1371,7 +1371,7 @@ int pre_flight_check(void)
 		close(temp_path_fd);
 		remove(buf);
 	}
-	my_free(buf);
+	nm_free(buf);
 
 	/* check if we can write to check_result_path */
 	nm_asprintf(&buf, "%s/nagiosXXXXXX", check_result_path);
@@ -1382,7 +1382,7 @@ int pre_flight_check(void)
 		close(temp_path_fd);
 		remove(buf);
 	}
-	my_free(buf);
+	nm_free(buf);
 
 	/* warn if user didn't specify any illegal macro output chars */
 	if (illegal_output_chars == NULL) {

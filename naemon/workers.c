@@ -213,7 +213,7 @@ static void destroy_job(struct wproc_job *job)
 	/* call with NULL result to make callback clean things up */
 	run_job_callback(job, NULL, 0);
 
-	my_free(job->command);
+	nm_free(job->command);
 	if (job->wp) {
 		fanout_remove(job->wp->jobs, job->id);
 		job->wp->jobs_running--;
@@ -255,7 +255,7 @@ static int wproc_destroy(struct wproc_worker *wp, int flags)
 	/* free all memory when either forcing or a worker called us */
 	iocache_destroy(wp->ioc);
 	wp->ioc = NULL;
-	my_free(wp->name);
+	nm_free(wp->name);
 	fanout_destroy(wp->jobs, fo_destroy_job);
 	wp->jobs = NULL;
 
@@ -558,7 +558,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 			wproc_logdump_buffer(DEBUGL_IPC, DEBUGV_MOST, "wproc:   stderr", wpres.outerr);
 			wproc_logdump_buffer(DEBUGL_IPC, DEBUGV_MOST, "wproc:   stdout", wpres.outstd);
 		}
-		my_free(error_reason);
+		nm_free(error_reason);
 
 		run_job_callback(job, &wpres, 0);
 

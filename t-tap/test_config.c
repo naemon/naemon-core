@@ -31,6 +31,7 @@
 #include "naemon/nebmods.h"
 #include "naemon/nebmodules.h"
 #include "naemon/xrddefault.h"
+#include "naemon/nm_alloc.h"
 #include "tap.h"
 
 int main(int argc, char **argv)
@@ -109,7 +110,7 @@ int main(int argc, char **argv)
 
 	cleanup();
 
-	my_free(config_file);
+	nm_free(config_file);
 
 	return exit_status();
 }

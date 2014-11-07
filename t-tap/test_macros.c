@@ -32,6 +32,7 @@
 #include "naemon/objects.h"
 #include "naemon/macros.h"
 #include "naemon/utils.h"
+#include "naemon/nm_alloc.h"
 #include "tap.h"
 
 /*****************************************************************************/
@@ -67,7 +68,7 @@ void init_environment(void)
 {
 	char *p;
 
-	my_free(illegal_output_chars);
+	nm_free(illegal_output_chars);
 	illegal_output_chars = strdup("'&\""); /* For this tests, remove ', " and & */
 
 	/* This is a part of preflight check, which we can't run */

@@ -105,14 +105,14 @@ int neb_free_module_list(void)
 		next_module = temp_module->next;
 
 		for (x = 0; x < NEBMODULE_MODINFO_NUMITEMS; x++)
-			my_free(temp_module->info[x]);
+			nm_free(temp_module->info[x]);
 
 		/* don't free this stuff for core modules */
 		if (temp_module->core_module)
 			continue;
-		my_free(temp_module->filename);
-		my_free(temp_module->args);
-		my_free(temp_module);
+		nm_free(temp_module->filename);
+		nm_free(temp_module->args);
+		nm_free(temp_module);
 	}
 
 	neb_module_list = NULL;
@@ -267,7 +267,7 @@ int neb_unload_module(nebmodule *mod, int flags, int reason)
 	/* remove the module's demand-loaded file */
 	if (daemon_dumps_core == TRUE && mod->dl_file) {
 		(void)unlink(mod->dl_file);
-		my_free(mod->dl_file);
+		nm_free(mod->dl_file);
 	}
 
 	/* call the de-initialization function if available (and the module was initialized) */
@@ -337,7 +337,7 @@ int neb_set_module_info(void *handle, int type, char *data)
 		return NEBERROR_BADMODULEHANDLE;
 
 	/* free any previously allocated memory */
-	my_free(temp_module->info[type]);
+	nm_free(temp_module->info[type]);
 
 	/* allocate memory for the new data */
 	temp_module->info[type] = nm_strdup(data);
@@ -479,7 +479,7 @@ int neb_deregister_callback(int callback_type, int (*callback_func)(int, void *)
 			neb_callback_list[callback_type] = NULL;
 		else
 			last_callback->next = next_callback;
-		my_free(temp_callback);
+		nm_free(temp_callback);
 	}
 
 	return OK;
@@ -560,13 +560,13 @@ int neb_free_callback_list(void)
 
 		for (temp_callback = neb_callback_list[x]; temp_callback != NULL; temp_callback = next_callback) {
 			next_callback = temp_callback->next;
-			my_free(temp_callback);
+			nm_free(temp_callback);
 		}
 
 		neb_callback_list[x] = NULL;
 	}
 
-	my_free(neb_callback_list);
+	nm_free(neb_callback_list);
 
 	return OK;
 }
