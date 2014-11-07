@@ -241,21 +241,21 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 		free_notification_list();
 
 		/* clear out all macros we created */
-		my_free(mac.x[MACRO_NOTIFICATIONNUMBER]);
-		my_free(mac.x[MACRO_SERVICENOTIFICATIONNUMBER]);
-		my_free(mac.x[MACRO_SERVICENOTIFICATIONID]);
-		my_free(mac.x[MACRO_NOTIFICATIONCOMMENT]);
-		my_free(mac.x[MACRO_NOTIFICATIONTYPE]);
-		my_free(mac.x[MACRO_NOTIFICATIONAUTHOR]);
-		my_free(mac.x[MACRO_NOTIFICATIONAUTHORNAME]);
-		my_free(mac.x[MACRO_NOTIFICATIONAUTHORALIAS]);
-		my_free(mac.x[MACRO_SERVICEACKAUTHORNAME]);
-		my_free(mac.x[MACRO_SERVICEACKAUTHORALIAS]);
-		my_free(mac.x[MACRO_SERVICEACKAUTHOR]);
-		my_free(mac.x[MACRO_SERVICEACKCOMMENT]);
+		nm_free(mac.x[MACRO_NOTIFICATIONNUMBER]);
+		nm_free(mac.x[MACRO_SERVICENOTIFICATIONNUMBER]);
+		nm_free(mac.x[MACRO_SERVICENOTIFICATIONID]);
+		nm_free(mac.x[MACRO_NOTIFICATIONCOMMENT]);
+		nm_free(mac.x[MACRO_NOTIFICATIONTYPE]);
+		nm_free(mac.x[MACRO_NOTIFICATIONAUTHOR]);
+		nm_free(mac.x[MACRO_NOTIFICATIONAUTHORNAME]);
+		nm_free(mac.x[MACRO_NOTIFICATIONAUTHORALIAS]);
+		nm_free(mac.x[MACRO_SERVICEACKAUTHORNAME]);
+		nm_free(mac.x[MACRO_SERVICEACKAUTHORALIAS]);
+		nm_free(mac.x[MACRO_SERVICEACKAUTHOR]);
+		nm_free(mac.x[MACRO_SERVICEACKCOMMENT]);
 
 		/* this gets set in add_notification() */
-		my_free(mac.x[MACRO_NOTIFICATIONRECIPIENTS]);
+		nm_free(mac.x[MACRO_NOTIFICATIONRECIPIENTS]);
 
 		/*
 		 * Clear all macros, or they will linger in memory
@@ -309,7 +309,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	}
 
 	/* this gets set in create_notification_list_from_service() */
-	my_free(mac.x[MACRO_NOTIFICATIONISESCALATED]);
+	nm_free(mac.x[MACRO_NOTIFICATIONISESCALATED]);
 
 	/* get the time we finished */
 	gettimeofday(&end_time, NULL);
@@ -740,7 +740,7 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 
 		/* process any macros contained in the argument */
 		process_macros_r(mac, raw_command, &processed_command, macro_options);
-		my_free(raw_command);
+		nm_free(raw_command);
 		if (processed_command == NULL)
 			continue;
 
@@ -787,8 +787,8 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 			process_macros_r(mac, temp_buffer, &processed_buffer, 0);
 			write_to_all_logs(processed_buffer, NSLOG_SERVICE_NOTIFICATION);
 
-			my_free(temp_buffer);
-			my_free(processed_buffer);
+			nm_free(temp_buffer);
+			nm_free(processed_buffer);
 		}
 
 		/* run the notification command */
@@ -802,8 +802,8 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 		}
 
 		/* free memory */
-		my_free(command_name);
-		my_free(processed_command);
+		nm_free(command_name);
+		nm_free(processed_command);
 
 		/* get end time */
 		gettimeofday(&method_end_time, NULL);
@@ -1182,20 +1182,20 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 		free_notification_list();
 
 		/* clear out all macros we created */
-		my_free(mac.x[MACRO_HOSTNOTIFICATIONID]);
-		my_free(mac.x[MACRO_NOTIFICATIONNUMBER]);
-		my_free(mac.x[MACRO_NOTIFICATIONCOMMENT]);
-		my_free(mac.x[MACRO_HOSTNOTIFICATIONNUMBER]);
-		my_free(mac.x[MACRO_NOTIFICATIONTYPE]);
-		my_free(mac.x[MACRO_NOTIFICATIONAUTHOR]);
-		my_free(mac.x[MACRO_NOTIFICATIONAUTHORNAME]);
-		my_free(mac.x[MACRO_NOTIFICATIONAUTHORALIAS]);
-		my_free(mac.x[MACRO_HOSTACKAUTHORNAME]);
-		my_free(mac.x[MACRO_HOSTACKAUTHORALIAS]);
-		my_free(mac.x[MACRO_HOSTACKAUTHOR]);
-		my_free(mac.x[MACRO_HOSTACKCOMMENT]);
+		nm_free(mac.x[MACRO_HOSTNOTIFICATIONID]);
+		nm_free(mac.x[MACRO_NOTIFICATIONNUMBER]);
+		nm_free(mac.x[MACRO_NOTIFICATIONCOMMENT]);
+		nm_free(mac.x[MACRO_HOSTNOTIFICATIONNUMBER]);
+		nm_free(mac.x[MACRO_NOTIFICATIONTYPE]);
+		nm_free(mac.x[MACRO_NOTIFICATIONAUTHOR]);
+		nm_free(mac.x[MACRO_NOTIFICATIONAUTHORNAME]);
+		nm_free(mac.x[MACRO_NOTIFICATIONAUTHORALIAS]);
+		nm_free(mac.x[MACRO_HOSTACKAUTHORNAME]);
+		nm_free(mac.x[MACRO_HOSTACKAUTHORALIAS]);
+		nm_free(mac.x[MACRO_HOSTACKAUTHOR]);
+		nm_free(mac.x[MACRO_HOSTACKCOMMENT]);
 		/* this gets set in add_notification() */
-		my_free(mac.x[MACRO_NOTIFICATIONRECIPIENTS]);
+		nm_free(mac.x[MACRO_NOTIFICATIONRECIPIENTS]);
 
 		/*
 		 * Clear all macros, or they will linger in memory
@@ -1247,7 +1247,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 	}
 
 	/* this gets set in create_notification_list_from_host() */
-	my_free(mac.x[MACRO_NOTIFICATIONISESCALATED]);
+	nm_free(mac.x[MACRO_NOTIFICATIONISESCALATED]);
 
 	/* get the time we finished */
 	gettimeofday(&end_time, NULL);
@@ -1642,7 +1642,7 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 
 		/* process any macros contained in the argument */
 		process_macros_r(mac, raw_command, &processed_command, macro_options);
-		my_free(raw_command);
+		nm_free(raw_command);
 		if (processed_command == NULL)
 			continue;
 
@@ -1689,8 +1689,8 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 			process_macros_r(mac, temp_buffer, &processed_buffer, 0);
 			write_to_all_logs(processed_buffer, NSLOG_HOST_NOTIFICATION);
 
-			my_free(temp_buffer);
-			my_free(processed_buffer);
+			nm_free(temp_buffer);
+			nm_free(processed_buffer);
 		}
 
 		/* run the notification command */
@@ -1710,8 +1710,8 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 		/* @todo Handle nebmod stuff when getting results from workers */
 
 		/* free memory */
-		my_free(command_name);
-		my_free(processed_command);
+		nm_free(command_name);
+		nm_free(processed_command);
 
 		/* get end time */
 		gettimeofday(&method_end_time, NULL);

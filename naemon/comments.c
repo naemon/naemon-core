@@ -175,11 +175,11 @@ int delete_comment(int type, unsigned long comment_id)
 		last_comment->next = next_comment;
 
 	/* free memory */
-	my_free(this_comment->host_name);
-	my_free(this_comment->service_description);
-	my_free(this_comment->author);
-	my_free(this_comment->comment_data);
-	my_free(this_comment);
+	nm_free(this_comment->host_name);
+	nm_free(this_comment->service_description);
+	nm_free(this_comment->author);
+	nm_free(this_comment->comment_data);
+	nm_free(this_comment);
 
 	return OK;
 }
@@ -438,11 +438,11 @@ int add_comment(int comment_type, int entry_type, char *host_name, char *svc_des
 
 	/* handle errors */
 	if (result == ERROR) {
-		my_free(new_comment->comment_data);
-		my_free(new_comment->author);
-		my_free(new_comment->service_description);
-		my_free(new_comment->host_name);
-		my_free(new_comment);
+		nm_free(new_comment->comment_data);
+		nm_free(new_comment->author);
+		nm_free(new_comment->service_description);
+		nm_free(new_comment->host_name);
+		nm_free(new_comment);
 		return ERROR;
 	}
 
@@ -520,7 +520,7 @@ int sort_comments(void)
 		temp_comment = temp_comment->next;
 	}
 	temp_comment->next = NULL;
-	my_free(array);
+	nm_free(array);
 	return OK;
 }
 
@@ -538,15 +538,15 @@ void free_comment_data(void)
 	/* free memory for the comment list */
 	for (this_comment = comment_list; this_comment != NULL; this_comment = next_comment) {
 		next_comment = this_comment->next;
-		my_free(this_comment->host_name);
-		my_free(this_comment->service_description);
-		my_free(this_comment->author);
-		my_free(this_comment->comment_data);
-		my_free(this_comment);
+		nm_free(this_comment->host_name);
+		nm_free(this_comment->service_description);
+		nm_free(this_comment->author);
+		nm_free(this_comment->comment_data);
+		nm_free(this_comment);
 	}
 
 	/* free hash list and reset list pointer */
-	my_free(comment_hashlist);
+	nm_free(comment_hashlist);
 	comment_hashlist = NULL;
 	comment_list = NULL;
 

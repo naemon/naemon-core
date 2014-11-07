@@ -2,6 +2,7 @@
 #include "naemon/utils.h"
 #include "naemon/globals.h"
 #include "naemon/defaults.h"
+#include "naemon/nm_alloc.h"
 
 #include <check.h>
 
@@ -85,8 +86,8 @@ START_TEST(main_include)
 	ck_assert_str_eq(file_cfg, objcfg_files->object_ptr);
 	ck_assert(NULL != objcfg_dirs);
 	ck_assert_str_eq(dir_cfg, objcfg_dirs->object_ptr);
-	my_free(file_cfg);
-	my_free(dir_cfg);
+	nm_free(file_cfg);
+	nm_free(dir_cfg);
 }
 END_TEST
 

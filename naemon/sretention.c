@@ -36,10 +36,10 @@ int cleanup_retention_data(void)
 	unsigned int i;
 
 	for (i = 0; i < num_objects.hosts; i++) {
-		my_free(premod_hosts[i]);
+		nm_free(premod_hosts[i]);
 	}
 	for (i = 0; i < num_objects.services; i++) {
-		my_free(premod_services[i]);
+		nm_free(premod_services[i]);
 	}
 	premod_hosts = NULL;
 	premod_services = NULL;

@@ -183,23 +183,23 @@ static void xodtemplate_free_memory(void)
 	/* free memory allocated to timeperiod list */
 	for (this_timeperiod = xodtemplate_timeperiod_list; this_timeperiod != NULL; this_timeperiod = next_timeperiod) {
 		next_timeperiod = this_timeperiod->next;
-		my_free(this_timeperiod->template);
-		my_free(this_timeperiod->name);
+		nm_free(this_timeperiod->template);
+		nm_free(this_timeperiod->name);
 		if (!this_timeperiod->register_object) {
-			my_free(this_timeperiod->timeperiod_name);
-			my_free(this_timeperiod->alias);
+			nm_free(this_timeperiod->timeperiod_name);
+			nm_free(this_timeperiod->alias);
 		}
 		for (x = 0; x < 7; x++)
-			my_free(this_timeperiod->timeranges[x]);
+			nm_free(this_timeperiod->timeranges[x]);
 		for (x = 0; x < DATERANGE_TYPES; x++) {
 			for (this_daterange = this_timeperiod->exceptions[x]; this_daterange != NULL; this_daterange = next_daterange) {
 				next_daterange = this_daterange->next;
-				my_free(this_daterange->timeranges);
-				my_free(this_daterange);
+				nm_free(this_daterange->timeranges);
+				nm_free(this_daterange);
 			}
 		}
-		my_free(this_timeperiod->exclusions);
-		my_free(this_timeperiod);
+		nm_free(this_timeperiod->exclusions);
+		nm_free(this_timeperiod);
 	}
 	xodtemplate_timeperiod_list = NULL;
 	xodtemplate_timeperiod_list_tail = NULL;
@@ -207,13 +207,13 @@ static void xodtemplate_free_memory(void)
 	/* free memory allocated to command list */
 	for (this_command = xodtemplate_command_list; this_command != NULL; this_command = next_command) {
 		next_command = this_command->next;
-		my_free(this_command->template);
-		my_free(this_command->name);
+		nm_free(this_command->template);
+		nm_free(this_command->name);
 		if (!this_command->register_object) {
-			my_free(this_command->command_name);
-			my_free(this_command->command_line);
+			nm_free(this_command->command_name);
+			nm_free(this_command->command_line);
 		}
-		my_free(this_command);
+		nm_free(this_command);
 	}
 	xodtemplate_command_list = NULL;
 	xodtemplate_command_list_tail = NULL;
@@ -221,18 +221,18 @@ static void xodtemplate_free_memory(void)
 	/* free memory allocated to contactgroup list */
 	for (this_contactgroup = xodtemplate_contactgroup_list; this_contactgroup != NULL; this_contactgroup = next_contactgroup) {
 		next_contactgroup = this_contactgroup->next;
-		my_free(this_contactgroup->template);
-		my_free(this_contactgroup->name);
-		my_free(this_contactgroup->members);
-		my_free(this_contactgroup->contactgroup_members);
+		nm_free(this_contactgroup->template);
+		nm_free(this_contactgroup->name);
+		nm_free(this_contactgroup->members);
+		nm_free(this_contactgroup->contactgroup_members);
 		bitmap_destroy(this_contactgroup->member_map);
 		free_objectlist(&this_contactgroup->member_list);
 		free_objectlist(&this_contactgroup->group_list);
 		if (!this_contactgroup->register_object) {
-			my_free(this_contactgroup->contactgroup_name);
-			my_free(this_contactgroup->alias);
+			nm_free(this_contactgroup->contactgroup_name);
+			nm_free(this_contactgroup->alias);
 		}
-		my_free(this_contactgroup);
+		nm_free(this_contactgroup);
 	}
 	xodtemplate_contactgroup_list = NULL;
 	xodtemplate_contactgroup_list_tail = NULL;
@@ -240,21 +240,21 @@ static void xodtemplate_free_memory(void)
 	/* free memory allocated to hostgroup list */
 	for (this_hostgroup = xodtemplate_hostgroup_list; this_hostgroup != NULL; this_hostgroup = next_hostgroup) {
 		next_hostgroup = this_hostgroup->next;
-		my_free(this_hostgroup->template);
-		my_free(this_hostgroup->name);
-		my_free(this_hostgroup->members);
-		my_free(this_hostgroup->hostgroup_members);
+		nm_free(this_hostgroup->template);
+		nm_free(this_hostgroup->name);
+		nm_free(this_hostgroup->members);
+		nm_free(this_hostgroup->hostgroup_members);
 		bitmap_destroy(this_hostgroup->member_map);
 		free_objectlist(&this_hostgroup->member_list);
 		free_objectlist(&this_hostgroup->group_list);
 		if (!this_hostgroup->register_object) {
-			my_free(this_hostgroup->hostgroup_name);
-			my_free(this_hostgroup->alias);
-			my_free(this_hostgroup->notes);
-			my_free(this_hostgroup->notes_url);
-			my_free(this_hostgroup->action_url);
+			nm_free(this_hostgroup->hostgroup_name);
+			nm_free(this_hostgroup->alias);
+			nm_free(this_hostgroup->notes);
+			nm_free(this_hostgroup->notes_url);
+			nm_free(this_hostgroup->action_url);
 		}
-		my_free(this_hostgroup);
+		nm_free(this_hostgroup);
 	}
 	xodtemplate_hostgroup_list = NULL;
 	xodtemplate_hostgroup_list_tail = NULL;
@@ -262,21 +262,21 @@ static void xodtemplate_free_memory(void)
 	/* free memory allocated to servicegroup list */
 	for (this_servicegroup = xodtemplate_servicegroup_list; this_servicegroup != NULL; this_servicegroup = next_servicegroup) {
 		next_servicegroup = this_servicegroup->next;
-		my_free(this_servicegroup->members);
-		my_free(this_servicegroup->servicegroup_members);
+		nm_free(this_servicegroup->members);
+		nm_free(this_servicegroup->servicegroup_members);
 		bitmap_destroy(this_servicegroup->member_map);
 		free_objectlist(&this_servicegroup->member_list);
 		free_objectlist(&this_servicegroup->group_list);
-		my_free(this_servicegroup->template);
-		my_free(this_servicegroup->name);
+		nm_free(this_servicegroup->template);
+		nm_free(this_servicegroup->name);
 		if (!this_servicegroup->register_object) {
-			my_free(this_servicegroup->servicegroup_name);
-			my_free(this_servicegroup->alias);
-			my_free(this_servicegroup->notes);
-			my_free(this_servicegroup->notes_url);
-			my_free(this_servicegroup->action_url);
+			nm_free(this_servicegroup->servicegroup_name);
+			nm_free(this_servicegroup->alias);
+			nm_free(this_servicegroup->notes);
+			nm_free(this_servicegroup->notes_url);
+			nm_free(this_servicegroup->action_url);
 		}
-		my_free(this_servicegroup);
+		nm_free(this_servicegroup);
 	}
 	xodtemplate_servicegroup_list = NULL;
 	xodtemplate_servicegroup_list_tail = NULL;
@@ -288,27 +288,27 @@ static void xodtemplate_free_memory(void)
 		this_customvariablesmember = this_contact->custom_variables;
 		while (this_customvariablesmember != NULL) {
 			next_customvariablesmember = this_customvariablesmember->next;
-			my_free(this_customvariablesmember->variable_name);
-			my_free(this_customvariablesmember->variable_value);
-			my_free(this_customvariablesmember);
+			nm_free(this_customvariablesmember->variable_name);
+			nm_free(this_customvariablesmember->variable_value);
+			nm_free(this_customvariablesmember);
 			this_customvariablesmember = next_customvariablesmember;
 		}
-		my_free(this_contact->template);
-		my_free(this_contact->name);
-		my_free(this_contact->contact_groups);
-		my_free(this_contact->service_notification_period);
-		my_free(this_contact->service_notification_commands);
-		my_free(this_contact->host_notification_period);
-		my_free(this_contact->host_notification_commands);
+		nm_free(this_contact->template);
+		nm_free(this_contact->name);
+		nm_free(this_contact->contact_groups);
+		nm_free(this_contact->service_notification_period);
+		nm_free(this_contact->service_notification_commands);
+		nm_free(this_contact->host_notification_period);
+		nm_free(this_contact->host_notification_commands);
 		if (!this_contact->register_object) {
-			my_free(this_contact->contact_name);
-			my_free(this_contact->alias);
-			my_free(this_contact->email);
-			my_free(this_contact->pager);
+			nm_free(this_contact->contact_name);
+			nm_free(this_contact->alias);
+			nm_free(this_contact->email);
+			nm_free(this_contact->pager);
 			for (x = 0; x < MAX_XODTEMPLATE_CONTACT_ADDRESSES; x++)
-				my_free(this_contact->address[x]);
+				nm_free(this_contact->address[x]);
 		}
-		my_free(this_contact);
+		nm_free(this_contact);
 	}
 	xodtemplate_contact_list = NULL;
 	xodtemplate_contact_list_tail = NULL;
@@ -320,36 +320,36 @@ static void xodtemplate_free_memory(void)
 		this_customvariablesmember = this_host->custom_variables;
 		while (this_customvariablesmember != NULL) {
 			next_customvariablesmember = this_customvariablesmember->next;
-			my_free(this_customvariablesmember->variable_name);
-			my_free(this_customvariablesmember->variable_value);
-			my_free(this_customvariablesmember);
+			nm_free(this_customvariablesmember->variable_name);
+			nm_free(this_customvariablesmember->variable_value);
+			nm_free(this_customvariablesmember);
 			this_customvariablesmember = next_customvariablesmember;
 		}
 
-		my_free(this_host->template);
-		my_free(this_host->name);
-		my_free(this_host->parents);
-		my_free(this_host->host_groups);
-		my_free(this_host->check_period);
-		my_free(this_host->contact_groups);
-		my_free(this_host->contacts);
-		my_free(this_host->notification_period);
+		nm_free(this_host->template);
+		nm_free(this_host->name);
+		nm_free(this_host->parents);
+		nm_free(this_host->host_groups);
+		nm_free(this_host->check_period);
+		nm_free(this_host->contact_groups);
+		nm_free(this_host->contacts);
+		nm_free(this_host->notification_period);
 		if (!this_host->register_object) {
-			my_free(this_host->host_name);
-			my_free(this_host->alias);
-			my_free(this_host->display_name);
-			my_free(this_host->address);
-			my_free(this_host->check_command);
-			my_free(this_host->event_handler);
-			my_free(this_host->notes);
-			my_free(this_host->notes_url);
-			my_free(this_host->action_url);
-			my_free(this_host->icon_image);
-			my_free(this_host->icon_image_alt);
-			my_free(this_host->statusmap_image);
-			my_free(this_host->vrml_image);
+			nm_free(this_host->host_name);
+			nm_free(this_host->alias);
+			nm_free(this_host->display_name);
+			nm_free(this_host->address);
+			nm_free(this_host->check_command);
+			nm_free(this_host->event_handler);
+			nm_free(this_host->notes);
+			nm_free(this_host->notes_url);
+			nm_free(this_host->action_url);
+			nm_free(this_host->icon_image);
+			nm_free(this_host->icon_image_alt);
+			nm_free(this_host->statusmap_image);
+			nm_free(this_host->vrml_image);
 		}
-		my_free(this_host);
+		nm_free(this_host);
 	}
 	xodtemplate_host_list = NULL;
 	xodtemplate_host_list_tail = NULL;
@@ -357,37 +357,37 @@ static void xodtemplate_free_memory(void)
 	/* free memory allocated to service list */
 	for (this_service = xodtemplate_service_list; this_service != NULL; this_service = next_service) {
 		next_service = this_service->next;
-		my_free(this_service->contact_groups);
-		my_free(this_service->contacts);
-		my_free(this_service->service_groups);
+		nm_free(this_service->contact_groups);
+		nm_free(this_service->contacts);
+		nm_free(this_service->service_groups);
 
 		if (this_service->is_copy == FALSE || !this_service->register_object) {
 			/* free custom variables */
 			this_customvariablesmember = this_service->custom_variables;
 			while (this_customvariablesmember != NULL) {
 				next_customvariablesmember = this_customvariablesmember->next;
-				my_free(this_customvariablesmember->variable_name);
-				my_free(this_customvariablesmember->variable_value);
-				my_free(this_customvariablesmember);
+				nm_free(this_customvariablesmember->variable_name);
+				nm_free(this_customvariablesmember->variable_value);
+				nm_free(this_customvariablesmember);
 				this_customvariablesmember = next_customvariablesmember;
 			}
 
-			my_free(this_service->template);
-			my_free(this_service->name);
-			my_free(this_service->display_name);
-			my_free(this_service->check_command);
-			my_free(this_service->check_period);
-			my_free(this_service->event_handler);
-			my_free(this_service->notification_period);
-			my_free(this_service->notes);
-			my_free(this_service->notes_url);
-			my_free(this_service->action_url);
-			my_free(this_service->icon_image);
-			my_free(this_service->icon_image_alt);
-			my_free(this_service->hostgroup_name);
-			my_free(this_service->service_description);
+			nm_free(this_service->template);
+			nm_free(this_service->name);
+			nm_free(this_service->display_name);
+			nm_free(this_service->check_command);
+			nm_free(this_service->check_period);
+			nm_free(this_service->event_handler);
+			nm_free(this_service->notification_period);
+			nm_free(this_service->notes);
+			nm_free(this_service->notes_url);
+			nm_free(this_service->action_url);
+			nm_free(this_service->icon_image);
+			nm_free(this_service->icon_image_alt);
+			nm_free(this_service->hostgroup_name);
+			nm_free(this_service->service_description);
 		}
-		my_free(this_service);
+		nm_free(this_service);
 	}
 	xodtemplate_service_list = NULL;
 	xodtemplate_service_list_tail = NULL;
@@ -403,8 +403,8 @@ static void xodtemplate_free_memory(void)
 
 	/* free memory for the config file names */
 	for (x = 0; x < xodtemplate_current_config_file; x++)
-		my_free(xodtemplate_config_files[x]);
-	my_free(xodtemplate_config_files);
+		nm_free(xodtemplate_config_files[x]);
+	nm_free(xodtemplate_config_files);
 	xodtemplate_current_config_file = 0;
 
 	/* free trees */
@@ -1463,13 +1463,13 @@ static xodtemplate_customvariablesmember *xodtemplate_add_custom_variable_to_obj
 	/* allocate memory for a new member */
 	new_customvariablesmember = nm_malloc(sizeof(xodtemplate_customvariablesmember));
 	if ((new_customvariablesmember->variable_name = nm_strdup(varname)) == NULL) {
-		my_free(new_customvariablesmember);
+		nm_free(new_customvariablesmember);
 		return NULL;
 	}
 	if (varvalue) {
 		if ((new_customvariablesmember->variable_value = nm_strdup(varvalue)) == NULL) {
-			my_free(new_customvariablesmember->variable_name);
-			my_free(new_customvariablesmember);
+			nm_free(new_customvariablesmember->variable_name);
+			nm_free(new_customvariablesmember);
 			return NULL;
 		}
 	} else
@@ -1825,7 +1825,7 @@ static int xodtemplate_parse_timeperiod_directive(xodtemplate_timeperiod *tperio
 	}
 
 	/* free memory */
-	my_free(input);
+	nm_free(input);
 
 	return result;
 }
@@ -1878,7 +1878,7 @@ static int xodtemplate_expand_contacts(objectlist **ret, bitmap *reject_map, cha
 
 			/* compile regular expression */
 			if (regcomp(&preg, temp_ptr, REG_EXTENDED)) {
-				my_free(contact_names);
+				nm_free(contact_names);
 				return ERROR;
 			}
 
@@ -1962,7 +1962,7 @@ static int xodtemplate_expand_contacts(objectlist **ret, bitmap *reject_map, cha
 	}
 
 	/* free memory */
-	my_free(contact_names);
+	nm_free(contact_names);
 
 	if (found_match == FALSE)
 		return ERROR;
@@ -2021,7 +2021,7 @@ static int xodtemplate_expand_hostgroups(objectlist **list, bitmap *reject_map, 
 
 			/* compile regular expression */
 			if (regcomp(&preg, temp_ptr, REG_EXTENDED)) {
-				my_free(hostgroup_names);
+				nm_free(hostgroup_names);
 				return ERROR;
 			}
 
@@ -2101,7 +2101,7 @@ static int xodtemplate_expand_hostgroups(objectlist **list, bitmap *reject_map, 
 	}
 
 	/* free memory */
-	my_free(hostgroup_names);
+	nm_free(hostgroup_names);
 
 	if (found_match == FALSE)
 		return ERROR;
@@ -2351,7 +2351,7 @@ static int xodtemplate_expand_servicegroups(objectlist **list, bitmap *reject, c
 
 			/* compile regular expression */
 			if (regcomp(&preg, temp_ptr, REG_EXTENDED)) {
-				my_free(servicegroup_names);
+				nm_free(servicegroup_names);
 				return ERROR;
 			}
 
@@ -2429,7 +2429,7 @@ static int xodtemplate_expand_servicegroups(objectlist **list, bitmap *reject, c
 	}
 
 	/* free memory */
-	my_free(servicegroup_names);
+	nm_free(servicegroup_names);
 
 	if (found_match == FALSE)
 		return ERROR;
@@ -2530,7 +2530,7 @@ static int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, ch
 			if (regcomp(&preg, temp_ptr, REG_EXTENDED)) {
 				if (use_regexp_host == TRUE)
 					regfree(&preg2);
-				my_free(service_names);
+				nm_free(service_names);
 				return ERROR;
 			}
 		}
@@ -2630,7 +2630,7 @@ static int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, ch
 
 	if (use_regexp_host == TRUE)
 		regfree(&preg2);
-	my_free(service_names);
+	nm_free(service_names);
 
 	if (found_match == FALSE && reject_item == FALSE)
 		return ERROR;
@@ -2902,7 +2902,7 @@ static int xodtemplate_duplicate_services(void)
 				return ERROR;
 			}
 			/* no longer needed */
-			my_free(temp_service->hostgroup_name);
+			nm_free(temp_service->hostgroup_name);
 
 			/* empty result is only bad if allow_empty_hostgroup_assignment is off */
 			if (!glist && !bitmap_count_set_bits(host_map)) {
@@ -2925,7 +2925,7 @@ static int xodtemplate_duplicate_services(void)
 				return ERROR;
 			}
 			/* we don't need this anymore now that we have the hlist */
-			my_free(temp_service->host_name);
+			nm_free(temp_service->host_name);
 		}
 
 		/*
@@ -3129,10 +3129,10 @@ static int xodtemplate_duplicate_objects(void)
 
 			/* if this is the last duplication, use the existing entry */
 			if (!next) {
-				my_free(temp_hostescalation->name);
-				my_free(temp_hostescalation->template);
-				my_free(temp_hostescalation->host_name);
-				my_free(temp_hostescalation->hostgroup_name);
+				nm_free(temp_hostescalation->name);
+				nm_free(temp_hostescalation->template);
+				nm_free(temp_hostescalation->host_name);
+				nm_free(temp_hostescalation->hostgroup_name);
 				temp_hostescalation->host_name = h->host_name;
 				continue;
 			}
@@ -3168,10 +3168,10 @@ static int xodtemplate_duplicate_objects(void)
 			return ERROR;
 
 		/* we won't need these anymore */
-		my_free(temp_serviceescalation->host_name);
-		my_free(temp_serviceescalation->hostgroup_name);
-		my_free(temp_serviceescalation->service_description);
-		my_free(temp_serviceescalation->servicegroup_name);
+		nm_free(temp_serviceescalation->host_name);
+		nm_free(temp_serviceescalation->hostgroup_name);
+		nm_free(temp_serviceescalation->service_description);
+		nm_free(temp_serviceescalation->servicegroup_name);
 
 		/* duplicate service escalation entries */
 		for (list = master_servicelist; list; list = next) {
@@ -3229,17 +3229,17 @@ static int xodtemplate_duplicate_objects(void)
 			xodtemplate_merge_host_extinfo_object(h, temp_hostextinfo);
 		}
 		/* might as well kill it off early */
-		my_free(temp_hostextinfo->template);
-		my_free(temp_hostextinfo->name);
-		my_free(temp_hostextinfo->notes);
-		my_free(temp_hostextinfo->host_name);
-		my_free(temp_hostextinfo->hostgroup_name);
-		my_free(temp_hostextinfo->notes_url);
-		my_free(temp_hostextinfo->action_url);
-		my_free(temp_hostextinfo->icon_image);
-		my_free(temp_hostextinfo->vrml_image);
-		my_free(temp_hostextinfo->statusmap_image);
-		my_free(temp_hostextinfo);
+		nm_free(temp_hostextinfo->template);
+		nm_free(temp_hostextinfo->name);
+		nm_free(temp_hostextinfo->notes);
+		nm_free(temp_hostextinfo->host_name);
+		nm_free(temp_hostextinfo->hostgroup_name);
+		nm_free(temp_hostextinfo->notes_url);
+		nm_free(temp_hostextinfo->action_url);
+		nm_free(temp_hostextinfo->icon_image);
+		nm_free(temp_hostextinfo->vrml_image);
+		nm_free(temp_hostextinfo->statusmap_image);
+		nm_free(temp_hostextinfo);
 	}
 	timing_point("Done merging hostextinfo\n");
 
@@ -3271,17 +3271,17 @@ static int xodtemplate_duplicate_objects(void)
 			xodtemplate_merge_service_extinfo_object(s, temp_serviceextinfo);
 		}
 		/* now we're done, so we might as well kill it off */
-		my_free(temp_serviceextinfo->template);
-		my_free(temp_serviceextinfo->name);
-		my_free(temp_serviceextinfo->host_name);
-		my_free(temp_serviceextinfo->hostgroup_name);
-		my_free(temp_serviceextinfo->service_description);
-		my_free(temp_serviceextinfo->notes);
-		my_free(temp_serviceextinfo->notes_url);
-		my_free(temp_serviceextinfo->action_url);
-		my_free(temp_serviceextinfo->icon_image);
-		my_free(temp_serviceextinfo->icon_image_alt);
-		my_free(temp_serviceextinfo);
+		nm_free(temp_serviceextinfo->template);
+		nm_free(temp_serviceextinfo->name);
+		nm_free(temp_serviceextinfo->host_name);
+		nm_free(temp_serviceextinfo->hostgroup_name);
+		nm_free(temp_serviceextinfo->service_description);
+		nm_free(temp_serviceextinfo->notes);
+		nm_free(temp_serviceextinfo->notes_url);
+		nm_free(temp_serviceextinfo->action_url);
+		nm_free(temp_serviceextinfo->icon_image);
+		nm_free(temp_serviceextinfo->icon_image_alt);
+		nm_free(temp_serviceextinfo);
 	}
 	timing_point("Done merging serviceextinfo\n");
 
@@ -3301,7 +3301,7 @@ static int xodtemplate_clean_additive_string(char **str)
 	/* remove the additive symbol if present */
 	if (*str != NULL && *str[0] == '+') {
 		buf = nm_strdup(*str + 1);
-		my_free(*str);
+		nm_free(*str);
 		*str = buf;
 	}
 
@@ -3437,7 +3437,7 @@ static int xodtemplate_get_inherited_string(char *have_template_value, char **te
 					strcpy(buf, *template_value);
 					strcat(buf, ",");
 					strcat(buf, *this_value + 1);
-					my_free(*this_value);
+					nm_free(*this_value);
 					*this_value = buf;
 				}
 
@@ -3628,7 +3628,7 @@ static int xodtemplate_resolve_timeperiod(xodtemplate_timeperiod *this_timeperio
 		template_timeperiod = xodtemplate_find_timeperiod(temp_ptr);
 		if (template_timeperiod == NULL) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Template '%s' specified in timeperiod definition could not be found (config file '%s', starting on line %d)\n", temp_ptr, xodtemplate_config_file_name(this_timeperiod->_config_file), this_timeperiod->_start_line);
-			my_free(template_names);
+			nm_free(template_names);
 			return ERROR;
 		}
 
@@ -3681,7 +3681,7 @@ static int xodtemplate_resolve_timeperiod(xodtemplate_timeperiod *this_timeperio
 		}
 	}
 
-	my_free(template_names);
+	nm_free(template_names);
 
 	return OK;
 }
@@ -3715,7 +3715,7 @@ static int xodtemplate_resolve_command(xodtemplate_command *this_command)
 		template_command = xodtemplate_find_command(temp_ptr);
 		if (template_command == NULL) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Template '%s' specified in command definition could not be found (config file '%s', starting on line %d)\n", temp_ptr, xodtemplate_config_file_name(this_command->_config_file), this_command->_start_line);
-			my_free(template_names);
+			nm_free(template_names);
 			return ERROR;
 		}
 
@@ -3727,7 +3727,7 @@ static int xodtemplate_resolve_command(xodtemplate_command *this_command)
 		xod_inherit_str_nohave(this_command, template_command, command_line);
 	}
 
-	my_free(template_names);
+	nm_free(template_names);
 
 	return OK;
 }
@@ -3761,7 +3761,7 @@ static int xodtemplate_resolve_contactgroup(xodtemplate_contactgroup *this_conta
 		template_contactgroup = xodtemplate_find_contactgroup(temp_ptr);
 		if (template_contactgroup == NULL) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Template '%s' specified in contactgroup definition could not be found (config file '%s', starting on line %d)\n", temp_ptr, xodtemplate_config_file_name(this_contactgroup->_config_file), this_contactgroup->_start_line);
-			my_free(template_names);
+			nm_free(template_names);
 			return ERROR;
 		}
 
@@ -3777,7 +3777,7 @@ static int xodtemplate_resolve_contactgroup(xodtemplate_contactgroup *this_conta
 
 	}
 
-	my_free(template_names);
+	nm_free(template_names);
 
 	return OK;
 }
@@ -3811,7 +3811,7 @@ static int xodtemplate_resolve_hostgroup(xodtemplate_hostgroup *this_hostgroup)
 		template_hostgroup = xodtemplate_find_hostgroup(temp_ptr);
 		if (template_hostgroup == NULL) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Template '%s' specified in hostgroup definition could not be found (config file '%s', starting on line %d)\n", temp_ptr, xodtemplate_config_file_name(this_hostgroup->_config_file), this_hostgroup->_start_line);
-			my_free(template_names);
+			nm_free(template_names);
 			return ERROR;
 		}
 
@@ -3830,7 +3830,7 @@ static int xodtemplate_resolve_hostgroup(xodtemplate_hostgroup *this_hostgroup)
 		xod_inherit_str(this_hostgroup, template_hostgroup, action_url);
 	}
 
-	my_free(template_names);
+	nm_free(template_names);
 
 	return OK;
 }
@@ -3864,7 +3864,7 @@ static int xodtemplate_resolve_servicegroup(xodtemplate_servicegroup *this_servi
 		template_servicegroup = xodtemplate_find_servicegroup(temp_ptr);
 		if (template_servicegroup == NULL) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Template '%s' specified in servicegroup definition could not be found (config file '%s', starting on line %d)\n", temp_ptr, xodtemplate_config_file_name(this_servicegroup->_config_file), this_servicegroup->_start_line);
-			my_free(template_names);
+			nm_free(template_names);
 			return ERROR;
 		}
 
@@ -3883,7 +3883,7 @@ static int xodtemplate_resolve_servicegroup(xodtemplate_servicegroup *this_servi
 		xod_inherit_str(this_servicegroup, template_servicegroup, action_url);
 	}
 
-	my_free(template_names);
+	nm_free(template_names);
 
 	return OK;
 }
@@ -3917,7 +3917,7 @@ static int xodtemplate_resolve_servicedependency(xodtemplate_servicedependency *
 		template_servicedependency = xodtemplate_find_servicedependency(temp_ptr);
 		if (template_servicedependency == NULL) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Template '%s' specified in service dependency definition could not be found (config file '%s', starting on line %d)\n", temp_ptr, xodtemplate_config_file_name(this_servicedependency->_config_file), this_servicedependency->_start_line);
-			my_free(template_names);
+			nm_free(template_names);
 			return ERROR;
 		}
 
@@ -3953,7 +3953,7 @@ static int xodtemplate_resolve_servicedependency(xodtemplate_servicedependency *
 		}
 	}
 
-	my_free(template_names);
+	nm_free(template_names);
 
 	return OK;
 }
@@ -3986,7 +3986,7 @@ static int xodtemplate_resolve_serviceescalation(xodtemplate_serviceescalation *
 		template_serviceescalation = xodtemplate_find_serviceescalation(temp_ptr);
 		if (template_serviceescalation == NULL) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Template '%s' specified in service escalation definition could not be found (config file '%s', starting on line %d)\n", temp_ptr, xodtemplate_config_file_name(this_serviceescalation->_config_file), this_serviceescalation->_start_line);
-			my_free(template_names);
+			nm_free(template_names);
 			return ERROR;
 		}
 
@@ -4024,7 +4024,7 @@ static int xodtemplate_resolve_serviceescalation(xodtemplate_serviceescalation *
 		}
 	}
 
-	my_free(template_names);
+	nm_free(template_names);
 
 	return OK;
 }
@@ -4061,7 +4061,7 @@ static int xodtemplate_resolve_contact(xodtemplate_contact *this_contact)
 		template_contact = xodtemplate_find_contact(temp_ptr);
 		if (template_contact == NULL) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Template '%s' specified in contact definition could not be found (config file '%s', starting on line %d)\n", temp_ptr, xodtemplate_config_file_name(this_contact->_config_file), this_contact->_start_line);
-			my_free(template_names);
+			nm_free(template_names);
 			return ERROR;
 		}
 
@@ -4107,7 +4107,7 @@ static int xodtemplate_resolve_contact(xodtemplate_contact *this_contact)
 		}
 	}
 
-	my_free(template_names);
+	nm_free(template_names);
 
 	return OK;
 }
@@ -4143,7 +4143,7 @@ static int xodtemplate_resolve_host(xodtemplate_host *this_host)
 		template_host = xodtemplate_find_host(temp_ptr);
 		if (template_host == NULL) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Template '%s' specified in host definition could not be found (config file '%s', starting on line %d)\n", temp_ptr, xodtemplate_config_file_name(this_host->_config_file), this_host->_start_line);
-			my_free(template_names);
+			nm_free(template_names);
 			return ERROR;
 		}
 
@@ -4225,7 +4225,7 @@ static int xodtemplate_resolve_host(xodtemplate_host *this_host)
 		}
 	}
 
-	my_free(template_names);
+	nm_free(template_names);
 
 	return OK;
 }
@@ -4261,7 +4261,7 @@ static int xodtemplate_resolve_service(xodtemplate_service *this_service)
 		template_service = xodtemplate_find_service(temp_ptr);
 		if (template_service == NULL) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Template '%s' specified in service definition could not be found (config file '%s', starting on line %d)\n", temp_ptr, xodtemplate_config_file_name(this_service->_config_file), this_service->_start_line);
-			my_free(template_names);
+			nm_free(template_names);
 			return ERROR;
 		}
 
@@ -4281,7 +4281,7 @@ static int xodtemplate_resolve_service(xodtemplate_service *this_service)
 
 		if (template_service->have_check_command == TRUE) {
 			if (template_service->have_important_check_command == TRUE) {
-				my_free(this_service->check_command);
+				nm_free(this_service->check_command);
 				this_service->have_check_command = FALSE;
 			}
 		}
@@ -4336,7 +4336,7 @@ static int xodtemplate_resolve_service(xodtemplate_service *this_service)
 		}
 	}
 
-	my_free(template_names);
+	nm_free(template_names);
 
 	return OK;
 }
@@ -4370,7 +4370,7 @@ static int xodtemplate_resolve_hostdependency(xodtemplate_hostdependency *this_h
 		template_hostdependency = xodtemplate_find_hostdependency(temp_ptr);
 		if (template_hostdependency == NULL) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Template '%s' specified in host dependency definition could not be found (config file '%s', starting on line %d)\n", temp_ptr, xodtemplate_config_file_name(this_hostdependency->_config_file), this_hostdependency->_start_line);
-			my_free(template_names);
+			nm_free(template_names);
 			return ERROR;
 		}
 
@@ -4390,7 +4390,7 @@ static int xodtemplate_resolve_hostdependency(xodtemplate_hostdependency *this_h
 		xod_inherit(this_hostdependency, template_hostdependency, notification_failure_options);
 	}
 
-	my_free(template_names);
+	nm_free(template_names);
 
 	return OK;
 }
@@ -4424,7 +4424,7 @@ static int xodtemplate_resolve_hostescalation(xodtemplate_hostescalation *this_h
 		template_hostescalation = xodtemplate_find_hostescalation(temp_ptr);
 		if (template_hostescalation == NULL) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Template '%s' specified in host escalation definition could not be found (config file '%s', starting on line %d)\n", temp_ptr, xodtemplate_config_file_name(this_hostescalation->_config_file), this_hostescalation->_start_line);
-			my_free(template_names);
+			nm_free(template_names);
 			return ERROR;
 		}
 
@@ -4444,7 +4444,7 @@ static int xodtemplate_resolve_hostescalation(xodtemplate_hostescalation *this_h
 		xod_inherit(this_hostescalation, template_hostescalation, escalation_options);
 	}
 
-	my_free(template_names);
+	nm_free(template_names);
 
 	return OK;
 }
@@ -4478,7 +4478,7 @@ static int xodtemplate_resolve_hostextinfo(xodtemplate_hostextinfo *this_hostext
 		template_hostextinfo = xodtemplate_find_hostextinfo(temp_ptr);
 		if (template_hostextinfo == NULL) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Template '%s' specified in extended host info definition could not be found (config file '%s', starting on line %d)\n", temp_ptr, xodtemplate_config_file_name(this_hostextinfo->_config_file), this_hostextinfo->_start_line);
-			my_free(template_names);
+			nm_free(template_names);
 			return ERROR;
 		}
 
@@ -4509,7 +4509,7 @@ static int xodtemplate_resolve_hostextinfo(xodtemplate_hostextinfo *this_hostext
 		}
 	}
 
-	my_free(template_names);
+	nm_free(template_names);
 
 	return OK;
 }
@@ -4543,7 +4543,7 @@ static int xodtemplate_resolve_serviceextinfo(xodtemplate_serviceextinfo *this_s
 		template_serviceextinfo = xodtemplate_find_serviceextinfo(temp_ptr);
 		if (template_serviceextinfo == NULL) {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Template '%s' specified in extended service info definition could not be found (config file '%s', starting on line %d)\n", temp_ptr, xodtemplate_config_file_name(this_serviceextinfo->_config_file), this_serviceextinfo->_start_line);
-			my_free(template_names);
+			nm_free(template_names);
 			return ERROR;
 		}
 
@@ -4561,7 +4561,7 @@ static int xodtemplate_resolve_serviceextinfo(xodtemplate_serviceextinfo *this_s
 		xod_inherit_str(this_serviceextinfo, template_serviceextinfo, icon_image_alt);
 	}
 
-	my_free(template_names);
+	nm_free(template_names);
 
 	return OK;
 }
@@ -4738,9 +4738,9 @@ static int xodtemplate_add_member_to_memberlist(xodtemplate_memberlist **list, c
 		new_item->name2 = nm_strdup(name2);
 
 	if (error == TRUE) {
-		my_free(new_item->name1);
-		my_free(new_item->name2);
-		my_free(new_item);
+		nm_free(new_item->name1);
+		nm_free(new_item->name2);
+		nm_free(new_item);
 		return ERROR;
 	}
 
@@ -4761,9 +4761,9 @@ static int xodtemplate_free_memberlist(xodtemplate_memberlist **temp_list)
 	/* free memory allocated to member name list */
 	for (this_memberlist = *temp_list; this_memberlist != NULL; this_memberlist = next_memberlist) {
 		next_memberlist = this_memberlist->next;
-		my_free(this_memberlist->name1);
-		my_free(this_memberlist->name2);
-		my_free(this_memberlist);
+		nm_free(this_memberlist->name1);
+		nm_free(this_memberlist->name2);
+		nm_free(this_memberlist);
 	}
 
 	*temp_list = NULL;
@@ -4796,9 +4796,9 @@ static void xodtemplate_remove_memberlist_item(xodtemplate_memberlist *item, xod
 		}
 	}
 
-	my_free(item->name1);
-	my_free(item->name2);
-	my_free(item);
+	nm_free(item->name1);
+	nm_free(item->name2);
+	nm_free(item);
 
 	return;
 }
@@ -4846,7 +4846,7 @@ static int xodtemplate_get_contactgroup_names(xodtemplate_memberlist **list, xod
 
 			/* compile regular expression */
 			if (regcomp(&preg, temp_ptr, REG_EXTENDED)) {
-				my_free(contactgroup_names);
+				nm_free(contactgroup_names);
 				return ERROR;
 			}
 
@@ -4915,7 +4915,7 @@ static int xodtemplate_get_contactgroup_names(xodtemplate_memberlist **list, xod
 	}
 
 	/* free memory */
-	my_free(contactgroup_names);
+	nm_free(contactgroup_names);
 
 	if (found_match == FALSE)
 		return ERROR;
@@ -5020,7 +5020,7 @@ static int xodtemplate_get_hostgroup_names(xodtemplate_memberlist **list, xodtem
 
 			/* compile regular expression */
 			if (regcomp(&preg, temp_ptr, REG_EXTENDED)) {
-				my_free(hostgroup_names);
+				nm_free(hostgroup_names);
 				return ERROR;
 			}
 
@@ -5089,7 +5089,7 @@ static int xodtemplate_get_hostgroup_names(xodtemplate_memberlist **list, xodtem
 	}
 
 	/* free memory */
-	my_free(hostgroup_names);
+	nm_free(hostgroup_names);
 
 	if (found_match == FALSE)
 		return ERROR;
@@ -5194,7 +5194,7 @@ static int xodtemplate_get_servicegroup_names(xodtemplate_memberlist **list, xod
 
 			/* compile regular expression */
 			if (regcomp(&preg, temp_ptr, REG_EXTENDED)) {
-				my_free(servicegroup_names);
+				nm_free(servicegroup_names);
 				return ERROR;
 			}
 
@@ -5263,7 +5263,7 @@ static int xodtemplate_get_servicegroup_names(xodtemplate_memberlist **list, xod
 	}
 
 	/* free memory */
-	my_free(servicegroup_names);
+	nm_free(servicegroup_names);
 
 	if (found_match == FALSE)
 		return ERROR;
@@ -5405,7 +5405,7 @@ static int xodtemplate_recombobulate_contactgroups(void)
 				}
 				prepend_object_to_objectlist(&temp_contactgroup->group_list, cg);
 			}
-			my_free(temp_contactgroup->contactgroup_members);
+			nm_free(temp_contactgroup->contactgroup_members);
 		}
 
 		/* move on if we have no members */
@@ -5427,7 +5427,7 @@ static int xodtemplate_recombobulate_contactgroups(void)
 			return ERROR;
 		}
 
-		my_free(temp_contactgroup->members);
+		nm_free(temp_contactgroup->members);
 		for (list = accepted; list; list = next) {
 			temp_contact = (xodtemplate_contact *)list->object_ptr;
 			next = list->next;
@@ -5464,7 +5464,7 @@ static int xodtemplate_recombobulate_contactgroups(void)
 			temp_contactgroup = xodtemplate_find_real_contactgroup(temp_ptr);
 			if (temp_contactgroup == NULL) {
 				logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not find contactgroup '%s' specified in contact '%s' definition (config file '%s', starting on line %d)\n", temp_ptr, temp_contact->contact_name, xodtemplate_config_file_name(temp_contact->_config_file), temp_contact->_start_line);
-				my_free(contactgroup_names);
+				nm_free(contactgroup_names);
 				return ERROR;
 			}
 
@@ -5478,7 +5478,7 @@ static int xodtemplate_recombobulate_contactgroups(void)
 		}
 
 		/* free memory */
-		my_free(contactgroup_names);
+		nm_free(contactgroup_names);
 	}
 
 	/* expand subgroup membership recursively */
@@ -5602,7 +5602,7 @@ static int xodtemplate_recombobulate_hostgroups(void)
 			return ERROR;
 		}
 
-		my_free(temp_hostgroup->members);
+		nm_free(temp_hostgroup->members);
 
 		for (list = accepted; list; list = next) {
 			temp_host = (xodtemplate_host *)list->object_ptr;
@@ -5645,7 +5645,7 @@ static int xodtemplate_recombobulate_hostgroups(void)
 			temp_hostgroup = xodtemplate_find_real_hostgroup(temp_ptr);
 			if (temp_hostgroup == NULL) {
 				logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not find hostgroup '%s' specified in host '%s' definition (config file '%s', starting on line %d)\n", temp_ptr, temp_host->host_name, xodtemplate_config_file_name(temp_host->_config_file), temp_host->_start_line);
-				my_free(hostgroup_names);
+				nm_free(hostgroup_names);
 				return ERROR;
 			}
 			if (!temp_hostgroup->member_map && !(temp_hostgroup->member_map = bitmap_create(xodcount.hosts))) {
@@ -5659,7 +5659,7 @@ static int xodtemplate_recombobulate_hostgroups(void)
 		}
 
 		/* free memory */
-		my_free(hostgroup_names);
+		nm_free(hostgroup_names);
 	}
 
 	/* expand subgroup membership recursively */
@@ -5764,7 +5764,7 @@ static int xodtemplate_recombobulate_servicegroups(void)
 				if (!next_ptr)
 					break;
 			}
-			my_free(temp_servicegroup->servicegroup_members);
+			nm_free(temp_servicegroup->servicegroup_members);
 		}
 
 		/* move on if we have no members */
@@ -5785,7 +5785,7 @@ static int xodtemplate_recombobulate_servicegroups(void)
 		}
 
 		/* we don't need this anymore */
-		my_free(temp_servicegroup->members);
+		nm_free(temp_servicegroup->members);
 
 		for (list = accepted; list; list = next) {
 			xodtemplate_service *s = (xodtemplate_service *)list->object_ptr;
@@ -5828,7 +5828,7 @@ static int xodtemplate_recombobulate_servicegroups(void)
 			temp_servicegroup = xodtemplate_find_real_servicegroup(temp_ptr);
 			if (temp_servicegroup == NULL) {
 				logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not find servicegroup '%s' specified in service '%s' on host '%s' definition (config file '%s', starting on line %d)\n", temp_ptr, temp_service->service_description, temp_service->host_name, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
-				my_free(servicegroup_names);
+				nm_free(servicegroup_names);
 				return ERROR;
 			}
 
@@ -5841,7 +5841,7 @@ static int xodtemplate_recombobulate_servicegroups(void)
 		}
 
 		/* free servicegroup names */
-		my_free(servicegroup_names);
+		nm_free(servicegroup_names);
 	}
 
 	/* expand subgroup membership recursively */
@@ -6349,12 +6349,12 @@ static int xodtemplate_register_and_destroy_hostdependency(void *hd_)
 		return ERROR;
 	}
 
-	my_free(temp_hostdependency->name);
-	my_free(temp_hostdependency->template);
-	my_free(temp_hostdependency->host_name);
-	my_free(temp_hostdependency->hostgroup_name);
-	my_free(temp_hostdependency->dependent_host_name);
-	my_free(temp_hostdependency->dependent_hostgroup_name);
+	nm_free(temp_hostdependency->name);
+	nm_free(temp_hostdependency->template);
+	nm_free(temp_hostdependency->host_name);
+	nm_free(temp_hostdependency->hostgroup_name);
+	nm_free(temp_hostdependency->dependent_host_name);
+	nm_free(temp_hostdependency->dependent_hostgroup_name);
 
 	/* duplicate the dependency definitions */
 	for (list = master_hostlist; list; list = next) {
@@ -6377,8 +6377,8 @@ static int xodtemplate_register_and_destroy_hostdependency(void *hd_)
 	}
 
 	free_objectlist(&dependent_hostlist);
-	my_free(temp_hostdependency->dependency_period);
-	my_free(temp_hostdependency);
+	nm_free(temp_hostdependency->dependency_period);
+	nm_free(temp_hostdependency);
 
 	return OK;
 }
@@ -6450,11 +6450,11 @@ static int xodtemplate_register_and_destroy_hostescalation(void *he_)
 
 	result = xodtemplate_register_hostescalation(he);
 	if (he->is_copy == FALSE) {
-		my_free(he->escalation_period);
+		nm_free(he->escalation_period);
 	}
-	my_free(he->contact_groups);
-	my_free(he->contacts);
-	my_free(he);
+	nm_free(he->contact_groups);
+	nm_free(he->contacts);
+	nm_free(he);
 
 	return result;
 }
@@ -6673,17 +6673,17 @@ static int xodtemplate_register_and_destroy_servicedependency(void *sd_)
 	dhname = temp_servicedependency->dependent_host_name;
 	dsdesc = temp_servicedependency->dependent_service_description;
 
-	my_free(temp_servicedependency->name);
-	my_free(temp_servicedependency->template);
+	nm_free(temp_servicedependency->name);
+	nm_free(temp_servicedependency->template);
 
 	/* skip templates, but free them first */
 	if (temp_servicedependency->register_object == 0) {
-		my_free(temp_servicedependency->host_name);
-		my_free(temp_servicedependency->service_description);
-		my_free(temp_servicedependency->hostgroup_name);
-		my_free(temp_servicedependency->dependent_host_name);
-		my_free(temp_servicedependency->dependent_service_description);
-		my_free(temp_servicedependency->dependent_hostgroup_name);
+		nm_free(temp_servicedependency->host_name);
+		nm_free(temp_servicedependency->service_description);
+		nm_free(temp_servicedependency->hostgroup_name);
+		nm_free(temp_servicedependency->dependent_host_name);
+		nm_free(temp_servicedependency->dependent_service_description);
+		nm_free(temp_servicedependency->dependent_hostgroup_name);
 		return OK;
 	}
 
@@ -6801,16 +6801,16 @@ static int xodtemplate_register_and_destroy_servicedependency(void *sd_)
 	if (same_host == FALSE)
 		free_objectlist(&children);
 
-	my_free(hname);
-	my_free(sdesc);
-	my_free(dhname);
-	my_free(dsdesc);
-	my_free(temp_servicedependency->hostgroup_name);
-	my_free(temp_servicedependency->servicegroup_name);
-	my_free(temp_servicedependency->dependent_hostgroup_name);
-	my_free(temp_servicedependency->dependent_servicegroup_name);
-	my_free(temp_servicedependency->dependency_period);
-	my_free(temp_servicedependency);
+	nm_free(hname);
+	nm_free(sdesc);
+	nm_free(dhname);
+	nm_free(dsdesc);
+	nm_free(temp_servicedependency->hostgroup_name);
+	nm_free(temp_servicedependency->servicegroup_name);
+	nm_free(temp_servicedependency->dependent_hostgroup_name);
+	nm_free(temp_servicedependency->dependent_servicegroup_name);
+	nm_free(temp_servicedependency->dependency_period);
+	nm_free(temp_servicedependency);
 	return OK;
 }
 
@@ -6881,11 +6881,11 @@ static int xodtemplate_register_and_destroy_serviceescalation(void *se_)
 	result = xodtemplate_register_serviceescalation(se);
 
 	if (se->is_copy == FALSE)
-		my_free(se->escalation_period);
+		nm_free(se->escalation_period);
 
-	my_free(se->contact_groups);
-	my_free(se->contacts);
-	my_free(se);
+	nm_free(se->contact_groups);
+	nm_free(se->contacts);
+	nm_free(se);
 
 	return result;
 }
@@ -7835,7 +7835,7 @@ static int xodtemplate_add_object_property(char *input, int options)
 			/* make sure we have a variable name */
 			if (!strcmp(customvarname, "")) {
 				logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Empty custom variable name.\n");
-				my_free(customvarname);
+				nm_free(customvarname);
 				return ERROR;
 			}
 
@@ -7847,14 +7847,14 @@ static int xodtemplate_add_object_property(char *input, int options)
 
 			/* add the custom variable */
 			if (xodtemplate_add_custom_variable_to_contact(temp_contact, customvarname, customvarvalue) == NULL) {
-				my_free(customvarname);
-				my_free(customvarvalue);
+				nm_free(customvarname);
+				nm_free(customvarvalue);
 				return ERROR;
 			}
 
 			/* free memory */
-			my_free(customvarname);
-			my_free(customvarvalue);
+			nm_free(customvarname);
+			nm_free(customvarvalue);
 		} else {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Invalid contact object directive '%s'.\n", variable);
 			return ERROR;
@@ -8151,7 +8151,7 @@ static int xodtemplate_add_object_property(char *input, int options)
 			/* make sure we have a variable name */
 			if (customvarname == NULL || !strcmp(customvarname, "")) {
 				logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Null custom variable name.\n");
-				my_free(customvarname);
+				nm_free(customvarname);
 				return ERROR;
 			}
 
@@ -8162,14 +8162,14 @@ static int xodtemplate_add_object_property(char *input, int options)
 
 			/* add the custom variable */
 			if (xodtemplate_add_custom_variable_to_host(temp_host, customvarname, customvarvalue) == NULL) {
-				my_free(customvarname);
-				my_free(customvarvalue);
+				nm_free(customvarname);
+				nm_free(customvarvalue);
 				return ERROR;
 			}
 
 			/* free memory */
-			my_free(customvarname);
-			my_free(customvarvalue);
+			nm_free(customvarname);
+			nm_free(customvarvalue);
 		} else {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Invalid host object directive '%s'.\n", variable);
 			return ERROR;
@@ -8468,7 +8468,7 @@ static int xodtemplate_add_object_property(char *input, int options)
 			/* make sure we have a variable name */
 			if (customvarname == NULL || !strcmp(customvarname, "")) {
 				logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Null custom variable name.\n");
-				my_free(customvarname);
+				nm_free(customvarname);
 				return ERROR;
 			}
 
@@ -8480,14 +8480,14 @@ static int xodtemplate_add_object_property(char *input, int options)
 
 			/* add the custom variable */
 			if (xodtemplate_add_custom_variable_to_service(temp_service, customvarname, customvarvalue) == NULL) {
-				my_free(customvarname);
-				my_free(customvarvalue);
+				nm_free(customvarname);
+				nm_free(customvarvalue);
 				return ERROR;
 			}
 
 			/* free memory */
-			my_free(customvarname);
-			my_free(customvarvalue);
+			nm_free(customvarname);
+			nm_free(customvarvalue);
 		} else {
 			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Invalid service object directive '%s'.\n", variable);
 			return ERROR;
@@ -8885,7 +8885,7 @@ static int xodtemplate_process_config_file(char *filename, int options)
 	while (1) {
 
 		/* free memory */
-		my_free(input);
+		nm_free(input);
 
 		/* read the next line */
 		if ((input = mmap_fgets_multiline(thefile)) == NULL)
@@ -9023,7 +9023,7 @@ static int xodtemplate_process_config_file(char *filename, int options)
 	}
 
 	/* free memory and close file */
-	my_free(input);
+	nm_free(input);
 	mmap_fclose(thefile);
 
 	/* whoops - EOF while we were in the middle of an object definition... */

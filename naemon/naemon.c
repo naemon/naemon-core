@@ -546,7 +546,7 @@ int main(int argc, char **argv)
 		/* NOTE 11/06/07 EG moved to after we read config files, as user may have overridden timezone offset */
 		/* get program (re)start time and save as macro */
 		program_start = time(NULL);
-		my_free(mac->x[MACRO_PROCESSSTARTTIME]);
+		nm_free(mac->x[MACRO_PROCESSSTARTTIME]);
 		nm_asprintf(&mac->x[MACRO_PROCESSSTARTTIME], "%lu", (unsigned long)program_start);
 
 		/* drop privileges */
@@ -764,7 +764,7 @@ int main(int argc, char **argv)
 
 		/* get event start time and save as macro */
 		event_start = time(NULL);
-		my_free(mac->x[MACRO_EVENTSTARTTIME]);
+		nm_free(mac->x[MACRO_EVENTSTARTTIME]);
 		nm_asprintf(&mac->x[MACRO_EVENTSTARTTIME], "%lu", (unsigned long)event_start);
 
 		timing_point("Entering event execution loop\n");
@@ -832,10 +832,10 @@ int main(int argc, char **argv)
 		unlink(lock_file);
 
 	/* free misc memory */
-	my_free(lock_file);
-	my_free(config_file);
-	my_free(config_file_dir);
-	my_free(naemon_binary_path);
+	nm_free(lock_file);
+	nm_free(config_file);
+	nm_free(config_file_dir);
+	nm_free(naemon_binary_path);
 
 	return OK;
 }

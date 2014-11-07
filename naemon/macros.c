@@ -157,7 +157,7 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 		 */
 		if (result != OK) {
 			if (free_macro == TRUE)
-				my_free(selected_macro);
+				nm_free(selected_macro);
 
 			/* add the plain text to the end of the already processed buffer */
 			*output_buffer = nm_realloc(*output_buffer, strlen(*output_buffer) + strlen(temp_buffer) + 3);
@@ -181,7 +181,7 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 				original_macro = selected_macro;
 				selected_macro = get_url_encoded_string(selected_macro);
 				if (free_macro == TRUE) {
-					my_free(original_macro);
+					nm_free(original_macro);
 				}
 				free_macro = TRUE;
 			}
@@ -214,7 +214,7 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 
 			/* free memory if necessary (if we URL encoded the macro or we were told to do so by grab_macro_value()) */
 			if (free_macro == TRUE)
-				my_free(selected_macro);
+				nm_free(selected_macro);
 
 			log_debug_info(DEBUGL_MACROS, 2, "  Just finished macro.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
 		}
@@ -223,7 +223,7 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 	}
 
 	/* free copy of input buffer */
-	my_free(save_buffer);
+	nm_free(save_buffer);
 
 	log_debug_info(DEBUGL_MACROS, 1, "  Done.  Final output: '%s'\n", *output_buffer);
 	log_debug_info(DEBUGL_MACROS, 1, "**** END MACRO PROCESSING *************\n");
@@ -390,7 +390,7 @@ int grab_macro_value_r(nagios_macros *mac, char *macro_buffer, char **output, in
 		return ERROR;
 
 	/* clear the old macro value */
-	my_free(*output);
+	nm_free(*output);
 
 	if (macro_buffer == NULL || free_macro == NULL)
 		return ERROR;
@@ -489,7 +489,7 @@ int grab_macro_value_r(nagios_macros *mac, char *macro_buffer, char **output, in
 
 			/* use the saved pointer */
 			if ((temp_contact = mac->contact_ptr) == NULL) {
-				my_free(buf);
+				nm_free(buf);
 				return ERROR;
 			}
 
@@ -529,7 +529,7 @@ int grab_macro_value_r(nagios_macros *mac, char *macro_buffer, char **output, in
 						strcat(*output, arg[1]);
 						strcat(*output, temp_buffer);
 					}
-					my_free(temp_buffer);
+					nm_free(temp_buffer);
 				}
 			}
 
@@ -538,7 +538,7 @@ int grab_macro_value_r(nagios_macros *mac, char *macro_buffer, char **output, in
 
 				/* find the contact */
 				if ((temp_contact = find_contact(arg[0])) == NULL) {
-					my_free(buf);
+					nm_free(buf);
 					return ERROR;
 				}
 
@@ -562,7 +562,7 @@ int grab_macro_value_r(nagios_macros *mac, char *macro_buffer, char **output, in
 	}
 
 	/* free memory */
-	my_free(buf);
+	nm_free(buf);
 
 	return result;
 }
@@ -712,7 +712,7 @@ int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, char *ar
 					strcat(*output, temp_buffer);
 				}
 				if (free_sub_macro == TRUE)
-					my_free(temp_buffer);
+					nm_free(temp_buffer);
 			}
 		}
 		break;
@@ -852,7 +852,7 @@ int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, char *ar
 						strcat(*output, temp_buffer);
 					}
 					if (free_sub_macro == TRUE)
-						my_free(temp_buffer);
+						nm_free(temp_buffer);
 				}
 			} else
 				return ERROR;
@@ -941,7 +941,7 @@ int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, char *ar
 					strcat(*output, arg2);
 					strcat(*output, temp_buffer);
 				}
-				my_free(temp_buffer);
+				nm_free(temp_buffer);
 			}
 		}
 		break;
@@ -1148,7 +1148,7 @@ int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, char *ar
 
 			/* these macros are time-intensive to compute, and will likely be used together, so save them all for future use */
 			for (x = MACRO_TOTALHOSTSUP; x <= MACRO_TOTALSERVICEPROBLEMSUNHANDLED; x++)
-				my_free(mac->x[x]);
+				nm_free(mac->x[x]);
 			nm_asprintf(&mac->x[MACRO_TOTALHOSTSUP], "%d", hosts_up);
 			nm_asprintf(&mac->x[MACRO_TOTALHOSTSDOWN], "%d", hosts_down);
 			nm_asprintf(&mac->x[MACRO_TOTALHOSTSUNREACHABLE], "%d", hosts_unreachable);
@@ -1255,7 +1255,7 @@ int grab_custom_macro_value_r(nagios_macros *mac, char *macro_name, char *arg1, 
 					strcat(*output, arg2);
 					strcat(*output, temp_buffer);
 				}
-				my_free(temp_buffer);
+				nm_free(temp_buffer);
 			}
 		}
 	}
@@ -1312,7 +1312,7 @@ int grab_custom_macro_value_r(nagios_macros *mac, char *macro_name, char *arg1, 
 						strcat(*output, arg2);
 						strcat(*output, temp_buffer);
 					}
-					my_free(temp_buffer);
+					nm_free(temp_buffer);
 				}
 			}
 		}
@@ -1366,7 +1366,7 @@ int grab_custom_macro_value_r(nagios_macros *mac, char *macro_name, char *arg1, 
 					strcat(*output, arg2);
 					strcat(*output, temp_buffer);
 				}
-				my_free(temp_buffer);
+				nm_free(temp_buffer);
 			}
 		}
 	}
@@ -1643,12 +1643,12 @@ int grab_standard_host_macro_r(nagios_macros *mac, int macro_type, host *temp_ho
 				continue;
 
 			nm_asprintf(&buf1, "%s%s%s", (buf2) ? buf2 : "", (buf2) ? "," : "", temp_hostgroup->group_name);
-			my_free(buf2);
+			nm_free(buf2);
 			buf2 = buf1;
 		}
 		if (buf2) {
 			*output = nm_strdup(buf2);
-			my_free(buf2);
+			nm_free(buf2);
 		}
 		break;
 	case MACRO_TOTALHOSTSERVICES:
@@ -2009,12 +2009,12 @@ int grab_standard_service_macro_r(nagios_macros *mac, int macro_type, service *t
 				continue;
 
 			nm_asprintf(&buf1, "%s%s%s", (buf2) ? buf2 : "", (buf2) ? "," : "", temp_servicegroup->group_name);
-			my_free(buf2);
+			nm_free(buf2);
 			buf2 = buf1;
 		}
 		if (buf2) {
 			*output = nm_strdup(buf2);
-			my_free(buf2);
+			nm_free(buf2);
 		}
 		break;
 		/***************/
@@ -2195,12 +2195,12 @@ int grab_standard_contact_macro_r(nagios_macros *mac, int macro_type, contact *t
 				continue;
 
 			nm_asprintf(&buf1, "%s%s%s", (buf2) ? buf2 : "", (buf2) ? "," : "", temp_contactgroup->group_name);
-			my_free(buf2);
+			nm_free(buf2);
 			buf2 = buf1;
 		}
 		if (buf2) {
 			*output = nm_strdup(buf2);
-			my_free(buf2);
+			nm_free(buf2);
 		}
 		break;
 	default:
@@ -2671,7 +2671,7 @@ int free_macrox_names(void)
 
 	/* free each macro name */
 	for (x = 0; x < MACRO_X_COUNT; x++)
-		my_free(macro_x_names[x]);
+		nm_free(macro_x_names[x]);
 
 	return OK;
 }
@@ -2685,7 +2685,7 @@ int clear_argv_macros_r(nagios_macros *mac)
 
 	/* command argument macros */
 	for (x = 0; x < MAX_COMMAND_ARGUMENTS; x++)
-		my_free(mac->argv[x]);
+		nm_free(mac->argv[x]);
 
 	return OK;
 }
@@ -2754,14 +2754,14 @@ int clear_volatile_macros_r(nagios_macros *mac)
 			/* these don't change during the course of monitoring, so no need to free them */
 			break;
 		default:
-			my_free(mac->x[x]);
+			nm_free(mac->x[x]);
 			break;
 		}
 	}
 
 	/* contact address macros */
 	for (x = 0; x < MAX_CONTACT_ADDRESSES; x++)
-		my_free(mac->contactaddress[x]);
+		nm_free(mac->contactaddress[x]);
 
 	/* clear macro pointers */
 	mac->host_ptr = NULL;
@@ -2772,7 +2772,7 @@ int clear_volatile_macros_r(nagios_macros *mac)
 	mac->contactgroup_ptr = NULL;
 
 	/* clear on-demand macro */
-	my_free(mac->ondemand);
+	nm_free(mac->ondemand);
 
 	/* clear ARGx macros */
 	clear_argv_macros_r(mac);
@@ -2780,27 +2780,27 @@ int clear_volatile_macros_r(nagios_macros *mac)
 	/* clear custom host variables */
 	for (this_customvariablesmember = mac->custom_host_vars; this_customvariablesmember != NULL; this_customvariablesmember = next_customvariablesmember) {
 		next_customvariablesmember = this_customvariablesmember->next;
-		my_free(this_customvariablesmember->variable_name);
-		my_free(this_customvariablesmember->variable_value);
-		my_free(this_customvariablesmember);
+		nm_free(this_customvariablesmember->variable_name);
+		nm_free(this_customvariablesmember->variable_value);
+		nm_free(this_customvariablesmember);
 	}
 	mac->custom_host_vars = NULL;
 
 	/* clear custom service variables */
 	for (this_customvariablesmember = mac->custom_service_vars; this_customvariablesmember != NULL; this_customvariablesmember = next_customvariablesmember) {
 		next_customvariablesmember = this_customvariablesmember->next;
-		my_free(this_customvariablesmember->variable_name);
-		my_free(this_customvariablesmember->variable_value);
-		my_free(this_customvariablesmember);
+		nm_free(this_customvariablesmember->variable_name);
+		nm_free(this_customvariablesmember->variable_value);
+		nm_free(this_customvariablesmember);
 	}
 	mac->custom_service_vars = NULL;
 
 	/* clear custom contact variables */
 	for (this_customvariablesmember = mac->custom_contact_vars; this_customvariablesmember != NULL; this_customvariablesmember = next_customvariablesmember) {
 		next_customvariablesmember = this_customvariablesmember->next;
-		my_free(this_customvariablesmember->variable_name);
-		my_free(this_customvariablesmember->variable_value);
-		my_free(this_customvariablesmember);
+		nm_free(this_customvariablesmember->variable_name);
+		nm_free(this_customvariablesmember->variable_value);
+		nm_free(this_customvariablesmember);
 	}
 	mac->custom_contact_vars = NULL;
 
@@ -2821,19 +2821,19 @@ int clear_service_macros_r(nagios_macros *mac)
 	customvariablesmember *next_customvariablesmember = NULL;
 
 	/* these are recursive but persistent. what to do? */
-	my_free(mac->x[MACRO_SERVICECHECKCOMMAND]);
-	my_free(mac->x[MACRO_SERVICEACTIONURL]);
-	my_free(mac->x[MACRO_SERVICENOTESURL]);
-	my_free(mac->x[MACRO_SERVICENOTES]);
+	nm_free(mac->x[MACRO_SERVICECHECKCOMMAND]);
+	nm_free(mac->x[MACRO_SERVICEACTIONURL]);
+	nm_free(mac->x[MACRO_SERVICENOTESURL]);
+	nm_free(mac->x[MACRO_SERVICENOTES]);
 
-	my_free(mac->x[MACRO_SERVICEGROUPNAMES]);
+	nm_free(mac->x[MACRO_SERVICEGROUPNAMES]);
 
 	/* clear custom service variables */
 	for (this_customvariablesmember = mac->custom_service_vars; this_customvariablesmember != NULL; this_customvariablesmember = next_customvariablesmember) {
 		next_customvariablesmember = this_customvariablesmember->next;
-		my_free(this_customvariablesmember->variable_name);
-		my_free(this_customvariablesmember->variable_value);
-		my_free(this_customvariablesmember);
+		nm_free(this_customvariablesmember->variable_name);
+		nm_free(this_customvariablesmember->variable_value);
+		nm_free(this_customvariablesmember);
 	}
 	mac->custom_service_vars = NULL;
 
@@ -2855,20 +2855,20 @@ int clear_host_macros_r(nagios_macros *mac)
 	customvariablesmember *next_customvariablesmember = NULL;
 
 	/* these are recursive but persistent. what to do? */
-	my_free(mac->x[MACRO_HOSTCHECKCOMMAND]);
-	my_free(mac->x[MACRO_HOSTACTIONURL]);
-	my_free(mac->x[MACRO_HOSTNOTESURL]);
-	my_free(mac->x[MACRO_HOSTNOTES]);
+	nm_free(mac->x[MACRO_HOSTCHECKCOMMAND]);
+	nm_free(mac->x[MACRO_HOSTACTIONURL]);
+	nm_free(mac->x[MACRO_HOSTNOTESURL]);
+	nm_free(mac->x[MACRO_HOSTNOTES]);
 
 	/* numbers or by necessity autogenerated strings */
-	my_free(mac->x[MACRO_HOSTGROUPNAMES]);
+	nm_free(mac->x[MACRO_HOSTGROUPNAMES]);
 
 	/* clear custom host variables */
 	for (this_customvariablesmember = mac->custom_host_vars; this_customvariablesmember != NULL; this_customvariablesmember = next_customvariablesmember) {
 		next_customvariablesmember = this_customvariablesmember->next;
-		my_free(this_customvariablesmember->variable_name);
-		my_free(this_customvariablesmember->variable_value);
-		my_free(this_customvariablesmember);
+		nm_free(this_customvariablesmember->variable_name);
+		nm_free(this_customvariablesmember->variable_value);
+		nm_free(this_customvariablesmember);
 	}
 	mac->custom_host_vars = NULL;
 
@@ -2889,12 +2889,12 @@ int clear_hostgroup_macros_r(nagios_macros *mac)
 {
 
 	/* recursive but persistent. what to do? */
-	my_free(mac->x[MACRO_HOSTGROUPACTIONURL]);
-	my_free(mac->x[MACRO_HOSTGROUPNOTESURL]);
-	my_free(mac->x[MACRO_HOSTGROUPNOTES]);
+	nm_free(mac->x[MACRO_HOSTGROUPACTIONURL]);
+	nm_free(mac->x[MACRO_HOSTGROUPNOTESURL]);
+	nm_free(mac->x[MACRO_HOSTGROUPNOTES]);
 
 	/* generated */
-	my_free(mac->x[MACRO_HOSTGROUPMEMBERS]);
+	nm_free(mac->x[MACRO_HOSTGROUPMEMBERS]);
 
 	/* clear pointers */
 	mac->hostgroup_ptr = NULL;
@@ -2912,12 +2912,12 @@ int clear_hostgroup_macros(void)
 int clear_servicegroup_macros_r(nagios_macros *mac)
 {
 	/* recursive but persistent. what to do? */
-	my_free(mac->x[MACRO_SERVICEGROUPACTIONURL]);
-	my_free(mac->x[MACRO_SERVICEGROUPNOTESURL]);
-	my_free(mac->x[MACRO_SERVICEGROUPNOTES]);
+	nm_free(mac->x[MACRO_SERVICEGROUPACTIONURL]);
+	nm_free(mac->x[MACRO_SERVICEGROUPNOTESURL]);
+	nm_free(mac->x[MACRO_SERVICEGROUPNOTES]);
 
 	/* generated */
-	my_free(mac->x[MACRO_SERVICEGROUPMEMBERS]);
+	nm_free(mac->x[MACRO_SERVICEGROUPMEMBERS]);
 
 	/* clear pointers */
 	mac->servicegroup_ptr = NULL;
@@ -2938,14 +2938,14 @@ int clear_contact_macros_r(nagios_macros *mac)
 	customvariablesmember *next_customvariablesmember = NULL;
 
 	/* generated */
-	my_free(mac->x[MACRO_CONTACTGROUPNAMES]);
+	nm_free(mac->x[MACRO_CONTACTGROUPNAMES]);
 
 	/* clear custom contact variables */
 	for (this_customvariablesmember = mac->custom_contact_vars; this_customvariablesmember != NULL; this_customvariablesmember = next_customvariablesmember) {
 		next_customvariablesmember = this_customvariablesmember->next;
-		my_free(this_customvariablesmember->variable_name);
-		my_free(this_customvariablesmember->variable_value);
-		my_free(this_customvariablesmember);
+		nm_free(this_customvariablesmember->variable_name);
+		nm_free(this_customvariablesmember->variable_value);
+		nm_free(this_customvariablesmember);
 	}
 	mac->custom_contact_vars = NULL;
 
@@ -2965,7 +2965,7 @@ int clear_contact_macros(void)
 int clear_contactgroup_macros_r(nagios_macros *mac)
 {
 	/* generated */
-	my_free(mac->x[MACRO_CONTACTGROUPMEMBERS]);
+	nm_free(mac->x[MACRO_CONTACTGROUPMEMBERS]);
 
 	/* clear pointers */
 	mac->contactgroup_ptr = NULL;
@@ -2985,7 +2985,7 @@ int clear_summary_macros_r(nagios_macros *mac)
 	register int x;
 
 	for (x = MACRO_TOTALHOSTSUP; x <= MACRO_TOTALSERVICEPROBLEMSUNHANDLED; x++)
-		my_free(mac->x[x]);
+		nm_free(mac->x[x]);
 
 	return OK;
 }
@@ -3076,7 +3076,7 @@ int set_argv_macro_environment_vars_r(nagios_macros *mac, int set)
 	for (x = 0; x < MAX_COMMAND_ARGUMENTS; x++) {
 		nm_asprintf(&macro_name, "ARG%d", x + 1);
 		set_macro_environment_var(macro_name, mac->argv[x], set);
-		my_free(macro_name);
+		nm_free(macro_name);
 	}
 
 	return OK;
@@ -3103,7 +3103,7 @@ int set_custom_macro_environment_vars_r(nagios_macros *mac, int set)
 		for (temp_customvariablesmember = temp_host->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 			nm_asprintf(&customvarname, "_HOST%s", temp_customvariablesmember->variable_name);
 			add_custom_variable_to_object(&mac->custom_host_vars, customvarname, temp_customvariablesmember->variable_value);
-			my_free(customvarname);
+			nm_free(customvarname);
 		}
 	}
 	/* set variables */
@@ -3117,7 +3117,7 @@ int set_custom_macro_environment_vars_r(nagios_macros *mac, int set)
 		for (temp_customvariablesmember = temp_service->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 			nm_asprintf(&customvarname, "_SERVICE%s", temp_customvariablesmember->variable_name);
 			add_custom_variable_to_object(&mac->custom_service_vars, customvarname, temp_customvariablesmember->variable_value);
-			my_free(customvarname);
+			nm_free(customvarname);
 		}
 	}
 	/* set variables */
@@ -3130,7 +3130,7 @@ int set_custom_macro_environment_vars_r(nagios_macros *mac, int set)
 		for (temp_customvariablesmember = temp_contact->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 			nm_asprintf(&customvarname, "_CONTACT%s", temp_customvariablesmember->variable_name);
 			add_custom_variable_to_object(&mac->custom_contact_vars, customvarname, temp_customvariablesmember->variable_value);
-			my_free(customvarname);
+			nm_free(customvarname);
 		}
 	}
 	/* set variables */
@@ -3159,7 +3159,7 @@ int set_contact_address_environment_vars_r(nagios_macros *mac, int set)
 	for (x = 0; x < MAX_CONTACT_ADDRESSES; x++) {
 		nm_asprintf(&varname, "CONTACTADDRESS%d", x);
 		set_macro_environment_var(varname, mac->contact_ptr->address[x], set);
-		my_free(varname);
+		nm_free(varname);
 	}
 
 	return OK;
@@ -3187,7 +3187,7 @@ int set_macro_environment_var(char *name, char *value, int set)
 	set_environment_var(env_macro_name, value, set);
 
 	/* free allocated memory */
-	my_free(env_macro_name);
+	nm_free(env_macro_name);
 
 	return OK;
 }

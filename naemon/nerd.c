@@ -354,9 +354,9 @@ static int nerd_deinit(void)
 
 	if (host_parent_path_cache) {
 		for (i = 0; i < num_objects.hosts; i++) {
-			my_free(host_parent_path_cache[i]);
+			nm_free(host_parent_path_cache[i]);
 		}
-		my_free(host_parent_path_cache);
+		nm_free(host_parent_path_cache);
 	}
 
 	for (i = 0; i < num_channels; i++) {
@@ -371,9 +371,9 @@ static int nerd_deinit(void)
 			free(subscr);
 		}
 		chan->subscriptions = NULL;
-		my_free(chan);
+		nm_free(chan);
 	}
-	my_free(channels);
+	nm_free(channels);
 	num_channels = 0;
 	alloc_channels = 0;
 

@@ -92,7 +92,7 @@ char *my_strtok(char *buffer, const char *tokens)
 			return NULL; /*nothing supplied, nothing stored*/
 	}
 	else {
-		my_free(original_my_strtok_buffer);
+		nm_free(original_my_strtok_buffer);
 		my_strtok_buffer = nm_strdup(buffer);
 		original_my_strtok_buffer = my_strtok_buffer;
 	}
@@ -175,14 +175,14 @@ mmapfile *mmap_fopen(const char *filename)
 
 	/* open the file */
 	if ((fd = open(filename, mode)) == -1) {
-		my_free(new_mmapfile);
+		nm_free(new_mmapfile);
 		return NULL;
 	}
 
 	/* get file info */
 	if ((fstat(fd, &statbuf)) == -1) {
 		close(fd);
-		my_free(new_mmapfile);
+		nm_free(new_mmapfile);
 		return NULL;
 	}
 
@@ -197,7 +197,7 @@ mmapfile *mmap_fopen(const char *filename)
 		         (void *)mmap(0, file_size, PROT_READ, MAP_PRIVATE, fd,
 		                      0)) == MAP_FAILED) {
 			close(fd);
-			my_free(new_mmapfile);
+			nm_free(new_mmapfile);
 			return NULL;
 		}
 	} else
@@ -230,8 +230,8 @@ int mmap_fclose(mmapfile *temp_mmapfile)
 	close(temp_mmapfile->fd);
 
 	/* free memory */
-	my_free(temp_mmapfile->path);
-	my_free(temp_mmapfile);
+	nm_free(temp_mmapfile->path);
+	nm_free(temp_mmapfile);
 
 	return OK;
 }
@@ -300,7 +300,7 @@ char *mmap_fgets_multiline(mmapfile *temp_mmapfile)
 
 	while (1) {
 
-		my_free(tempbuf);
+		nm_free(tempbuf);
 
 		if ((tempbuf = mmap_fgets(temp_mmapfile)) == NULL)
 			break;
@@ -351,7 +351,7 @@ char *mmap_fgets_multiline(mmapfile *temp_mmapfile)
 			break;
 	}
 
-	my_free(tempbuf);
+	nm_free(tempbuf);
 
 	return buf;
 }

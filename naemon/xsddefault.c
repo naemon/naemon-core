@@ -50,7 +50,7 @@ int xsddefault_initialize_status_data(const char *cfgfile)
 
 	mac = get_global_macros();
 	/* save the status file macro */
-	my_free(mac->x[MACRO_STATUSDATAFILE]);
+	nm_free(mac->x[MACRO_STATUSDATAFILE]);
 	mac->x[MACRO_STATUSDATAFILE] = nm_strdup(status_file);
 	strip(mac->x[MACRO_STATUSDATAFILE]);
 
@@ -73,7 +73,7 @@ int xsddefault_cleanup_status_data(int delete_status_data)
 	}
 
 	/* free memory */
-	my_free(status_file);
+	nm_free(status_file);
 
 	return OK;
 }
@@ -116,7 +116,7 @@ int xsddefault_save_status_data(void)
 		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to create temp file '%s' for writing status data: %s\n", tmp_log, strerror(errno));
 
 		/* free memory */
-		my_free(tmp_log);
+		nm_free(tmp_log);
 
 		return ERROR;
 	}
@@ -130,7 +130,7 @@ int xsddefault_save_status_data(void)
 		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to open temp file '%s' for writing status data: %s\n", tmp_log, strerror(errno));
 
 		/* free memory */
-		my_free(tmp_log);
+		nm_free(tmp_log);
 
 		return ERROR;
 	}
@@ -437,7 +437,7 @@ int xsddefault_save_status_data(void)
 	}
 
 	/* free memory */
-	my_free(tmp_log);
+	nm_free(tmp_log);
 
 	return result;
 }

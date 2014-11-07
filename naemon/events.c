@@ -758,7 +758,7 @@ int event_execution_loop(void)
 
 		/* else free memory associated with the event */
 		else
-			my_free(temp_event);
+			nm_free(temp_event);
 	}
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "event_execution_loop() end\n");

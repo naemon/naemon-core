@@ -159,17 +159,17 @@ int main(int argc, char **argv) {
     }
 
     /* required before daemonizing, because we need full pid path */
-    my_free(output_socket_path);
+    nm_free(output_socket_path);
     output_socket_path = nm_malloc(250);
     snprintf(output_socket_path, 249, "%s/%s", output_folder, "live");
     output_folder   = nspath_absolute_dirname(output_socket_path, NULL);
     config_file_dir = nspath_absolute_dirname(output_socket_path, NULL);
-    my_free(tmp_folder);
+    nm_free(tmp_folder);
     tmp_folder = nm_malloc(250);
     snprintf(tmp_folder, 249, "%s/%s", output_folder, "tmp");
     nspath_mkdir_p(output_folder, 0700, 0);
     nspath_mkdir_p(tmp_folder, 0700, 0);
-    my_free(log_file);
+    nm_free(log_file);
     log_file = nm_malloc(250);
     snprintf(log_file, 249, "%s/%s", tmp_folder, "shadownaemon.log");
 
@@ -250,20 +250,20 @@ error_out:
     clean_output_folder();
 
     /* free some locations */
-    my_free(config_file);
-    my_free(tmp_folder);
-    my_free(log_file);
-    my_free(cmds_pattern);
-    my_free(output_socket_path);
-    my_free(resource_config);
-    my_free(objects_file);
-    my_free(retention_file);
-    my_free(archive_folder);
-    my_free(livestatus_log);
-    my_free(check_result_path);
+    nm_free(config_file);
+    nm_free(tmp_folder);
+    nm_free(log_file);
+    nm_free(cmds_pattern);
+    nm_free(output_socket_path);
+    nm_free(resource_config);
+    nm_free(objects_file);
+    nm_free(retention_file);
+    nm_free(archive_folder);
+    nm_free(livestatus_log);
+    nm_free(check_result_path);
 
     unlink(lock_file);
-    my_free(lock_file);
+    nm_free(lock_file);
 
     /* exit */
     return EXIT_SUCCESS;
@@ -303,7 +303,7 @@ char *get_default_livestatus_module() {
     if(stat(livestatus_path, &st) == 0) {
         return(livestatus_path);
     }
-    my_free(livestatus_path);
+    nm_free(livestatus_path);
     return(NULL);
 }
 
@@ -331,30 +331,30 @@ int write_config_files() {
 
     /* set our file locations */
     config_file_dir = nspath_absolute_dirname(output_socket_path, NULL);
-    my_free(config_file);
+    nm_free(config_file);
     config_file = nm_malloc(250);
     snprintf(config_file, 249, "%s/%s", tmp_folder, "naemon.cfg");
-    my_free(resource_config);
+    nm_free(resource_config);
     resource_config = nm_malloc(250);
     snprintf(resource_config, 249, "%s/%s", tmp_folder, "resource.cfg");
-    my_free(objects_file);
+    nm_free(objects_file);
     objects_file = nm_malloc(250);
     snprintf(objects_file, 249, "%s/%s", tmp_folder, "objects.cfg");
-    my_free(retention_file);
+    nm_free(retention_file);
     retention_file = nm_malloc(250);
     snprintf(retention_file, 249, "%s/%s", tmp_folder, "retention.dat");
-    my_free(livestatus_log);
+    nm_free(livestatus_log);
     livestatus_log = nm_malloc(250);
     snprintf(livestatus_log, 249, "%s/%s", tmp_folder, "livestatus.log");
-    my_free(check_result_path);
+    nm_free(check_result_path);
     check_result_path = nm_strdup(tmp_folder);
-    my_free(log_file);
+    nm_free(log_file);
     log_file = nm_malloc(250);
     snprintf(log_file, 249, "%s/%s", tmp_folder, "shadownaemon.log");
-    my_free(cmds_pattern);
+    nm_free(cmds_pattern);
     cmds_pattern = nm_malloc(250);
     snprintf(cmds_pattern, 249, "%s/*.cmds", tmp_folder);
-    my_free(archive_folder);
+    nm_free(archive_folder);
     archive_folder = nm_malloc(250);
     snprintf(archive_folder, 249, "%s/%s", tmp_folder, "archives");
 
@@ -589,8 +589,8 @@ int deinitialize_core() {
     cleanup();
 
     /* free misc memory */
-    my_free(config_file_dir);
-    my_free(naemon_binary_path);
+    nm_free(config_file_dir);
+    nm_free(naemon_binary_path);
 
     return OK;
 }
@@ -675,7 +675,7 @@ int livestatus_query_socket(result_list **result, char *socket_path, char *query
     size = send(input_socket, send_header, strlen(send_header), 0);
     if(verbose)
         logit(NSLOG_PROCESS_INFO, TRUE, "query: %s\n", send_header);
-    my_free(columnsheader);
+    nm_free(columnsheader);
     size = read(input_socket, header, 16);
     if( size < 16) {
         logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "reading socket failed (%d bytes read): %s\n", size, strerror(errno));
@@ -714,7 +714,7 @@ int livestatus_query_socket(result_list **result, char *socket_path, char *query
     }
     if( size <= 0 || total_read != result_size) {
         logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "reading socket failed (%d bytes read, expected %d): %s\n", total_read, result_size, strerror(errno));
-        my_free(result_string_c);
+        nm_free(result_string_c);
         close(input_socket);
         input_socket = -1;
         return(-1);
@@ -736,7 +736,7 @@ int livestatus_query_socket(result_list **result, char *socket_path, char *query
         }
         row_size++;
     }
-    my_free(result_string_c);
+    nm_free(result_string_c);
 
     return(row_size);
 }
@@ -750,11 +750,11 @@ void free_livestatus_result(result_list * result, int datasize) {
         curr   = curr->next;
         if(result->set != NULL) {
             for(x=0;x<datasize;x++) {
-                my_free(result->set[x]);
+                nm_free(result->set[x]);
             }
-            my_free(result->set);
+            nm_free(result->set);
         }
-        my_free(result);
+        nm_free(result);
     }
 }
 
@@ -814,7 +814,7 @@ int open_tcp_socket(char *connection_string) {
     hostp = gethostbyname(hostname);
     if(hostp == (struct hostent *)NULL) {
         logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "host %s not found: %s\n", hostname, hstrerror(h_errno));
-        my_free(server_c);
+        nm_free(server_c);
         close(input_socket);
         exit(EXIT_FAILURE);
     }
@@ -830,10 +830,10 @@ int open_tcp_socket(char *connection_string) {
     if(!connect(input_socket, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) == 0) {
         logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "connecting to %s:%d failed: %s\n", hostname, port, strerror(errno));
         close(input_socket);
-        my_free(server_c);
+        nm_free(server_c);
         return(-1);
     }
-    my_free(server_c);
+    nm_free(server_c);
     return(input_socket);
 }
 
@@ -1034,11 +1034,11 @@ int update_host_status_data() {
     }
     /* too many running hosts would blow off our filter, so just fetch everything if we hit the limit */
     if(full_refresh_required || running > max_number_of_executing_objects) {
-        my_free(filtered_query);
+        nm_free(filtered_query);
         filtered_query = nm_strdup(query);
     }
     num = livestatus_query(&answer, (char*)input_source, filtered_query, columns, columns_size);
-    my_free(filtered_query);
+    nm_free(filtered_query);
 
     /* update our hosts */
     if(num > 0) {
@@ -1065,15 +1065,15 @@ int update_host_status_data() {
             hst->last_notification              = atoi(row->set[14]);
             hst->last_state_change              = atoi(row->set[15]);
             hst->latency                        = atof(row->set[16]);
-            my_free(hst->long_plugin_output);
+            nm_free(hst->long_plugin_output);
             hst->long_plugin_output             = nm_strdup(row->set[17]);
             hst->next_check                     = atoi(row->set[18]);
             hst->notifications_enabled          = atoi(row->set[19]);
             hst->obsess                         = atoi(row->set[20]);
             hst->percent_state_change           = atoi(row->set[21]);
-            my_free(hst->perf_data);
+            nm_free(hst->perf_data);
             hst->perf_data                      = nm_strdup(row->set[22]);
-            my_free(hst->plugin_output);
+            nm_free(hst->plugin_output);
             hst->plugin_output                  = nm_strdup(row->set[23]);
             hst->process_performance_data       = atoi(row->set[24]);
             hst->scheduled_downtime_depth       = atoi(row->set[25]);
@@ -1165,11 +1165,11 @@ int update_service_status_data() {
     }
     /* too many running services would blow off our filter, so just fetch everything if we hit the limit */
     if(full_refresh_required || running > max_number_of_executing_objects) {
-        my_free(filtered_query);
+        nm_free(filtered_query);
         filtered_query = nm_strdup(query);
     }
     num = livestatus_query(&answer, (char*)input_source, filtered_query, columns, columns_size);
-    my_free(filtered_query);
+    nm_free(filtered_query);
 
     if(num > 0) {
         row = answer;
@@ -1195,15 +1195,15 @@ int update_service_status_data() {
             svc->last_notification              = atoi(row->set[15]);
             svc->last_state_change              = atoi(row->set[16]);
             svc->latency                        = atof(row->set[17]);
-            my_free(svc->long_plugin_output);
+            nm_free(svc->long_plugin_output);
             svc->long_plugin_output             = nm_strdup(row->set[18]);
             svc->next_check                     = atoi(row->set[19]);
             svc->notifications_enabled          = atoi(row->set[20]);
             svc->obsess                         = atoi(row->set[21]);
             svc->percent_state_change           = atoi(row->set[22]);
-            my_free(svc->perf_data);
+            nm_free(svc->perf_data);
             svc->perf_data                      = nm_strdup(row->set[23]);
-            my_free(svc->plugin_output);
+            nm_free(svc->plugin_output);
             svc->plugin_output                  = nm_strdup(row->set[24]);
             svc->process_performance_data       = atoi(row->set[25]);
             svc->scheduled_downtime_depth       = atoi(row->set[26]);
@@ -1280,12 +1280,12 @@ int update_downtime_data() {
 
     /* full refresh? */
     if(full_refresh_required) {
-        my_free(filtered_query);
+        nm_free(filtered_query);
         filtered_query = strdup(query);
     }
 
     num = livestatus_query(&answer, (char*)input_source, filtered_query, columns, columns_size);
-    my_free(filtered_query);
+    nm_free(filtered_query);
 
     if(num > 0) {
         row = answer;
@@ -1451,12 +1451,12 @@ int update_comment_data() {
 
     /* full refresh? */
     if(full_refresh_required) {
-        my_free(filtered_query);
+        nm_free(filtered_query);
         filtered_query = strdup(query);
     }
 
     num = livestatus_query(&answer, (char*)input_source, filtered_query, columns, columns_size);
-    my_free(filtered_query);
+    nm_free(filtered_query);
 
     if(num > 0) {
         row = answer;
@@ -1691,10 +1691,10 @@ int run_refresh_loop() {
         timing_point("refresh loop waiting...\n");
     }
 
-    my_free(dummy_command);
+    nm_free(dummy_command);
     dummy_command = NULL;
     deinitialize_core();
-    my_free(program_version);
+    nm_free(program_version);
 
     timing_point("Done cleaning up.\n");
 
@@ -2063,7 +2063,7 @@ int write_list_attribute(FILE *file, char* attr, char* rawlist) {
             tmpstr[i] = 44;
     }
     fprintf(file,"    %s %s\n", attr, tmpstr);
-    my_free(tmpstr);
+    nm_free(tmpstr);
     return(OK);
 }
 
@@ -2080,8 +2080,8 @@ int write_custom_variables(FILE *file, char* rawnames, char* rawvalues) {
         value = strsep(&values, "\x5");
         fprintf(file,"    _%s %s\n", name, value);
     }
-    my_free(namesp);
-    my_free(valuesp);
+    nm_free(namesp);
+    nm_free(valuesp);
     return(OK);
 }
 

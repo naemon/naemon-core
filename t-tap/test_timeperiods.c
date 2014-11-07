@@ -450,7 +450,7 @@ int main(int argc, char **argv)
 
 	cleanup();
 
-	my_free(config_file);
+	nm_free(config_file);
 
 	return exit_status();
 }

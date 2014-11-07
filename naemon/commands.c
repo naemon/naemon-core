@@ -1711,7 +1711,7 @@ static int host_command_handler(const struct external_command *ext_command, time
 			set_host_notification_number(target_host, GV_INT("notification_number"));
 			return OK;
 		case CMD_CHANGE_HOST_CHECK_TIMEPERIOD:
-			my_free(target_host->check_period);
+			nm_free(target_host->check_period);
 			target_host->check_period = nm_strdup((GV_TIMEPERIOD("check_timeperiod"))->name);
 			target_host->check_period_ptr = GV_TIMEPERIOD("check_timeperiod");
 			target_host->modified_attributes |= MODATTR_CHECK_TIMEPERIOD;
@@ -1737,7 +1737,7 @@ static int host_command_handler(const struct external_command *ext_command, time
 		case CMD_SEND_CUSTOM_HOST_NOTIFICATION:
 			return host_notification(target_host, NOTIFICATION_CUSTOM, GV("author"), GV("comment"), GV_INT("options"));
 		case CMD_CHANGE_HOST_NOTIFICATION_TIMEPERIOD:
-			my_free(target_host->notification_period);
+			nm_free(target_host->notification_period);
 			target_host->notification_period = nm_strdup((GV_TIMEPERIOD("notification_timeperiod"))->name);
 			target_host->notification_period_ptr = GV_TIMEPERIOD("notification_timeperiod");
 			target_host->modified_attributes |= MODATTR_NOTIFICATION_TIMEPERIOD;
@@ -2002,7 +2002,7 @@ static int service_command_handler(const struct external_command *ext_command, t
 			set_service_notification_number(target_service, GV_INT("notification_number"));
 			return OK;
 		case CMD_CHANGE_SVC_CHECK_TIMEPERIOD:
-			my_free(target_service->check_period);
+			nm_free(target_service->check_period);
 			target_service->check_period = nm_strdup((GV_TIMEPERIOD("check_timeperiod"))->name);
 			target_service->check_period_ptr = GV("check_timeperiod");
 			target_service->modified_attributes |= MODATTR_CHECK_TIMEPERIOD;
@@ -2018,7 +2018,7 @@ static int service_command_handler(const struct external_command *ext_command, t
 			return service_notification(target_service, NOTIFICATION_CUSTOM, GV("author"), GV("comment"), GV_INT("options"));
 
 		case CMD_CHANGE_SVC_NOTIFICATION_TIMEPERIOD:
-			my_free(target_service->notification_period);
+			nm_free(target_service->notification_period);
 			target_service->notification_period = nm_strdup(GV_TIMEPERIOD("notification_timeperiod")->name);
 			target_service->notification_period_ptr = GV("notification_timeperiod");
 			target_service->modified_attributes |= MODATTR_NOTIFICATION_TIMEPERIOD;
@@ -2144,7 +2144,7 @@ static int contact_command_handler(const struct external_command *ext_command, t
 			enable_contact_host_notifications(target_contact);
 			return OK;
 		case CMD_CHANGE_CONTACT_HOST_NOTIFICATION_TIMEPERIOD:
-			my_free(target_contact->host_notification_period);
+			nm_free(target_contact->host_notification_period);
 			target_contact->host_notification_period = nm_strdup(GV_TIMEPERIOD("notification_timeperiod")->name);
 			target_contact->host_notification_period_ptr = GV_TIMEPERIOD("notification_timeperiod");
 			target_contact->modified_host_attributes |= MODATTR_NOTIFICATION_TIMEPERIOD;
@@ -2158,7 +2158,7 @@ static int contact_command_handler(const struct external_command *ext_command, t
 			return update_contact_status(target_contact, FALSE);
 
 		case CMD_CHANGE_CONTACT_SVC_NOTIFICATION_TIMEPERIOD:
-			my_free(target_contact->service_notification_period);
+			nm_free(target_contact->service_notification_period);
 			target_contact->service_notification_period = nm_strdup(GV_TIMEPERIOD("notification_timeperiod")->name);
 			target_contact->service_notification_period_ptr = GV_TIMEPERIOD("notification_timeperiod");
 			target_contact->modified_host_attributes |= MODATTR_NONE;
@@ -2232,7 +2232,7 @@ static int change_custom_var_handler(const struct external_command *ext_command,
 
 			/* update the value */
 			if(customvariablesmember_p->variable_value)
-				my_free(customvariablesmember_p->variable_value);
+				nm_free(customvariablesmember_p->variable_value);
 			customvariablesmember_p->variable_value = nm_strdup(GV("varvalue"));
 
 			/* mark the variable value as having been changed */
@@ -2245,7 +2245,7 @@ static int change_custom_var_handler(const struct external_command *ext_command,
 	}
 
 
-	my_free(varname);
+	nm_free(varname);
 	switch ( ext_command->id ) {
 		case CMD_CHANGE_CUSTOM_SVC_VAR:
 			((service *)GV("service"))->modified_attributes |= MODATTR_CUSTOM_VARIABLE;
@@ -2975,7 +2975,7 @@ int process_external_commands_from_file(char *fname, int delete_file)
 	while (1) {
 
 		/* free memory */
-		my_free(input);
+		nm_free(input);
 
 		/* read the next line */
 		if ((input = mmap_fgets(thefile)) == NULL)
@@ -3046,7 +3046,7 @@ int process_external_command1(char *cmd)
 	} else if (log_external_commands == TRUE) {
 			write_to_all_logs(temp_buffer, NSLOG_EXTERNAL_COMMAND);
 	}
-	my_free(temp_buffer);
+	nm_free(temp_buffer);
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
