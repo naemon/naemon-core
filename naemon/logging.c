@@ -19,6 +19,24 @@ static FILE *log_fp;
 /************************ LOGGING FUNCTIONS ***********************/
 /******************************************************************/
 
+static FILE *open_log_file(void)
+{
+	if (log_fp) /* keep it open unless we rotate */
+		return log_fp;
+
+	log_fp = fopen(log_file, "a+");
+	if (log_fp == NULL) {
+		if (daemon_mode == FALSE) {
+			printf("Warning: Cannot open log file '%s' for writing\n", log_file);
+		}
+		return NULL;
+	}
+
+	(void)fcntl(fileno(log_fp), F_SETFD, FD_CLOEXEC);
+	return log_fp;
+}
+
+
 /* write something to the console */
 static void write_to_console(char *buffer)
 {
@@ -26,6 +44,89 @@ static void write_to_console(char *buffer)
 	if (daemon_mode == FALSE)
 		printf("%s\n", buffer);
 }
+
+/* write something to the syslog facility */
+static int write_to_syslog(char *buffer, unsigned long data_type)
+{
+
+	if (buffer == NULL)
+		return ERROR;
+
+	/* don't log anything if we're not actually running... */
+	if (verify_config || test_scheduling == TRUE)
+		return OK;
+
+	/* bail out if we shouldn't write to syslog */
+	if (use_syslog == FALSE)
+		return OK;
+
+	/* make sure we should log this type of entry */
+	if (!(data_type & syslog_options))
+		return OK;
+
+	/* write the buffer to the syslog facility */
+	syslog(LOG_USER | LOG_INFO, "%s", buffer);
+
+	return OK;
+}
+
+/* write something to the naemon log file */
+static int write_to_log(char *buffer, unsigned long data_type, time_t *timestamp)
+{
+	FILE *fp;
+	time_t log_time = 0L;
+
+	if (buffer == NULL)
+		return ERROR;
+
+	/* don't log anything if we're not actually running... */
+	if (verify_config || test_scheduling == TRUE)
+		return OK;
+
+	/* make sure we can log this type of entry */
+	if (!(data_type & logging_options))
+		return OK;
+
+	fp = open_log_file();
+	if (fp == NULL)
+		return ERROR;
+	/* what timestamp should we use? */
+	if (timestamp == NULL)
+		time(&log_time);
+	else
+		log_time = *timestamp;
+
+	/* strip any newlines from the end of the buffer */
+	strip(buffer);
+
+	/* write the buffer to the log file */
+	fprintf(fp, "[%lu] %s\n", log_time, buffer);
+	fflush(fp);
+
+#ifdef USE_EVENT_BROKER
+	/* send data to the event broker */
+	broker_log_data(NEBTYPE_LOG_DATA, NEBFLAG_NONE, NEBATTR_NONE, buffer, data_type, log_time, NULL);
+#endif
+
+	return OK;
+}
+
+
+
+
+/* write something to the log file and syslog facility */
+int write_to_all_logs(char *buffer, unsigned long data_type)
+{
+
+	/* write to syslog */
+	write_to_syslog(buffer, data_type);
+
+	/* write to main log */
+	write_to_log(buffer, data_type, NULL);
+
+	return OK;
+}
+
 
 
 /* write something to the log file, syslog, and possibly the console */
@@ -44,7 +145,8 @@ static void write_to_logs_and_console(char *buffer, unsigned long data_type, int
 	}
 
 	/* write messages to the logs */
-	write_to_all_logs(buffer, data_type);
+	write_to_log(buffer, data_type, NULL);
+	write_to_syslog(buffer, data_type);
 
 	/* write message to the console */
 	if (display == TRUE) {
@@ -86,20 +188,6 @@ void nm_log(int data_type, const char *fmt, ...)
 }
 
 /* write something to the log file and syslog facility */
-int write_to_all_logs(char *buffer, unsigned long data_type)
-{
-
-	/* write to syslog */
-	write_to_syslog(buffer, data_type);
-
-	/* write to main log */
-	write_to_log(buffer, data_type, NULL);
-
-	return OK;
-}
-
-
-/* write something to the log file and syslog facility */
 static void write_to_all_logs_with_timestamp(char *buffer, unsigned long data_type, time_t *timestamp)
 {
 	/* write to syslog */
@@ -109,23 +197,6 @@ static void write_to_all_logs_with_timestamp(char *buffer, unsigned long data_ty
 	write_to_log(buffer, data_type, timestamp);
 }
 
-
-static FILE *open_log_file(void)
-{
-	if (log_fp) /* keep it open unless we rotate */
-		return log_fp;
-
-	log_fp = fopen(log_file, "a+");
-	if (log_fp == NULL) {
-		if (daemon_mode == FALSE) {
-			printf("Warning: Cannot open log file '%s' for writing\n", log_file);
-		}
-		return NULL;
-	}
-
-	(void)fcntl(fileno(log_fp), F_SETFD, FD_CLOEXEC);
-	return log_fp;
-}
 
 int fix_log_file_owner(uid_t uid, gid_t gid)
 {
@@ -153,73 +224,6 @@ int close_log_file(void)
 	fclose(log_fp);
 	log_fp = NULL;
 	return 0;
-}
-
-/* write something to the naemon log file */
-int write_to_log(char *buffer, unsigned long data_type, time_t *timestamp)
-{
-	FILE *fp;
-	time_t log_time = 0L;
-
-	if (buffer == NULL)
-		return ERROR;
-
-	/* don't log anything if we're not actually running... */
-	if (verify_config || test_scheduling == TRUE)
-		return OK;
-
-	/* make sure we can log this type of entry */
-	if (!(data_type & logging_options))
-		return OK;
-
-	fp = open_log_file();
-	if (fp == NULL)
-		return ERROR;
-	/* what timestamp should we use? */
-	if (timestamp == NULL)
-		time(&log_time);
-	else
-		log_time = *timestamp;
-
-	/* strip any newlines from the end of the buffer */
-	strip(buffer);
-
-	/* write the buffer to the log file */
-	fprintf(fp, "[%lu] %s\n", log_time, buffer);
-	fflush(fp);
-
-#ifdef USE_EVENT_BROKER
-	/* send data to the event broker */
-	broker_log_data(NEBTYPE_LOG_DATA, NEBFLAG_NONE, NEBATTR_NONE, buffer, data_type, log_time, NULL);
-#endif
-
-	return OK;
-}
-
-
-/* write something to the syslog facility */
-int write_to_syslog(char *buffer, unsigned long data_type)
-{
-
-	if (buffer == NULL)
-		return ERROR;
-
-	/* don't log anything if we're not actually running... */
-	if (verify_config || test_scheduling == TRUE)
-		return OK;
-
-	/* bail out if we shouldn't write to syslog */
-	if (use_syslog == FALSE)
-		return OK;
-
-	/* make sure we should log this type of entry */
-	if (!(data_type & syslog_options))
-		return OK;
-
-	/* write the buffer to the syslog facility */
-	syslog(LOG_USER | LOG_INFO, "%s", buffer);
-
-	return OK;
 }
 
 
@@ -250,7 +254,8 @@ int log_service_event(service *svc)
 	         svc->current_attempt,
 	         (svc->plugin_output == NULL) ? "" : svc->plugin_output);
 
-	write_to_all_logs(temp_buffer, log_options);
+	write_to_log(temp_buffer, log_options, NULL);
+	write_to_syslog(temp_buffer, log_options);
 	free(temp_buffer);
 
 	return OK;
@@ -278,7 +283,8 @@ int log_host_event(host *hst)
 	         hst->current_attempt,
 	         (hst->plugin_output == NULL) ? "" : hst->plugin_output);
 
-	write_to_all_logs(temp_buffer, log_options);
+	write_to_log(temp_buffer, log_options, NULL);
+	write_to_syslog(temp_buffer, log_options);
 
 	nm_free(temp_buffer);
 
