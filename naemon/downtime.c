@@ -298,8 +298,7 @@ int unschedule_downtime(int type, unsigned long downtime_id)
 			/* log a notice - this is parsed by the history CGI */
 			if (hst->scheduled_downtime_depth == 0) {
 
-				logit(NSLOG_INFO_MESSAGE,
-				      "HOST DOWNTIME ALERT: %s;CANCELLED; Scheduled downtime for host has been cancelled.\n", hst->name);
+				logit(NSLOG_INFO_MESSAGE, FALSE, "HOST DOWNTIME ALERT: %s;CANCELLED; Scheduled downtime for host has been cancelled.\n", hst->name);
 
 				/* send a notification */
 				host_notification(hst, NOTIFICATION_DOWNTIMECANCELLED, NULL, NULL, NOTIFICATION_OPTION_NONE);
@@ -315,8 +314,7 @@ int unschedule_downtime(int type, unsigned long downtime_id)
 			/* log a notice - this is parsed by the history CGI */
 			if (svc->scheduled_downtime_depth == 0) {
 
-				logit(NSLOG_INFO_MESSAGE,
-				      "SERVICE DOWNTIME ALERT: %s;%s;CANCELLED; Scheduled downtime for service has been cancelled.\n", svc->host_name, svc->description);
+				logit(NSLOG_INFO_MESSAGE, FALSE, "SERVICE DOWNTIME ALERT: %s;%s;CANCELLED; Scheduled downtime for service has been cancelled.\n", svc->host_name, svc->description);
 
 				/* send a notification */
 				service_notification(svc, NOTIFICATION_DOWNTIMECANCELLED, NULL, NULL, NOTIFICATION_OPTION_NONE);
@@ -588,8 +586,7 @@ int handle_scheduled_downtime(scheduled_downtime *temp_downtime)
 			log_debug_info(DEBUGL_DOWNTIME, 0, "Host '%s' has exited from a period of scheduled downtime (id=%lu).\n", hst->name, temp_downtime->downtime_id);
 
 			/* log a notice - this one is parsed by the history CGI */
-			logit(NSLOG_INFO_MESSAGE,
-			      "HOST DOWNTIME ALERT: %s;STOPPED; Host has exited from a period of scheduled downtime", hst->name);
+			logit(NSLOG_INFO_MESSAGE, FALSE, "HOST DOWNTIME ALERT: %s;STOPPED; Host has exited from a period of scheduled downtime", hst->name);
 
 			/* send a notification */
 			host_notification(hst, NOTIFICATION_DOWNTIMEEND, temp_downtime->author, temp_downtime->comment, NOTIFICATION_OPTION_NONE);
@@ -600,8 +597,7 @@ int handle_scheduled_downtime(scheduled_downtime *temp_downtime)
 			log_debug_info(DEBUGL_DOWNTIME, 0, "Service '%s' on host '%s' has exited from a period of scheduled downtime (id=%lu).\n", svc->description, svc->host_name, temp_downtime->downtime_id);
 
 			/* log a notice - this one is parsed by the history CGI */
-			logit(NSLOG_INFO_MESSAGE,
-			      "SERVICE DOWNTIME ALERT: %s;%s;STOPPED; Service has exited from a period of scheduled downtime", svc->host_name, svc->description);
+			logit(NSLOG_INFO_MESSAGE, FALSE, "SERVICE DOWNTIME ALERT: %s;%s;STOPPED; Service has exited from a period of scheduled downtime", svc->host_name, svc->description);
 
 			/* send a notification */
 			service_notification(svc, NOTIFICATION_DOWNTIMEEND, temp_downtime->author, temp_downtime->comment, NOTIFICATION_OPTION_NONE);
@@ -660,8 +656,7 @@ int handle_scheduled_downtime(scheduled_downtime *temp_downtime)
 			log_debug_info(DEBUGL_DOWNTIME, 0, "Host '%s' has entered a period of scheduled downtime (id=%lu).\n", hst->name, temp_downtime->downtime_id);
 
 			/* log a notice - this one is parsed by the history CGI */
-			logit(NSLOG_INFO_MESSAGE,
-			      "HOST DOWNTIME ALERT: %s;STARTED; Host has entered a period of scheduled downtime", hst->name);
+			logit(NSLOG_INFO_MESSAGE, FALSE, "HOST DOWNTIME ALERT: %s;STARTED; Host has entered a period of scheduled downtime", hst->name);
 
 			/* send a notification */
 			if (FALSE == temp_downtime->start_notification_sent) {
@@ -675,8 +670,7 @@ int handle_scheduled_downtime(scheduled_downtime *temp_downtime)
 			log_debug_info(DEBUGL_DOWNTIME, 0, "Service '%s' on host '%s' has entered a period of scheduled downtime (id=%lu).\n", svc->description, svc->host_name, temp_downtime->downtime_id);
 
 			/* log a notice - this one is parsed by the history CGI */
-			logit(NSLOG_INFO_MESSAGE,
-			      "SERVICE DOWNTIME ALERT: %s;%s;STARTED; Service has entered a period of scheduled downtime", svc->host_name, svc->description);
+			logit(NSLOG_INFO_MESSAGE, FALSE, "SERVICE DOWNTIME ALERT: %s;%s;STARTED; Service has entered a period of scheduled downtime", svc->host_name, svc->description);
 
 			/* send a notification */
 			if (FALSE == temp_downtime->start_notification_sent) {
@@ -1165,11 +1159,10 @@ int add_downtime(int downtime_type, char *host_name, char *svc_description, time
 		result = downtime_add(new_downtime);
 		if (result) {
 			if (new_downtime->type == SERVICE_DOWNTIME) {
-				logit(NSLOG_RUNTIME_ERROR,
-				      "Error: Failed to add downtime for service '%s' on host '%s': %s\n", new_downtime->service_description, new_downtime->host_name, dt_strerror(result));
+				logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to add downtime for service '%s' on host '%s': %s\n",
+							   new_downtime->service_description, new_downtime->host_name, dt_strerror(result));
 			} else {
-				logit(NSLOG_RUNTIME_ERROR,
-				      "Error: Failed to add downtime for host '%s': %s\n", new_downtime->host_name, dt_strerror(result));
+				logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to add downtime for host '%s': %s\n", new_downtime->host_name, dt_strerror(result));
 			}
 			result = ERROR;
 		}

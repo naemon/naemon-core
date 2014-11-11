@@ -113,8 +113,7 @@ int xsddefault_save_status_data(void)
 	if ((fd = mkstemp(tmp_log)) == -1) {
 
 		/* log an error */
-		logit(NSLOG_RUNTIME_ERROR,
-		      "Error: Unable to create temp file '%s' for writing status data: %s\n", tmp_log, strerror(errno));
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to create temp file '%s' for writing status data: %s\n", tmp_log, strerror(errno));
 
 		/* free memory */
 		nm_free(tmp_log);
@@ -128,8 +127,7 @@ int xsddefault_save_status_data(void)
 		unlink(tmp_log);
 
 		/* log an error */
-		logit(NSLOG_RUNTIME_ERROR,
-		      "Error: Unable to open temp file '%s' for writing status data: %s\n", tmp_log, strerror(errno));
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to open temp file '%s' for writing status data: %s\n", tmp_log, strerror(errno));
 
 		/* free memory */
 		nm_free(tmp_log);
@@ -423,8 +421,7 @@ int xsddefault_save_status_data(void)
 		/* move the temp file to the status log (overwrite the old status log) */
 		if (my_rename(tmp_log, status_file)) {
 			unlink(tmp_log);
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Error: Unable to update status data file '%s': %s", status_file, strerror(errno));
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to update status data file '%s': %s", status_file, strerror(errno));
 			result = ERROR;
 		}
 	}
@@ -436,8 +433,7 @@ int xsddefault_save_status_data(void)
 
 		/* remove temp file and log an error */
 		unlink(tmp_log);
-		logit(NSLOG_RUNTIME_ERROR,
-		      "Error: Unable to save status file: %s", strerror(errno));
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to save status file: %s", strerror(errno));
 	}
 
 	/* free memory */

@@ -160,14 +160,14 @@ static void write_to_logs_and_console(char *buffer, unsigned long data_type, int
 
 
 /* The main logging function */
-void logit(int data_type, const char *fmt, ...)
+void logit(int data_type, int display, const char *fmt, ...)
 {
 	va_list ap;
 	char *buffer = NULL;
 
 	va_start(ap, fmt);
 	if (vasprintf(&buffer, fmt, ap) > 0) {
-		write_to_logs_and_console(buffer, data_type, TRUE);
+		write_to_logs_and_console(buffer, data_type, display);
 		free(buffer);
 	}
 	va_end(ap);
@@ -241,7 +241,7 @@ int log_service_event(service *svc)
 	         svc->current_attempt,
 	         (svc->plugin_output == NULL) ? "" : svc->plugin_output);
 
-	logit(log_options, temp_buffer);
+	write_to_all_logs(temp_buffer, log_options);
 	free(temp_buffer);
 
 	return OK;
@@ -269,7 +269,7 @@ int log_host_event(host *hst)
 	         hst->current_attempt,
 	         (hst->plugin_output == NULL) ? "" : hst->plugin_output);
 
-	logit(log_options, temp_buffer);
+	write_to_all_logs(temp_buffer, log_options);
 
 	nm_free(temp_buffer);
 

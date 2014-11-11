@@ -54,11 +54,13 @@ static void notification_handle_job_result(struct wproc_result *wpres, void *dat
 	if (wpres) {
 		if (wpres->early_timeout) {
 			if(nj->svc) {
-				logit(NSLOG_RUNTIME_WARNING,
-				      "Warning: Timeout while notifying contact '%s' of service '%s' on host '%s' by command '%s'\n", nj->ctc->name, nj->svc->description, nj->hst->name, wpres->command);
+				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Timeout while notifying contact '%s' of service '%s' on host '%s' by command '%s'\n",
+						nj->ctc->name, nj->svc->description,
+						nj->hst->name, wpres->command);
 			} else {
-				logit(NSLOG_RUNTIME_WARNING,
-				      "Warning: Timeout while notifying contact '%s' of host '%s' by command '%s'\n", nj->ctc->name, nj->hst->name, wpres->command);
+				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Timeout while notifying contact '%s' of host '%s' by command '%s'\n",
+						nj->ctc->name, nj->hst->name,
+						wpres->command);
 			}
 		}
 	}
@@ -783,7 +785,7 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 			}
 
 			process_macros_r(mac, temp_buffer, &processed_buffer, 0);
-			logit(NSLOG_SERVICE_NOTIFICATION, processed_buffer);
+			write_to_all_logs(processed_buffer, NSLOG_SERVICE_NOTIFICATION);
 
 			nm_free(temp_buffer);
 			nm_free(processed_buffer);
@@ -795,8 +797,7 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 		nj->hst = svc->host_ptr;
 		nj->svc = svc;
 		if(ERROR == wproc_run_callback(processed_command, notification_timeout, notification_handle_job_result, nj, mac)) {
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Unable to send notification for service '%s on host '%s' to worker\n", svc->description, svc->host_ptr->name);
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to send notification for service '%s on host '%s' to worker\n", svc->description, svc->host_ptr->name);
 			free(nj);
 		}
 
@@ -1686,7 +1687,7 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 			}
 
 			process_macros_r(mac, temp_buffer, &processed_buffer, 0);
-			logit(NSLOG_HOST_NOTIFICATION, processed_buffer);
+			write_to_all_logs(processed_buffer, NSLOG_HOST_NOTIFICATION);
 
 			nm_free(temp_buffer);
 			nm_free(processed_buffer);
@@ -1695,15 +1696,13 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 		/* run the notification command */
 		nj = nm_calloc(1,sizeof(struct notification_job));
 		if(nj == NULL) {
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Error: Allocating storage for notification job\n");
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Allocating storage for notification job\n");
 		} else {
 			nj->ctc = cntct;
 			nj->hst = hst;
 			nj->svc = NULL;
 			if(ERROR == wproc_run_callback(processed_command, notification_timeout, notification_handle_job_result, nj, mac)) {
-				logit(NSLOG_RUNTIME_ERROR,
-				      "Unable to send notification for host '%s' to worker\n", hst->name);
+				logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to send notification for host '%s' to worker\n", hst->name);
 				free(nj);
 			}
 		}

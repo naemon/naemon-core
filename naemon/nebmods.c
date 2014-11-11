@@ -138,8 +138,7 @@ int neb_load_all_modules(void)
 	for (temp_module = neb_module_list; temp_module; temp_module = temp_module->next) {
 		ret = neb_load_module(temp_module);
 		if (ret != OK) {
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Error: Failed to load module '%s'.\n", temp_module->filename ? temp_module->filename : "(no file?)");
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to load module '%s'.\n", temp_module->filename ? temp_module->filename : "(no file?)");
 			errors++;
 		}
 	}
@@ -169,8 +168,7 @@ int neb_load_module(nebmodule *mod)
 	/* load the module */
 	mod->module_handle = dlopen(mod->filename, RTLD_NOW | RTLD_GLOBAL);
 	if (mod->module_handle == NULL) {
-		logit(NSLOG_RUNTIME_ERROR,
-		      "Error: Could not load module '%s' -> %s\n", mod->filename, dlerror());
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Could not load module '%s' -> %s\n", mod->filename, dlerror());
 
 		return ERROR;
 	}
@@ -184,8 +182,7 @@ int neb_load_module(nebmodule *mod)
 	/* check the module API version */
 	if (module_version_ptr == NULL || ((*module_version_ptr) != CURRENT_NEB_API_VERSION)) {
 
-		logit(NSLOG_RUNTIME_ERROR,
-		      "Error: Module '%s' is using an old or unspecified version of the event broker API.  Module will be unloaded.\n", mod->filename);
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Module '%s' is using an old or unspecified version of the event broker API.  Module will be unloaded.\n", mod->filename);
 
 		neb_unload_module(mod, NEBMODULE_FORCE_UNLOAD, NEBMODULE_ERROR_API_VERSION);
 
@@ -198,8 +195,7 @@ int neb_load_module(nebmodule *mod)
 	/* if the init function could not be located, unload the module */
 	if (mod->init_func == NULL) {
 
-		logit(NSLOG_RUNTIME_ERROR,
-		      "Error: Could not locate nebmodule_init() in module '%s'.  Module will be unloaded.\n", mod->filename);
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Could not locate nebmodule_init() in module '%s'.  Module will be unloaded.\n", mod->filename);
 
 		neb_unload_module(mod, NEBMODULE_FORCE_UNLOAD, NEBMODULE_ERROR_NO_INIT);
 
@@ -213,16 +209,14 @@ int neb_load_module(nebmodule *mod)
 	/* if the init function returned an error, unload the module */
 	if (result != OK) {
 
-		logit(NSLOG_RUNTIME_ERROR,
-		      "Error: Function nebmodule_init() in module '%s' returned an error.  Module will be unloaded.\n", mod->filename);
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Function nebmodule_init() in module '%s' returned an error.  Module will be unloaded.\n", mod->filename);
 
 		neb_unload_module(mod, NEBMODULE_FORCE_UNLOAD, NEBMODULE_ERROR_BAD_INIT);
 
 		return ERROR;
 	}
 
-	logit(NSLOG_INFO_MESSAGE,
-	      "Event broker module '%s' initialized successfully.\n", mod->filename);
+	logit(NSLOG_INFO_MESSAGE, TRUE, "Event broker module '%s' initialized successfully.\n", mod->filename);
 
 	/* locate the de-initialization function (may or may not be present) */
 	mod->deinit_func = dlsym(mod->module_handle, "nebmodule_deinit");
@@ -298,8 +292,7 @@ int neb_unload_module(nebmodule *mod, int flags, int reason)
 		result = dlclose(mod->module_handle);
 
 		if (result != 0) {
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Error: Could not unload module '%s' -> %s\n", mod->filename, dlerror());
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Could not unload module '%s' -> %s\n", mod->filename, dlerror());
 			return ERROR;
 		}
 	}
@@ -309,8 +302,7 @@ int neb_unload_module(nebmodule *mod, int flags, int reason)
 
 	log_debug_info(DEBUGL_EVENTBROKER, 0, "Module '%s' unloaded successfully.\n", mod->filename);
 
-	logit(NSLOG_INFO_MESSAGE,
-	      "Event broker module '%s' deinitialized successfully.\n", mod->filename);
+	logit(NSLOG_INFO_MESSAGE, FALSE, "Event broker module '%s' deinitialized successfully.\n", mod->filename);
 
 	return OK;
 }

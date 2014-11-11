@@ -125,18 +125,16 @@ int wproc_can_spawn(struct load_control *lc)
 		if (lc->jobs_limit > lc->jobs_max) {
 			lc->jobs_limit = lc->jobs_max;
 		} else if (lc->jobs_limit < lc->jobs_min) {
-			logit(NSLOG_RUNTIME_WARNING,
-			      "Warning: Tried to set jobs_limit to %u, below jobs_min (%u)\n", lc->jobs_limit, lc->jobs_min);
+			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Tried to set jobs_limit to %u, below jobs_min (%u)\n",
+			      lc->jobs_limit, lc->jobs_min);
 			lc->jobs_limit = lc->jobs_min;
 		}
 
 		if (old && old != lc->jobs_limit) {
 			if (lc->jobs_limit < old) {
-				logit(NSLOG_RUNTIME_WARNING,
-				      "Warning: loadctl.jobs_limit changed from %u to %u\n", old, lc->jobs_limit);
+				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: loadctl.jobs_limit changed from %u to %u\n", old, lc->jobs_limit);
 			} else {
-				logit(NSLOG_INFO_MESSAGE,
-				      "wproc: loadctl.jobs_limit changed from %u to %u\n", old, lc->jobs_limit);
+				logit(NSLOG_INFO_MESSAGE, FALSE, "wproc: loadctl.jobs_limit changed from %u to %u\n", old, lc->jobs_limit);
 			}
 		}
 	}
@@ -369,8 +367,7 @@ static int parse_worker_result(wproc_result *wpres, struct kvvec *kvv)
 
 		k = wpres_get_key(key, kvv->kv[i].key_len);
 		if (!k) {
-			logit(NSLOG_RUNTIME_WARNING,
-			      "wproc: Unrecognized result variable: (i=%d) %s=%s\n", i, key, value);
+			logit(NSLOG_RUNTIME_WARNING, TRUE, "wproc: Unrecognized result variable: (i=%d) %s=%s\n", i, key, value);
 			continue;
 		}
 		switch (k->code) {
@@ -453,8 +450,7 @@ static int parse_worker_result(wproc_result *wpres, struct kvvec *kvv)
 			break;
 
 		default:
-			logit(NSLOG_RUNTIME_WARNING,
-			      "wproc: Recognized but unhandled result variable: %s=%s\n", key, value);
+			logit(NSLOG_RUNTIME_WARNING, TRUE, "wproc: Recognized but unhandled result variable: %s=%s\n", key, value);
 			break;
 		}
 	}
@@ -480,27 +476,24 @@ static int handle_worker_result(int sd, int events, void *arg)
 	struct wproc_worker *wp = (struct wproc_worker *)arg;
 
 	if (iocache_capacity(wp->ioc) == 0) {
-		logit(NSLOG_RUNTIME_WARNING,
-		      "wproc: iocache_capacity() is 0 for worker %s.\n", wp->name);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "wproc: iocache_capacity() is 0 for worker %s.\n", wp->name);
 	}
 
 	ret = iocache_read(wp->ioc, wp->sd);
 
 	if (ret < 0) {
-		logit(NSLOG_RUNTIME_WARNING,
-		      "wproc: iocache_read() from %s returned %d: %s\n", wp->name, ret, strerror(errno));
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "wproc: iocache_read() from %s returned %d: %s\n",
+		      wp->name, ret, strerror(errno));
 		return 0;
 	} else if (ret == 0) {
-		logit(NSLOG_INFO_MESSAGE,
-		      "wproc: Socket to worker %s broken, removing", wp->name);
+		logit(NSLOG_INFO_MESSAGE, TRUE, "wproc: Socket to worker %s broken, removing", wp->name);
 		wproc_num_workers_online--;
 		iobroker_unregister(nagios_iobs, sd);
 		if (workers.len <= 0) {
 			/* there aren't global workers left, we can't run any more checks
 			 * we should try respawning a few of the standard ones
 			 */
-			logit(NSLOG_RUNTIME_ERROR,
-			      "wproc: All our workers are dead, we can't do anything!");
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "wproc: All our workers are dead, we can't do anything!");
 		}
 		remove_worker(wp);
 		fanout_destroy(wp->jobs, fo_reassign_wproc_job);
@@ -514,15 +507,15 @@ static int handle_worker_result(int sd, int events, void *arg)
 
 		/* log messages are handled first */
 		if (size > 5 && !memcmp(buf, "log=", 4)) {
-			logit(NSLOG_INFO_MESSAGE,
-			      "wproc: %s: %s\n", wp->name, buf + 4);
+			logit(NSLOG_INFO_MESSAGE, TRUE, "wproc: %s: %s\n", wp->name, buf + 4);
 			continue;
 		}
 
 		/* for everything else we need to actually parse */
 		if (buf2kvvec_prealloc(&kvv, buf, size, '=', '\0', KVVEC_ASSIGN) <= 0) {
-			logit(NSLOG_RUNTIME_ERROR,
-			      "wproc: Failed to parse key/value vector from worker response with len %lu. First kv=%s", size, buf ? buf : "(NULL)");
+			logit(NSLOG_RUNTIME_ERROR, TRUE,
+			      "wproc: Failed to parse key/value vector from worker response with len %lu. First kv=%s",
+			      size, buf ? buf : "(NULL)");
 			continue;
 		}
 
@@ -534,8 +527,8 @@ static int handle_worker_result(int sd, int events, void *arg)
 
 		job = get_job(wp, wpres.job_id);
 		if (!job) {
-			logit(NSLOG_RUNTIME_WARNING,
-			      "wproc: Job with id '%d' doesn't exist on %s.\n", wpres.job_id, wp->name);
+			logit(NSLOG_RUNTIME_WARNING, TRUE, "wproc: Job with id '%d' doesn't exist on %s.\n",
+			      wpres.job_id, wp->name);
 			continue;
 		}
 
@@ -595,13 +588,12 @@ static int register_worker(int sd, char *buf, unsigned int len)
 	struct kvvec *info;
 	struct wproc_worker *worker;
 
-	logit(NSLOG_INFO_MESSAGE, "wproc: Registry request: %s\n", buf);
+	logit(NSLOG_INFO_MESSAGE, TRUE, "wproc: Registry request: %s\n", buf);
 	worker = nm_calloc(1, sizeof(*worker));
 	info = buf2kvvec(buf, len, '=', ';', 0);
 	if (info == NULL) {
 		free(worker);
-		logit(NSLOG_RUNTIME_ERROR,
-		      "wproc: Failed to parse registration request\n");
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "wproc: Failed to parse registration request\n");
 		return 500;
 	}
 
@@ -705,8 +697,7 @@ static int spawn_core_worker(void)
 	int ret;
 
 	if ((ret = spawn_helper(argvec)) < 0)
-		logit(NSLOG_RUNTIME_ERROR,
-		      "wproc: Failed to launch core worker: %s\n", strerror(errno));
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "wproc: Failed to launch core worker: %s\n", strerror(errno));
 	else
 		wproc_num_workers_spawned++;
 
@@ -724,11 +715,9 @@ int init_workers(int desired_workers)
 	 */
 	specialized_workers = dkhash_create(512);
 	if (!qh_register_handler("wproc", "Worker process management and info", 0, wproc_query_handler))
-		logit(NSLOG_INFO_MESSAGE,
-		      "wproc: Successfully registered manager as @wproc with query handler\n");
+		logit(NSLOG_INFO_MESSAGE, TRUE, "wproc: Successfully registered manager as @wproc with query handler\n");
 	else
-		logit(NSLOG_RUNTIME_ERROR,
-		      "wproc: Failed to register manager with query handler\n");
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "wproc: Failed to register manager with query handler\n");
 
 	if (desired_workers <= 0) {
 		int cpus = online_cpus();
@@ -820,8 +809,8 @@ static int wproc_run_job(struct wproc_job *job, nagios_macros *mac)
 	kvvb = build_kvvec_buf(&kvv);
 	ret = write(wp->sd, kvvb->buf, kvvb->bufsize);
 	if (ret != (int)kvvb->bufsize) {
-		logit(NSLOG_RUNTIME_ERROR,
-		      "wproc: '%s' seems to be choked. ret = %d; bufsize = %lu: errno = %d (%s)\n", wp->name, ret, kvvb->bufsize, errno, strerror(errno));
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "wproc: '%s' seems to be choked. ret = %d; bufsize = %lu: errno = %d (%s)\n",
+		      wp->name, ret, kvvb->bufsize, errno, strerror(errno));
 		// these two will be decremented by destroy_job, so preemptively increment them
 		wp->jobs_running++;
 		loadctl.jobs_running++;

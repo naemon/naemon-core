@@ -61,13 +61,12 @@ int nebmodule_init(int flags, char *args, nebmodule *handle) {
 	neb_set_module_info(helloworld_module_handle, NEBMODULE_MODINFO_DESC, "A simple example to get you started with Nagios Event Broker (NEB) modules.");
 
 	/* log module info to the Nagios log file */
-	logit(NSLOG_INFO_MESSAGE,
-	      "helloworld: Copyright (c) 2003-2007 Ethan Galstad (egalstad@nagios.org)");
+	write_to_all_logs("helloworld: Copyright (c) 2003-2007 Ethan Galstad (egalstad@nagios.org)", NSLOG_INFO_MESSAGE);
 
 	/* log a message to the Nagios log file */
 	snprintf(temp_buffer, sizeof(temp_buffer) - 1, "helloworld: Hello world!\n");
 	temp_buffer[sizeof(temp_buffer) - 1] = '\x0';
-	logit(NSLOG_INFO_MESSAGE, temp_buffer);
+	write_to_all_logs(temp_buffer, NSLOG_INFO_MESSAGE);
 
 	/* log a reminder message every 15 minutes (how's that for annoying? :-)) */
 	time(&current_time);
@@ -91,7 +90,7 @@ int nebmodule_deinit(int flags, int reason) {
 	/* log a message to the Nagios log file */
 	snprintf(temp_buffer, sizeof(temp_buffer) - 1, "helloworld: Goodbye world!\n");
 	temp_buffer[sizeof(temp_buffer) - 1] = '\x0';
-	logit(NSLOG_INFO_MESSAGE, temp_buffer);
+	write_to_all_logs(temp_buffer, NSLOG_INFO_MESSAGE);
 
 	return 0;
 	}
@@ -104,7 +103,7 @@ void helloworld_reminder_message(char *message) {
 	/* log a message to the Nagios log file */
 	snprintf(temp_buffer, sizeof(temp_buffer) - 1, "helloworld: I'm still here! %s", message);
 	temp_buffer[sizeof(temp_buffer) - 1] = '\x0';
-	logit(NSLOG_INFO_MESSAGE, temp_buffer);
+	write_to_all_logs(temp_buffer, NSLOG_INFO_MESSAGE);
 
 	return;
 	}
@@ -126,7 +125,7 @@ int helloworld_handle_data(int event_type, void *data) {
 				/* log a message to the Nagios log file */
 				snprintf(temp_buffer, sizeof(temp_buffer) - 1, "helloworld: An aggregated status update just %s.", (agsdata->type == NEBTYPE_AGGREGATEDSTATUS_STARTDUMP) ? "started" : "finished");
 				temp_buffer[sizeof(temp_buffer) - 1] = '\x0';
-				logit(NSLOG_INFO_MESSAGE, temp_buffer);
+				write_to_all_logs(temp_buffer, NSLOG_INFO_MESSAGE);
 				}
 
 			break;

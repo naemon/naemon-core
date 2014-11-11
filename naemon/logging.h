@@ -76,8 +76,8 @@
 
 NAGIOS_BEGIN_DECL
 /**** Logging Functions ****/
-void logit(int, const char *, ...)
-__attribute__((__format__(__printf__, 2, 3)));
+void logit(int, int, const char *, ...)
+__attribute__((__format__(__printf__, 3, 4)));
 int log_debug_info(int, int, const char *, ...)
 __attribute__((__format__(__printf__, 3, 4)));
 

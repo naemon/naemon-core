@@ -206,8 +206,7 @@ int main(int argc, char **argv) {
 error_out:
 #endif
             /* we had an error daemonizing, so bail... */
-            logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-                  "Bailing out due to failure to daemonize. (PID=%d)", (int)getpid());
+            logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "Bailing out due to failure to daemonize. (PID=%d)", (int)getpid());
             cleanup();
             exit(EXIT_FAILURE);
         }
@@ -235,16 +234,14 @@ error_out:
         sigrestart           = FALSE;
         last_program_restart = 0;
         if(write_config_files() != OK) {
-            logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-                  "remote site not available, waiting 30seconds");
+            logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "remote site not available, waiting 30seconds");
             cleanup();
             sleep(30);
             continue;
         }
         run_refresh_loop();
         if(sigshutdown == FALSE && sigrestart == FALSE) {
-            logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-                  "remote site went offline, waiting 30seconds");
+            logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "remote site went offline, waiting 30seconds");
             sleep(30);
         }
     }
@@ -373,16 +370,14 @@ int write_config_files() {
     timing_point("writing configuration files\n");
     nspath_mkdir_p(output_folder, 0700, 0);
     if(verbose)
-        logit(NSLOG_PROCESS_INFO,
-              "writing configuration into: %s\n", output_folder);
+        logit(NSLOG_PROCESS_INFO, TRUE, "writing configuration into: %s\n", output_folder);
     nspath_mkdir_p(tmp_folder, 0700, 0);
     nspath_mkdir_p(archive_folder, 0700, 0);
 
     /* write minimal naemon.cfg */
     file = fopen(config_file, "w+");
     if(file == NULL) {
-        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-              "cannot write %s: %s\n", config_file, strerror(errno));
+        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "cannot write %s: %s\n", config_file, strerror(errno));
         exit(EXIT_FAILURE);
     }
     fprintf(file,"lock_file=%s/shadownaemon.pid\n", tmp_folder);
@@ -409,8 +404,7 @@ int write_config_files() {
     /* write resource.cfg */
     file = fopen(resource_config, "w+");
     if(file == NULL) {
-        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-              "cannot write %s: %s\n", resource_config, strerror(errno));
+        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "cannot write %s: %s\n", resource_config, strerror(errno));
         exit(EXIT_FAILURE);
     }
     if(omd_site == NULL) {
@@ -427,8 +421,7 @@ int write_config_files() {
     /* write objects */
     file = fopen(objects_file, "w+");
     if(file == NULL) {
-        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-              "cannot write %s: %s\n", objects_file, strerror(errno));
+        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "cannot write %s: %s\n", objects_file, strerror(errno));
         exit(EXIT_FAILURE);
     }
     if(write_commands_configuration(file) != OK) {
@@ -485,8 +478,7 @@ int initialize_core() {
 
     /* there was a problem reading the config files */
     if (result != OK) {
-        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_CONFIG_ERROR,
-              "Bailing out due to one or more errors encountered in the configuration files. Run Naemon from the command line with the -v option to verify your config before restarting. (PID=%d)", (int)getpid());
+        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_CONFIG_ERROR, TRUE, "Bailing out due to one or more errors encountered in the configuration files. Run Naemon from the command line with the -v option to verify your config before restarting. (PID=%d)", (int)getpid());
         exit(EXIT_FAILURE);
     }
 
@@ -502,7 +494,7 @@ int initialize_core() {
     if(verbose == FALSE)
         daemon_mode = TRUE; // prevents nebmods from loging to console
     if (neb_load_all_modules() != OK) {
-        logit(NSLOG_CONFIG_ERROR, "Error: Module loading failed. Aborting.\n");
+        logit(NSLOG_CONFIG_ERROR, ERROR, "Error: Module loading failed. Aborting.\n");
         exit(EXIT_FAILURE);
     }
     timing_point("Modules loaded\n");
@@ -514,8 +506,7 @@ int initialize_core() {
     /* run the pre-flight check to make sure everything looks okay*/
     if(verbose == TRUE) {
         if((result = pre_flight_check()) != OK) {
-            logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_VERIFICATION_ERROR,
-                  "Bailing out due to errors encountered while running the pre-flight check.  Run Naemon from the command line with the -v option to verify your config before restarting. (PID=%d)\n", (int)getpid());
+            logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_VERIFICATION_ERROR, TRUE, "Bailing out due to errors encountered while running the pre-flight check.  Run Naemon from the command line with the -v option to verify your config before restarting. (PID=%d)\n", (int)getpid());
             exit(EXIT_FAILURE);
         }
         timing_point("Object configuration parsed and understood\n");
@@ -617,8 +608,7 @@ int livestatus_query(result_list **answer, char *source, char *query, char *colu
         case LIVESTATUS_MODE_HTTP:
             /* not implemented yet */
         default:
-            logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-                  "no input method available for: %s\n", source);
+            logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "no input method available for: %s\n", source);
             exit(EXIT_FAILURE);
             break;
     }
@@ -655,11 +645,10 @@ int livestatus_query_socket(result_list **result, char *socket_path, char *query
     }
 
     if(verbose)
-        logit(NSLOG_PROCESS_INFO, "query: %s\n", query);
+        logit(NSLOG_PROCESS_INFO, TRUE, "query: %s\n", query);
     size = send(input_socket, query, strlen(query), 0);
     if( size <= 0) {
-        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-              "sending to socket failed : %s\n", strerror(errno));
+        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "sending to socket failed : %s\n", strerror(errno));
         close(input_socket);
         input_socket = -1;
         return(-1);
@@ -682,18 +671,16 @@ int livestatus_query_socket(result_list **result, char *socket_path, char *query
     strcat(columnsheader, "\n");
     size = send(input_socket, columnsheader, strlen(columnsheader), 0);
     if(verbose)
-        logit(NSLOG_PROCESS_INFO, "query: %s\n", columnsheader);
+        logit(NSLOG_PROCESS_INFO, TRUE, "query: %s\n", columnsheader);
     size = send(input_socket, send_header, strlen(send_header), 0);
     if(verbose)
-        logit(NSLOG_PROCESS_INFO, "query: %s\n", send_header);
+        logit(NSLOG_PROCESS_INFO, TRUE, "query: %s\n", send_header);
     nm_free(columnsheader);
     size = read(input_socket, header, 16);
     if( size < 16) {
-        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-              "reading socket failed (%d bytes read): %s\n", size, strerror(errno));
+        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "reading socket failed (%d bytes read): %s\n", size, strerror(errno));
         if(size > 0)
-            logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-                  "got header: '%s'\n", header);
+            logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "got header: '%s'\n", header);
         close(input_socket);
         input_socket = -1;
         return(-1);
@@ -703,8 +690,7 @@ int livestatus_query_socket(result_list **result, char *socket_path, char *query
     buffer[3] = '\0';
     return_code = atoi(buffer);
     if( return_code != 200) {
-        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-              "query failed: %d\nquery:\n---\n%s\n---\n", return_code, query);
+        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "query failed: %d\nquery:\n---\n%s\n---\n", return_code, query);
         close(input_socket);
         input_socket = -1;
         return(-1);
@@ -727,8 +713,7 @@ int livestatus_query_socket(result_list **result, char *socket_path, char *query
             break;
     }
     if( size <= 0 || total_read != result_size) {
-        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-              "reading socket failed (%d bytes read, expected %d): %s\n", total_read, result_size, strerror(errno));
+        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "reading socket failed (%d bytes read, expected %d): %s\n", total_read, result_size, strerror(errno));
         nm_free(result_string_c);
         close(input_socket);
         input_socket = -1;
@@ -782,14 +767,12 @@ int open_local_socket(char *socket_path) {
     tv.tv_usec = 0;
 
     if (0 != stat(socket_path, &st)) {
-        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-              "no unix socket %s existing\n", socket_path);
+        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "no unix socket %s existing\n", socket_path);
         return(-1);
     }
 
     if((input_socket=socket (PF_LOCAL, SOCK_STREAM, 0)) <= 0) {
-        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-              "creating socket failed: %s\n", strerror(errno));
+        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "creating socket failed: %s\n", strerror(errno));
         return(-1);
     }
 
@@ -800,8 +783,7 @@ int open_local_socket(char *socket_path) {
     setsockopt(input_socket, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 
     if(!connect(input_socket, (struct sockaddr *) &address, sizeof (address)) == 0) {
-        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-              "connecting socket failed: %s\n", strerror(errno));
+        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "connecting socket failed: %s\n", strerror(errno));
         close(input_socket);
         return(-1);
     }
@@ -825,15 +807,13 @@ int open_tcp_socket(char *connection_string) {
     port     = (in_port_t) atoi(port_val);
 
     if((input_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-              "creating socket failed: %s\n", strerror(errno));
+        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "creating socket failed: %s\n", strerror(errno));
         return(-1);
     }
 
     hostp = gethostbyname(hostname);
     if(hostp == (struct hostent *)NULL) {
-        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-              "host %s not found: %s\n", hostname, hstrerror(h_errno));
+        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "host %s not found: %s\n", hostname, hstrerror(h_errno));
         nm_free(server_c);
         close(input_socket);
         exit(EXIT_FAILURE);
@@ -848,8 +828,7 @@ int open_tcp_socket(char *connection_string) {
     setsockopt(input_socket, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 
     if(!connect(input_socket, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) == 0) {
-        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR,
-              "connecting to %s:%d failed: %s\n", hostname, port, strerror(errno));
+        logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "connecting to %s:%d failed: %s\n", hostname, port, strerror(errno));
         close(input_socket);
         nm_free(server_c);
         return(-1);
@@ -918,8 +897,7 @@ int update_program_status_data() {
         if(last_program_restart != 0 && last_program_restart != program_start) {
             sigrestart = TRUE;
             full_refresh_required = TRUE;
-            logit(NSLOG_INFO_MESSAGE,
-                  "remote site has restarted, need new config...\n");
+            logit(NSLOG_INFO_MESSAGE, TRUE, "remote site has restarted, need new config...\n");
         } else {
             last_program_restart = program_start;
 
@@ -982,7 +960,7 @@ int update_program_status_data() {
             broker_adaptive_program_data(NEBTYPE_ADAPTIVEPROGRAM_UPDATE, NEBFLAG_NONE, NEBATTR_NONE, CMD_NONE, MODATTR_NONE, MODATTR_NONE, MODATTR_NONE, MODATTR_NONE, NULL);
         }
     } else {
-        logit(NSLOG_INFO_MESSAGE, "updating program status failed\n");
+        logit(NSLOG_INFO_MESSAGE, TRUE, "updating program status failed\n");
         return(ERROR);
     }
     free_livestatus_result(answer, columns_size);
@@ -1068,8 +1046,7 @@ int update_host_status_data() {
         while(row != NULL) {
             hst = find_host(row->set[0]);
             if(hst == NULL) {
-                logit(NSLOG_INFO_MESSAGE,
-                      "host '%s' not found, something is seriously wrong\n", row->set[0]);
+                logit(NSLOG_INFO_MESSAGE, TRUE, "host '%s' not found, something is seriously wrong\n", row->set[0]);
                 exit(EXIT_FAILURE);
             }
             hst->accept_passive_checks          = atoi(row->set[1]);
@@ -1113,7 +1090,7 @@ int update_host_status_data() {
     }
     free_livestatus_result(answer, columns_size);
     if(num < 0) {
-        logit(NSLOG_INFO_MESSAGE, "updating hosts status failed\n");
+        logit(NSLOG_INFO_MESSAGE, TRUE, "updating hosts status failed\n");
         return(ERROR);
     }
     timing_point("updated %d hosts\n", num);
@@ -1199,8 +1176,7 @@ int update_service_status_data() {
         while(row != NULL && row->set != NULL) {
             svc = find_service(row->set[0], row->set[1]);
             if(svc == NULL) {
-                logit(NSLOG_INFO_MESSAGE,
-                      "service '%s' on hst '%s' not found, something is seriously wrong\n", row->set[1], row->set[0]);
+                logit(NSLOG_INFO_MESSAGE, TRUE, "service '%s' on hst '%s' not found, something is seriously wrong\n", row->set[1], row->set[0]);
                 exit(EXIT_FAILURE);
             }
             svc->accept_passive_checks          = atoi(row->set[2]);
@@ -1245,7 +1221,7 @@ int update_service_status_data() {
     }
     free_livestatus_result(answer, columns_size);
     if(num < 0) {
-        logit(NSLOG_INFO_MESSAGE, "updating service status failed\n");
+        logit(NSLOG_INFO_MESSAGE, TRUE, "updating service status failed\n");
         return(ERROR);
     }
     timing_point("updated %d services\n", num);
@@ -1263,8 +1239,7 @@ int update_external_commands() {
             process_external_commands_from_file(globbuf.gl_pathv[i], TRUE);
             timing_point("processed external commands from %s\n", globbuf.gl_pathv[i]);
             if(stat(globbuf.gl_pathv[i], &st) == 0 && !unlink(globbuf.gl_pathv[i])) {
-                logit(NSLOG_INFO_MESSAGE,
-                      "cannot remove %s: %s\n", globbuf.gl_pathv[i], strerror(errno));
+                logit(NSLOG_INFO_MESSAGE, TRUE, "cannot remove %s: %s\n", globbuf.gl_pathv[i], strerror(errno));
             }
         }
         globfree(&globbuf);
@@ -1339,8 +1314,7 @@ int update_downtime_data() {
                 hst    = find_host(row->set[1]);
                 hst->scheduled_downtime_depth++;
                 if(result != OK) {
-                    logit(NSLOG_INFO_MESSAGE,
-                          "adding host downtime failed (id: %s, host: '%s'), something is seriously wrong\n", row->set[0], row->set[1]);
+                    logit(NSLOG_INFO_MESSAGE, TRUE, "adding host downtime failed (id: %s, host: '%s'), something is seriously wrong\n", row->set[0], row->set[1]);
                     exit(EXIT_FAILURE);
                 }
             } else {
@@ -1367,8 +1341,7 @@ int update_downtime_data() {
                 svc    = find_service(row->set[1], row->set[2]);
                 svc->scheduled_downtime_depth++;
                 if(result != OK) {
-                    logit(NSLOG_INFO_MESSAGE,
-                          "adding service downtime failed (id: %s, host: '%s', service: '%s'), something is seriously wrong\n", row->set[0], row->set[1], row->set[2]);
+                    logit(NSLOG_INFO_MESSAGE, TRUE, "adding service downtime failed (id: %s, host: '%s', service: '%s'), something is seriously wrong\n", row->set[0], row->set[1], row->set[2]);
                     exit(EXIT_FAILURE);
                 }
             }
@@ -1379,7 +1352,7 @@ int update_downtime_data() {
     }
     free_livestatus_result(answer, columns_size);
     if(num < 0) {
-        logit(NSLOG_INFO_MESSAGE, "updating downtimes failed\n");
+        logit(NSLOG_INFO_MESSAGE, TRUE, "updating downtimes failed\n");
         return(ERROR);
     }
     timing_point("added %d new downtimes\n", num);
@@ -1432,8 +1405,7 @@ int remove_old_downtimes() {
                     result = unschedule_downtime(SERVICE_DOWNTIME, current_id);
                 }
                 if(result != OK) {
-                    logit(NSLOG_INFO_MESSAGE,
-                          "removing downtime failed (id: %lu), something is seriously wrong\n", current_id);
+                    logit(NSLOG_INFO_MESSAGE, TRUE, "removing downtime failed (id: %lu), something is seriously wrong\n", current_id);
                     exit(EXIT_FAILURE);
                 } else {
                     removed++;
@@ -1444,7 +1416,7 @@ int remove_old_downtimes() {
     }
     free_livestatus_result(answer, columns_size);
     if(num < 0) {
-        logit(NSLOG_INFO_MESSAGE, "removing old downtimes failed\n");
+        logit(NSLOG_INFO_MESSAGE, TRUE, "removing old downtimes failed\n");
         return(ERROR);
     }
     timing_point("removed %d old downtimes\n", removed);
@@ -1508,8 +1480,7 @@ int update_comment_data() {
                                           atoi(row->set[10])    // source
                                         );
                 if(result != OK) {
-                    logit(NSLOG_INFO_MESSAGE,
-                          "adding host comment failed (id: %s, host: '%s'), something is seriously wrong\n", row->set[0], row->set[1]);
+                    logit(NSLOG_INFO_MESSAGE, TRUE, "adding host comment failed (id: %s, host: '%s'), something is seriously wrong\n", row->set[0], row->set[1]);
                     exit(EXIT_FAILURE);
                 }
             } else {
@@ -1531,8 +1502,7 @@ int update_comment_data() {
                                           atoi(row->set[10])    // source
                                         );
                 if(result != OK) {
-                    logit(NSLOG_INFO_MESSAGE,
-                          "adding service comment failed (id: %s, host: '%s', service: '%s'), something is seriously wrong\n", row->set[0], row->set[1], row->set[2]);
+                    logit(NSLOG_INFO_MESSAGE, TRUE, "adding service comment failed (id: %s, host: '%s', service: '%s'), something is seriously wrong\n", row->set[0], row->set[1], row->set[2]);
                     exit(EXIT_FAILURE);
                 }
             }
@@ -1543,7 +1513,7 @@ int update_comment_data() {
     }
     free_livestatus_result(answer, columns_size);
     if(num < 0) {
-        logit(NSLOG_INFO_MESSAGE, "updating comments failed\n");
+        logit(NSLOG_INFO_MESSAGE, TRUE, "updating comments failed\n");
         return(ERROR);
     }
     timing_point("added %d new comments\n", num);
@@ -1590,8 +1560,7 @@ int remove_old_comments() {
                     result = delete_service_comment(current_id);
                 }
                 if(result != OK) {
-                    logit(NSLOG_INFO_MESSAGE,
-                          "removing comment failed (id: %lu), something is seriously wrong\n", current_id);
+                    logit(NSLOG_INFO_MESSAGE, TRUE, "removing comment failed (id: %lu), something is seriously wrong\n", current_id);
                     exit(EXIT_FAILURE);
                 } else {
                     removed++;
@@ -1601,7 +1570,7 @@ int remove_old_comments() {
     }
     free_livestatus_result(answer, columns_size);
     if(num < 0) {
-        logit(NSLOG_INFO_MESSAGE, "removing old comments failed\n");
+        logit(NSLOG_INFO_MESSAGE, TRUE, "removing old comments failed\n");
         return(ERROR);
     }
     timing_point("removed %d old comments\n", removed);
@@ -1665,10 +1634,8 @@ int run_refresh_loop() {
     /* main action, run broker... */
     daemon_mode = FALSE;
     if(verbose)
-        logit(NSLOG_INFO_MESSAGE,
-              "%s initialized with pid %d...\n", self_name, getpid());
-    logit(NSLOG_PROCESS_INFO,
-          "started caching %s to %s\n", input_source, output_socket_path);
+        logit(NSLOG_INFO_MESSAGE, TRUE, "%s initialized with pid %d...\n", self_name, getpid());
+    logit(NSLOG_PROCESS_INFO, TRUE, "started caching %s to %s\n", input_source, output_socket_path);
 
     /* sleep normal interval because we just have fetched all data */
     usleep(short_shadow_update_interval);

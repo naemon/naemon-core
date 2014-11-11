@@ -72,8 +72,7 @@ int save_state_information(int autosave)
 		return ERROR;
 
 	if (autosave == TRUE)
-		logit(NSLOG_PROCESS_INFO,
-		      "Auto-save of retention data completed successfully.\n");
+		logit(NSLOG_PROCESS_INFO, FALSE, "Auto-save of retention data completed successfully.\n");
 
 	return OK;
 }

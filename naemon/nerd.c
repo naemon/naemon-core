@@ -90,8 +90,8 @@ static int nerd_register_channel_callbacks(struct nerd_channel *chan)
 	for (i = 0; i < chan->num_callbacks; i++) {
 		int result = neb_register_callback(chan->callbacks[i], &nerd_mod, 0, chan->handler);
 		if (result != 0) {
-			logit(NSLOG_RUNTIME_ERROR,
-			      "nerd: Failed to register callback %d for channel '%s': %d\n", chan->callbacks[i], chan->name, result);
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "nerd: Failed to register callback %d for channel '%s': %d\n",
+			      chan->callbacks[i], chan->name, result);
 			return -1;
 		}
 	}
@@ -152,8 +152,8 @@ static int cancel_channel_subscription(struct nerd_channel *chan, int sd)
 	}
 
 	if (cancelled) {
-		logit(NSLOG_INFO_MESSAGE,
-		      "nerd: Cancelled %d subscription%s to channel '%s' for %d\n", cancelled, cancelled == 1 ? "" : "s", chan->name, sd);
+		logit(NSLOG_INFO_MESSAGE, TRUE, "nerd: Cancelled %d subscription%s to channel '%s' for %d\n",
+		      cancelled, cancelled == 1 ? "" : "s", chan->name, sd);
 	}
 
 	if (chan->subscriptions == NULL)
@@ -404,8 +404,7 @@ int nerd_mkchan(const char *name, const char *description, int (*handler)(int, v
 
 	channels[num_channels++] = chan;
 
-	logit(NSLOG_INFO_MESSAGE,
-	      "nerd: Channel %s registered successfully\n", chan->name);
+	logit(NSLOG_INFO_MESSAGE, TRUE, "nerd: Channel %s registered successfully\n", chan->name);
 	return num_channels - 1;
 }
 
@@ -474,8 +473,7 @@ int nerd_init(void)
 	nerd_mod.filename = (char *)"NERD"; /* something to log */
 
 	if (qh_register_handler("nerd", "Naemon Event Radio Dispatcher - Subscriber Service", 0, nerd_qh_handler) < 0) {
-		logit(NSLOG_RUNTIME_ERROR,
-		      "nerd: Failed to register with query handler\n");
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "nerd: Failed to register with query handler\n");
 		return ERROR;
 	}
 
@@ -491,7 +489,6 @@ int nerd_init(void)
 	                                   "Host and service checks in gource's log format",
 	                                   chan_opath_checks, nebcallback_flag(NEBCALLBACK_HOST_CHECK_DATA) | nebcallback_flag(NEBCALLBACK_SERVICE_CHECK_DATA));
 
-	logit(NSLOG_INFO_MESSAGE,
-	      "nerd: Fully initialized and ready to rock!\n");
+	logit(NSLOG_INFO_MESSAGE, TRUE, "nerd: Fully initialized and ready to rock!\n");
 	return 0;
 }

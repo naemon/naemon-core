@@ -12,8 +12,8 @@
 #  endif
 # endif
 #endif
-#define log_mem_error() logit(NSLOG_RUNTIME_ERROR, "Error: Failed to allocate memory in %s", __func__);
-#define log_vasprintf_error() logit(NSLOG_RUNTIME_ERROR, "Error: Failed to vasprintf in %s", __func__);
+#define log_mem_error() logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to allocate memory in %s", __func__);
+#define log_vasprintf_error() logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to vasprintf in %s", __func__);
 
 #define CHECK_AND_RETURN(_ptr)					\
 	if (_ptr == NULL) {							\

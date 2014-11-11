@@ -109,8 +109,7 @@ static int qh_input(int sd, int events, void *ioc_)
 		}
 
 		if (!(ioc = iocache_create(16384))) {
-			logit(NSLOG_RUNTIME_ERROR,
-			      "qh: Failed to create iocache for inbound request\n");
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "qh: Failed to create iocache for inbound request\n");
 			nsock_printf(nsd, "500: Internal server error");
 			close(nsd);
 			return 0;
@@ -121,8 +120,7 @@ static int qh_input(int sd, int events, void *ioc_)
 		 * addressable list so we can release them on deinit
 		 */
 		if (iobroker_register(nagios_iobs, nsd, ioc, qh_input) < 0) {
-			logit(NSLOG_RUNTIME_ERROR,
-			      "qh: Failed to register input socket %d with I/O broker: %s\n", nsd, strerror(errno));
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "qh: Failed to register input socket %d with I/O broker: %s\n", nsd, strerror(errno));
 			iocache_destroy(ioc);
 			close(nsd);
 			return 0;
@@ -250,21 +248,18 @@ int qh_register_handler(const char *name, const char *description, unsigned int 
 		return -1;
 
 	if (!handler) {
-		logit(NSLOG_RUNTIME_ERROR,
-		      "qh: Failed to register handler '%s': No handler function specified\n", name);
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "qh: Failed to register handler '%s': No handler function specified\n", name);
 		return -1;
 	}
 
 	if (strlen(name) > 128) {
-		logit(NSLOG_RUNTIME_ERROR,
-		      "qh: Failed to register handler '%s': Name too long\n", name);
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "qh: Failed to register handler '%s': Name too long\n", name);
 		return -ENAMETOOLONG;
 	}
 
 	/* names must be unique */
 	if (qh_find_handler(name)) {
-		logit(NSLOG_RUNTIME_WARNING,
-		      "qh: Handler '%s' registered more than once\n", name);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "qh: Handler '%s' registered more than once\n", name);
 		return -1;
 	}
 
@@ -280,8 +275,9 @@ int qh_register_handler(const char *name, const char *description, unsigned int 
 
 	result = dkhash_insert(qh_table, qh->name, NULL, qh);
 	if (result < 0) {
-		logit(NSLOG_RUNTIME_ERROR,
-		      "qh: Failed to insert query handler '%s' (%p) into hash table %p (%d): %s\n", name, qh, qh_table, result, strerror(errno));
+		logit(NSLOG_RUNTIME_ERROR, TRUE,
+		      "qh: Failed to insert query handler '%s' (%p) into hash table %p (%d): %s\n",
+		      name, qh, qh_table, result, strerror(errno));
 		free(qh);
 		return result;
 	}
@@ -421,8 +417,7 @@ int qh_init(const char *path)
 		iobroker_close(nagios_iobs, qh_listen_sock);
 
 	if (!path) {
-		logit(NSLOG_RUNTIME_ERROR,
-		      "qh: query_socket is NULL. What voodoo is this?\n");
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "qh: query_socket is NULL. What voodoo is this?\n");
 		return ERROR;
 	}
 
@@ -431,8 +426,8 @@ int qh_init(const char *path)
 	qh_listen_sock = nsock_unix(path, NSOCK_TCP | NSOCK_UNLINK);
 	umask(old_umask);
 	if (qh_listen_sock < 0) {
-		logit(NSLOG_RUNTIME_ERROR,
-		      "qh: Failed to init socket '%s'. %s: %s\n", path, nsock_strerror(qh_listen_sock), strerror(errno));
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "qh: Failed to init socket '%s'. %s: %s\n",
+		      path, nsock_strerror(qh_listen_sock), strerror(errno));
 		return ERROR;
 	}
 
@@ -441,8 +436,7 @@ int qh_init(const char *path)
 
 	/* most likely overkill, but it's small, so... */
 	if (!(qh_table = dkhash_create(1024))) {
-		logit(NSLOG_RUNTIME_ERROR,
-		      "qh: Failed to create hash table\n");
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "qh: Failed to create hash table\n");
 		close(qh_listen_sock);
 		return ERROR;
 	}
@@ -452,18 +446,15 @@ int qh_init(const char *path)
 	if (result < 0) {
 		dkhash_destroy(qh_table);
 		close(qh_listen_sock);
-		logit(NSLOG_RUNTIME_ERROR,
-		      "qh: Failed to register socket with io broker: %s; errno=%d: %s\n", iobroker_strerror(result), errno, strerror(errno));
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "qh: Failed to register socket with io broker: %s; errno=%d: %s\n", iobroker_strerror(result), errno, strerror(errno));
 		return ERROR;
 	}
 
-	logit(NSLOG_INFO_MESSAGE,
-	      "qh: Socket '%s' successfully initialized\n", path);
+	logit(NSLOG_INFO_MESSAGE, FALSE, "qh: Socket '%s' successfully initialized\n", path);
 
 	/* now register our the in-core handlers */
 	if (!qh_register_handler("core", "Naemon Core control and info", 0, qh_core))
-		logit(NSLOG_INFO_MESSAGE,
-		      "qh: core query handler registered\n");
+		logit(NSLOG_INFO_MESSAGE, FALSE, "qh: core query handler registered\n");
 	qh_register_handler("command", "Naemon external commands interface", 0, qh_command);
 	qh_register_handler("echo", "The Echo Service - What You Put Is What You Get", 0, qh_echo);
 	qh_register_handler("help", "Help for the query handler", 0, qh_help);

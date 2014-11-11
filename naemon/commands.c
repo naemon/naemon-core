@@ -67,8 +67,7 @@ int open_command_file(void)
 		/* create the external command file as a named pipe (FIFO) */
 		if ((result = mkfifo(command_file, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) != 0) {
 
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Error: Could not create external command file '%s' as named pipe: (%d) -> %s.  If this file already exists and you are sure that another copy of Naemon is not running, you should delete this file.\n", command_file, errno, strerror(errno));
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Could not create external command file '%s' as named pipe: (%d) -> %s.  If this file already exists and you are sure that another copy of Naemon is not running, you should delete this file.\n", command_file, errno, strerror(errno));
 			return ERROR;
 		}
 	}
@@ -77,8 +76,7 @@ int open_command_file(void)
 	/* NOTE: file must be opened read-write for poll() to work */
 	if ((command_file_fd = open(command_file, O_RDWR | O_NONBLOCK)) < 0) {
 
-		logit(NSLOG_RUNTIME_ERROR,
-		      "Error: Could not open external command file for reading via open(): (%d) -> %s\n", errno, strerror(errno));
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Could not open external command file for reading via open(): (%d) -> %s\n", errno, strerror(errno));
 
 		return ERROR;
 	}
@@ -142,8 +140,7 @@ static int command_input_handler(int sd, int events, void *discard)
 	ret = iocache_read(command_worker.ioc, sd);
 	log_debug_info(DEBUGL_COMMANDS, 2, "Read %d bytes from command worker\n", ret);
 	if (ret == 0) {
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Command file worker seems to have died. Respawning\n");
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Command file worker seems to have died. Respawning\n");
 		shutdown_command_file_worker();
 		launch_command_file_worker();
 		return 0;
@@ -155,8 +152,7 @@ static int command_input_handler(int sd, int events, void *discard)
 			log_debug_info(DEBUGL_COMMANDS, 1, "Read raw external command '%s'\n", buf);
 		}
 		if ((cmd_ret = process_external_command1(buf)) != CMD_ERROR_OK) {
-			logit(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING,
-			      "External command error: %s\n", cmd_error_strerror(cmd_ret));
+			logit(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING, TRUE, "External command error: %s\n", cmd_error_strerror(cmd_ret));
 		}
 
 	}
@@ -246,36 +242,33 @@ int launch_command_file_worker(void)
 	}
 
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, sv) < 0) {
-		logit(NSLOG_RUNTIME_ERROR,
-		      "Failed to create socketpair for command file worker: %m\n");
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Failed to create socketpair for command file worker: %m\n");
 		return ERROR;
 	}
 
 	command_worker.pid = fork();
 	if (command_worker.pid < 0) {
-		logit(NSLOG_RUNTIME_ERROR,
-		      "Failed to fork() command file worker: %m\n");
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Failed to fork() command file worker: %m\n");
 		goto err_close;
 	}
 
 	if (command_worker.pid) {
 		command_worker.ioc = iocache_create(512 * 1024);
 		if (!command_worker.ioc) {
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Failed to create I/O cache for command file worker: %m\n");
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Failed to create I/O cache for command file worker: %m\n");
 			goto err_close;
 		}
 
 		command_worker.sd = sv[0];
 		ret = iobroker_register(nagios_iobs, command_worker.sd, NULL, command_input_handler);
 		if (ret < 0) {
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Failed to register command file worker socket %d with io broker %p: %s; errno=%d: %s\n", command_worker.sd, nagios_iobs, iobroker_strerror(ret), errno, strerror(errno));
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Failed to register command file worker socket %d with io broker %p: %s; errno=%d: %s\n",
+			      command_worker.sd, nagios_iobs, iobroker_strerror(ret), errno, strerror(errno));
 			iocache_destroy(command_worker.ioc);
 			goto err_close;
 		}
-		logit(NSLOG_INFO_MESSAGE,
-		      "Successfully launched command file worker with pid %d\n", command_worker.pid);
+		logit(NSLOG_INFO_MESSAGE, TRUE, "Successfully launched command file worker with pid %d\n",
+		      command_worker.pid);
 		return OK;
 	}
 
@@ -338,7 +331,7 @@ static struct arg_val * arg_val_create(arg_t type, void * v);
 #  endif
 # endif
 #endif
-#define log_mem_error() logit(NSLOG_RUNTIME_ERROR, "Error: Failed to allocate memory in %s", __func__);
+#define log_mem_error() logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to allocate memory in %s", __func__);
 
 static size_t type_sz(arg_t type) {
 	switch (type) {
@@ -586,8 +579,7 @@ static int validate_bool(void *value)
 	int val = *(int *)value;
 
 	if ( val < 0 || val > 1) {
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Validation error: BOOL(%d) not in range (0,1).", val);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Validation error: BOOL(%d) not in range (0,1).", val);
 		ret = 0;
 	}
 	return ret;
@@ -602,20 +594,17 @@ static unsigned long parse_ulong(const char *str, int *error)
 	ret = strtoul(str, &endptr, 10);
 	if(errno != 0) {
 		/*error when parsing*/
-		logit(NSLOG_RUNTIME_ERROR,
-		      "Parse error: '%s' while parsing ulong '%s'", strerror(errno), str);
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Parse error: '%s' while parsing ulong '%s'", strerror(errno), str);
 		*error = 1;
 	}
 	else if (endptr == str) {
 		/*no digits at all*/
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Parse error: No digits found in ulong '%s'", str);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Parse error: No digits found in ulong '%s'", str);
 		*error = 1;
 	}
 	else if (*endptr != '\0') {
 		/*invalid character*/
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Parse error: Invalid characters (%s) in ulong '%s'", endptr, str);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Parse error: Invalid characters (%s) in ulong '%s'", endptr, str);
 		*error = 1;
 	}
 	return ret;
@@ -629,20 +618,17 @@ static double parse_double(const char *str, int *error) {
 	ret = strtod(str, &endptr);
 	if (errno != 0) {
 		/*don't bother checking whether this was an overflow/underflow, this error should be enough*/
-		logit(NSLOG_RUNTIME_ERROR,
-		      "Parse error: '%s' while parsing double '%s'", strerror(errno), str);
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Parse error: '%s' while parsing double '%s'", strerror(errno), str);
 		*error = 1;
 	}
 	else if(endptr == str) {
 		/*no digits*/
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Parse error: No digits found in double '%s'", str);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Parse error: No digits found in double '%s'", str);
 		*error = 1;
 	}
 	else if (*endptr != '\0') {
 		/*invalid character*/
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Parse error: Invalid characters (%s) in double '%s'", endptr, str);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Parse error: Invalid characters (%s) in double '%s'", endptr, str);
 		*error = 1;
 	}
 	return ret;
@@ -656,20 +642,17 @@ static int parse_integer(const char *str, int *error) {
 	ret = strtol(str, &endptr, 10);
 	if(errno != 0) {
 		/*error when parsing*/
-		logit(NSLOG_RUNTIME_ERROR,
-		      "Parse error: '%s' while parsing integer '%s'", strerror(errno), str);
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Parse error: '%s' while parsing integer '%s'", strerror(errno), str);
 		*error = 1;
 	}
 	else if (endptr == str) {
 		/*no digits at all*/
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Parse error: No digits found in integer '%s'", str);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Parse error: No digits found in integer '%s'", str);
 		*error = 1;
 	}
 	else if (*endptr != '\0') {
 		/*invalid character*/
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Parse error: Invalid characters (%s) in integer '%s'", endptr, str);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Parse error: Invalid characters (%s) in integer '%s'", endptr, str);
 		*error = 1;
 	}
 	return ret;
@@ -916,21 +899,18 @@ struct external_command /*@null@*/ * command_parse(const char * cmdstr, int mode
 			mode ^=COMMAND_SYNTAX_KV;
 		}
 		else {
-			logit(NSLOG_RUNTIME_WARNING,
-			      "Warning: Invalid parse mode (%d) supplied to %s", mode, __func__);
+			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Invalid parse mode (%d) supplied to %s", mode, __func__);
 			*error = CMD_ERROR_UNSUPPORTED_PARSE_MODE;
 			return NULL;
 		}
 	}
 	if (ext_command == NULL && *error == CMD_ERROR_OK) {
-		logit(NSLOG_RUNTIME_ERROR,
-		      "Error: No command parsed but no error code set in %s - this is a bug, please report it", __func__);
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: No command parsed but no error code set in %s - this is a bug, please report it", __func__);
 		*error = CMD_ERROR_INTERNAL_ERROR;
 	}
 
 	if (ext_command != NULL && *error != CMD_ERROR_OK && *error != CMD_ERROR_CUSTOM_COMMAND) {
-		logit(NSLOG_RUNTIME_ERROR,
-		      "Error: Command parsed but error code set in %s - this is a bug, please report it", __func__);
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Command parsed but error code set in %s - this is a bug, please report it", __func__);
 		*error = CMD_ERROR_INTERNAL_ERROR;
 	}
 	return ext_command;
@@ -983,8 +963,8 @@ static struct external_command_argument /*@null@*/ * command_argument_create(cha
 
 	if (v->val != NULL && !(arg->validator(v->val)) ) {
 		/*Default value does not validate*/
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Warning: Refusing to create argument %s with invalid default value", name);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Refusing to create argument %s with invalid default value",
+				name);
 		return NULL;
 	}
 	if ( arg )
@@ -1040,21 +1020,20 @@ void command_argument_add(struct external_command *ext_command, char *name, arg_
 	struct arg_val *argval;
 
 	if ( command_argument_get(ext_command, name) != NULL) {
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Warning: Refusing to add already defined argument %s for command %s", name, ext_command->name);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Refusing to add already defined argument %s for command %s",
+				name, ext_command->name);
 		return;
 	}
 	if( (argval = arg_val_create(type, default_value)) == NULL) {
-		logit(NSLOG_RUNTIME_ERROR,
-		      "Error: Failed to create arg_val in %s", __func__);
+		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Failed to create arg_val in %s", __func__);
 		return;
 	}
 
 	ext_command->arguments = nm_realloc(ext_command->arguments, sizeof(struct external_command_argument) * (ext_command->argc + 1));
 	ext_command->arguments[ext_command->argc] = command_argument_create(name, argval, validator);
 	if( ext_command->arguments[ext_command->argc] == NULL) {
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Warning: Failed to create argument %s for command %s in %s", name, ext_command->name, __func__);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Failed to create argument %s for command %s in %s",
+				name, ext_command->name, __func__);
 		return;
 	}
 	++(ext_command->argc);
@@ -1162,8 +1141,7 @@ struct external_command /*@null@*/ * command_create(char *cmd, ext_command_handl
 		ext_command->raw_arguments = NULL;
 	}
 	else {
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Warning: Null parameter passed to %s for %s", __func__, cmd ? cmd : "unknown command");
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Null parameter passed to %s for %s", __func__, cmd ? cmd : "unknown command");
 	}
 
 	if (arg_spec) {
@@ -1194,23 +1172,20 @@ int command_register(struct external_command *ext_command, int id)
 	int i;
 
 	if (!ext_command) {
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Warning: Null parameter command passed to %s", __func__);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Null parameter command passed to %s", __func__);
 		return -1;
 	}
 
 	/*does this command name already exist in the registry?*/
 	if (command_lookup(ext_command->name)) {
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Warning: Refusing to re-register command %s", ext_command->name);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Refusing to re-register command %s", ext_command->name);
 		return -1;
 	}
 
 	if (id >= 0) {
 		/*id already taken?*/
 		if (registered_commands[id] != NULL) {
-			logit(NSLOG_RUNTIME_WARNING,
-			      "Warning: Refusing to re-register command ID %d", id);
+			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Refusing to re-register command ID %d", id);
 			return -2;
 		}
 	}
@@ -1246,8 +1221,7 @@ int command_register(struct external_command *ext_command, int id)
 void registered_commands_init(int initial_size)
 {
 	if ( registered_commands != NULL ) {
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Warning: Refusing double initialize of commands register");
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Refusing double initialize of commands register");
 		return;
 	}
 	registered_commands = nm_calloc((size_t)initial_size, sizeof(struct external_command *));
@@ -1407,8 +1381,7 @@ static int global_command_handler(const struct external_command *ext_command, ti
 			return process_external_commands_from_file(GV_STRING("file_name"), GV_BOOL("delete"));
 
 		default:
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Unknown global command ID %d", ext_command->id);
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unknown global command ID %d", ext_command->id);
 			return ERROR;
 	}
 }
@@ -1510,8 +1483,7 @@ static int del_downtime_by_filter_handler(const struct external_command *ext_com
 				return ERROR;
 			return OK;
 		default:
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Unknown downtime filter deletion command ID %d", (ext_command->id));
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unknown downtime filter deletion command ID %d", (ext_command->id));
 			return ERROR;
 	}
 }
@@ -1789,8 +1761,7 @@ static int host_command_handler(const struct external_command *ext_command, time
 			return update_host_status(target_host, FALSE);
 
 		default:
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Unknown host command ID %d", ext_command->id);
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unknown host command ID %d", ext_command->id);
 			return ERROR;
 
 	}
@@ -1883,8 +1854,7 @@ static int hostgroup_command_handler(const struct external_command *ext_command,
 			return OK;
 
 		default:
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Unknown hostgroup command ID %d", ext_command->id);
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unknown hostgroup command ID %d", ext_command->id);
 			return ERROR;
 	}
 	return ERROR;
@@ -2070,8 +2040,7 @@ static int service_command_handler(const struct external_command *ext_command, t
 			/* update the status log with the host info */
 			return update_service_status(target_service, FALSE);
 		default:
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Unknown service command ID %d", (ext_command->id));
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unknown service command ID %d", (ext_command->id));
 			return ERROR;
 	}
 }
@@ -2154,8 +2123,7 @@ static int servicegroup_command_handler(const struct external_command *ext_comma
 			}
 			return OK;
 		default:
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Unknown servicegroup command ID %d", (ext_command->id));
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unknown servicegroup command ID %d", (ext_command->id));
 			return ERROR;
 	}
 }
@@ -2204,8 +2172,7 @@ static int contact_command_handler(const struct external_command *ext_command, t
 			return update_contact_status(target_contact, FALSE);
 
 		default:
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Unknown contact command ID %d", (ext_command->id));
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unknown contact command ID %d", (ext_command->id));
 			return ERROR;
 	}
 }
@@ -2227,8 +2194,7 @@ static int contactgroup_command_handler(const struct external_command *ext_comma
 			foreach_contact_in_contactgroup(target_contactgroup, enable_contact_host_notifications);
 			return OK;
 		default:
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Unknown contactgroup command ID %d", (ext_command->id));
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unknown contactgroup command ID %d", (ext_command->id));
 			return ERROR;
 	}
 }
@@ -2250,8 +2216,7 @@ static int change_custom_var_handler(const struct external_command *ext_command,
 			customvariablesmember_p = ((contact *)GV("contact_name"))->custom_variables;
 			break;
 		default:
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Unknown custom variables modification command ID %d", (ext_command->id));
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unknown custom variables modification command ID %d", (ext_command->id));
 			return ERROR;
 	}
 	varname = nm_strdup(GV("varname"));
@@ -2295,8 +2260,7 @@ static int change_custom_var_handler(const struct external_command *ext_command,
 			return update_contact_status(GV("contact_name"), FALSE);
 			break;
 		default:
-			logit(NSLOG_RUNTIME_ERROR,
-			      "Unknown custom variables modification command ID %d", (ext_command->id));
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unknown custom variables modification command ID %d", (ext_command->id));
 			return ERROR;
 	}
 }
@@ -3003,8 +2967,7 @@ int process_external_commands_from_file(char *fname, int delete_file)
 
 	/* open the config file for reading */
 	if ((thefile = mmap_fopen(fname)) == NULL) {
-		logit(NSLOG_INFO_MESSAGE,
-		      "Error: Cannot open file '%s' to process external commands!", fname);
+		logit(NSLOG_INFO_MESSAGE, FALSE, "Error: Cannot open file '%s' to process external commands!", fname);
 		return ERROR;
 	}
 
@@ -3060,8 +3023,7 @@ int process_external_command1(char *cmd)
 		external_command_ret = CMD_ERROR_OK;
 	}
 	else if (external_command_ret != CMD_ERROR_OK) {
-		logit(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING,
-		      "Warning: External command parse error %s (%s)\n", cmd, cmd_error_strerror(external_command_ret));
+		logit(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING, TRUE, "Warning: External command parse error %s (%s)\n", cmd, cmd_error_strerror(external_command_ret));
 		return external_command_ret;
 	}
 	else {
@@ -3080,9 +3042,9 @@ int process_external_command1(char *cmd)
 	if (id == CMD_PROCESS_SERVICE_CHECK_RESULT || id == CMD_PROCESS_HOST_CHECK_RESULT) {
 		/* passive checks are logged in checks.c as well, as some my bypass external commands by getting dropped in checkresults dir */
 		if (log_passive_checks == TRUE)
-			logit(NSLOG_PASSIVE_CHECK, temp_buffer);
+			write_to_all_logs(temp_buffer, NSLOG_PASSIVE_CHECK);
 	} else if (log_external_commands == TRUE) {
-			logit(NSLOG_EXTERNAL_COMMAND, temp_buffer);
+			write_to_all_logs(temp_buffer, NSLOG_EXTERNAL_COMMAND);
 	}
 	nm_free(temp_buffer);
 
@@ -3095,8 +3057,7 @@ int process_external_command1(char *cmd)
 	if (id != CMD_CUSTOM_COMMAND) {
 		external_command_ret = command_execute_handler(parsed_command);
 		if (external_command_ret != CMD_ERROR_OK) {
-			logit(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING,
-			      "Error: External command failed -> %s;%s (%s)\n", name, args, cmd_error_strerror(external_command_ret));
+			logit(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING, TRUE, "Error: External command failed -> %s;%s (%s)\n", name, args, cmd_error_strerror(external_command_ret));
 		}
 	}
 
@@ -3188,15 +3149,13 @@ int process_passive_service_check(time_t check_time, char *host_name, char *svc_
 
 	/* we couldn't find the host */
 	if (temp_host == NULL) {
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Warning:  Passive check result was received for service '%s' on host '%s', but the host could not be found!\n", svc_description, host_name);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning:  Passive check result was received for service '%s' on host '%s', but the host could not be found!\n", svc_description, host_name);
 		return ERROR;
 	}
 
 	/* make sure the service exists */
 	if ((temp_service = find_service(temp_host->name, svc_description)) == NULL) {
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Warning:  Passive check result was received for service '%s' on host '%s', but the service could not be found!\n", svc_description, host_name);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning:  Passive check result was received for service '%s' on host '%s', but the service could not be found!\n", svc_description, host_name);
 		return ERROR;
 	}
 
@@ -3251,8 +3210,7 @@ int process_passive_host_check(time_t check_time, char *host_name, int return_co
 
 	/* we couldn't find the host */
 	if (temp_host == NULL) {
-		logit(NSLOG_RUNTIME_WARNING,
-		      "Warning:  Passive check result was received for host '%s', but the host could not be found!\n", host_name);
+		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning:  Passive check result was received for host '%s', but the host could not be found!\n", host_name);
 		return ERROR;
 	}
 
