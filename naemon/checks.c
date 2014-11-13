@@ -280,7 +280,7 @@ int run_async_service_check(service *svc, int check_options, double latency, int
 	/* paw off the check to a worker to run */
 	runchk_result = wproc_run_callback(processed_command, service_check_timeout, handle_worker_check, (void*)cr, &mac);
 	if (runchk_result == ERROR) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to run check for service '%s' on host '%s'\n", svc->description, svc->host_name);
+		nm_log(NSLOG_RUNTIME_ERROR, "Unable to run check for service '%s' on host '%s'\n", svc->description, svc->host_name);
 	} else {
 		/* do the book-keeping */
 		currently_running_service_checks++;
@@ -404,14 +404,14 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	nm_free(temp_service->perf_data);
 
 	if (queued_check_result->early_timeout == TRUE) {
-		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Check of service '%s' on host '%s' timed out after %.3fs!\n", temp_service->description, temp_service->host_name, temp_service->execution_time);
+		nm_log(NSLOG_RUNTIME_WARNING, "Warning: Check of service '%s' on host '%s' timed out after %.3fs!\n", temp_service->description, temp_service->host_name, temp_service->execution_time);
 		nm_asprintf(&temp_service->plugin_output, "(Service check timed out after %.2lf seconds)\n", temp_service->execution_time);
 		temp_service->current_state = service_check_timeout_state;
 	}
 	/* if there was some error running the command, just skip it (this shouldn't be happening) */
 	else if (queued_check_result->exited_ok == FALSE) {
 
-		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning:  Check of service '%s' on host '%s' did not exit properly!\n", temp_service->description, temp_service->host_name);
+		nm_log(NSLOG_RUNTIME_WARNING, "Warning:  Check of service '%s' on host '%s' did not exit properly!\n", temp_service->description, temp_service->host_name);
 
 		temp_service->plugin_output = nm_strdup("(Service check did not exit properly)");
 
@@ -421,7 +421,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	/* make sure the return code is within bounds */
 	else if (queued_check_result->return_code < 0 || queued_check_result->return_code > 3) {
 
-		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Return code of %d for check of service '%s' on host '%s' was out of bounds.%s\n", queued_check_result->return_code, temp_service->description, temp_service->host_name, (queued_check_result->return_code == 126 ? "Make sure the plugin you're trying to run is executable." : (queued_check_result->return_code == 127 ? " Make sure the plugin you're trying to run actually exists." : "")));
+		nm_log(NSLOG_RUNTIME_WARNING, "Warning: Return code of %d for check of service '%s' on host '%s' was out of bounds.%s\n", queued_check_result->return_code, temp_service->description, temp_service->host_name, (queued_check_result->return_code == 126 ? "Make sure the plugin you're trying to run is executable." : (queued_check_result->return_code == 127 ? " Make sure the plugin you're trying to run actually exists." : "")));
 
 		nm_asprintf(&temp_plugin_output, "\x73\x6f\x69\x67\x61\x6e\x20\x74\x68\x67\x69\x72\x79\x70\x6f\x63\x20\x6e\x61\x68\x74\x65\x20\x64\x61\x74\x73\x6c\x61\x67");
 		nm_free(temp_plugin_output);
@@ -477,7 +477,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	/* log passive checks - we need to do this here, as some my bypass external commands by getting dropped in checkresults dir */
 	if (temp_service->check_type == CHECK_TYPE_PASSIVE) {
 		if (log_passive_checks == TRUE)
-			logit(NSLOG_PASSIVE_CHECK, FALSE, "PASSIVE SERVICE CHECK: %s;%s;%d;%s\n", temp_service->host_name, temp_service->description, temp_service->current_state, temp_service->plugin_output);
+			nm_log(NSLOG_PASSIVE_CHECK, "PASSIVE SERVICE CHECK: %s;%s;%d;%s\n", temp_service->host_name, temp_service->description, temp_service->current_state, temp_service->plugin_output);
 	}
 
 	temp_host = temp_service->host_ptr;
@@ -1077,7 +1077,7 @@ void schedule_service_check(service *svc, time_t check_time, int options)
 			/* allocate memory for a new event item */
 			temp_event = nm_calloc(1, sizeof(timed_event));
 			if (temp_event == NULL) {
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Could not reschedule check of service '%s' on host '%s'!\n", svc->description, svc->host_name);
+				nm_log(NSLOG_RUNTIME_WARNING, "Warning: Could not reschedule check of service '%s' on host '%s'!\n", svc->description, svc->host_name);
 				return;
 			}
 		}
@@ -1265,7 +1265,7 @@ void check_for_orphaned_services(void)
 		if (expected_time < current_time) {
 
 			/* log a warning */
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: The check of service '%s' on host '%s' looks like it was orphaned (results never came back; last_check=%lu; next_check=%lu).  I'm scheduling an immediate check of the service...\n", temp_service->description, temp_service->host_name, temp_service->last_check, temp_service->next_check);
+			nm_log(NSLOG_RUNTIME_WARNING, "Warning: The check of service '%s' on host '%s' looks like it was orphaned (results never came back; last_check=%lu; next_check=%lu).  I'm scheduling an immediate check of the service...\n", temp_service->description, temp_service->host_name, temp_service->last_check, temp_service->next_check);
 
 			log_debug_info(DEBUGL_CHECKS, 1, "Service '%s' on host '%s' was orphaned, so we're scheduling an immediate check...\n", temp_service->description, temp_service->host_name);
 			log_debug_info(DEBUGL_CHECKS, 1, "  next_check=%lu (%s); last_check=%lu (%s);\n",
@@ -1436,7 +1436,7 @@ int is_service_result_fresh(service *temp_service, time_t current_time, int log_
 
 		/* log a warning */
 		if (log_this == TRUE)
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: The results of service '%s' on host '%s' are stale by %dd %dh %dm %ds (threshold=%dd %dh %dm %ds).  I'm forcing an immediate check of the service.\n", temp_service->description, temp_service->host_name, days, hours, minutes, seconds, tdays, thours, tminutes, tseconds);
+			nm_log(NSLOG_RUNTIME_WARNING, "Warning: The results of service '%s' on host '%s' are stale by %dd %dh %dm %ds (threshold=%dd %dh %dm %ds).  I'm forcing an immediate check of the service.\n", temp_service->description, temp_service->host_name, days, hours, minutes, seconds, tdays, thours, tminutes, tseconds);
 
 		log_debug_info(DEBUGL_CHECKS, 1, "Check results for service '%s' on host '%s' are stale by %dd %dh %dm %ds (threshold=%dd %dh %dm %ds).  Forcing an immediate check of the service...\n", temp_service->description, temp_service->host_name, days, hours, minutes, seconds, tdays, thours, tminutes, tseconds);
 
@@ -1657,7 +1657,7 @@ void check_for_orphaned_hosts(void)
 		if (expected_time < current_time) {
 
 			/* log a warning */
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: The check of host '%s' looks like it was orphaned (results never came back).  I'm scheduling an immediate check of the host...\n", temp_host->name);
+			nm_log(NSLOG_RUNTIME_WARNING, "Warning: The check of host '%s' looks like it was orphaned (results never came back).  I'm scheduling an immediate check of the host...\n", temp_host->name);
 
 			log_debug_info(DEBUGL_CHECKS, 1, "Host '%s' was orphaned, so we're scheduling an immediate check...\n", temp_host->name);
 
@@ -1813,7 +1813,7 @@ int is_host_result_fresh(host *temp_host, time_t current_time, int log_this)
 
 		/* log a warning */
 		if (log_this == TRUE)
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: The results of host '%s' are stale by %dd %dh %dm %ds (threshold=%dd %dh %dm %ds).  I'm forcing an immediate check of the host.\n", temp_host->name, days, hours, minutes, seconds, tdays, thours, tminutes, tseconds);
+			nm_log(NSLOG_RUNTIME_WARNING, "Warning: The results of host '%s' are stale by %dd %dh %dm %ds (threshold=%dd %dh %dm %ds).  I'm forcing an immediate check of the host.\n", temp_host->name, days, hours, minutes, seconds, tdays, thours, tminutes, tseconds);
 
 		log_debug_info(DEBUGL_CHECKS, 1, "Check results for host '%s' are stale by %dd %dh %dm %ds (threshold=%dd %dh %dm %ds).  Forcing an immediate check of the host...\n", temp_host->name, days, hours, minutes, seconds, tdays, thours, tminutes, tseconds);
 
@@ -2032,7 +2032,7 @@ int run_async_host_check(host *hst, int check_options, double latency, int sched
 
 	runchk_result = wproc_run_callback(processed_command, host_check_timeout, handle_worker_check, (void*)cr, &mac);
 	if (runchk_result == ERROR) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to send check for host '%s' to worker (ret=%d)\n", hst->name, runchk_result);
+		nm_log(NSLOG_RUNTIME_ERROR, "Unable to send check for host '%s' to worker (ret=%d)\n", hst->name, runchk_result);
 	} else {
 		/* do the book-keeping */
 		currently_running_host_checks++;
@@ -2189,7 +2189,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 	/* adjust return code (active checks only) */
 	if (queued_check_result->check_type == CHECK_TYPE_ACTIVE) {
 		if (queued_check_result->early_timeout) {
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Check of host '%s' timed out after %.2lf seconds\n", temp_host->name, temp_host->execution_time);
+			nm_log(NSLOG_RUNTIME_WARNING, "Warning: Check of host '%s' timed out after %.2lf seconds\n", temp_host->name, temp_host->execution_time);
 			nm_free(temp_host->plugin_output);
 			nm_free(temp_host->long_plugin_output);
 			nm_free(temp_host->perf_data);
@@ -2200,7 +2200,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 		/* if there was some error running the command, just skip it (this shouldn't be happening) */
 		else if (queued_check_result->exited_ok == FALSE) {
 
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning:  Check of host '%s' did not exit properly!\n", temp_host->name);
+			nm_log(NSLOG_RUNTIME_WARNING, "Warning:  Check of host '%s' did not exit properly!\n", temp_host->name);
 
 			nm_free(temp_host->plugin_output);
 			nm_free(temp_host->long_plugin_output);
@@ -2214,7 +2214,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 		/* make sure the return code is within bounds */
 		else if (queued_check_result->return_code < 0 || queued_check_result->return_code > 3) {
 
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Return code of %d for check of host '%s' was out of bounds.%s\n", queued_check_result->return_code, temp_host->name, (queued_check_result->return_code == 126 || queued_check_result->return_code == 127) ? " Make sure the plugin you're trying to run actually exists." : "");
+			nm_log(NSLOG_RUNTIME_WARNING, "Warning: Return code of %d for check of host '%s' was out of bounds.%s\n", queued_check_result->return_code, temp_host->name, (queued_check_result->return_code == 126 || queued_check_result->return_code == 127) ? " Make sure the plugin you're trying to run actually exists." : "");
 
 			nm_free(temp_host->plugin_output);
 			nm_free(temp_host->long_plugin_output);
@@ -2326,7 +2326,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 	/* log passive checks - we need to do this here, as some my bypass external commands by getting dropped in checkresults dir */
 	if (hst->check_type == CHECK_TYPE_PASSIVE) {
 		if (log_passive_checks == TRUE)
-			logit(NSLOG_PASSIVE_CHECK, FALSE, "PASSIVE HOST CHECK: %s;%d;%s\n", hst->name, new_state, hst->plugin_output);
+			nm_log(NSLOG_PASSIVE_CHECK, "PASSIVE HOST CHECK: %s;%d;%s\n", hst->name, new_state, hst->plugin_output);
 	}
 
 

@@ -263,11 +263,11 @@ int set_loadctl_options(char *opts, unsigned int len)
 		if (!strcmp(kv->key, "enabled")) {
 			if (*kv->value == '1') {
 				if (!(loadctl.options & LOADCTL_ENABLED))
-					logit(0, 0, "Warning: Enabling experimental load control\n");
+					nm_log(0, "Warning: Enabling experimental load control\n");
 				loadctl.options |= LOADCTL_ENABLED;
 			} else {
 				if (loadctl.options & LOADCTL_ENABLED)
-					logit(0, 0, "Warning: Disabling experimental load control\n");
+					nm_log(0, "Warning: Disabling experimental load control\n");
 				loadctl.options &= (~LOADCTL_ENABLED);
 			}
 		} else if (!strcmp(kv->key, "jobs_max")) {
@@ -287,7 +287,7 @@ int set_loadctl_options(char *opts, unsigned int len)
 		} else if (!strcmp(kv->key, "rampup_change")) {
 			loadctl.rampup_change = atoi(kv->value);
 		} else {
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Bad loadctl option; %s = %s\n", kv->key, kv->value);
+			nm_log(NSLOG_CONFIG_ERROR, "Error: Bad loadctl option; %s = %s\n", kv->key, kv->value);
 			return 400;
 		}
 	}
@@ -340,7 +340,7 @@ int my_system_r(nagios_macros *mac, char *cmd, int timeout, int *early_timeout, 
 
 	/* create a pipe */
 	if (pipe(fd) < 0) {
-		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: pipe() in my_system_r() failed: '%s'\n", strerror(errno));
+		nm_log(NSLOG_RUNTIME_WARNING, "Warning: pipe() in my_system_r() failed: '%s'\n", strerror(errno));
 		return STATE_UNKNOWN;
 	}
 
@@ -363,7 +363,7 @@ int my_system_r(nagios_macros *mac, char *cmd, int timeout, int *early_timeout, 
 
 	/* return an error if we couldn't fork */
 	if (pid == -1) {
-		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: fork() in my_system_r() failed for command \"%s\": %s\n", cmd, strerror(errno));
+		nm_log(NSLOG_RUNTIME_WARNING, "Warning: fork() in my_system_r() failed for command \"%s\": %s\n", cmd, strerror(errno));
 
 		/* close both ends of the pipe */
 		close(fd[0]);
@@ -472,7 +472,7 @@ int my_system_r(nagios_macros *mac, char *cmd, int timeout, int *early_timeout, 
 
 	/* check for possibly missing scripts/binaries/etc */
 	if (result == 126 || result == 127) {
-		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Attempting to execute the command \"%s\" resulted in a return code of %d.  Make sure the script or binary you are trying to execute actually exists...\n", cmd, result);
+		nm_log(NSLOG_RUNTIME_WARNING, "Warning: Attempting to execute the command \"%s\" resulted in a return code of %d.  Make sure the script or binary you are trying to execute actually exists...\n", cmd, result);
 	}
 
 	/* check bounds on the return value */
@@ -1470,12 +1470,12 @@ void signal_react() {
 
 	if (sigrestart) {
 		/* we received a SIGHUP, so restart... */
-		logit(NSLOG_PROCESS_INFO, TRUE, "Caught '%s', restarting...\n", strsignal(signum));
+		nm_log(NSLOG_PROCESS_INFO, "Caught '%s', restarting...\n", strsignal(signum));
 	} else if (sigfilesize) {
 		handle_sigxfsz();
 	} else if (sigshutdown) {
 		/* else begin shutting down... */
-		logit(NSLOG_PROCESS_INFO, TRUE, "Caught '%s', shutting down...\n", strsignal(signum));
+		nm_log(NSLOG_PROCESS_INFO, "Caught '%s', shutting down...\n", strsignal(signum));
 	}
 	sig_id = 0;
 }
@@ -1503,7 +1503,7 @@ int uninterrupted_write(int fd, const void *buf, size_t nbyte)
 			if (errno == EINTR || errno == EAGAIN)
 				continue;
 
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "%s", strerror(errno));
+			nm_log(NSLOG_RUNTIME_ERROR, "%s", strerror(errno));
 			return -1;
 		}
 		c += (size_t)ret;
@@ -1556,9 +1556,8 @@ void handle_sigxfsz()
 	if (getrlimit(RLIMIT_FSIZE, &rlim) != 0) {
 		/* Attempt to log the error, realizing that the logging may fail
 		   if it is the log file that is over the size limit. */
-		logit(NSLOG_RUNTIME_ERROR, TRUE,
-		      "Unable to determine current resoure limits: %s\n",
-		      strerror(errno));
+		nm_log(NSLOG_RUNTIME_ERROR, "Unable to determine current resource limits: %s\n",
+		       strerror(errno));
 		lastlog_time = now;
 		return;
 	}
@@ -1581,14 +1580,14 @@ void handle_sigxfsz()
 	}
 
 	if ((max_size > 0) && (max_name != NULL)) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "SIGXFSZ received because a "
-		      "file's size may have exceeded the file size limits of "
-		      "the filesystem. The largest file checked, '%s', has a "
-		      "size of %lld bytes", max_name, max_size);
+		nm_log(NSLOG_RUNTIME_ERROR, "SIGXFSZ received because a "
+		       "file's size may have exceeded the file size limits of "
+		       "the filesystem. The largest file checked, '%s', has a "
+		       "size of %lld bytes", max_name, max_size);
 
 	} else {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "SIGXFSZ received but unable to "
-		      "determine which file may have caused it.");
+		nm_log(NSLOG_RUNTIME_ERROR, "SIGXFSZ received but unable to "
+		       "determine which file may have caused it.");
 	}
 }
 
@@ -1611,9 +1610,9 @@ static long long check_file_size(char *path, unsigned long fudge,
 
 	/* Get the status of the file */
 	if (stat(path, &status) < 0) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE,
-		      "Unable to determine status of file %s: %s\n",
-		      path, strerror(errno));
+		nm_log(NSLOG_RUNTIME_ERROR,
+		       "Unable to determine status of file %s: %s\n",
+		       path, strerror(errno));
 		return 0;
 	}
 
@@ -1627,12 +1626,12 @@ static long long check_file_size(char *path, unsigned long fudge,
 
 	/* If the file size plus the fudge factor exceeds the
 	   current resource limit imposed size limit, log an error */
-	logit(NSLOG_RUNTIME_ERROR, TRUE, "Size of file '%s' (%llu) "
-	      "exceeds (or nearly exceeds) size imposed by resource "
-	      "limits (%llu). Consider increasing limits with "
-	      "ulimit(1).\n", path,
-	      (unsigned long long)status.st_size,
-	      (unsigned long long)rlim.rlim_cur);
+	nm_log(NSLOG_RUNTIME_ERROR, "Size of file '%s' (%llu) "
+	       "exceeds (or nearly exceeds) size imposed by resource "
+	       "limits (%llu). Consider increasing limits with "
+	       "ulimit(1).\n", path,
+	       (unsigned long long)status.st_size,
+	       (unsigned long long)rlim.rlim_cur);
 	return -1;
 
 }
@@ -1643,7 +1642,7 @@ static long long check_file_size(char *path, unsigned long fudge,
 /******************************************************************/
 static void set_working_directory(void) {
 	if (chdir("/") != 0) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Aborting. Failed to set daemon working directory (/): %s\n", strerror(errno));
+		nm_log(NSLOG_RUNTIME_ERROR, "Aborting. Failed to set daemon working directory (/): %s\n", strerror(errno));
 		cleanup();
 		exit(ERROR);
 	}
@@ -1675,8 +1674,8 @@ int daemon_init(void)
 	lockfile = open(lock_file, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 
 	if (lockfile < 0) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Failed to obtain lock on file %s: %s\n", lock_file, strerror(errno));
-		logit(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, TRUE, "Bailing out due to errors encountered while attempting to daemonize... (PID=%d)", (int)getpid());
+		nm_log(NSLOG_RUNTIME_ERROR, "Failed to obtain lock on file %s: %s\n", lock_file, strerror(errno));
+		nm_log(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, "Bailing out due to errors encountered while attempting to daemonize... (PID=%d)", (int)getpid());
 
 		cleanup();
 		exit(ERROR);
@@ -1684,7 +1683,7 @@ int daemon_init(void)
 
 	/* see if we can read the contents of the lockfile */
 	if ((val = read(lockfile, buf, (size_t)10)) < 0) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Lockfile exists but cannot be read");
+		nm_log(NSLOG_RUNTIME_ERROR, "Lockfile exists but cannot be read");
 		cleanup();
 		exit(ERROR);
 	}
@@ -1692,7 +1691,7 @@ int daemon_init(void)
 	/* we read something - check the PID */
 	if (val > 0) {
 		if ((val = sscanf(buf, "%d", &pidno)) < 1) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Lockfile '%s' does not contain a valid PID (%s)", lock_file, buf);
+			nm_log(NSLOG_RUNTIME_ERROR, "Lockfile '%s' does not contain a valid PID (%s)", lock_file, buf);
 			cleanup();
 			exit(ERROR);
 		}
@@ -1725,9 +1724,9 @@ int daemon_init(void)
 	if (fcntl(lockfile, F_SETLK, &lock) < 0) {
 		if (errno == EACCES || errno == EAGAIN) {
 			fcntl(lockfile, F_GETLK, &lock);
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Lockfile '%s' looks like its already held by another instance of Naemon (PID %d).  Bailing out...", lock_file, (int)lock.l_pid);
+			nm_log(NSLOG_RUNTIME_ERROR, "Lockfile '%s' looks like its already held by another instance of Naemon (PID %d).  Bailing out...", lock_file, (int)lock.l_pid);
 		} else
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Cannot lock lockfile '%s': %s. Bailing out...", lock_file, strerror(errno));
+			nm_log(NSLOG_RUNTIME_ERROR, "Cannot lock lockfile '%s': %s. Bailing out...", lock_file, strerror(errno));
 
 		cleanup();
 		exit(ERROR);
@@ -1743,7 +1742,7 @@ int daemon_init(void)
 	/* write PID to lockfile... */
 	lseek(lockfile, 0, SEEK_SET);
 	if (ftruncate(lockfile, 0) != 0) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Cannot truncate lockfile '%s': %s. Bailing out...", lock_file, strerror(errno));
+		nm_log(NSLOG_RUNTIME_ERROR, "Cannot truncate lockfile '%s': %s. Bailing out...", lock_file, strerror(errno));
 		cleanup();
 		exit(ERROR);
 	}
@@ -1790,7 +1789,7 @@ int drop_privileges(char *user, char *group)
 			if (grp != NULL)
 				gid = (gid_t)(grp->gr_gid);
 			else
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Could not get group entry for '%s'", group);
+				nm_log(NSLOG_RUNTIME_WARNING, "Warning: Could not get group entry for '%s'", group);
 		}
 
 		/* else we were passed the GID */
@@ -1807,7 +1806,7 @@ int drop_privileges(char *user, char *group)
 			if (pw != NULL)
 				uid = (uid_t)(pw->pw_uid);
 			else
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Could not get passwd entry for '%s'", user);
+				nm_log(NSLOG_RUNTIME_WARNING, "Warning: Could not get passwd entry for '%s'", user);
 		}
 
 		/* else we were passed the UID */
@@ -1821,7 +1820,7 @@ int drop_privileges(char *user, char *group)
 	/* set effective group ID if other than current EGID */
 	if (gid != getegid()) {
 		if (setgid(gid) == -1) {
-			logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Could not set effective GID=%d", (int)gid);
+			nm_log(NSLOG_RUNTIME_WARNING, "Warning: Could not set effective GID=%d", (int)gid);
 			result = ERROR;
 		}
 	}
@@ -1832,16 +1831,16 @@ int drop_privileges(char *user, char *group)
 		/* initialize supplementary groups */
 		if (initgroups(user, gid) == -1) {
 			if (errno == EPERM)
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Unable to change supplementary groups using initgroups() -- I hope you know what you're doing");
+				nm_log(NSLOG_RUNTIME_WARNING, "Warning: Unable to change supplementary groups using initgroups() -- I hope you know what you're doing");
 			else {
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Possibly root user failed dropping privileges with initgroups()");
+				nm_log(NSLOG_RUNTIME_WARNING, "Warning: Possibly root user failed dropping privileges with initgroups()");
 				return ERROR;
 			}
 		}
 	}
 #endif
 	if (setuid(uid) == -1) {
-		logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Could not set effective UID=%d", (int)uid);
+		nm_log(NSLOG_RUNTIME_WARNING, "Warning: Could not set effective UID=%d", (int)uid);
 		result = ERROR;
 	}
 
@@ -1873,13 +1872,13 @@ int process_check_result_queue(char *dirname)
 
 	/* make sure we have what we need */
 	if (dirname == NULL) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: No check result queue directory specified.\n");
+		nm_log(NSLOG_CONFIG_ERROR, "Error: No check result queue directory specified.\n");
 		return ERROR;
 	}
 
 	/* open the directory for reading */
 	if ((dirp = opendir(dirname)) == NULL) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not open check result queue directory '%s' for reading.\n", dirname);
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not open check result queue directory '%s' for reading.\n", dirname);
 		return ERROR;
 	}
 
@@ -1910,7 +1909,7 @@ int process_check_result_queue(char *dirname)
 		if (x == 7 && dirfile->d_name[0] == 'c') {
 
 			if (stat(file, &stat_buf) == -1) {
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Could not stat() check result file '%s'.\n", file);
+				nm_log(NSLOG_RUNTIME_WARNING, "Warning: Could not stat() check result file '%s'.\n", file);
 				continue;
 			}
 
@@ -1963,8 +1962,8 @@ int process_check_result(check_result *cr)
 		service *svc;
 		svc = find_service(cr->host_name, cr->service_description);
 		if (!svc) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Got check result for service '%s' on host '%s'. Unable to find service\n",
-			      cr->service_description, cr->host_name);
+			nm_log(NSLOG_RUNTIME_ERROR, "Error: Got check result for service '%s' on host '%s'. Unable to find service\n",
+			       cr->service_description, cr->host_name);
 			return ERROR;
 		}
 		log_debug_info(DEBUGL_CHECKS, 2, "Processing check result for service '%s' on host '%s'\n",
@@ -1976,7 +1975,7 @@ int process_check_result(check_result *cr)
 		host *hst;
 		hst = find_host(cr->host_name);
 		if (!hst) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Got host checkresult for '%s', but no such host can be found\n", cr->host_name);
+			nm_log(NSLOG_RUNTIME_ERROR, "Error: Got host checkresult for '%s', but no such host can be found\n", cr->host_name);
 			return ERROR;
 		}
 		log_debug_info(DEBUGL_CHECKS, 2, "Processing check result for host '%s'\n", hst->name);
@@ -1985,10 +1984,10 @@ int process_check_result(check_result *cr)
 	}
 
 	/* We should never end up here */
-	logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unknown object check type for checkresult: %d; (host_name: %s; service_description: %s)\n",
-	      cr->object_check_type,
-	      cr->host_name ? cr->host_name : "(null)",
-	      cr->service_description ? cr->service_description : "(null)");
+	nm_log(NSLOG_RUNTIME_ERROR, "Error: Unknown object check type for checkresult: %d; (host_name: %s; service_description: %s)\n",
+	       cr->object_check_type,
+	       cr->host_name ? cr->host_name : "(null)",
+	       cr->service_description ? cr->service_description : "(null)");
 
 	return ERROR;
 }
@@ -2320,7 +2319,7 @@ int my_rename(char *source, char *dest)
 
 			/* try copying the file */
 			if (my_fcopy(source, dest) == ERROR) {
-				logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to rename file '%s' to '%s': %s\n", source, dest, strerror(errno));
+				nm_log(NSLOG_RUNTIME_ERROR, "Error: Unable to rename file '%s' to '%s': %s\n", source, dest, strerror(errno));
 				return -1;
 			}
 
@@ -2333,7 +2332,7 @@ int my_rename(char *source, char *dest)
 
 		/* some other error occurred */
 		else {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to rename file '%s' to '%s': %s\n", source, dest, strerror(errno));
+			nm_log(NSLOG_RUNTIME_ERROR, "Error: Unable to rename file '%s' to '%s': %s\n", source, dest, strerror(errno));
 			return rename_result;
 		}
 	}
@@ -2356,7 +2355,7 @@ int my_fdcopy(char *source, char *dest, int dest_fd)
 
 	/* open source file for reading */
 	if ((source_fd = open(source, O_RDONLY, 0644)) < 0) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to open file '%s' for reading: %s\n", source, strerror(errno));
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Unable to open file '%s' for reading: %s\n", source, strerror(errno));
 		return ERROR;
 	}
 
@@ -2365,7 +2364,7 @@ int my_fdcopy(char *source, char *dest, int dest_fd)
 	 * we've written all of it
 	 */
 	if (fstat(source_fd, &st) < 0) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to stat source file '%s' for my_fcopy(): %s\n", source, strerror(errno));
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Unable to stat source file '%s' for my_fcopy(): %s\n", source, strerror(errno));
 		close(source_fd);
 		return ERROR;
 	}
@@ -2389,7 +2388,7 @@ int my_fdcopy(char *source, char *dest, int dest_fd)
 		if (rd_result < 0) {
 			if (errno == EAGAIN || errno == EINTR)
 				continue;
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: my_fcopy() failed to read from '%s': %s\n", source, strerror(errno));
+			nm_log(NSLOG_RUNTIME_ERROR, "Error: my_fcopy() failed to read from '%s': %s\n", source, strerror(errno));
 			break;
 		}
 		tot_read += rd_result;
@@ -2400,7 +2399,7 @@ int my_fdcopy(char *source, char *dest, int dest_fd)
 			if (wr_result < 0) {
 				if (errno == EAGAIN || errno == EINTR)
 					continue;
-				logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: my_fcopy() failed to write to '%s': %s\n", dest, strerror(errno));
+				nm_log(NSLOG_RUNTIME_ERROR, "Error: my_fcopy() failed to write to '%s': %s\n", dest, strerror(errno));
 				break;
 			}
 			loop_wr += wr_result;
@@ -2441,7 +2440,7 @@ int my_fcopy(char *source, char *dest)
 
 	/* open destination file for writing */
 	if ((dest_fd = open(dest, O_WRONLY | O_TRUNC | O_CREAT | O_APPEND, 0644)) < 0) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to open file '%s' for writing: %s\n", dest, strerror(errno));
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Unable to open file '%s' for writing: %s\n", dest, strerror(errno));
 		return ERROR;
 	}
 
