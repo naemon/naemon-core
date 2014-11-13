@@ -173,6 +173,18 @@ void logit(int data_type, int display, const char *fmt, ...)
 	va_end(ap);
 }
 
+void nm_log(int data_type, const char *fmt, ...)
+{
+	va_list ap;
+	char *buffer = NULL;
+
+	va_start(ap, fmt);
+	if (vasprintf(&buffer, fmt, ap) > 0) {
+		write_to_logs_and_console(buffer, data_type, TRUE);
+		free(buffer);
+	}
+	va_end(ap);
+}
 
 /* write something to the log file and syslog facility */
 static void write_to_all_logs_with_timestamp(char *buffer, unsigned long data_type, time_t *timestamp)

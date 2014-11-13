@@ -83,7 +83,7 @@ int xrddefault_save_state_information(void)
 
 	/* make sure we have everything */
 	if (retention_file == NULL || temp_file == NULL) {
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: We don't have the required file names to store retention data!\n");
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: We don't have the required file names to store retention data!\n");
 		return ERROR;
 	}
 
@@ -102,7 +102,7 @@ int xrddefault_save_state_information(void)
 		close(fd);
 		unlink(tmp_file);
 
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Could not open temp state retention file '%s' for writing!\n", tmp_file);
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Could not open temp state retention file '%s' for writing!\n", tmp_file);
 
 		nm_free(tmp_file);
 
@@ -435,7 +435,7 @@ int xrddefault_save_state_information(void)
 		/* move the temp file to the retention file (overwrite the old retention file) */
 		if (my_rename(tmp_file, retention_file)) {
 			unlink(tmp_file);
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to update retention file '%s': %s", retention_file, strerror(errno));
+			nm_log(NSLOG_RUNTIME_ERROR, "Error: Unable to update retention file '%s': %s", retention_file, strerror(errno));
 			result = ERROR;
 		}
 	}
@@ -447,7 +447,7 @@ int xrddefault_save_state_information(void)
 
 		/* remove temp file and log an error */
 		unlink(tmp_file);
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unable to save retention file: %s", strerror(errno));
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Unable to save retention file: %s", strerror(errno));
 	}
 
 	/* free memory */
@@ -535,7 +535,7 @@ int xrddefault_read_state_information(void)
 	/* make sure we have what we need */
 	if (retention_file == NULL) {
 
-		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: We don't have a filename for retention data!\n");
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: We don't have a filename for retention data!\n");
 
 		return ERROR;
 	}
