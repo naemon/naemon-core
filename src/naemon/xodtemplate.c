@@ -1189,13 +1189,16 @@ static int xodtemplate_begin_object_definition(char *input, int options, int cfg
 		xodtemplate_current_object_type = XODTEMPLATE_HOSTDEPENDENCY;
 	else if (!strcmp(input, "hostescalation"))
 		xodtemplate_current_object_type = XODTEMPLATE_HOSTESCALATION;
-	else if (!strcmp(input, "hostextinfo"))
+	else if (!strcmp(input, "hostextinfo")) {
 		xodtemplate_current_object_type = XODTEMPLATE_HOSTEXTINFO;
-	else if (!strcmp(input, "serviceextinfo"))
+		nm_log(NSLOG_CONFIG_WARNING, "WARNING: Extinfo objects are deprecated and will be removed in future versions\n");
+	} else if (!strcmp(input, "serviceextinfo")) {
 		xodtemplate_current_object_type = XODTEMPLATE_SERVICEEXTINFO;
-	else
+		nm_log(NSLOG_CONFIG_WARNING, "WARNING: Extinfo objects are deprecated and will be removed in future versions\n");
+	} else {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid object definition type '%s' in file '%s' on line %d.\n", input, xodtemplate_config_file_name(cfgfile), start_line);
 		return ERROR;
-
+	}
 
 	/* check to see if we should process this type of object */
 	switch (xodtemplate_current_object_type) {
@@ -8931,16 +8934,6 @@ static int xodtemplate_process_config_file(char *filename, int options)
 				nm_log(NSLOG_CONFIG_ERROR, "Error: No object type specified in file '%s' on line %d.\n", filename, current_line);
 				result = ERROR;
 				break;
-			}
-
-			/* check validity of object type */
-			if (strcmp(input, "timeperiod") && strcmp(input, "command") && strcmp(input, "contact") && strcmp(input, "contactgroup") && strcmp(input, "host") && strcmp(input, "hostgroup") && strcmp(input, "servicegroup") && strcmp(input, "service") && strcmp(input, "servicedependency") && strcmp(input, "serviceescalation") && strcmp(input, "hostgroupescalation") && strcmp(input, "hostdependency") && strcmp(input, "hostescalation")) {
-				if (strcmp(input, "hostextinfo") && strcmp(input, "serviceextinfo")) {
-					nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid object definition type '%s' in file '%s' on line %d.\n", input, filename, current_line);
-					result = ERROR;
-					break;
-				}
-				nm_log(NSLOG_CONFIG_WARNING, "WARNING: Extinfo objects are deprecated and will be removed in future versions\n");
 			}
 
 			/* we're already in an object definition... */
