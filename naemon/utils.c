@@ -10,7 +10,6 @@
 #include "workers.h"
 #include "utils.h"
 #include "commands.h"
-#include "checks.h"
 #include "events.h"
 #include "logging.h"
 #include "defaults.h"
@@ -26,7 +25,6 @@
 #include <math.h>
 #include <poll.h>
 #include <string.h>
-#include "loadctl.h"
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif
@@ -94,8 +92,6 @@ int max_check_reaper_time = DEFAULT_MAX_REAPER_TIME;
 int service_freshness_check_interval = DEFAULT_FRESHNESS_CHECK_INTERVAL;
 int host_freshness_check_interval = DEFAULT_FRESHNESS_CHECK_INTERVAL;
 
-struct load_control loadctl;
-
 int check_orphaned_services = DEFAULT_CHECK_ORPHANED_SERVICES;
 int check_orphaned_hosts = DEFAULT_CHECK_ORPHANED_HOSTS;
 int check_service_freshness = DEFAULT_CHECK_SERVICE_FRESHNESS;
@@ -136,7 +132,6 @@ unsigned long next_comment_id = 0L;
 unsigned long next_notification_id = 0L;
 
 int verify_config = FALSE;
-int test_scheduling = FALSE;
 int precache_objects = FALSE;
 int use_precached_objects = FALSE;
 
@@ -211,9 +206,6 @@ int debug_verbosity = DEFAULT_DEBUG_VERBOSITY;
 unsigned long   max_debug_file_size = DEFAULT_MAX_DEBUG_FILE_SIZE;
 
 iobroker_set *nagios_iobs = NULL;
-squeue_t *nagios_squeue = NULL; /* our scheduling queue */
-
-sched_info scheduling_info;
 
 /* from GNU defines errno as a macro, since it's a per-thread variable */
 #ifndef errno
@@ -226,20 +218,9 @@ static const char *worker_source_name(void *source)
 	return source ? (const char *)source : "unknown internal source (voodoo, perhaps?)";
 }
 
-static const char *spool_file_source_name(void *source)
-{
-	return "check result spool dir";
-}
-
 struct check_engine nagios_check_engine = {
 	"Naemon Core",
 	worker_source_name,
-	NULL,
-};
-
-static struct check_engine nagios_spool_check_engine = {
-	"Spooled checkresult file",
-	spool_file_source_name,
 	NULL,
 };
 
@@ -249,60 +230,6 @@ const char *check_result_source(check_result *cr)
 		return cr->engine->source_name(cr->source);
 	return cr->source ? (const char *)cr->source : "(unknown engine)";
 }
-
-
-int set_loadctl_options(char *opts, unsigned int len)
-{
-	struct kvvec *kvv;
-	int i;
-
-	kvv = buf2kvvec(opts, len, '=', ';', 0);
-	for (i = 0; i < kvv->kv_pairs; i++) {
-		struct key_value *kv = &kvv->kv[i];
-
-		if (!strcmp(kv->key, "enabled")) {
-			if (*kv->value == '1') {
-				if (!(loadctl.options & LOADCTL_ENABLED))
-					logit(0, 0, "Warning: Enabling experimental load control\n");
-				loadctl.options |= LOADCTL_ENABLED;
-			} else {
-				if (loadctl.options & LOADCTL_ENABLED)
-					logit(0, 0, "Warning: Disabling experimental load control\n");
-				loadctl.options &= (~LOADCTL_ENABLED);
-			}
-		} else if (!strcmp(kv->key, "jobs_max")) {
-			loadctl.jobs_max = atoi(kv->value);
-		} else if (!strcmp(kv->key, "jobs_min")) {
-			loadctl.jobs_min = atoi(kv->value);
-		} else if (!strcmp(kv->key, "jobs_limit")) {
-			loadctl.jobs_limit = atoi(kv->value);
-		} else if (!strcmp(kv->key, "check_interval")) {
-			loadctl.check_interval = strtoul(kv->value, NULL, 10);
-		} else if (!strcmp(kv->key, "backoff_limit")) {
-			loadctl.backoff_limit = strtod(kv->value, NULL);
-		} else if (!strcmp(kv->key, "rampup_limit")) {
-			loadctl.rampup_limit = strtod(kv->value, NULL);
-		} else if (!strcmp(kv->key, "backoff_change")) {
-			loadctl.backoff_change = atoi(kv->value);
-		} else if (!strcmp(kv->key, "rampup_change")) {
-			loadctl.rampup_change = atoi(kv->value);
-		} else {
-			logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Bad loadctl option; %s = %s\n", kv->key, kv->value);
-			return 400;
-		}
-	}
-
-	/* precedence order is "jobs_min -> jobs_max -> jobs_limit" */
-	if (loadctl.jobs_max < loadctl.jobs_min)
-		loadctl.jobs_max = loadctl.jobs_min;
-	if (loadctl.jobs_limit > loadctl.jobs_max)
-		loadctl.jobs_limit = loadctl.jobs_max;
-	if (loadctl.jobs_limit < loadctl.jobs_min)
-		loadctl.jobs_limit = loadctl.jobs_min;
-	kvvec_destroy(kvv, 0);
-	return 0;
-}
-
 
 /******************************************************************/
 /******************** SYSTEM COMMAND FUNCTIONS ********************/
@@ -322,9 +249,6 @@ int my_system_r(nagios_macros *mac, char *cmd, int timeout, int *early_timeout, 
 	dbuf output_dbuf;
 	int dbuf_chunk = 1024;
 	int flags;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "my_system_r()\n");
 
 	/* initialize return variables */
 	if (output != NULL)
@@ -581,8 +505,6 @@ int get_raw_command_line_r(nagios_macros *mac, command *cmd_ptr, char *cmd, char
 	register int y = 0;
 	register int arg_index = 0;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "get_raw_command_line_r()\n");
-
 	/* clear the argv macros */
 	clear_argv_macros_r(mac);
 
@@ -737,8 +659,6 @@ static timerange *_get_matching_timerange(time_t test_time, timeperiod *tperiod)
 	int test_time_year = 0;
 	int test_time_mon = 0;
 	int test_time_wday = 0;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "_get_matching_timerange()\n");
 
 	if (tperiod == NULL)
 		return NULL;
@@ -974,8 +894,6 @@ int check_time_against_period(time_t test_time, timeperiod *tperiod)
 {
 	timerange *temp_timerange = NULL;
 	time_t midnight = (time_t)0L;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_time_against_period()\n");
 
 	midnight = get_midnight(test_time);
 
@@ -1220,8 +1138,6 @@ void _get_next_valid_time(time_t pref_time, time_t *valid_time, timeperiod *tper
 void get_next_valid_time(time_t pref_time, time_t *valid_time, timeperiod *tperiod)
 {
 	time_t current_time = (time_t)0L;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "get_next_valid_time()\n");
 
 	/* get time right now, preferred time must be now or in the future */
 	time(&current_time);
@@ -1855,348 +1771,6 @@ int drop_privileges(char *user, char *group)
 
 
 /******************************************************************/
-/************************* IPC FUNCTIONS **************************/
-/******************************************************************/
-
-/* processes files in the check result queue directory */
-int process_check_result_queue(char *dirname)
-{
-	char file[MAX_FILENAME_LENGTH];
-	DIR *dirp = NULL;
-	struct dirent *dirfile = NULL;
-	register int x = 0;
-	struct stat stat_buf;
-	struct stat ok_stat_buf;
-	char *temp_buffer = NULL;
-	int result = OK, check_result_files = 0;
-	time_t start;
-
-	/* make sure we have what we need */
-	if (dirname == NULL) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: No check result queue directory specified.\n");
-		return ERROR;
-	}
-
-	/* open the directory for reading */
-	if ((dirp = opendir(dirname)) == NULL) {
-		logit(NSLOG_CONFIG_ERROR, TRUE, "Error: Could not open check result queue directory '%s' for reading.\n", dirname);
-		return ERROR;
-	}
-
-	log_debug_info(DEBUGL_CHECKS, 1, "Starting to read check result queue '%s'...\n", dirname);
-
-	start = time(NULL);
-
-	/* process all files in the directory... */
-	while ((dirfile = readdir(dirp)) != NULL) {
-		/* bail out if we encountered a signal */
-		if (sigshutdown == TRUE || sigrestart == TRUE) {
-			log_debug_info(DEBUGL_CHECKS, 0, "Breaking out of check result reaper: signal encountered\n");
-			break;
-		}
-
-		/* break out if we've been here too long */
-		if (start + max_check_reaper_time < time(NULL)) {
-			log_debug_info(DEBUGL_CHECKS, 0, "Breaking out of check result reaper: max time (%ds) exceeded\n", max_check_reaper_time);
-			break;
-		}
-
-		/* create /path/to/file */
-		snprintf(file, sizeof(file), "%s/%s", dirname, dirfile->d_name);
-		file[sizeof(file) - 1] = '\x0';
-
-		/* process this if it's a check result file... */
-		x = strlen(dirfile->d_name);
-		if (x == 7 && dirfile->d_name[0] == 'c') {
-
-			if (stat(file, &stat_buf) == -1) {
-				logit(NSLOG_RUNTIME_WARNING, TRUE, "Warning: Could not stat() check result file '%s'.\n", file);
-				continue;
-			}
-
-			/* we only care about real files */
-			if (!S_ISREG(stat_buf.st_mode))
-				continue;
-
-			/* at this point we have a regular file... */
-
-			/* if the file is too old, we delete it */
-			if (stat_buf.st_mtime + max_check_result_file_age < time(NULL)) {
-				delete_check_result_file(dirfile->d_name);
-				continue;
-			}
-
-			/* can we find the associated ok-to-go file ? */
-			nm_asprintf(&temp_buffer, "%s.ok", file);
-			result = stat(temp_buffer, &ok_stat_buf);
-			my_free(temp_buffer);
-			if (result == -1)
-				continue;
-
-			/* process the file */
-			result = process_check_result_file(file);
-
-			/* break out if we encountered an error */
-			if (result == ERROR)
-				break;
-
-			check_result_files++;
-		}
-	}
-
-	closedir(dirp);
-
-	return check_result_files;
-
-}
-
-
-int process_check_result(check_result *cr)
-{
-	const char *source_name;
-	if (!cr)
-		return ERROR;
-
-	source_name = check_result_source(cr);
-
-	if (cr->object_check_type == SERVICE_CHECK) {
-		service *svc;
-		svc = find_service(cr->host_name, cr->service_description);
-		if (!svc) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Got check result for service '%s' on host '%s'. Unable to find service\n",
-			      cr->service_description, cr->host_name);
-			return ERROR;
-		}
-		log_debug_info(DEBUGL_CHECKS, 2, "Processing check result for service '%s' on host '%s'\n",
-		               svc->description, svc->host_name);
-		svc->check_source = source_name;
-		return handle_async_service_check_result(svc, cr);
-	}
-	if (cr->object_check_type == HOST_CHECK) {
-		host *hst;
-		hst = find_host(cr->host_name);
-		if (!hst) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Got host checkresult for '%s', but no such host can be found\n", cr->host_name);
-			return ERROR;
-		}
-		log_debug_info(DEBUGL_CHECKS, 2, "Processing check result for host '%s'\n", hst->name);
-		hst->check_source = source_name;
-		return handle_async_host_check_result(hst, cr);
-	}
-
-	/* We should never end up here */
-	logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Unknown object check type for checkresult: %d; (host_name: %s; service_description: %s)\n",
-	      cr->object_check_type,
-	      cr->host_name ? cr->host_name : "(null)",
-	      cr->service_description ? cr->service_description : "(null)");
-
-	return ERROR;
-}
-
-
-/* reads check result(s) from a file */
-int process_check_result_file(char *fname)
-{
-	mmapfile *thefile = NULL;
-	char *input = NULL;
-	char *var = NULL;
-	char *val = NULL;
-	char *v1 = NULL, *v2 = NULL;
-	time_t current_time;
-	check_result cr;
-
-	if (fname == NULL)
-		return ERROR;
-
-	init_check_result(&cr);
-	cr.engine = &nagios_spool_check_engine;
-
-	time(&current_time);
-
-	log_debug_info(DEBUGL_CHECKS, 1, "Processing check result file: '%s'\n", fname);
-
-	/* open the file for reading */
-	if ((thefile = mmap_fopen(fname)) == NULL) {
-
-		/* try removing the file - zero length files can't be mmap()'ed, so it might exist */
-		unlink(fname);
-
-		return ERROR;
-	}
-
-	/* read in all lines from the file */
-	while (1) {
-
-		/* free memory */
-		my_free(input);
-
-		/* read the next line */
-		if ((input = mmap_fgets_multiline(thefile)) == NULL)
-			break;
-
-		/* skip comments */
-		if (input[0] == '#')
-			continue;
-
-		/* empty line indicates end of record */
-		else if (input[0] == '\n') {
-
-			/* do we have the minimum amount of data? */
-			if (cr.host_name != NULL && cr.output != NULL) {
-
-				/* process the check result */
-				process_check_result(&cr);
-
-			}
-
-			/* cleanse for next check result */
-			free_check_result(&cr);
-			init_check_result(&cr);
-			cr.output_file = fname;
-		}
-
-		if ((var = my_strtok(input, "=")) == NULL)
-			continue;
-		if ((val = my_strtok(NULL, "\n")) == NULL)
-			continue;
-
-		/* found the file time */
-		if (!strcmp(var, "file_time")) {
-
-			/* file is too old - ignore check results it contains and delete it */
-			/* this will only work as intended if file_time comes before check results */
-			if (max_check_result_file_age > 0 && (current_time - (time_t)(strtoul(val, NULL, 0)) > max_check_result_file_age)) {
-				break;
-			}
-		}
-
-		/* else we have check result data */
-		else {
-			if (!strcmp(var, "host_name"))
-				cr.host_name = nm_strdup(val);
-			else if (!strcmp(var, "service_description")) {
-				cr.service_description = nm_strdup(val);
-				cr.object_check_type = SERVICE_CHECK;
-			} else if (!strcmp(var, "check_type"))
-				cr.check_type = atoi(val);
-			else if (!strcmp(var, "check_options"))
-				cr.check_options = atoi(val);
-			else if (!strcmp(var, "scheduled_check"))
-				cr.scheduled_check = atoi(val);
-			else if (!strcmp(var, "reschedule_check"))
-				cr.reschedule_check = atoi(val);
-			else if (!strcmp(var, "latency"))
-				cr.latency = strtod(val, NULL);
-			else if (!strcmp(var, "start_time")) {
-				if ((v1 = strtok(val, ".")) == NULL)
-					continue;
-				if ((v2 = strtok(NULL, "\n")) == NULL)
-					continue;
-				cr.start_time.tv_sec = strtoul(v1, NULL, 0);
-				cr.start_time.tv_usec = strtoul(v2, NULL, 0);
-			} else if (!strcmp(var, "finish_time")) {
-				if ((v1 = strtok(val, ".")) == NULL)
-					continue;
-				if ((v2 = strtok(NULL, "\n")) == NULL)
-					continue;
-				cr.finish_time.tv_sec = strtoul(v1, NULL, 0);
-				cr.finish_time.tv_usec = strtoul(v2, NULL, 0);
-			} else if (!strcmp(var, "early_timeout"))
-				cr.early_timeout = atoi(val);
-			else if (!strcmp(var, "exited_ok"))
-				cr.exited_ok = atoi(val);
-			else if (!strcmp(var, "return_code"))
-				cr.return_code = atoi(val);
-			else if (!strcmp(var, "output"))
-				cr.output = nm_strdup(val);
-		}
-	}
-
-	/* do we have the minimum amount of data? */
-	if (cr.host_name != NULL && cr.output != NULL) {
-
-		/* process check result */
-		process_check_result(&cr);
-	}
-
-	free_check_result(&cr);
-
-	/* free memory and close file */
-	my_free(input);
-	mmap_fclose(thefile);
-
-	/* delete the file (as well its ok-to-go file) */
-	delete_check_result_file(fname);
-
-	return OK;
-}
-
-
-/* deletes as check result file, as well as its ok-to-go file */
-int delete_check_result_file(char *fname)
-{
-	char *temp_buffer = NULL;
-
-	/* delete the result file */
-	unlink(fname);
-
-	/* delete the ok-to-go file */
-	nm_asprintf(&temp_buffer, "%s.ok", fname);
-	unlink(temp_buffer);
-	my_free(temp_buffer);
-
-	return OK;
-}
-
-
-/* initializes a host/service check result */
-int init_check_result(check_result *info)
-{
-
-	if (info == NULL)
-		return ERROR;
-
-	/* reset vars */
-	info->object_check_type = HOST_CHECK;
-	info->host_name = NULL;
-	info->service_description = NULL;
-	info->check_type = CHECK_TYPE_ACTIVE;
-	info->check_options = CHECK_OPTION_NONE;
-	info->scheduled_check = FALSE;
-	info->reschedule_check = FALSE;
-	info->output_file_fp = NULL;
-	info->latency = 0.0;
-	info->start_time.tv_sec = 0;
-	info->start_time.tv_usec = 0;
-	info->finish_time.tv_sec = 0;
-	info->finish_time.tv_usec = 0;
-	info->early_timeout = FALSE;
-	info->exited_ok = TRUE;
-	info->return_code = 0;
-	info->output = NULL;
-	info->source = NULL;
-	info->engine = NULL;
-
-	return OK;
-}
-
-
-/* frees memory associated with a host/service check result */
-int free_check_result(check_result *info)
-{
-
-	if (info == NULL)
-		return OK;
-
-	my_free(info->host_name);
-	my_free(info->service_description);
-	my_free(info->output);
-
-	return OK;
-}
-
-
-/******************************************************************/
 /************************ STRING FUNCTIONS ************************/
 /******************************************************************/
 
@@ -2803,7 +2377,7 @@ void cleanup(void)
 
 #ifdef USE_EVENT_BROKER
 	/* unload modules */
-	if (test_scheduling == FALSE && verify_config == FALSE) {
+	if (verify_config == FALSE) {
 		neb_free_callback_list();
 		neb_unload_all_modules(NEBMODULE_FORCE_UNLOAD, (sigshutdown == TRUE) ? NEBMODULE_NEB_SHUTDOWN : NEBMODULE_NEB_RESTART);
 		neb_free_module_list();
@@ -2832,8 +2406,7 @@ void free_memory(nagios_macros *mac)
 	free_comment_data();
 
 	/* free event queue data */
-	squeue_destroy(nagios_squeue, SQUEUE_FREE_DATA);
-	nagios_squeue = NULL;
+	destroy_event_queue();
 
 	/* free memory for global event handlers */
 	my_free(global_host_event_handler);

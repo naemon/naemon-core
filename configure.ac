@@ -4,7 +4,7 @@
 AC_PREREQ([2.59])
 AC_INIT([naemon], [0.8.0], [naemon-dev@monitoring-lists.org])
 AC_CONFIG_SRCDIR([naemon/naemon.c])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([silent-rules])
 
 AC_CONFIG_HEADERS([config.h naemon/lib/snprintf.h])
 
@@ -114,6 +114,8 @@ AC_FUNC_CHOWN
 AC_FUNC_FORK
 AC_FUNC_MMAP
 AC_FUNC_WAIT3
+
+AC_SEARCH_LIBS([clock_gettime],[rt posix4])
 
 # We expect full C89 and almost-full POSIX.1-2001 compliance where
 # we're compiled. That covers all linuxes, bsd's and solaris boxen

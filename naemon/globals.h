@@ -78,11 +78,8 @@ extern int daemon_dumps_core;
 extern volatile sig_atomic_t sig_id;
 
 extern int verify_config;
-extern int test_scheduling;
 extern int precache_objects;
 extern int use_precached_objects;
-
-extern sched_info scheduling_info;
 
 extern int max_parallel_service_checks;
 
@@ -175,7 +172,6 @@ extern unsigned long modified_process_attributes;
 extern unsigned long modified_host_process_attributes;
 extern unsigned long modified_service_process_attributes;
 
-extern squeue_t *nagios_squeue;
 extern iobroker_set *nagios_iobs;
 
 extern struct check_stats check_statistics[MAX_CHECK_STATS_TYPES];

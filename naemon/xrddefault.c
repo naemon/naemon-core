@@ -78,9 +78,6 @@ int xrddefault_save_state_information(void)
 	unsigned long process_host_attribute_mask = 0L;
 	unsigned long process_service_attribute_mask = 0L;
 
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "xrddefault_save_state_information()\n");
-
 	/* make sure we have everything */
 	if (retention_file == NULL || temp_file == NULL) {
 		logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: We don't have the required file names to store retention data!\n");
@@ -521,16 +518,11 @@ int xrddefault_read_state_information(void)
 	int ack = FALSE;
 	int was_flapping = FALSE;
 	int allow_flapstart_notification = TRUE;
-	struct timeval tv[2];
-	double runtime[2];
 	int found_directive = FALSE;
 	int is_in_effect = FALSE;
 	int start_notification_sent = FALSE;
 	struct host conf, have;
 	struct contact cont_conf, cont_have;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "xrddefault_read_state_information() start\n");
 
 	/* make sure we have what we need */
 	if (retention_file == NULL) {
@@ -539,9 +531,6 @@ int xrddefault_read_state_information(void)
 
 		return ERROR;
 	}
-
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[0], NULL);
 
 	/* open the retention file for reading */
 	if ((thefile = mmap_fopen(retention_file)) == NULL)
@@ -1662,22 +1651,6 @@ int xrddefault_read_state_information(void)
 		return ERROR;
 	if (sort_comments() != OK)
 		return ERROR;
-
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[1], NULL);
-
-	if (test_scheduling == TRUE) {
-		runtime[0] = (double)((double)(tv[1].tv_sec - tv[0].tv_sec) + (double)((tv[1].tv_usec - tv[0].tv_usec) / 1000.0) / 1000.0);
-
-		runtime[1] = (double)((double)(tv[1].tv_sec - tv[0].tv_sec) + (double)((tv[1].tv_usec - tv[0].tv_usec) / 1000.0) / 1000.0);
-
-		printf("RETENTION DATA TIMES\n");
-		printf("----------------------------------\n");
-		printf("Read and Process:     %.6lf sec\n", runtime[0]);
-		printf("                      ============\n");
-		printf("TOTAL:                %.6lf sec\n", runtime[1]);
-		printf("\n\n");
-	}
 
 	return OK;
 }

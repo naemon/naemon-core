@@ -8,6 +8,7 @@
 #include "globals.h"
 #include "logging.h"
 #include "nm_alloc.h"
+#include "events.h"
 #include <string.h>
 
 /* hosts and services before attribute modifications */
@@ -19,12 +20,31 @@ static struct contact **premod_contacts;
 /************* TOP-LEVEL STATE INFORMATION FUNCTIONS **************/
 /******************************************************************/
 
+void save_state_information_eventhandler(struct timed_event_properties *evprop)
+{
+	int status;
+
+	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+		schedule_event(retention_update_interval * 60, save_state_information_eventhandler, evprop->user_data);
+
+		status = save_state_information(FALSE);
+
+		if(status == OK) {
+			logit(NSLOG_PROCESS_INFO, FALSE, "Auto-save of retention data completed successfully.\n");
+		}
+	}
+}
+
 /* initializes retention data at program start */
 int initialize_retention_data(const char *cfgfile)
 {
 	premod_hosts = nm_calloc(num_objects.hosts, sizeof(void *));
 	premod_services = nm_calloc(num_objects.services, sizeof(void *));
 	premod_contacts = nm_calloc(num_objects.contacts, sizeof(void *));
+
+	/* add a retention data save event if needed */
+	if (retain_state_information == TRUE && retention_update_interval > 0)
+		schedule_event(retention_update_interval * 60, save_state_information_eventhandler, NULL);
 
 	return xrddefault_initialize_retention_data(cfgfile);
 }
@@ -70,9 +90,6 @@ int save_state_information(int autosave)
 
 	if (result == ERROR)
 		return ERROR;
-
-	if (autosave == TRUE)
-		logit(NSLOG_PROCESS_INFO, FALSE, "Auto-save of retention data completed successfully.\n");
 
 	return OK;
 }

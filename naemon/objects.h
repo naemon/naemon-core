@@ -101,21 +101,6 @@ typedef struct host host;
 typedef struct service service;
 typedef struct contact contact;
 
-/* TIMED_EVENT structure */
-typedef struct timed_event {
-	int event_type;
-	time_t run_time;
-	int recurring;
-	unsigned long event_interval;
-	int compensate_for_time_change;
-	void *timing_func;
-	void *event_data;
-	void *event_args;
-	int event_options;
-	unsigned int priority; /* 0 is auto, 1 is highest. n+1 < n */
-	struct squeue_event *sq_event;
-} timed_event;
-
 
 /* NOTIFY_LIST structure */
 typedef struct notify_list {
@@ -167,33 +152,6 @@ typedef struct check_result {
 	struct check_engine *engine;	/* where did we get this check from? */
 	void *source;					/* engine handles this */
 } check_result;
-
-
-/* SCHED_INFO structure */
-typedef struct sched_info {
-	int total_services;
-	int total_scheduled_services;
-	int total_hosts;
-	int total_scheduled_hosts;
-	double average_services_per_host;
-	double average_scheduled_services_per_host;
-	unsigned long service_check_interval_total;
-	unsigned long host_check_interval_total;
-	double average_service_execution_time;
-	double average_service_check_interval;
-	double average_host_check_interval;
-	double average_service_inter_check_delay;
-	double average_host_inter_check_delay;
-	double service_inter_check_delay;
-	double host_inter_check_delay;
-	int service_interleave_factor;
-	int max_service_check_spread;
-	int max_host_check_spread;
-	time_t first_service_check;
-	time_t last_service_check;
-	time_t first_host_check;
-	time_t last_host_check;
-} sched_info;
 
 
 /* DBUF structure - dynamic string storage */

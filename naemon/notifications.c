@@ -9,6 +9,8 @@
 #include "workers.h"
 #include "utils.h"
 #include "checks.h"
+#include "checks_service.h"
+#include "checks_host.h"
 #include "logging.h"
 #include "globals.h"
 #include "nm_alloc.h"
@@ -87,8 +89,6 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	int increment_notification_number = FALSE;
 	nagios_macros mac;
 	int neb_result;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "service_notification()\n");
 
 	/* get the current time */
 	time(&current_time);
@@ -335,8 +335,6 @@ int check_service_notification_viability(service *svc, int type, int options)
 	time_t timeperiod_start;
 	time_t first_problem_time;
 	servicesmember *sm;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_service_notification_viability()\n");
 
 	/* forced notifications bust through everything */
 	if (options & NOTIFICATION_OPTION_FORCED) {
@@ -586,8 +584,6 @@ int check_service_notification_viability(service *svc, int type, int options)
 int check_contact_service_notification_viability(contact *cntct, service *svc, int type, int options)
 {
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_contact_service_notification_viability()\n");
-
 	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "** Checking service notification viability for contact '%s'...\n", cntct->name);
 
 	/* forced notifications bust through everything */
@@ -695,8 +691,6 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	int neb_result;
 	struct notification_job *nj;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "notify_contact_of_service()\n");
 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "** Notifying contact '%s'\n", cntct->name);
 
@@ -836,8 +830,6 @@ int is_valid_escalation_for_service_notification(service *svc, serviceescalation
 	time_t current_time = 0L;
 	service *temp_service = NULL;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "is_valid_escalation_for_service_notification()\n");
-
 	/* get the current time */
 	time(&current_time);
 
@@ -882,8 +874,6 @@ int should_service_notification_be_escalated(service *svc)
 {
 	objectlist *list;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "should_service_notification_be_escalated()\n");
-
 	/* search the service escalation list */
 	for (list = svc->escalation_list; list; list = list->next) {
 		serviceescalation *temp_se = (serviceescalation *)list->object_ptr;
@@ -910,9 +900,6 @@ int create_notification_list_from_service(nagios_macros *mac, service *svc, int 
 	contactgroupsmember *temp_contactgroupsmember = NULL;
 	contactgroup *temp_contactgroup = NULL;
 	int escalate_notification = FALSE;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "create_notification_list_from_service()\n");
 
 	/* see if this notification should be escalated */
 	escalate_notification = should_service_notification_be_escalated(svc);
@@ -1271,8 +1258,6 @@ int check_host_notification_viability(host *hst, int type, int options)
 	time_t timeperiod_start;
 	time_t first_problem_time;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_host_notification_viability()\n");
-
 	/* forced notifications bust through everything */
 	if (options & NOTIFICATION_OPTION_FORCED) {
 		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "This is a forced host notification, so we'll send it out.\n");
@@ -1490,8 +1475,6 @@ int check_host_notification_viability(host *hst, int type, int options)
 int check_contact_host_notification_viability(contact *cntct, host *hst, int type, int options)
 {
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "check_contact_host_notification_viability()\n");
-
 	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "** Checking host notification viability for contact '%s'...\n", cntct->name);
 
 	/* forced notifications bust through everything */
@@ -1597,9 +1580,6 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 	int neb_result;
 	struct notification_job *nj;
 
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "notify_contact_of_host()\n");
-
 	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "** Notifying contact '%s'\n", cntct->name);
 
 	/* get start time */
@@ -1695,16 +1675,13 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 
 		/* run the notification command */
 		nj = nm_calloc(1,sizeof(struct notification_job));
-		if(nj == NULL) {
-			logit(NSLOG_RUNTIME_ERROR, TRUE, "Error: Allocating storage for notification job\n");
-		} else {
-			nj->ctc = cntct;
-			nj->hst = hst;
-			nj->svc = NULL;
-			if(ERROR == wproc_run_callback(processed_command, notification_timeout, notification_handle_job_result, nj, mac)) {
-				logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to send notification for host '%s' to worker\n", hst->name);
-				free(nj);
-			}
+
+		nj->ctc = cntct;
+		nj->hst = hst;
+		nj->svc = NULL;
+		if(ERROR == wproc_run_callback(processed_command, notification_timeout, notification_handle_job_result, nj, mac)) {
+			logit(NSLOG_RUNTIME_ERROR, TRUE, "Unable to send notification for host '%s' to worker\n", hst->name);
+			free(nj);
 		}
 
 		/* @todo Handle nebmod stuff when getting results from workers */
@@ -1743,8 +1720,6 @@ int is_valid_escalation_for_host_notification(host *hst, hostescalation *he, int
 	int notification_number = 0;
 	time_t current_time = 0L;
 	host *temp_host = NULL;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "is_valid_escalation_for_host_notification()\n");
 
 	/* get the current time */
 	time(&current_time);
@@ -1790,8 +1765,6 @@ int should_host_notification_be_escalated(host *hst)
 {
 	objectlist *list;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "should_host_notification_be_escalated()\n");
-
 	if (hst == NULL)
 		return FALSE;
 
@@ -1818,8 +1791,6 @@ int create_notification_list_from_host(nagios_macros *mac, host *hst, int option
 	contactgroupsmember *temp_contactgroupsmember = NULL;
 	contactgroup *temp_contactgroup = NULL;
 	int escalate_notification = FALSE;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "create_notification_list_from_host()\n");
 
 	/* see if this notification should be escalated */
 	escalate_notification = should_host_notification_be_escalated(hst);
@@ -1937,8 +1908,6 @@ time_t get_next_service_notification_time(service *svc, time_t offset)
 	objectlist *list;
 	int have_escalated_interval = FALSE;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "get_next_service_notification_time()\n");
-
 	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Calculating next valid notification time...\n");
 
 	/* default notification interval */
@@ -1995,9 +1964,6 @@ time_t get_next_host_notification_time(host *hst, time_t offset)
 	double interval_to_use = 0.0;
 	objectlist *list;
 	int have_escalated_interval = FALSE;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "get_next_host_notification_time()\n");
 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Calculating next valid notification time...\n");
 
@@ -2057,8 +2023,6 @@ notification *find_notification(contact *cntct)
 {
 	notification *temp_notification = NULL;
 
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "find_notification() start\n");
-
 	if (cntct == NULL)
 		return NULL;
 
@@ -2077,8 +2041,6 @@ int add_notification(nagios_macros *mac, contact *cntct)
 {
 	notification *new_notification = NULL;
 	notification *temp_notification = NULL;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "add_notification() start\n");
 
 	if (cntct == NULL)
 		return ERROR;

@@ -65,17 +65,18 @@ int xsddefault_initialize_status_data(const char *cfgfile)
 /* cleanup status data before terminating */
 int xsddefault_cleanup_status_data(int delete_status_data)
 {
+	int return_code = OK;
 
 	/* delete the status log */
 	if (delete_status_data == TRUE && status_file) {
 		if (unlink(status_file))
-			return ERROR;
+			return_code = ERROR;
 	}
 
 	/* free memory */
 	my_free(status_file);
 
-	return OK;
+	return return_code;
 }
 
 
@@ -97,8 +98,6 @@ int xsddefault_save_status_data(void)
 	int fd = 0;
 	FILE *fp = NULL;
 	int result = OK;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "save_status_data()\n");
 
 	/* users may not want us to write status data */
 	if (!status_file || !strcmp(status_file, "/dev/null"))

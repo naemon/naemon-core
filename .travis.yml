@@ -3,7 +3,8 @@ compiler:
   - gcc
 # Change this to your needs
 script:
-  - ./autogen.sh
+  - autoreconf -s -i
+  - ./configure
   - make
 after_success:
   - make check || exit 1

@@ -46,3 +46,4 @@ m4/
 naemon-uninstalled.pc
 naemon.pc
 naemon.log
+/Debug

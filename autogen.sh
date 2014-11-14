@@ -1,7 +1,7 @@
 #!/bin/sh
 
 autoreconf -s -i
-# not enabling silent rules through configure.ac macros, as I'd like
-# non-interactive build outputs to be useful, despite interactive builds
-# looking pleasant
+# The silent rules support is enabled in configure.ac, but silent rules isn't
+# active by default. This is just a helper for interactive builds, which
+# should be easier to track.
 ./configure --enable-silent-rules "$@"
