@@ -74,7 +74,7 @@ autoreconf -i -s
 # autofix modification time and program version with each package
 sed -i \
 	-e  's/^\(#define PROGRAM_MODIFICATION_DATE\).*/\1 \"'`date -I`'\"/' \
-		naemon/common.h
+		src/naemon/common.h
 
 %__make
 %__make check

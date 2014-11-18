@@ -1,4 +1,3 @@
-#define _GNU_SOURCE 1
 #include <stdio.h>
 #include <errno.h>
 #include "fanout.c"

@@ -3,10 +3,11 @@
 
 AC_PREREQ([2.59])
 AC_INIT([naemon], m4_esyscmd([op5build/generate_version_number.sh]), [dev@op5.org])
-AC_CONFIG_SRCDIR([naemon/naemon.c])
-AM_INIT_AUTOMAKE
+AC_CONFIG_SRCDIR([src/naemon/naemon.c])
+AC_CONFIG_SRCDIR([lib/libnaemon.h])
+AM_INIT_AUTOMAKE([subdir-objects])
 
-AC_CONFIG_HEADERS([config.h naemon/lib/snprintf.h])
+AC_CONFIG_HEADERS([config.h lib/snprintf.h])
 
 # Checks for programs.
 AC_PROG_CC
@@ -222,12 +223,6 @@ AC_CONFIG_FILES([Makefile
                  daemon-init
                  daemon-systemd
                  naemon.logrotate
-                 naemon/Makefile
-                 naemon/lib/Makefile
-                 sample-config/Makefile
-                 tests/Makefile
-                 t/Makefile
-                 t-tap/Makefile
                  naemon.pc
                  naemon-uninstalled.pc
                 ])
