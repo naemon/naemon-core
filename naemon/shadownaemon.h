@@ -69,13 +69,13 @@ int livestatus_query_socket(result_list **result, char *socket_path, char *query
 void free_livestatus_result(result_list * result, int datasize);
 int update_all_runtime_data(void);
 int update_program_status_data(void);
-int update_host_status_data(void);
-int update_service_status_data(void);
+int update_host_status_data(char *);
+int update_service_status_data(char *, char *);
 int update_external_commands(void);
 int update_downtime_data(void);
-int remove_old_downtimes(void);
+int update_downtime_data_by_id(unsigned long);
 int update_comment_data(void);
-int remove_old_comments(void);
+int update_comment_data_by_id(unsigned long);
 char *get_default_livestatus_module(void);
 int clean_output_folder(void);
 int write_config_files(void);
@@ -93,4 +93,3 @@ int open_tcp_socket(char *connection_string);
 int write_list_attribute(FILE *file, char* attr, char* rawlist);
 int write_custom_variables(FILE *file, char* rawnames, char* rawvalues);
 int get_delta_request_count(void);
-
