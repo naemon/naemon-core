@@ -2343,7 +2343,6 @@ static void destroy_contactsmember(struct contactsmember *cur)
 
 	while (cur) {
 		next = cur->next;
-		nm_free(cur->contact_name);
 		nm_free(cur);
 		cur = next;
 	}
