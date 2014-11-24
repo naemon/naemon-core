@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <string.h>
+#include <stdarg.h>
 
 /* A registered handler */
 struct query_handler {
