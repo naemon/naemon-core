@@ -410,14 +410,14 @@ int my_system_r(nagios_macros *mac, char *cmd, int timeout, int *early_timeout, 
 			buffer[sizeof(buffer) - 1] = '\x0';
 
 			/* write the error back to the parent process */
-			uninterrupted_write(fd[1], buffer, strlen(buffer) + 1);
+			nsock_write_all(fd[1], buffer, strlen(buffer) + 1);
 
 			result = STATE_CRITICAL;
 		} else {
 
 			/* write all the lines of output back to the parent process */
 			while (fgets(buffer, sizeof(buffer) - 1, fp))
-				uninterrupted_write(fd[1], buffer, strlen(buffer));
+				nsock_write_all(fd[1], buffer, strlen(buffer));
 
 			/* close the command and get termination status */
 			status = pclose(fp);
@@ -1489,29 +1489,6 @@ void my_system_sighandler(int sig)
 }
 
 /**
- * Write all of nbyte bytes of buf to fd, and don't let EINTR/EAGAIN stop you.
- * Returns 0 on success. On error, returns -1 and errno is set to indicate the
- * error
- */
-int uninterrupted_write(int fd, const void *buf, size_t nbyte)
-{
-	size_t c = 0;
-	int ret = 0;
-	while ( c < nbyte ) {
-		ret = write(fd, (char *) buf + c, nbyte - c);
-		if (ret < 0) {
-			if (errno == EINTR || errno == EAGAIN)
-				continue;
-
-			nm_log(NSLOG_RUNTIME_ERROR, "%s", strerror(errno));
-			return -1;
-		}
-		c += (size_t)ret;
-	}
-	return 0;
-}
-
-/**
  * Handle the SIGXFSZ signal. A SIGXFSZ signal is received when a file exceeds
  * the maximum allowable size either as dictated by the fzise paramater in
  * /etc/security/limits.conf (ulimit -f) or by the maximum size allowed by
@@ -1747,7 +1724,7 @@ int daemon_init(void)
 		exit(ERROR);
 	}
 	sprintf(buf, "%d\n", (int)getpid());
-	uninterrupted_write(lockfile, buf, strlen(buf));
+	nsock_write_all(lockfile, buf, strlen(buf));
 
 	/* make sure lock file stays open while program is executing... */
 	val = fcntl(lockfile, F_GETFD, 0);

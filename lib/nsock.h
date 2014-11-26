@@ -80,6 +80,13 @@ extern int nsock_printf(int sd, const char *fmt, ...)
 	__attribute__((__format__(__printf__, 2, 3)));
 
 
+/**
+ * Write all of nbyte bytes of buf to fd, and don't let EINTR/EAGAIN stop you.
+ * Returns 0 on success. On error, returns -1 and errno is set to indicate the
+ * error
+ */
+int nsock_write_all(int fd, const void *buf, size_t nbyte);
+
 NAGIOS_END_DECL
 
 /** @} */

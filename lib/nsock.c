@@ -123,3 +123,25 @@ int nsock_printf(int sd, const char *fmt, ...)
 	va_end(ap);
 	return ret;
 }
+
+/**
+ * Write all of nbyte bytes of buf to fd, and don't let EINTR/EAGAIN stop you.
+ * Returns 0 on success. On error, returns -1 and errno is set to indicate the
+ * error
+ */
+int nsock_write_all(int fd, const void *buf, size_t nbyte)
+{
+	size_t c = 0;
+	int ret = 0;
+	while ( c < nbyte ) {
+		ret = write(fd, (char *) buf + c, nbyte - c);
+		if (ret < 0) {
+			if (errno == EINTR || errno == EAGAIN)
+				continue;
+
+			return -1;
+		}
+		c += (size_t)ret;
+	}
+	return 0;
+}
