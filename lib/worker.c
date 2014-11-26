@@ -639,7 +639,7 @@ static int receive_command(int sd, int events, void *arg)
 #if 0
 	/* debug-volley */
 	buf = iocache_use_size(ioc, ioc_ret);
-	uninterrupted_write(master_sd, buf, ioc_ret);
+	nsock_write_all(master_sd, buf, ioc_ret);
 	return 0;
 #endif
 	/*
