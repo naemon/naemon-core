@@ -147,9 +147,7 @@ service naemon start || :
 %_libdir/libnaemon.so.*
 %_bindir/naemon
 %_bindir/naemonstats
-%_bindir/oconfsplit
 %_mandir/man8/naemon*
-%_mandir/man8/oconfsplit*
 /opt/monitor/bin/monitor
 %attr(-,%daemon_user,%daemon_group) %dir %_localstatedir/cache/naemon/
 
