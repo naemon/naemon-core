@@ -735,7 +735,7 @@ int event_execution_loop(void)
 		}
 
 		gettimeofday(&now, NULL);
-		if (tv_delta_msec(&now, event_runtime) >= 0)
+		if (tv_delta_msec(&now, event_runtime) > 0)
 			continue;
 
 		/* move on if we shouldn't run this event */
