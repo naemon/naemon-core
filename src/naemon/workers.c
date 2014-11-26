@@ -554,8 +554,8 @@ static int handle_worker_result(int sd, int events, void *arg)
 			log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   command: %s\n", job->command);
 			log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   early_timeout=%d; exited_ok=%d; wait_status=%d; error_code=%d;\n",
 			      wpres.early_timeout, wpres.exited_ok, wpres.wait_status, wpres.error_code);
-			wproc_logdump_buffer(DEBUGL_IPC, DEBUGV_MOST, "wproc:   stderr", wpres.outerr);
-			wproc_logdump_buffer(DEBUGL_IPC, DEBUGV_MOST, "wproc:   stdout", wpres.outstd);
+			wproc_logdump_buffer(DEBUGL_IPC, DEBUGV_MORE, "wproc:   stderr", wpres.outerr);
+			wproc_logdump_buffer(DEBUGL_IPC, DEBUGV_MORE, "wproc:   stdout", wpres.outstd);
 		}
 		nm_free(error_reason);
 
