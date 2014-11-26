@@ -62,6 +62,35 @@ static void notification_handle_job_result(struct wproc_result *wpres, void *dat
 				       nj->ctc->name, nj->hst->name,
 				       wpres->command);
 			}
+		} else if (!WIFEXITED(wpres->wait_status) || WEXITSTATUS(wpres->wait_status)) {
+			char *objectname = NULL;
+			char *reason = NULL;
+			char *objecttype = NULL;
+			int code = 0;
+			if (nj->svc) {
+				objecttype = "service";
+				asprintf(&objectname, "%s;%s", nj->svc->host_name, nj->svc->description);
+			} else {
+				objecttype = "host";
+				objectname = strdup(nj->hst->name);
+			}
+			if (!WIFEXITED(wpres->wait_status)) {
+				reason = "was killed by signal";
+				code = WTERMSIG(wpres->wait_status);
+			} else {
+				reason = "exited with exit code";
+				code = WEXITSTATUS(wpres->wait_status);
+			}
+			nm_log(NSLOG_RUNTIME_WARNING,
+			      "Warning: Notification command for contact '%s' about %s '%s' %s %i. stdout: '%s', stderr: '%s'",
+			      nj->ctc->name,
+			      objecttype,
+			      objectname,
+			      reason,
+			      code,
+			      wpres->outstd && wpres->outstd[0] ? wpres->outstd : "(empty)",
+			      wpres->outerr && wpres->outerr[0] ? wpres->outerr : "(empty)");
+			free(objectname);
 		}
 	}
 	free(nj);
