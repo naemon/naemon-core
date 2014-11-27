@@ -34,19 +34,40 @@ static contact *find_contact_by_name_or_alias(const char *name)
 	return c;
 }
 
-const char *notification_reason_name(unsigned int reason_type)
+const char *notification_reason_name(enum NotificationReason reason)
 {
-	static const char *names[] = {
-		"NORMAL", "ACKNOWLEDGEMENT",
-		"FLAPPINGSTART", "FLAPPINGSTOP", "FLAPPINGDISABLED",
-		"DOWNTIMESTART", "DOWNTIMEEND", "DOWNTIMECANCELLED",
-		"CUSTOM"
-	};
+	switch (reason) {
+		case NOTIFICATION_NORMAL:
+			return "NORMAL";
+			break;
+		case NOTIFICATION_ACKNOWLEDGEMENT:
+			return "ACKNOWLEDGEMENT";
+			break;
+		case NOTIFICATION_FLAPPINGSTART:
+			return "FLAPPINGSTART";
+			break;
+		case NOTIFICATION_FLAPPINGSTOP:
+			return "FLAPPINGSTOP";
+			break;
+		case NOTIFICATION_FLAPPINGDISABLED:
+			return "FLAPPINGDISABLED";
+			break;
+		case NOTIFICATION_DOWNTIMESTART:
+			return "DOWNTIMESTART";
+			break;
+		case NOTIFICATION_DOWNTIMEEND:
+			return "DOWNTIMEEND";
+			break;
+		case NOTIFICATION_DOWNTIMECANCELLED:
+			return "DOWNTIMECANCELLED";
+			break;
+		case NOTIFICATION_CUSTOM:
+			return "CUSTOM";
+			break;
+	}
+	nm_log(NSLOG_RUNTIME_ERROR, "Unhandled notification reason: %d", reason);
+	return NULL;
 
-	if (reason_type < sizeof(names))
-		return names[reason_type];
-
-	return "(unknown)";
 }
 
 static void notification_handle_job_result(struct wproc_result *wpres, void *data, int flags) {
@@ -220,28 +241,16 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 		}
 
 		/* set the notification type macro */
-		if (type == NOTIFICATION_ACKNOWLEDGEMENT)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "ACKNOWLEDGEMENT";
-		else if (type == NOTIFICATION_FLAPPINGSTART)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "FLAPPINGSTART";
-		else if (type == NOTIFICATION_FLAPPINGSTOP)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "FLAPPINGSTOP";
-		else if (type == NOTIFICATION_FLAPPINGDISABLED)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "FLAPPINGDISABLED";
-		else if (type == NOTIFICATION_DOWNTIMESTART)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "DOWNTIMESTART";
-		else if (type == NOTIFICATION_DOWNTIMEEND)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "DOWNTIMEEND";
-		else if (type == NOTIFICATION_DOWNTIMECANCELLED)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "DOWNTIMECANCELLED";
-		else if (type == NOTIFICATION_CUSTOM)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "CUSTOM";
-		else if (svc->current_state == STATE_OK)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "RECOVERY";
-		else
-			mac.x[MACRO_NOTIFICATIONTYPE] = "PROBLEM";
+		if (type != NOTIFICATION_NORMAL) {
+			mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup(notification_reason_name(type));
+		}
+		else if (svc->current_state == STATE_OK) {
+			mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup("RECOVERY");
+		}
+		else {
+			mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup("PROBLEM");
+		}
 
-		mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup(mac.x[MACRO_NOTIFICATIONTYPE]);
 
 		/* set the notification number macro */
 		nm_asprintf(&mac.x[MACRO_SERVICENOTIFICATIONNUMBER], "%d", svc->current_notification_number);
@@ -783,36 +792,12 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 
 		/* log the notification to program log file */
 		if (log_notifications == TRUE) {
-			switch (type) {
-			case NOTIFICATION_CUSTOM:
-				nm_asprintf(&temp_buffer, "SERVICE NOTIFICATION: %s;%s;%s;CUSTOM ($SERVICESTATE$);%s;$SERVICEOUTPUT$;$NOTIFICATIONAUTHOR$;$NOTIFICATIONCOMMENT$\n", cntct->name, svc->host_name, svc->description, command_name_ptr);
-				break;
-			case NOTIFICATION_ACKNOWLEDGEMENT:
-				nm_asprintf(&temp_buffer, "SERVICE NOTIFICATION: %s;%s;%s;ACKNOWLEDGEMENT ($SERVICESTATE$);%s;$SERVICEOUTPUT$;$NOTIFICATIONAUTHOR$;$NOTIFICATIONCOMMENT$\n", cntct->name, svc->host_name, svc->description, command_name_ptr);
-				break;
-			case NOTIFICATION_FLAPPINGSTART:
-				nm_asprintf(&temp_buffer, "SERVICE NOTIFICATION: %s;%s;%s;FLAPPINGSTART ($SERVICESTATE$);%s;$SERVICEOUTPUT$\n", cntct->name, svc->host_name, svc->description, command_name_ptr);
-				break;
-			case NOTIFICATION_FLAPPINGSTOP:
-				nm_asprintf(&temp_buffer, "SERVICE NOTIFICATION: %s;%s;%s;FLAPPINGSTOP ($SERVICESTATE$);%s;$SERVICEOUTPUT$\n", cntct->name, svc->host_name, svc->description, command_name_ptr);
-				break;
-			case NOTIFICATION_FLAPPINGDISABLED:
-				nm_asprintf(&temp_buffer, "SERVICE NOTIFICATION: %s;%s;%s;FLAPPINGDISABLED ($SERVICESTATE$);%s;$SERVICEOUTPUT$\n", cntct->name, svc->host_name, svc->description, command_name_ptr);
-				break;
-			case NOTIFICATION_DOWNTIMESTART:
-				nm_asprintf(&temp_buffer, "SERVICE NOTIFICATION: %s;%s;%s;DOWNTIMESTART ($SERVICESTATE$);%s;$SERVICEOUTPUT$\n", cntct->name, svc->host_name, svc->description, command_name_ptr);
-				break;
-			case NOTIFICATION_DOWNTIMEEND:
-				nm_asprintf(&temp_buffer, "SERVICE NOTIFICATION: %s;%s;%s;DOWNTIMEEND ($SERVICESTATE$);%s;$SERVICEOUTPUT$\n", cntct->name, svc->host_name, svc->description, command_name_ptr);
-				break;
-			case NOTIFICATION_DOWNTIMECANCELLED:
-				nm_asprintf(&temp_buffer, "SERVICE NOTIFICATION: %s;%s;%s;DOWNTIMECANCELLED ($SERVICESTATE$);%s;$SERVICEOUTPUT$\n", cntct->name, svc->host_name, svc->description, command_name_ptr);
-				break;
-			default:
-				nm_asprintf(&temp_buffer, "SERVICE NOTIFICATION: %s;%s;%s;$SERVICESTATE$;%s;$SERVICEOUTPUT$\n", cntct->name, svc->host_name, svc->description, command_name_ptr);
-				break;
+			if (type != NOTIFICATION_NORMAL) {
+				nm_asprintf(&temp_buffer, "SERVICE NOTIFICATION: %s;%s;%s;%s ($SERVICESTATE$);%s;$SERVICEOUTPUT$;$NOTIFICATIONAUTHOR$;$NOTIFICATIONCOMMENT$\n", cntct->name, svc->host_name, svc->description, notification_reason_name(type), command_name_ptr);
 			}
-
+			else {
+				nm_asprintf(&temp_buffer, "SERVICE NOTIFICATION: %s;%s;%s;$SERVICESTATE$;%s;$SERVICEOUTPUT$\n", cntct->name, svc->host_name, svc->description, command_name_ptr);
+			}
 			process_macros_r(mac, temp_buffer, &processed_buffer, 0);
 			nm_log(NSLOG_SERVICE_NOTIFICATION, "%s", processed_buffer);
 
@@ -1158,28 +1143,16 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 		}
 
 		/* set the notification type macro */
-		if (type == NOTIFICATION_ACKNOWLEDGEMENT)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "ACKNOWLEDGEMENT";
-		else if (type == NOTIFICATION_FLAPPINGSTART)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "FLAPPINGSTART";
-		else if (type == NOTIFICATION_FLAPPINGSTOP)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "FLAPPINGSTOP";
-		else if (type == NOTIFICATION_FLAPPINGDISABLED)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "FLAPPINGDISABLED";
-		else if (type == NOTIFICATION_DOWNTIMESTART)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "DOWNTIMESTART";
-		else if (type == NOTIFICATION_DOWNTIMEEND)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "DOWNTIMEEND";
-		else if (type == NOTIFICATION_DOWNTIMECANCELLED)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "DOWNTIMECANCELLED";
-		else if (type == NOTIFICATION_CUSTOM)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "CUSTOM";
-		else if (hst->current_state == STATE_UP)
-			mac.x[MACRO_NOTIFICATIONTYPE] = "RECOVERY";
-		else
-			mac.x[MACRO_NOTIFICATIONTYPE] = "PROBLEM";
+		if (type != NOTIFICATION_NORMAL) {
+			mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup(notification_reason_name(type));
+		}
+		else if (hst->current_state == HOST_UP) {
+			mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup("RECOVERY");
+		}
+		else {
+			mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup("PROBLEM");
+		}
 
-		mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup(mac.x[MACRO_NOTIFICATIONTYPE]);
 
 		/* set the notification number macro */
 		nm_asprintf(&mac.x[MACRO_HOSTNOTIFICATIONNUMBER], "%d", hst->current_notification_number);
@@ -1685,36 +1658,12 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 
 		/* log the notification to program log file */
 		if (log_notifications == TRUE) {
-			switch (type) {
-			case NOTIFICATION_CUSTOM:
-				nm_asprintf(&temp_buffer, "HOST NOTIFICATION: %s;%s;CUSTOM ($HOSTSTATE$);%s;$HOSTOUTPUT$;$NOTIFICATIONAUTHOR$;$NOTIFICATIONCOMMENT$\n", cntct->name, hst->name, command_name_ptr);
-				break;
-			case NOTIFICATION_ACKNOWLEDGEMENT:
-				nm_asprintf(&temp_buffer, "HOST NOTIFICATION: %s;%s;ACKNOWLEDGEMENT ($HOSTSTATE$);%s;$HOSTOUTPUT$;$NOTIFICATIONAUTHOR$;$NOTIFICATIONCOMMENT$\n", cntct->name, hst->name, command_name_ptr);
-				break;
-			case NOTIFICATION_FLAPPINGSTART:
-				nm_asprintf(&temp_buffer, "HOST NOTIFICATION: %s;%s;FLAPPINGSTART ($HOSTSTATE$);%s;$HOSTOUTPUT$\n", cntct->name, hst->name, command_name_ptr);
-				break;
-			case NOTIFICATION_FLAPPINGSTOP:
-				nm_asprintf(&temp_buffer, "HOST NOTIFICATION: %s;%s;FLAPPINGSTOP ($HOSTSTATE$);%s;$HOSTOUTPUT$\n", cntct->name, hst->name, command_name_ptr);
-				break;
-			case NOTIFICATION_FLAPPINGDISABLED:
-				nm_asprintf(&temp_buffer, "HOST NOTIFICATION: %s;%s;FLAPPINGDISABLED ($HOSTSTATE$);%s;$HOSTOUTPUT$\n", cntct->name, hst->name, command_name_ptr);
-				break;
-			case NOTIFICATION_DOWNTIMESTART:
-				nm_asprintf(&temp_buffer, "HOST NOTIFICATION: %s;%s;DOWNTIMESTART ($HOSTSTATE$);%s;$HOSTOUTPUT$\n", cntct->name, hst->name, command_name_ptr);
-				break;
-			case NOTIFICATION_DOWNTIMEEND:
-				nm_asprintf(&temp_buffer, "HOST NOTIFICATION: %s;%s;DOWNTIMEEND ($HOSTSTATE$);%s;$HOSTOUTPUT$\n", cntct->name, hst->name, command_name_ptr);
-				break;
-			case NOTIFICATION_DOWNTIMECANCELLED:
-				nm_asprintf(&temp_buffer, "HOST NOTIFICATION: %s;%s;DOWNTIMECANCELLED ($HOSTSTATE$);%s;$HOSTOUTPUT$\n", cntct->name, hst->name, command_name_ptr);
-				break;
-			default:
-				nm_asprintf(&temp_buffer, "HOST NOTIFICATION: %s;%s;$HOSTSTATE$;%s;$HOSTOUTPUT$\n", cntct->name, hst->name, command_name_ptr);
-				break;
+			if (type != NOTIFICATION_NORMAL) {
+				nm_asprintf(&temp_buffer, "HOST NOTIFICATION: %s;%s;%s ($HOSTSTATE$);%s;$HOSTOUTPUT$;$NOTIFICATIONAUTHOR$;$NOTIFICATIONCOMMENT$\n", cntct->name, hst->name, notification_reason_name(type), command_name_ptr);
 			}
-
+			else {
+				nm_asprintf(&temp_buffer, "HOST NOTIFICATION: %s;%s;$HOSTSTATE$;%s;$HOSTOUTPUT$\n", cntct->name, hst->name, command_name_ptr);
+			}
 			process_macros_r(mac, temp_buffer, &processed_buffer, 0);
 			nm_log(NSLOG_HOST_NOTIFICATION, "%s", processed_buffer);
 
