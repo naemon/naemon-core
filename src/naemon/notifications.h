@@ -8,6 +8,49 @@
 #include "objects.h"
 #include "macros.h"
 
+/*
+ * Enumeration of the type of objects that can influence notification
+ * suppressions
+ */
+enum NotificationSuppressionType {
+	NS_TYPE_HOST,
+	NS_TYPE_SERVICE,
+	NS_TYPE_HOST_CONTACT,
+	NS_TYPE_SERVICE_CONTACT
+};
+
+/*
+ * Enumeration of all known valid notification suppression reasons
+ */
+enum NotificationSuppressionReason {
+	NSR_OK,
+	NSR_DISABLED,
+	NSR_TIMEPERIOD_BLOCKED,
+	NSR_DISABLED_OBJECT,
+	NSR_NO_CONTACTS,
+	NSR_CUSTOM_SCHED_DOWNTIME,
+	NSR_ACK_OBJECT_OK,
+	NSR_NO_FLAPPING,
+	NSR_SCHED_DOWNTIME_FLAPPING,
+	NSR_NO_DOWNTIME,
+	NSR_SCHED_DOWNTIME_DOWNTIME,
+	NSR_SOFT_STATE,
+	NSR_ACKNOWLEDGED,
+	NSR_DEPENDENCY_FAILURE,
+	NSR_STATE_DISABLED,
+	NSR_NO_RECOVERY,
+	NSR_RECOVERY_UNNOTIFIED_PROBLEM,
+	NSR_DELAY,
+	NSR_IS_FLAPPING,
+	NSR_IS_SCHEDULED_DOWNTIME,
+	NSR_RE_NO_MORE,
+	NSR_RE_NOT_YET,
+	NSR_NEB_BLOCKED,
+	NSR_BAD_PARENTS,
+	NSR_SERVICE_HOST_DOWN_UNREACHABLE,
+	NSR_SERVICE_HOST_SCHEDULED_DOWNTIME,
+	NSR_INSUFF_IMPORTANCE,
+};
 
 /**************** NOTIFICATION TYPES ******************/
 

@@ -70,6 +70,149 @@ const char *notification_reason_name(enum NotificationReason reason)
 
 }
 
+#define _log_nsr(S) nm_log(log_level, "%s NOTIFICATION SUPPRESSED: %s;%s", type_name, objname, S);
+void log_notification_suppression_reason(enum NotificationSuppressionReason reason,
+		enum NotificationSuppressionType type, void *primary_obj, void *secondary_obj)
+{
+	char *objname = NULL;
+	char *type_name = NULL;
+	unsigned int log_level = NSLOG_RUNTIME_ERROR;
+	unsigned int modattr = 0u;
+
+	/* We use a switches here rather than lookup arrays
+	 *  or plain old if-else chains because this way we can get compiler
+	 *  warnings on unhandled cases
+	 */
+	switch (type) {
+	case NS_TYPE_HOST:
+		objname = nm_strdup(((host *)primary_obj)->name);
+		type_name = "HOST";
+		log_level = NSLOG_HOST_NOTIFICATION;
+		modattr = ((struct host *)primary_obj)->modified_attributes;
+		break;
+	case NS_TYPE_SERVICE:
+		nm_asprintf(&objname, "%s;%s", ((service *)primary_obj)->host_name, ((service *)primary_obj)->description);
+		type_name = "SERVICE";
+		log_level = NSLOG_SERVICE_NOTIFICATION;
+		modattr = ((struct service *)primary_obj)->modified_attributes;
+		break;
+	case NS_TYPE_SERVICE_CONTACT:
+		nm_asprintf(&objname, "%s for %s;%s",
+				((contact *)primary_obj)->name,
+				((service *)secondary_obj)->host_name,
+				((service *)secondary_obj)->description
+				);
+		type_name = "SERVICE CONTACT";
+		log_level = NSLOG_SERVICE_NOTIFICATION;
+		modattr = ((struct service *)secondary_obj)->modified_attributes;
+		break;
+	case NS_TYPE_HOST_CONTACT:
+		nm_asprintf(&objname, "%s for %s",
+				((contact *)primary_obj)->name,
+				((host *)secondary_obj)->name
+				);
+		type_name = "HOST CONTACT";
+		log_level = NSLOG_HOST_NOTIFICATION;
+		modattr = ((struct host *)secondary_obj)->modified_attributes;
+		break;
+	}
+
+	switch (reason) {
+	case NSR_OK:
+		break;
+	case NSR_DISABLED:
+		_log_nsr("Notifications are disabled globally.");
+		break;
+	case NSR_TIMEPERIOD_BLOCKED:
+		_log_nsr("Notification blocked by timeperiod; notifications should not be sent out at this time.");
+		break;
+	case NSR_DISABLED_OBJECT:
+		if (modattr & MODATTR_NOTIFICATIONS_ENABLED) {
+			_log_nsr("Notifications are temporarily disabled for this object by an external command.");
+		} else {
+			_log_nsr("Notifications are disabled for this object by its configuration.");
+		}
+		break;
+	case NSR_NO_CONTACTS:
+		_log_nsr("No notification sent, because no contacts were found for notification purposes.");
+		break;
+	case NSR_CUSTOM_SCHED_DOWNTIME:
+		_log_nsr("Custom notifications blocked during scheduled downtime.");
+		break;
+	case NSR_ACK_OBJECT_OK:
+		_log_nsr("Acknowledgement notification blocked for UP/OK object.");
+		break;
+	case NSR_NO_FLAPPING:
+		_log_nsr("Notifications about FLAPPING events blocked for this object.");
+		break;
+	case NSR_SCHED_DOWNTIME_FLAPPING:
+		_log_nsr("Notifications about FLAPPING events blocked during scheduled downtime.");
+		break;
+	case NSR_NO_DOWNTIME:
+		_log_nsr("Notifications about SCHEDULED DOWNTIME events blocked for this object.");
+		break;
+	case NSR_SCHED_DOWNTIME_DOWNTIME:
+		_log_nsr("Notifications about SCHEDULED DOWNTIME events blocked during scheduled downtime.");
+		break;
+	case NSR_SOFT_STATE:
+		_log_nsr("Notifications blocked for object in a soft state.");
+		break;
+	case NSR_ACKNOWLEDGED:
+		_log_nsr("Notification for problem blocked because it has already been acknowledged.");
+		break;
+	case NSR_DEPENDENCY_FAILURE:
+		_log_nsr("Notification blocked due to dependency of another object.");
+		break;
+	case NSR_STATE_DISABLED:
+		_log_nsr("Notifications disabled for current object state.");
+		break;
+	case NSR_NO_RECOVERY:
+		_log_nsr("Notifications about RECOVERY events blocked for this object.");
+		break;
+	case NSR_RECOVERY_UNNOTIFIED_PROBLEM:
+		_log_nsr("Notification blocked for RECOVERY because no notification was sent out for the original problem.");
+		break;
+	case NSR_DELAY:
+		_log_nsr("Notification blocked because first_notification_delay is configured and not enough time has elapsed since the object changed to a non-UP/non-OK state (or since program start).");
+		break;
+	case NSR_IS_FLAPPING:
+		_log_nsr("Notification blocked because the object is currently flapping.");
+		break;
+	case NSR_IS_SCHEDULED_DOWNTIME:
+		_log_nsr("Notification blocked for object currently in a scheduled downtime.");
+		break;
+	case NSR_RE_NO_MORE:
+		_log_nsr("Re-notification blocked for this problem.");
+		break;
+	case NSR_RE_NOT_YET:
+		_log_nsr("Re-notification blocked for this problem because not enough time has passed since last notification.");
+		break;
+	case NSR_NEB_BLOCKED:
+		_log_nsr("Notification was blocked by a NEB module.");
+		break;
+	case NSR_BAD_PARENTS:
+		_log_nsr("Notification blocked because this object is unreachable - its parents are down.");
+		break;
+	case NSR_SERVICE_HOST_DOWN_UNREACHABLE:
+		_log_nsr("Notification blocked for service because its associated host is either down or unreachable.");
+		break;
+	case NSR_SERVICE_HOST_SCHEDULED_DOWNTIME:
+		_log_nsr("Notification blocked for service because its associated host is currently in a scheduled downtime.");
+		break;
+	case NSR_INSUFF_IMPORTANCE:
+		_log_nsr("Notification blocked for contact because it is not important enough (according to minimum_value).");
+		break;
+
+	}
+	nm_free(objname);
+}
+#undef _log_nsr
+
+#define LOG_SERVICE_NSR(NSR) log_notification_suppression_reason(NSR, NS_TYPE_SERVICE, svc, NULL);
+#define LOG_HOST_NSR(NSR) log_notification_suppression_reason(NSR, NS_TYPE_HOST, hst, NULL);
+#define LOG_SERVICE_CONTACT_NSR(NSR) log_notification_suppression_reason(NSR, NS_TYPE_SERVICE_CONTACT, cntct, svc);
+#define LOG_HOST_CONTACT_NSR(NSR) log_notification_suppression_reason(NSR, NS_TYPE_HOST_CONTACT, cntct, hst);
+
 static void notification_handle_job_result(struct wproc_result *wpres, void *data, int flags) {
 	struct notification_job *nj = (struct notification_job*)data;
 	if (wpres) {
@@ -162,8 +305,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	end_time.tv_usec = 0L;
 	neb_result = broker_notification_data(NEBTYPE_NOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, start_time, end_time, (void *)svc, not_author, not_data, escalated, 0, NULL);
 	if (neb_result == NEBERROR_CALLBACKCANCEL || neb_result == NEBERROR_CALLBACKOVERRIDE) {
-		log_debug_info(DEBUGL_CHECKS, 0, "Service notification to %s;%s (id=%u) was blocked by a module\n",
-		               svc->host_name, svc->description, svc->id);
+		LOG_SERVICE_NSR(NSR_NEB_BLOCKED);
 		free_notification_list();
 		return neb_result == NEBERROR_CALLBACKOVERRIDE ? OK : ERROR;
 	}
@@ -330,7 +472,6 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 
 				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "No contacts were notified.  Next possible notification time: %s", ctime(&svc->next_notification));
 			}
-
 		}
 
 		log_debug_info(DEBUGL_NOTIFICATIONS, 0, "%d contacts were notified.\n", contacts_notified);
@@ -343,7 +484,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 		if (increment_notification_number == TRUE)
 			svc->current_notification_number--;
 
-		log_debug_info(DEBUGL_NOTIFICATIONS, 0, "No contacts were found for notification purposes.  No notification was sent out.\n");
+		LOG_SERVICE_NSR(NSR_NO_CONTACTS);
 	}
 
 	/* this gets set in create_notification_list_from_service() */
@@ -387,7 +528,7 @@ int check_service_notification_viability(service *svc, int type, int options)
 
 	/* are notifications enabled? */
 	if (enable_notifications == FALSE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Notifications are disabled, so service notifications will not be sent out.\n");
+		LOG_SERVICE_NSR(NSR_DISABLED);
 		return ERROR;
 	}
 
@@ -400,7 +541,7 @@ int check_service_notification_viability(service *svc, int type, int options)
 			sm = sm->next;
 		}
 		if (sm == NULL) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "This service has no good parents, so notification will be blocked.\n");
+			LOG_SERVICE_NSR(NSR_BAD_PARENTS);
 			return ERROR;
 		}
 	}
@@ -413,9 +554,7 @@ int check_service_notification_viability(service *svc, int type, int options)
 
 	/* see if the service can have notifications sent out at this time */
 	if (check_time_against_period(current_time, temp_period) == ERROR) {
-
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "This service shouldn't have notifications sent out at this time.\n");
-
+		LOG_SERVICE_NSR(NSR_TIMEPERIOD_BLOCKED);
 		/* calculate the next acceptable notification time, once the next valid time range arrives... */
 		if (type == NOTIFICATION_NORMAL) {
 
@@ -437,7 +576,7 @@ int check_service_notification_viability(service *svc, int type, int options)
 
 	/* are notifications temporarily disabled for this service? */
 	if (svc->notifications_enabled == FALSE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Notifications are temporarily disabled for this service, so we won't send one out.\n");
+		LOG_SERVICE_NSR(NSR_DISABLED_OBJECT);
 		return ERROR;
 	}
 
@@ -449,7 +588,7 @@ int check_service_notification_viability(service *svc, int type, int options)
 	/* custom notifications are good to go at this point... */
 	if (type == NOTIFICATION_CUSTOM) {
 		if (svc->scheduled_downtime_depth > 0 || temp_host->scheduled_downtime_depth > 0) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We shouldn't send custom notification during scheduled downtime.\n");
+			LOG_SERVICE_NSR(NSR_CUSTOM_SCHED_DOWNTIME);
 			return ERROR;
 		}
 		return OK;
@@ -466,7 +605,7 @@ int check_service_notification_viability(service *svc, int type, int options)
 
 		/* don't send an acknowledgement if there isn't a problem... */
 		if (svc->current_state == STATE_OK) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "The service is currently OK, so we won't send an acknowledgement.\n");
+			LOG_SERVICE_NSR(NSR_ACK_OBJECT_OK);
 			return ERROR;
 		}
 
@@ -484,13 +623,13 @@ int check_service_notification_viability(service *svc, int type, int options)
 
 		/* don't send a notification if we're not supposed to... */
 		if (flag_isset(svc->notification_options, OPT_FLAPPING) == FALSE) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We shouldn't notify about FLAPPING events for this service.\n");
+			LOG_SERVICE_NSR(NSR_NO_FLAPPING);
 			return ERROR;
 		}
 
 		/* don't send notifications during scheduled downtime */
 		if (svc->scheduled_downtime_depth > 0 || temp_host->scheduled_downtime_depth > 0) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We shouldn't notify about FLAPPING events during scheduled downtime.\n");
+			LOG_SERVICE_NSR(NSR_SCHED_DOWNTIME_FLAPPING);
 			return ERROR;
 		}
 
@@ -508,13 +647,13 @@ int check_service_notification_viability(service *svc, int type, int options)
 
 		/* don't send a notification if we're not supposed to... */
 		if (flag_isset(svc->notification_options, OPT_DOWNTIME) == FALSE) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We shouldn't notify about DOWNTIME events for this service.\n");
+			LOG_SERVICE_NSR(NSR_NO_DOWNTIME);
 			return ERROR;
 		}
 
 		/* don't send notifications during scheduled downtime (for service only, not host) */
 		if (svc->scheduled_downtime_depth > 0) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We shouldn't notify about DOWNTIME events during scheduled downtime.\n");
+			LOG_SERVICE_NSR(NSR_SCHED_DOWNTIME_DOWNTIME);
 			return ERROR;
 		}
 
@@ -529,35 +668,36 @@ int check_service_notification_viability(service *svc, int type, int options)
 
 	/* is this a hard problem/recovery? */
 	if (svc->state_type == SOFT_STATE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "This service is in a soft state, so we won't send a notification out.\n");
+		LOG_SERVICE_NSR(NSR_SOFT_STATE);
 		return ERROR;
 	}
 
 	/* has this problem already been acknowledged? */
 	if (svc->problem_has_been_acknowledged == TRUE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "This service problem has already been acknowledged, so we won't send a notification out.\n");
+		LOG_SERVICE_NSR(NSR_ACKNOWLEDGED);
 		return ERROR;
 	}
 
 	/* check service notification dependencies */
 	if (check_service_dependencies(svc, NOTIFICATION_DEPENDENCY) == DEPENDENCIES_FAILED) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Service notification dependencies for this service have failed, so we won't sent a notification out.\n");
+		LOG_SERVICE_NSR(NSR_DEPENDENCY_FAILURE);
 		return ERROR;
 	}
 
 	/* check host notification dependencies */
 	if (check_host_dependencies(temp_host, NOTIFICATION_DEPENDENCY) == DEPENDENCIES_FAILED) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Host notification dependencies for this service have failed, so we won't sent a notification out.\n");
+		LOG_SERVICE_NSR(NSR_DEPENDENCY_FAILURE);
 		return ERROR;
 	}
 
 	/* see if we should notify about problems with this service */
 	if (should_notify(svc) == FALSE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We shouldn't notify about %s states for this service.\n", service_state_name(svc->current_state));
+		LOG_SERVICE_NSR(NSR_STATE_DISABLED);
 		return ERROR;
 	}
+
 	if (svc->current_state == STATE_OK && svc->notified_on == 0) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We shouldn't notify about this recovery.\n");
+		LOG_SERVICE_NSR(NSR_RECOVERY_UNNOTIFIED_PROBLEM);
 		return ERROR;
 	}
 
@@ -570,14 +710,14 @@ int check_service_notification_viability(service *svc, int type, int options)
 		first_problem_time = svc->last_time_ok > 0 ? svc->last_time_ok : program_start;
 
 		if (current_time < first_problem_time + (time_t)(svc->first_notification_delay * interval_length)) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Not enough time has elapsed since the service changed to a non-OK state, so we should not notify about this problem yet\n");
+			LOG_SERVICE_NSR(NSR_DELAY);
 			return ERROR;
 		}
 	}
 
 	/* if this service is currently flapping, don't send the notification */
 	if (svc->is_flapping == TRUE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "This service is currently flapping, so we won't send notifications.\n");
+		LOG_SERVICE_NSR(NSR_IS_FLAPPING);
 		return ERROR;
 	}
 
@@ -587,32 +727,32 @@ int check_service_notification_viability(service *svc, int type, int options)
 
 	/* don't notify contacts about this service problem again if the notification interval is set to 0 */
 	if (svc->no_more_notifications == TRUE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We shouldn't re-notify contacts about this service problem.\n");
+		LOG_SERVICE_NSR(NSR_RE_NO_MORE);
 		return ERROR;
 	}
 
 	/* if the host is down or unreachable, don't notify contacts about service failures */
 	if (temp_host->current_state != HOST_UP) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "The host is either down or unreachable, so we won't notify contacts about this service.\n");
+		LOG_SERVICE_NSR(NSR_SERVICE_HOST_DOWN_UNREACHABLE);
 		return ERROR;
 	}
 
 	/* don't notify if we haven't waited long enough since the last time (and the service is not marked as being volatile) */
 	if ((current_time < svc->next_notification) && svc->is_volatile == FALSE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We haven't waited long enough to re-notify contacts about this service.\n");
+		LOG_SERVICE_NSR(NSR_RE_NOT_YET);
 		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Next valid notification time: %s", ctime(&svc->next_notification));
 		return ERROR;
 	}
 
 	/* if this service is currently in a scheduled downtime period, don't send the notification */
 	if (svc->scheduled_downtime_depth > 0) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "This service is currently in a scheduled downtime, so we won't send notifications.\n");
+		LOG_SERVICE_NSR(NSR_IS_SCHEDULED_DOWNTIME);
 		return ERROR;
 	}
 
 	/* if this host is currently in a scheduled downtime period, don't send the notification */
 	if (temp_host->scheduled_downtime_depth > 0) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "The host this service is associated with is currently in a scheduled downtime, so we won't send notifications.\n");
+		LOG_SERVICE_NSR(NSR_SERVICE_HOST_SCHEDULED_DOWNTIME);
 		return ERROR;
 	}
 
@@ -636,19 +776,19 @@ int check_contact_service_notification_viability(contact *cntct, service *svc, i
 
 	/* is this service not important enough? */
 	if (cntct->minimum_value > svc->hourly_value) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Contact's minimum_value is higher than service's hourly value. Notification will be blocked\n");
+		LOG_SERVICE_CONTACT_NSR(NSR_INSUFF_IMPORTANCE);
 		return ERROR;
 	}
 
 	/* are notifications enabled? */
 	if (cntct->service_notifications_enabled == FALSE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Service notifications are disabled for this contact.\n");
+		LOG_SERVICE_CONTACT_NSR(NSR_DISABLED_OBJECT);
 		return ERROR;
 	}
 
 	/* see if the contact can be notified at this time */
 	if (check_time_against_period(time(NULL), cntct->service_notification_period_ptr) == ERROR) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 2, "This contact shouldn't be notified at this time.\n");
+		LOG_SERVICE_CONTACT_NSR(NSR_TIMEPERIOD_BLOCKED);
 		return ERROR;
 	}
 
@@ -668,7 +808,7 @@ int check_contact_service_notification_viability(contact *cntct, service *svc, i
 	if (type == NOTIFICATION_FLAPPINGSTART || type == NOTIFICATION_FLAPPINGSTOP || type == NOTIFICATION_FLAPPINGDISABLED) {
 
 		if ((cntct->service_notification_options & OPT_FLAPPING) == FALSE) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 2, "We shouldn't notify this contact about FLAPPING service events.\n");
+			LOG_SERVICE_CONTACT_NSR(NSR_NO_FLAPPING);
 			return ERROR;
 		}
 
@@ -682,7 +822,7 @@ int check_contact_service_notification_viability(contact *cntct, service *svc, i
 	if (type == NOTIFICATION_DOWNTIMESTART || type == NOTIFICATION_DOWNTIMEEND || type == NOTIFICATION_DOWNTIMECANCELLED) {
 
 		if ((cntct->service_notification_options & OPT_DOWNTIME) == FALSE) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 2, "We shouldn't notify this contact about DOWNTIME service events.\n");
+			LOG_SERVICE_CONTACT_NSR(NSR_NO_DOWNTIME);
 			return ERROR;
 		}
 
@@ -695,19 +835,19 @@ int check_contact_service_notification_viability(contact *cntct, service *svc, i
 
 	/* see if we should notify about problems with this service */
 	if (!(cntct->service_notification_options & (1 << svc->current_state))) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 2, "We shouldn't notify this contact about %s service states.\n", service_state_name(svc->current_state));
+		LOG_SERVICE_CONTACT_NSR(NSR_STATE_DISABLED);
 		return ERROR;
 	}
 
 	if (svc->current_state == STATE_OK) {
 
 		if ((cntct->service_notification_options & OPT_RECOVERY) == FALSE) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 2, "We shouldn't notify this contact about RECOVERY service states.\n");
+			LOG_SERVICE_CONTACT_NSR(NSR_NO_RECOVERY);
 			return ERROR;
 		}
 
 		if (!(svc->notified_on & cntct->service_notification_options)) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 2, "We shouldn't notify about this recovery.\n");
+			LOG_SERVICE_CONTACT_NSR(NSR_RECOVERY_UNNOTIFIED_PROBLEM);
 			return ERROR;
 		}
 	}
@@ -1067,7 +1207,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 	end_time.tv_usec = 0L;
 	neb_result = broker_notification_data(NEBTYPE_NOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, start_time, end_time, (void *)hst, not_author, not_data, escalated, 0, NULL);
 	if (neb_result == NEBERROR_CALLBACKCANCEL || neb_result == NEBERROR_CALLBACKOVERRIDE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 0, "Host notification to %s (id=%u) was blocked by a module.\n", hst->name, hst->id);
+		LOG_HOST_NSR(NSR_NEB_BLOCKED);
 		free_notification_list();
 		return neb_result == NEBERROR_CALLBACKOVERRIDE ? OK : ERROR;
 	}
@@ -1244,8 +1384,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 		/* adjust notification number, since no notification actually went out */
 		if (increment_notification_number == TRUE)
 			hst->current_notification_number--;
-
-		log_debug_info(DEBUGL_NOTIFICATIONS, 0, "No contacts were found for notification purposes.  No notification was sent out.\n");
+		LOG_HOST_NSR(NSR_NO_CONTACTS);
 	}
 
 	/* this gets set in create_notification_list_from_host() */
@@ -1286,15 +1425,14 @@ int check_host_notification_viability(host *hst, int type, int options)
 
 	/* are notifications enabled? */
 	if (enable_notifications == FALSE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Notifications are disabled, so host notifications will not be sent out.\n");
+		LOG_HOST_NSR(NSR_DISABLED);
 		return ERROR;
 	}
 
 	/* see if the host can have notifications sent out at this time */
 	if (check_time_against_period(current_time, hst->notification_period_ptr) == ERROR) {
 
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "This host shouldn't have notifications sent out at this time.\n");
-
+		LOG_HOST_NSR(NSR_TIMEPERIOD_BLOCKED);
 		/* if this is a normal notification, calculate the next acceptable notification time, once the next valid time range arrives... */
 		if (type == NOTIFICATION_NORMAL) {
 
@@ -1316,7 +1454,7 @@ int check_host_notification_viability(host *hst, int type, int options)
 
 	/* are notifications temporarily disabled for this host? */
 	if (hst->notifications_enabled == FALSE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Notifications are temporarily disabled for this host, so we won't send one out.\n");
+		LOG_HOST_NSR(NSR_DISABLED_OBJECT);
 		return ERROR;
 	}
 
@@ -1328,7 +1466,7 @@ int check_host_notification_viability(host *hst, int type, int options)
 	/* custom notifications are good to go at this point... */
 	if (type == NOTIFICATION_CUSTOM) {
 		if (hst->scheduled_downtime_depth > 0) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We shouldn't send custom notification during scheduled downtime.\n");
+			LOG_HOST_NSR(NSR_CUSTOM_SCHED_DOWNTIME);
 			return ERROR;
 		}
 		return OK;
@@ -1345,7 +1483,7 @@ int check_host_notification_viability(host *hst, int type, int options)
 
 		/* don't send an acknowledgement if there isn't a problem... */
 		if (hst->current_state == HOST_UP) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "The host is currently UP, so we won't send an acknowledgement.\n");
+			LOG_HOST_NSR(NSR_ACK_OBJECT_OK);
 			return ERROR;
 		}
 
@@ -1363,13 +1501,13 @@ int check_host_notification_viability(host *hst, int type, int options)
 
 		/* don't send a notification if we're not supposed to... */
 		if (!(hst->notification_options & OPT_FLAPPING)) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We shouldn't notify about FLAPPING events for this host.\n");
+			LOG_HOST_NSR(NSR_NO_FLAPPING);
 			return ERROR;
 		}
 
 		/* don't send notifications during scheduled downtime */
 		if (hst->scheduled_downtime_depth > 0) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We shouldn't notify about FLAPPING events during scheduled downtime.\n");
+			LOG_HOST_NSR(NSR_SCHED_DOWNTIME_FLAPPING);
 			return ERROR;
 		}
 
@@ -1387,13 +1525,13 @@ int check_host_notification_viability(host *hst, int type, int options)
 
 		/* don't send a notification if we're not supposed to... */
 		if ((hst->notification_options & OPT_DOWNTIME) == FALSE) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We shouldn't notify about DOWNTIME events for this host.\n");
+			LOG_HOST_NSR(NSR_NO_DOWNTIME);
 			return ERROR;
 		}
 
 		/* don't send notifications during scheduled downtime */
 		if (hst->scheduled_downtime_depth > 0) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We shouldn't notify about DOWNTIME events during scheduled downtime!\n");
+			LOG_HOST_NSR(NSR_SCHED_DOWNTIME_DOWNTIME);
 			return ERROR;
 		}
 
@@ -1408,35 +1546,35 @@ int check_host_notification_viability(host *hst, int type, int options)
 
 	/* is this a hard problem/recovery? */
 	if (hst->state_type == SOFT_STATE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "This host is in a soft state, so we won't send a notification out.\n");
+		LOG_HOST_NSR(NSR_SOFT_STATE);
 		return ERROR;
 	}
 
 	/* has this problem already been acknowledged? */
 	if (hst->problem_has_been_acknowledged == TRUE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "This host problem has already been acknowledged, so we won't send a notification out!\n");
+		LOG_HOST_NSR(NSR_ACKNOWLEDGED);
 		return ERROR;
 	}
 
 	/* check notification dependencies */
 	if (check_host_dependencies(hst, NOTIFICATION_DEPENDENCY) == DEPENDENCIES_FAILED) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Notification dependencies for this host have failed, so we won't sent a notification out!\n");
+		LOG_HOST_NSR(NSR_DEPENDENCY_FAILURE);
 		return ERROR;
 	}
 
 	/* see if we should notify about problems with this host */
 	if ((hst->notification_options & (1 << hst->current_state)) == FALSE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We shouldn't notify about %s status for this host.\n", host_state_name(hst->current_state));
+		LOG_HOST_NSR(NSR_STATE_DISABLED);
 		return ERROR;
 	}
 	if (hst->current_state == HOST_UP) {
 
 		if ((hst->notification_options & OPT_RECOVERY) == FALSE) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We shouldn't notify about RECOVERY states for this host.\n");
+			LOG_HOST_NSR(NSR_NO_RECOVERY);
 			return ERROR;
 		}
 		if (!hst->notified_on) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We shouldn't notify about this recovery.\n");
+			LOG_HOST_NSR(NSR_RECOVERY_UNNOTIFIED_PROBLEM);
 			return ERROR;
 		}
 
@@ -1450,14 +1588,14 @@ int check_host_notification_viability(host *hst, int type, int options)
 		first_problem_time = hst->last_time_up > 0 ? hst->last_time_up : program_start;
 
 		if (current_time < first_problem_time + (time_t)(hst->first_notification_delay * interval_length)) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Not enough time has elapsed since the host changed to a non-UP state (or since program start), so we shouldn't notify about this problem yet.\n");
+			LOG_HOST_NSR(NSR_DELAY);
 			return ERROR;
 		}
 	}
 
 	/* if this host is currently flapping, don't send the notification */
 	if (hst->is_flapping == TRUE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "This host is currently flapping, so we won't send notifications.\n");
+		LOG_HOST_NSR(NSR_IS_FLAPPING);
 		return ERROR;
 	}
 
@@ -1467,19 +1605,19 @@ int check_host_notification_viability(host *hst, int type, int options)
 
 	/* if this host is currently in a scheduled downtime period, don't send the notification */
 	if (hst->scheduled_downtime_depth > 0) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "This host is currently in a scheduled downtime, so we won't send notifications.\n");
+		LOG_HOST_NSR(NSR_IS_SCHEDULED_DOWNTIME);
 		return ERROR;
 	}
 
 	/* check if we shouldn't renotify contacts about the host problem */
 	if (hst->no_more_notifications == TRUE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "We shouldn't re-notify contacts about this host problem.\n");
+		LOG_HOST_NSR(NSR_RE_NO_MORE);
 		return ERROR;
 	}
 
 	/* check if its time to re-notify the contacts about the host... */
 	if (current_time < hst->next_notification) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Its not yet time to re-notify the contacts about this host problem...\n");
+		LOG_HOST_NSR(NSR_RE_NOT_YET);
 		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Next acceptable notification time: %s", ctime(&hst->next_notification));
 		return ERROR;
 	}
@@ -1504,19 +1642,19 @@ int check_contact_host_notification_viability(contact *cntct, host *hst, int typ
 
 	/* are notifications enabled? */
 	if (cntct->host_notifications_enabled == FALSE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Host notifications are disabled for this contact.\n");
+		LOG_HOST_CONTACT_NSR(NSR_DISABLED_OBJECT);
 		return ERROR;
 	}
 
 	/* is this host important enough? */
 	if (cntct->minimum_value > hst->hourly_value && cntct->minimum_value > hst->hourly_value + host_services_value(hst)) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Contact's minimum_value is greater than that of the host and all its services. Notification will be blocked\n");
+		LOG_HOST_CONTACT_NSR(NSR_INSUFF_IMPORTANCE);
 		return ERROR;
 	}
 
 	/* see if the contact can be notified at this time */
 	if (check_time_against_period(time(NULL), cntct->host_notification_period_ptr) == ERROR) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 2, "This contact shouldn't be notified at this time.\n");
+		LOG_HOST_CONTACT_NSR(NSR_TIMEPERIOD_BLOCKED);
 		return ERROR;
 	}
 
@@ -1537,7 +1675,7 @@ int check_contact_host_notification_viability(contact *cntct, host *hst, int typ
 	if (type == NOTIFICATION_FLAPPINGSTART || type == NOTIFICATION_FLAPPINGSTOP || type == NOTIFICATION_FLAPPINGDISABLED) {
 
 		if ((cntct->host_notification_options & OPT_FLAPPING) == FALSE) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 2, "We shouldn't notify this contact about FLAPPING host events.\n");
+			LOG_HOST_CONTACT_NSR(NSR_NO_FLAPPING);
 			return ERROR;
 		}
 
@@ -1552,7 +1690,7 @@ int check_contact_host_notification_viability(contact *cntct, host *hst, int typ
 	if (type == NOTIFICATION_DOWNTIMESTART || type == NOTIFICATION_DOWNTIMEEND || type == NOTIFICATION_DOWNTIMECANCELLED) {
 
 		if (flag_isset(cntct->host_notification_options, OPT_DOWNTIME) == FALSE) {
-			log_debug_info(DEBUGL_NOTIFICATIONS, 2, "We shouldn't notify this contact about DOWNTIME host events.\n");
+			LOG_HOST_CONTACT_NSR(NSR_NO_DOWNTIME);
 			return ERROR;
 		}
 
@@ -1566,12 +1704,12 @@ int check_contact_host_notification_viability(contact *cntct, host *hst, int typ
 
 	/* see if we should notify about problems with this host */
 	if (flag_isset(cntct->host_notification_options, 1 << hst->current_state) == FALSE) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 2, "We shouldn't notify this contact about %s states.\n", host_state_name(hst->current_state));
+		LOG_HOST_CONTACT_NSR(NSR_STATE_DISABLED);
 		return ERROR;
 	}
 
 	if (hst->current_state == HOST_UP && hst->notified_on == 0) {
-		log_debug_info(DEBUGL_NOTIFICATIONS, 2, "We shouldn't notify about this recovery.\n");
+		LOG_HOST_CONTACT_NSR(NSR_RECOVERY_UNNOTIFIED_PROBLEM);
 		return ERROR;
 	}
 
