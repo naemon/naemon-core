@@ -6,9 +6,9 @@ use warnings;
 use strict;
 use Test::More;
 
-my $naemon = "$ENV{builddir}/../naemon/naemon";
-my $etc = "$ENV{builddir}/etc";
-my $precache = "$ENV{builddir}/var/objects.precache";
+my $naemon = "$ENV{builddir}/src/naemon/naemon";
+my $etc = "$ENV{builddir}/t/etc";
+my $precache = "$ENV{builddir}/t/var/objects.precache";
 
 plan tests => 4;
 

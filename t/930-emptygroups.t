@@ -8,8 +8,8 @@ use warnings;
 use strict;
 use Test::More;
 
-my $naemon = "$ENV{builddir}/../naemon/naemon";
-my $etc = "$ENV{builddir}/etc";
+my $naemon = "$ENV{builddir}/src/naemon/naemon";
+my $etc = "$ENV{builddir}/t/etc";
 
 plan tests => 1;
 

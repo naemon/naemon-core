@@ -6,9 +6,9 @@ use warnings;
 use strict;
 use Test::More;
 
-my $naemonstats = "$ENV{builddir}/../naemon/naemonstats";
-my $etc = "$ENV{builddir}/etc";
-my $var = "$ENV{builddir}/var";
+my $naemonstats = "$ENV{builddir}/src/naemon/naemonstats";
+my $etc = "$ENV{builddir}/t/etc";
+my $var = "$ENV{builddir}/t/var";
 
 plan tests => 10;
 
