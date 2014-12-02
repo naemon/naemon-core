@@ -200,8 +200,10 @@ static void destroy_job(child_process *cp)
 
 	kvvec_destroy(cp->request, KVVEC_FREE_ALL);
 	free(cp->cmd);
+	cp->cmd = NULL;
 
 	free(cp->ei);
+	cp->ei = NULL;
 	free(cp);
 }
 
@@ -340,6 +342,7 @@ static void kill_job(child_process *cp, int reason)
 {
 	int ret, status, reaped = 0;
 	int pid = cp ? cp->ei->pid : 0;
+	int id = cp->id;
 
 	/*
 	 * first attempt at reaping, so see if we just failed to
@@ -347,7 +350,7 @@ static void kill_job(child_process *cp, int reason)
 	 */
 	if (reason == ETIME && !check_completion(cp, WNOHANG)) {
 		timeouts++;
-		wlog("job %d with pid %d reaped at timeout. timeouts=%u; started=%u", cp->id, pid, timeouts, started);
+		wlog("job %d with pid %d reaped at timeout. timeouts=%u; started=%u", id, pid, timeouts, started);
 		return;
 	}
 
