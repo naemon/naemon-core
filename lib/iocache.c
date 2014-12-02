@@ -207,7 +207,7 @@ int iocache_add(iocache *ioc, char *buf, unsigned int len)
 	if (!ioc || iocache_capacity(ioc) < len)
 		return -1;
 
-	memcpy(ioc->ioc_buf + ioc->ioc_offset, buf, len);
+	memcpy(ioc->ioc_buf + ioc->ioc_buflen, buf, len);
 	ioc->ioc_buflen += len;
 	return ioc->ioc_buflen - ioc->ioc_offset;
 }
@@ -220,7 +220,7 @@ int iocache_add(iocache *ioc, char *buf, unsigned int len)
  */
 int iocache_sendto(iocache *ioc, int fd, char *buf, unsigned int len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen)
 {
-	int sent;
+	unsigned int sent = 0;
 
 	errno = 0;
 	if (!ioc)
@@ -229,26 +229,36 @@ int iocache_sendto(iocache *ioc, int fd, char *buf, unsigned int len, int flags,
 	if (!ioc->ioc_buflen && !len)
 		return 0;
 
-	if (ioc->ioc_buf && iocache_available(ioc)) {
-		if (buf && len) {
-			/* copy buf and len to iocache buffer to use just one write */
-			if (iocache_capacity(ioc) < len) {
-				if (iocache_grow(ioc, iocache_size(ioc)) < 0)
-					return -1;
-			}
-			if (iocache_add(ioc, buf, len) < 0)
+	if (buf && len) {
+		/* copy buf and len to iocache buffer to use just one write */
+		if (iocache_capacity(ioc) < len) {
+			if (iocache_grow(ioc, iocache_size(ioc)) < 0)
 				return -1;
 		}
-		buf = ioc->ioc_buf;
+		if (iocache_add(ioc, buf, len) < 0)
+			return -1;
+	}
+	buf = ioc->ioc_buf + ioc->ioc_offset;
+	len = iocache_available(ioc);
+
+	while (len) {
+		int new_sent = sendto(fd, buf, len, flags, dest_addr, addrlen);
+		if (new_sent < 0) {
+			if (errno == EINTR) {
+				continue;
+			} else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+				/* will be retried when the next job is executed, so don't
+				 * return error */
+				return sent;
+			}
+			return -errno;
+		}
+		sent += new_sent;
+
+		iocache_use_size(ioc, new_sent);
+		buf = ioc->ioc_buf + ioc->ioc_offset;
 		len = iocache_available(ioc);
 	}
-
-	sent = sendto(fd, buf, len, flags, dest_addr, addrlen);
-	if (sent < 1)
-		return -errno;
-
-	if (iocache_available(ioc))
-		iocache_use_size(ioc, sent);
 
 	return sent;
 }
