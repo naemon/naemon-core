@@ -630,21 +630,16 @@ static int receive_command(int sd, int events, void *arg)
 	}
 	ioc_ret = iocache_read(ioc, sd);
 
-	/* master closed the connection, so we exit */
 	if (ioc_ret == 0) {
 		iobroker_close(iobs, sd);
 		exit_worker(0, NULL);
-	}
-	if (ioc_ret < 0) {
-		/* XXX: handle this somehow */
+	} else if (ioc_ret < 0) {
+		if (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
+			iobroker_close(iobs, sd);
+			exit_worker(0, NULL);
+		}
 	}
 
-#if 0
-	/* debug-volley */
-	buf = iocache_use_size(ioc, ioc_ret);
-	nsock_write_all(master_sd, buf, ioc_ret);
-	return 0;
-#endif
 	/*
 	 * now loop over all inbound messages in the iocache.
 	 * Since KV_TERMINATOR is a nul-byte, they're separated by 3 nuls
