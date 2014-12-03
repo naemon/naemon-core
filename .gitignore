@@ -34,10 +34,9 @@ core.[1-9]*
 /config.h.in
 depcomp
 aclocal.m4
-/compile
+compile
 /stamp-h1
-/missing
-/stamp-h1
+missing
 /test-driver
 libtool
 ltmain.sh
