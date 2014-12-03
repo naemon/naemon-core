@@ -1423,6 +1423,7 @@ void setup_sighandler(void)
 	signal(SIGTERM, sighandler);
 	signal(SIGHUP, sighandler);
 	signal(SIGUSR1, sighandler);
+	signal(SIGINT, sighandler);
 
 	return;
 }
@@ -1439,6 +1440,7 @@ void reset_sighandler(void)
 	signal(SIGPIPE, SIG_DFL);
 	signal(SIGXFSZ, SIG_DFL);
 	signal(SIGUSR1, SIG_DFL);
+	signal(SIGINT, SIG_DFL);
 
 	return;
 }
@@ -1457,6 +1459,7 @@ void sighandler(int sig)
 	case SIGUSR1: sigrotate = TRUE; break;
 	case SIGQUIT: /* fallthrough */
 	case SIGTERM: /* fallthrough */
+	case SIGINT: /* fallthrough */
 	case SIGPIPE: sigshutdown = TRUE; break;
 	}
 
