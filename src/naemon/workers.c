@@ -201,7 +201,6 @@ static int wproc_destroy(struct wproc_worker *wp, int flags)
 
 	self = getpid();
 
-	/* master retains workers through restarts */
 	if (self == nagios_pid && !force)
 		return 0;
 
