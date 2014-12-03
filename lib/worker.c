@@ -72,7 +72,8 @@ static void wlog(const char *fmt, ...)
 {
 	va_list ap;
 	static char lmsg[8192] = "log=";
-	int len = 4, to_send;
+	int len = 4;
+	size_t to_send;
 
 	va_start(ap, fmt);
 	len = vsnprintf(&lmsg[len], sizeof(lmsg) - 7, fmt, ap);
@@ -141,7 +142,7 @@ int worker_send_kvvec(int sd, struct kvvec *kvv)
 		return -1;
 
 	/* bufsize, not buflen, as it gets us the delimiter */
-	ret = write(sd, kvvb->buf, kvvb->bufsize);
+	ret = nsock_write_all(sd, kvvb->buf, (size_t)kvvb->bufsize);
 	free(kvvb->buf);
 	free(kvvb);
 
