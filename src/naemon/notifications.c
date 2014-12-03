@@ -945,7 +945,7 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 		nj->hst = svc->host_ptr;
 		nj->svc = svc;
 		if(ERROR == wproc_run_callback(processed_command, notification_timeout, notification_handle_job_result, nj, mac)) {
-			nm_log(NSLOG_RUNTIME_ERROR, "Unable to send notification for service '%s on host '%s' to worker\n", svc->description, svc->host_ptr->name);
+			nm_log(NSLOG_RUNTIME_ERROR, "wproc: Unable to send notification for service '%s on host '%s' to worker\n", svc->description, svc->host_ptr->name);
 			free(nj);
 		}
 
@@ -1795,7 +1795,7 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 		nj->hst = hst;
 		nj->svc = NULL;
 		if(ERROR == wproc_run_callback(processed_command, notification_timeout, notification_handle_job_result, nj, mac)) {
-			nm_log(NSLOG_RUNTIME_ERROR, "Unable to send notification for host '%s' to worker\n", hst->name);
+			nm_log(NSLOG_RUNTIME_ERROR, "wproc: Unable to send notification for host '%s' to worker\n", hst->name);
 			free(nj);
 		}
 
