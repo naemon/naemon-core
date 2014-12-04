@@ -86,7 +86,7 @@ static void wlog(const char *fmt, ...)
 	to_send = len + MSG_DELIM_LEN + 1;
 	lmsg[len] = 0;
 	memcpy(&lmsg[len + 1], MSG_DELIM, MSG_DELIM_LEN);
-	if (nsock_write_all(master_sd, lmsg, to_send) < 0) {
+	if (write(master_sd, lmsg, to_send) < 0) {
 		if (errno == EPIPE) {
 			/* master has died or abandoned us, so exit */
 			exit_worker(1, "Failed to write() to master");
@@ -141,7 +141,7 @@ int worker_send_kvvec(int sd, struct kvvec *kvv)
 		return -1;
 
 	/* bufsize, not buflen, as it gets us the delimiter */
-	ret = nsock_write_all(sd, kvvb->buf, kvvb->bufsize);
+	ret = write(sd, kvvb->buf, kvvb->bufsize);
 	free(kvvb->buf);
 	free(kvvb);
 
