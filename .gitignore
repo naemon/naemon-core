@@ -41,6 +41,7 @@ aclocal.m4
 /test-driver
 libtool
 ltmain.sh
+.dirstamp
 naemon/defaults.h
 m4/
 naemon-uninstalled.pc
