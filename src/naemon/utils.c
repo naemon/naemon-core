@@ -2350,6 +2350,8 @@ const char *get_program_modification_date(void)
 /* do some cleanup before we exit */
 void cleanup(void)
 {
+	/* free event queue data */
+	destroy_event_queue();
 
 #ifdef USE_EVENT_BROKER
 	/* unload modules */
@@ -2380,9 +2382,6 @@ void free_memory(nagios_macros *mac)
 
 	/* free memory allocated to comments */
 	free_comment_data();
-
-	/* free event queue data */
-	destroy_event_queue();
 
 	/* free memory for global event handlers */
 	nm_free(global_host_event_handler);
