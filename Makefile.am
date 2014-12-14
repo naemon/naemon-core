@@ -55,7 +55,7 @@ pkginclude_HEADERS = \
 	src/naemon/sehandlers.h		src/naemon/common.h         src/naemon/logging.h		src/naemon/nebmodules.h \
 	src/naemon/shared.h			src/naemon/configuration.h  src/naemon/macros.h			src/naemon/nebstructs.h \
 	src/naemon/sretention.h		src/naemon/defaults.h       src/naemon/naemon.h			src/naemon/nerd.h \
-	src/naemon/statusdata.h		src/naemon/downtime.h       src/naemon/naemonstats.h	src/naemon/notifications.h \
+	src/naemon/statusdata.h		src/naemon/downtime.h       src/naemonstats/naemonstats.h	src/naemon/notifications.h \
 	src/naemon/utils.h			src/naemon/buildopts.h      src/naemon/nm_alloc.h
 
 common_sources = \
@@ -100,11 +100,11 @@ common_sources = \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = naemon.pc
 
-bin_PROGRAMS = src/naemon/naemon src/naemon/naemonstats src/naemon/shadownaemon
+bin_PROGRAMS = src/naemon/naemon src/naemonstats/naemonstats src/shadownaemon/shadownaemon
 manpages: $(bin_PROGRAMS)
 	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "monitoring core"                          ./src/naemon/naemon       > naemon.8
-	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "gather statistics from naemon core"       ./src/naemon/naemonstats  > naemonstats.8
-	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "shadow remote cores via livestatus"       ./src/naemon/shadownaemon > shadownaemon.8
+	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "gather statistics from naemon core"       ./src/naemonstats/naemonstats  > naemonstats.8
+	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "shadow remote cores via livestatus"       ./src/shadownaemon/shadownaemon > shadownaemon.8
 
 all-local: manpages
 
@@ -117,12 +117,12 @@ src_naemon_naemon_CPPFLAGS = $(AM_CPPFLAGS) -DPREFIX='"$(prefix)"'
 src_naemon_naemon_LDADD = libnaemon.la -lm -ldl
 src_naemon_naemon_LDFLAGS = -rdynamic
 
-src_naemon_naemonstats_SOURCES = src/naemon/naemonstats.c src/naemon/buildopts.h src/naemon/defaults.h src/naemon/defaults.c
-src_naemon_naemonstats_LDADD = libnaemon.la
+src_naemonstats_naemonstats_SOURCES = src/naemonstats/naemonstats.c src/naemon/buildopts.h src/naemon/defaults.h src/naemon/defaults.c src/naemon/common.h
+src_naemonstats_naemonstats_LDADD = libnaemon.la
 
-src_naemon_shadownaemon_SOURCES = src/naemon/shadownaemon.c src/naemon/shadownaemon.h $(common_sources)
-src_naemon_shadownaemon_LDADD = libnaemon.la -lm -ldl
-src_naemon_shadownaemon_LDFLAGS = -rdynamic
+src_shadownaemon_shadownaemon_SOURCES = src/shadownaemon/shadownaemon.c src/shadownaemon/shadownaemon.h $(common_sources)
+src_shadownaemon_shadownaemon_LDADD = libnaemon.la -lm -ldl
+src_shadownaemon_shadownaemon_LDFLAGS = -rdynamic
 
 LDADD = -lnaemon
 lib_LTLIBRARIES = libnaemon.la

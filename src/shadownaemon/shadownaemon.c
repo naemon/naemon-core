@@ -6,7 +6,7 @@
  */
 
 #include "shadownaemon.h"
-#include "nm_alloc.h"
+#include <naemon/nm_alloc.h>
 #include <libgen.h>
 
 static int verbose                         = FALSE;
