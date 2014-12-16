@@ -37,7 +37,7 @@ static struct {
 	const char *source_name;
 	int pid;
 	int sd;
-	iocache *ioc;
+	nm_bufferqueue *bq;
 } command_worker = { "command file", "command file worker", 0, 0, NULL };
 
 
@@ -122,8 +122,8 @@ int shutdown_command_file_worker(void)
 	if (!command_worker.pid)
 		return 0;
 
-	iocache_destroy(command_worker.ioc);
-	command_worker.ioc = NULL;
+	nm_bufferqueue_destroy(command_worker.bq);
+	command_worker.bq = NULL;
 	iobroker_close(nagios_iobs, command_worker.sd);
 	command_worker.sd = -1;
 	kill(command_worker.pid, SIGKILL);
@@ -139,7 +139,7 @@ static int command_input_handler(int sd, int events, void *discard)
 	char *buf;
 	unsigned long size;
 
-	ret = iocache_read(command_worker.ioc, sd);
+	ret = nm_bufferqueue_read(command_worker.bq, sd);
 	log_debug_info(DEBUGL_COMMANDS, 2, "Read %d bytes from command worker\n", ret);
 	if (ret == 0) {
 		nm_log(NSLOG_RUNTIME_WARNING, "Command file worker seems to have died. Respawning\n");
@@ -147,8 +147,8 @@ static int command_input_handler(int sd, int events, void *discard)
 		launch_command_file_worker();
 		return 0;
 	}
-	while ((buf = iocache_use_delim(command_worker.ioc, "\n", 1, &size))) {
-		buf[size] = 0;
+	while (!nm_bufferqueue_unshift_to_delim(command_worker.bq, "\n", 1, &size, (void **)&buf)) {
+		buf[size - 1] = 0;
 		if (buf[0] == '[') {
 			/* raw external command */
 			log_debug_info(DEBUGL_COMMANDS, 1, "Read raw external command '%s'\n", buf);
@@ -156,7 +156,7 @@ static int command_input_handler(int sd, int events, void *discard)
 		if ((cmd_ret = process_external_command1(buf)) != CMD_ERROR_OK) {
 			nm_log(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING, "External command error: %s\n", cmd_error_strerror(cmd_ret));
 		}
-
+		free(buf);
 	}
 	return 0;
 }
@@ -165,20 +165,18 @@ static int command_input_handler(int sd, int events, void *discard)
 /* main controller of command file helper process */
 static int command_file_worker(int sd)
 {
-	iocache *ioc;
+	nm_bufferqueue *bq;
 
 	if (open_command_file() == ERROR)
 		return (EXIT_FAILURE);
 
-	ioc = iocache_create(65536);
-	if (!ioc)
+	bq = nm_bufferqueue_create();
+	if (!bq)
 		exit(EXIT_FAILURE);
 
 	while (1) {
 		struct pollfd pfd;
 		int pollval, ret;
-		char *buf;
-		unsigned long size;
 
 		/* if our master has gone away, we need to die */
 		if (kill(nagios_pid, 0) < 0 && errno == ESRCH) {
@@ -207,21 +205,15 @@ static int command_file_worker(int sd)
 		}
 
 		errno = 0;
-		ret = iocache_read(ioc, command_file_fd);
+		ret = nm_bufferqueue_read(bq, command_file_fd);
 		if (ret < 1) {
 			if (errno == EINTR)
 				continue;
 			return EXIT_FAILURE;
 		}
 
-		size = iocache_available(ioc);
-		buf = iocache_use_size(ioc, size);
-		ret = write(sd, buf, size);
-		/*
-		 * @todo Add libio to get io_write_all(), which handles
-		 * EINTR and EAGAIN properly instead of just exiting.
-		 */
-		if (ret < 0 && errno != EINTR)
+		ret = nm_bufferqueue_write(bq, sd);
+		if (ret < 0 && ret != EAGAIN && ret != EWOULDBLOCK)
 			return EXIT_FAILURE;
 	} /* while(1) */
 }
@@ -255,8 +247,8 @@ int launch_command_file_worker(void)
 	}
 
 	if (command_worker.pid) {
-		command_worker.ioc = iocache_create(512 * 1024);
-		if (!command_worker.ioc) {
+		command_worker.bq = nm_bufferqueue_create();
+		if (!command_worker.bq) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Failed to create I/O cache for command file worker: %m\n");
 			goto err_close;
 		}
@@ -266,7 +258,7 @@ int launch_command_file_worker(void)
 		if (ret < 0) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Failed to register command file worker socket %d with io broker %p: %s; errno=%d: %s\n",
 			       command_worker.sd, nagios_iobs, iobroker_strerror(ret), errno, strerror(errno));
-			iocache_destroy(command_worker.ioc);
+			nm_bufferqueue_destroy(command_worker.bq);
 			goto err_close;
 		}
 		nm_log(NSLOG_INFO_MESSAGE, "Successfully launched command file worker with pid %d\n",
@@ -1840,7 +1832,6 @@ static int service_command_handler(const struct external_command *ext_command, t
 {
 	struct service *target_service = NULL;
 	unsigned long downtime_id = 0L;
-	time_t preferred_time = 0L;
 	time_t old_interval = 0L;
 
 	if (ext_command->id != CMD_DEL_SVC_COMMENT)
@@ -3233,7 +3224,6 @@ void disable_service_checks(service *svc)
 /* enables a service check */
 void enable_service_checks(service *svc)
 {
-	time_t preferred_time = 0L;
 	unsigned long attr = MODATTR_ACTIVE_CHECKS_ENABLED;
 
 	if (svc->checks_enabled == TRUE)
@@ -4288,7 +4278,6 @@ void disable_host_checks(host *hst)
 /* enables checks of a particular host */
 void enable_host_checks(host *hst)
 {
-	time_t preferred_time = 0L;
 	unsigned long attr = MODATTR_ACTIVE_CHECKS_ENABLED;
 
 	/* checks are already enabled */
