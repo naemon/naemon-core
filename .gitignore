@@ -38,7 +38,7 @@ aclocal.m4
 /stamp-h1
 /missing
 /stamp-h1
-/test-driver
+/test-*
 libtool
 ltmain.sh
 .dirstamp
@@ -49,3 +49,5 @@ naemon.pc
 naemon.log
 /Debug
 *.8
+*.log
+*.trs
