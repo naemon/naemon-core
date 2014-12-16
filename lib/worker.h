@@ -115,17 +115,6 @@ extern int send_kvvec(int sd, struct kvvec *kvv)
 extern char *worker_ioc2msg(iocache *ioc, unsigned long *size, int flags);
 
 /**
- * Parse a worker message to a preallocated key/value vector
- *
- * @param[in] kvv Key/value vector to fill
- * @param[in] buf The buffer to parse
- * @param[in] len Length of 'buf'
- * @param[in] kvv_flags Flags for buf2kvvec()
- * @return 0 on success, < 0 on errors
- */
-extern int worker_buf2kvvec_prealloc(struct kvvec *kvv, char *buf, unsigned long len, int kvv_flags);
-
-/**
  * Set some common socket options
  * @param[in] sd The socket to set options for
  * @param[in] bufsize Size to set send and receive buffers to
