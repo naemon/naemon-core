@@ -73,10 +73,6 @@ NAGIOS_END_DECL
 #define STATE_UP                0
 #define STATE_DOWN              1
 #define STATE_UNREACHABLE       2
-/* for legacy reasons */
-#define HOST_UP              STATE_UP
-#define HOST_DOWN            STATE_DOWN
-#define HOST_UNREACHABLE     STATE_UNREACHABLE
 
 /***************************** COMMANDS *********************************/
 

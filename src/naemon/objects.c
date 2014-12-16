@@ -214,9 +214,9 @@ const char *service_state_name(int state)
 const char *host_state_name(int state)
 {
 	switch (state) {
-	case HOST_UP: return "UP";
-	case HOST_DOWN: return "DOWN";
-	case HOST_UNREACHABLE: return "UNREACHABLE";
+	case STATE_UP: return "UP";
+	case STATE_DOWN: return "DOWN";
+	case STATE_UNREACHABLE: return "UNREACHABLE";
 	}
 
 	return "(unknown)";
@@ -622,7 +622,7 @@ host *add_host(char *name, char *display_name, char *alias, char *address, char 
 	new_host->last_hard_state = initial_state;
 	new_host->check_type = CHECK_TYPE_ACTIVE;
 	new_host->should_be_scheduled = TRUE;
-	new_host->current_attempt = (initial_state == HOST_UP) ? 1 : max_attempts;
+	new_host->current_attempt = (initial_state == STATE_UP) ? 1 : max_attempts;
 	new_host->state_type = HARD_STATE;
 	new_host->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
 	new_host->notifications_enabled = (notifications_enabled > 0) ? TRUE : FALSE;
@@ -2949,9 +2949,9 @@ void fcache_host(FILE *fp, host *temp_host)
 	if (temp_host->notification_period)
 		fprintf(fp, "\tnotification_period\t%s\n", temp_host->notification_period);
 	fprintf(fp, "\tinitial_state\t");
-	if (temp_host->initial_state == HOST_DOWN)
+	if (temp_host->initial_state == STATE_DOWN)
 		fprintf(fp, "d\n");
-	else if (temp_host->initial_state == HOST_UNREACHABLE)
+	else if (temp_host->initial_state == STATE_UNREACHABLE)
 		fprintf(fp, "u\n");
 	else
 		fprintf(fp, "o\n");

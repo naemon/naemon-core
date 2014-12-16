@@ -528,11 +528,11 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 
 		/* OK states means the host is UP */
 		if (result == STATE_OK)
-			result = HOST_UP;
+			result = STATE_UP;
 
 		/* any problem state indicates the host is not UP */
 		else
-			result = HOST_DOWN;
+			result = STATE_DOWN;
 	}
 
 
@@ -642,16 +642,16 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 
 
 	/******* HOST WAS DOWN/UNREACHABLE INITIALLY *******/
-	if (hst->current_state != HOST_UP) {
+	if (hst->current_state != STATE_UP) {
 
 		log_debug_info(DEBUGL_CHECKS, 1, "Host was %s.\n", host_state_name(hst->current_state));
 
 		/***** HOST IS NOW UP *****/
 		/* the host just recovered! */
-		if (new_state == HOST_UP) {
+		if (new_state == STATE_UP) {
 
 			/* set the current state */
-			hst->current_state = HOST_UP;
+			hst->current_state = STATE_UP;
 
 			/* set the state type */
 			/* set state type to HARD for passive checks and active checks that were previously in a HARD STATE */
@@ -667,7 +667,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 			log_debug_info(DEBUGL_CHECKS, 1, "Propagating checks to parent host(s)...\n");
 			for (temp_hostsmember = hst->parent_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
 				parent_host = temp_hostsmember->host_ptr;
-				if (parent_host->current_state != HOST_UP) {
+				if (parent_host->current_state != STATE_UP) {
 					log_debug_info(DEBUGL_CHECKS, 1, "Check of parent host '%s' queued.\n", parent_host->name);
 					schedule_next_host_check(parent_host, 0, CHECK_OPTION_NONE);
 				}
@@ -678,7 +678,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 			log_debug_info(DEBUGL_CHECKS, 1, "Propagating checks to child host(s)...\n");
 			for (temp_hostsmember = hst->child_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
 				child_host = temp_hostsmember->host_ptr;
-				if (child_host->current_state != HOST_UP) {
+				if (child_host->current_state != STATE_UP) {
 					log_debug_info(DEBUGL_CHECKS, 1, "Check of child host '%s' queued.\n", child_host->name);
 					schedule_next_host_check(child_host, 0, CHECK_OPTION_NONE);
 				}
@@ -732,12 +732,12 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 
 		/***** HOST IS STILL UP *****/
 		/* either the host never went down since last check */
-		if (new_state == HOST_UP) {
+		if (new_state == STATE_UP) {
 
 			log_debug_info(DEBUGL_CHECKS, 1, "Host is still UP.\n");
 
 			/* set current state and state type */
-			hst->current_state = HOST_UP;
+			hst->current_state = STATE_UP;
 			hst->state_type = HARD_STATE;
 		}
 
@@ -776,7 +776,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 
 			for (temp_hostsmember = hst->parent_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
 				parent_host = temp_hostsmember->host_ptr;
-				if (parent_host->current_state == HOST_UP) {
+				if (parent_host->current_state == STATE_UP) {
 					schedule_next_host_check(parent_host, 0, CHECK_OPTION_NONE);
 					log_debug_info(DEBUGL_CHECKS, 1, "Check of host '%s' queued.\n", parent_host->name);
 				}
@@ -787,7 +787,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 			log_debug_info(DEBUGL_CHECKS, 1, "Propagating checks to immediate non-UNREACHABLE child hosts...\n");
 			for (temp_hostsmember = hst->child_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
 				child_host = temp_hostsmember->host_ptr;
-				if (child_host->current_state != HOST_UNREACHABLE) {
+				if (child_host->current_state != STATE_UNREACHABLE) {
 					log_debug_info(DEBUGL_CHECKS, 1, "Check of child host '%s' queued.\n", child_host->name);
 					schedule_next_host_check(child_host, 0, CHECK_OPTION_NONE);
 				}
@@ -841,7 +841,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 	check_for_host_flapping(hst, TRUE, TRUE, TRUE);
 
 	/* If there is a problem, and the state still is soft, use retry interval  */
-	if (hst->current_state != HOST_UP && hst->state_type == SOFT_STATE) {
+	if (hst->current_state != STATE_UP && hst->state_type == SOFT_STATE) {
 		if (hst->retry_interval != 0.0) {
 			schedule_next_host_check(hst, hst->retry_interval * interval_length, CHECK_OPTION_NONE);
 		}
@@ -864,7 +864,7 @@ static int adjust_host_check_attempt(host *hst, int is_active)
 		hst->current_attempt = 1;
 
 	/* if host is in a soft UP state, reset current attempt number (active checks only) */
-	else if (is_active == TRUE && hst->state_type == SOFT_STATE && hst->current_state == HOST_UP)
+	else if (is_active == TRUE && hst->state_type == SOFT_STATE && hst->current_state == STATE_UP)
 		hst->current_attempt = 1;
 
 	/* increment current attempt number */
@@ -894,13 +894,13 @@ static int handle_host_state(host *hst, int *alert_recorded)
 
 	/* record the time the last state ended */
 	switch (hst->last_state) {
-	case HOST_UP:
+	case STATE_UP:
 		hst->last_time_up = current_time;
 		break;
-	case HOST_DOWN:
+	case STATE_DOWN:
 		hst->last_time_down = current_time;
 		break;
-	case HOST_UNREACHABLE:
+	case STATE_UNREACHABLE:
 		hst->last_time_unreachable = current_time;
 		break;
 	default:
@@ -908,7 +908,7 @@ static int handle_host_state(host *hst, int *alert_recorded)
 	}
 
 	/* has the host state changed? */
-	if (hst->last_state != hst->current_state || (hst->current_state == HOST_UP && hst->state_type == SOFT_STATE))
+	if (hst->last_state != hst->current_state || (hst->current_state == STATE_UP && hst->state_type == SOFT_STATE))
 		state_change = TRUE;
 
 	if (hst->current_attempt >= hst->max_attempts && hst->last_hard_state != hst->current_state)
@@ -932,7 +932,7 @@ static int handle_host_state(host *hst, int *alert_recorded)
 
 			/* remove any non-persistant comments associated with the ack */
 			delete_host_acknowledgement_comments(hst);
-		} else if (hst->acknowledgement_type == ACKNOWLEDGEMENT_STICKY && hst->current_state == HOST_UP) {
+		} else if (hst->acknowledgement_type == ACKNOWLEDGEMENT_STICKY && hst->current_state == STATE_UP) {
 
 			hst->problem_has_been_acknowledged = FALSE;
 			hst->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
@@ -960,14 +960,14 @@ static int handle_host_state(host *hst, int *alert_recorded)
 		next_event_id++;
 
 		/* update the problem id when transitioning to a problem state */
-		if (hst->last_state == HOST_UP) {
+		if (hst->last_state == STATE_UP) {
 			/* don't reset last problem id, or it will be zero the next time a problem is encountered */
 			hst->current_problem_id = next_problem_id;
 			next_problem_id++;
 		}
 
 		/* clear the problem id when transitioning from a problem state to an UP state */
-		if (hst->current_state == HOST_UP) {
+		if (hst->current_state == STATE_UP) {
 			hst->last_problem_id = hst->current_problem_id;
 			hst->current_problem_id = 0L;
 		}
@@ -990,11 +990,11 @@ static int handle_host_state(host *hst, int *alert_recorded)
 		handle_host_event(hst);
 
 		/* the host just recovered, so reset the current host attempt */
-		if (hst->current_state == HOST_UP)
+		if (hst->current_state == STATE_UP)
 			hst->current_attempt = 1;
 
 		/* the host recovered, so reset the current notification number and state flags (after the recovery notification has gone out) */
-		if (hst->current_state == HOST_UP) {
+		if (hst->current_state == STATE_UP) {
 			hst->current_notification_number = 0;
 			hst->notified_on = 0;
 		}
@@ -1004,7 +1004,7 @@ static int handle_host_state(host *hst, int *alert_recorded)
 	else {
 
 		/* notify contacts if host is still down or unreachable */
-		if (hst->current_state != HOST_UP && hst->state_type == HARD_STATE)
+		if (hst->current_state != STATE_UP && hst->state_type == HARD_STATE)
 			host_notification(hst, NOTIFICATION_NORMAL, NULL, NULL, NOTIFICATION_OPTION_NONE);
 
 		/* if we're in a soft state and we should log host retries, do so now... */
@@ -1141,7 +1141,7 @@ int check_host_dependencies(host *hst, int dependency_type)
 	hostdependency *temp_dependency = NULL;
 	objectlist *list;
 	host *temp_host = NULL;
-	int state = HOST_UP;
+	int state = STATE_UP;
 	time_t current_time = 0L;
 
 	if (dependency_type == NOTIFICATION_DEPENDENCY) {
@@ -1281,20 +1281,20 @@ static int determine_host_reachability(host *hst)
 	hostsmember *temp_hostsmember = NULL;
 
 	if (hst == NULL)
-		return HOST_DOWN;
+		return STATE_DOWN;
 
 	log_debug_info(DEBUGL_CHECKS, 2, "Determining state of host '%s': current state=%d (%s)\n", hst->name, hst->current_state, host_state_name(hst->current_state));
 
 	/* host is UP - no translation needed */
-	if (hst->current_state == HOST_UP) {
+	if (hst->current_state == STATE_UP) {
 		log_debug_info(DEBUGL_CHECKS, 2, "Host is UP, no state translation needed.\n");
-		return HOST_UP;
+		return STATE_UP;
 	}
 
 	/* host has no parents, so it is DOWN */
 	if (hst->parent_hosts == NULL) {
 		log_debug_info(DEBUGL_CHECKS, 2, "Host has no parents, so it is DOWN.\n");
-		return HOST_DOWN;
+		return STATE_DOWN;
 	}
 
 	/* check all parent hosts to see if we're DOWN or UNREACHABLE */
@@ -1303,14 +1303,14 @@ static int determine_host_reachability(host *hst)
 			parent_host = temp_hostsmember->host_ptr;
 			log_debug_info(DEBUGL_CHECKS, 2, "   Parent '%s' is %s\n", parent_host->name, host_state_name(parent_host->current_state));
 			/* bail out as soon as we find one parent host that is UP */
-			if (parent_host->current_state == HOST_UP) {
+			if (parent_host->current_state == STATE_UP) {
 				/* set the current state */
 				log_debug_info(DEBUGL_CHECKS, 2, "At least one parent (%s) is up, so host is DOWN.\n", parent_host->name);
-				return HOST_DOWN;
+				return STATE_DOWN;
 			}
 		}
 	}
 
 	log_debug_info(DEBUGL_CHECKS, 2, "No parents were up, so host is UNREACHABLE.\n");
-	return HOST_UNREACHABLE;
+	return STATE_UNREACHABLE;
 }

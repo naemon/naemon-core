@@ -730,7 +730,7 @@ int check_service_notification_viability(service *svc, int type, int options)
 	}
 
 	/* if the host is down or unreachable, don't notify contacts about service failures */
-	if (temp_host->current_state != HOST_UP) {
+	if (temp_host->current_state != STATE_UP) {
 		LOG_SERVICE_NSR(NSR_SERVICE_HOST_DOWN_UNREACHABLE);
 		return ERROR;
 	}
@@ -1273,7 +1273,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 		if (type != NOTIFICATION_NORMAL) {
 			mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup(notification_reason_name(type));
 		}
-		else if (hst->current_state == HOST_UP) {
+		else if (hst->current_state == STATE_UP) {
 			mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup("RECOVERY");
 		}
 		else {
@@ -1467,7 +1467,7 @@ int check_host_notification_viability(host *hst, int type, int options)
 	if (type == NOTIFICATION_ACKNOWLEDGEMENT) {
 
 		/* don't send an acknowledgement if there isn't a problem... */
-		if (hst->current_state == HOST_UP) {
+		if (hst->current_state == STATE_UP) {
 			LOG_HOST_NSR(NSR_ACK_OBJECT_OK);
 			return ERROR;
 		}
@@ -1552,7 +1552,7 @@ int check_host_notification_viability(host *hst, int type, int options)
 		LOG_HOST_NSR(NSR_STATE_DISABLED);
 		return ERROR;
 	}
-	if (hst->current_state == HOST_UP) {
+	if (hst->current_state == STATE_UP) {
 
 		if ((hst->notification_options & OPT_RECOVERY) == FALSE) {
 			LOG_HOST_NSR(NSR_NO_RECOVERY);
@@ -1568,7 +1568,7 @@ int check_host_notification_viability(host *hst, int type, int options)
 	/* see if enough time has elapsed for first notification (Mathias Sundman) */
 	/* 10/02/07 don't place restrictions on recoveries or non-normal notifications, must use last time up (or program start) in calculation */
 	/* it is reasonable to assume that if the host was never up, the program start time should be used in this calculation */
-	if (type == NOTIFICATION_NORMAL && hst->current_notification_number == 0 && hst->current_state != HOST_UP) {
+	if (type == NOTIFICATION_NORMAL && hst->current_notification_number == 0 && hst->current_state != STATE_UP) {
 
 		first_problem_time = hst->last_time_up > 0 ? hst->last_time_up : program_start;
 
@@ -1585,7 +1585,7 @@ int check_host_notification_viability(host *hst, int type, int options)
 	}
 
 	/***** RECOVERY NOTIFICATIONS ARE GOOD TO GO AT THIS POINT *****/
-	if (hst->current_state == HOST_UP)
+	if (hst->current_state == STATE_UP)
 		return OK;
 
 	/* if this host is currently in a scheduled downtime period, don't send the notification */
@@ -1691,7 +1691,7 @@ int check_contact_host_notification_viability(contact *cntct, host *hst, int typ
 		return ERROR;
 	}
 
-	if (hst->current_state == HOST_UP && hst->notified_on == 0) {
+	if (hst->current_state == STATE_UP && hst->notified_on == 0) {
 		LOG_HOST_CONTACT_NSR(NSR_RECOVERY_UNNOTIFIED_PROBLEM);
 		return ERROR;
 	}
@@ -1840,7 +1840,7 @@ int is_valid_escalation_for_host_notification(host *hst, hostescalation *he, int
 	time(&current_time);
 
 	/* if this is a recovery, really we check for who got notified about a previous problem */
-	if (hst->current_state == HOST_UP)
+	if (hst->current_state == STATE_UP)
 		notification_number = hst->current_notification_number - 1;
 	else
 		notification_number = hst->current_notification_number;

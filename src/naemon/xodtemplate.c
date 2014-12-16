@@ -7978,11 +7978,11 @@ static int xodtemplate_add_object_property(char *input, int options)
 			temp_host->have_statusmap_image = TRUE;
 		} else if (!strcmp(variable, "initial_state")) {
 			if (!strcmp(value, "o") || !strcmp(value, "up"))
-				temp_host->initial_state = 0; /* HOST_UP */
+				temp_host->initial_state = 0; /* STATE_UP */
 			else if (!strcmp(value, "d") || !strcmp(value, "down"))
-				temp_host->initial_state = 1; /* HOST_DOWN */
+				temp_host->initial_state = 1; /* STATE_DOWN */
 			else if (!strcmp(value, "u") || !strcmp(value, "unreachable"))
-				temp_host->initial_state = 2; /* HOST_UNREACHABLE */
+				temp_host->initial_state = 2; /* STATE_UNREACHABLE */
 			else {
 				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid initial state '%s' in host definition.\n", value);
 				result = ERROR;

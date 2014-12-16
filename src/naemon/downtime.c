@@ -735,7 +735,7 @@ int check_pending_flex_host_downtime(host *hst)
 	time(&current_time);
 
 	/* if host is currently up, nothing to do */
-	if (hst->current_state == HOST_UP)
+	if (hst->current_state == STATE_UP)
 		return OK;
 
 	/* check all downtime entries */

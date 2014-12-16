@@ -358,7 +358,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	int state_change = FALSE;
 	int hard_state_change = FALSE;
 	int first_host_check_initiated = FALSE;
-	int route_result = HOST_UP;
+	int route_result = STATE_UP;
 	time_t current_time = 0L;
 	int alert_recorded = NEBATTR_NONE;
 	int first_recorded_state = NEBATTR_NONE;
@@ -533,7 +533,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 		/* if the host has never been checked before, verify its status */
 		/* only do this if 1) the initial state was set to non-UP or 2) the host is not scheduled to be checked soon (next 5 minutes) */
-		if (temp_host->has_been_checked == FALSE && (temp_host->initial_state != HOST_UP || (unsigned long)temp_host->next_check == 0L || (unsigned long)(temp_host->next_check - current_time) > 300)) {
+		if (temp_host->has_been_checked == FALSE && (temp_host->initial_state != STATE_UP || (unsigned long)temp_host->next_check == 0L || (unsigned long)(temp_host->next_check - current_time) > 300)) {
 
 			/* set a flag to remember that we launched a check */
 			first_host_check_initiated = TRUE;
@@ -655,7 +655,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		temp_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
 
 		/* verify the route to the host and send out host recovery notifications */
-		if (temp_host->current_state != HOST_UP) {
+		if (temp_host->current_state != STATE_UP) {
 
 			log_debug_info(DEBUGL_CHECKS, 1, "Host is NOT UP, so we'll check it to see if it recovered...\n");
 
@@ -758,7 +758,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		route_result = temp_host->current_state;
 
 		/* check the route to the host if its up right now... */
-		if (temp_host->current_state == HOST_UP) {
+		if (temp_host->current_state == STATE_UP) {
 
 			log_debug_info(DEBUGL_CHECKS, 1, "Host is currently UP, so we'll recheck its state to make sure...\n");
 
@@ -802,7 +802,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 		/* if the host is down or unreachable ... */
 		/* The host might be in a SOFT problem state due to host check retries/caching.  Not sure if we should take that into account and do something different or not... */
-		if (route_result != HOST_UP) {
+		if (route_result != STATE_UP) {
 
 			log_debug_info(DEBUGL_CHECKS, 2, "Host is not UP, so we mark state changes if appropriate\n");
 
@@ -845,7 +845,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		if (temp_service->current_attempt < temp_service->max_attempts) {
 
 			/* the host is down or unreachable, so don't attempt to retry the service check */
-			if (route_result != HOST_UP) {
+			if (route_result != STATE_UP) {
 
 				log_debug_info(DEBUGL_CHECKS, 1, "Host isn't UP, so we won't retry the service check...\n");
 
