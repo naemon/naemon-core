@@ -361,7 +361,7 @@ int main(int argc, char **argv)
 		printf("       the appropriate number (i.e. '1', '5', '15', or '60').\n");
 		printf("\n");
 
-		exit(ERROR);
+		exit(1);
 	}
 
 	/* if we got no -s option, we must read the main config file */
@@ -370,7 +370,7 @@ int main(int argc, char **argv)
 		result = read_config_file();
 		if (result == ERROR && mrtg_mode == FALSE) {
 			printf("Error processing config file '%s'\n", main_config_file);
-			return ERROR;
+			return 1;
 		}
 	}
 
@@ -378,7 +378,7 @@ int main(int argc, char **argv)
 	result = read_status_file();
 	if (result == ERROR && mrtg_mode == FALSE) {
 		printf("Error reading status file '%s': %s\n", status_file, strerror(errno));
-		return ERROR;
+		return 1;
 	}
 
 	/* display stats */
@@ -389,7 +389,7 @@ int main(int argc, char **argv)
 
 	/* Opsera patch - return based on error, because mrtg_mode was always returning OK */
 	if (result == ERROR)
-		return ERROR;
+		return 1;
 	else
 		return OK;
 }
