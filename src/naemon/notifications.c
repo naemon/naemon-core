@@ -72,28 +72,72 @@ const char *notification_reason_name(enum NotificationReason reason)
 
 }
 
-#define _log_nsr(S) nm_log(log_level, "%s NOTIFICATION SUPPRESSED: %s;%s", type_name, objname, S);
+
+/*
+ * Keep track of/update the notification suppression reason for a given object.
+ * Returns TRUE if the new reason is an update, and FALSE if it is not.
+ */
+static int update_notification_suppression_reason(enum NotificationSuppressionType type, unsigned int obj_id,
+		enum NotificationSuppressionReason reason)
+{
+	/*
+	 * NOTE:
+	 * This map only ever grows currently, since we never delete objects. It
+	 * doesn't allocate everything at once (based on whatever the highest ID
+	 * is, for example), since this way makes it easier to accommodate dynamic
+	 * object configuration. At least it doesn't make it significantly harder.
+	 */
+	static struct {
+		unsigned int count;
+		enum NotificationSuppressionReason *reasons;
+	} nsr_map[NS_TYPE__COUNT];
+	unsigned int new_count;
+
+	/* object id:s start at zero */
+	new_count = obj_id + 1;
+	if (nsr_map[type].count < new_count) {
+		nsr_map[type].reasons = nm_realloc(nsr_map[type].reasons,
+				new_count * sizeof(reason));
+
+		memset(nsr_map[type].reasons + nsr_map[type].count, (int) NSR_OK,
+				(new_count - nsr_map[type].count) * sizeof(reason));
+		nsr_map[type].count = new_count;
+	}
+
+	if (nsr_map[type].reasons[obj_id] != reason) {
+		nsr_map[type].reasons[obj_id] = reason;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+#define _log_nsr(S) if (update_notification_suppression_reason(type, objid, reason)) { \
+	nm_log(log_level, "%s NOTIFICATION SUPPRESSED: %s;%s", type_name, objname, S); \
+} else { log_debug_info(DEBUGL_NOTIFICATIONS, DEBUGV_BASIC, "%s NOTIFICATION SUPPRESSED: %s;%s", type_name, objname, S);}
 void log_notification_suppression_reason(enum NotificationSuppressionReason reason,
 		enum NotificationSuppressionType type, void *primary_obj, void *secondary_obj)
 {
 	char *objname = NULL;
 	char *type_name = NULL;
+	unsigned int objid = 0u;
 	unsigned int log_level = NSLOG_RUNTIME_ERROR;
 	unsigned int modattr = 0u;
-
 	/* We use a switches here rather than lookup arrays
 	 *  or plain old if-else chains because this way we can get compiler
 	 *  warnings on unhandled cases
 	 */
 	switch (type) {
+	case NS_TYPE__COUNT: break;
 	case NS_TYPE_HOST:
 		objname = nm_strdup(((host *)primary_obj)->name);
+		objid = ((host *)primary_obj)->id;
 		type_name = "HOST";
 		log_level = NSLOG_HOST_NOTIFICATION;
 		modattr = ((struct host *)primary_obj)->modified_attributes;
 		break;
 	case NS_TYPE_SERVICE:
 		nm_asprintf(&objname, "%s;%s", ((service *)primary_obj)->host_name, ((service *)primary_obj)->description);
+		objid = ((service *)primary_obj)->id;
 		type_name = "SERVICE";
 		log_level = NSLOG_SERVICE_NOTIFICATION;
 		modattr = ((struct service *)primary_obj)->modified_attributes;
@@ -104,6 +148,7 @@ void log_notification_suppression_reason(enum NotificationSuppressionReason reas
 				((service *)secondary_obj)->host_name,
 				((service *)secondary_obj)->description
 				);
+		objid = ((contact *)primary_obj)->id;
 		type_name = "SERVICE CONTACT";
 		log_level = NSLOG_SERVICE_NOTIFICATION;
 		modattr = ((struct service *)secondary_obj)->modified_attributes;
@@ -113,6 +158,7 @@ void log_notification_suppression_reason(enum NotificationSuppressionReason reas
 				((contact *)primary_obj)->name,
 				((host *)secondary_obj)->name
 				);
+		objid = ((contact *)primary_obj)->id;
 		type_name = "HOST CONTACT";
 		log_level = NSLOG_HOST_NOTIFICATION;
 		modattr = ((struct host *)secondary_obj)->modified_attributes;

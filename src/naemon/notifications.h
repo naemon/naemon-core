@@ -13,10 +13,14 @@
  * suppressions
  */
 enum NotificationSuppressionType {
-	NS_TYPE_HOST,
+	NS_TYPE_HOST = 0,
 	NS_TYPE_SERVICE,
 	NS_TYPE_HOST_CONTACT,
-	NS_TYPE_SERVICE_CONTACT
+	NS_TYPE_SERVICE_CONTACT,
+	/* NOTE: NS_TYPE__COUNT assumes the types are sequential, and start at zero. If you break
+	 * this assumption, you break this member as well and need to fix it
+	 */
+	NS_TYPE__COUNT
 };
 
 /*
