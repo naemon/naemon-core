@@ -422,8 +422,6 @@ int process_check_result_file(char *fname)
 				cr.check_options = atoi(val);
 			else if (!strcmp(var, "scheduled_check"))
 				cr.scheduled_check = atoi(val);
-			else if (!strcmp(var, "reschedule_check"))
-				cr.reschedule_check = atoi(val);
 			else if (!strcmp(var, "latency"))
 				cr.latency = strtod(val, NULL);
 			else if (!strcmp(var, "start_time")) {
@@ -501,7 +499,6 @@ int init_check_result(check_result *info)
 	info->check_type = CHECK_TYPE_ACTIVE;
 	info->check_options = CHECK_OPTION_NONE;
 	info->scheduled_check = FALSE;
-	info->reschedule_check = FALSE;
 	info->output_file_fp = NULL;
 	info->latency = 0.0;
 	info->start_time.tv_sec = 0;
