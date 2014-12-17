@@ -1644,24 +1644,16 @@ static int host_command_handler(const struct external_command *ext_command, time
 
 			/* might disable future checks */
 			if (target_host->check_interval == 0) {
-				target_host->should_be_scheduled = FALSE;
 				return OK;
 			}
 
-			/* schedule or reschedule the host check if we should */
-			if (target_host->should_be_scheduled) {
-
-				/* set the host check flag */
-				target_host->should_be_scheduled = TRUE;
-
-				/* schedule a check */
-				target_host->next_check = next_check_time(target_host);
-				if (target_host->next_check < time(NULL)) {
-					target_host->next_check = time(NULL);
-				}
-
-				schedule_host_check(target_host, target_host->next_check, CHECK_OPTION_NONE);
+			/* schedule a check */
+			target_host->next_check = next_check_time(target_host);
+			if (target_host->next_check < time(NULL)) {
+				target_host->next_check = time(NULL);
 			}
+
+			schedule_host_check(target_host, target_host->next_check, CHECK_OPTION_NONE);
 			target_host->modified_attributes |= MODATTR_NORMAL_CHECK_INTERVAL;
 			return OK;
 		case CMD_CHANGE_MAX_HOST_CHECK_ATTEMPTS:
@@ -1947,16 +1939,13 @@ static int service_command_handler(const struct external_command *ext_command, t
 			old_interval = target_service->check_interval;
 			target_service->check_interval = GV_TIMESTAMP("check_interval");
 			if(old_interval == 0 && target_service->checks_enabled == TRUE && target_service->check_interval != 0) {
-				target_service->should_be_scheduled = TRUE;
 				time(&preferred_time);
 				target_service->next_check = next_check_time(target_service);
 				if (target_service->next_check < preferred_time) {
 					target_service->next_check = preferred_time;
 				}
 
-				/* schedule a check if we should */
-				if(target_service->should_be_scheduled == TRUE)
-					schedule_service_check(target_service, target_service->next_check, CHECK_OPTION_NONE);
+				schedule_service_check(target_service, target_service->next_check, CHECK_OPTION_NONE);
 			}
 			target_service->modified_attributes |= MODATTR_NORMAL_CHECK_INTERVAL;
 
@@ -3244,7 +3233,6 @@ void disable_service_checks(service *svc)
 
 	/* disable the service check... */
 	svc->checks_enabled = FALSE;
-	svc->should_be_scheduled = FALSE;
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
@@ -3278,8 +3266,6 @@ void enable_service_checks(service *svc)
 	/* checks with no interval shouldn't be scheduled */
 	if (svc->check_interval == 0)
 		return;
-
-	svc->should_be_scheduled = TRUE;
 
 	/* schedule a check */
 	time(&preferred_time);
@@ -4314,7 +4300,6 @@ void disable_host_checks(host *hst)
 
 	/* set the host check flag */
 	hst->checks_enabled = FALSE;
-	hst->should_be_scheduled = FALSE;
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
@@ -4348,8 +4333,6 @@ void enable_host_checks(host *hst)
 
 	if (hst->check_interval == 0)
 		return;
-
-	hst->should_be_scheduled = TRUE;
 
 	/* schedule a check for right now (or as soon as possible) */
 	time(&preferred_time);
