@@ -1634,27 +1634,14 @@ static int host_command_handler(const struct external_command *ext_command, time
 			old_interval = target_host->check_interval;
 			target_host->check_interval = GV_TIMESTAMP("check_interval");
 
-			/*
-			 * no real change means we're done. This also means we
-			 * only have to check one of the variables for 0 below
-			 * to know if we should toggle scheduling
-			 */
+			/* no real change means we're done */
 			if (target_host->check_interval == old_interval)
 				return OK;
 
-			/* might disable future checks */
-			if (target_host->check_interval == 0) {
-				return OK;
-			}
-
-			/* schedule a check */
-			target_host->next_check = next_check_time(target_host);
-			if (target_host->next_check < time(NULL)) {
-				target_host->next_check = time(NULL);
-			}
-
-			schedule_host_check(target_host, target_host->next_check, CHECK_OPTION_NONE);
 			target_host->modified_attributes |= MODATTR_NORMAL_CHECK_INTERVAL;
+
+			if (target_host->check_interval > 0)
+				schedule_next_host_check(target_host, check_window(target_host), CHECK_OPTION_NONE);
 			return OK;
 		case CMD_CHANGE_MAX_HOST_CHECK_ATTEMPTS:
 			target_host->max_attempts = GV_INT("check_attempts");
@@ -1935,19 +1922,17 @@ static int service_command_handler(const struct external_command *ext_command, t
 			/*disabled*/
 			return ERROR;
 		case CMD_CHANGE_NORMAL_SVC_CHECK_INTERVAL:
-			/* schedule a service check if previous interval was 0 (checks were not regularly scheduled) */
 			old_interval = target_service->check_interval;
 			target_service->check_interval = GV_TIMESTAMP("check_interval");
-			if(old_interval == 0 && target_service->checks_enabled == TRUE && target_service->check_interval != 0) {
-				time(&preferred_time);
-				target_service->next_check = next_check_time(target_service);
-				if (target_service->next_check < preferred_time) {
-					target_service->next_check = preferred_time;
-				}
 
-				schedule_service_check(target_service, target_service->next_check, CHECK_OPTION_NONE);
-			}
+			/* no real change means we're done */
+			if (target_service->check_interval == old_interval)
+				return OK;
+
 			target_service->modified_attributes |= MODATTR_NORMAL_CHECK_INTERVAL;
+
+			if (target_service->check_interval > 0)
+				schedule_next_service_check(target_service, check_window(target_service), CHECK_OPTION_NONE);
 
 #ifdef USE_EVENT_BROKER
 			/* send data to event broker */
@@ -3231,7 +3216,6 @@ void disable_service_checks(service *svc)
 	/* set the attribute modified flag */
 	svc->modified_attributes |= attr;
 
-	/* disable the service check... */
 	svc->checks_enabled = FALSE;
 
 #ifdef USE_EVENT_BROKER
@@ -3252,28 +3236,16 @@ void enable_service_checks(service *svc)
 	time_t preferred_time = 0L;
 	unsigned long attr = MODATTR_ACTIVE_CHECKS_ENABLED;
 
-	/* checks are already enabled */
 	if (svc->checks_enabled == TRUE)
 		return;
 
 	pre_modify_service_attribute(svc, attr);
 
-	/* set the attribute modified flag */
 	svc->modified_attributes |= attr;
-
-	/* enable the service check... */
 	svc->checks_enabled = TRUE;
-	/* checks with no interval shouldn't be scheduled */
-	if (svc->check_interval == 0)
-		return;
 
-	/* schedule a check */
-	time(&preferred_time);
-	svc->next_check = next_check_time(svc);
-	if (svc->next_check < preferred_time)
-		svc->next_check = preferred_time;
-
-	schedule_service_check(svc, svc->next_check, CHECK_OPTION_NONE);
+	if (svc->check_interval > 0)
+		schedule_next_service_check(svc, check_window(svc), CHECK_OPTION_NONE);
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
@@ -4325,22 +4297,10 @@ void enable_host_checks(host *hst)
 
 	pre_modify_host_attribute(hst, attr);
 
-	/* set the attribute modified flag */
 	hst->modified_attributes |= attr;
-
-	/* set the host check flag */
 	hst->checks_enabled = TRUE;
 
-	if (hst->check_interval == 0)
-		return;
-
-	/* schedule a check for right now (or as soon as possible) */
-	time(&preferred_time);
-	hst->next_check = next_check_time(hst);
-	if (hst->next_check < preferred_time)
-		hst->next_check = preferred_time;
-
-	schedule_host_check(hst, hst->next_check, CHECK_OPTION_NONE);
+	schedule_next_host_check(hst, check_window(hst), CHECK_OPTION_NONE);
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
