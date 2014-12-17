@@ -48,3 +48,4 @@ naemon-uninstalled.pc
 naemon.pc
 naemon.log
 /Debug
+*.8
