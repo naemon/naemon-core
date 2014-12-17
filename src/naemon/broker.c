@@ -184,7 +184,6 @@ int broker_event_handler(int type, int flags, int attr, int eventhandler_type, v
 	/* make callbacks */
 	return_code = neb_make_callbacks(NEBCALLBACK_EVENT_HANDLER_DATA, (void *)&ds);
 
-	/* free memory */
 	nm_free(command_buf);
 
 	return return_code;
@@ -685,7 +684,6 @@ int broker_contact_notification_method_data(int type, int flags, int attr, int n
 	/* make callbacks */
 	return_code = neb_make_callbacks(NEBCALLBACK_CONTACT_NOTIFICATION_METHOD_DATA, (void *)&ds);
 
-	/* free memory */
 	nm_free(command_buf);
 
 	return return_code;

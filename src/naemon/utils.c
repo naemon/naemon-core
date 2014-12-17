@@ -551,7 +551,6 @@ int my_system_r(nagios_macros *mac, char *cmd, int timeout, int *early_timeout, 
 	broker_system_command(NEBTYPE_SYSTEM_COMMAND_END, NEBFLAG_NONE, NEBATTR_NONE, start_time, end_time, *exectime, timeout, *early_timeout, result, cmd, (output_dbuf.buf == NULL) ? NULL : output_dbuf.buf, NULL);
 #endif
 
-	/* free memory */
 	dbuf_free(&output_dbuf);
 
 	/* close the pipe for reading */
@@ -2006,7 +2005,6 @@ int process_check_result_file(char *fname)
 	/* read in all lines from the file */
 	while (1) {
 
-		/* free memory */
 		nm_free(input);
 
 		/* read the next line */
@@ -2100,7 +2098,6 @@ int process_check_result_file(char *fname)
 
 	free_check_result(&cr);
 
-	/* free memory and close file */
 	nm_free(input);
 	mmap_fclose(thefile);
 
@@ -2814,7 +2811,6 @@ void free_memory(nagios_macros *mac)
 	squeue_destroy(nagios_squeue, SQUEUE_FREE_DATA);
 	nagios_squeue = NULL;
 
-	/* free memory for global event handlers */
 	nm_free(global_host_event_handler);
 	nm_free(global_service_event_handler);
 

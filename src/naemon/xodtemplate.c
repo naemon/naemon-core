@@ -1827,7 +1827,6 @@ static int xodtemplate_parse_timeperiod_directive(xodtemplate_timeperiod *tperio
 		printf("Error: Could not parse timeperiod directive '%s'!\n", input);
 	}
 
-	/* free memory */
 	nm_free(input);
 
 	return result;
@@ -1964,7 +1963,6 @@ static int xodtemplate_expand_contacts(objectlist **ret, bitmap *reject_map, cha
 		}
 	}
 
-	/* free memory */
 	nm_free(contact_names);
 
 	if (found_match == FALSE)
@@ -2103,7 +2101,6 @@ static int xodtemplate_expand_hostgroups(objectlist **list, bitmap *reject_map, 
 		}
 	}
 
-	/* free memory */
 	nm_free(hostgroup_names);
 
 	if (found_match == FALSE)
@@ -2431,7 +2428,6 @@ static int xodtemplate_expand_servicegroups(objectlist **list, bitmap *reject, c
 		}
 	}
 
-	/* free memory */
 	nm_free(servicegroup_names);
 
 	if (found_match == FALSE)
@@ -4917,7 +4913,6 @@ static int xodtemplate_get_contactgroup_names(xodtemplate_memberlist **list, xod
 		}
 	}
 
-	/* free memory */
 	nm_free(contactgroup_names);
 
 	if (found_match == FALSE)
@@ -5091,7 +5086,6 @@ static int xodtemplate_get_hostgroup_names(xodtemplate_memberlist **list, xodtem
 		}
 	}
 
-	/* free memory */
 	nm_free(hostgroup_names);
 
 	if (found_match == FALSE)
@@ -5265,7 +5259,6 @@ static int xodtemplate_get_servicegroup_names(xodtemplate_memberlist **list, xod
 		}
 	}
 
-	/* free memory */
 	nm_free(servicegroup_names);
 
 	if (found_match == FALSE)
@@ -5480,7 +5473,6 @@ static int xodtemplate_recombobulate_contactgroups(void)
 			xodtemplate_add_contactgroup_member(temp_contactgroup, temp_contact);
 		}
 
-		/* free memory */
 		nm_free(contactgroup_names);
 	}
 
@@ -5661,7 +5653,6 @@ static int xodtemplate_recombobulate_hostgroups(void)
 			xodtemplate_add_hostgroup_member(temp_hostgroup, temp_host);
 		}
 
-		/* free memory */
 		nm_free(hostgroup_names);
 	}
 
@@ -7855,7 +7846,6 @@ static int xodtemplate_add_object_property(char *input, int options)
 				return ERROR;
 			}
 
-			/* free memory */
 			nm_free(customvarname);
 			nm_free(customvarvalue);
 		} else {
@@ -8170,7 +8160,6 @@ static int xodtemplate_add_object_property(char *input, int options)
 				return ERROR;
 			}
 
-			/* free memory */
 			nm_free(customvarname);
 			nm_free(customvarvalue);
 		} else {
@@ -8488,7 +8477,6 @@ static int xodtemplate_add_object_property(char *input, int options)
 				return ERROR;
 			}
 
-			/* free memory */
 			nm_free(customvarname);
 			nm_free(customvarvalue);
 		} else {
@@ -8887,7 +8875,6 @@ static int xodtemplate_process_config_file(char *filename, int options)
 	/* read in all lines from the config file */
 	while (1) {
 
-		/* free memory */
 		nm_free(input);
 
 		/* read the next line */
@@ -9015,7 +9002,6 @@ static int xodtemplate_process_config_file(char *filename, int options)
 		}
 	}
 
-	/* free memory and close file */
 	nm_free(input);
 	mmap_fclose(thefile);
 

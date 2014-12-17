@@ -105,7 +105,6 @@ int xpddefault_initialize_performance_data(const char *cfgfile)
 			nm_free(host_perfdata_file_processing_command);
 		}
 
-		/* free memory */
 		nm_free(temp_buffer);
 
 		/* save the command pointer for later */
@@ -145,7 +144,6 @@ int xpddefault_initialize_performance_data(const char *cfgfile)
 		strip(mac->x[MACRO_SERVICEPERFDATAFILE]);
 	}
 
-	/* free memory */
 	nm_free(temp_buffer);
 	nm_free(buffer);
 
@@ -157,7 +155,6 @@ int xpddefault_initialize_performance_data(const char *cfgfile)
 int xpddefault_cleanup_performance_data(void)
 {
 
-	/* free memory */
 	nm_free(host_perfdata_command);
 	nm_free(service_perfdata_command);
 	nm_free(host_perfdata_file_template);
@@ -305,7 +302,6 @@ int xpddefault_run_service_performance_data_command(nagios_macros *mac, service 
 	/* run the command */
 	wproc_run_callback(processed_command_line, perfdata_timeout, xpddefault_perfdata_job_handler, NULL, mac);
 
-	/* free memory */
 	nm_free(processed_command_line);
 
 	return result;
@@ -347,7 +343,6 @@ int xpddefault_run_host_performance_data_command(nagios_macros *mac, host *hst)
 	/* run the command */
 	wproc_run_callback(processed_command_line, perfdata_timeout, xpddefault_perfdata_job_handler, NULL, mac);
 
-	/* free memory */
 	nm_free(processed_command_line);
 
 	return result;
@@ -508,7 +503,6 @@ int xpddefault_update_service_performance_data_file(nagios_macros *mac, service 
 	fputc('\n', service_perfdata_fp);
 	fflush(service_perfdata_fp);
 
-	/* free memory */
 	nm_free(raw_output);
 	nm_free(processed_output);
 
@@ -549,7 +543,6 @@ int xpddefault_update_host_performance_data_file(nagios_macros *mac, host *hst)
 	fputc('\n', host_perfdata_fp);
 	fflush(host_perfdata_fp);
 
-	/* free memory */
 	nm_free(raw_output);
 	nm_free(processed_output);
 
@@ -611,7 +604,6 @@ int xpddefault_process_host_perfdata_file(void)
 		nm_log(NSLOG_RUNTIME_WARNING, "Warning: Host performance data file processing command '%s' timed out after %d seconds\n", processed_command_line, perfdata_timeout);
 
 
-	/* free memory */
 	nm_free(processed_command_line);
 
 	return result;
@@ -672,7 +664,6 @@ int xpddefault_process_service_perfdata_file(void)
 	if (early_timeout == TRUE)
 		nm_log(NSLOG_RUNTIME_WARNING, "Warning: Service performance data file processing command '%s' timed out after %d seconds\n", processed_command_line, perfdata_timeout);
 
-	/* free memory */
 	nm_free(processed_command_line);
 
 	return result;

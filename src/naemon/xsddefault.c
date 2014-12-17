@@ -73,7 +73,6 @@ int xsddefault_cleanup_status_data(int delete_status_data)
 			return_code = ERROR;
 	}
 
-	/* free memory */
 	nm_free(status_file);
 
 	return return_code;
@@ -116,7 +115,6 @@ int xsddefault_save_status_data(void)
 		/* log an error */
 		nm_log(NSLOG_RUNTIME_ERROR, "Error: Unable to create temp file '%s' for writing status data: %s\n", tmp_log, strerror(errno));
 
-		/* free memory */
 		nm_free(tmp_log);
 
 		return ERROR;
@@ -130,7 +128,6 @@ int xsddefault_save_status_data(void)
 		/* log an error */
 		nm_log(NSLOG_RUNTIME_ERROR, "Error: Unable to open temp file '%s' for writing status data: %s\n", tmp_log, strerror(errno));
 
-		/* free memory */
 		nm_free(tmp_log);
 
 		return ERROR;
@@ -437,7 +434,6 @@ int xsddefault_save_status_data(void)
 		nm_log(NSLOG_RUNTIME_ERROR, "Error: Unable to save status file: %s", strerror(errno));
 	}
 
-	/* free memory */
 	nm_free(tmp_log);
 
 	return result;

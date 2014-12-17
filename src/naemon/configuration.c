@@ -72,7 +72,6 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 	/* process all lines in the config file */
 	while (1) {
 
-		/* free memory */
 		nm_free(input);
 		nm_free(variable);
 		nm_free(value);
@@ -1217,7 +1216,6 @@ int read_resource_file(const char *resource_file)
 	/* process all lines in the resource file */
 	while (1) {
 
-		/* free memory */
 		nm_free(input);
 		nm_free(variable);
 		nm_free(value);
@@ -1269,7 +1267,6 @@ int read_resource_file(const char *resource_file)
 	nm_free(input);
 	mmap_fclose(thefile);
 
-	/* free memory */
 	nm_free(variable);
 	nm_free(value);
 

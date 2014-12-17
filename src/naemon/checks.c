@@ -288,7 +288,6 @@ int run_async_service_check(service *svc, int check_options, double latency, int
 		update_check_stats((scheduled_check == TRUE) ? ACTIVE_SCHEDULED_SERVICE_CHECK_STATS : ACTIVE_ONDEMAND_SERVICE_CHECK_STATS, start_time.tv_sec);
 	}
 
-	/* free memory */
 	nm_free(processed_command);
 	clear_volatile_macros_r(&mac);
 
@@ -2020,7 +2019,6 @@ int run_async_host_check(host *hst, int check_options, double latency, int sched
 	}
 
 
-	/* free memory */
 	clear_volatile_macros_r(&mac);
 	nm_free(processed_command);
 
@@ -2234,7 +2232,6 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 	/* process the host check result */
 	process_host_check_result(temp_host, result, old_plugin_output, old_long_plugin_output, CHECK_OPTION_NONE, reschedule_check, TRUE, cached_host_check_horizon, &alert_recorded);
 
-	/* free memory */
 	nm_free(old_plugin_output);
 	nm_free(old_long_plugin_output);
 

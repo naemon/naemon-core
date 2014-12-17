@@ -174,7 +174,6 @@ int delete_comment(int type, unsigned long comment_id)
 	else
 		last_comment->next = next_comment;
 
-	/* free memory */
 	nm_free(this_comment->host_name);
 	nm_free(this_comment->service_description);
 	nm_free(this_comment->author);
