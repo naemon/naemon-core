@@ -36,7 +36,6 @@
 #include "../include/comments.h"
 #include "../include/downtime.h"
 #include "../include/macros.h"
-#include "../include/skiplist.h"
 #include "tap.h"
 
 extern comment *comment_list;

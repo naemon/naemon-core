@@ -39,7 +39,7 @@ src/naemon/buildopts.h: src/naemon/buildopts.h.in
 
 
 nobase_pkginclude_HEADERS = \
-	lib/bitmap.h    lib/kvvec.h       lib/nsock.h    lib/skiplist.h \
+	lib/bitmap.h    lib/kvvec.h       lib/nsock.h    \
 	lib/dkhash.h    lib/libnaemon.h   lib/nspath.h   lib/snprintf.h \
 	lib/fanout.h    lib/libnagios.h   lib/nsutils.h  lib/squeue.h \
 	lib/iobroker.h  lib/lnae-utils.h  lib/pqueue.h   lib/t-utils.h \
@@ -132,7 +132,7 @@ libnaemon_la_LDFLAGS = -version-info 0:0:0
 libnaemon_la_SOURCES = $(pkginclude_HEADERS) \
 	lib/bitmap.c lib/dkhash.c lib/fanout.c lib/iobroker.c \
 	lib/iocache.c lib/kvvec.c lib/nsock.c lib/nspath.c lib/nsutils.c lib/pqueue.c \
-	lib/rbtree.c lib/runcmd.c lib/skiplist.c lib/snprintf.c lib/squeue.c lib/worker.c
+	lib/rbtree.c lib/runcmd.c lib/snprintf.c lib/squeue.c lib/worker.c
 
 check_PROGRAMS = test-bitmap test-dkhash test-fanout test-iobroker test-iocache \
 	test-kvvec test-nsutils test-runcmd test-squeue
