@@ -300,7 +300,6 @@ int run_async_service_check(service *svc, int check_options, double latency, int
 int handle_async_service_check_result(service *temp_service, check_result *queued_check_result)
 {
 	host *temp_host = NULL;
-	time_t next_service_check = 0L;
 	int reschedule_check = FALSE;
 	int state_change = FALSE;
 	int hard_state_change = FALSE;
@@ -327,8 +326,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 	/* get the current time */
 	time(&current_time);
-
-	next_service_check = current_time + check_window(temp_service);
 
 	log_debug_info(DEBUGL_CHECKS, 0, "** Handling check result for service '%s' on host '%s' from '%s'...\n", temp_service->description, temp_service->host_name, check_result_source(queued_check_result));
 	log_debug_info(DEBUGL_CHECKS, 1, "HOST: %s, SERVICE: %s, CHECK TYPE: %s, OPTIONS: %d, SCHEDULED: %s, RESCHEDULE: %s, EXITED OK: %s, RETURN CODE: %d, OUTPUT: %s\n", temp_service->host_name, temp_service->description, (queued_check_result->check_type == CHECK_TYPE_ACTIVE) ? "Active" : "Passive", queued_check_result->check_options, (queued_check_result->scheduled_check == TRUE) ? "Yes" : "No", (queued_check_result->reschedule_check == TRUE) ? "Yes" : "No", (queued_check_result->exited_ok == TRUE) ? "Yes" : "No", queued_check_result->return_code, queued_check_result->output);
@@ -694,9 +691,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		temp_service->problem_has_been_acknowledged = FALSE;
 		temp_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
 		temp_service->notified_on = 0;
-
-		if (reschedule_check == TRUE)
-			next_service_check = (time_t)(temp_service->last_check + (temp_service->check_interval * interval_length));
 	}
 
 
@@ -809,10 +803,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 				log_debug_info(DEBUGL_CHECKS, 1, "Host isn't UP, so we won't retry the service check...\n");
 
-				/* the host is not up, so reschedule the next service check at regular interval */
-				if (reschedule_check == TRUE)
-					next_service_check = (time_t)(temp_service->last_check + (temp_service->check_interval * interval_length));
-
 				/* log the problem as a hard state if the host just went down */
 				if (hard_state_change == TRUE) {
 					log_service_event(temp_service);
@@ -837,9 +827,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 				/* run the service event handler to handle the soft state */
 				handle_service_event(temp_service);
-
-				if (reschedule_check == TRUE)
-					next_service_check = next_check_time(temp_service);
 			}
 
 			/* perform dependency checks on the second to last check of the service */
@@ -912,10 +899,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 			/* save the last hard state */
 			temp_service->last_hard_state = temp_service->current_state;
-
-			/* reschedule the next check at the regular interval */
-			if (reschedule_check == TRUE)
-				next_service_check = next_check_time(temp_service);
 		}
 
 
@@ -931,11 +914,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		temp_service->next_check = next_check_time(temp_service);
 		log_debug_info(DEBUGL_CHECKS, 1, "Rescheduling next check of service at %s", ctime(&temp_service->next_check));
 		temp_service->should_be_scheduled = TRUE;
-
-		/* push the check to its next alotted time */
-		temp_service->next_check = next_service_check;
-		if (current_time > temp_service->next_check)
-			temp_service->next_check = current_time;
 
 		schedule_service_check(temp_service, temp_service->next_check, CHECK_OPTION_NONE);
 	}
@@ -2306,18 +2284,12 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 	host *parent_host = NULL;
 	host *master_host = NULL;
 	time_t current_time = 0L;
-	time_t next_check = 0L;
-
 
 	log_debug_info(DEBUGL_FUNCTIONS, 0, "process_host_check_result()\n");
-
 	log_debug_info(DEBUGL_CHECKS, 1, "HOST: %s, ATTEMPT=%d/%d, CHECK TYPE=%s, STATE TYPE=%s, OLD STATE=%d, NEW STATE=%d\n", hst->name, hst->current_attempt, hst->max_attempts, (hst->check_type == CHECK_TYPE_ACTIVE) ? "ACTIVE" : "PASSIVE", (hst->state_type == HARD_STATE) ? "HARD" : "SOFT", hst->current_state, new_state);
 
 	/* get the current time */
 	time(&current_time);
-
-	/* default next check time */
-	next_check = current_time + normal_check_window(hst);
 
 	/* we have to adjust current attempt # for passive checks, as it isn't done elsewhere */
 	if (hst->check_type == CHECK_TYPE_PASSIVE && passive_host_checks_are_soft == TRUE)
@@ -2419,8 +2391,6 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 			if (hst->last_state != hst->current_state || hst->last_hard_state != hst->current_state) {
 
 				reschedule_check = TRUE;
-
-				next_check = current_time + check_window(hst);
 			}
 		}
 	}
@@ -2439,8 +2409,6 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 			/* set current state and state type */
 			hst->current_state = HOST_UP;
 			hst->state_type = HARD_STATE;
-
-			next_check = current_time + check_window(hst);
 		}
 
 		/***** HOST IS NOW DOWN/UNREACHABLE *****/
@@ -2473,14 +2441,6 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 
 			/* reschedule a check of the host */
 			reschedule_check = TRUE;
-
-			/* schedule a re-check of the host at the retry interval because we can't determine its final state yet... */
-			if (hst->check_type == CHECK_TYPE_ACTIVE || passive_host_checks_are_soft == TRUE)
-				next_check = (unsigned long)(current_time + (hst->retry_interval * interval_length));
-
-			/* schedule a re-check of the host at the normal interval */
-			else
-				next_check = (unsigned long)(current_time + (hst->check_interval * interval_length));
 
 			/* propagate checks to immediate parents if they are UP */
 			/* we do this because a parent host (or grandparent) may have gone down and blocked our route */
@@ -2556,17 +2516,8 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 	/* reschedule the next check of the host (usually ONLY for scheduled, active checks, unless overridden above) */
 	if (reschedule_check == TRUE) {
 
-		log_debug_info(DEBUGL_CHECKS, 1, "Rescheduling next check of host at %s", ctime(&next_check));
-
 		/* default is to reschedule host check unless a test below fails... */
 		hst->should_be_scheduled = TRUE;
-
-		/* make sure we don't get ourselves into too much trouble... */
-		next_check = next_check_time(hst);
-		if (current_time > next_check)
-			hst->next_check = current_time;
-		else
-			hst->next_check = next_check;
 
 		/* hosts with non-recurring intervals do not get rescheduled if we're in a HARD or UP state */
 		if (hst->check_interval == 0 && (hst->state_type == HARD_STATE || hst->current_state == HOST_UP))
@@ -2578,6 +2529,8 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 
 		/* schedule a non-forced check if we can */
 		if (hst->should_be_scheduled == TRUE) {
+			hst->next_check = next_check_time(hst);
+			log_debug_info(DEBUGL_CHECKS, 1, "Rescheduling next check of host at %s", ctime(&hst->next_check));
 			schedule_host_check(hst, hst->next_check, CHECK_OPTION_NONE);
 		}
 	}
