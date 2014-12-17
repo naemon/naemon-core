@@ -417,7 +417,6 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 				contacts_notified++;
 		}
 
-		/* free memory allocated to the notification list */
 		free_notification_list();
 
 		/* clear out all macros we created */
@@ -949,7 +948,6 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 			free(nj);
 		}
 
-		/* free memory */
 		nm_free(command_name);
 		nm_free(processed_command);
 
@@ -1307,7 +1305,6 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 				contacts_notified++;
 		}
 
-		/* free memory allocated to the notification list */
 		free_notification_list();
 
 		/* clear out all macros we created */
@@ -1801,7 +1798,6 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 
 		/* @todo Handle nebmod stuff when getting results from workers */
 
-		/* free memory */
 		nm_free(command_name);
 		nm_free(processed_command);
 

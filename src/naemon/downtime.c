@@ -207,7 +207,6 @@ int initialize_downtime_data(void)
 /* cleans up scheduled downtime data */
 int cleanup_downtime_data(void)
 {
-	/* free memory allocated to downtime data */
 	free_downtime_data();
 	return OK;
 }
@@ -1004,7 +1003,6 @@ int delete_downtime(int type, unsigned long downtime_id)
 	broker_downtime_data(NEBTYPE_DOWNTIME_DELETE, NEBFLAG_NONE, NEBATTR_NONE, type, this_downtime->host_name, this_downtime->service_description, this_downtime->entry_time, this_downtime->author, this_downtime->comment, this_downtime->start_time, this_downtime->end_time, this_downtime->fixed, this_downtime->triggered_by, this_downtime->duration, downtime_id, NULL);
 #endif
 
-	/* free memory */
 	nm_free(this_downtime->host_name);
 	nm_free(this_downtime->service_description);
 	nm_free(this_downtime->author);

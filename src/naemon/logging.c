@@ -462,7 +462,6 @@ int log_debug_info(int level, int verbosity, const char *fmt, ...)
 			/* rotate the debug file */
 			my_rename(debug_file, tmppath);
 
-			/* free memory */
 			nm_free(tmppath);
 		}
 

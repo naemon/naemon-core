@@ -559,7 +559,6 @@ int grab_macro_value_r(nagios_macros *mac, char *macro_buffer, char **output, in
 		result = ERROR;
 	}
 
-	/* free memory */
 	nm_free(buf);
 
 	return result;
