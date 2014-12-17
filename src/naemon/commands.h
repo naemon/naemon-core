@@ -205,10 +205,6 @@ const char *command_raw_arguments(const struct external_command * command);
 int command_id(const struct external_command * command);
 const char *command_name(const struct external_command * command);
 
-
-int open_command_file(void);					/* creates the external command file as a named pipe (FIFO) and opens it for reading */
-int close_command_file(void);					/* closes and deletes the external command file (FIFO) */
-
 int process_external_command(char *cmd, int mode); /* processes an external command given mode flags */
 int process_external_command1(char *cmd); /* DEPRECATED: top-level external old style command processor */
 int process_external_command2(int cmd, time_t entry_time, char *args);  /* DEPRECATED: for backwards NEB compatibility only */
@@ -274,10 +270,6 @@ void enable_contact_host_notifications(contact *);      /* enables host notifica
 void disable_contact_host_notifications(contact *);     /* disables host notifications for a specific contact */
 void enable_contact_service_notifications(contact *);   /* enables service notifications for a specific contact */
 void disable_contact_service_notifications(contact *);  /* disables service notifications for a specific contact */
-
-int launch_command_file_worker(void);
-int shutdown_command_file_worker(void);
-int disconnect_command_file_worker(void);
 
 NAGIOS_END_DECL
 
