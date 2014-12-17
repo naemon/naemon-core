@@ -46,3 +46,16 @@ m4/
 naemon-uninstalled.pc
 naemon.pc
 naemon.log
+test-dkhash
+test-bitmap
+test-fanout
+test-iobroker
+test-iocache
+test-kvvec
+test-nsutils
+test-runcmd
+test-squeue
+test-*.trs
+test-*.log
+.dirstamp
+*.8
