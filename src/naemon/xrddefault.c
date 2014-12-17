@@ -639,11 +639,11 @@ int xrddefault_read_state_information(void)
 					}
 
 					/* calculate next possible notification time */
-					if (temp_host->current_state != HOST_UP && temp_host->last_notification != (time_t)0)
+					if (temp_host->current_state != STATE_UP && temp_host->last_notification != (time_t)0)
 						temp_host->next_notification = get_next_host_notification_time(temp_host, temp_host->last_notification);
 
 					/* ADDED 01/23/2009 adjust current check attempts if host in hard problem state (max attempts may have changed in config since restart) */
-					if (temp_host->current_state != HOST_UP && temp_host->state_type == HARD_STATE)
+					if (temp_host->current_state != STATE_UP && temp_host->state_type == HARD_STATE)
 						temp_host->current_attempt = temp_host->max_attempts;
 
 
@@ -1184,7 +1184,7 @@ int xrddefault_read_state_information(void)
 								temp_host->max_attempts = atoi(val);
 
 								/* adjust current attempt number if in a hard state */
-								if (temp_host->state_type == HARD_STATE && temp_host->current_state != HOST_UP && temp_host->current_attempt > 1)
+								if (temp_host->state_type == HARD_STATE && temp_host->current_state != STATE_UP && temp_host->current_attempt > 1)
 									temp_host->current_attempt = temp_host->max_attempts;
 							}
 						}

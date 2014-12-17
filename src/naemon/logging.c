@@ -269,9 +269,9 @@ int log_host_event(host *hst)
 	unsigned long log_options = 0L;
 
 	/* get the log options */
-	if (hst->current_state == HOST_DOWN)
+	if (hst->current_state == STATE_DOWN)
 		log_options = NSLOG_HOST_DOWN;
-	else if (hst->current_state == HOST_UNREACHABLE)
+	else if (hst->current_state == STATE_UNREACHABLE)
 		log_options = NSLOG_HOST_UNREACHABLE;
 	else
 		log_options = NSLOG_HOST_UP;

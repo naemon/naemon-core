@@ -1003,13 +1003,13 @@ static int read_status_file(void)
 						passive_hosts_checked_last_1min++;
 				}
 				switch (current_state) {
-				case HOST_UP:
+				case STATE_UP:
 					hosts_up++;
 					break;
-				case HOST_DOWN:
+				case STATE_DOWN:
 					hosts_down++;
 					break;
-				case HOST_UNREACHABLE:
+				case STATE_UNREACHABLE:
 					hosts_unreachable++;
 					break;
 				default:

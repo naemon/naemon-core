@@ -45,7 +45,7 @@ host *host_new(const char *name)
 	new_host->check_interval = 5;
 	new_host->check_options = 0;
 	new_host->state_type = HARD_STATE;
-	new_host->current_state = HOST_UP;
+	new_host->current_state = STATE_UP;
 	new_host->has_been_checked = TRUE;
 	new_host->last_check = (time_t)(time(NULL) - 60);
 	new_host->next_check = (time_t)(time(NULL) + 1);

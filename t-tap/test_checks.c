@@ -53,7 +53,7 @@ void setup_objects(time_t when)
 	host1->check_interval = 5;
 	host1->check_options = 0;
 	host1->state_type = SOFT_STATE;
-	host1->current_state = HOST_DOWN;
+	host1->current_state = STATE_DOWN;
 	host1->has_been_checked = TRUE;
 	host1->last_check = when;
 	host1->next_check = when;
@@ -154,7 +154,7 @@ int main(int argc, char **argv)
 	*/
 /**
 *	setup_objects((time_t) 1234567800L);
-*	host1->current_state = HOST_DOWN;
+*	host1->current_state = STATE_DOWN;
 *	svc1->current_state = STATE_OK;
 *	svc1->state_type = HARD_STATE;
 *	setup_check_result();
@@ -179,7 +179,7 @@ int main(int argc, char **argv)
 		Tests that the ack is left for 2/4
 	*/
 	setup_objects(now);
-	host1->current_state = HOST_UP;
+	host1->current_state = STATE_UP;
 	host1->max_attempts = 4;
 	svc1->last_state = STATE_OK;
 	svc1->last_hard_state = STATE_OK;
@@ -221,7 +221,7 @@ int main(int argc, char **argv)
 	   Tests that the ack is not removed on hard state change
 	*/
 	setup_objects(now);
-	host1->current_state = HOST_UP;
+	host1->current_state = STATE_UP;
 	host1->max_attempts = 4;
 	svc1->last_state = STATE_OK;
 	svc1->last_hard_state = STATE_OK;
@@ -279,7 +279,7 @@ int main(int argc, char **argv)
 	   Tests that the ack is not removed on 2nd warning, but is on OK
 	*/
 	setup_objects(now);
-	host1->current_state = HOST_UP;
+	host1->current_state = STATE_UP;
 	host1->max_attempts = 4;
 	svc1->last_state = STATE_OK;
 	svc1->last_hard_state = STATE_OK;
@@ -315,9 +315,9 @@ int main(int argc, char **argv)
 	   Tests that the ack is not removed on 2nd DOWN, but is on UP
 	*/
 	setup_objects(now);
-	host1->current_state = HOST_UP;
-	host1->last_state = HOST_UP;
-	host1->last_hard_state = HOST_UP;
+	host1->current_state = STATE_UP;
+	host1->last_state = STATE_UP;
+	host1->last_hard_state = STATE_UP;
 	host1->state_type = SOFT_STATE;
 	host1->current_attempt = 1;
 	host1->max_attempts = 4;

@@ -69,9 +69,9 @@ NAGIOS_BEGIN_DECL
  */
 #define OPT_NOTHING       0 /* no options selected */
 #define OPT_ALL           (~0) /* everything selected, so all bits set */
-#define OPT_DOWN          (1 << HOST_DOWN)
-#define OPT_UP            (1 << HOST_UP)
-#define OPT_UNREACHABLE   (1 << HOST_UNREACHABLE)
+#define OPT_DOWN          (1 << STATE_DOWN)
+#define OPT_UP            (1 << STATE_UP)
+#define OPT_UNREACHABLE   (1 << STATE_UNREACHABLE)
 #define OPT_OK            (1 << STATE_OK)
 #define OPT_WARNING       (1 << STATE_WARNING)
 #define OPT_CRITICAL      (1 << STATE_CRITICAL)

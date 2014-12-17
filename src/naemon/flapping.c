@@ -319,7 +319,7 @@ void set_host_flap(host *hst, double percent_change, double high_threshold, doub
 #endif
 
 	/* see if we should check to send a recovery notification out when flapping stops */
-	if (hst->current_state != HOST_UP && hst->current_notification_number > 0)
+	if (hst->current_state != STATE_UP && hst->current_notification_number > 0)
 		hst->check_flapping_recovery_notification = TRUE;
 	else
 		hst->check_flapping_recovery_notification = FALSE;
@@ -363,7 +363,7 @@ void clear_host_flap(host *hst, double percent_change, double high_threshold, do
 	host_notification(hst, NOTIFICATION_FLAPPINGSTOP, NULL, NULL, NOTIFICATION_OPTION_NONE);
 
 	/* should we send a recovery notification? */
-	if (hst->check_flapping_recovery_notification == TRUE && hst->current_state == HOST_UP)
+	if (hst->check_flapping_recovery_notification == TRUE && hst->current_state == STATE_UP)
 		host_notification(hst, NOTIFICATION_NORMAL, NULL, NULL, NOTIFICATION_OPTION_NONE);
 
 	/* clear the recovery notification flag */
@@ -552,7 +552,7 @@ void handle_host_flap_detection_disabled(host *hst)
 		host_notification(hst, NOTIFICATION_FLAPPINGDISABLED, NULL, NULL, NOTIFICATION_OPTION_NONE);
 
 		/* should we send a recovery notification? */
-		if (hst->check_flapping_recovery_notification == TRUE && hst->current_state == HOST_UP)
+		if (hst->check_flapping_recovery_notification == TRUE && hst->current_state == STATE_UP)
 			host_notification(hst, NOTIFICATION_NORMAL, NULL, NULL, NOTIFICATION_OPTION_NONE);
 
 		/* clear the recovery notification flag */

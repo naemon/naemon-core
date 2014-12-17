@@ -1670,7 +1670,7 @@ static int host_command_handler(const struct external_command *ext_command, time
 			target_host->max_attempts = GV_INT("check_attempts");
 			target_host->modified_attributes |= MODATTR_MAX_CHECK_ATTEMPTS;
 
-			if(target_host->state_type == HARD_STATE && target_host->current_state != HOST_UP && target_host->current_attempt > 1)
+			if(target_host->state_type == HARD_STATE && target_host->current_state != STATE_UP && target_host->current_attempt > 1)
 				target_host->current_attempt = target_host->max_attempts;
 			return OK;
 
@@ -3705,7 +3705,7 @@ void acknowledge_host_problem(host *hst, char *ack_author, char *ack_data, int t
 	time_t current_time = 0L;
 
 	/* cannot acknowledge a non-existent problem */
-	if (hst->current_state == HOST_UP)
+	if (hst->current_state == STATE_UP)
 		return;
 
 #ifdef USE_EVENT_BROKER

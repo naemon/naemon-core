@@ -460,13 +460,13 @@ void test_host_commands(void) {
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] ENABLE_HOST_SVC_NOTIFICATIONS;host1"), "core command: ENABLE_HOST_SVC_NOTIFICATIONS");
 	ok(target_host->services->service_ptr->notifications_enabled, "ENABLE_HOST_SVC_NOTIFICATIONS enables notifications for services on a host");
 
-	target_host->current_state = HOST_DOWN;
+	target_host->current_state = STATE_DOWN;
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] ACKNOWLEDGE_HOST_PROBLEM;host1;2;0;0;myself;my ack comment"), "core command: ACKNOWLEDGE_HOST_PROBLEM");
 	ok(target_host->problem_has_been_acknowledged, "ACKNOWLEDGE_HOST_PROBLEM acknowledges a host problem");
 
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] REMOVE_HOST_ACKNOWLEDGEMENT;host1"), "core command: REMOVE_HOST_ACKNOWLEDGEMENT");
 	ok(!target_host->problem_has_been_acknowledged, "REMOVE_HOST_ACKNOWLEDGEMENT removes a host acknowledgement");
-	target_host->current_state = HOST_UP;
+	target_host->current_state = STATE_UP;
 
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] DISABLE_HOST_EVENT_HANDLER;host1"), "core command: DISABLE_HOST_EVENT_HANDLER");
 	ok(!target_host->event_handler_enabled, "DISABLE_HOST_EVENT_HANDLER disables event handler for a host");
@@ -512,7 +512,7 @@ void test_host_commands(void) {
 	free(cmdstr);
 
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] PROCESS_HOST_CHECK_RESULT;host1;1;some plugin output"), "core command: PROCESS_HOST_CHECK_RESULT");
-	ok(target_host->current_state == HOST_DOWN, "PROCESS_HOST_CHECK_RESULT processes host check results");
+	ok(target_host->current_state == STATE_DOWN, "PROCESS_HOST_CHECK_RESULT processes host check results");
 
 	check_time = target_host->next_check - 20;
 	asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_CHECK;host1;%llu", (unsigned long long int)check_time);
