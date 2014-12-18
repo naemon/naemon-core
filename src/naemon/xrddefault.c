@@ -45,7 +45,6 @@ int xrddefault_initialize_retention_data(const char *cfgfile)
 int xrddefault_cleanup_retention_data(void)
 {
 
-	/* free memory */
 	nm_free(retention_file);
 
 	return OK;
@@ -447,7 +446,6 @@ int xrddefault_save_state_information(void)
 		nm_log(NSLOG_RUNTIME_ERROR, "Error: Unable to save retention file: %s", strerror(errno));
 	}
 
-	/* free memory */
 	nm_free(tmp_file);
 
 	return result;
@@ -551,7 +549,6 @@ int xrddefault_read_state_information(void)
 
 	/* read all lines in the retention file */
 	while (1) {
-		/* free memory */
 		nm_free(inputbuf);
 
 		/* read the next line */
@@ -1197,7 +1194,6 @@ int xrddefault_read_state_information(void)
 									}
 								}
 
-								/* free memory */
 								nm_free(customvarname);
 							}
 
@@ -1460,7 +1456,6 @@ int xrddefault_read_state_information(void)
 									}
 								}
 
-								/* free memory */
 								nm_free(customvarname);
 							}
 						}
@@ -1569,7 +1564,6 @@ int xrddefault_read_state_information(void)
 									}
 								}
 
-								/* free memory */
 								nm_free(customvarname);
 							}
 						}
@@ -1643,7 +1637,6 @@ int xrddefault_read_state_information(void)
 		}
 	}
 
-	/* free memory and close the file */
 	nm_free(inputbuf);
 	mmap_fclose(thefile);
 

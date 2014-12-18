@@ -102,7 +102,6 @@ int obsessive_compulsive_service_check_processor(service *svc)
 		free(ocj);
 	}
 
-	/* free memory */
 	clear_volatile_macros_r(&mac);
 	nm_free(processed_command);
 
@@ -162,7 +161,6 @@ int obsessive_compulsive_host_check_processor(host *hst)
 		free(ocj);
 	}
 
-	/* free memory */
 	clear_volatile_macros_r(&mac);
 	nm_free(processed_command);
 
@@ -316,7 +314,6 @@ int run_global_service_event_handler(nagios_macros *mac, service *svc)
 	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, GLOBAL_SERVICE_EVENTHANDLER, (void *)svc, svc->current_state, svc->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, global_service_event_handler, processed_command, command_output, NULL);
 #endif
 
-	/* free memory */
 	nm_free(command_output);
 	nm_free(processed_command);
 	nm_free(raw_logentry);
@@ -412,7 +409,6 @@ int run_service_event_handler(nagios_macros *mac, service *svc)
 	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_EVENTHANDLER, (void *)svc, svc->current_state, svc->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, svc->event_handler, processed_command, command_output, NULL);
 #endif
 
-	/* free memory */
 	nm_free(command_output);
 	nm_free(processed_command);
 	nm_free(raw_logentry);
@@ -549,7 +545,6 @@ int run_global_host_event_handler(nagios_macros *mac, host *hst)
 	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, GLOBAL_HOST_EVENTHANDLER, (void *)hst, hst->current_state, hst->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, global_host_event_handler, processed_command, command_output, NULL);
 #endif
 
-	/* free memory */
 	nm_free(command_output);
 	nm_free(processed_command);
 	nm_free(raw_logentry);
@@ -644,7 +639,6 @@ int run_host_event_handler(nagios_macros *mac, host *hst)
 	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_EVENTHANDLER, (void *)hst, hst->current_state, hst->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, hst->event_handler, processed_command, command_output, NULL);
 #endif
 
-	/* free memory */
 	nm_free(command_output);
 	nm_free(processed_command);
 	nm_free(raw_logentry);

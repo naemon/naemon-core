@@ -304,7 +304,6 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 		update_check_stats(ACTIVE_SCHEDULED_SERVICE_CHECK_STATS, start_time.tv_sec);
 	}
 
-	/* free memory */
 	my_free(processed_command);
 	clear_volatile_macros_r(&mac);
 

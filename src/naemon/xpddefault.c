@@ -27,6 +27,18 @@ static int     service_perfdata_fd = -1;
 
 static void xpddefault_process_host_perfdata_file(struct timed_event_properties *evprop);
 static void xpddefault_process_service_perfdata_file(struct timed_event_properties *evprop);
+static int xpddefault_run_service_performance_data_command(nagios_macros *mac, service *);
+static int xpddefault_run_host_performance_data_command(nagios_macros *mac, host *);
+
+static int xpddefault_update_service_performance_data_file(nagios_macros *mac, service *);
+static int xpddefault_update_host_performance_data_file(nagios_macros *mac, host *);
+
+static int xpddefault_preprocess_file_templates(char *);
+
+static int xpddefault_open_host_perfdata_file(void);
+static int xpddefault_open_service_perfdata_file(void);
+static int xpddefault_close_host_perfdata_file(void);
+static int xpddefault_close_service_perfdata_file(void);
 
 
 /******************************************************************/
@@ -108,7 +120,6 @@ int xpddefault_initialize_performance_data(const char *cfgfile)
 			nm_free(host_perfdata_file_processing_command);
 		}
 
-		/* free memory */
 		nm_free(temp_buffer);
 
 		/* save the command pointer for later */
@@ -150,7 +161,6 @@ int xpddefault_initialize_performance_data(const char *cfgfile)
 		strip(mac->x[MACRO_SERVICEPERFDATAFILE]);
 	}
 
-	/* free memory */
 	nm_free(temp_buffer);
 	nm_free(buffer);
 
@@ -162,7 +172,6 @@ int xpddefault_initialize_performance_data(const char *cfgfile)
 int xpddefault_cleanup_performance_data(void)
 {
 
-	/* free memory */
 	nm_free(host_perfdata_command);
 	nm_free(service_perfdata_command);
 	nm_free(host_perfdata_file_template);
@@ -276,7 +285,7 @@ int xpddefault_update_host_performance_data(host *hst)
 /******************************************************************/
 
 /* runs the service performance data command */
-int xpddefault_run_service_performance_data_command(nagios_macros *mac, service *svc)
+static int xpddefault_run_service_performance_data_command(nagios_macros *mac, service *svc)
 {
 	char *raw_command_line = NULL;
 	char *processed_command_line = NULL;
@@ -308,7 +317,6 @@ int xpddefault_run_service_performance_data_command(nagios_macros *mac, service 
 	/* run the command */
 	wproc_run_callback(processed_command_line, perfdata_timeout, xpddefault_perfdata_job_handler, NULL, mac);
 
-	/* free memory */
 	nm_free(processed_command_line);
 
 	return result;
@@ -316,7 +324,7 @@ int xpddefault_run_service_performance_data_command(nagios_macros *mac, service 
 
 
 /* runs the host performance data command */
-int xpddefault_run_host_performance_data_command(nagios_macros *mac, host *hst)
+static int xpddefault_run_host_performance_data_command(nagios_macros *mac, host *hst)
 {
 	char *raw_command_line = NULL;
 	char *processed_command_line = NULL;
@@ -348,7 +356,6 @@ int xpddefault_run_host_performance_data_command(nagios_macros *mac, host *hst)
 	/* run the command */
 	wproc_run_callback(processed_command_line, perfdata_timeout, xpddefault_perfdata_job_handler, NULL, mac);
 
-	/* free memory */
 	nm_free(processed_command_line);
 
 	return result;
@@ -360,7 +367,7 @@ int xpddefault_run_host_performance_data_command(nagios_macros *mac, host *hst)
 /******************************************************************/
 
 /* open the host performance data file for writing */
-int xpddefault_open_host_perfdata_file(void)
+static int xpddefault_open_host_perfdata_file(void)
 {
 
 	if (host_perfdata_file != NULL) {
@@ -385,7 +392,7 @@ int xpddefault_open_host_perfdata_file(void)
 
 
 /* open the service performance data file for writing */
-int xpddefault_open_service_perfdata_file(void)
+static int xpddefault_open_service_perfdata_file(void)
 {
 
 	if (service_perfdata_file != NULL) {
@@ -409,7 +416,7 @@ int xpddefault_open_service_perfdata_file(void)
 
 
 /* close the host performance data file */
-int xpddefault_close_host_perfdata_file(void)
+static int xpddefault_close_host_perfdata_file(void)
 {
 
 	if (host_perfdata_fp != NULL)
@@ -424,7 +431,7 @@ int xpddefault_close_host_perfdata_file(void)
 
 
 /* close the service performance data file */
-int xpddefault_close_service_perfdata_file(void)
+static int xpddefault_close_service_perfdata_file(void)
 {
 
 	if (service_perfdata_fp != NULL)
@@ -439,7 +446,7 @@ int xpddefault_close_service_perfdata_file(void)
 
 
 /* processes delimiter characters in templates */
-int xpddefault_preprocess_file_templates(char *template)
+static int xpddefault_preprocess_file_templates(char *template)
 {
 	char *tempbuf;
 	unsigned int x, y;
@@ -477,7 +484,7 @@ int xpddefault_preprocess_file_templates(char *template)
 
 
 /* updates service performance data file */
-int xpddefault_update_service_performance_data_file(nagios_macros *mac, service *svc)
+static int xpddefault_update_service_performance_data_file(nagios_macros *mac, service *svc)
 {
 	char *raw_output = NULL;
 	char *processed_output = NULL;
@@ -507,7 +514,6 @@ int xpddefault_update_service_performance_data_file(nagios_macros *mac, service 
 	fputc('\n', service_perfdata_fp);
 	fflush(service_perfdata_fp);
 
-	/* free memory */
 	nm_free(raw_output);
 	nm_free(processed_output);
 
@@ -516,7 +522,7 @@ int xpddefault_update_service_performance_data_file(nagios_macros *mac, service 
 
 
 /* updates host performance data file */
-int xpddefault_update_host_performance_data_file(nagios_macros *mac, host *hst)
+static int xpddefault_update_host_performance_data_file(nagios_macros *mac, host *hst)
 {
 	char *raw_output = NULL;
 	char *processed_output = NULL;
@@ -546,7 +552,6 @@ int xpddefault_update_host_performance_data_file(nagios_macros *mac, host *hst)
 	fputc('\n', host_perfdata_fp);
 	fflush(host_perfdata_fp);
 
-	/* free memory */
 	nm_free(raw_output);
 	nm_free(processed_output);
 
@@ -610,7 +615,6 @@ static void xpddefault_process_host_perfdata_file(struct timed_event_properties 
 			       "Warning: Host performance data file processing command '%s' timed out after %d seconds\n", processed_command_line, perfdata_timeout);
 
 
-		/* free memory */
 		my_free(processed_command_line);
 
 		/* return OK */
@@ -674,7 +678,6 @@ static void xpddefault_process_service_perfdata_file(struct timed_event_properti
 			nm_log(NSLOG_RUNTIME_WARNING,
 			       "Warning: Service performance data file processing command '%s' timed out after %d seconds\n", processed_command_line, perfdata_timeout);
 
-		/* free memory */
 		my_free(processed_command_line);
 
 		/* return OK */

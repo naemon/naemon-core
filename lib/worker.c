@@ -158,11 +158,6 @@ char *worker_ioc2msg(iocache *ioc, unsigned long *size, int flags)
 	return iocache_use_delim(ioc, MSG_DELIM, MSG_DELIM_LEN, size);
 }
 
-int worker_buf2kvvec_prealloc(struct kvvec *kvv, char *buf, unsigned long len, int kvv_flags)
-{
-	return buf2kvvec_prealloc(kvv, buf, len, KV_SEP, PAIR_SEP, kvv_flags);
-}
-
 #define kvvec_add_long(kvv, key, value) \
 	do { \
 		const char *buf = mkstr("%ld", value); \

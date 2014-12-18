@@ -2969,7 +2969,6 @@ int process_external_commands_from_file(char *fname, int delete_file)
 	/* process all commands in the file */
 	while (1) {
 
-		/* free memory */
 		nm_free(input);
 
 		/* read the next line */
@@ -3060,7 +3059,6 @@ int process_external_command1(char *cmd)
 	broker_external_command(NEBTYPE_EXTERNALCOMMAND_END, NEBFLAG_NONE, NEBATTR_NONE, id, command_entry_time(parsed_command), name, args, NULL);
 #endif
 
-	/* free memory */
 	free(name);
 	free(args);
 	command_destroy(parsed_command);

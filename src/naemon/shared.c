@@ -229,7 +229,6 @@ int mmap_fclose(mmapfile *temp_mmapfile)
 	/* close the file */
 	close(temp_mmapfile->fd);
 
-	/* free memory */
 	nm_free(temp_mmapfile->path);
 	nm_free(temp_mmapfile);
 

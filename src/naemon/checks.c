@@ -367,7 +367,6 @@ int process_check_result_file(char *fname)
 	/* read in all lines from the file */
 	while (1) {
 
-		/* free memory */
 		my_free(input);
 
 		/* read the next line */
@@ -461,7 +460,6 @@ int process_check_result_file(char *fname)
 
 	free_check_result(&cr);
 
-	/* free memory and close file */
 	my_free(input);
 	mmap_fclose(thefile);
 
