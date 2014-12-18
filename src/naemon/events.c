@@ -299,6 +299,13 @@ void event_execution_loop(void)
 		else if (time_diff >= 1500)
 			time_diff = 1500;
 
+		if (!iobroker_push(nagios_iobs)) {
+			/* There was a backlog for data sending? Catch up at "idle
+			 * priority", i.e. prevent sleeping while awaiting
+			 * results, but continue to run events as usual.
+			 */
+			time_diff = 0;
+		}
 		inputs = iobroker_poll(nagios_iobs, time_diff);
 		if (inputs < 0 && errno != EINTR) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Error: Polling for input on %p failed: %s", nagios_iobs, iobroker_strerror(inputs));

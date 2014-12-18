@@ -762,8 +762,8 @@ static int wproc_run_job(struct wproc_job *job, nagios_macros *mac)
 	kvvec_addkv(&kvv, "command", job->command);
 	kvvec_addkv(&kvv, "timeout", (char *)mkstr("%u", job->timeout));
 	kvvb = build_kvvec_buf(&kvv);
-	ret = write(wp->sd, kvvb->buf, kvvb->bufsize);
-	if (ret != (int)kvvb->bufsize) {
+	ret = iobroker_write_packet(nagios_iobs, wp->sd, kvvb->buf, kvvb->bufsize);
+	if (ret < 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "wproc: '%s' seems to be choked. ret = %d; bufsize = %lu: errno = %d (%s)\n",
 		       wp->name, ret, kvvb->bufsize, errno, strerror(errno));
 		// these two will be decremented by destroy_job, so preemptively increment them
