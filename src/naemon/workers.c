@@ -222,9 +222,12 @@ static int wproc_destroy(struct wproc_worker *wp, int flags)
 
 	iobroker_close(nagios_iobs, wp->sd);
 
-	/* reap our possibly lost children */
-	while (waitpid(wp->pid, &i, 0) >= 0)
-		; /* do nothing */
+	/* reap this child if it still exists */
+	do {
+		int ret = waitpid(wp->pid, &i, 0);
+		if (ret == wp->pid || (ret < 0 && errno == ECHILD))
+			break;
+	} while(1);
 
 	free(wp);
 
