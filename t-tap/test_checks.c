@@ -1,5 +1,7 @@
 #include <string.h>
 #include "naemon/checks.h"
+#include "naemon/checks_host.h"
+#include "naemon/checks_service.h"
 #include "naemon/configuration.h"
 #include "naemon/comments.h"
 #include "naemon/common.h"
