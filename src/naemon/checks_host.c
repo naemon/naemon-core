@@ -292,7 +292,6 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	cr->check_type = CHECK_TYPE_ACTIVE;
 	cr->check_options = check_options;
 	cr->scheduled_check = TRUE;
-	cr->reschedule_check = TRUE;
 	cr->latency = latency;
 	cr->start_time = start_time;
 	cr->finish_time = start_time;
@@ -361,7 +360,6 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 	log_debug_info(DEBUGL_CHECKS, 2, "\tCheck Type:         %s\n", (queued_check_result->check_type == CHECK_TYPE_ACTIVE) ? "Active" : "Passive");
 	log_debug_info(DEBUGL_CHECKS, 2, "\tCheck Options:      %d\n", queued_check_result->check_options);
 	log_debug_info(DEBUGL_CHECKS, 2, "\tScheduled Check?:   %s\n", (queued_check_result->scheduled_check == TRUE) ? "Yes" : "No");
-	log_debug_info(DEBUGL_CHECKS, 2, "\tReschedule Check?:  %s\n", (queued_check_result->reschedule_check == TRUE) ? "Yes" : "No");
 	log_debug_info(DEBUGL_CHECKS, 2, "\tExited OK?:         %s\n", (queued_check_result->exited_ok == TRUE) ? "Yes" : "No");
 	log_debug_info(DEBUGL_CHECKS, 2, "\tExec Time:          %.3f\n", temp_host->execution_time);
 	log_debug_info(DEBUGL_CHECKS, 2, "\tLatency:            %.3f\n", temp_host->latency);

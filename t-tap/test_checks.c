@@ -35,7 +35,6 @@ void setup_check_result(void)
 	tmp_check_result->check_type = SERVICE_CHECK_ACTIVE;
 	tmp_check_result->check_options = 0;
 	tmp_check_result->scheduled_check = TRUE;
-	tmp_check_result->reschedule_check = TRUE;
 	tmp_check_result->exited_ok = TRUE;
 	tmp_check_result->return_code = 0;
 	tmp_check_result->output = strdup("Fake result");
@@ -113,7 +112,6 @@ int main(int argc, char **argv)
 	tmp_check_result->check_type = SERVICE_CHECK_ACTIVE;
 	tmp_check_result->check_options = 0;
 	tmp_check_result->scheduled_check = TRUE;
-	tmp_check_result->reschedule_check = TRUE;
 	tmp_check_result->latency = 0.666;
 	tmp_check_result->start_time.tv_sec = 1234567890;
 	tmp_check_result->start_time.tv_usec = 56565;

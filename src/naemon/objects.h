@@ -138,7 +138,6 @@ typedef struct check_result {
 	int check_type;					/* was this an active or passive service check? */
 	int check_options;
 	int scheduled_check;                            /* was this a scheduled or an on-demand check? */
-	int reschedule_check;                           /* should we reschedule the next check */
 	char *output_file;                              /* what file is the output stored in? */
 	FILE *output_file_fp;
 	double latency;
