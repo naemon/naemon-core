@@ -621,7 +621,6 @@ host *add_host(char *name, char *display_name, char *alias, char *address, char 
 	new_host->last_state = initial_state;
 	new_host->last_hard_state = initial_state;
 	new_host->check_type = CHECK_TYPE_ACTIVE;
-	new_host->should_be_scheduled = TRUE;
 	new_host->current_attempt = (initial_state == STATE_UP) ? 1 : max_attempts;
 	new_host->state_type = HARD_STATE;
 	new_host->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
@@ -1408,7 +1407,6 @@ service *add_service(char *host_name, char *description, char *display_name, cha
 	new_service->last_state = initial_state;
 	new_service->last_hard_state = initial_state;
 	new_service->state_type = HARD_STATE;
-	new_service->should_be_scheduled = TRUE;
 	new_service->check_options = CHECK_OPTION_NONE;
 
 	/* add new service to hash table */

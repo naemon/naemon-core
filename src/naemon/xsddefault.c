@@ -207,7 +207,6 @@ int xsddefault_save_status_data(void)
 		fprintf(fp, "\tevent_handler=%s\n", (temp_host->event_handler == NULL) ? "" : temp_host->event_handler);
 
 		fprintf(fp, "\thas_been_checked=%d\n", temp_host->has_been_checked);
-		fprintf(fp, "\tshould_be_scheduled=%d\n", temp_host->should_be_scheduled);
 		fprintf(fp, "\tcheck_execution_time=%.3f\n", temp_host->execution_time);
 		fprintf(fp, "\tcheck_latency=%.3f\n", temp_host->latency);
 		fprintf(fp, "\tcheck_type=%d\n", temp_host->check_type);
@@ -273,7 +272,6 @@ int xsddefault_save_status_data(void)
 		fprintf(fp, "\tevent_handler=%s\n", (temp_service->event_handler == NULL) ? "" : temp_service->event_handler);
 
 		fprintf(fp, "\thas_been_checked=%d\n", temp_service->has_been_checked);
-		fprintf(fp, "\tshould_be_scheduled=%d\n", temp_service->should_be_scheduled);
 		fprintf(fp, "\tcheck_execution_time=%.3f\n", temp_service->execution_time);
 		fprintf(fp, "\tcheck_latency=%.3f\n", temp_service->latency);
 		fprintf(fp, "\tcheck_type=%d\n", temp_service->check_type);

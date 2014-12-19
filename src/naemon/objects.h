@@ -422,7 +422,7 @@ struct host {
 	time_t  last_notification;
 	time_t  next_notification;
 	time_t  next_check;
-	int     should_be_scheduled;
+	int     reserved2; /* placeholder var to not break interface, was should_be_scheduled before */
 	time_t  last_check;
 	time_t	last_state_change;
 	time_t	last_hard_state_change;
@@ -531,7 +531,7 @@ struct service {
 	char    *perf_data;
 	int     state_type;
 	time_t	next_check;
-	int     should_be_scheduled;
+	int     reserved2; /* placeholder var to not break interface, was should_be_scheduled before */
 	time_t	last_check;
 	int	current_attempt;
 	unsigned long current_event_id;
