@@ -16,6 +16,7 @@
 #include "pqueue.h"
 #include "squeue.h"
 #include "kvvec.h"
+#include "kvvec_ekvstr.h"
 #include "iobroker.h"
 #include "iocache.h"
 #include "runcmd.h"

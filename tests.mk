@@ -97,7 +97,26 @@ tests_test_event_heap_SOURCES	= tests/test-event-heap.c src/naemon/defaults.c
 tests_test_event_heap_LDADD = $(TEST_EVENT_HEAP_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
 tests_test_event_heap_CPPFLAGS = $(TESTS_AM_CPPFLAGS)
 
-check_PROGRAMS += tests/test-checks tests/test-utils tests/test-log tests/test-config tests/test-event-heap
+TEST_KVVEC_EKVSTR_DEPS =
+tests_test_kvvec_ekvstr_SOURCES	= tests/test-kvvec-ekvstr.c
+tests_test_kvvec_ekvstr_LDADD = $(TEST_KVVEC_EKVSTR_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
+tests_test_kvvec_ekvstr_CPPFLAGS = $(TESTS_AM_CPPFLAGS)
+
+TEST_KVVEC_DEPS =
+tests_test_kvvec_SOURCES = tests/test-kvvec.c
+tests_test_kvvec_LDADD = $(TEST_KVVEC_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
+tests_test_kvvec_CPPFLAGS = $(TESTS_AM_CPPFLAGS)
+
+check_PROGRAMS += \
+	tests/test-checks \
+	tests/test-utils \
+	tests/test-log \
+	tests/test-config \
+	tests/test-event-heap \
+	tests/test-kvvec \
+	tests/test-kvvec-ekvstr
+
+
 endif
 TEST_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
 	build-aux/tap-driver.sh
