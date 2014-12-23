@@ -167,6 +167,143 @@ START_TEST( kvvec_tests ) {
  }
 END_TEST
 
+START_TEST( kvvec_test_lookup_unsorted ) {
+	struct kvvec *kvv;
+	struct key_value *kv;
+	kvv = kvvec_create(1);
+	ck_assert(kvv != NULL);
+
+	kvvec_addkv(kvv, "golf", "7");
+	kvvec_addkv(kvv, "alfa", "1");
+	kvvec_addkv(kvv, "echo", "5");
+	kvvec_addkv(kvv, "foxtrot", "6");
+	kvvec_addkv(kvv, "bravo", "2");
+	kvvec_addkv(kvv, "hotel", "8");
+	kvvec_addkv(kvv, "charlie", "3");
+	kvvec_addkv(kvv, "delta", "4");
+
+	ck_assert_int_eq(kvv->kv_pairs, 8);
+
+	kv = kvvec_fetch(kvv, "foxtrot", 0);
+	ck_assert(kv != NULL);
+	ck_assert_str_eq(kv->key, "foxtrot");
+	ck_assert_str_eq(kv->value, "6");
+
+	kv = kvvec_fetch(kvv, "hotel", 0);
+	ck_assert(kv != NULL);
+	ck_assert_str_eq(kv->key, "hotel");
+	ck_assert_str_eq(kv->value, "8");
+
+	kv = kvvec_fetch(kvv, "delta", 0);
+	ck_assert(kv != NULL);
+	ck_assert_str_eq(kv->key, "delta");
+	ck_assert_str_eq(kv->value, "4");
+
+	kv = kvvec_fetch(kvv, "golf", 0);
+	ck_assert(kv != NULL);
+	ck_assert_str_eq(kv->key, "golf");
+	ck_assert_str_eq(kv->value, "7");
+
+	kv = kvvec_fetch(kvv, "fox", 0);
+	ck_assert(kv == NULL);
+
+	kv = kvvec_fetch(kvv, "foxtrottrot", 0);
+	ck_assert(kv == NULL);
+
+	kvvec_destroy(kvv, 0);
+}
+END_TEST
+
+START_TEST( kvvec_test_lookup_sorted ) {
+	struct kvvec *kvv;
+	struct key_value *kv;
+	kvv = kvvec_create(1);
+	ck_assert(kvv != NULL);
+
+	kvvec_addkv(kvv, "golf", "7");
+	kvvec_addkv(kvv, "alfa", "1");
+	kvvec_addkv(kvv, "echo", "5");
+	kvvec_addkv(kvv, "foxtrot", "6");
+	kvvec_addkv(kvv, "bravo", "2");
+	kvvec_addkv(kvv, "hotel", "8");
+	kvvec_addkv(kvv, "charlie", "3");
+	kvvec_addkv(kvv, "delta", "4");
+
+	kvvec_sort(kvv);
+
+	ck_assert_int_eq(kvv->kv_pairs, 8);
+
+	kv = kvvec_fetch(kvv, "foxtrot", 0);
+	ck_assert(kv != NULL);
+	ck_assert_str_eq(kv->key, "foxtrot");
+	ck_assert_str_eq(kv->value, "6");
+
+	kv = kvvec_fetch(kvv, "hotel", 0);
+	ck_assert(kv != NULL);
+	ck_assert_str_eq(kv->key, "hotel");
+	ck_assert_str_eq(kv->value, "8");
+
+	kv = kvvec_fetch(kvv, "delta", 0);
+	ck_assert(kv != NULL);
+	ck_assert_str_eq(kv->key, "delta");
+	ck_assert_str_eq(kv->value, "4");
+
+	kv = kvvec_fetch(kvv, "golf", 0);
+	ck_assert(kv != NULL);
+	ck_assert_str_eq(kv->key, "golf");
+	ck_assert_str_eq(kv->value, "7");
+
+	kv = kvvec_fetch(kvv, "fox", 0);
+	ck_assert(kv == NULL);
+
+	kv = kvvec_fetch(kvv, "foxtrottrot", 0);
+	ck_assert(kv == NULL);
+
+	kvvec_destroy(kvv, 0);
+}
+END_TEST
+
+
+/**
+ * This test verifies that the is_sorted flag triggers a binary search, which
+ * reduces the overall time. Forcing a unsorted list to be reduced means some
+ * values shouldn't be found.
+ *
+ * This shouldn't happen, since is_sorted should only be set if the list is
+ * sorted on key.
+ */
+START_TEST( kvvec_test_lookup_sorted_uses_binary ) {
+	struct kvvec *kvv;
+	struct key_value *kv;
+	kvv = kvvec_create(1);
+	ck_assert(kvv != NULL);
+
+	kvvec_addkv(kvv, "bravo", "2");
+	kvvec_addkv(kvv, "charlie", "3");
+	kvvec_addkv(kvv, "delta", "4");
+	kvvec_addkv(kvv, "echo", "5");
+	kvvec_addkv(kvv, "foxtrot", "6");
+	kvvec_addkv(kvv, "golf", "7");
+	kvvec_addkv(kvv, "hotel", "8");
+	kvvec_addkv(kvv, "alfa", "1");
+
+	/* Using non-sorted lookup alfa should be found */
+	kv = kvvec_fetch(kvv, "alfa", 0);
+	ck_assert(kv != NULL);
+	ck_assert_str_eq(kv->key, "alfa");
+	ck_assert_str_eq(kv->value, "1");
+
+	/* Forcing sorted flag, binary search shoud be used */
+	kvv->kvv_sorted = 1;
+
+	/* alfa shouldn't be found, since binary search reduces to first half */
+	kv = kvvec_fetch(kvv, "alfa", 0);
+	ck_assert(kv == NULL);
+
+	kvvec_destroy(kvv, 0);
+}
+END_TEST
+
 Suite *kvvec_suite(void)
 {
 	Suite *s = suite_create("kvvec");
@@ -174,6 +311,9 @@ Suite *kvvec_suite(void)
 	TCase *tc;
 	tc = tcase_create("kvvec");
 	tcase_add_test(tc, kvvec_tests);
+	tcase_add_test(tc, kvvec_test_lookup_unsorted);
+	tcase_add_test(tc, kvvec_test_lookup_sorted);
+	tcase_add_test(tc, kvvec_test_lookup_sorted_uses_binary);
 	suite_add_tcase(s, tc);
 
 	return s;

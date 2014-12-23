@@ -101,25 +101,41 @@ int kvvec_addkv_wlen(struct kvvec *kvv, const char *key, int keylen, const char 
 	return 0;
 }
 
+static int val_compare(const void *a, int a_len, const void *b, int b_len)
+{
+	size_t prefix;
+	int diff;
+
+	if (a == NULL && b == NULL)
+		return 0;
+	if (a == NULL)
+		return -1;
+	if (b == NULL)
+		return 1;
+
+	if (a_len > b_len)
+		prefix = b_len;
+	else
+		prefix = a_len;
+
+	diff = memcmp(a, b, prefix);
+	if (diff != 0)
+		return diff;
+	return a_len - b_len;
+}
+
 static int kv_compare(const void *a_, const void *b_)
 {
 	const struct key_value *a = (const struct key_value *)a_;
 	const struct key_value *b = (const struct key_value *)b_;
 	int ret = 0;
 
-	ret = strcmp(a->key, b->key);
-	if (ret)
+	ret = val_compare(a->key, a->key_len, b->key, b->key_len);
+
+	if (ret != 0)
 		return ret;
 
-	if (!a->value && !b->value) {
-		return 0;
-	}
-	if (a->value && !b->value)
-		return -1;
-	if (!a->value && b->value)
-		return 1;
-
-	return strcmp(a->value, b->value);
+	return val_compare(a->value, a->value_len, b->value, b->value_len);
 }
 
 int kvvec_sort(struct kvvec *kvv)
@@ -127,6 +143,49 @@ int kvvec_sort(struct kvvec *kvv)
 	qsort(kvv->kv, kvv->kv_pairs, sizeof(struct key_value), kv_compare);
 	kvv->kvv_sorted = 1;
 	return 0;
+}
+
+struct key_value *kvvec_fetch(struct kvvec *kvv, const char *key, int keylen)
+{
+	int i;
+
+	/* If no keylen defined, key is a string, and strlen is used */
+	if (keylen == 0)
+		keylen = strlen(key);
+
+	/* If sorted, do a binary search */
+	if (kvv->kvv_sorted) {
+		int low = 0;
+		int high = kvv->kv_pairs;
+		while(low < high) {
+			int mid = (low + high)/2;
+			struct key_value *midkv = &(kvv->kv[mid]);
+
+			int diff = val_compare(midkv->key, midkv->key_len, key, keylen);
+
+			if (diff > 0) {
+				high = mid;
+			} else if (diff < 0) {
+				low = mid+1;
+			} else {
+				return midkv;
+			}
+
+		}
+		return NULL;
+	}
+
+	/* If unsorted, lookup until found. O(n) */
+	for (i=0;i<kvv->kv_pairs;i++) {
+		if (keylen != kvv->kv[i].key_len)
+			continue;
+		if (memcmp(kvv->kv[i].key, key, keylen) != 0)
+			continue;
+		return &(kvv->kv[i]);
+	}
+
+	/* Nothing is found, return NULL */
+	return NULL;
 }
 
 int kvvec_foreach(struct kvvec *kvv, void *arg, int (*callback)(struct key_value *, void *))

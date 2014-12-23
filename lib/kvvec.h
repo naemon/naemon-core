@@ -121,6 +121,19 @@ extern unsigned int kvvec_capacity(struct kvvec *kvv);
 extern int kvvec_sort(struct kvvec *kvv);
 
 /**
+ * Fetch an element from a kvvec given key.
+ *
+ * The complexity of this method is O(log N), given that the kvvec is sorted,
+ * O(n) Otherwise.
+ *
+ * @param kvv The key/value vector to search in
+ * @param key The key to search for
+ * @param keylen The length of the key. If 0, keylen is guessed with strlen
+ * @return pointer to an internal key_value struct, stored within kvv (don't free)
+ */
+extern struct key_value *kvvec_fetch(struct kvvec *kvv, const char *key, int keylen);
+
+/**
  * Add a key/value pair to an existing key/value vector, with
  * lengths of strings already calculated
  * @param kvv The key/value vector to add this key/value pair to
