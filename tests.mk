@@ -61,7 +61,8 @@ TESTS_ENVIRONMENT = \
 					   fi; \
 					   builddir=$(abs_builddir); export builddir;
 if HAVE_CHECK
-TESTS_LDADD = @CHECK_LIBS@ -Llib -lnaemon -lm -ldl
+TESTS_LDADD = @CHECK_LIBS@ libnaemon.la -Llib -lm -ldl
+TESTS_LDFLAGS = -static
 TESTS_AM_CPPFLAGS = $(AM_CPPFLAGS) -Isrc '-DSYSCONFDIR="$(abs_srcdir)/tests/configs/"' -DNAEMON_COMPILATION
 AM_CFLAGS += @CHECK_CFLAGS@
 GENERAL_DEPS = nebmods.o commands.o broker.o query-handler.o utils.o events.o notifications.o \
@@ -75,36 +76,43 @@ tests_test_checks_SOURCES	= tests/test-checks.c \
 	src/naemon/checks_service.h src/naemon/checks_service.c \
 	src/naemon/defaults.c
 tests_test_checks_LDADD =  $(TEST_CHECKS_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
+tests_test_checks_LDFLAGS = $(TESTS_LDFLAGS)
 tests_test_checks_CPPFLAGS = $(TESTS_AM_CPPFLAGS)
 
 TEST_UTILS_DEPS = $(GENERAL_DEPS) checks.o checks_host.o checks_service.o logging.o
 tests_test_utils_SOURCES	= tests/test-utils.c src/naemon/defaults.c
 tests_test_utils_LDADD =  $(TEST_UTILS_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
+tests_test_utils_LDFLAGS = $(TESTS_LDFLAGS)
 tests_test_utils_CPPFLAGS = $(TESTS_AM_CPPFLAGS)
 
 TEST_LOG_DEPS = $(GENERAL_DEPS) checks.o checks_host.o checks_service.o
 tests_test_log_SOURCES	= tests/test-log.c src/naemon/defaults.c
 tests_test_log_LDADD = $(TEST_LOG_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
+tests_test_log_LDFLAGS = $(TESTS_LDFLAGS)
 tests_test_log_CPPFLAGS = $(TESTS_AM_CPPFLAGS)
 
 TEST_CONFIG_DEPS = $(GENERAL_DEPS) checks.o checks_host.o checks_service.o configuration.o logging.o
 tests_test_config_SOURCES	= tests/test-config.c src/naemon/defaults.c
 tests_test_config_LDADD = $(TEST_CONFIG_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
+tests_test_config_LDFLAGS = $(TESTS_LDFLAGS)
 tests_test_config_CPPFLAGS = $(TESTS_AM_CPPFLAGS)
 
 TEST_EVENT_HEAP_DEPS = $(filter-out events.o,$(GENERAL_DEPS)) checks.o checks_host.o checks_service.o logging.o
 tests_test_event_heap_SOURCES	= tests/test-event-heap.c src/naemon/defaults.c
 tests_test_event_heap_LDADD = $(TEST_EVENT_HEAP_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
+tests_test_event_heap_LDFLAGS = $(TESTS_LDFLAGS)
 tests_test_event_heap_CPPFLAGS = $(TESTS_AM_CPPFLAGS)
 
 TEST_KVVEC_EKVSTR_DEPS =
 tests_test_kvvec_ekvstr_SOURCES	= tests/test-kvvec-ekvstr.c
 tests_test_kvvec_ekvstr_LDADD = $(TEST_KVVEC_EKVSTR_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
+tests_test_kvvec_ekvstr_LDFLAGS = $(TESTS_LDFLAGS)
 tests_test_kvvec_ekvstr_CPPFLAGS = $(TESTS_AM_CPPFLAGS)
 
 TEST_KVVEC_DEPS =
 tests_test_kvvec_SOURCES = tests/test-kvvec.c
 tests_test_kvvec_LDADD = $(TEST_KVVEC_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
+tests_test_kvvec_LDFLAGS = $(TESTS_LDFLAGS)
 tests_test_kvvec_CPPFLAGS = $(TESTS_AM_CPPFLAGS)
 
 check_PROGRAMS += \
