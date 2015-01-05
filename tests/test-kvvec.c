@@ -167,6 +167,11 @@ START_TEST( kvvec_tests ) {
  }
 END_TEST
 
+START_TEST( kvvec_test_free_null ) {
+	kvvec_destroy(NULL, KVVEC_FREE_ALL);
+}
+END_TEST
+
 START_TEST( kvvec_test_lookup_unsorted ) {
 	struct kvvec *kvv;
 	struct key_value *kv;
@@ -311,6 +316,7 @@ Suite *kvvec_suite(void)
 	TCase *tc;
 	tc = tcase_create("kvvec");
 	tcase_add_test(tc, kvvec_tests);
+	tcase_add_test(tc, kvvec_test_free_null);
 	tcase_add_test(tc, kvvec_test_lookup_unsorted);
 	tcase_add_test(tc, kvvec_test_lookup_sorted);
 	tcase_add_test(tc, kvvec_test_lookup_sorted_uses_binary);

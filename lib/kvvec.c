@@ -226,6 +226,8 @@ void kvvec_free_kvpairs(struct kvvec *kvv, int flags)
 
 int kvvec_destroy(struct kvvec *kvv, int flags)
 {
+	if(kvv == NULL)
+		return 0;
 	kvvec_free_kvpairs(kvv, flags);
 	free(kvv->kv);
 	free(kvv);
