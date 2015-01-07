@@ -99,17 +99,25 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = naemon.pc
 
 bin_PROGRAMS = src/naemon/naemon src/naemonstats/naemonstats src/oconfsplit/oconfsplit src/shadownaemon/shadownaemon
-manpages: $(bin_PROGRAMS)
+man_MANS = naemon.8 naemonstats.8 shadownaemon.8 oconfsplit.8
+naemon.8: src/naemon/naemon
 	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "monitoring core"                          ./src/naemon/naemon       > naemon.8
+
+naemonstats.8: src/naemonstats/naemonstats
 	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "gather statistics from naemon core"       ./src/naemonstats/naemonstats  > naemonstats.8
+
+shadownaemon.8: src/shadownaemon/shadownaemon
 	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "shadow remote cores via livestatus"       ./src/shadownaemon/shadownaemon > shadownaemon.8
+
+oconfsplit.8: src/oconfsplit/oconfsplit
 	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "split naemon config by hostgroups"        ./src/oconfsplit/oconfsplit   > oconfsplit.8
 
-all-local: manpages
+all-local: $(man_MANS)
 
-CLEANFILES = naemon-uninstalled.pc naemon.pc naemon.8 naemonstats.8 shadownaemon.8 oconfsplit.8
+CLEANFILES = naemon-uninstalled.pc naemon.pc
 CLEANFILES += src/naemon/wpres-phash.h src/naemon/buildopts.h
 CLEANFILES += $(CONFIG_FILES)
+CLEANFILES += $(man_MANS)
 
 src_naemon_naemon_SOURCES = src/naemon/naemon.c $(common_sources)
 src_naemon_naemon_CPPFLAGS = $(AM_CPPFLAGS) -DPREFIX='"$(prefix)"'
@@ -197,13 +205,6 @@ install-exec-hook:
 		$(install_sh_PROGRAM) -m 644 sample-config/conf.d/templates/hosts.cfg     $(DESTDIR)$(pkgconfdir)/conf.d/templates/ ; \
 		$(install_sh_PROGRAM) -m 644 sample-config/conf.d/templates/contacts.cfg  $(DESTDIR)$(pkgconfdir)/conf.d/templates/ ; \
 	fi
-
-
-install-data-local:
-	mkdir -p $(DESTDIR)$(mandir)/man8/
-	install -m 644 naemon.8       $(DESTDIR)$(mandir)/man8/
-	install -m 644 naemonstats.8  $(DESTDIR)$(mandir)/man8/
-	install -m 644 shadownaemon.8 $(DESTDIR)$(mandir)/man8/
 
 uninstall-hook:
 	[ -z $(logrotatedir) ] || rm $(DESTDIR)$(logrotatedir)/naemon
