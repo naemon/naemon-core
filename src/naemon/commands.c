@@ -18,6 +18,7 @@
 #include "globals.h"
 #include "logging.h"
 #include "nm_alloc.h"
+#include "lib/libnaemon.h"
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -497,12 +498,6 @@ static struct external_command * external_command_copy(struct external_command *
 
 }
 
-static struct external_command * parse_kv_command(const char * cmdstr, int *error)
-{
-	*error = CMD_ERROR_UNSUPPORTED_PARSE_MODE;
-	return NULL;
-}
-
 static int validate_contact(void *value)
 {
 	int ret = 0;
@@ -649,6 +644,130 @@ static int parse_integer(const char *str, int *error) {
 		*error = 1;
 	}
 	return ret;
+}
+
+static struct external_command * parse_kv_command(const char * cmdstr, int *error)
+{
+	struct kvvec *kvv;
+	struct key_value *tmpkv;
+	struct external_command *stored_command;
+	struct external_command *extcmd = NULL;
+	char *cmd_name = NULL;
+	dbuf raw_args;
+	int i;
+	int parse_error;
+
+	*error = CMD_ERROR_OK;
+
+	kvv = ekvstr_to_kvvec(cmdstr);
+	if (kvv == NULL) {
+		*error = CMD_ERROR_MALFORMED_COMMAND;
+		goto cleanup;
+	}
+
+	/* Sorted kvvec.s is faster when using kvvec_fetch */
+	(void)kvvec_sort(kvv);
+
+	tmpkv = kvvec_fetch(kvv, "command", 0);
+	if (tmpkv == NULL) {
+		*error = CMD_ERROR_UNKNOWN_COMMAND;
+		goto cleanup;
+	}
+
+	cmd_name = nm_strdup(tmpkv->value);
+
+	stored_command = command_lookup(cmd_name);
+	if(stored_command == NULL) {
+		*error = CMD_ERROR_UNKNOWN_COMMAND;
+		goto cleanup;
+	}
+
+	extcmd = external_command_copy(stored_command);
+	extcmd->entry_time = time(NULL);
+	dbuf_init(&raw_args, 16);
+
+	for (i=0;i<extcmd->argc;i++) {
+		tmpkv = kvvec_fetch(kvv, extcmd->arguments[i]->name, 0);
+		if (tmpkv == NULL) {
+			*error = CMD_ERROR_PARSE_MISSING_ARG;
+			command_destroy(extcmd);
+			extcmd = NULL;
+			goto cleanup;
+		}
+
+		parse_error = 0;
+		switch (extcmd->arguments[i]->argval->type) {
+		case SERVICE:
+			/* TODO: Test if string contains ; */
+			/* ret = CMD_ERROR_PARSE_TYPE_MISMATCH; */
+			extcmd->arguments[i]->argval->val = nm_strdup(tmpkv->value);
+			break;
+		case CONTACT:
+		case CONTACTGROUP:
+		case HOST:
+		case TIMEPERIOD:
+		case STRING:
+		case SERVICEGROUP:
+		case HOSTGROUP:
+			extcmd->arguments[i]->argval->val = nm_strdup(tmpkv->value);
+			break;
+		case BOOL:
+			nm_free(extcmd->arguments[i]->argval->val);
+			extcmd->arguments[i]->argval->val = nm_malloc(sizeof(int));
+			*(int *)(extcmd->arguments[i]->argval->val) = parse_integer(tmpkv->value, &parse_error);
+			break;
+		case INTEGER:
+			nm_free(extcmd->arguments[i]->argval->val);
+			extcmd->arguments[i]->argval->val = nm_malloc(sizeof(int));
+			*(int *)(extcmd->arguments[i]->argval->val) = parse_integer(tmpkv->value, &parse_error);
+			break;
+		case ULONG:
+			nm_free(extcmd->arguments[i]->argval->val);
+			extcmd->arguments[i]->argval->val = nm_malloc(sizeof(unsigned long));
+			*(unsigned long *)(extcmd->arguments[i]->argval->val) = parse_ulong(tmpkv->value, &parse_error);
+			break;
+		case TIMESTAMP:
+			nm_free(extcmd->arguments[i]->argval->val);
+			extcmd->arguments[i]->argval->val = nm_malloc(sizeof(time_t));
+			*(time_t *)(extcmd->arguments[i]->argval->val) = (time_t)parse_ulong(tmpkv->value, &parse_error);
+			break;
+		case DOUBLE:
+			nm_free(extcmd->arguments[i]->argval->val);
+			extcmd->arguments[i]->argval->val = nm_malloc(sizeof(double));
+			*(double *)(extcmd->arguments[i]->argval->val) = parse_double(tmpkv->value, &parse_error);
+			break;
+		default:
+			*error = CMD_ERROR_UNSUPPORTED_ARG_TYPE;
+			command_destroy(extcmd);
+			extcmd = NULL;
+			goto cleanup;
+		}
+		if (parse_error) {
+			*error = CMD_ERROR_PARSE_TYPE_MISMATCH;
+			command_destroy(extcmd);
+			extcmd = NULL;
+			goto cleanup;
+		}
+		if (!(extcmd->arguments[i]->validator(extcmd->arguments[i]->argval->val)))
+		{
+			*error = CMD_ERROR_VALIDATION_FAILURE;
+			command_destroy(extcmd);
+			extcmd = NULL;
+			goto cleanup;
+		}
+
+		if (i!=0)
+			dbuf_strcat(&raw_args, ";");
+		dbuf_strcat(&raw_args, tmpkv->value);
+	}
+	extcmd->raw_arguments = nm_strdup(raw_args.buf);
+	dbuf_free(&raw_args);
+
+cleanup:
+
+	kvvec_destroy(kvv, KVVEC_FREE_ALL);
+	nm_free(cmd_name);
+	return extcmd;
 }
 
 
@@ -2963,9 +3082,14 @@ int process_external_commands_from_file(char *fname, int delete_file)
 	return OK;
 }
 
+/* wrapper for processing old-style external commands */
+int process_external_command1(char *cmd)
+{
+	return process_external_command(cmd, COMMAND_SYNTAX_NOKV);
+}
 
 /* top-level external command processor */
-int process_external_command1(char *cmd)
+int process_external_command(char *cmd, int mode)
 {
 	char *temp_buffer = NULL;
 	char *args = NULL;
@@ -2982,7 +3106,7 @@ int process_external_command1(char *cmd)
 
 	log_debug_info(DEBUGL_EXTERNALCOMMANDS, 2, "Raw command entry: %s\n", cmd);
 	/* is the command in the command register? */
-	parsed_command = command_parse(cmd, COMMAND_SYNTAX_NOKV, &external_command_ret);
+	parsed_command = command_parse(cmd, mode, &external_command_ret);
 	if ( external_command_ret == CMD_ERROR_CUSTOM_COMMAND ) {
 		id = CMD_CUSTOM_COMMAND;
 		/*custom command, reset return value*/

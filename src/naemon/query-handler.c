@@ -332,19 +332,28 @@ static int qh_help(int sd, char *buf, unsigned int len)
 static int qh_command(int sd, char *buf, unsigned int len)
 {
 	char *space;
+	int mode;
 
 	if (!*buf || !strcmp(buf, "help")) {
 		nsock_printf_nul(sd, "Query handler for naemon commands.\n"
 		                 "Available commands:\n"
-							  "  run <command>     Run a command\n"
+		                 "  run <command>     Run a command\n"
+		                 "  runkv <command>   Run a command as escaped kvvec\n"
 							  );
 		return 0;
 	}
 	if ((space = memchr(buf, ' ', len)))
 		* (space++) = 0;
 	if (space) {
+		mode = 0;
 		if (!strcmp(buf, "run")) {
-			int res = process_external_command1(space);
+			mode = COMMAND_SYNTAX_NOKV;
+		}
+		else if(!strcmp(buf, "runkv")) {
+			mode = COMMAND_SYNTAX_KV;
+		}
+		if(mode != 0) {
+			int res = process_external_command(space, mode);
 			if (res == OK) {
 				return 200;
 			} else {

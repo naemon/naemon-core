@@ -103,6 +103,12 @@ tests_test_event_heap_LDADD = $(TEST_EVENT_HEAP_DEPS:%=$(top_builddir)/src/naemo
 tests_test_event_heap_LDFLAGS = $(TESTS_LDFLAGS)
 tests_test_event_heap_CPPFLAGS = $(TESTS_AM_CPPFLAGS)
 
+TEST_KV_COMMAND_DEPS = $(filter-out commands.o,$(GENERAL_DEPS)) checks.o checks_host.o checks_service.o logging.o
+tests_test_kv_command_SOURCES	= tests/test-kv-command.c src/naemon/defaults.c lib/kvvec.c lib/kvvec_ekvstr.c
+tests_test_kv_command_LDADD = $(TEST_KV_COMMAND_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
+tests_test_kv_command_LDFLAGS = $(TESTS_LDFLAGS)
+tests_test_kv_command_CPPFLAGS = $(TESTS_AM_CPPFLAGS)
+
 TEST_KVVEC_EKVSTR_DEPS =
 tests_test_kvvec_ekvstr_SOURCES	= tests/test-kvvec-ekvstr.c
 tests_test_kvvec_ekvstr_LDADD = $(TEST_KVVEC_EKVSTR_DEPS:%=$(top_builddir)/src/naemon/%) $(TESTS_LDADD)
@@ -121,6 +127,7 @@ check_PROGRAMS += \
 	tests/test-log \
 	tests/test-config \
 	tests/test-event-heap \
+	tests/test-kv-command \
 	tests/test-kvvec \
 	tests/test-kvvec-ekvstr
 

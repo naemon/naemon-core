@@ -5,8 +5,10 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
-NAGIOS_BEGIN_DECL
 #include <time.h>
+#include "objects.h"
+
+NAGIOS_BEGIN_DECL
 
 /**************************** COMMAND ERRORS *****************************/
 #define CMD_ERROR_OK 0 /* No errors encountered */
@@ -205,9 +207,10 @@ const char *command_name(const struct external_command * command);
 int open_command_file(void);					/* creates the external command file as a named pipe (FIFO) and opens it for reading */
 int close_command_file(void);					/* closes and deletes the external command file (FIFO) */
 
-int process_external_command1(char *);                  /* top-level external command processor */
+int process_external_command(char *cmd, int mode); /* processes an external command given mode flags */
+int process_external_command1(char *cmd); /* DEPRECATED: top-level external old style command processor */
 int process_external_command2(int cmd, time_t entry_time, char *args);  /* DEPRECATED: for backwards NEB compatibility only */
-int process_external_commands_from_file(char *, int);   /* process external commands in a file */
+int process_external_commands_from_file(char *, int); /* process external commands in a file */
 
 int process_passive_service_check(time_t, char *, char *, int, char *);
 int process_passive_host_check(time_t, char *, int, char *);

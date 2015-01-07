@@ -1,6 +1,7 @@
 /test*.log
 /test*.trs
 /test-checks
+/test-kv-command
 /test-config
 /test-kvvec
 /test-kvvec-ekvstr
