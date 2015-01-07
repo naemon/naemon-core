@@ -7,8 +7,6 @@
 
 #include "shared.h"
 
-#define PROGRAM_MODIFICATION_DATE "02-13-2014"
-
 NAGIOS_BEGIN_DECL
 
 /*************************************************************/

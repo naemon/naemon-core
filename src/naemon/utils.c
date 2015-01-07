@@ -2755,16 +2755,14 @@ int generate_check_stats(void)
 /* returns Naemon version */
 const char *get_program_version(void)
 {
-
 	return (const char *)VERSION;
 }
 
 
-/* returns Naemon modification date */
+/* XXX: REMOVE! returns Naemon modification date */
 const char *get_program_modification_date(void)
 {
-
-	return (const char *)PROGRAM_MODIFICATION_DATE;
+	return (const char *)"deprecated function; Use get_program_version() instead";
 }
 
 

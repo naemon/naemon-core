@@ -252,7 +252,6 @@ int main(int argc, char **argv)
 		printf("\nNaemon Stats " VERSION "\n");
 		printf("Copyright (c) 2013-present Naemon Development Team (www.naemon.org)\n");
 		printf("Copyright (c) 2003-2008 Ethan Galstad (www.nagios.org)\n");
-		printf("Last Modified: %s\n", PROGRAM_MODIFICATION_DATE);
 		printf("License: GPL\n\n");
 	}
 

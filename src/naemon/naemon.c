@@ -294,7 +294,6 @@ int main(int argc, char **argv)
 		printf("Copyright (c) 2013-present Naemon Core Development Team and Community Contributors\n");
 		printf("Copyright (c) 2009-2013 Nagios Core Development Team and Community Contributors\n");
 		printf("Copyright (c) 1999-2009 Ethan Galstad\n");
-		printf("Last Modified: %s\n", PROGRAM_MODIFICATION_DATE);
 		printf("License: GPL\n\n");
 		printf("Website: http://www.naemon.org\n");
 	}
