@@ -1,8 +1,10 @@
 /test*.log
 /test*.trs
 /test-checks
+/test-event-heap
 /test-kv-command
 /test-config
 /test-kvvec
 /test-kvvec-ekvstr
 /test-log
+/test-utils
