@@ -25,7 +25,7 @@
 #endif
 
 /* Scheduling (before worker job is started) */
-static void handle_host_check_event(struct timed_event_properties *evprop);
+static void handle_host_check_event(struct nm_event_execution_properties *evprop);
 static int run_async_host_check(host *hst, int check_options, double latency);
 
 /* Result handling (After worker job is executed) */
@@ -35,8 +35,8 @@ static int adjust_host_check_attempt(host *hst, int is_active);
 static int handle_host_state(host *hst, int *alert_recorded);
 
 /* Extra features */
-static void check_host_result_freshness(struct timed_event_properties *evprop);
-static void check_for_orphaned_hosts_eventhandler(struct timed_event_properties *evprop);
+static void check_host_result_freshness(struct nm_event_execution_properties *evprop);
+static void check_for_orphaned_hosts_eventhandler(struct nm_event_execution_properties *evprop);
 
 /* Status functions, immutable */
 static int is_host_result_fresh(host *temp_host, time_t current_time, int log_this);
@@ -107,7 +107,7 @@ void schedule_host_check(host *hst, time_t check_time, int options)
 	schedule_next_host_check( hst, check_time-time(NULL), options);
 }
 
-static void handle_host_check_event(struct timed_event_properties *evprop)
+static void handle_host_check_event(struct nm_event_execution_properties *evprop)
 {
 	host *hst = (host *)evprop->user_data;
 	double latency;
@@ -116,7 +116,7 @@ static void handle_host_check_event(struct timed_event_properties *evprop)
 
 	int result = OK;
 
-	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* get event latency */
 		gettimeofday(&tv, NULL);
 		event_runtime.tv_sec = hst->next_check;
@@ -1014,12 +1014,12 @@ static int handle_host_state(host *hst, int *alert_recorded)
  ******************************************************************************/
 
 /* event handler for checking freshness of host results */
-static void check_host_result_freshness(struct timed_event_properties *evprop)
+static void check_host_result_freshness(struct nm_event_execution_properties *evprop)
 {
 	host *temp_host = NULL;
 	time_t current_time = 0L;
 
-	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* get the current time */
 		time(&current_time);
 
@@ -1072,13 +1072,13 @@ static void check_host_result_freshness(struct timed_event_properties *evprop)
 }
 
 /* check for hosts that never returned from a check... */
-static void check_for_orphaned_hosts_eventhandler(struct timed_event_properties *evprop)
+static void check_for_orphaned_hosts_eventhandler(struct nm_event_execution_properties *evprop)
 {
 	host *temp_host = NULL;
 	time_t current_time = 0L;
 	time_t expected_time = 0L;
 
-	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
 		schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_for_orphaned_hosts_eventhandler, evprop->user_data);
 
 		/* get the current time */

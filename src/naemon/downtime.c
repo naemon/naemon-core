@@ -25,7 +25,7 @@ static fanout_table *dt_fanout;
 #define DT_ETIME (-6)
 
 
-static void check_for_expired_downtime(struct timed_event_properties *evprop);
+static void check_for_expired_downtime(struct nm_event_execution_properties *evprop);
 
 static const char *dt_strerror(int err)
 {
@@ -216,9 +216,9 @@ int cleanup_downtime_data(void)
 /********************** SCHEDULING FUNCTIONS **********************/
 /******************************************************************/
 
-static void handle_downtime_start_event(struct timed_event_properties *evprop)
+static void handle_downtime_start_event(struct nm_event_execution_properties *evprop)
 {
-	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* process scheduled downtime info */
 		if (evprop->user_data) {
 			handle_scheduled_downtime_by_id(*(unsigned long *)evprop->user_data);
@@ -829,7 +829,7 @@ int check_pending_flex_service_downtime(service *svc)
 
 
 /* event handler: checks for (and removes) expired downtime entries */
-static void check_for_expired_downtime(struct timed_event_properties *evprop)
+static void check_for_expired_downtime(struct nm_event_execution_properties *evprop)
 {
 	scheduled_downtime *temp_downtime = NULL;
 	scheduled_downtime *next_downtime = NULL;
@@ -837,7 +837,7 @@ static void check_for_expired_downtime(struct timed_event_properties *evprop)
 	service *svc = NULL;
 	host *hst = NULL;
 
-	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
 		time(&current_time);
 
 		/* check all downtime entries... */

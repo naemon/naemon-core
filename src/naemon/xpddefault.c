@@ -25,8 +25,8 @@ static int service_perfdata_fd = -1;
 static nm_bufferqueue *host_perfdata_bq = NULL;
 static nm_bufferqueue *service_perfdata_bq = NULL;
 
-static void xpddefault_process_host_perfdata_file(struct timed_event_properties *evprop);
-static void xpddefault_process_service_perfdata_file(struct timed_event_properties *evprop);
+static void xpddefault_process_host_perfdata_file(struct nm_event_execution_properties *evprop);
+static void xpddefault_process_service_perfdata_file(struct nm_event_execution_properties *evprop);
 static int xpddefault_run_service_performance_data_command(nagios_macros *mac, service *);
 static int xpddefault_run_host_performance_data_command(nagios_macros *mac, host *);
 
@@ -518,14 +518,14 @@ static void xpddefault_process_host_job_handler(struct wproc_result *wpres, void
 }
 
 /* periodically process the host perf data file */
-static void xpddefault_process_host_perfdata_file(struct timed_event_properties *evprop)
+static void xpddefault_process_host_perfdata_file(struct nm_event_execution_properties *evprop)
 {
 	char *raw_command_line = NULL;
 	char *processed_command_line = NULL;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	nagios_macros mac;
 
-	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* Recurring event */
 		schedule_event(host_perfdata_file_processing_interval, xpddefault_process_host_perfdata_file, NULL);
 
@@ -586,14 +586,14 @@ static void xpddefault_process_service_job_handler(struct wproc_result *wpres, v
 }
 
 /* periodically process the service perf data file */
-static void xpddefault_process_service_perfdata_file(struct timed_event_properties *evprop)
+static void xpddefault_process_service_perfdata_file(struct nm_event_execution_properties *evprop)
 {
 	char *raw_command_line = NULL;
 	char *processed_command_line = NULL;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	nagios_macros mac;
 
-	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* Recurring event */
 		schedule_event(service_perfdata_file_processing_interval, xpddefault_process_service_perfdata_file, NULL);
 

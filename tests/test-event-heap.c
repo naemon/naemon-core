@@ -19,7 +19,7 @@ static void print_heap(struct timed_event_queue *q, size_t i) {
 	print_heap(q, (i<<1) + 2);
 }
 */
-static void func_a(struct timed_event_properties *evprop) {
+static void func_a(struct nm_event_execution_properties *evprop) {
 }
 
 /* Verify the heap property: every node is less than its children */

@@ -26,7 +26,7 @@
 #endif
 
 /* Scheduling (before worker job is started) */
-static void handle_service_check_event(struct timed_event_properties *evprop);
+static void handle_service_check_event(struct nm_event_execution_properties *evprop);
 
 /* Check exeuction */
 static int run_scheduled_service_check(service *, int, double);
@@ -35,8 +35,8 @@ static int run_scheduled_service_check(service *, int, double);
 static void handle_worker_service_check(wproc_result *wpres, void *arg, int flags);
 
 /* Extra features */
-static void check_service_result_freshness(struct timed_event_properties *evprop);
-static void check_for_orphaned_services_eventhandler(struct timed_event_properties *evprop);
+static void check_service_result_freshness(struct nm_event_execution_properties *evprop);
+static void check_for_orphaned_services_eventhandler(struct nm_event_execution_properties *evprop);
 
 /* Status functions, immutable */
 static int is_service_result_fresh(service *, time_t, int);
@@ -108,7 +108,7 @@ void schedule_service_check(service *svc, time_t check_time, int options)
 	schedule_next_service_check(svc, check_time - time(NULL), options);
 }
 
-static void handle_service_check_event(struct timed_event_properties *evprop)
+static void handle_service_check_event(struct nm_event_execution_properties *evprop)
 {
 	service *temp_service = (service *)evprop->user_data;
 	int nudge_seconds = 0;
@@ -116,7 +116,7 @@ static void handle_service_check_event(struct timed_event_properties *evprop)
 	struct timeval tv;
 	struct timeval event_runtime;
 
-	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
 
 		/* get event latency */
 		gettimeofday(&tv, NULL);
@@ -1017,13 +1017,13 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 
 /* check for services that never returned from a check... */
-static void check_for_orphaned_services_eventhandler(struct timed_event_properties *evprop)
+static void check_for_orphaned_services_eventhandler(struct nm_event_execution_properties *evprop)
 {
 	service *temp_service = NULL;
 	time_t current_time = 0L;
 	time_t expected_time = 0L;
 
-	if (evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 
 		schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_for_orphaned_services_eventhandler, evprop->user_data);
 
@@ -1069,12 +1069,12 @@ static void check_for_orphaned_services_eventhandler(struct timed_event_properti
 
 
 /* event handler for checking freshness of service results */
-static void check_service_result_freshness(struct timed_event_properties *evprop)
+static void check_service_result_freshness(struct nm_event_execution_properties *evprop)
 {
 	service *temp_service = NULL;
 	time_t current_time = 0L;
 
-	if (evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* get the current time */
 		time(&current_time);
 

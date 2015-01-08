@@ -12,9 +12,9 @@
 /****************** TOP-LEVEL OUTPUT FUNCTIONS ********************/
 /******************************************************************/
 
-static void update_all_status_data_eventhandler(struct timed_event_properties *evprop)
+static void update_all_status_data_eventhandler(struct nm_event_execution_properties *evprop)
 {
-	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* Reschedule, so it becomes recurring */
 		schedule_event(status_update_interval, update_all_status_data_eventhandler, NULL);
 
@@ -22,9 +22,9 @@ static void update_all_status_data_eventhandler(struct timed_event_properties *e
 	}
 }
 
-static void update_status_data_eventhandler(struct timed_event_properties *evprop)
+static void update_status_data_eventhandler(struct nm_event_execution_properties *evprop)
 {
-	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* Reschedule, so it becomes recurring */
 		schedule_event(5, update_status_data_eventhandler, NULL);
 		update_program_status(FALSE);

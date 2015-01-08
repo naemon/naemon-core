@@ -10,21 +10,31 @@
 NAGIOS_BEGIN_DECL
 
 /* Set if execution of the callback is done normally because of timed event */
-#define EVENT_EXEC_FLAG_ABORT	1
-#define EVENT_EXEC_FLAG_TIMED	2
+enum nm_exec_type {
+	EVENT_EXEC_NORMAL, /* Everything was fine, the event is a proper event */
+	EVENT_EXEC_ABORTED, /* The event wasn't completed: a timeout for timed events, or a socket problem for input events */
+};
 
-/* TIMED_EVENT structure */
+enum nm_event_type {
+	EVENT_TYPE_TIMED,
+};
+
 struct timed_event;
 typedef struct timed_event timed_event;
 
-struct timed_event_properties {
+struct nm_event_execution_properties {
+	enum nm_exec_type execution_type;
+	enum nm_event_type event_type;
 	void *user_data;
-	timed_event *event;
-	double latency;
-	int flags;
+	union {
+		struct {
+			timed_event *event;
+			double latency;
+		} timed; /* only available if event_type is EVENT_EXEC_FLAG_TIMED */
+	} attributes;
 };
 
-typedef void (*event_callback)(struct timed_event_properties *);
+typedef void (*event_callback)(struct nm_event_execution_properties *);
 
 /**
  * Schedule a timed event. At the given time, the callback is executed

@@ -20,11 +20,11 @@ static struct contact **premod_contacts;
 /************* TOP-LEVEL STATE INFORMATION FUNCTIONS **************/
 /******************************************************************/
 
-void save_state_information_eventhandler(struct timed_event_properties *evprop)
+void save_state_information_eventhandler(struct nm_event_execution_properties *evprop)
 {
 	int status;
 
-	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
 		schedule_event(retention_update_interval * interval_length, save_state_information_eventhandler, evprop->user_data);
 
 		status = save_state_information(FALSE);

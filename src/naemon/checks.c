@@ -31,7 +31,7 @@
 
 /* forward declarations */
 static const char *spool_file_source_name(void *source);
-static void reap_check_results(struct timed_event_properties *evprop);
+static void reap_check_results(struct nm_event_execution_properties *evprop);
 
 
 static struct check_engine nagios_spool_check_engine = {
@@ -66,11 +66,11 @@ void checks_init(void)
 /******************************************************************/
 
 /* reaps host and service check results */
-static void reap_check_results(struct timed_event_properties *evprop)
+static void reap_check_results(struct nm_event_execution_properties *evprop)
 {
 	int reaped_checks = 0;
 
-	if(evprop->flags & EVENT_EXEC_FLAG_TIMED) {
+	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* Reschedule, since reccuring */
 		schedule_event(check_reaper_interval, reap_check_results, NULL);
 

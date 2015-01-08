@@ -211,21 +211,22 @@ timed_event *schedule_event(time_t delay, event_callback callback, void *user_da
 }
 
 /* Unschedule, execute and destroy event, given parameters of evprop */
-static void execute_and_destroy_event(struct timed_event_properties *evprop)
+static void execute_and_destroy_event(struct nm_event_execution_properties *evprop)
 {
-	evheap_remove(event_queue, evprop->event);
-	(*evprop->event->callback)(evprop);
-	nm_free(evprop->event);
+	evheap_remove(event_queue, evprop->attributes.timed.event);
+	(*evprop->attributes.timed.event->callback)(evprop);
+	nm_free(evprop->attributes.timed.event);
 }
 
 /* remove an event from the queue */
 void destroy_event(timed_event *event)
 {
-	struct timed_event_properties evprop;
-	evprop.event = event;
-	evprop.flags = EVENT_EXEC_FLAG_ABORT;
-	evprop.latency = 0.0;
+	struct nm_event_execution_properties evprop;
+	evprop.event_type = EVENT_TYPE_TIMED;
+	evprop.execution_type = EVENT_EXEC_ABORTED;
 	evprop.user_data = event->user_data;
+	evprop.attributes.timed.event = event;
+	evprop.attributes.timed.latency = 0.0;
 	execute_and_destroy_event(&evprop);
 }
 
@@ -256,7 +257,7 @@ void event_execution_loop(void)
 	timed_event *evt;
 	struct timespec current_time;
 	long time_diff;
-	struct timed_event_properties evprop;
+	struct nm_event_execution_properties evprop;
 	int inputs;
 
 	while (!sigshutdown && !sigrestart) {
@@ -327,10 +328,11 @@ void event_execution_loop(void)
 		/*
 		 * It isn't any special cases, so it's time to run the event
 		 */
-		evprop.event = evt;
-		evprop.flags = EVENT_EXEC_FLAG_TIMED;
-		evprop.latency = -time_diff/1000.0;
+		evprop.event_type = EVENT_TYPE_TIMED;
+		evprop.execution_type = EVENT_EXEC_NORMAL;
 		evprop.user_data = evt->user_data;
+		evprop.attributes.timed.event = evt;
+		evprop.attributes.timed.latency = -time_diff/1000.0;
 		execute_and_destroy_event(&evprop);
 	}
 }
