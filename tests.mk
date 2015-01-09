@@ -1,7 +1,5 @@
 BROKEN = test_downtime test_nagios_config test_xsddefault
 
-AM_CFLAGS += -Wno-error
-
 T_TAP_AM_CPPFLAGS = $(AM_CPPFLAGS) -I$(abs_srcdir)/tap/src -DNAEMON_BUILDOPTS_H__ '-DNAEMON_SYSCONFDIR="$(abs_builddir)/t-tap/smallconfig/"' '-DNAEMON_LOCALSTATEDIR="$(abs_builddir)/t-tap/"' '-DNAEMON_LOGDIR="$(abs_builddir)/t-tap/"' '-DNAEMON_LOCKFILE="$(lockfile)"' -DNAEMON_COMPILATION
 T_TAP_LDADD = -ltap -L$(top_builddir)/tap/src -L$(top_builddir)/lib -lnaemon -ldl -lm
 BASE_DEPS = libnaemon.la
