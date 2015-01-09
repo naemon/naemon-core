@@ -1,4 +1,3 @@
-SUBDIRS = tap
 AM_CPPFLAGS += -I$(abs_srcdir)/src -DNAEMON_COMPILATION
 BUILT_SOURCES = src/naemon/wpres-phash.h src/naemon/buildopts.h
 
@@ -224,3 +223,6 @@ cov-report:
 		| sed -e 's/function \([^ ]*\) called 0.*/\1/' \
 		| sed -e 's/\.c\.gcov:/\.c:/'
 
+noinst_LTLIBRARIES = tap/src/libtap.la
+tap_src_libtap_la_SOURCES = tap/src/tap.c tap/src/tap.h
+tap_src_libtap_la_CFLAGS = $(CFLAGS) -Wno-error

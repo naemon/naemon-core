@@ -228,5 +228,4 @@ AC_CONFIG_FILES([Makefile
                  naemon.pc
                  naemon-uninstalled.pc
                 ])
-AC_CONFIG_SUBDIRS([tap])
 AC_OUTPUT
