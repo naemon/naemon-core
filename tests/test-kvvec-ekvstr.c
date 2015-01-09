@@ -102,10 +102,10 @@ START_TEST( kvvec_ekvstr_escaping ) {
 	for (i = 0; i < 256; i++) {
 		kvv->kv[0].value[0] = i;
 		buf = kvvec_to_ekvstr(kvv);
-		ck_assert_msg( buf, "Could not ekvstr-encode kvvec for %d (%c)", i, i);
+		ck_assert_msg(buf != NULL, "Could not ekvstr-encode kvvec for %d (%c)", i, i);
 		kvvb = ekvstr_to_kvvec(buf);
 		free(buf);
-		ck_assert_msg( kvvb, "Could parse kvvec for %d (%c), String: %s", i, i, buf);
+		ck_assert_msg(kvvb != NULL, "Could parse kvvec for %d (%c), String: %s", i, i, buf);
 		ck_assert_msg( kvvb->kv_pairs == 2, "Incorrect length of kvvec for %d (%c), String: %s", i, i, buf);
 		ck_assert_str_eq( kvvb->kv[0].key, "a");
 		ck_assert_msg( kvvb->kv[0].value_len == 1,

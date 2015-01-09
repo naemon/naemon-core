@@ -6,6 +6,8 @@
 #include "naemon/statusdata.h"
 #include "naemon/globals.h"
 #include "naemon/checks.h"
+#include "naemon/checks_service.h"
+#include "naemon/checks_host.h"
 #include "tap.h"
 #include <assert.h>
 #define NUM_NEBTYPES 2000
@@ -59,7 +61,8 @@ int test_cb_service_check_processed(void)
 	assert(OK == handle_async_service_check_result(svc, cr));
 	ds = (nebstruct_service_check_data *) received_callback_data[NEBCALLBACK_SERVICE_CHECK_DATA][NEBTYPE_SERVICECHECK_PROCESSED];
 	ok(ds != NULL, "SERVICE_CHECK_DATA callback invoked");
-	ok(ds->type == NEBTYPE_SERVICECHECK_PROCESSED, "nebstruct has expected type") || diag("Type was %d", ds->type);
+	if (!ok(ds->type == NEBTYPE_SERVICECHECK_PROCESSED, "nebstruct has expected type"))
+		diag("Type was %d", ds->type);
 	ok(!strcmp(ds->host_name, "MyHost"), "nebstruct has expected hostname");
 	ok(!strcmp(ds->service_description, "MyService"), "nebstruct has expected service description");
 	ok(ds->attr == NEBATTR_NONE, "nebstruct has no attributes set");
@@ -120,7 +123,8 @@ int test_cb_host_check_processed(void)
 	assert(OK == handle_async_host_check_result(hst, cr));
 	ds = (nebstruct_host_check_data *) received_callback_data[NEBCALLBACK_HOST_CHECK_DATA][NEBTYPE_HOSTCHECK_PROCESSED];
 	ok(ds != NULL, "HOST_CHECK_DATA callback invoked");
-	ok(ds->type == NEBTYPE_HOSTCHECK_PROCESSED, "nebstruct has expected type") || diag("Type was %d", ds->type);
+	if (!ok(ds->type == NEBTYPE_HOSTCHECK_PROCESSED, "nebstruct has expected type"))
+		diag("Type was %d", ds->type);
 	ok(!strcmp(ds->host_name, "MyHost"), "nebstruct has expected hostname");
 	ok(ds->attr == NEBATTR_NONE, "nebstruct has no attributes set");
 	clear_callback_data();

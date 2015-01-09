@@ -122,8 +122,8 @@ START_TEST(event_heap_count_random_order)
 		ck_assert(ev != NULL);
 
 		/* Make sure the value increments */
-		ck_assert((size_t)ev->event_time.tv_sec >= last_value);
-		last_value=(size_t)ev->event_time.tv_sec;
+		ck_assert((time_t)ev->event_time.tv_sec >= last_value);
+		last_value=(time_t)ev->event_time.tv_sec;
 
 		evheap_remove(q, ev);
 		free(ev);

@@ -97,7 +97,7 @@ END_TEST
 START_TEST( kv_command_raw_arguments_set) {
 	struct external_command *extcmd;
 	int error;
-	char *raw_args;
+	const char *raw_args;
 
 	error = -1;
 	extcmd = command_parse("command=TEST_COMMAND;something_bool=1;author=2;comment=kaka", COMMAND_SYNTAX_KV, &error);

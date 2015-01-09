@@ -337,31 +337,39 @@ int main(int argc, char **argv)
 	tmp_check_result->check_type = HOST_CHECK_PASSIVE;
 	handle_async_host_check_result(host1, tmp_check_result);
 	ok(host1->acknowledgement_type == ACKNOWLEDGEMENT_NONE, "No ack set");
-	ok(host1->current_attempt == 2, "Attempts right (not sure why this goes into 2 and not 1)") || diag("current_attempt=%d", host1->current_attempt);
-	ok(strcmp(host1->plugin_output, "DOWN failure 2") == 0, "output set") || diag("plugin_output=%s", host1->plugin_output);
+	if (!ok(host1->current_attempt == 2, "Attempts right (not sure why this goes into 2 and not 1)"))
+		diag("current_attempt=%d", host1->current_attempt);
+	if (!ok(strcmp(host1->plugin_output, "DOWN failure 2") == 0, "output set"))
+		diag("plugin_output=%s", host1->plugin_output);
 
 	host1->acknowledgement_type = ACKNOWLEDGEMENT_NORMAL;
 
 	tmp_check_result->output = strdup("DOWN failure 3");
 	handle_async_host_check_result(host1, tmp_check_result);
 	ok(host1->acknowledgement_type == ACKNOWLEDGEMENT_NORMAL, "Ack should be retained as in soft state");
-	ok(host1->current_attempt == 3, "Attempts incremented") || diag("current_attempt=%d", host1->current_attempt);
-	ok(strcmp(host1->plugin_output, "DOWN failure 3") == 0, "output set") || diag("plugin_output=%s", host1->plugin_output);
+	if (!ok(host1->current_attempt == 3, "Attempts incremented"))
+		diag("current_attempt=%d", host1->current_attempt);
+	if (!ok(strcmp(host1->plugin_output, "DOWN failure 3") == 0, "output set"))
+		diag("plugin_output=%s", host1->plugin_output);
 
 
 	tmp_check_result->output = strdup("DOWN failure 4");
 	handle_async_host_check_result(host1, tmp_check_result);
 	ok(host1->acknowledgement_type == ACKNOWLEDGEMENT_NORMAL, "Ack should be retained as in soft state");
-	ok(host1->current_attempt == 4, "Attempts incremented") || diag("current_attempt=%d", host1->current_attempt);
-	ok(strcmp(host1->plugin_output, "DOWN failure 4") == 0, "output set") || diag("plugin_output=%s", host1->plugin_output);
+	if (!ok(host1->current_attempt == 4, "Attempts incremented"))
+		diag("current_attempt=%d", host1->current_attempt);
+	if (!ok(strcmp(host1->plugin_output, "DOWN failure 4") == 0, "output set"))
+		diag("plugin_output=%s", host1->plugin_output);
 
 
 	tmp_check_result->return_code = STATE_OK;
 	tmp_check_result->output = strdup("UP again");
 	handle_async_host_check_result(host1, tmp_check_result);
 	ok(host1->acknowledgement_type == ACKNOWLEDGEMENT_NONE, "Ack reset due to state change");
-	ok(host1->current_attempt == 1, "Attempts reset") || diag("current_attempt=%d", host1->current_attempt);
-	ok(strcmp(host1->plugin_output, "UP again") == 0, "output set") || diag("plugin_output=%s", host1->plugin_output);
+	if (!ok(host1->current_attempt == 1, "Attempts reset"))
+		diag("current_attempt=%d", host1->current_attempt);
+	if (!ok(strcmp(host1->plugin_output, "UP again") == 0, "output set"))
+		diag("plugin_output=%s", host1->plugin_output);
 
 	destroy_event_queue();
 

@@ -281,7 +281,7 @@ static void notification_handle_job_result(struct wproc_result *wpres, void *dat
 			int code = 0;
 			if (nj->svc) {
 				objecttype = "service";
-				asprintf(&objectname, "%s;%s", nj->svc->host_name, nj->svc->description);
+				nm_asprintf(&objectname, "%s;%s", nj->svc->host_name, nj->svc->description);
 			} else {
 				objecttype = "host";
 				objectname = strdup(nj->hst->name);

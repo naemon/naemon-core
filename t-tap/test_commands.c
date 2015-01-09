@@ -82,12 +82,12 @@ void test_register(void)
 {
 	struct external_command *ext_command = NULL;
 	int author = 42, persistent = 0;
-	char command_name[21];
+	char cmd_name[21];
 	int expected_command_index = 0;
 	registered_commands_init(20);
 	while ( expected_command_index  < 60 ) { /*Verify that auto-growing the register works*/
-		(void)snprintf(command_name, 21, "ADD_HOST_COMMENT_%d", expected_command_index+1);
-		ext_command = command_create(command_name, test__add_host_comment_handler, "This is a description for a command named ADD_HOST_COMMENT", NULL);
+		(void)snprintf(cmd_name, 21, "ADD_HOST_COMMENT_%d", expected_command_index+1);
+		ext_command = command_create(cmd_name, test__add_host_comment_handler, "This is a description for a command named ADD_HOST_COMMENT", NULL);
 		command_argument_add(ext_command, "host", STRING, NULL, NULL);
 		b_val = 0;
 		command_argument_add(ext_command, "persistent", BOOL, &b_val, NULL);
@@ -416,7 +416,7 @@ void test_host_commands(void) {
 	++pre;
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] ADD_HOST_COMMENT;host1;0;myself;my comment"), "core command: ADD_HOST_COMMENT");
 	ok(pre+1 == number_of_host_comments(host_name), "ADD_HOST_COMMENT adds a host comment");
-	asprintf(&cmdstr, "[1234567890] DEL_HOST_COMMENT;%i", prev_comment_id);
+	nm_asprintf(&cmdstr, "[1234567890] DEL_HOST_COMMENT;%i", prev_comment_id);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: DEL_HOST_COMMENT");
 	free(cmdstr);
 	ok(pre == number_of_host_comments(host_name), "DEL_HOST_COMMENT deletes a host comment");
@@ -431,7 +431,7 @@ void test_host_commands(void) {
 	ok(target_host->services->service_ptr->checks_enabled, "ENABLE_HOST_SVC_CHECKS enables active checks for services on a host");
 
 	check_time = target_host->services->service_ptr->next_check - 20;
-	asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_SVC_CHECKS;host1;%llu", (long long unsigned int)check_time);
+	nm_asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_SVC_CHECKS;host1;%llu", (long long unsigned int)check_time);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_HOST_SVC_CHECKS");
 	ok(check_time == target_host->services->service_ptr->next_check, "SCHEDULE_HOST_SVC_CHECKS schedules host service checks");
 	free(cmdstr);
@@ -481,19 +481,19 @@ void test_host_commands(void) {
 	ok(target_host->checks_enabled, "ENABLE_HOST_CHECK enables active host checks");
 
 	check_time = target_host->services->service_ptr->next_check + 2000;
-	asprintf(&cmdstr, "[1234567890] SCHEDULE_FORCED_HOST_SVC_CHECKS;host1;%llu", (unsigned long long int)check_time);
+	nm_asprintf(&cmdstr, "[1234567890] SCHEDULE_FORCED_HOST_SVC_CHECKS;host1;%llu", (unsigned long long int)check_time);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_FORCED_HOST_SVC_CHECKS");
 	ok(check_time == target_host->services->service_ptr->next_check, "SCHEDULE_FORCED_HOST_SVC_CHECKS schedules forced checks for services on a host");
 	free(cmdstr);
 
 	prev_downtime_id = next_downtime_id;
-	asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_DOWNTIME;host1;%llu;%llu;1;0;0;myself;my downtime comment", (unsigned long long int)time(NULL), (unsigned long long int)time(NULL) + 1500);
+	nm_asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_DOWNTIME;host1;%llu;%llu;1;0;0;myself;my downtime comment", (unsigned long long int)time(NULL), (unsigned long long int)time(NULL) + 1500);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_HOST_DOWNTIME");
 	ok(prev_downtime_id != next_downtime_id, "SCHEDULE_HOST_DOWNTIME schedules one new downtime");
 	ok(NULL != find_host_downtime(prev_downtime_id), "SCHEDULE_HOST_DOWNTIME schedules downtime for a host");
 	free(cmdstr);
 
-	asprintf(&cmdstr, "[1234567890] DEL_HOST_DOWNTIME;%i", prev_downtime_id);
+	nm_asprintf(&cmdstr, "[1234567890] DEL_HOST_DOWNTIME;%i", prev_downtime_id);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: DEL_HOST_DOWNTIME");
 	ok(!find_host_downtime(prev_downtime_id), "DEL_HOST_DOWNTIME deletes a scheduled host downtime");
 	free(cmdstr);
@@ -505,7 +505,7 @@ void test_host_commands(void) {
 	ok(target_host->flap_detection_enabled, "ENABLE_HOST_FLAP_DETECTION enables host flap detection");
 
 	assert(NULL == find_service_downtime(0));
-	asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_SVC_DOWNTIME;host1;%llu;%llu;1;0;0;myself;my downtime comment", (unsigned long long int)time(NULL), (unsigned long long int)time(NULL) + 1500);
+	nm_asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_SVC_DOWNTIME;host1;%llu;%llu;1;0;0;myself;my downtime comment", (unsigned long long int)time(NULL), (unsigned long long int)time(NULL) + 1500);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_HOST_SVC_DOWNTIME");
 	strcmp(host_name, find_service_downtime(0)->host_name);
 	ok(0 == 0, "SCHEDULE_HOST_SVC_DOWNTIME schedules downtime for services on a host");
@@ -515,12 +515,12 @@ void test_host_commands(void) {
 	ok(target_host->current_state == STATE_DOWN, "PROCESS_HOST_CHECK_RESULT processes host check results");
 
 	check_time = target_host->next_check - 20;
-	asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_CHECK;host1;%llu", (unsigned long long int)check_time);
+	nm_asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_CHECK;host1;%llu", (unsigned long long int)check_time);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_HOST_CHECK");
 	ok(check_time == target_host->next_check, "SCHEDULE_HOST_CHECK schedules a host check");
 	free(cmdstr);
 
-	asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_CHECK;host1;%llu", (unsigned long long int)check_time);
+	nm_asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_CHECK;host1;%llu", (unsigned long long int)check_time);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_FORCED_HOST_CHECK");
 	ok(check_time == target_host->next_check, "SCHEDULE_FORCED_HOST_CHECK schedules a host check");
 	free(cmdstr);
