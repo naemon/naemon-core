@@ -138,13 +138,21 @@ check_PROGRAMS = test-bitmap test-dkhash test-fanout test-iobroker test-bufferqu
 
 LIBTEST_UTILS = lib/t-utils.c lib/t-utils.h
 test_bitmap_SOURCES = lib/test-bitmap.c $(LIBTEST_UTILS)
+test_bitmap_DEPENDENCIES = libnaemon.la
 test_dkhash_SOURCES = lib/test-dkhash.c $(LIBTEST_UTILS)
+test_dkhash_DEPENDENCIES = libnaemon.la
 test_fanout_SOURCES = lib/test-fanout.c $(LIBTEST_UTILS)
+test_fanout_DEPENDENCIES = libnaemon.la
 test_iobroker_SOURCES = lib/test-iobroker.c $(LIBTEST_UTILS)
+test_iobroker_DEPENDENCIES = libnaemon.la
 test_bufferqueue_SOURCES = lib/test-bufferqueue.c $(LIBTEST_UTILS)
+test_bufferqueue_DEPENDENCIES = libnaemon.la
 test_nsutils_SOURCES = lib/test-nsutils.c $(LIBTEST_UTILS)
+test_nsutils_DEPENDENCIES = libnaemon.la
 test_runcmd_SOURCES = lib/test-runcmd.c $(LIBTEST_UTILS)
+test_runcmd_DEPENDENCIES = libnaemon.la
 test_squeue_SOURCES = lib/test-squeue.c $(LIBTEST_UTILS)
+test_squeue_DEPENDENCIES = libnaemon.la
 
 COV_CFLAGS = -ggdb3 -O0 -ftest-coverage -fprofile-arcs -pg
 cov-build:
