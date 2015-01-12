@@ -128,7 +128,7 @@ static void evheap_bubble_down(struct timed_event_queue *q, size_t idx)
 
 static struct timed_event *evheap_head(struct timed_event_queue *q)
 {
-	if (q->count == 0)
+	if (!q || q->count == 0)
 		return NULL;
 	return q->queue[0];
 }
