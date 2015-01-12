@@ -172,8 +172,6 @@ extern unsigned long modified_process_attributes;
 extern unsigned long modified_host_process_attributes;
 extern unsigned long modified_service_process_attributes;
 
-extern iobroker_set *nagios_iobs;
-
 extern struct check_stats check_statistics[MAX_CHECK_STATS_TYPES];
 
 /*** perfdata variables ***/

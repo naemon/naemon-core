@@ -5,9 +5,14 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
+#include "lib/lnae-utils.h"
+#include "lib/iobroker.h"
+
 /******************* EVENT TYPES **********************/
 
 NAGIOS_BEGIN_DECL
+
+extern iobroker_set *nagios_iobs;
 
 /* Set if execution of the callback is done normally because of timed event */
 enum nm_exec_type {
@@ -44,7 +49,7 @@ void destroy_event(timed_event *event);
 
 /* Main function */
 void init_event_queue(void); /* creates the queue nagios_squeue */
-void event_execution_loop(void); /* main monitoring/event handler loop */
+int event_poll(void); /* main monitoring/event handler loop */
 void destroy_event_queue(void); /* destroys the queue nagios_squeue */
 
 NAGIOS_END_DECL

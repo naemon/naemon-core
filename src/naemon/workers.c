@@ -16,6 +16,7 @@
 #include "globals.h"
 #include "defaults.h"
 #include "nm_alloc.h"
+#include "events.h"
 
 /* perfect hash function for wproc response codes */
 #include "wpres-phash.h"

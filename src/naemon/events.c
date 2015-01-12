@@ -1,19 +1,9 @@
-#include "config.h"
-#include "common.h"
-#include "statusdata.h"
-#include "broker.h"
-#include "sretention.h"
-#include "events.h"
-#include "utils.h"
-#include "checks.h"
-#include "notifications.h"
-#include "logging.h"
-#include "globals.h"
-#include "defaults.h"
-#include "nm_alloc.h"
-#include <math.h>
-#include <string.h>
 #include <time.h>
+#include <string.h>
+
+#include "events.h"
+#include "logging.h"
+#include "nm_alloc.h"
 
 /* Which clock should be used for events? */
 #define EVENT_CLOCK_ID CLOCK_MONOTONIC
@@ -32,7 +22,7 @@ struct timed_event_queue {
 };
 
 struct timed_event_queue *event_queue = NULL; /* our scheduling queue */
-
+iobroker_set *nagios_iobs = NULL;
 
 /******************************************************************/
 /************************** TIME HELEPERS *************************/
@@ -251,88 +241,81 @@ void destroy_event_queue(void)
 	evheap_destroy(event_queue);
 }
 
-/* this is the main event handler loop */
-void event_execution_loop(void)
+/**
+ * Poll for events once.
+ * @returns < 0 on errors, 0 on success.
+ */
+int event_poll(void)
 {
 	timed_event *evt;
 	struct timespec current_time;
 	long time_diff;
 	struct nm_event_execution_properties evprop;
 	int inputs;
+	clock_gettime(EVENT_CLOCK_ID, &current_time);
 
-	while (!sigshutdown && !sigrestart) {
+	/* get next scheduled event */
+	evt = evheap_head(event_queue);
 
-		/* get the current time */
-		clock_gettime(EVENT_CLOCK_ID, &current_time);
-
-		if (sigrotate == TRUE) {
-			sigrotate = FALSE;
-			rotate_log_file(time(NULL));
-			update_program_status(FALSE);
-		}
-
-		/* get next scheduled event */
-		evt = evheap_head(event_queue);
-
-		/* if we don't have any events to handle, exit */
-		if (!evt) {
-			log_debug_info(DEBUGL_EVENTS, 0, "There aren't any events that need to be handled! Exiting...\n");
-			break;
-		}
-
-		time_diff = timespec_msdiff(&evt->event_time, &current_time);
-		if (time_diff < 0)
-			time_diff = 0;
-		else if (time_diff >= 1500)
-			time_diff = 1500;
-
-		if (!iobroker_push(nagios_iobs)) {
-			/* There was a backlog for data sending? Catch up at "idle
-			 * priority", i.e. prevent sleeping while awaiting
-			 * results, but continue to run events as usual.
-			 */
-			time_diff = 0;
-		}
-		inputs = iobroker_poll(nagios_iobs, time_diff);
-		if (inputs < 0 && errno != EINTR) {
-			nm_log(NSLOG_RUNTIME_ERROR, "Error: Polling for input on %p failed: %s", nagios_iobs, iobroker_strerror(inputs));
-			break;
-		}
-		if (inputs < 0 ) {
-			/*
-			 * errno is EINTR, which means it isn't a timed event, thus don't
-			 * continue below
-			 */
-			continue;
-		}
-
-		log_debug_info(DEBUGL_IPC, 2, "## %d descriptors had input\n", inputs);
-
-		/*
-		 * Since we got input on one of the file descriptors, this wakeup wans't
-		 * about a timed event, so start the main loop over.
-		 */
-		if (inputs > 0) {
-			log_debug_info(DEBUGL_EVENTS, 0, "Event was cancelled by iobroker input\n");
-			continue;
-		}
-
-		/*
-		 * Might have been a timeout just because the max time of polling
-		 */
-		clock_gettime(EVENT_CLOCK_ID, &current_time);
-		time_diff = timespec_msdiff(&evt->event_time, &current_time);
-		if (time_diff > 0)
-			continue;
-
-		/*
-		 * It isn't any special cases, so it's time to run the event
-		 */
-		evprop.event_type = EVENT_TYPE_TIMED;
-		evprop.execution_type = EVENT_EXEC_NORMAL;
-		evprop.user_data = evt->user_data;
-		evprop.attributes.timed.event = evt;
-		evprop.attributes.timed.latency = -time_diff/1000.0;
-		execute_and_destroy_event(&evprop);
+	/* if we don't have any events to handle, exit */
+	if (!evt) {
+		log_debug_info(DEBUGL_EVENTS, 0, "There aren't any events that need to be handled! Exiting...\n");
+		return -1;
 	}
+	time_diff = timespec_msdiff(&evt->event_time, &current_time);
+	if (time_diff < 0)
+		time_diff = 0;
+	else if (time_diff >= 1500)
+		time_diff = 1500;
+
+	if (!iobroker_push(nagios_iobs)) {
+		/* There is a backlog for data sending? Catch up at "idle
+		 * priority", i.e. prevent sleeping while awaiting
+		 * results, but continue to run events as usual.
+		 */
+		time_diff = 0;
+	}
+	inputs = iobroker_poll(nagios_iobs, time_diff);
+	if (inputs < 0 && errno != EINTR) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Polling for input on %p failed: %s", nagios_iobs, iobroker_strerror(inputs));
+		return -1;
+	}
+	if (inputs < 0 ) {
+		/*
+		 * errno is EINTR, which means it isn't a timed event, thus don't
+		 * continue below
+		 */
+		return 0;
+	}
+
+	log_debug_info(DEBUGL_IPC, 2, "## %d descriptors had input\n", inputs);
+
+	/*
+	 * Since we got input on one of the file descriptors, this wakeup wans't
+	 * about a timed event, so start the main loop over.
+	 */
+	if (inputs > 0) {
+		log_debug_info(DEBUGL_EVENTS, 0, "Event was cancelled by iobroker input\n");
+		return 0;
+	}
+
+	/*
+	 * Might have been a timeout just because the max time of polling
+	 */
+	clock_gettime(EVENT_CLOCK_ID, &current_time);
+	time_diff = timespec_msdiff(&evt->event_time, &current_time);
+	if (time_diff > 0)
+		return 0;
+
+	/*
+	 * It isn't any special cases, so it's time to run the event
+	 */
+	evprop.event_type = EVENT_TYPE_TIMED;
+	evprop.execution_type = EVENT_EXEC_NORMAL;
+	evprop.user_data = evt->user_data;
+	evprop.attributes.timed.event = evt;
+	evprop.attributes.timed.latency = -time_diff/1000.0;
+	execute_and_destroy_event(&evprop);
+
+	return 0;
 }

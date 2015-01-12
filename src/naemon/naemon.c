@@ -144,6 +144,21 @@ static int test_configured_paths(void)
 	return OK;
 }
 
+/* this is the main event handler loop */
+static void event_execution_loop(void)
+{
+	while (!sigshutdown && !sigrestart) {
+		if (sigrotate == TRUE) {
+			sigrotate = FALSE;
+			rotate_log_file(time(NULL));
+			update_program_status(FALSE);
+		}
+
+		if (event_poll())
+			break;
+	}
+}
+
 int main(int argc, char **argv)
 {
 	int result;

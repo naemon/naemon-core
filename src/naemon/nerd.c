@@ -27,6 +27,7 @@
 #include "nerd.h"
 #include "globals.h"
 #include "nm_alloc.h"
+#include "events.h"
 
 struct nerd_channel {
 	const char *name; /* name of this channel */

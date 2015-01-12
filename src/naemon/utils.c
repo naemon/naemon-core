@@ -205,8 +205,6 @@ int debug_level = DEFAULT_DEBUG_LEVEL;
 int debug_verbosity = DEFAULT_DEBUG_VERBOSITY;
 unsigned long   max_debug_file_size = DEFAULT_MAX_DEBUG_FILE_SIZE;
 
-iobroker_set *nagios_iobs = NULL;
-
 /* from GNU defines errno as a macro, since it's a per-thread variable */
 #ifndef errno
 extern int errno;
