@@ -6926,6 +6926,7 @@ static int xodtemplate_register_objects(void)
 		nm_log(NSLOG_CONFIG_ERROR, "Failed to create object tables\n");
 		return ERROR;
 	}
+	init_objects_command(xodcount.commands);
 
 	/* register timeperiods */
 	rbtree_traverse(xobject_tree[OBJTYPE_TIMEPERIOD], xodtemplate_register_timeperiod, NULL, rbinorder);

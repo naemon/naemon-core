@@ -16,7 +16,6 @@
  */
 dkhash_table *object_hash_tables[NUM_HASHED_OBJECT_TYPES];
 
-command *command_list = NULL;
 timeperiod *timeperiod_list = NULL;
 host *host_list = NULL;
 service *service_list = NULL;
@@ -26,7 +25,6 @@ servicegroup *servicegroup_list = NULL;
 contactgroup *contactgroup_list = NULL;
 hostescalation *hostescalation_list = NULL;
 serviceescalation *serviceescalation_list = NULL;
-command **command_ary = NULL;
 timeperiod **timeperiod_ary = NULL;
 host **host_ary = NULL;
 service **service_ary = NULL;
@@ -151,7 +149,6 @@ static void post_process_object_config(void)
 	timing_point("Done post-sorting slave objects\n");
 
 	timeperiod_list = timeperiod_ary ? *timeperiod_ary : NULL;
-	command_list = command_ary ? *command_ary : NULL;
 	hostgroup_list = hostgroup_ary ? *hostgroup_ary : NULL;
 	contactgroup_list = contactgroup_ary ? *contactgroup_ary : NULL;
 	servicegroup_list = servicegroup_ary ? *servicegroup_ary : NULL;
@@ -260,8 +257,6 @@ int create_object_tables(unsigned int *ocount)
 	 * to free() successful allocs when later ones fail
 	 */
 	if (mktable(timeperiod, OBJTYPE_TIMEPERIOD) != OK)
-		return ERROR;
-	if (mktable(command, OBJTYPE_COMMAND) != OK)
 		return ERROR;
 	if (mktable(host, OBJTYPE_HOST) != OK)
 		return ERROR;
@@ -1427,57 +1422,6 @@ customvariablesmember *add_custom_variable_to_service(service *svc, char *varnam
 }
 
 
-/* add a new command to the list in memory */
-command *add_command(char *name, char *value)
-{
-	command *new_command = NULL;
-	int result = OK;
-
-	/* make sure we have the data we need */
-	if ((name == NULL || !strcmp(name, "")) || (value == NULL || !strcmp(value, ""))) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Command name of command line is NULL\n");
-		return NULL;
-	}
-
-	/* allocate memory for the new command */
-	new_command = nm_calloc(1, sizeof(*new_command));
-
-	/* assign vars */
-	new_command->name = name;
-	new_command->command_line = value;
-
-	/* add new command to hash table */
-	if (result == OK) {
-		result = dkhash_insert(object_hash_tables[OBJTYPE_COMMAND], new_command->name, NULL, new_command);
-		switch (result) {
-		case DKHASH_EDUPE:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Command '%s' has already been defined\n", name);
-			result = ERROR;
-			break;
-		case DKHASH_OK:
-			result = OK;
-			break;
-		default:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add command '%s' to hash table\n", name);
-			result = ERROR;
-			break;
-		}
-	}
-
-	/* handle errors */
-	if (result == ERROR) {
-		nm_free(new_command);
-		return NULL;
-	}
-
-	new_command->id = num_objects.commands++;
-	command_ary[new_command->id] = new_command;
-	if (new_command->id)
-		command_ary[new_command->id - 1]->next = new_command;
-	return new_command;
-}
-
-
 /* add a new service escalation to the list in memory */
 serviceescalation *add_serviceescalation(char *host_name, char *description, int first_notification, int last_notification, double notification_interval, char *escalation_period, int escalation_options)
 {
@@ -1799,29 +1743,6 @@ contact *find_contact(const char *name)
 contactgroup *find_contactgroup(const char *name)
 {
 	return dkhash_get(object_hash_tables[OBJTYPE_CONTACTGROUP], name, NULL);
-}
-
-/* find a command with arguments still attached */
-command *find_bang_command(char *name)
-{
-	char *bang;
-	command *cmd;
-
-	if (!name)
-		return NULL;
-
-	bang = strchr(name, '!');
-	if (!bang)
-		return find_command(name);
-	*bang = 0;
-	cmd = find_command(name);
-	*bang = '!';
-	return cmd;
-}
-
-command *find_command(const char *name)
-{
-	return dkhash_get(object_hash_tables[OBJTYPE_COMMAND], name, NULL);
 }
 
 service *find_service(const char *host_name, const char *svc_desc)
@@ -2408,18 +2329,6 @@ int free_object_data(void)
 	nm_free(service_ary);
 
 
-	/**** free command memory ****/
-	for (i = 0; i < num_objects.commands; i++) {
-		command *this_command = command_ary[i];
-		nm_free(this_command->name);
-		nm_free(this_command->command_line);
-		nm_free(this_command);
-	}
-
-	/* reset pointers */
-	nm_free(command_ary);
-
-
 	/**** free service escalation memory ****/
 	for (i = 0; i < num_objects.serviceescalations; i++) {
 		serviceescalation *this_serviceescalation = serviceescalation_ary[i];
@@ -2632,12 +2541,6 @@ void fcache_timeperiod(FILE *fp, timeperiod *temp_timeperiod)
 		}
 	}
 	fprintf(fp, "\t}\n\n");
-}
-
-void fcache_command(FILE *fp, command *temp_command)
-{
-	fprintf(fp, "define command {\n\tcommand_name\t%s\n\tcommand_line\t%s\n\t}\n\n",
-	        temp_command->name, temp_command->command_line);
 }
 
 void fcache_contactgroup(FILE *fp, contactgroup *temp_contactgroup)

@@ -7,6 +7,7 @@
 
 #include "common.h"
 #include "objects_common.h"
+#include "objects_command.h"
 #include "objectlist.h"
 
 NAGIOS_BEGIN_DECL
@@ -216,25 +217,6 @@ typedef struct contactgroupsmember {
 	struct contactgroup *group_ptr;
 	struct contactgroupsmember *next;
 } contactgroupsmember;
-
-
-/* COMMAND structure */
-typedef struct command {
-	unsigned int id;
-	char    *name;
-	char    *command_line;
-	struct command *next;
-} command;
-
-
-/* COMMANDSMEMBER structure */
-typedef struct commandsmember {
-	char	*command;
-	struct command *command_ptr;
-	struct	commandsmember *next;
-} commandsmember;
-
-
 /* CONTACT structure */
 struct contact {
 	unsigned int id;
@@ -597,7 +579,6 @@ typedef struct hostdependency {
 	struct timeperiod *dependency_period_ptr;
 } hostdependency;
 
-extern struct command *command_list;
 extern struct timeperiod *timeperiod_list;
 extern struct host *host_list;
 extern struct service *service_list;
@@ -607,7 +588,6 @@ extern struct servicegroup *servicegroup_list;
 extern struct contactgroup *contactgroup_list;
 extern struct hostescalation *hostescalation_list;
 extern struct serviceescalation *serviceescalation_list;
-extern struct command **command_ary;
 extern struct timeperiod **timeperiod_ary;
 extern struct host **host_ary;
 extern struct service **service_ary;
@@ -654,7 +634,6 @@ struct servicegroup *add_servicegroup(char *, char *, char *, char *, char *);  
 struct servicesmember *add_service_to_servicegroup(servicegroup *, char *, char *);                            /* adds a service to a servicegroup definition */
 struct contactgroup *add_contactgroup(char *, char *);								/* adds a contactgroup definition */
 struct contactsmember *add_contact_to_contactgroup(contactgroup *, char *);					/* adds a contact to a contact group definition */
-struct command *add_command(char *, char *);									/* adds a command definition */
 struct service *add_service(char *host_name, char *description, char *display_name, char *check_period, int initial_state, int max_attempts, int accept_passive_checks, double check_interval, double retry_interval, double notification_interval, double first_notification_delay, char *notification_period, int notification_options, int notifications_enabled, int is_volatile, char *event_handler, int event_handler_enabled, char *check_command, int checks_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, char *notes, char *notes_url, char *action_url, char *icon_image, char *icon_image_alt, int retain_status_information, int retain_nonstatus_information, int obsess_over_service, unsigned int hourly_value);
 struct contactgroupsmember *add_contactgroup_to_service(service *, char *);					/* adds a contact group to a service definition */
 struct contactsmember *add_contact_to_service(service *, char *);                                              /* adds a contact to a host definition */
@@ -685,8 +664,6 @@ struct hostgroup *find_hostgroup(const char *);
 struct servicegroup *find_servicegroup(const char *);
 struct contact *find_contact(const char *);
 struct contactgroup *find_contactgroup(const char *);
-struct command *find_bang_command(char *);
-struct command *find_command(const char *);
 struct service *find_service(const char *, const char *);
 
 
@@ -712,7 +689,6 @@ void fcache_contactlist(FILE *fp, const char *prefix, struct contactsmember *lis
 void fcache_contactgrouplist(FILE *fp, const char *prefix, struct contactgroupsmember *list);
 void fcache_hostlist(FILE *fp, const char *prefix, struct hostsmember *list);
 void fcache_timeperiod(FILE *fp, struct timeperiod *temp_timeperiod);
-void fcache_command(FILE *fp, struct command *temp_command);
 void fcache_contactgroup(FILE *fp, struct contactgroup *temp_contactgroup);
 void fcache_hostgroup(FILE *fp, struct hostgroup *temp_hostgroup);
 void fcache_servicegroup(FILE *fp, struct servicegroup *temp_servicegroup);
