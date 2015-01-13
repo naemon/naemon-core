@@ -7,6 +7,7 @@
 
 #include "common.h"
 #include "objects_common.h"
+#include "objects_contact.h"
 #include "objects_command.h"
 #include "objects_timeperiod.h"
 #include "objectlist.h"
@@ -17,10 +18,6 @@ NAGIOS_BEGIN_DECL
 /*************** CURRENT OBJECT REVISION **************/
 #define CURRENT_OBJECT_STRUCTURE_VERSION        402     /* increment when changes are made to data structures... */
 /* Nagios 3 starts at 300, Nagios 4 at 400, etc. */
-
-
-/***************** OBJECT SIZE LIMITS *****************/
-#define MAX_CONTACT_ADDRESSES                   6       /* max number of custom addresses a contact can have */
 
 
 /***************** INDEXES ****************/
@@ -57,10 +54,12 @@ NAGIOS_BEGIN_DECL
 #define SERVICEDEPENDENCY_SKIPLIST  OBJTYPE_SERVICEDEPENDENCY
 /****************** DATA STRUCTURES *******************/
 
+const struct flag_map service_flag_map[9];
+const struct flag_map host_flag_map[7];
+
 /* @todo Remove typedef's of non-opaque types in next major release */
 typedef struct host host;
 typedef struct service service;
-typedef struct contact contact;
 
 
 /* NOTIFY_LIST structure */
@@ -135,14 +134,6 @@ typedef struct check_stats {
 } check_stats;
 
 
-/* CONTACTSMEMBER structure */
-typedef struct contactsmember {
-	char    *contact_name;
-	struct contact *contact_ptr;
-	struct contactsmember *next;
-} contactsmember;
-
-
 /* CONTACTGROUP structure */
 typedef struct contactgroup {
 	unsigned int id;
@@ -159,37 +150,6 @@ typedef struct contactgroupsmember {
 	struct contactgroup *group_ptr;
 	struct contactgroupsmember *next;
 } contactgroupsmember;
-/* CONTACT structure */
-struct contact {
-	unsigned int id;
-	char	*name;
-	char	*alias;
-	char	*email;
-	char	*pager;
-	char    *address[MAX_CONTACT_ADDRESSES];
-	struct commandsmember *host_notification_commands;
-	struct commandsmember *service_notification_commands;
-	unsigned int host_notification_options;
-	unsigned int service_notification_options;
-	unsigned int minimum_value;
-	char	*host_notification_period;
-	char	*service_notification_period;
-	int     host_notifications_enabled;
-	int     service_notifications_enabled;
-	int     can_submit_commands;
-	int     retain_status_information;
-	int     retain_nonstatus_information;
-	struct customvariablesmember *custom_variables;
-	time_t  last_host_notification;
-	time_t  last_service_notification;
-	unsigned long modified_attributes;
-	unsigned long modified_host_attributes;
-	unsigned long modified_service_attributes;
-	struct timeperiod *host_notification_period_ptr;
-	struct timeperiod *service_notification_period_ptr;
-	struct objectlist *contactgroups_ptr;
-	struct	contact *next;
-};
 
 
 /* SERVICESMEMBER structure */
@@ -523,7 +483,6 @@ typedef struct hostdependency {
 
 extern struct host *host_list;
 extern struct service *service_list;
-extern struct contact *contact_list;
 extern struct hostgroup *hostgroup_list;
 extern struct servicegroup *servicegroup_list;
 extern struct contactgroup *contactgroup_list;
@@ -531,7 +490,6 @@ extern struct hostescalation *hostescalation_list;
 extern struct serviceescalation *serviceescalation_list;
 extern struct host **host_ary;
 extern struct service **service_ary;
-extern struct contact **contact_ary;
 extern struct hostgroup **hostgroup_ary;
 extern struct servicegroup **servicegroup_ary;
 extern struct contactgroup **contactgroup_ary;
@@ -552,10 +510,6 @@ int read_object_config_data(const char *, int);     /* reads all external config
 
 
 /**** Object Creation Functions ****/
-struct contact *add_contact(char *name, char *alias, char *email, char *pager, char **addresses, char *svc_notification_period, char *host_notification_period, int service_notification_options, int host_notification_options, int service_notifications_enabled, int host_notifications_enabled, int can_submit_commands, int retain_status_information, int retain_nonstatus_information, unsigned int minimum_value);
-struct commandsmember *add_service_notification_command_to_contact(contact *, char *);				/* adds a service notification command to a contact definition */
-struct commandsmember *add_host_notification_command_to_contact(contact *, char *);				/* adds a host notification command to a contact definition */
-struct customvariablesmember *add_custom_variable_to_contact(contact *, char *, char *);                       /* adds a custom variable to a service definition */
 struct host *add_host(char *name, char *display_name, char *alias, char *address, char *check_period, int initial_state, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, char *notification_period, int notifications_enabled, char *check_command, int checks_enabled, int accept_passive_checks, char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, char *notes, char *notes_url, char *action_url, char *icon_image, char *icon_image_alt, char *vrml_image, char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int should_be_drawn, int retain_status_information, int retain_nonstatus_information, int obsess_over_host, unsigned int hourly_value);
 struct hostsmember *add_parent_host_to_host(host *, char *);							/* adds a parent host to a host definition */
 struct servicesmember *add_parent_service_to_service(service *, char *host_name, char *description);
@@ -582,7 +536,6 @@ struct hostescalation *add_hostescalation(char *host_name, int first_notificatio
 struct contactsmember *add_contact_to_hostescalation(hostescalation *, char *);                                /* adds a contact to a host escalation definition */
 struct contactgroupsmember *add_contactgroup_to_hostescalation(hostescalation *, char *);                      /* adds a contact group to a host escalation definition */
 
-struct contactsmember *add_contact_to_object(contactsmember **, char *);                                       /* adds a contact to an object */
 struct servicesmember *add_service_link_to_host(host *, service *);
 
 
@@ -596,7 +549,6 @@ int create_object_tables(unsigned int *);
 struct host *find_host(const char *);
 struct hostgroup *find_hostgroup(const char *);
 struct servicegroup *find_servicegroup(const char *);
-struct contact *find_contact(const char *);
 struct contactgroup *find_contactgroup(const char *);
 struct service *find_service(const char *, const char *);
 
@@ -619,13 +571,11 @@ int number_of_immediate_child_hosts(struct host *);		                /* counts t
 int number_of_total_child_hosts(struct host *);				/* counts the number of total child hosts for a particular host */
 int number_of_immediate_parent_hosts(struct host *);				/* counts the number of immediate parents hosts for a particular host */
 
-void fcache_contactlist(FILE *fp, const char *prefix, struct contactsmember *list);
 void fcache_contactgrouplist(FILE *fp, const char *prefix, struct contactgroupsmember *list);
 void fcache_hostlist(FILE *fp, const char *prefix, struct hostsmember *list);
 void fcache_contactgroup(FILE *fp, struct contactgroup *temp_contactgroup);
 void fcache_hostgroup(FILE *fp, struct hostgroup *temp_hostgroup);
 void fcache_servicegroup(FILE *fp, struct servicegroup *temp_servicegroup);
-void fcache_contact(FILE *fp, struct contact *temp_contact);
 void fcache_host(FILE *fp, struct host *temp_host);
 void fcache_service(FILE *fp, struct service *temp_service);
 void fcache_servicedependency(FILE *fp, struct servicedependency *temp_servicedependency);
