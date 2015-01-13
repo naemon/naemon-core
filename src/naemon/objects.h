@@ -12,6 +12,7 @@
 #include "objects_command.h"
 #include "objects_host.h"
 #include "objects_hostgroup.h"
+#include "objects_service.h"
 #include "objects_timeperiod.h"
 #include "objectlist.h"
 
@@ -56,12 +57,6 @@ NAGIOS_BEGIN_DECL
 #define HOSTDEPENDENCY_SKIPLIST     OBJTYPE_HOSTDEPENDENCY
 #define SERVICEDEPENDENCY_SKIPLIST  OBJTYPE_SERVICEDEPENDENCY
 /****************** DATA STRUCTURES *******************/
-
-const struct flag_map service_flag_map[9];
-
-/* @todo Remove typedef's of non-opaque types in next major release */
-typedef struct service service;
-
 
 /* NOTIFY_LIST structure */
 typedef struct notify_list {
@@ -135,15 +130,6 @@ typedef struct check_stats {
 } check_stats;
 
 
-/* SERVICESMEMBER structure */
-typedef struct servicesmember {
-	char    *host_name;
-	char    *service_description;
-	struct service *service_ptr;
-	struct servicesmember *next;
-} servicesmember;
-
-
 /* SERVICEGROUP structure */
 typedef struct servicegroup {
 	unsigned int id;
@@ -155,113 +141,6 @@ typedef struct servicegroup {
 	char    *action_url;
 	struct	servicegroup *next;
 } servicegroup;
-
-
-/* SERVICE structure */
-struct service {
-	unsigned int id;
-	char	*host_name;
-	char	*description;
-	char    *display_name;
-	struct servicesmember *parents;
-	struct servicesmember *children;
-	char    *check_command;
-	char    *event_handler;
-	int     initial_state;
-	double	check_interval;
-	double  retry_interval;
-	int	max_attempts;
-	int     reserved1;   /* placeholder var to not break interface, was parallelize before */
-	struct contactgroupsmember *contact_groups;
-	struct contactsmember *contacts;
-	double	notification_interval;
-	double  first_notification_delay;
-	unsigned int notification_options;
-	unsigned int stalking_options;
-	unsigned int hourly_value;
-	int     is_volatile;
-	char	*notification_period;
-	char	*check_period;
-	int     flap_detection_enabled;
-	double  low_flap_threshold;
-	double  high_flap_threshold;
-	unsigned int flap_detection_options;
-	int     process_performance_data;
-	int     check_freshness;
-	int     freshness_threshold;
-	int     accept_passive_checks;
-	int     event_handler_enabled;
-	int	checks_enabled;
-	const char *check_source;
-	int     retain_status_information;
-	int     retain_nonstatus_information;
-	int     notifications_enabled;
-	int     obsess;
-	char    *notes;
-	char    *notes_url;
-	char    *action_url;
-	char    *icon_image;
-	char    *icon_image_alt;
-	struct customvariablesmember *custom_variables;
-	int     problem_has_been_acknowledged;
-	int     acknowledgement_type;
-	int     host_problem_at_last_check;
-	int     check_type;
-	int	current_state;
-	int	last_state;
-	int	last_hard_state;
-	char	*plugin_output;
-	char    *long_plugin_output;
-	char    *perf_data;
-	int     state_type;
-	time_t	next_check;
-	int     reserved2; /* placeholder var to not break interface, was should_be_scheduled before */
-	time_t	last_check;
-	int	current_attempt;
-	unsigned long current_event_id;
-	unsigned long last_event_id;
-	unsigned long current_problem_id;
-	unsigned long last_problem_id;
-	time_t	last_notification;
-	time_t  next_notification;
-	int     no_more_notifications;
-	int     check_flapping_recovery_notification;
-	time_t	last_state_change;
-	time_t	last_hard_state_change;
-	time_t  last_time_ok;
-	time_t  last_time_warning;
-	time_t  last_time_unknown;
-	time_t  last_time_critical;
-	int     has_been_checked;
-	int     is_being_freshened;
-	unsigned int notified_on;
-	int     current_notification_number;
-	unsigned long current_notification_id;
-	double  latency;
-	double  execution_time;
-	int     is_executing;
-	int     check_options;
-	int     scheduled_downtime_depth;
-	int     pending_flex_downtime;
-	int     state_history[MAX_STATE_HISTORY_ENTRIES];    /* flap detection */
-	int     state_history_index;
-	int     is_flapping;
-	unsigned long flapping_comment_id;
-	double  percent_state_change;
-	unsigned long modified_attributes;
-	struct host *host_ptr;
-	struct command *event_handler_ptr;
-	char *event_handler_args;
-	struct command *check_command_ptr;
-	char *check_command_args;
-	struct timeperiod *check_period_ptr;
-	struct timeperiod *notification_period_ptr;
-	struct objectlist *servicegroups_ptr;
-	struct objectlist *exec_deps, *notify_deps;
-	struct objectlist *escalation_list;
-	struct service *next;
-	struct timed_event *next_check_event;
-};
 
 
 /* SERVICE ESCALATION structure */
@@ -327,11 +206,9 @@ typedef struct hostdependency {
 	struct timeperiod *dependency_period_ptr;
 } hostdependency;
 
-extern struct service *service_list;
 extern struct servicegroup *servicegroup_list;
 extern struct hostescalation *hostescalation_list;
 extern struct serviceescalation *serviceescalation_list;
-extern struct service **service_ary;
 extern struct servicegroup **servicegroup_ary;
 extern struct hostescalation **hostescalation_ary;
 extern struct hostdependency **hostdependency_ary;
@@ -342,48 +219,31 @@ extern struct servicedependency **servicedependency_ary;
 /********************* FUNCTIONS **********************/
 
 
-/* silly helpers useful pretty much all over the place */
-const char *service_state_name(int state);
 /**** Top-level input functions ****/
 int read_object_config_data(const char *, int);     /* reads all external configuration data of specific types */
 
 
 /**** Object Creation Functions ****/
-struct servicesmember *add_parent_service_to_service(service *, char *host_name, char *description);
 struct servicegroup *add_servicegroup(char *, char *, char *, char *, char *);                                 /* adds a servicegroup definition */
 struct servicesmember *add_service_to_servicegroup(servicegroup *, char *, char *);                            /* adds a service to a servicegroup definition */
-struct service *add_service(char *host_name, char *description, char *display_name, char *check_period, int initial_state, int max_attempts, int accept_passive_checks, double check_interval, double retry_interval, double notification_interval, double first_notification_delay, char *notification_period, int notification_options, int notifications_enabled, int is_volatile, char *event_handler, int event_handler_enabled, char *check_command, int checks_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, char *notes, char *notes_url, char *action_url, char *icon_image, char *icon_image_alt, int retain_status_information, int retain_nonstatus_information, int obsess_over_service, unsigned int hourly_value);
-struct contactgroupsmember *add_contactgroup_to_service(service *, char *);					/* adds a contact group to a service definition */
-struct contactsmember *add_contact_to_service(service *, char *);                                              /* adds a contact to a host definition */
 struct serviceescalation *add_serviceescalation(char *host_name, char *description, int first_notification, int last_notification, double notification_interval, char *escalation_period, int escalation_options);
 struct contactgroupsmember *add_contactgroup_to_serviceescalation(serviceescalation *, char *);                /* adds a contact group to a service escalation definition */
 struct contactsmember *add_contact_to_serviceescalation(serviceescalation *, char *);                          /* adds a contact to a service escalation definition */
-struct customvariablesmember *add_custom_variable_to_service(service *, char *, char *);                       /* adds a custom variable to a service definition */
 struct servicedependency *add_service_dependency(char *dependent_host_name, char *dependent_service_description, char *host_name, char *service_description, int dependency_type, int inherits_parent, int failure_options, char *dependency_period);
 struct hostdependency *add_host_dependency(char *dependent_host_name, char *host_name, int dependency_type, int inherits_parent, int failure_options, char *dependency_period);
 struct hostescalation *add_hostescalation(char *host_name, int first_notification, int last_notification, double notification_interval, char *escalation_period, int escalation_options);
 struct contactsmember *add_contact_to_hostescalation(hostescalation *, char *);                                /* adds a contact to a host escalation definition */
 struct contactgroupsmember *add_contactgroup_to_hostescalation(hostescalation *, char *);                      /* adds a contact group to a host escalation definition */
 
-int get_service_count(void);
-
-
 int create_object_tables(unsigned int *);
 
 /**** Object Search Functions ****/
 struct servicegroup *find_servicegroup(const char *);
-struct service *find_service(const char *, const char *);
-
-
 /**** Object Query Functions ****/
 int is_host_member_of_servicegroup(struct servicegroup *, struct host *);	       /* tests whether or not a service is a member of a specific servicegroup */
 int is_service_member_of_servicegroup(struct servicegroup *, struct service *);	/* tests whether or not a service is a member of a specific servicegroup */
-int is_contact_for_service(struct service *, struct contact *);		       /* tests whether or not a contact is a contact member for a specific service */
-int is_escalated_contact_for_service(struct service *, struct contact *);             /* checks whether or not a contact is an escalated contact for a specific service */
-
 
 void fcache_servicegroup(FILE *fp, struct servicegroup *temp_servicegroup);
-void fcache_service(FILE *fp, struct service *temp_service);
 void fcache_servicedependency(FILE *fp, struct servicedependency *temp_servicedependency);
 void fcache_serviceescalation(FILE *fp, struct serviceescalation *temp_serviceescalation);
 void fcache_hostdependency(FILE *fp, struct hostdependency *temp_hostdependency);
