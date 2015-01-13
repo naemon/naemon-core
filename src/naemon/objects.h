@@ -8,6 +8,7 @@
 #include "common.h"
 #include "objects_common.h"
 #include "objects_contact.h"
+#include "objects_contactgroup.h"
 #include "objects_command.h"
 #include "objects_timeperiod.h"
 #include "objectlist.h"
@@ -132,24 +133,6 @@ typedef struct check_stats {
 	int minute_stats[3];
 	time_t last_update;
 } check_stats;
-
-
-/* CONTACTGROUP structure */
-typedef struct contactgroup {
-	unsigned int id;
-	char	*group_name;
-	char    *alias;
-	struct contactsmember *members;
-	struct contactgroup *next;
-} contactgroup;
-
-
-/* CONTACTGROUPSMEMBER structure */
-typedef struct contactgroupsmember {
-	char    *group_name;
-	struct contactgroup *group_ptr;
-	struct contactgroupsmember *next;
-} contactgroupsmember;
 
 
 /* SERVICESMEMBER structure */
@@ -485,14 +468,12 @@ extern struct host *host_list;
 extern struct service *service_list;
 extern struct hostgroup *hostgroup_list;
 extern struct servicegroup *servicegroup_list;
-extern struct contactgroup *contactgroup_list;
 extern struct hostescalation *hostescalation_list;
 extern struct serviceescalation *serviceescalation_list;
 extern struct host **host_ary;
 extern struct service **service_ary;
 extern struct hostgroup **hostgroup_ary;
 extern struct servicegroup **servicegroup_ary;
-extern struct contactgroup **contactgroup_ary;
 extern struct hostescalation **hostescalation_ary;
 extern struct hostdependency **hostdependency_ary;
 extern struct serviceescalation **serviceescalation_ary;
@@ -521,8 +502,6 @@ struct hostgroup *add_hostgroup(char *, char *, char *, char *, char *);						/*
 struct hostsmember *add_host_to_hostgroup(hostgroup *, char *);						/* adds a host to a hostgroup definition */
 struct servicegroup *add_servicegroup(char *, char *, char *, char *, char *);                                 /* adds a servicegroup definition */
 struct servicesmember *add_service_to_servicegroup(servicegroup *, char *, char *);                            /* adds a service to a servicegroup definition */
-struct contactgroup *add_contactgroup(char *, char *);								/* adds a contactgroup definition */
-struct contactsmember *add_contact_to_contactgroup(contactgroup *, char *);					/* adds a contact to a contact group definition */
 struct service *add_service(char *host_name, char *description, char *display_name, char *check_period, int initial_state, int max_attempts, int accept_passive_checks, double check_interval, double retry_interval, double notification_interval, double first_notification_delay, char *notification_period, int notification_options, int notifications_enabled, int is_volatile, char *event_handler, int event_handler_enabled, char *check_command, int checks_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, char *notes, char *notes_url, char *action_url, char *icon_image, char *icon_image_alt, int retain_status_information, int retain_nonstatus_information, int obsess_over_service, unsigned int hourly_value);
 struct contactgroupsmember *add_contactgroup_to_service(service *, char *);					/* adds a contact group to a service definition */
 struct contactsmember *add_contact_to_service(service *, char *);                                              /* adds a contact to a host definition */
@@ -549,7 +528,6 @@ int create_object_tables(unsigned int *);
 struct host *find_host(const char *);
 struct hostgroup *find_hostgroup(const char *);
 struct servicegroup *find_servicegroup(const char *);
-struct contactgroup *find_contactgroup(const char *);
 struct service *find_service(const char *, const char *);
 
 
@@ -561,7 +539,6 @@ int is_host_immediate_parent_of_host(struct host *, struct host *);	            
 int is_host_member_of_hostgroup(struct hostgroup *, struct host *);		       /* tests whether or not a host is a member of a specific hostgroup */
 int is_host_member_of_servicegroup(struct servicegroup *, struct host *);	       /* tests whether or not a service is a member of a specific servicegroup */
 int is_service_member_of_servicegroup(struct servicegroup *, struct service *);	/* tests whether or not a service is a member of a specific servicegroup */
-int is_contact_member_of_contactgroup(struct contactgroup *, struct contact *);	/* tests whether or not a contact is a member of a specific contact group */
 int is_contact_for_host(struct host *, struct contact *);			       /* tests whether or not a contact is a contact member for a specific host */
 int is_escalated_contact_for_host(struct host *, struct contact *);                   /* checks whether or not a contact is an escalated contact for a specific host */
 int is_contact_for_service(struct service *, struct contact *);		       /* tests whether or not a contact is a contact member for a specific service */
@@ -571,9 +548,7 @@ int number_of_immediate_child_hosts(struct host *);		                /* counts t
 int number_of_total_child_hosts(struct host *);				/* counts the number of total child hosts for a particular host */
 int number_of_immediate_parent_hosts(struct host *);				/* counts the number of immediate parents hosts for a particular host */
 
-void fcache_contactgrouplist(FILE *fp, const char *prefix, struct contactgroupsmember *list);
 void fcache_hostlist(FILE *fp, const char *prefix, struct hostsmember *list);
-void fcache_contactgroup(FILE *fp, struct contactgroup *temp_contactgroup);
 void fcache_hostgroup(FILE *fp, struct hostgroup *temp_hostgroup);
 void fcache_servicegroup(FILE *fp, struct servicegroup *temp_servicegroup);
 void fcache_host(FILE *fp, struct host *temp_host);

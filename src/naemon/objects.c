@@ -21,14 +21,12 @@ host *host_list = NULL;
 service *service_list = NULL;
 hostgroup *hostgroup_list = NULL;
 servicegroup *servicegroup_list = NULL;
-contactgroup *contactgroup_list = NULL;
 hostescalation *hostescalation_list = NULL;
 serviceescalation *serviceescalation_list = NULL;
 host **host_ary = NULL;
 service **service_ary = NULL;
 hostgroup **hostgroup_ary = NULL;
 servicegroup **servicegroup_ary = NULL;
-contactgroup **contactgroup_ary = NULL;
 hostescalation **hostescalation_ary = NULL;
 serviceescalation **serviceescalation_ary = NULL;
 hostdependency **hostdependency_ary = NULL;
@@ -146,7 +144,6 @@ static void post_process_object_config(void)
 	timing_point("Done post-sorting slave objects\n");
 
 	hostgroup_list = hostgroup_ary ? *hostgroup_ary : NULL;
-	contactgroup_list = contactgroup_ary ? *contactgroup_ary : NULL;
 	servicegroup_list = servicegroup_ary ? *servicegroup_ary : NULL;
 	host_list = host_ary ? *host_ary : NULL;
 	service_list = service_ary ? *service_ary : NULL;
@@ -258,8 +255,6 @@ int create_object_tables(unsigned int *ocount)
 	if (mktable(hostgroup, OBJTYPE_HOSTGROUP) != OK)
 		return ERROR;
 	if (mktable(servicegroup, OBJTYPE_SERVICEGROUP) != OK)
-		return ERROR;
-	if (mktable(contactgroup, OBJTYPE_CONTACTGROUP) != OK)
 		return ERROR;
 	if (mktable(hostescalation, OBJTYPE_HOSTESCALATION) != OK)
 		return ERROR;
@@ -511,29 +506,6 @@ servicesmember *add_service_link_to_host(host *hst, service *service_ptr)
 	hst->hourly_value += service_ptr->hourly_value;
 
 	return new_servicesmember;
-}
-
-
-static contactgroupsmember *add_contactgroup_to_object(contactgroupsmember **cg_list, const char *group_name)
-{
-	contactgroupsmember *cgm;
-	contactgroup *cg;
-
-	if (!group_name || !*group_name) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Contact name is NULL\n");
-		return NULL;
-	}
-	if (!(cg = find_contactgroup(group_name))) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Contactgroup '%s' is not defined anywhere\n", group_name);
-		return NULL;
-	}
-	cgm = nm_malloc(sizeof(*cgm));
-	cgm->group_name = cg->group_name;
-	cgm->group_ptr = cg;
-	cgm->next = *cg_list;
-	*cg_list = cgm;
-
-	return cgm;
 }
 
 
@@ -795,92 +767,6 @@ servicesmember *add_service_to_servicegroup(servicegroup *temp_servicegroup, cha
 	}
 
 	return new_member;
-}
-
-
-
-
-/* add a new contact group to the list in memory */
-contactgroup *add_contactgroup(char *name, char *alias)
-{
-	contactgroup *new_contactgroup = NULL;
-	int result = OK;
-
-	/* make sure we have the data we need */
-	if (name == NULL || !strcmp(name, "")) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Contactgroup name is NULL\n");
-		return NULL;
-	}
-
-	new_contactgroup = nm_calloc(1, sizeof(*new_contactgroup));
-
-	/* assign vars */
-	new_contactgroup->group_name = name;
-	new_contactgroup->alias = alias ? alias : name;
-
-	/* add new contact group to hash table */
-	if (result == OK) {
-		result = dkhash_insert(object_hash_tables[OBJTYPE_CONTACTGROUP], new_contactgroup->group_name, NULL, new_contactgroup);
-		switch (result) {
-		case DKHASH_EDUPE:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Contactgroup '%s' has already been defined\n", name);
-			result = ERROR;
-			break;
-		case DKHASH_OK:
-			result = OK;
-			break;
-		default:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add contactgroup '%s' to hash table\n", name);
-			result = ERROR;
-			break;
-		}
-	}
-
-	/* handle errors */
-	if (result == ERROR) {
-		free(new_contactgroup);
-		return NULL;
-	}
-
-	new_contactgroup->id = num_objects.contactgroups++;
-	contactgroup_ary[new_contactgroup->id] = new_contactgroup;
-	if (new_contactgroup->id)
-		contactgroup_ary[new_contactgroup->id - 1]->next = new_contactgroup;
-	return new_contactgroup;
-}
-
-
-/* add a new member to a contact group */
-contactsmember *add_contact_to_contactgroup(contactgroup *grp, char *contact_name)
-{
-	contactsmember *new_contactsmember = NULL;
-	struct contact *c;
-
-	/* make sure we have the data we need */
-	if (grp == NULL || (contact_name == NULL || !strcmp(contact_name, ""))) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Contactgroup or contact name is NULL\n");
-		return NULL;
-	}
-
-	if (!(c = find_contact(contact_name))) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Failed to locate contact '%s' for contactgroup '%s'\n", contact_name, grp->group_name);
-		return NULL;
-	}
-
-	/* allocate memory for a new member */
-	new_contactsmember = nm_calloc(1, sizeof(contactsmember));
-
-	/* assign vars */
-	new_contactsmember->contact_name = c->name;
-	new_contactsmember->contact_ptr = c;
-
-	/* add the new member to the head of the member list */
-	new_contactsmember->next = grp->members;
-	grp->members = new_contactsmember;
-
-	prepend_object_to_objectlist(&c->contactgroups_ptr, (void *)grp);
-
-	return new_contactsmember;
 }
 
 
@@ -1346,11 +1232,6 @@ servicegroup *find_servicegroup(const char *name)
 	return dkhash_get(object_hash_tables[OBJTYPE_SERVICEGROUP], name, NULL);
 }
 
-contactgroup *find_contactgroup(const char *name)
-{
-	return dkhash_get(object_hash_tables[OBJTYPE_CONTACTGROUP], name, NULL);
-}
-
 service *find_service(const char *host_name, const char *svc_desc)
 {
 	return dkhash_get(object_hash_tables[OBJTYPE_SERVICE], host_name, svc_desc);
@@ -1446,27 +1327,6 @@ int is_service_member_of_servicegroup(servicegroup *group, service *svc)
 
 	for (temp_servicesmember = group->members; temp_servicesmember != NULL; temp_servicesmember = temp_servicesmember->next) {
 		if (temp_servicesmember->service_ptr == svc)
-			return TRUE;
-	}
-
-	return FALSE;
-}
-
-
-/*
- * tests whether a contact is a member of a particular contactgroup.
- * This function is used by external modules, such as Livestatus
- */
-int is_contact_member_of_contactgroup(contactgroup *group, contact *cntct)
-{
-	contactsmember *member;
-
-	if (!group || !cntct)
-		return FALSE;
-
-	/* search all contacts in this contact group */
-	for (member = group->members; member; member = member->next) {
-		if (member->contact_ptr == cntct)
 			return TRUE;
 	}
 
@@ -1755,28 +1615,6 @@ int free_object_data(void)
 	/* reset pointers */
 	nm_free(servicegroup_ary);
 
-	/**** free memory for the contact group list ****/
-	for (i = 0; i < num_objects.contactgroups; i++) {
-		contactgroup *this_contactgroup = contactgroup_ary[i];
-
-		/* free memory for the group members */
-		this_contactsmember = this_contactgroup->members;
-		while (this_contactsmember != NULL) {
-			next_contactsmember = this_contactsmember->next;
-			nm_free(this_contactsmember);
-			this_contactsmember = next_contactsmember;
-		}
-
-		if (this_contactgroup->alias != this_contactgroup->group_name)
-			nm_free(this_contactgroup->alias);
-		nm_free(this_contactgroup->group_name);
-		nm_free(this_contactgroup);
-	}
-
-	/* reset pointers */
-	nm_free(contactgroup_ary);
-
-
 	/**** free memory for the service list ****/
 	for (i = 0; i < num_objects.services; i++) {
 		service *this_service = service_ary[i];
@@ -1911,16 +1749,6 @@ int free_object_data(void)
 /*********************** CACHE FUNCTIONS **************************/
 /******************************************************************/
 
-void fcache_contactgrouplist(FILE *fp, const char *prefix, contactgroupsmember *list)
-{
-	if (list) {
-		contactgroupsmember *l;
-		fprintf(fp, "%s", prefix);
-		for (l = list; l; l = l->next)
-			fprintf(fp, "%s%c", l->group_name, l->next ? ',' : '\n');
-	}
-}
-
 void fcache_hostlist(FILE *fp, const char *prefix, hostsmember *list)
 {
 	if (list) {
@@ -1929,16 +1757,6 @@ void fcache_hostlist(FILE *fp, const char *prefix, hostsmember *list)
 		for (l = list; l; l = l->next)
 			fprintf(fp, "%s%c", l->host_name, l->next ? ',' : '\n');
 	}
-}
-
-void fcache_contactgroup(FILE *fp, contactgroup *temp_contactgroup)
-{
-	fprintf(fp, "define contactgroup {\n");
-	fprintf(fp, "\tcontactgroup_name\t%s\n", temp_contactgroup->group_name);
-	if (temp_contactgroup->alias)
-		fprintf(fp, "\talias\t%s\n", temp_contactgroup->alias);
-	fcache_contactlist(fp, "\tmembers\t", temp_contactgroup->members);
-	fprintf(fp, "\t}\n\n");
 }
 
 void fcache_hostgroup(FILE *fp, hostgroup *temp_hostgroup)

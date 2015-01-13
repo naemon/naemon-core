@@ -12,6 +12,7 @@ BASE_SOURCE = \
 	src/naemon/nebmods.c src/naemon/nm_alloc.c src/naemon/notifications.c \
 	src/naemon/objects.c src/naemon/objectlist.c src/naemon/objects_common.c \
 	src/naemon/objects_command.c src/naemon/objects_contact.c \
+	src/naemon/objects_contactgroup.c \
 	src/naemon/objects_timeperiod.c \
 	src/naemon/perfdata.c src/naemon/query-handler.c \
 	src/naemon/sehandlers.c src/naemon/shared.c src/naemon/sretention.c \
