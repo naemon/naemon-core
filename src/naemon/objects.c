@@ -18,12 +18,10 @@
 dkhash_table *object_hash_tables[NUM_HASHED_OBJECT_TYPES];
 
 service *service_list = NULL;
-hostgroup *hostgroup_list = NULL;
 servicegroup *servicegroup_list = NULL;
 hostescalation *hostescalation_list = NULL;
 serviceescalation *serviceescalation_list = NULL;
 service **service_ary = NULL;
-hostgroup **hostgroup_ary = NULL;
 servicegroup **servicegroup_ary = NULL;
 hostescalation **hostescalation_ary = NULL;
 serviceescalation **serviceescalation_ary = NULL;
@@ -120,7 +118,6 @@ static void post_process_object_config(void)
 		qsort(serviceescalation_ary, num_objects.serviceescalations, sizeof(serviceescalation *), cmp_serviceesc);
 	timing_point("Done post-sorting slave objects\n");
 
-	hostgroup_list = hostgroup_ary ? *hostgroup_ary : NULL;
 	servicegroup_list = servicegroup_ary ? *servicegroup_ary : NULL;
 	service_list = service_ary ? *service_ary : NULL;
 	hostescalation_list = hostescalation_ary ? *hostescalation_ary : NULL;
@@ -210,8 +207,6 @@ int create_object_tables(unsigned int *ocount)
 	 */
 	if (mktable(service, OBJTYPE_SERVICE) != OK)
 		return ERROR;
-	if (mktable(hostgroup, OBJTYPE_HOSTGROUP) != OK)
-		return ERROR;
 	if (mktable(servicegroup, OBJTYPE_SERVICEGROUP) != OK)
 		return ERROR;
 	if (mktable(hostescalation, OBJTYPE_HOSTESCALATION) != OK)
@@ -241,116 +236,6 @@ servicesmember *add_parent_service_to_service(service *svc, char *host_name, cha
 	sm->next = svc->parents;
 	svc->parents = sm;
 	return sm;
-}
-
-
-/* add a new host group to the list in memory */
-hostgroup *add_hostgroup(char *name, char *alias, char *notes, char *notes_url, char *action_url)
-{
-	hostgroup *new_hostgroup = NULL;
-	int result = OK;
-
-	/* make sure we have the data we need */
-	if (name == NULL || !strcmp(name, "")) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Hostgroup name is NULL\n");
-		return NULL;
-	}
-
-	new_hostgroup = nm_calloc(1, sizeof(*new_hostgroup));
-
-	/* assign vars */
-	new_hostgroup->group_name = name;
-	new_hostgroup->alias = alias ? alias : name;
-	new_hostgroup->notes = notes;
-	new_hostgroup->notes_url = notes_url;
-	new_hostgroup->action_url = action_url;
-
-	/* add new host group to hash table */
-	if (result == OK) {
-		result = dkhash_insert(object_hash_tables[OBJTYPE_HOSTGROUP], new_hostgroup->group_name, NULL, new_hostgroup);
-		switch (result) {
-		case DKHASH_EDUPE:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Hostgroup '%s' has already been defined\n", name);
-			result = ERROR;
-			break;
-		case DKHASH_OK:
-			result = OK;
-			break;
-		default:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add hostgroup '%s' to hash table\n", name);
-			result = ERROR;
-			break;
-		}
-	}
-
-	/* handle errors */
-	if (result == ERROR) {
-		free(new_hostgroup);
-		return NULL;
-	}
-
-	new_hostgroup->id = num_objects.hostgroups++;
-	hostgroup_ary[new_hostgroup->id] = new_hostgroup;
-	if (new_hostgroup->id)
-		hostgroup_ary[new_hostgroup->id - 1]->next = new_hostgroup;
-	return new_hostgroup;
-}
-
-
-/* add a new host to a host group */
-hostsmember *add_host_to_hostgroup(hostgroup *temp_hostgroup, char *host_name)
-{
-	hostsmember *new_member = NULL;
-	hostsmember *last_member = NULL;
-	hostsmember *temp_member = NULL;
-	struct host *h;
-
-	/* make sure we have the data we need */
-	if (temp_hostgroup == NULL || (host_name == NULL || !strcmp(host_name, ""))) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Hostgroup or group member is NULL\n");
-		return NULL;
-	}
-	if (!(h = find_host(host_name))) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Failed to locate host '%s' for hostgroup '%s'\n", host_name, temp_hostgroup->group_name);
-		return NULL;
-	}
-
-	/* allocate memory for a new member */
-	new_member = nm_calloc(1, sizeof(hostsmember));
-	/* assign vars */
-	new_member->host_name = h->name;
-	new_member->host_ptr = h;
-
-	/* add (unsorted) link from the host to its group */
-	prepend_object_to_objectlist(&h->hostgroups_ptr, (void *)temp_hostgroup);
-
-	/* add the new member to the member list, sorted by host name */
-	if (use_large_installation_tweaks == TRUE) {
-		new_member->next = temp_hostgroup->members;
-		temp_hostgroup->members = new_member;
-		return new_member;
-	}
-	last_member = temp_hostgroup->members;
-	for (temp_member = temp_hostgroup->members; temp_member != NULL; temp_member = temp_member->next) {
-		if (strcmp(new_member->host_name, temp_member->host_name) < 0) {
-			new_member->next = temp_member;
-			if (temp_member == temp_hostgroup->members)
-				temp_hostgroup->members = new_member;
-			else
-				last_member->next = new_member;
-			break;
-		} else
-			last_member = temp_member;
-	}
-	if (temp_hostgroup->members == NULL) {
-		new_member->next = NULL;
-		temp_hostgroup->members = new_member;
-	} else if (temp_member == NULL) {
-		new_member->next = NULL;
-		last_member->next = new_member;
-	}
-
-	return new_member;
 }
 
 
@@ -929,11 +814,6 @@ contactsmember *add_contact_to_hostescalation(hostescalation *he, char *contact_
 /******************** OBJECT SEARCH FUNCTIONS *********************/
 /******************************************************************/
 
-hostgroup *find_hostgroup(const char *name)
-{
-	return dkhash_get(object_hash_tables[OBJTYPE_HOSTGROUP], name, NULL);
-}
-
 servicegroup *find_servicegroup(const char *name)
 {
 	return dkhash_get(object_hash_tables[OBJTYPE_SERVICEGROUP], name, NULL);
@@ -948,24 +828,6 @@ service *find_service(const char *host_name, const char *svc_desc)
 /******************************************************************/
 /********************* OBJECT QUERY FUNCTIONS *********************/
 /******************************************************************/
-
-/*  tests whether a host is a member of a particular hostgroup */
-/* NOTE: This function is only used by external modules */
-int is_host_member_of_hostgroup(hostgroup *group, host *hst)
-{
-	hostsmember *temp_hostsmember = NULL;
-
-	if (group == NULL || hst == NULL)
-		return FALSE;
-
-	for (temp_hostsmember = group->members; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-		if (temp_hostsmember->host_ptr == hst)
-			return TRUE;
-	}
-
-	return FALSE;
-}
-
 
 /*  tests whether a host is a member of a particular servicegroup */
 /* NOTE: This function is only used by external modules (mod_gearman, f.e) */
@@ -1069,8 +931,6 @@ int is_escalated_contact_for_service(service *svc, contact *cntct)
 /* free all allocated memory for objects */
 int free_object_data(void)
 {
-	hostsmember *this_hostsmember = NULL;
-	hostsmember *next_hostsmember = NULL;
 	servicesmember *this_servicesmember = NULL;
 	servicesmember *next_servicesmember = NULL;
 	contactsmember *this_contactsmember = NULL;
@@ -1091,30 +951,6 @@ int free_object_data(void)
 		object_hash_tables[i] = NULL;
 		dkhash_destroy(t);
 	}
-
-	/**** free memory for the host group list ****/
-	for (i = 0; i < num_objects.hostgroups; i++) {
-		hostgroup *this_hostgroup = hostgroup_ary[i];
-
-		/* free memory for the group members */
-		this_hostsmember = this_hostgroup->members;
-		while (this_hostsmember != NULL) {
-			next_hostsmember = this_hostsmember->next;
-			nm_free(this_hostsmember);
-			this_hostsmember = next_hostsmember;
-		}
-
-		if (this_hostgroup->alias != this_hostgroup->group_name)
-			nm_free(this_hostgroup->alias);
-		nm_free(this_hostgroup->group_name);
-		nm_free(this_hostgroup->notes);
-		nm_free(this_hostgroup->notes_url);
-		nm_free(this_hostgroup->action_url);
-		nm_free(this_hostgroup);
-	}
-
-	/* reset pointers */
-	nm_free(hostgroup_ary);
 
 	/**** free memory for the service group list ****/
 	for (i = 0; i < num_objects.servicegroups; i++) {
@@ -1273,27 +1109,6 @@ int free_object_data(void)
 /******************************************************************/
 /*********************** CACHE FUNCTIONS **************************/
 /******************************************************************/
-
-void fcache_hostgroup(FILE *fp, hostgroup *temp_hostgroup)
-{
-	fprintf(fp, "define hostgroup {\n");
-	fprintf(fp, "\thostgroup_name\t%s\n", temp_hostgroup->group_name);
-	if (temp_hostgroup->alias)
-		fprintf(fp, "\talias\t%s\n", temp_hostgroup->alias);
-	if (temp_hostgroup->members) {
-		hostsmember *list;
-		fprintf(fp, "\tmembers\t");
-		for (list = temp_hostgroup->members; list; list = list->next)
-			fprintf(fp, "%s%c", list->host_name, list->next ? ',' : '\n');
-	}
-	if (temp_hostgroup->notes)
-		fprintf(fp, "\tnotes\t%s\n", temp_hostgroup->notes);
-	if (temp_hostgroup->notes_url)
-		fprintf(fp, "\tnotes_url\t%s\n", temp_hostgroup->notes_url);
-	if (temp_hostgroup->action_url)
-		fprintf(fp, "\taction_url\t%s\n", temp_hostgroup->action_url);
-	fprintf(fp, "\t}\n\n");
-}
 
 void fcache_servicegroup(FILE *fp, servicegroup *temp_servicegroup)
 {

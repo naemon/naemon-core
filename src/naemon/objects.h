@@ -11,6 +11,7 @@
 #include "objects_contactgroup.h"
 #include "objects_command.h"
 #include "objects_host.h"
+#include "objects_hostgroup.h"
 #include "objects_timeperiod.h"
 #include "objectlist.h"
 
@@ -141,19 +142,6 @@ typedef struct servicesmember {
 	struct service *service_ptr;
 	struct servicesmember *next;
 } servicesmember;
-
-
-/* HOSTGROUP structure */
-typedef struct hostgroup {
-	unsigned int id;
-	char 	*group_name;
-	char    *alias;
-	struct hostsmember *members;
-	char    *notes;
-	char    *notes_url;
-	char    *action_url;
-	struct	hostgroup *next;
-} hostgroup;
 
 
 /* SERVICEGROUP structure */
@@ -340,12 +328,10 @@ typedef struct hostdependency {
 } hostdependency;
 
 extern struct service *service_list;
-extern struct hostgroup *hostgroup_list;
 extern struct servicegroup *servicegroup_list;
 extern struct hostescalation *hostescalation_list;
 extern struct serviceescalation *serviceescalation_list;
 extern struct service **service_ary;
-extern struct hostgroup **hostgroup_ary;
 extern struct servicegroup **servicegroup_ary;
 extern struct hostescalation **hostescalation_ary;
 extern struct hostdependency **hostdependency_ary;
@@ -364,8 +350,6 @@ int read_object_config_data(const char *, int);     /* reads all external config
 
 /**** Object Creation Functions ****/
 struct servicesmember *add_parent_service_to_service(service *, char *host_name, char *description);
-struct hostgroup *add_hostgroup(char *, char *, char *, char *, char *);						/* adds a hostgroup definition */
-struct hostsmember *add_host_to_hostgroup(hostgroup *, char *);						/* adds a host to a hostgroup definition */
 struct servicegroup *add_servicegroup(char *, char *, char *, char *, char *);                                 /* adds a servicegroup definition */
 struct servicesmember *add_service_to_servicegroup(servicegroup *, char *, char *);                            /* adds a service to a servicegroup definition */
 struct service *add_service(char *host_name, char *description, char *display_name, char *check_period, int initial_state, int max_attempts, int accept_passive_checks, double check_interval, double retry_interval, double notification_interval, double first_notification_delay, char *notification_period, int notification_options, int notifications_enabled, int is_volatile, char *event_handler, int event_handler_enabled, char *check_command, int checks_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, char *notes, char *notes_url, char *action_url, char *icon_image, char *icon_image_alt, int retain_status_information, int retain_nonstatus_information, int obsess_over_service, unsigned int hourly_value);
@@ -387,20 +371,17 @@ int get_service_count(void);
 int create_object_tables(unsigned int *);
 
 /**** Object Search Functions ****/
-struct hostgroup *find_hostgroup(const char *);
 struct servicegroup *find_servicegroup(const char *);
 struct service *find_service(const char *, const char *);
 
 
 /**** Object Query Functions ****/
-int is_host_member_of_hostgroup(struct hostgroup *, struct host *);		       /* tests whether or not a host is a member of a specific hostgroup */
 int is_host_member_of_servicegroup(struct servicegroup *, struct host *);	       /* tests whether or not a service is a member of a specific servicegroup */
 int is_service_member_of_servicegroup(struct servicegroup *, struct service *);	/* tests whether or not a service is a member of a specific servicegroup */
 int is_contact_for_service(struct service *, struct contact *);		       /* tests whether or not a contact is a contact member for a specific service */
 int is_escalated_contact_for_service(struct service *, struct contact *);             /* checks whether or not a contact is an escalated contact for a specific service */
 
 
-void fcache_hostgroup(FILE *fp, struct hostgroup *temp_hostgroup);
 void fcache_servicegroup(FILE *fp, struct servicegroup *temp_servicegroup);
 void fcache_service(FILE *fp, struct service *temp_service);
 void fcache_servicedependency(FILE *fp, struct servicedependency *temp_servicedependency);
