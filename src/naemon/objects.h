@@ -6,6 +6,7 @@
 #endif
 
 #include "common.h"
+#include "objects_common.h"
 
 NAGIOS_BEGIN_DECL
 
@@ -16,7 +17,6 @@ NAGIOS_BEGIN_DECL
 
 
 /***************** OBJECT SIZE LIMITS *****************/
-#define MAX_STATE_HISTORY_ENTRIES		21	/* max number of old states to keep track of for flap detection */
 #define MAX_CONTACT_ADDRESSES                   6       /* max number of custom addresses a contact can have */
 
 
@@ -61,37 +61,6 @@ NAGIOS_BEGIN_DECL
 #define DATERANGE_MONTH_WEEK_DAY 3  /* 3rd thursday (specific month) */
 #define DATERANGE_WEEK_DAY       4  /* 3rd thursday (generic month) */
 #define DATERANGE_TYPES          5
-
-
-/*
- * flags for notification_options, flapping_options and other similar
- * flags. They overlap (hosts and services), so we can't use enum's.
- */
-#define OPT_NOTHING       0 /* no options selected */
-#define OPT_ALL           (~0) /* everything selected, so all bits set */
-#define OPT_DOWN          (1 << STATE_DOWN)
-#define OPT_UP            (1 << STATE_UP)
-#define OPT_UNREACHABLE   (1 << STATE_UNREACHABLE)
-#define OPT_OK            (1 << STATE_OK)
-#define OPT_WARNING       (1 << STATE_WARNING)
-#define OPT_CRITICAL      (1 << STATE_CRITICAL)
-#define OPT_UNKNOWN       (1 << STATE_UNKNOWN)
-#define OPT_RECOVERY      OPT_OK
-/* and now the "unreal" states... */
-#define OPT_PENDING       (1 << 10)
-#define OPT_FLAPPING      (1 << 11)
-#define OPT_DOWNTIME      (1 << 12)
-#define OPT_DISABLED      (1 << 15) /* will denote disabled checks some day */
-
-/* macros useful with both hosts and services */
-#define flag_set(c, flag)    ((c) |= (flag))
-#define flag_get(c, flag)    (unsigned int)((c) & (flag))
-#define flag_isset(c, flag)  (flag_get((c), (flag)) == (unsigned int)(flag))
-#define flag_unset(c, flag)  (c &= ~(flag))
-#define should_stalk(o) flag_isset(o->stalking_options, 1 << o->current_state)
-#define should_flap_detect(o) flag_isset(o->flap_detection_options, 1 << o->current_state)
-#define should_notify(o) flag_isset(o->notification_options, 1 << o->current_state)
-#define add_notified_on(o, f) (o->notified_on |= (1 << f))
 
 
 /****************** DATA STRUCTURES *******************/
@@ -253,15 +222,6 @@ typedef struct contactgroupsmember {
 	struct contactgroup *group_ptr;
 	struct contactgroupsmember *next;
 } contactgroupsmember;
-
-
-/* CUSTOMVARIABLESMEMBER structure */
-typedef struct customvariablesmember {
-	char    *variable_name;
-	char    *variable_value;
-	int     has_been_modified;
-	struct customvariablesmember *next;
-} customvariablesmember;
 
 
 /* COMMAND structure */
@@ -673,9 +633,6 @@ extern struct servicedependency **servicedependency_ary;
 /* silly helpers useful pretty much all over the place */
 const char *service_state_name(int state);
 const char *host_state_name(int state);
-const char *state_type_name(int state_type);
-const char *check_type_name(int check_type);
-
 /**** Top-level input functions ****/
 int read_object_config_data(const char *, int);     /* reads all external configuration data of specific types */
 
@@ -718,7 +675,6 @@ struct contactsmember *add_contact_to_hostescalation(hostescalation *, char *); 
 struct contactgroupsmember *add_contactgroup_to_hostescalation(hostescalation *, char *);                      /* adds a contact group to a host escalation definition */
 
 struct contactsmember *add_contact_to_object(contactsmember **, char *);                                       /* adds a contact to an object */
-struct customvariablesmember *add_custom_variable_to_object(customvariablesmember **, char *, char *);         /* adds a custom variable to an object */
 struct servicesmember *add_service_link_to_host(host *, service *);
 
 
@@ -810,7 +766,6 @@ int number_of_immediate_parent_hosts(struct host *);				/* counts the number of 
 void fcache_contactlist(FILE *fp, const char *prefix, struct contactsmember *list);
 void fcache_contactgrouplist(FILE *fp, const char *prefix, struct contactgroupsmember *list);
 void fcache_hostlist(FILE *fp, const char *prefix, struct hostsmember *list);
-void fcache_customvars(FILE *fp, struct customvariablesmember *cvlist);
 void fcache_timeperiod(FILE *fp, struct timeperiod *temp_timeperiod);
 void fcache_command(FILE *fp, struct command *temp_command);
 void fcache_contactgroup(FILE *fp, struct contactgroup *temp_contactgroup);
