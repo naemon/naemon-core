@@ -8,6 +8,7 @@
 #include "common.h"
 #include "objects_common.h"
 #include "objects_command.h"
+#include "objects_timeperiod.h"
 #include "objectlist.h"
 
 NAGIOS_BEGIN_DECL
@@ -54,17 +55,6 @@ NAGIOS_BEGIN_DECL
 #define SERVICEGROUP_SKIPLIST       OBJTYPE_SERVICEGROUP
 #define HOSTDEPENDENCY_SKIPLIST     OBJTYPE_HOSTDEPENDENCY
 #define SERVICEDEPENDENCY_SKIPLIST  OBJTYPE_SERVICEDEPENDENCY
-
-/***************** DATE RANGE TYPES *******************/
-
-#define DATERANGE_CALENDAR_DATE  0  /* 2008-12-25 */
-#define DATERANGE_MONTH_DATE     1  /* july 4 (specific month) */
-#define DATERANGE_MONTH_DAY      2  /* day 21 (generic month) */
-#define DATERANGE_MONTH_WEEK_DAY 3  /* 3rd thursday (specific month) */
-#define DATERANGE_WEEK_DAY       4  /* 3rd thursday (generic month) */
-#define DATERANGE_TYPES          5
-
-
 /****************** DATA STRUCTURES *******************/
 
 /* @todo Remove typedef's of non-opaque types in next major release */
@@ -143,54 +133,6 @@ typedef struct check_stats {
 	int minute_stats[3];
 	time_t last_update;
 } check_stats;
-
-
-
-/* TIMERANGE structure */
-typedef struct timerange {
-	unsigned long range_start;
-	unsigned long range_end;
-	struct timerange *next;
-} timerange;
-
-
-/* DATERANGE structure */
-typedef struct daterange {
-	int type;
-	int syear;          /* start year */
-	int smon;           /* start month */
-	int smday;          /* start day of month (may 3rd, last day in feb) */
-	int swday;          /* start day of week (thursday) */
-	int swday_offset;   /* start weekday offset (3rd thursday, last monday in jan) */
-	int eyear;
-	int emon;
-	int emday;
-	int ewday;
-	int ewday_offset;
-	int skip_interval;
-	struct timerange *times;
-	struct daterange *next;
-} daterange;
-
-
-/* TIMEPERIODEXCLUSION structure */
-typedef struct timeperiodexclusion {
-	char  *timeperiod_name;
-	struct timeperiod *timeperiod_ptr;
-	struct timeperiodexclusion *next;
-} timeperiodexclusion;
-
-
-/* TIMEPERIOD structure */
-typedef struct timeperiod {
-	unsigned int id;
-	char    *name;
-	char    *alias;
-	struct timerange *days[7];
-	struct daterange *exceptions[DATERANGE_TYPES];
-	struct timeperiodexclusion *exclusions;
-	struct timeperiod *next;
-} timeperiod;
 
 
 /* CONTACTSMEMBER structure */
@@ -579,7 +521,6 @@ typedef struct hostdependency {
 	struct timeperiod *dependency_period_ptr;
 } hostdependency;
 
-extern struct timeperiod *timeperiod_list;
 extern struct host *host_list;
 extern struct service *service_list;
 extern struct contact *contact_list;
@@ -588,7 +529,6 @@ extern struct servicegroup *servicegroup_list;
 extern struct contactgroup *contactgroup_list;
 extern struct hostescalation *hostescalation_list;
 extern struct serviceescalation *serviceescalation_list;
-extern struct timeperiod **timeperiod_ary;
 extern struct host **host_ary;
 extern struct service **service_ary;
 extern struct contact **contact_ary;
@@ -623,11 +563,6 @@ struct hostsmember *add_child_link_to_host(host *, host *);						       /* adds 
 struct contactgroupsmember *add_contactgroup_to_host(host *, char *);					       /* adds a contactgroup to a host definition */
 struct contactsmember *add_contact_to_host(host *, char *);                                                    /* adds a contact to a host definition */
 struct customvariablesmember *add_custom_variable_to_host(host *, char *, char *);                             /* adds a custom variable to a host definition */
-struct timeperiod *add_timeperiod(char *, char *);								/* adds a timeperiod definition */
-struct timeperiodexclusion *add_exclusion_to_timeperiod(timeperiod *, char *);                                 /* adds an exclusion to a timeperiod */
-struct timerange *add_timerange_to_timeperiod(timeperiod *, int, unsigned long, unsigned long);			/* adds a timerange to a timeperiod definition */
-struct daterange *add_exception_to_timeperiod(timeperiod *, int, int, int, int, int, int, int, int, int, int, int, int);
-struct timerange *add_timerange_to_daterange(daterange *, unsigned long, unsigned long);
 struct hostgroup *add_hostgroup(char *, char *, char *, char *, char *);						/* adds a hostgroup definition */
 struct hostsmember *add_host_to_hostgroup(hostgroup *, char *);						/* adds a host to a hostgroup definition */
 struct servicegroup *add_servicegroup(char *, char *, char *, char *, char *);                                 /* adds a servicegroup definition */
@@ -658,7 +593,6 @@ int get_service_count(void);
 int create_object_tables(unsigned int *);
 
 /**** Object Search Functions ****/
-struct timeperiod *find_timeperiod(const char *);
 struct host *find_host(const char *);
 struct hostgroup *find_hostgroup(const char *);
 struct servicegroup *find_servicegroup(const char *);
@@ -688,7 +622,6 @@ int number_of_immediate_parent_hosts(struct host *);				/* counts the number of 
 void fcache_contactlist(FILE *fp, const char *prefix, struct contactsmember *list);
 void fcache_contactgrouplist(FILE *fp, const char *prefix, struct contactgroupsmember *list);
 void fcache_hostlist(FILE *fp, const char *prefix, struct hostsmember *list);
-void fcache_timeperiod(FILE *fp, struct timeperiod *temp_timeperiod);
 void fcache_contactgroup(FILE *fp, struct contactgroup *temp_contactgroup);
 void fcache_hostgroup(FILE *fp, struct hostgroup *temp_hostgroup);
 void fcache_servicegroup(FILE *fp, struct servicegroup *temp_servicegroup);
