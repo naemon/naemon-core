@@ -10,7 +10,7 @@ BASE_SOURCE = \
 	src/naemon/defaults.c src/naemon/downtime.c \
 	src/naemon/flapping.c src/naemon/macros.c \
 	src/naemon/nebmods.c src/naemon/nm_alloc.c src/naemon/notifications.c \
-	src/naemon/objects.c src/naemon/objects_common.c \
+	src/naemon/objects.c src/naemon/objectlist.c src/naemon/objects_common.c \
 	src/naemon/perfdata.c src/naemon/query-handler.c \
 	src/naemon/sehandlers.c src/naemon/shared.c src/naemon/sretention.c \
 	src/naemon/statusdata.c src/naemon/workers.c src/naemon/xodtemplate.c \
