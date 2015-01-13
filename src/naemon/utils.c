@@ -2118,6 +2118,7 @@ void free_memory(nagios_macros *mac)
 	destroy_objects_contact();
 	destroy_objects_contactgroup();
 	destroy_objects_hostgroup();
+	destroy_objects_servicegroup();
 
 	free_comment_data();
 

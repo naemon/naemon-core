@@ -6933,6 +6933,7 @@ static int xodtemplate_register_objects(void)
 	init_objects_contact(xodcount.contacts);
 	init_objects_contactgroup(xodcount.contactgroups);
 	init_objects_hostgroup(xodcount.hostgroups);
+	init_objects_servicegroup(xodcount.servicegroups);
 
 	/* register timeperiods */
 	rbtree_traverse(xobject_tree[OBJTYPE_TIMEPERIOD], xodtemplate_register_timeperiod, NULL, rbinorder);

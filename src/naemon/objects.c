@@ -17,10 +17,8 @@
  */
 dkhash_table *object_hash_tables[NUM_HASHED_OBJECT_TYPES];
 
-servicegroup *servicegroup_list = NULL;
 hostescalation *hostescalation_list = NULL;
 serviceescalation *serviceescalation_list = NULL;
-servicegroup **servicegroup_ary = NULL;
 hostescalation **hostescalation_ary = NULL;
 serviceescalation **serviceescalation_ary = NULL;
 hostdependency **hostdependency_ary = NULL;
@@ -104,7 +102,6 @@ static void post_process_object_config(void)
 		qsort(serviceescalation_ary, num_objects.serviceescalations, sizeof(serviceescalation *), cmp_serviceesc);
 	timing_point("Done post-sorting slave objects\n");
 
-	servicegroup_list = servicegroup_ary ? *servicegroup_ary : NULL;
 	hostescalation_list = hostescalation_ary ? *hostescalation_ary : NULL;
 	serviceescalation_list = serviceescalation_ary ? *serviceescalation_ary : NULL;
 }
@@ -170,8 +167,6 @@ int create_object_tables(unsigned int *ocount)
 	 * errors here will always lead to an early exit, so there's no need
 	 * to free() successful allocs when later ones fail
 	 */
-	if (mktable(servicegroup, OBJTYPE_SERVICEGROUP) != OK)
-		return ERROR;
 	if (mktable(hostescalation, OBJTYPE_HOSTESCALATION) != OK)
 		return ERROR;
 	if (mktable(hostdependency, OBJTYPE_HOSTDEPENDENCY) != OK)
@@ -182,134 +177,6 @@ int create_object_tables(unsigned int *ocount)
 		return ERROR;
 
 	return OK;
-}
-
-
-/* add a new service group to the list in memory */
-servicegroup *add_servicegroup(char *name, char *alias, char *notes, char *notes_url, char *action_url)
-{
-	servicegroup *new_servicegroup = NULL;
-	int result = OK;
-
-	/* make sure we have the data we need */
-	if (name == NULL || !strcmp(name, "")) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Servicegroup name is NULL\n");
-		return NULL;
-	}
-
-	new_servicegroup = nm_calloc(1, sizeof(*new_servicegroup));
-
-	/* duplicate vars */
-	new_servicegroup->group_name = name;
-	new_servicegroup->alias = alias ? alias : name;
-	new_servicegroup->notes = notes;
-	new_servicegroup->notes_url = notes_url;
-	new_servicegroup->action_url = action_url;
-
-	/* add new service group to hash table */
-	if (result == OK) {
-		result = dkhash_insert(object_hash_tables[OBJTYPE_SERVICEGROUP], new_servicegroup->group_name, NULL, new_servicegroup);
-		switch (result) {
-		case DKHASH_EDUPE:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Servicegroup '%s' has already been defined\n", name);
-			result = ERROR;
-			break;
-		case DKHASH_OK:
-			result = OK;
-			break;
-		default:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add servicegroup '%s' to hash table\n", name);
-			result = ERROR;
-			break;
-		}
-	}
-
-	/* handle errors */
-	if (result == ERROR) {
-		nm_free(new_servicegroup);
-		return NULL;
-	}
-
-	new_servicegroup->id = num_objects.servicegroups++;
-	servicegroup_ary[new_servicegroup->id] = new_servicegroup;
-	if (new_servicegroup->id)
-		servicegroup_ary[new_servicegroup->id - 1]->next = new_servicegroup;
-	return new_servicegroup;
-}
-
-
-/* add a new service to a service group */
-servicesmember *add_service_to_servicegroup(servicegroup *temp_servicegroup, char *host_name, char *svc_description)
-{
-	servicesmember *new_member = NULL;
-	servicesmember *last_member = NULL;
-	servicesmember *temp_member = NULL;
-	struct service *svc;
-
-	/* make sure we have the data we need */
-	if (temp_servicegroup == NULL || (host_name == NULL || !strcmp(host_name, "")) || (svc_description == NULL || !strcmp(svc_description, ""))) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Servicegroup or group member is NULL\n");
-		return NULL;
-	}
-	if (!(svc = find_service(host_name, svc_description))) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Failed to locate service '%s' on host '%s' for servicegroup '%s'\n", svc_description, host_name, temp_servicegroup->group_name);
-		return NULL;
-	}
-
-	/* allocate memory for a new member */
-	new_member = nm_calloc(1, sizeof(servicesmember));
-
-	/* assign vars */
-	new_member->host_name = svc->host_name;
-	new_member->service_description = svc->description;
-	new_member->service_ptr = svc;
-
-	/* add (unsorted) link from the service to its groups */
-	prepend_object_to_objectlist(&svc->servicegroups_ptr, temp_servicegroup);
-
-	/*
-	 * add new member to member list, sorted by host name then
-	 * service description, unless we're a large installation, in
-	 * which case insertion-sorting will take far too long
-	 */
-	if (use_large_installation_tweaks == TRUE) {
-		new_member->next = temp_servicegroup->members;
-		temp_servicegroup->members = new_member;
-		return new_member;
-	}
-	last_member = temp_servicegroup->members;
-	for (temp_member = temp_servicegroup->members; temp_member != NULL; temp_member = temp_member->next) {
-
-		if (strcmp(new_member->host_name, temp_member->host_name) < 0) {
-			new_member->next = temp_member;
-			if (temp_member == temp_servicegroup->members)
-				temp_servicegroup->members = new_member;
-			else
-				last_member->next = new_member;
-			break;
-		}
-
-		else if (strcmp(new_member->host_name, temp_member->host_name) == 0 && strcmp(new_member->service_description, temp_member->service_description) < 0) {
-			new_member->next = temp_member;
-			if (temp_member == temp_servicegroup->members)
-				temp_servicegroup->members = new_member;
-			else
-				last_member->next = new_member;
-			break;
-		}
-
-		else
-			last_member = temp_member;
-	}
-	if (temp_servicegroup->members == NULL) {
-		new_member->next = NULL;
-		temp_servicegroup->members = new_member;
-	} else if (temp_member == NULL) {
-		new_member->next = NULL;
-		last_member->next = new_member;
-	}
-
-	return new_member;
 }
 
 
@@ -567,63 +434,12 @@ contactsmember *add_contact_to_hostescalation(hostescalation *he, char *contact_
 
 
 /******************************************************************/
-/******************** OBJECT SEARCH FUNCTIONS *********************/
-/******************************************************************/
-
-servicegroup *find_servicegroup(const char *name)
-{
-	return dkhash_get(object_hash_tables[OBJTYPE_SERVICEGROUP], name, NULL);
-}
-
-/******************************************************************/
-/********************* OBJECT QUERY FUNCTIONS *********************/
-/******************************************************************/
-
-/*  tests whether a host is a member of a particular servicegroup */
-/* NOTE: This function is only used by external modules (mod_gearman, f.e) */
-int is_host_member_of_servicegroup(servicegroup *group, host *hst)
-{
-	servicesmember *temp_servicesmember = NULL;
-
-	if (group == NULL || hst == NULL)
-		return FALSE;
-
-	for (temp_servicesmember = group->members; temp_servicesmember != NULL; temp_servicesmember = temp_servicesmember->next) {
-		if (temp_servicesmember->service_ptr != NULL && temp_servicesmember->service_ptr->host_ptr == hst)
-			return TRUE;
-	}
-
-	return FALSE;
-}
-
-
-/*  tests whether a service is a member of a particular servicegroup */
-/* NOTE: This function is only used by external modules (mod_gearman, f.e) */
-int is_service_member_of_servicegroup(servicegroup *group, service *svc)
-{
-	servicesmember *temp_servicesmember = NULL;
-
-	if (group == NULL || svc == NULL)
-		return FALSE;
-
-	for (temp_servicesmember = group->members; temp_servicesmember != NULL; temp_servicesmember = temp_servicesmember->next) {
-		if (temp_servicesmember->service_ptr == svc)
-			return TRUE;
-	}
-
-	return FALSE;
-}
-
-
-/******************************************************************/
 /******************* OBJECT DELETION FUNCTIONS ********************/
 /******************************************************************/
 
 /* free all allocated memory for objects */
 int free_object_data(void)
 {
-	servicesmember *this_servicesmember = NULL;
-	servicesmember *next_servicesmember = NULL;
 	contactsmember *this_contactsmember = NULL;
 	contactsmember *next_contactsmember = NULL;
 	contactgroupsmember *this_contactgroupsmember = NULL;
@@ -640,30 +456,6 @@ int free_object_data(void)
 		object_hash_tables[i] = NULL;
 		dkhash_destroy(t);
 	}
-
-	/**** free memory for the service group list ****/
-	for (i = 0; i < num_objects.servicegroups; i++) {
-		servicegroup *this_servicegroup = servicegroup_ary[i];
-
-		/* free memory for the group members */
-		this_servicesmember = this_servicegroup->members;
-		while (this_servicesmember != NULL) {
-			next_servicesmember = this_servicesmember->next;
-			nm_free(this_servicesmember);
-			this_servicesmember = next_servicesmember;
-		}
-
-		if (this_servicegroup->alias != this_servicegroup->group_name)
-			nm_free(this_servicegroup->alias);
-		nm_free(this_servicegroup->group_name);
-		nm_free(this_servicegroup->notes);
-		nm_free(this_servicegroup->notes_url);
-		nm_free(this_servicegroup->action_url);
-		nm_free(this_servicegroup);
-	}
-
-	/* reset pointers */
-	nm_free(servicegroup_ary);
 
 	/**** free service escalation memory ****/
 	for (i = 0; i < num_objects.serviceescalations; i++) {
@@ -742,29 +534,6 @@ int free_object_data(void)
 /******************************************************************/
 /*********************** CACHE FUNCTIONS **************************/
 /******************************************************************/
-
-void fcache_servicegroup(FILE *fp, servicegroup *temp_servicegroup)
-{
-	fprintf(fp, "define servicegroup {\n");
-	fprintf(fp, "\tservicegroup_name\t%s\n", temp_servicegroup->group_name);
-	if (temp_servicegroup->alias)
-		fprintf(fp, "\talias\t%s\n", temp_servicegroup->alias);
-	if (temp_servicegroup->members) {
-		servicesmember *list;
-		fprintf(fp, "\tmembers\t");
-		for (list = temp_servicegroup->members; list; list = list->next) {
-			service *s = list->service_ptr;
-			fprintf(fp, "%s,%s%c", s->host_name, s->description, list->next ? ',' : '\n');
-		}
-	}
-	if (temp_servicegroup->notes)
-		fprintf(fp, "\tnotes\t%s\n", temp_servicegroup->notes);
-	if (temp_servicegroup->notes_url)
-		fprintf(fp, "\tnotes_url\t%s\n", temp_servicegroup->notes_url);
-	if (temp_servicegroup->action_url)
-		fprintf(fp, "\taction_url\t%s\n", temp_servicegroup->action_url);
-	fprintf(fp, "\t}\n\n");
-}
 
 void fcache_servicedependency(FILE *fp, servicedependency *temp_servicedependency)
 {

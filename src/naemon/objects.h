@@ -13,6 +13,7 @@
 #include "objects_host.h"
 #include "objects_hostgroup.h"
 #include "objects_service.h"
+#include "objects_servicegroup.h"
 #include "objects_timeperiod.h"
 #include "objectlist.h"
 
@@ -130,19 +131,6 @@ typedef struct check_stats {
 } check_stats;
 
 
-/* SERVICEGROUP structure */
-typedef struct servicegroup {
-	unsigned int id;
-	char 	*group_name;
-	char    *alias;
-	struct servicesmember *members;
-	char    *notes;
-	char    *notes_url;
-	char    *action_url;
-	struct	servicegroup *next;
-} servicegroup;
-
-
 /* SERVICE ESCALATION structure */
 typedef struct serviceescalation {
 	unsigned int id;
@@ -206,10 +194,8 @@ typedef struct hostdependency {
 	struct timeperiod *dependency_period_ptr;
 } hostdependency;
 
-extern struct servicegroup *servicegroup_list;
 extern struct hostescalation *hostescalation_list;
 extern struct serviceescalation *serviceescalation_list;
-extern struct servicegroup **servicegroup_ary;
 extern struct hostescalation **hostescalation_ary;
 extern struct hostdependency **hostdependency_ary;
 extern struct serviceescalation **serviceescalation_ary;
@@ -224,8 +210,6 @@ int read_object_config_data(const char *, int);     /* reads all external config
 
 
 /**** Object Creation Functions ****/
-struct servicegroup *add_servicegroup(char *, char *, char *, char *, char *);                                 /* adds a servicegroup definition */
-struct servicesmember *add_service_to_servicegroup(servicegroup *, char *, char *);                            /* adds a service to a servicegroup definition */
 struct serviceescalation *add_serviceescalation(char *host_name, char *description, int first_notification, int last_notification, double notification_interval, char *escalation_period, int escalation_options);
 struct contactgroupsmember *add_contactgroup_to_serviceescalation(serviceescalation *, char *);                /* adds a contact group to a service escalation definition */
 struct contactsmember *add_contact_to_serviceescalation(serviceescalation *, char *);                          /* adds a contact to a service escalation definition */
@@ -237,13 +221,6 @@ struct contactgroupsmember *add_contactgroup_to_hostescalation(hostescalation *,
 
 int create_object_tables(unsigned int *);
 
-/**** Object Search Functions ****/
-struct servicegroup *find_servicegroup(const char *);
-/**** Object Query Functions ****/
-int is_host_member_of_servicegroup(struct servicegroup *, struct host *);	       /* tests whether or not a service is a member of a specific servicegroup */
-int is_service_member_of_servicegroup(struct servicegroup *, struct service *);	/* tests whether or not a service is a member of a specific servicegroup */
-
-void fcache_servicegroup(FILE *fp, struct servicegroup *temp_servicegroup);
 void fcache_servicedependency(FILE *fp, struct servicedependency *temp_servicedependency);
 void fcache_serviceescalation(FILE *fp, struct serviceescalation *temp_serviceescalation);
 void fcache_hostdependency(FILE *fp, struct hostdependency *temp_hostdependency);
