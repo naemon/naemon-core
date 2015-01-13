@@ -6928,6 +6928,7 @@ static int xodtemplate_register_objects(void)
 	}
 	init_objects_command(xodcount.commands);
 	init_objects_timeperiod(xodcount.timeperiods);
+	init_objects_host(xodcount.hosts);
 	init_objects_contact(xodcount.contacts);
 	init_objects_contactgroup(xodcount.contactgroups);
 
