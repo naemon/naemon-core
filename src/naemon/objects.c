@@ -19,18 +19,8 @@ dkhash_table *object_hash_tables[NUM_HASHED_OBJECT_TYPES];
 
 serviceescalation *serviceescalation_list = NULL;
 serviceescalation **serviceescalation_ary = NULL;
-servicedependency **servicedependency_ary = NULL;
 
 int __nagios_object_structure_version = CURRENT_OBJECT_STRUCTURE_VERSION;
-
-static int cmp_sdep(const void *a_, const void *b_)
-{
-	const servicedependency *a = *(servicedependency **)a_;
-	const servicedependency *b = *(servicedependency **)b_;
-	int ret;
-	ret = a->master_service_ptr->id - b->master_service_ptr->id;
-	return ret ? ret : (int)(a->dependent_service_ptr->id - b->dependent_service_ptr->id);
-}
 
 static int cmp_serviceesc(const void *a_, const void *b_)
 {
@@ -42,26 +32,6 @@ static int cmp_serviceesc(const void *a_, const void *b_)
 
 static void post_process_object_config(void)
 {
-	objectlist *list;
-	unsigned int i, slot;
-
-	if (servicedependency_ary)
-		free(servicedependency_ary);
-
-	servicedependency_ary = nm_calloc(num_objects.servicedependencies, sizeof(void *));
-
-	slot = 0;
-	for (i = 0; slot < num_objects.servicedependencies && i < num_objects.services; i++) {
-		service *s = service_ary[i];
-		for (list = s->notify_deps; list; list = list->next)
-			servicedependency_ary[slot++] = (servicedependency *)list->object_ptr;
-		for (list = s->exec_deps; list; list = list->next)
-			servicedependency_ary[slot++] = (servicedependency *)list->object_ptr;
-	}
-	timing_point("Done post-processing servicedependencies\n");
-
-	if (servicedependency_ary)
-		qsort(servicedependency_ary, num_objects.servicedependencies, sizeof(servicedependency *), cmp_sdep);
 	if (serviceescalation_ary)
 		qsort(serviceescalation_ary, num_objects.serviceescalations, sizeof(serviceescalation *), cmp_serviceesc);
 	timing_point("Done post-sorting slave objects\n");
@@ -132,8 +102,6 @@ int create_object_tables(unsigned int *ocount)
 	 */
 	if (mktable(serviceescalation, OBJTYPE_SERVICEESCALATION) != OK)
 		return ERROR;
-	if (mktable(servicedependency, OBJTYPE_SERVICEDEPENDENCY) != OK)
-		return ERROR;
 
 	return OK;
 }
@@ -202,74 +170,6 @@ contactsmember *add_contact_to_serviceescalation(serviceescalation *se, char *co
 	return add_contact_to_object(&se->contacts, contact_name);
 }
 
-/* adds a service dependency definition */
-servicedependency *add_service_dependency(char *dependent_host_name, char *dependent_service_description, char *host_name, char *service_description, int dependency_type, int inherits_parent, int failure_options, char *dependency_period)
-{
-	servicedependency *new_servicedependency = NULL;
-	service *parent, *child;
-	timeperiod *tp = NULL;
-	int result;
-	size_t sdep_size = sizeof(*new_servicedependency);
-
-	/* make sure we have what we need */
-	parent = find_service(host_name, service_description);
-	if (!parent) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Master service '%s' on host '%s' is not defined anywhere!\n",
-		       service_description, host_name);
-		return NULL;
-	}
-	child = find_service(dependent_host_name, dependent_service_description);
-	if (!child) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Dependent service '%s' on host '%s' is not defined anywhere!\n",
-		       dependent_service_description, dependent_host_name);
-		return NULL;
-	}
-	if (dependency_period && !(tp = find_timeperiod(dependency_period))) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Failed to locate timeperiod '%s' for dependency from service '%s' on host '%s' to service '%s' on host '%s'\n",
-		       dependency_period, dependent_service_description, dependent_host_name, service_description, host_name);
-		return NULL;
-	}
-
-	/* allocate memory for a new service dependency entry */
-	new_servicedependency = nm_calloc(1, sizeof(*new_servicedependency));
-
-	new_servicedependency->dependent_service_ptr = child;
-	new_servicedependency->master_service_ptr = parent;
-	new_servicedependency->dependency_period_ptr = tp;
-
-	/* assign vars. object names are immutable, so no need to copy */
-	new_servicedependency->dependent_host_name = child->host_name;
-	new_servicedependency->dependent_service_description = child->description;
-	new_servicedependency->host_name = parent->host_name;
-	new_servicedependency->service_description = parent->description;
-	if (tp)
-		new_servicedependency->dependency_period = tp->name;
-
-	new_servicedependency->dependency_type = (dependency_type == EXECUTION_DEPENDENCY) ? EXECUTION_DEPENDENCY : NOTIFICATION_DEPENDENCY;
-	new_servicedependency->inherits_parent = (inherits_parent > 0) ? TRUE : FALSE;
-	new_servicedependency->failure_options = failure_options;
-
-	/*
-	 * add new service dependency to its respective services.
-	 * Ordering doesn't matter here as we'll have to check them
-	 * all anyway. We avoid adding dupes though, since we can
-	 * apparently get zillion's and zillion's of them.
-	 */
-	if (dependency_type == NOTIFICATION_DEPENDENCY)
-		result = prepend_unique_object_to_objectlist_ptr(&child->notify_deps, new_servicedependency, &compare_objects, &sdep_size);
-	else
-		result = prepend_unique_object_to_objectlist_ptr(&child->exec_deps, new_servicedependency, &compare_objects, &sdep_size);
-
-	if (result != OK) {
-		free(new_servicedependency);
-		/* hack to avoid caller bombing out */
-		return result == OBJECTLIST_DUPE ? (void *)1 : NULL;
-	}
-
-	num_objects.servicedependencies++;
-	return new_servicedependency;
-}
-
 
 /******************************************************************/
 /******************* OBJECT DELETION FUNCTIONS ********************/
@@ -321,14 +221,6 @@ int free_object_data(void)
 	nm_free(serviceescalation_ary);
 
 
-	/**** free service dependency memory ****/
-	if (servicedependency_ary) {
-		for (i = 0; i < num_objects.servicedependencies; i++)
-			nm_free(servicedependency_ary[i]);
-		nm_free(servicedependency_ary);
-	}
-
-
 	/* we no longer have any objects */
 	memset(&num_objects, 0, sizeof(num_objects));
 
@@ -339,22 +231,6 @@ int free_object_data(void)
 /******************************************************************/
 /*********************** CACHE FUNCTIONS **************************/
 /******************************************************************/
-
-void fcache_servicedependency(FILE *fp, servicedependency *temp_servicedependency)
-{
-	fprintf(fp, "define servicedependency {\n");
-	fprintf(fp, "\thost_name\t%s\n", temp_servicedependency->host_name);
-	fprintf(fp, "\tservice_description\t%s\n", temp_servicedependency->service_description);
-	fprintf(fp, "\tdependent_host_name\t%s\n", temp_servicedependency->dependent_host_name);
-	fprintf(fp, "\tdependent_service_description\t%s\n", temp_servicedependency->dependent_service_description);
-	if (temp_servicedependency->dependency_period)
-		fprintf(fp, "\tdependency_period\t%s\n", temp_servicedependency->dependency_period);
-	fprintf(fp, "\tinherits_parent\t%d\n", temp_servicedependency->inherits_parent);
-	fprintf(fp, "\t%s_failure_options\t%s\n",
-	        temp_servicedependency->dependency_type == NOTIFICATION_DEPENDENCY ? "notification" : "execution",
-	        opts2str(temp_servicedependency->failure_options, service_flag_map, 'o'));
-	fprintf(fp, "\t}\n\n");
-}
 
 void fcache_serviceescalation(FILE *fp, serviceescalation *temp_serviceescalation)
 {
@@ -447,8 +323,13 @@ int fcache_objects(char *cache_file)
 		fcache_service(fp, service_ary[i]);
 
 	/* cache service dependencies */
-	for (i = 0; i < num_objects.servicedependencies; i++)
-		fcache_servicedependency(fp, servicedependency_ary[i]);
+	for (i = 0; i < num_objects.services; i++) {
+		struct objectlist *deplist;
+		for (deplist = service_ary[i]->exec_deps; deplist; deplist = deplist->next)
+			fcache_servicedependency(fp, deplist->object_ptr);
+		for (deplist = service_ary[i]->notify_deps; deplist; deplist = deplist->next)
+			fcache_servicedependency(fp, deplist->object_ptr);
+	}
 
 	/* cache service escalations */
 	for (i = 0; i < num_objects.serviceescalations; i++)

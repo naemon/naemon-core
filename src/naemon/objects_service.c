@@ -1,4 +1,5 @@
 #include "objects_service.h"
+#include "objects_servicedependency.h"
 #include "objects_host.h"
 #include "objects_timeperiod.h"
 #include "objects_contactgroup.h"
@@ -241,6 +242,7 @@ void destroy_service(service *this_service)
 	struct contactgroupsmember *this_contactgroupsmember, *next_contactgroupsmember;
 	struct contactsmember *this_contactsmember, *next_contactsmember;
 	struct customvariablesmember *this_customvariablesmember, *next_customvariablesmember;
+	struct objectlist *slavelist;
 
 	/* free memory for contact groups */
 	this_contactgroupsmember = this_service->contact_groups;
@@ -267,6 +269,11 @@ void destroy_service(service *this_service)
 		nm_free(this_customvariablesmember);
 		this_customvariablesmember = next_customvariablesmember;
 	}
+
+	for (slavelist = this_service->notify_deps; slavelist; slavelist = slavelist->next)
+		destroy_servicedependency(slavelist->object_ptr);
+	for (slavelist = this_service->exec_deps; slavelist; slavelist = slavelist->next)
+		destroy_servicedependency(slavelist->object_ptr);
 
 	if (this_service->display_name != this_service->description)
 		nm_free(this_service->display_name);

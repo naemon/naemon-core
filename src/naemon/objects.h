@@ -15,6 +15,7 @@
 #include "objects_hostescalation.h"
 #include "objects_hostgroup.h"
 #include "objects_service.h"
+#include "objects_servicedependency.h"
 #include "objects_servicegroup.h"
 #include "objects_timeperiod.h"
 #include "objectlist.h"
@@ -149,26 +150,9 @@ typedef struct serviceescalation {
 	struct timeperiod *escalation_period_ptr;
 } serviceescalation;
 
-/* SERVICE DEPENDENCY structure */
-typedef struct servicedependency {
-	unsigned int id;
-	int     dependency_type;
-	char    *dependent_host_name;
-	char    *dependent_service_description;
-	char    *host_name;
-	char    *service_description;
-	char    *dependency_period;
-	int     inherits_parent;
-	int     failure_options;
-	struct service *master_service_ptr;
-	struct service *dependent_service_ptr;
-	struct timeperiod *dependency_period_ptr;
-} servicedependency;
-
 
 extern struct serviceescalation *serviceescalation_list;
 extern struct serviceescalation **serviceescalation_ary;
-extern struct servicedependency **servicedependency_ary;
 
 
 /********************* FUNCTIONS **********************/
@@ -182,12 +166,10 @@ int read_object_config_data(const char *, int);     /* reads all external config
 struct serviceescalation *add_serviceescalation(char *host_name, char *description, int first_notification, int last_notification, double notification_interval, char *escalation_period, int escalation_options);
 struct contactgroupsmember *add_contactgroup_to_serviceescalation(serviceescalation *, char *);                /* adds a contact group to a service escalation definition */
 struct contactsmember *add_contact_to_serviceescalation(serviceescalation *, char *);                          /* adds a contact to a service escalation definition */
-struct servicedependency *add_service_dependency(char *dependent_host_name, char *dependent_service_description, char *host_name, char *service_description, int dependency_type, int inherits_parent, int failure_options, char *dependency_period);
 
 int create_object_tables(unsigned int *);
 
 void fcache_servicedependency(FILE *fp, struct servicedependency *temp_servicedependency);
-void fcache_serviceescalation(FILE *fp, struct serviceescalation *temp_serviceescalation);
 int fcache_objects(char *cache_file);
 
 
