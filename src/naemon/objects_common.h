@@ -7,6 +7,7 @@
 
 #include "lib/lnae-utils.h"
 #include "common.h"
+#include <stdio.h>
 
 NAGIOS_BEGIN_DECL
 

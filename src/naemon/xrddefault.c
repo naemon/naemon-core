@@ -1,6 +1,5 @@
 #include "config.h"
 #include "common.h"
-#include "objects.h"
 #include "statusdata.h"
 #include "macros.h"
 #include "sretention.h"

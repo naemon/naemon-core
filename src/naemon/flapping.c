@@ -1,7 +1,6 @@
 #include "flapping.h"
 #include "config.h"
 #include "common.h"
-#include "objects.h"
 #include "comments.h"
 #include "statusdata.h"
 #include "broker.h"

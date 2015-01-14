@@ -6,7 +6,8 @@
 #endif
 
 #include "common.h"
-#include "objects.h"
+#include "objects_host.h"
+#include "objects_service.h"
 
 
 /**************************** COMMENT SOURCES ******************************/

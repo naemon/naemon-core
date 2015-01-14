@@ -10,6 +10,7 @@
 #include "globals.h"
 #include "nm_alloc.h"
 #include <string.h>
+#include <sys/time.h>
 
 #ifdef USE_EVENT_BROKER
 

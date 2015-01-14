@@ -6,7 +6,8 @@
 #endif
 
 #include "checks.h"
-#include "objects.h"
+#include "objects_host.h"
+#include "objects_contact.h"
 
 /*************** EVENT BROKER OPTIONS *****************/
 

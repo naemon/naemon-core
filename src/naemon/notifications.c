@@ -1,7 +1,6 @@
 #include "notifications.h"
 #include "config.h"
 #include "common.h"
-#include "objects.h"
 #include "statusdata.h"
 #include "macros.h"
 #include "broker.h"
@@ -15,6 +14,7 @@
 #include "globals.h"
 #include "nm_alloc.h"
 #include <string.h>
+#include <sys/time.h>
 
 struct notification_job {
 	host *hst;

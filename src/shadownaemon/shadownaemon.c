@@ -8,6 +8,7 @@
 #include "shadownaemon.h"
 #include <naemon/nm_alloc.h>
 #include <libgen.h>
+#include <sys/time.h>
 
 static int verbose                         = FALSE;
 static int daemonmode                      = FALSE;

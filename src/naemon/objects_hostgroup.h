@@ -19,8 +19,6 @@ typedef struct hostgroup hostgroup;
 extern struct hostgroup *hostgroup_list;
 extern struct hostgroup **hostgroup_ary;
 
-struct host;
-
 struct hostgroup {
 	unsigned int id;
 	char	*group_name;

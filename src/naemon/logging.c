@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <syslog.h>
 #include <stdarg.h>
+#include <sys/time.h>
 
 static FILE *debug_file_fp;
 static FILE *log_fp;

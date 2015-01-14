@@ -18,7 +18,9 @@
 #include "globals.h"
 #include "nm_alloc.h"
 #include "defaults.h"
+#include "objects_hostdependency.h"
 #include <string.h>
+#include <sys/time.h>
 
 #ifdef USE_EVENT_BROKER
 #include "neberrors.h"

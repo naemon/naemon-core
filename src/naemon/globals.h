@@ -5,7 +5,9 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
-#include "objects.h"
+#include "common.h"
+#include "objectlist.h"
+#include "objects_command.h"
 #include "macros.h" /* For MAX_USER_MACROS */
 
 NAGIOS_BEGIN_DECL

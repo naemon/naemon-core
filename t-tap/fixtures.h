@@ -1,4 +1,5 @@
-#include "naemon/objects.h"
+#include "naemon/objects_host.h"
+#include "naemon/objects_service.h"
 #include "naemon/checks.h"
 
 #include <string.h>

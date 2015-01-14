@@ -1,5 +1,6 @@
 #include <check.h>
 #include <lib/kvvec.h>
+#include <stdio.h>
 
 
 static int walking_steps, walks;

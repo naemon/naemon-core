@@ -5,7 +5,8 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
-#include "objects.h"
+#include "objects_host.h"
+#include "objects_service.h"
 #include "macros.h"
 
 /**************** EVENT HANDLER TYPES *****************/

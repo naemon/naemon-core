@@ -6,7 +6,9 @@
 #endif
 
 #include <time.h>
-#include "objects.h"
+#include "objects_contact.h"
+#include "objects_host.h"
+#include "objects_service.h"
 
 NAGIOS_BEGIN_DECL
 

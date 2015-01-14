@@ -4,8 +4,10 @@
 #include "nm_alloc.h"
 #include <string.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #ifdef HAVE_SYS_MMAN_H
 # include <sys/mman.h>

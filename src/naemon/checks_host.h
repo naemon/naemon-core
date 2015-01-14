@@ -5,7 +5,7 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
-#include "objects.h"
+#include "objects_host.h"
 
 NAGIOS_BEGIN_DECL
 

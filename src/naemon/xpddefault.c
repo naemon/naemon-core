@@ -1,6 +1,5 @@
 #include "config.h"
 #include "common.h"
-#include "objects.h"
 #include "macros.h"
 #include "workers.h"
 #include "xpddefault.h"
@@ -12,6 +11,7 @@
 #include "nm_alloc.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/resource.h>
 #include <fcntl.h>
 #include <string.h>
 

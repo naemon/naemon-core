@@ -6,7 +6,8 @@
 #endif
 
 #include "checks.h"
-#include "objects.h"
+#include "objects_timeperiod.h"
+#include "objects_command.h"
 #include "macros.h"
 #include "lib/lnae-utils.h"
 

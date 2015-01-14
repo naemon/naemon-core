@@ -24,7 +24,13 @@
 #include "xodtemplate.h"
 #include "config.h"
 #include "common.h"
-#include "objects.h"
+#include "objects_command.h"
+#include "objects_host.h"
+#include "objects_hostescalation.h"
+#include "objects_hostdependency.h"
+#include "objects_service.h"
+#include "objects_serviceescalation.h"
+#include "objects_servicedependency.h"
 #include "defaults.h"
 #include "macros.h"
 #include <dirent.h>
@@ -41,6 +47,24 @@
 #define XOD_SEEN  1 /* seen, but not yet loopy */
 #define XOD_LOOPY 2 /* loopy */
 #define XOD_OK    3 /* not loopy */
+
+#define OBJTYPE_HOST                 0
+#define OBJTYPE_SERVICE              1
+#define OBJTYPE_COMMAND              2
+#define OBJTYPE_TIMEPERIOD           3
+#define OBJTYPE_CONTACT              4
+#define OBJTYPE_CONTACTGROUP         5
+#define OBJTYPE_HOSTGROUP            6
+#define OBJTYPE_SERVICEGROUP         7
+#define OBJTYPE_HOSTDEPENDENCY       8
+#define OBJTYPE_SERVICEDEPENDENCY    9
+#define OBJTYPE_HOSTESCALATION      10
+#define OBJTYPE_SERVICEESCALATION   11
+#define OBJTYPE_HOSTEXTINFO         12
+#define OBJTYPE_SERVICEEXTINFO      13
+
+#define NUM_HASHED_OBJECT_TYPES      8
+#define NUM_OBJECT_TYPES            14
 
 static xodtemplate_timeperiod *xodtemplate_timeperiod_list = NULL;
 static xodtemplate_command *xodtemplate_command_list = NULL;

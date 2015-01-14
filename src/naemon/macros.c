@@ -1,7 +1,6 @@
 #include "config.h"
 #include "macros.h"
 #include "common.h"
-#include "objects.h"
 #include "statusdata.h"
 #include "comments.h"
 #include "utils.h"

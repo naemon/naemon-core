@@ -10,7 +10,7 @@
 #include "lib/lnae-utils.h"
 #include "defaults.h"
 #include "objects_common.h"
-#include "objects.h"
+#include "objects_service.h"
 
 NAGIOS_BEGIN_DECL
 
@@ -21,8 +21,6 @@ typedef struct hostsmember hostsmember;
 
 extern struct host **host_ary;
 extern struct host *host_list;
-
-typedef struct service service;
 
 struct host {
 	unsigned int id;

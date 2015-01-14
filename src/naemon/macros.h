@@ -6,7 +6,12 @@
 #endif
 
 #include "common.h"
-#include "objects.h"
+#include "objects_host.h"
+#include "objects_hostgroup.h"
+#include "objects_contact.h"
+#include "objects_contactgroup.h"
+#include "objects_service.h"
+#include "objects_servicegroup.h"
 
 
 /****************** LENGTH LIMITATIONS ****************/

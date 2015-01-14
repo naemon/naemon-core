@@ -5,7 +5,8 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
-#include "objects.h"
+#include "objects_serviceescalation.h"
+#include "objects_hostescalation.h"
 #include "macros.h"
 
 /*

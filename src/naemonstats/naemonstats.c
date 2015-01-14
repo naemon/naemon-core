@@ -4,6 +4,7 @@
 
 #include <getopt.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "lib/nspath.h"
 #include "config.h"
