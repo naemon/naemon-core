@@ -16,6 +16,7 @@
 #include "objects_hostgroup.h"
 #include "objects_service.h"
 #include "objects_servicedependency.h"
+#include "objects_serviceescalation.h"
 #include "objects_servicegroup.h"
 #include "objects_timeperiod.h"
 #include "objectlist.h"
@@ -134,27 +135,6 @@ typedef struct check_stats {
 } check_stats;
 
 
-/* SERVICE ESCALATION structure */
-typedef struct serviceescalation {
-	unsigned int id;
-	char    *host_name;
-	char    *description;
-	int     first_notification;
-	int     last_notification;
-	double  notification_interval;
-	char    *escalation_period;
-	int     escalation_options;
-	struct contactgroupsmember *contact_groups;
-	struct contactsmember *contacts;
-	struct service *service_ptr;
-	struct timeperiod *escalation_period_ptr;
-} serviceescalation;
-
-
-extern struct serviceescalation *serviceescalation_list;
-extern struct serviceescalation **serviceescalation_ary;
-
-
 /********************* FUNCTIONS **********************/
 
 
@@ -162,19 +142,7 @@ extern struct serviceescalation **serviceescalation_ary;
 int read_object_config_data(const char *, int);     /* reads all external configuration data of specific types */
 
 
-/**** Object Creation Functions ****/
-struct serviceescalation *add_serviceescalation(char *host_name, char *description, int first_notification, int last_notification, double notification_interval, char *escalation_period, int escalation_options);
-struct contactgroupsmember *add_contactgroup_to_serviceescalation(serviceescalation *, char *);                /* adds a contact group to a service escalation definition */
-struct contactsmember *add_contact_to_serviceescalation(serviceescalation *, char *);                          /* adds a contact to a service escalation definition */
-
-int create_object_tables(unsigned int *);
-
-void fcache_servicedependency(FILE *fp, struct servicedependency *temp_servicedependency);
 int fcache_objects(char *cache_file);
-
-
-/**** Object Cleanup Functions ****/
-int free_object_data(void);                             /* frees all allocated memory for the object definitions */
 
 NAGIOS_END_DECL
 #endif

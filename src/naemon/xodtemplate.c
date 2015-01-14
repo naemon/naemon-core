@@ -6902,30 +6902,13 @@ static int xodtemplate_register_and_destroy_serviceescalation(void *se_)
  */
 static int xodtemplate_register_objects(void)
 {
-	unsigned int i;
 	xodtemplate_hostdependency *hd, *next_hd;
 	xodtemplate_hostescalation *he, *next_he;
 	xodtemplate_servicedependency *sd, *next_sd;
 	xodtemplate_serviceescalation *se, *next_se;
 	/* +4 for dependencies and escalations */
-	unsigned int ocount[NUM_HASHED_OBJECT_TYPES + 4];
 	unsigned int tot_members = 0;
 
-
-	for (i = 0; i < NUM_HASHED_OBJECT_TYPES; i++) {
-		ocount[i] = rbtree_num_nodes(xobject_tree[i]);
-	}
-
-	/* dependencies and escalations are handled specially */
-	ocount[OBJTYPE_SERVICEDEPENDENCY] = 0;
-	ocount[OBJTYPE_HOSTDEPENDENCY] = 0;
-	ocount[OBJTYPE_HOSTESCALATION] = xodcount.hostescalations;
-	ocount[OBJTYPE_SERVICEESCALATION] = xodcount.serviceescalations;
-
-	if (create_object_tables(ocount) != OK) {
-		nm_log(NSLOG_CONFIG_ERROR, "Failed to create object tables\n");
-		return ERROR;
-	}
 	init_objects_command(xodcount.commands);
 	init_objects_timeperiod(xodcount.timeperiods);
 	init_objects_host(xodcount.hosts);

@@ -2109,8 +2109,6 @@ void free_memory(nagios_macros *mac)
 	int i;
 	objectlist *entry, *next;
 
-	/* free all allocated memory for the object definitions */
-	free_object_data();
 	destroy_objects_command();
 	destroy_objects_timeperiod();
 	destroy_objects_host();

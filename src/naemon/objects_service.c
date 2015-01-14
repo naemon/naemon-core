@@ -1,4 +1,5 @@
 #include "objects_service.h"
+#include "objects_serviceescalation.h"
 #include "objects_servicedependency.h"
 #include "objects_host.h"
 #include "objects_timeperiod.h"
@@ -274,6 +275,8 @@ void destroy_service(service *this_service)
 		destroy_servicedependency(slavelist->object_ptr);
 	for (slavelist = this_service->exec_deps; slavelist; slavelist = slavelist->next)
 		destroy_servicedependency(slavelist->object_ptr);
+	for (slavelist = this_service->escalation_list; slavelist; slavelist = slavelist->next)
+		destroy_serviceescalation(slavelist->object_ptr);
 
 	if (this_service->display_name != this_service->description)
 		nm_free(this_service->display_name);
