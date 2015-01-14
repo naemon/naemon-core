@@ -92,131 +92,131 @@ const char *qh_strerror(int code)
 static int qh_input(int sd, int events, void *bq_)
 {
 	nm_bufferqueue *bq = (nm_bufferqueue *)bq_;
+	int result;
+	unsigned long len;
+	unsigned int query_len = 0;
+	char *buf, *space;
+	struct query_handler *qh;
+	char *handler = NULL, *query = NULL;
 
-	/* input on main socket, so accept one */
-	if (sd == qh_listen_sock) {
-		struct sockaddr sa;
-		socklen_t slen = 0;
-		int nsd;
-
-		memset(&sa, 0, sizeof(sa)); /* shut valgrind up */
-		nsd = accept(sd, &sa, &slen);
-		if (qh_max_running && qh_running >= qh_max_running) {
-			nsock_printf(nsd, "503: Server full");
-			close(nsd);
-			return 0;
-		}
-
-		if (!(bq = nm_bufferqueue_create())) {
-			nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to create iocache for inbound request\n");
-			nsock_printf(nsd, "500: Internal server error");
-			close(nsd);
-			return 0;
-		}
-
-		/*
-		 * @todo: Stash the iocache and the socket in some
-		 * addressable list so we can release them on deinit
-		 */
-		if (iobroker_register(nagios_iobs, nsd, bq, qh_input) < 0) {
-			nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to register input socket %d with I/O broker: %s\n", nsd, strerror(errno));
-			nm_bufferqueue_destroy(bq);
-			close(nsd);
-			return 0;
-		}
-
-		/* make it non-blocking, but leave kernel buffers unchanged */
-		worker_set_sockopts(nsd, 0);
-		qh_running++;
+	result = nm_bufferqueue_read(bq, sd);
+	/* disconnect? */
+	if (result == 0 || (result < 0 && errno == EPIPE)) {
+		nm_bufferqueue_destroy(bq);
+		iobroker_close(nagios_iobs, sd);
+		qh_running--;
 		return 0;
-	} else {
-		int result;
-		unsigned long len;
-		unsigned int query_len = 0;
-		char *buf, *space;
-		struct query_handler *qh;
-		char *handler = NULL, *query = NULL;
-
-		result = nm_bufferqueue_read(bq, sd);
-		/* disconnect? */
-		if (result == 0 || (result < 0 && errno == EPIPE)) {
-			nm_bufferqueue_destroy(bq);
-			iobroker_close(nagios_iobs, sd);
-			qh_running--;
-			return 0;
-		}
-
-		/*
-		 * A request looks like this: '[@|#]<qh>[<SP>][<query>]\0'.
-		 * That is, optional '#' (oneshot) or '@' (keepalive),
-		 * followed by the name of a registered handler, followed by
-		 * an optional space and an optional query. If the handler
-		 * has no "default" handler, a query is required or an error
-		 * will be thrown.
-		 */
-
-		/* Use data up to the first nul byte */
-		nm_bufferqueue_unshift_to_delim(bq, "\0", 1, &len, (void **)&buf);
-		if (!buf)
-			return 0;
-
-		/* Identify handler part and any magic query bytes */
-		if (*buf == '@' || *buf == '#') {
-			handler = buf + 1;
-		} else {
-			handler = buf;
-		}
-
-		/* Locate query (if any) */
-		if ((space = strchr(buf, ' '))) {
-			*space = 0;
-			query = space + 1;
-			query_len = len - ((unsigned long)query - (unsigned long)buf);
-		} else {
-			query = "";
-			query_len = 0;
-		}
-
-		/* locate the handler */
-		if (!(qh = qh_find_handler(handler))) {
-			/* not found. that's a 404 */
-			nsock_printf(sd, "404: %s: No such handler", handler);
-			nm_free(buf);
-			iobroker_close(nagios_iobs, sd);
-			nm_bufferqueue_destroy(bq);
-			return 0;
-		}
-
-		/* strip trailing newlines */
-		while (query_len > 0 && (query[query_len - 1] == 0 || query[query_len - 1] == '\n'))
-			query[--query_len] = 0;
-
-		/* now pass the query to the handler */
-		if ((result = qh->handler(sd, query, query_len)) >= 100) {
-			nsock_printf_nul(sd, "%d: %s", result, qh_strerror(result));
-		}
-
-		if (result >= 300 || *buf != '@') {
-			/* error code or one-shot query */
-			nm_free(buf);
-			iobroker_close(nagios_iobs, sd);
-			nm_bufferqueue_destroy(bq);
-			return 0;
-		}
-		nm_free(buf);
-
-		/* check for magic handler codes */
-		switch (result) {
-		case QH_CLOSE: /* oneshot handler */
-		case -1:       /* general error */
-			iobroker_close(nagios_iobs, sd);
-			/* fallthrough */
-		case QH_TAKEOVER: /* handler takes over */
-		case 101:         /* switch protocol (takeover + message) */
-			nm_bufferqueue_destroy(bq);
-			break;
-		}
 	}
+
+	/*
+	 * A request looks like this: '[@|#]<qh>[<SP>][<query>]\0'.
+	 * That is, optional '#' (oneshot) or '@' (keepalive),
+	 * followed by the name of a registered handler, followed by
+	 * an optional space and an optional query. If the handler
+	 * has no "default" handler, a query is required or an error
+	 * will be thrown.
+	 */
+
+	/* Use data up to the first nul byte */
+	nm_bufferqueue_unshift_to_delim(bq, "\0", 1, &len, (void **)&buf);
+	if (!buf)
+		return 0;
+
+	/* Identify handler part and any magic query bytes */
+	if (*buf == '@' || *buf == '#') {
+		handler = buf + 1;
+	} else {
+		handler = buf;
+	}
+
+	/* Locate query (if any) */
+	if ((space = strchr(buf, ' '))) {
+		*space = 0;
+		query = space + 1;
+		query_len = len - ((unsigned long)query - (unsigned long)buf);
+	} else {
+		query = "";
+		query_len = 0;
+	}
+
+	/* locate the handler */
+	if (!(qh = qh_find_handler(handler))) {
+		/* not found. that's a 404 */
+		nsock_printf(sd, "404: %s: No such handler", handler);
+		nm_free(buf);
+		iobroker_close(nagios_iobs, sd);
+		nm_bufferqueue_destroy(bq);
+		return 0;
+	}
+
+	/* strip trailing newlines */
+	while (query_len > 0 && (query[query_len - 1] == 0 || query[query_len - 1] == '\n'))
+		query[--query_len] = 0;
+
+	/* now pass the query to the handler */
+	if ((result = qh->handler(sd, query, query_len)) >= 100) {
+		nsock_printf_nul(sd, "%d: %s", result, qh_strerror(result));
+	}
+
+	if (result >= 300 || *buf != '@') {
+		/* error code or one-shot query */
+		nm_free(buf);
+		iobroker_close(nagios_iobs, sd);
+		nm_bufferqueue_destroy(bq);
+		return 0;
+	}
+	nm_free(buf);
+
+	/* check for magic handler codes */
+	switch (result) {
+	case QH_CLOSE: /* oneshot handler */
+	case -1:       /* general error */
+		iobroker_close(nagios_iobs, sd);
+		/* fallthrough */
+	case QH_TAKEOVER: /* handler takes over */
+	case 101:         /* switch protocol (takeover + message) */
+		nm_bufferqueue_destroy(bq);
+		break;
+	}
+	return 0;
+}
+
+static int qh_registration_input(int sd, int events, void *bq_)
+{
+	nm_bufferqueue *bq = (nm_bufferqueue *)bq_;
+	struct sockaddr sa;
+	socklen_t slen = 0;
+	int nsd;
+
+	memset(&sa, 0, sizeof(sa)); /* shut valgrind up */
+	nsd = accept(sd, &sa, &slen);
+	if (qh_max_running && qh_running >= qh_max_running) {
+		nsock_printf(nsd, "503: Server full");
+		close(nsd);
+		return 0;
+	}
+
+	if (!(bq = nm_bufferqueue_create())) {
+		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to create iocache for inbound request\n");
+		nsock_printf(nsd, "500: Internal server error");
+		close(nsd);
+		return 0;
+	}
+
+	/*
+	 * @todo: Stash the iocache and the socket in some
+	 * addressable list so we can release them on deinit
+	 */
+	if (iobroker_register(nagios_iobs, nsd, bq, qh_input) < 0) {
+		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to register input socket %d with I/O broker: %s\n", nsd, strerror(errno));
+		nm_bufferqueue_destroy(bq);
+		close(nsd);
+		return 0;
+	}
+
+	/* make it non-blocking, but leave kernel buffers unchanged */
+	worker_set_sockopts(nsd, 0);
+	qh_running++;
 	return 0;
 }
 
@@ -402,7 +402,7 @@ int qh_init(const char *path)
 	}
 
 	errno = 0;
-	result = iobroker_register(nagios_iobs, qh_listen_sock, NULL, qh_input);
+	result = iobroker_register(nagios_iobs, qh_listen_sock, NULL, qh_registration_input);
 	if (result < 0) {
 		dkhash_destroy(qh_table);
 		close(qh_listen_sock);
