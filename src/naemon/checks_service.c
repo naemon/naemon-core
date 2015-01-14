@@ -151,7 +151,7 @@ static void handle_service_check_event(struct timed_event_properties *evprop)
 			}
 
 			/* Don't execute check if already executed close enough */
-			if (temp_service->last_check + cached_service_check_horizon > time(NULL)) {
+			if (temp_service->last_check + cached_service_check_horizon > tv.tv_sec && temp_service->last_check <= tv.tv_sec) {
 				log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' was last checked within its cache horizon. Aborting check\n", temp_service->description, temp_service->host_name);
 				return;
 			}
@@ -662,7 +662,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 			else {
 				/* can we use the last cached host state? */
 				/* usually only use cached host state if no service state change has occurred */
-				if ((state_change == FALSE || state_changes_use_cached_state == TRUE) && temp_host->has_been_checked == TRUE && ((current_time - temp_host->last_check) <= cached_host_check_horizon)) {
+				if ((state_change == FALSE || state_changes_use_cached_state == TRUE) && temp_host->has_been_checked == TRUE && (temp_host->last_check + cached_host_check_horizon > current_time && temp_host->last_check <= current_time)) {
 					log_debug_info(DEBUGL_CHECKS, 1, "* Using cached host state: %d\n", temp_host->current_state);
 					update_check_stats(ACTIVE_ONDEMAND_HOST_CHECK_STATS, current_time);
 					update_check_stats(ACTIVE_CACHED_HOST_CHECK_STATS, current_time);
@@ -761,12 +761,12 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 			log_debug_info(DEBUGL_CHECKS, 1, "Host is currently UP, so we'll recheck its state to make sure...\n");
 
 			/* only run a new check if we can and have to */
-			if (execute_host_checks && temp_host->last_check + cached_host_check_horizon < current_time) {
-				schedule_host_check(temp_host, current_time, CHECK_OPTION_DEPENDENCY_CHECK);
-			} else {
+			if (!execute_host_checks || (temp_host->last_check + cached_host_check_horizon > current_time && temp_host->last_check <= current_time)) {
 				log_debug_info(DEBUGL_CHECKS, 1, "* Using cached host state: %d\n", temp_host->current_state);
 				update_check_stats(ACTIVE_ONDEMAND_HOST_CHECK_STATS, current_time);
 				update_check_stats(ACTIVE_CACHED_HOST_CHECK_STATS, current_time);
+			} else {
+				schedule_next_host_check(temp_host, 0, CHECK_OPTION_DEPENDENCY_CHECK);
 			}
 		}
 

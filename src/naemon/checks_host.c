@@ -180,6 +180,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 #ifdef USE_EVENT_BROKER
 	int neb_result = OK;
 #endif
+	time_t now = time(NULL);
 
 	log_debug_info(DEBUGL_CHECKS, 0, "** Running async check of host '%s'...\n", hst->name);
 
@@ -195,20 +196,14 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 			return ERROR;
 		}
 
-		/* abort if check was recently completed (FIXME: wall clock vs. monotonic) */
-		if (hst->last_check + cached_host_check_horizon > time(NULL)) {
+		/* abort if check was recently completed */
+		if (hst->last_check + cached_host_check_horizon > now && hst->last_check <= now) {
 			log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' was last checked within its cache horizon. Aborting check\n", hst->name);
 			return ERROR;
 		}
 
 		/* if checks of the host are currently disabled... */
 		if (hst->checks_enabled == FALSE) {
-			return ERROR;
-		}
-
-		/* Don't check to often, might happend in dependency checks */
-		if (hst->last_check + cached_host_check_horizon > time(NULL)) {
-			log_debug_info(DEBUGL_CHECKS, 0, "Last check result is recent enough (%s)\n", ctime(&hst->last_check));
 			return ERROR;
 		}
 
