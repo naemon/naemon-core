@@ -634,7 +634,7 @@ static int wproc_query_handler(int sd, char *buf, unsigned int len)
 
 static int spawn_core_worker(void)
 {
-	char *argvec[] = {naemon_binary_path, "--worker", qh_socket_path ? qh_socket_path : DEFAULT_QUERY_SOCKET, NULL};
+	char * argvec[] = {naemon_binary_path, "--worker", qh_socket_path, NULL};
 	int ret;
 
 	if ((ret = spawn_helper(argvec)) < 0)

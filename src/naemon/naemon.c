@@ -554,7 +554,7 @@ int main(int argc, char **argv)
 		 * This must be done before modules are initialized, so
 		 * the modules can use our in-core stuff properly
 		 */
-		if (qh_init(qh_socket_path ? qh_socket_path : DEFAULT_QUERY_SOCKET) != OK) {
+		if (qh_init(qh_socket_path) != OK) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Error: Failed to initialize query handler. Aborting\n");
 			exit(EXIT_FAILURE);
 		}
@@ -710,7 +710,7 @@ int main(int argc, char **argv)
 		 * immediately deinitialize the query handler so it
 		 * can remove modules that have stashed data with it
 		 */
-		qh_deinit(qh_socket_path ? qh_socket_path : DEFAULT_QUERY_SOCKET);
+		qh_deinit(qh_socket_path);
 
 		/*
 		 * handle any incoming signals
