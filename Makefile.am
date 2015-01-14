@@ -40,8 +40,8 @@ src/naemon/buildopts.h: src/naemon/buildopts.h.in
 nobase_pkginclude_HEADERS = \
 	lib/bitmap.h    lib/kvvec.h       lib/kvvec_ekvstr.h lib/nsock.h    \
 	lib/dkhash.h    lib/libnaemon.h   lib/nspath.h   lib/snprintf.h \
-	lib/fanout.h    lib/libnagios.h   lib/nsutils.h  lib/squeue.h \
-	lib/iobroker.h  lib/lnae-utils.h  lib/pqueue.h   lib/t-utils.h \
+	lib/fanout.h    lib/libnagios.h   lib/nsutils.h  \
+	lib/iobroker.h  lib/lnae-utils.h  lib/t-utils.h \
 	lib/bufferqueue.h   lib/lnag-utils.h  lib/runcmd.h   lib/worker.h \
 	lib/rbtree.h
 
@@ -155,11 +155,11 @@ lib_LTLIBRARIES = libnaemon.la
 libnaemon_la_LDFLAGS = -version-info 0:0:0
 libnaemon_la_SOURCES = $(pkginclude_HEADERS) \
 	lib/bitmap.c lib/dkhash.c lib/fanout.c lib/iobroker.c lib/bufferqueue.c \
-	lib/kvvec.c lib/kvvec_ekvstr.c lib/nsock.c lib/nspath.c lib/nsutils.c lib/pqueue.c \
-	lib/rbtree.c lib/runcmd.c lib/snprintf.c lib/squeue.c lib/worker.c
+	lib/kvvec.c lib/kvvec_ekvstr.c lib/nsock.c lib/nspath.c lib/nsutils.c \
+	lib/rbtree.c lib/runcmd.c lib/snprintf.c lib/worker.c
 
 check_PROGRAMS = test-bitmap test-dkhash test-fanout test-iobroker test-bufferqueue \
-	test-nsutils test-runcmd test-squeue
+	test-nsutils test-runcmd
 
 LIBTEST_UTILS = lib/t-utils.c lib/t-utils.h
 test_bitmap_SOURCES = lib/test-bitmap.c $(LIBTEST_UTILS)
@@ -176,8 +176,6 @@ test_nsutils_SOURCES = lib/test-nsutils.c $(LIBTEST_UTILS)
 test_nsutils_DEPENDENCIES = libnaemon.la
 test_runcmd_SOURCES = lib/test-runcmd.c $(LIBTEST_UTILS)
 test_runcmd_DEPENDENCIES = libnaemon.la
-test_squeue_SOURCES = lib/test-squeue.c $(LIBTEST_UTILS)
-test_squeue_DEPENDENCIES = libnaemon.la
 
 COV_CFLAGS = -ggdb3 -O0 -ftest-coverage -fprofile-arcs -pg
 cov-build:
@@ -249,7 +247,7 @@ TESTS = $(check_PROGRAMS)
 TESTS += $(dist_check_SCRIPTS)
 
 cov-report:
-	@for f in $(TESTS) pqueue; do gcov -b -p $$f.c >/dev/null; done
+	@for f in $(TESTS); do gcov -b -p $$f.c >/dev/null; done
 	@rm -f *.h.gcov test-*.c.gcov
 	@echo "--- untested functions:" | tee -a untested
 	@grep '^function .* called 0' *.c.gcov \

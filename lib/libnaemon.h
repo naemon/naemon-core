@@ -13,8 +13,6 @@
 #include "lnae-utils.h"
 #include "fanout.h"
 #include "nsutils.h"
-#include "pqueue.h"
-#include "squeue.h"
 #include "kvvec.h"
 #include "kvvec_ekvstr.h"
 #include "iobroker.h"
