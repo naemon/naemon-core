@@ -7,6 +7,7 @@
 #include "broker.h"
 #include "nebmods.h"
 #include "nebmodules.h"
+#include "notifications.h"
 #include "workers.h"
 #include "utils.h"
 #include "commands.h"

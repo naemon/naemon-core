@@ -12,6 +12,26 @@
 
 NAGIOS_BEGIN_DECL
 
+typedef struct dbuf {
+	char *buf;
+	unsigned long used_size;
+	unsigned long allocated_size;
+	unsigned long chunk_size;
+} dbuf;
+
+#define CHECK_STATS_BUCKETS                  15
+
+/* used for tracking host and service check statistics */
+typedef struct check_stats {
+	int current_bucket;
+	int bucket[CHECK_STATS_BUCKETS];
+	int overflow_bucket;
+	int minute_stats[3];
+	time_t last_update;
+} check_stats;
+
+extern struct check_stats check_statistics[MAX_CHECK_STATS_TYPES];
+
 const char *check_result_source(check_result *cr);
 
 void setup_sighandler(void);                         		/* trap signals */

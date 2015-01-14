@@ -70,27 +70,6 @@ typedef struct notify_list {
 } notification;
 
 
-/* DBUF structure - dynamic string storage */
-typedef struct dbuf {
-	char *buf;
-	unsigned long used_size;
-	unsigned long allocated_size;
-	unsigned long chunk_size;
-} dbuf;
-
-
-#define CHECK_STATS_BUCKETS                  15
-
-/* used for tracking host and service check statistics */
-typedef struct check_stats {
-	int current_bucket;
-	int bucket[CHECK_STATS_BUCKETS];
-	int overflow_bucket;
-	int minute_stats[3];
-	time_t last_update;
-} check_stats;
-
-
 /********************* FUNCTIONS **********************/
 
 

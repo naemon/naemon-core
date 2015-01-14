@@ -172,8 +172,6 @@ extern unsigned long modified_process_attributes;
 extern unsigned long modified_host_process_attributes;
 extern unsigned long modified_service_process_attributes;
 
-extern struct check_stats check_statistics[MAX_CHECK_STATS_TYPES];
-
 /*** perfdata variables ***/
 extern int     perfdata_timeout;
 extern char    *host_perfdata_command;
