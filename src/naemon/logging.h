@@ -5,7 +5,7 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
-#include "objects.h"
+#include "lib/lnae-utils.h"
 
 /******************* LOGGING TYPES ********************/
 
@@ -74,6 +74,10 @@
 
 
 NAGIOS_BEGIN_DECL
+
+extern int log_initial_states;
+extern int log_current_states;
+
 /**** Logging Functions ****/
 /* logit is deprecated. People should use nm_log() instead */
 void logit(int, int, const char *, ...)
@@ -83,10 +87,6 @@ __attribute__((__format__(__printf__, 2, 3)));
 int log_debug_info(int, int, const char *, ...)
 __attribute__((__format__(__printf__, 3, 4)));
 
-int log_service_event(service *);			/* logs a service event */
-int log_host_event(host *);				/* logs a host event */
-int log_host_states(int, time_t *);	               /* logs initial/current host states */
-int log_service_states(int, time_t *);                  /* logs initial/current service states */
 int rotate_log_file(time_t);			     	/* rotates the main log file */
 int write_log_file_info(time_t *); 			/* records log file/version info */
 int open_debug_log(void);

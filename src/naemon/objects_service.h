@@ -162,6 +162,8 @@ int is_escalated_contact_for_service(struct service *, struct contact *);       
 int get_service_count(void);
 const char *service_state_name(int state);
 
+int log_service_event(service *);
+int log_service_states(int, time_t *);
 void fcache_service(FILE *fp, struct service *temp_service);
 
 NAGIOS_END_DECL

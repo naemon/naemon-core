@@ -1,5 +1,6 @@
 #include <time.h>
 #include <string.h>
+#include <errno.h>
 
 #include "events.h"
 #include "logging.h"

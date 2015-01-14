@@ -453,3 +453,56 @@ void fcache_service(FILE *fp, service *temp_service)
 	fcache_customvars(fp, temp_service->custom_variables);
 	fprintf(fp, "\t}\n\n");
 }
+
+/* write a service problem/recovery to the naemon log file */
+int log_service_event(service *svc)
+{
+	unsigned long log_options = 0L;
+
+	/* don't log soft errors if the user doesn't want to */
+	if (svc->state_type == SOFT_STATE && !log_service_retries)
+		return OK;
+
+	/* get the log options */
+	if (svc->current_state == STATE_UNKNOWN)
+		log_options = NSLOG_SERVICE_UNKNOWN;
+	else if (svc->current_state == STATE_WARNING)
+		log_options = NSLOG_SERVICE_WARNING;
+	else if (svc->current_state == STATE_CRITICAL)
+		log_options = NSLOG_SERVICE_CRITICAL;
+	else
+		log_options = NSLOG_SERVICE_OK;
+
+	nm_log(log_options, "SERVICE ALERT: %s;%s;%s;%s;%d;%s",
+	         svc->host_name, svc->description,
+	         service_state_name(svc->current_state),
+	         state_type_name(svc->state_type),
+	         svc->current_attempt,
+	         (svc->plugin_output == NULL) ? "" : svc->plugin_output);
+
+	return OK;
+}
+
+
+/* logs service states */
+int log_service_states(int type, time_t *timestamp)
+{
+	service *temp_service = NULL;
+
+	/* bail if we shouldn't be logging initial states */
+	if (type == INITIAL_STATES && log_initial_states == FALSE)
+		return OK;
+
+	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
+
+		nm_log(type, "%s SERVICE STATE: %s;%s;%s;%s;%d;%s",
+		         (type == INITIAL_STATES) ? "INITIAL" : "CURRENT",
+		         temp_service->host_name, temp_service->description,
+		         service_state_name(temp_service->current_state),
+		         state_type_name(temp_service->state_type),
+		         temp_service->current_attempt,
+		         temp_service->plugin_output);
+	}
+
+	return OK;
+}

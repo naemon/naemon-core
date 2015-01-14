@@ -183,5 +183,8 @@ unsigned int host_services_value(struct host *h);
 
 void fcache_host(FILE *fp, struct host *temp_host);
 
+int log_host_event(host *);
+int log_host_states(int, time_t *);
+
 NAGIOS_END_DECL
 #endif

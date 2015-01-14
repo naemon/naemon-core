@@ -70,9 +70,6 @@ extern int host_check_timeout;
 extern int event_handler_timeout;
 extern int notification_timeout;
 
-extern int log_initial_states;
-extern int log_current_states;
-
 extern int daemon_dumps_core;
 
 extern volatile sig_atomic_t sig_id;

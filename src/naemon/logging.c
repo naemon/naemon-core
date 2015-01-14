@@ -1,8 +1,4 @@
 #include "logging.h"
-#include "config.h"
-#include "common.h"
-#include "statusdata.h"
-#include "macros.h"
 #include "broker.h"
 #include "utils.h"
 #include "globals.h"
@@ -14,6 +10,9 @@
 
 static FILE *debug_file_fp;
 static FILE *log_fp;
+
+int log_initial_states = DEFAULT_LOG_INITIAL_STATES;
+int log_current_states = DEFAULT_LOG_CURRENT_STATES;
 
 /******************************************************************/
 /************************ LOGGING FUNCTIONS ***********************/
@@ -219,126 +218,6 @@ int close_log_file(void)
 	log_fp = NULL;
 	return 0;
 }
-
-/* write a service problem/recovery to the naemon log file */
-int log_service_event(service *svc)
-{
-	char *temp_buffer = NULL;
-	unsigned long log_options = 0L;
-
-	/* don't log soft errors if the user doesn't want to */
-	if (svc->state_type == SOFT_STATE && !log_service_retries)
-		return OK;
-
-	/* get the log options */
-	if (svc->current_state == STATE_UNKNOWN)
-		log_options = NSLOG_SERVICE_UNKNOWN;
-	else if (svc->current_state == STATE_WARNING)
-		log_options = NSLOG_SERVICE_WARNING;
-	else if (svc->current_state == STATE_CRITICAL)
-		log_options = NSLOG_SERVICE_CRITICAL;
-	else
-		log_options = NSLOG_SERVICE_OK;
-
-	nm_asprintf(&temp_buffer, "SERVICE ALERT: %s;%s;%s;%s;%d;%s\n",
-	         svc->host_name, svc->description,
-	         service_state_name(svc->current_state),
-	         state_type_name(svc->state_type),
-	         svc->current_attempt,
-	         (svc->plugin_output == NULL) ? "" : svc->plugin_output);
-
-	write_to_all_logs(temp_buffer, log_options);
-	free(temp_buffer);
-
-	return OK;
-}
-
-
-/* write a host problem/recovery to the log file */
-int log_host_event(host *hst)
-{
-	char *temp_buffer = NULL;
-	unsigned long log_options = 0L;
-
-	/* get the log options */
-	if (hst->current_state == STATE_DOWN)
-		log_options = NSLOG_HOST_DOWN;
-	else if (hst->current_state == STATE_UNREACHABLE)
-		log_options = NSLOG_HOST_UNREACHABLE;
-	else
-		log_options = NSLOG_HOST_UP;
-
-	nm_asprintf(&temp_buffer, "HOST ALERT: %s;%s;%s;%d;%s\n",
-	         hst->name,
-	         host_state_name(hst->current_state),
-	         state_type_name(hst->state_type),
-	         hst->current_attempt,
-	         (hst->plugin_output == NULL) ? "" : hst->plugin_output);
-
-	write_to_all_logs(temp_buffer, log_options);
-
-	nm_free(temp_buffer);
-
-	return OK;
-}
-
-
-/* logs host states */
-int log_host_states(int type, time_t *timestamp)
-{
-	char *temp_buffer = NULL;
-	host *temp_host = NULL;;
-
-	/* bail if we shouldn't be logging initial states */
-	if (type == INITIAL_STATES && log_initial_states == FALSE)
-		return OK;
-
-	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
-
-		nm_asprintf(&temp_buffer, "%s HOST STATE: %s;%s;%s;%d;%s\n", (type == INITIAL_STATES) ? "INITIAL" : "CURRENT",
-		         temp_host->name,
-		         host_state_name(temp_host->current_state),
-		         state_type_name(temp_host->state_type),
-		         temp_host->current_attempt,
-		         (temp_host->plugin_output == NULL) ? "" : temp_host->plugin_output);
-
-		write_to_all_logs_with_timestamp(temp_buffer, NSLOG_INFO_MESSAGE, timestamp);
-
-		nm_free(temp_buffer);
-	}
-
-	return OK;
-}
-
-
-/* logs service states */
-int log_service_states(int type, time_t *timestamp)
-{
-	char *temp_buffer = NULL;
-	service *temp_service = NULL;
-
-	/* bail if we shouldn't be logging initial states */
-	if (type == INITIAL_STATES && log_initial_states == FALSE)
-		return OK;
-
-	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
-
-		nm_asprintf(&temp_buffer, "%s SERVICE STATE: %s;%s;%s;%s;%d;%s\n",
-		         (type == INITIAL_STATES) ? "INITIAL" : "CURRENT",
-		         temp_service->host_name, temp_service->description,
-		         service_state_name(temp_service->current_state),
-		         state_type_name(temp_service->state_type),
-		         temp_service->current_attempt,
-		         temp_service->plugin_output);
-
-		write_to_all_logs_with_timestamp(temp_buffer, NSLOG_INFO_MESSAGE, timestamp);
-
-		nm_free(temp_buffer);
-	}
-
-	return OK;
-}
-
 
 /* rotates the main log file */
 int rotate_log_file(time_t rotation_time)

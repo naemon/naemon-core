@@ -578,3 +578,48 @@ void fcache_host(FILE *fp, host *temp_host)
 	fcache_customvars(fp, temp_host->custom_variables);
 	fprintf(fp, "\t}\n\n");
 }
+
+/* write a host problem/recovery to the log file */
+int log_host_event(host *hst)
+{
+	unsigned long log_options = 0L;
+
+	/* get the log options */
+	if (hst->current_state == STATE_DOWN)
+		log_options = NSLOG_HOST_DOWN;
+	else if (hst->current_state == STATE_UNREACHABLE)
+		log_options = NSLOG_HOST_UNREACHABLE;
+	else
+		log_options = NSLOG_HOST_UP;
+
+	nm_log(log_options, "HOST ALERT: %s;%s;%s;%d;%s\n",
+				hst->name,
+				host_state_name(hst->current_state),
+				state_type_name(hst->state_type),
+				hst->current_attempt,
+				(hst->plugin_output == NULL) ? "" : hst->plugin_output);
+
+	return OK;
+}
+
+
+/* logs host states */
+int log_host_states(int type, time_t *timestamp)
+{
+	host *temp_host = NULL;;
+
+	/* bail if we shouldn't be logging initial states */
+	if (type == INITIAL_STATES && log_initial_states == FALSE)
+		return OK;
+
+	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
+		nm_log(NSLOG_INFO_MESSAGE, "%s HOST STATE: %s;%s;%s;%d;%s\n", (type == INITIAL_STATES) ? "INITIAL" : "CURRENT",
+					temp_host->name,
+					host_state_name(temp_host->current_state),
+					state_type_name(temp_host->state_type),
+					temp_host->current_attempt,
+					(temp_host->plugin_output == NULL) ? "" : temp_host->plugin_output);
+	}
+
+	return OK;
+}
