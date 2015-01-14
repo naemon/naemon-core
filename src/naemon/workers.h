@@ -39,7 +39,6 @@ extern unsigned int wproc_num_workers_desired;
 
 struct load_control; /* TODO: load_control is ugly */
 
-void wproc_reap(int jobs, int msecs);
 void free_worker_memory(int flags);
 int workers_alive(void);
 int init_workers(int desired_workers);

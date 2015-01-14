@@ -84,22 +84,6 @@ static void wproc_logdump_buffer(int debuglevel, int verbosity, const char *pref
 	}
 }
 
-/* reap 'jobs' jobs or 'secs' seconds, whichever comes first */
-void wproc_reap(int jobs, int msecs)
-{
-	time_t start, now;
-	start = time(NULL);
-
-	/* one input equals one job (or close enough to it anyway) */
-	do {
-		int inputs;
-
-		now = time(NULL);
-		inputs = iobroker_poll(nagios_iobs, (now - start) * 1000);
-		jobs -= inputs;
-	} while (jobs > 0 && start + (msecs * 1000) <= now);
-}
-
 static int get_job_id(struct wproc_worker *wp)
 {
 	return wp->job_index++;
