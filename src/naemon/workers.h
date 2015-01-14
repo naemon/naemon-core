@@ -8,6 +8,8 @@
 #include "lib/libnagios.h"
 #include "macros.h"
 
+#include <sys/resource.h>
+
 #define WPROC_FORCE  (1 << 0)
 
 NAGIOS_BEGIN_DECL;

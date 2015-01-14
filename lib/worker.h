@@ -5,14 +5,9 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
-#include <errno.h>
-#include <sys/socket.h>
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include "libnagios.h"
+#include "lnae-utils.h"
+#include "kvvec.h"
+#include "bufferqueue.h"
 
 /**
  * @file worker.h
@@ -23,34 +18,12 @@
  * as an example on how to use the API's found here.
  */
 
-#ifndef ETIME
-#define ETIME ETIMEDOUT
-#endif
-
 NAGIOS_BEGIN_DECL
 
-typedef struct iobuf {
-	int fd;
-	unsigned int len;
-	char *buf;
-} iobuf;
-
-typedef struct execution_information execution_information;
-
-typedef struct child_process {
-	unsigned int id, timeout;
-	char *cmd;
-	int ret;
-	struct kvvec *request;
-	iobuf outstd;
-	iobuf outerr;
-	execution_information *ei;
-} child_process;
-
-/**
- * Callback for enter_worker that simply runs a command
- */
-extern int start_cmd(child_process *cp);
+#define MSG_DELIM "\1\0\0" /**< message limiter */
+#define MSG_DELIM_LEN (sizeof(MSG_DELIM)) /**< message delimiter length */
+#define PAIR_SEP 0 /**< pair separator for buf2kvvec() and kvvec2buf() */
+#define KV_SEP '=' /**< key/value separator for buf2kvvec() and kvvec2buf() */
 
 /**
  * Spawn a helper with a specific process name
@@ -69,21 +42,6 @@ extern int spawn_named_helper(char *path, char **argv);
 extern int spawn_helper(char **argv);
 
 /**
- * To be called when a child_process has completed to ship the result to nagios
- * @param cp The child_process that describes the job
- * @param reason 0 if everything was OK, 1 if the job was unable to run
- * @return 0 on success, non-zero otherwise
- */
-extern int finish_job(child_process *cp, int reason);
-
-/**
- * Start to poll the socket and call the callback when there are new tasks
- * @param sd A socket descriptor to poll
- * @param cb The callback to call upon completion
- */
-extern void enter_worker(int sd, int (*cb)(child_process*));
-
-/**
  * Build a buffer from a key/value vector buffer.
  * The resulting kvvec-buffer is suitable for sending between
  * worker and master in either direction, as it has all the
@@ -92,18 +50,6 @@ extern void enter_worker(int sd, int (*cb)(child_process*));
  * @return NULL on errors, a newly allocated kvvec buffer on success
  */
 extern struct kvvec_buf *build_kvvec_buf(struct kvvec *kvv);
-
-/**
- * Send a key/value vector as a bytestream through a socket
- * @param[in] sd The socket descriptor to send to
- * @param kvv The key/value vector to send
- * @return The number of bytes sent, or -1 on errors
- */
-extern int worker_send_kvvec(int sd, struct kvvec *kvv);
-
-/** @deprecated Use worker_send_kvvec() instead */
-extern int send_kvvec(int sd, struct kvvec *kvv)
-	NAGIOS_DEPRECATED(4.1.0, "worker_send_kvvec()");
 
 /**
  * Grab a worker message from an iocache buffer
@@ -122,9 +68,6 @@ extern char *worker_ioc2msg(nm_bufferqueue *ioc, unsigned long *size, int flags)
  */
 extern int worker_set_sockopts(int sd, int bufsize);
 
-/** @deprecated Use worker_set_sockopts() instead */
-extern int set_socket_options(int sd, int bufsize)
-	NAGIOS_DEPRECATED(4.1.0, "worker_set_sockopts()");
-
 NAGIOS_END_DECL
-#endif /* INCLUDE_worker_h__ */
+
+#endif

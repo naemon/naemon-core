@@ -17,6 +17,9 @@
 #include "defaults.h"
 #include "nm_alloc.h"
 #include "events.h"
+#include "lib/worker.h"
+#include <sys/types.h>
+#include <sys/wait.h>
 
 /* perfect hash function for wproc response codes */
 #include "wpres-phash.h"

@@ -23,6 +23,8 @@
 #include "nm_alloc.h"
 #include "checks.h"
 
+#include "worker/worker.h"
+
 #include <getopt.h>
 #include <string.h>
 
