@@ -5,6 +5,7 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
+#include "checks.h"
 #include "objects.h"
 
 /*************** EVENT BROKER OPTIONS *****************/

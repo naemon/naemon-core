@@ -5,7 +5,9 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
-#include "objects.h"
+#include "lib/lnae-utils.h"
+#include <stdio.h>
+#include <sys/resource.h>
 
 /************ SERVICE DEPENDENCY VALUES ***************/
 
@@ -26,7 +28,48 @@
 
 NAGIOS_BEGIN_DECL
 
-/*********************** GENERIC **********************/
+/*
+ * *name can be "Nagios Core", "Merlin", "mod_gearman" or "DNX", fe.
+ * source_name gets passed the 'source' pointer from check_result
+ * and must return a non-free()'able string useful for printing what
+ * we need to determine exactly where the check was received from,
+ * such as "mod_gearman worker@10.11.12.13", or "Nagios Core command
+ * file worker" (for passive checks submitted locally), which will be
+ * stashed with hosts and services and used as the "CHECKSOURCE" macro.
+ */
+struct check_engine {
+	char *name;         /* "Nagios Core", "Merlin", "Mod Gearman" fe */
+	const char *(*source_name)(void *);
+	void (*clean_result)(void *);
+};
+
+typedef struct check_result {
+	int object_check_type;                          /* is this a service or a host check? */
+	char *host_name;                                /* host name */
+	char *service_description;                      /* service description */
+	int check_type;					/* was this an active or passive service check? */
+	int check_options;
+	int scheduled_check;                            /* was this a scheduled or an on-demand check? */
+	char *output_file;                              /* what file is the output stored in? */
+	FILE *output_file_fp;
+	double latency;
+	struct timeval start_time;			/* time the service check was initiated */
+	struct timeval finish_time;			/* time the service check was completed */
+	int early_timeout;                              /* did the service check timeout? */
+	int exited_ok;					/* did the plugin check return okay? */
+	int return_code;				/* plugin return code */
+	char *output;	                                /* plugin output */
+	struct rusage rusage;			/* resource usage by this check */
+	struct check_engine *engine;	/* where did we get this check from? */
+	void *source;					/* engine handles this */
+} check_result;
+
+struct check_output {
+	char *short_output;
+	char *long_output;
+	char *perf_data;
+};
+
 void checks_init(void); /* Init check execution, schedule events */
 
 int parse_check_output(char *, char **, char **, char **, int, int);
