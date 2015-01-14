@@ -241,6 +241,8 @@ void destroy_host(host *this_host)
 		destroy_hostdependency(slavelist->object_ptr);
 	for (slavelist = this_host->exec_deps; slavelist; slavelist = slavelist->next)
 		destroy_hostdependency(slavelist->object_ptr);
+	for (slavelist = this_host->escalation_list; slavelist; slavelist = slavelist->next)
+		destroy_hostescalation(slavelist->object_ptr);
 
 	if (this_host->display_name != this_host->name)
 		nm_free(this_host->display_name);

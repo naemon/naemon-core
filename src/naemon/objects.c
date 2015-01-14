@@ -17,9 +17,7 @@
  */
 dkhash_table *object_hash_tables[NUM_HASHED_OBJECT_TYPES];
 
-hostescalation *hostescalation_list = NULL;
 serviceescalation *serviceescalation_list = NULL;
-hostescalation **hostescalation_ary = NULL;
 serviceescalation **serviceescalation_ary = NULL;
 servicedependency **servicedependency_ary = NULL;
 
@@ -39,13 +37,6 @@ static int cmp_serviceesc(const void *a_, const void *b_)
 	const serviceescalation *a = *(const serviceescalation **)a_;
 	const serviceescalation *b = *(const serviceescalation **)b_;
 	return a->service_ptr->id - b->service_ptr->id;
-}
-
-static int cmp_hostesc(const void *a_, const void *b_)
-{
-	const hostescalation *a = *(const hostescalation **)a_;
-	const hostescalation *b = *(const hostescalation **)b_;
-	return a->host_ptr->id - b->host_ptr->id;
 }
 
 
@@ -71,13 +62,10 @@ static void post_process_object_config(void)
 
 	if (servicedependency_ary)
 		qsort(servicedependency_ary, num_objects.servicedependencies, sizeof(servicedependency *), cmp_sdep);
-	if (hostescalation_ary)
-		qsort(hostescalation_ary, num_objects.hostescalations, sizeof(hostescalation *), cmp_hostesc);
 	if (serviceescalation_ary)
 		qsort(serviceescalation_ary, num_objects.serviceescalations, sizeof(serviceescalation *), cmp_serviceesc);
 	timing_point("Done post-sorting slave objects\n");
 
-	hostescalation_list = hostescalation_ary ? *hostescalation_ary : NULL;
 	serviceescalation_list = serviceescalation_ary ? *serviceescalation_ary : NULL;
 }
 
@@ -142,8 +130,6 @@ int create_object_tables(unsigned int *ocount)
 	 * errors here will always lead to an early exit, so there's no need
 	 * to free() successful allocs when later ones fail
 	 */
-	if (mktable(hostescalation, OBJTYPE_HOSTESCALATION) != OK)
-		return ERROR;
 	if (mktable(serviceescalation, OBJTYPE_SERVICEESCALATION) != OK)
 		return ERROR;
 	if (mktable(servicedependency, OBJTYPE_SERVICEDEPENDENCY) != OK)
@@ -285,68 +271,6 @@ servicedependency *add_service_dependency(char *dependent_host_name, char *depen
 }
 
 
-/* add a new host escalation to the list in memory */
-hostescalation *add_hostescalation(char *host_name, int first_notification, int last_notification, double notification_interval, char *escalation_period, int escalation_options)
-{
-	hostescalation *new_hostescalation = NULL;
-	host *h;
-	timeperiod *tp = NULL;
-
-	/* make sure we have the data we need */
-	if (host_name == NULL || !*host_name) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Host escalation host name is NULL\n");
-		return NULL;
-	}
-	if (!(h = find_host(host_name))) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Host '%s' has an escalation, but is not defined anywhere!\n", host_name);
-		return NULL;
-	}
-	if (escalation_period && !(tp = find_timeperiod(escalation_period))) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Unable to locate timeperiod '%s' for hostescalation '%s'\n",
-		       escalation_period, host_name);
-		return NULL;
-	}
-
-	new_hostescalation = nm_calloc(1, sizeof(*new_hostescalation));
-
-	/* add the escalation to its host */
-	if (prepend_object_to_objectlist(&h->escalation_list, new_hostescalation) != OK) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add hostescalation to host '%s'\n", host_name);
-		free(new_hostescalation);
-		return NULL;
-	}
-
-	/* assign vars. Object names are immutable, so no need to copy */
-	new_hostescalation->host_name = h->name;
-	new_hostescalation->host_ptr = h;
-	new_hostescalation->escalation_period = tp ? tp->name : NULL;
-	new_hostescalation->escalation_period_ptr = tp;
-	new_hostescalation->first_notification = first_notification;
-	new_hostescalation->last_notification = last_notification;
-	new_hostescalation->notification_interval = (notification_interval <= 0) ? 0 : notification_interval;
-	new_hostescalation->escalation_options = escalation_options;
-
-	new_hostescalation->id = num_objects.hostescalations++;
-	hostescalation_ary[new_hostescalation->id] = new_hostescalation;
-	return new_hostescalation;
-}
-
-
-/* adds a contact group to a host escalation */
-contactgroupsmember *add_contactgroup_to_hostescalation(hostescalation *he, char *group_name)
-{
-	return add_contactgroup_to_object(&he->contact_groups, group_name);
-}
-
-
-/* adds a contact to a host escalation */
-contactsmember *add_contact_to_hostescalation(hostescalation *he, char *contact_name)
-{
-
-	return add_contact_to_object(&he->contacts, contact_name);
-}
-
-
 /******************************************************************/
 /******************* OBJECT DELETION FUNCTIONS ********************/
 /******************************************************************/
@@ -405,31 +329,6 @@ int free_object_data(void)
 	}
 
 
-	/**** free host escalation memory ****/
-	for (i = 0; i < num_objects.hostescalations; i++) {
-		hostescalation *this_hostescalation = hostescalation_ary[i];
-
-		/* free memory for the contact group members */
-		this_contactgroupsmember = this_hostescalation->contact_groups;
-		while (this_contactgroupsmember != NULL) {
-			next_contactgroupsmember = this_contactgroupsmember->next;
-			nm_free(this_contactgroupsmember);
-			this_contactgroupsmember = next_contactgroupsmember;
-		}
-
-		/* free memory for contacts */
-		this_contactsmember = this_hostescalation->contacts;
-		while (this_contactsmember != NULL) {
-			next_contactsmember = this_contactsmember->next;
-			nm_free(this_contactsmember);
-			this_contactsmember = next_contactsmember;
-		}
-		nm_free(this_hostescalation);
-	}
-
-	/* reset pointers */
-	nm_free(hostescalation_ary);
-
 	/* we no longer have any objects */
 	memset(&num_objects, 0, sizeof(num_objects));
 
@@ -481,22 +380,6 @@ void fcache_serviceescalation(FILE *fp, serviceescalation *temp_serviceescalatio
 		for (cgl = temp_serviceescalation->contact_groups; cgl; cgl = cgl->next)
 			fprintf(fp, "%s%c", cgl->group_name, cgl->next ? ',' : '\n');
 	}
-	fprintf(fp, "\t}\n\n");
-}
-
-void fcache_hostescalation(FILE *fp, hostescalation *temp_hostescalation)
-{
-	fprintf(fp, "define hostescalation {\n");
-	fprintf(fp, "\thost_name\t%s\n", temp_hostescalation->host_name);
-	fprintf(fp, "\tfirst_notification\t%d\n", temp_hostescalation->first_notification);
-	fprintf(fp, "\tlast_notification\t%d\n", temp_hostescalation->last_notification);
-	fprintf(fp, "\tnotification_interval\t%f\n", temp_hostescalation->notification_interval);
-	if (temp_hostescalation->escalation_period)
-		fprintf(fp, "\tescalation_period\t%s\n", temp_hostescalation->escalation_period);
-	fprintf(fp, "\tescalation_options\t%s\n", opts2str(temp_hostescalation->escalation_options, host_flag_map, 'r'));
-
-	fcache_contactlist(fp, "\tcontacts\t", temp_hostescalation->contacts);
-	fcache_contactgrouplist(fp, "\tcontact_groups\t", temp_hostescalation->contact_groups);
 	fprintf(fp, "\t}\n\n");
 }
 
@@ -581,8 +464,11 @@ int fcache_objects(char *cache_file)
 	}
 
 	/* cache host escalations */
-	for (i = 0; i < num_objects.hostescalations; i++)
-		fcache_hostescalation(fp, hostescalation_ary[i]);
+	for (i = 0; i < num_objects.hosts; i++) {
+		struct objectlist *esclist;
+		for (esclist = host_ary[i]->escalation_list; esclist; esclist = esclist->next)
+			fcache_hostescalation(fp, esclist->object_ptr);
+	}
 
 	fclose(fp);
 
