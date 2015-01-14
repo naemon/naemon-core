@@ -77,6 +77,11 @@ enum NotificationReason {
 
 NAGIOS_BEGIN_DECL
 
+typedef struct notify_list {
+	struct contact *contact;
+	struct notify_list *next;
+} notification;
+
 const char *notification_reason_name(unsigned int reason_type);
 int check_service_notification_viability(service *, int, int);			/* checks viability of notifying all contacts about a service */
 int is_valid_escalation_for_service_notification(service *, serviceescalation *, int);	/* checks if an escalation entry is valid for a particular service notification */

@@ -61,15 +61,6 @@ NAGIOS_BEGIN_DECL
 #define SERVICEGROUP_SKIPLIST       OBJTYPE_SERVICEGROUP
 #define HOSTDEPENDENCY_SKIPLIST     OBJTYPE_HOSTDEPENDENCY
 #define SERVICEDEPENDENCY_SKIPLIST  OBJTYPE_SERVICEDEPENDENCY
-/****************** DATA STRUCTURES *******************/
-
-/* NOTIFY_LIST structure */
-typedef struct notify_list {
-	struct contact *contact;
-	struct notify_list *next;
-} notification;
-
-
 /********************* FUNCTIONS **********************/
 
 
