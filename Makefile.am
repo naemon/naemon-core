@@ -119,7 +119,7 @@ common_sources = \
 	src/naemon/nagios.h src/naemon/naemon.h \
 	src/worker/worker.c src/worker/worker.h \
 	src/naemon/wpres.gperf \
-	src/naemon/buildopts.h
+	src/naemon/buildopts.h config.h
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = naemon.pc
