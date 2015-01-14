@@ -21,7 +21,6 @@ hostescalation *hostescalation_list = NULL;
 serviceescalation *serviceescalation_list = NULL;
 hostescalation **hostescalation_ary = NULL;
 serviceescalation **serviceescalation_ary = NULL;
-hostdependency **hostdependency_ary = NULL;
 servicedependency **servicedependency_ary = NULL;
 
 int __nagios_object_structure_version = CURRENT_OBJECT_STRUCTURE_VERSION;
@@ -33,15 +32,6 @@ static int cmp_sdep(const void *a_, const void *b_)
 	int ret;
 	ret = a->master_service_ptr->id - b->master_service_ptr->id;
 	return ret ? ret : (int)(a->dependent_service_ptr->id - b->dependent_service_ptr->id);
-}
-
-static int cmp_hdep(const void *a_, const void *b_)
-{
-	const hostdependency *a = *(const hostdependency **)a_;
-	const hostdependency *b = *(const hostdependency **)b_;
-	int ret;
-	ret = a->master_host_ptr->id - b->master_host_ptr->id;
-	return ret ? ret : (int)(a->dependent_host_ptr->id - b->dependent_host_ptr->id);
 }
 
 static int cmp_serviceesc(const void *a_, const void *b_)
@@ -64,12 +54,9 @@ static void post_process_object_config(void)
 	objectlist *list;
 	unsigned int i, slot;
 
-	if (hostdependency_ary)
-		free(hostdependency_ary);
 	if (servicedependency_ary)
 		free(servicedependency_ary);
 
-	hostdependency_ary = nm_calloc(num_objects.hostdependencies, sizeof(void *));
 	servicedependency_ary = nm_calloc(num_objects.servicedependencies, sizeof(void *));
 
 	slot = 0;
@@ -82,20 +69,8 @@ static void post_process_object_config(void)
 	}
 	timing_point("Done post-processing servicedependencies\n");
 
-	slot = 0;
-	for (i = 0; slot < num_objects.hostdependencies && i < num_objects.hosts; i++) {
-		host *h = host_ary[i];
-		for (list = h->notify_deps; list; list = list->next)
-			hostdependency_ary[slot++] = (hostdependency *)list->object_ptr;
-		for (list = h->exec_deps; list; list = list->next)
-			hostdependency_ary[slot++] = (hostdependency *)list->object_ptr;
-	}
-	timing_point("Done post-processing host dependencies\n");
-
 	if (servicedependency_ary)
 		qsort(servicedependency_ary, num_objects.servicedependencies, sizeof(servicedependency *), cmp_sdep);
-	if (hostdependency_ary)
-		qsort(hostdependency_ary, num_objects.hostdependencies, sizeof(hostdependency *), cmp_hdep);
 	if (hostescalation_ary)
 		qsort(hostescalation_ary, num_objects.hostescalations, sizeof(hostescalation *), cmp_hostesc);
 	if (serviceescalation_ary)
@@ -168,8 +143,6 @@ int create_object_tables(unsigned int *ocount)
 	 * to free() successful allocs when later ones fail
 	 */
 	if (mktable(hostescalation, OBJTYPE_HOSTESCALATION) != OK)
-		return ERROR;
-	if (mktable(hostdependency, OBJTYPE_HOSTDEPENDENCY) != OK)
 		return ERROR;
 	if (mktable(serviceescalation, OBJTYPE_SERVICEESCALATION) != OK)
 		return ERROR;
@@ -312,65 +285,6 @@ servicedependency *add_service_dependency(char *dependent_host_name, char *depen
 }
 
 
-/* adds a host dependency definition */
-hostdependency *add_host_dependency(char *dependent_host_name, char *host_name, int dependency_type, int inherits_parent, int failure_options, char *dependency_period)
-{
-	hostdependency *new_hostdependency = NULL;
-	host *parent, *child;
-	timeperiod *tp = NULL;
-	int result;
-	size_t hdep_size = sizeof(*new_hostdependency);
-
-	/* make sure we have what we need */
-	parent = find_host(host_name);
-	if (!parent) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Master host '%s' in hostdependency from '%s' to '%s' is not defined anywhere!\n",
-		       host_name, dependent_host_name, host_name);
-		return NULL;
-	}
-	child = find_host(dependent_host_name);
-	if (!child) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Dependent host '%s' in hostdependency from '%s' to '%s' is not defined anywhere!\n",
-		       dependent_host_name, dependent_host_name, host_name);
-		return NULL;
-	}
-	if (dependency_period && !(tp = find_timeperiod(dependency_period))) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Unable to locate dependency_period '%s' for %s->%s host dependency\n",
-		       dependency_period, parent->name, child->name);
-		return NULL ;
-	}
-
-	new_hostdependency = nm_calloc(1, sizeof(*new_hostdependency));
-	new_hostdependency->dependent_host_ptr = child;
-	new_hostdependency->master_host_ptr = parent;
-	new_hostdependency->dependency_period_ptr = tp;
-
-	/* assign vars. Objects are immutable, so no need to copy */
-	new_hostdependency->dependent_host_name = child->name;
-	new_hostdependency->host_name = parent->name;
-	if (tp)
-		new_hostdependency->dependency_period = tp->name;
-
-	new_hostdependency->dependency_type = (dependency_type == EXECUTION_DEPENDENCY) ? EXECUTION_DEPENDENCY : NOTIFICATION_DEPENDENCY;
-	new_hostdependency->inherits_parent = (inherits_parent > 0) ? TRUE : FALSE;
-	new_hostdependency->failure_options = failure_options;
-
-	if (dependency_type == NOTIFICATION_DEPENDENCY)
-		result = prepend_unique_object_to_objectlist_ptr(&child->notify_deps, new_hostdependency, *compare_objects, &hdep_size);
-	else
-		result = prepend_unique_object_to_objectlist_ptr(&child->exec_deps, new_hostdependency, *compare_objects, &hdep_size);
-
-	if (result != OK) {
-		free(new_hostdependency);
-		/* hack to avoid caller bombing out */
-		return result == OBJECTLIST_DUPE ? (void *)1 : NULL;
-	}
-
-	num_objects.hostdependencies++;
-	return new_hostdependency;
-}
-
-
 /* add a new host escalation to the list in memory */
 hostescalation *add_hostescalation(char *host_name, int first_notification, int last_notification, double notification_interval, char *escalation_period, int escalation_options)
 {
@@ -491,14 +405,6 @@ int free_object_data(void)
 	}
 
 
-	/**** free host dependency memory ****/
-	if (hostdependency_ary) {
-		for (i = 0; i < num_objects.hostdependencies; i++)
-			nm_free(hostdependency_ary[i]);
-		nm_free(hostdependency_ary);
-	}
-
-
 	/**** free host escalation memory ****/
 	for (i = 0; i < num_objects.hostescalations; i++) {
 		hostescalation *this_hostescalation = hostescalation_ary[i];
@@ -575,20 +481,6 @@ void fcache_serviceescalation(FILE *fp, serviceescalation *temp_serviceescalatio
 		for (cgl = temp_serviceescalation->contact_groups; cgl; cgl = cgl->next)
 			fprintf(fp, "%s%c", cgl->group_name, cgl->next ? ',' : '\n');
 	}
-	fprintf(fp, "\t}\n\n");
-}
-
-void fcache_hostdependency(FILE *fp, hostdependency *temp_hostdependency)
-{
-	fprintf(fp, "define hostdependency {\n");
-	fprintf(fp, "\thost_name\t%s\n", temp_hostdependency->host_name);
-	fprintf(fp, "\tdependent_host_name\t%s\n", temp_hostdependency->dependent_host_name);
-	if (temp_hostdependency->dependency_period)
-		fprintf(fp, "\tdependency_period\t%s\n", temp_hostdependency->dependency_period);
-	fprintf(fp, "\tinherits_parent\t%d\n", temp_hostdependency->inherits_parent);
-	fprintf(fp, "\t%s_failure_options\t%s\n",
-	        temp_hostdependency->dependency_type == NOTIFICATION_DEPENDENCY ? "notification" : "execution",
-	        opts2str(temp_hostdependency->failure_options, host_flag_map, 'o'));
 	fprintf(fp, "\t}\n\n");
 }
 
@@ -680,8 +572,13 @@ int fcache_objects(char *cache_file)
 		fcache_serviceescalation(fp, serviceescalation_ary[i]);
 
 	/* cache host dependencies */
-	for (i = 0; i < num_objects.hostdependencies; i++)
-		fcache_hostdependency(fp, hostdependency_ary[i]);
+	for (i = 0; i < num_objects.hosts; i++) {
+		struct objectlist *deplist;
+		for (deplist = host_ary[i]->exec_deps; deplist; deplist = deplist->next)
+			fcache_hostdependency(fp, deplist->object_ptr);
+		for (deplist = host_ary[i]->notify_deps; deplist; deplist = deplist->next)
+			fcache_hostdependency(fp, deplist->object_ptr);
+	}
 
 	/* cache host escalations */
 	for (i = 0; i < num_objects.hostescalations; i++)

@@ -184,6 +184,7 @@ void destroy_host(host *this_host)
 	struct contactgroupsmember *this_contactgroupsmember, *next_contactgroupsmember;
 	struct contactsmember *this_contactsmember, *next_contactsmember;
 	struct customvariablesmember *this_customvariablesmember, *next_customvariablesmember;
+	struct objectlist *slavelist;
 
 	/* free memory for parent hosts */
 	this_hostsmember = this_host->parent_hosts;
@@ -235,6 +236,11 @@ void destroy_host(host *this_host)
 		nm_free(this_customvariablesmember);
 		this_customvariablesmember = next_customvariablesmember;
 	}
+
+	for (slavelist = this_host->notify_deps; slavelist; slavelist = slavelist->next)
+		destroy_hostdependency(slavelist->object_ptr);
+	for (slavelist = this_host->exec_deps; slavelist; slavelist = slavelist->next)
+		destroy_hostdependency(slavelist->object_ptr);
 
 	if (this_host->display_name != this_host->name)
 		nm_free(this_host->display_name);

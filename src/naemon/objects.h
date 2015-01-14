@@ -11,6 +11,7 @@
 #include "objects_contactgroup.h"
 #include "objects_command.h"
 #include "objects_host.h"
+#include "objects_hostdependency.h"
 #include "objects_hostgroup.h"
 #include "objects_service.h"
 #include "objects_servicegroup.h"
@@ -179,25 +180,9 @@ typedef struct hostescalation {
 	struct timeperiod *escalation_period_ptr;
 } hostescalation;
 
-
-/* HOST DEPENDENCY structure */
-typedef struct hostdependency {
-	unsigned int id;
-	int     dependency_type;
-	char    *dependent_host_name;
-	char    *host_name;
-	char    *dependency_period;
-	int     inherits_parent;
-	int     failure_options;
-	struct host    *master_host_ptr;
-	struct host    *dependent_host_ptr;
-	struct timeperiod *dependency_period_ptr;
-} hostdependency;
-
 extern struct hostescalation *hostescalation_list;
 extern struct serviceescalation *serviceescalation_list;
 extern struct hostescalation **hostescalation_ary;
-extern struct hostdependency **hostdependency_ary;
 extern struct serviceescalation **serviceescalation_ary;
 extern struct servicedependency **servicedependency_ary;
 
@@ -214,7 +199,6 @@ struct serviceescalation *add_serviceescalation(char *host_name, char *descripti
 struct contactgroupsmember *add_contactgroup_to_serviceescalation(serviceescalation *, char *);                /* adds a contact group to a service escalation definition */
 struct contactsmember *add_contact_to_serviceescalation(serviceescalation *, char *);                          /* adds a contact to a service escalation definition */
 struct servicedependency *add_service_dependency(char *dependent_host_name, char *dependent_service_description, char *host_name, char *service_description, int dependency_type, int inherits_parent, int failure_options, char *dependency_period);
-struct hostdependency *add_host_dependency(char *dependent_host_name, char *host_name, int dependency_type, int inherits_parent, int failure_options, char *dependency_period);
 struct hostescalation *add_hostescalation(char *host_name, int first_notification, int last_notification, double notification_interval, char *escalation_period, int escalation_options);
 struct contactsmember *add_contact_to_hostescalation(hostescalation *, char *);                                /* adds a contact to a host escalation definition */
 struct contactgroupsmember *add_contactgroup_to_hostescalation(hostescalation *, char *);                      /* adds a contact group to a host escalation definition */
@@ -223,7 +207,6 @@ int create_object_tables(unsigned int *);
 
 void fcache_servicedependency(FILE *fp, struct servicedependency *temp_servicedependency);
 void fcache_serviceescalation(FILE *fp, struct serviceescalation *temp_serviceescalation);
-void fcache_hostdependency(FILE *fp, struct hostdependency *temp_hostdependency);
 void fcache_hostescalation(FILE *fp, struct hostescalation *temp_hostescalation);
 int fcache_objects(char *cache_file);
 

@@ -2094,13 +2094,18 @@ int pre_flight_circular_check(int *w, int *e)
 	/* check host dependencies */
 	for (i = 0; i < ARRAY_SIZE(ary); i++)
 		memset(ary[i], 0, alloc);
-	for (i = 0; i < num_objects.hostdependencies; i++) {
-		temp_hd = hostdependency_ary[i];
-		dep_type = temp_hd->dependency_type;
-		/* see above */
-		if (dep_type < 1 || dep_type > ARRAY_SIZE(ary))
-			continue;
-		dfs_hostdep_path(ary[dep_type - 1], temp_hd->dependent_host_ptr, dep_type, &errors);
+	for (i = 0; i < num_objects.hosts; i++) {
+		struct objectlist *deplist;
+		for (deplist = host_ary[i]->notify_deps; deplist; deplist = deplist->next) {
+			temp_hd = deplist->object_ptr;
+			dep_type = temp_hd->dependency_type;
+			dfs_hostdep_path(ary[dep_type - 1], temp_hd->dependent_host_ptr, dep_type, &errors);
+		}
+		for (deplist = host_ary[i]->exec_deps; deplist; deplist = deplist->next) {
+			temp_hd = deplist->object_ptr;
+			dep_type = temp_hd->dependency_type;
+			dfs_hostdep_path(ary[dep_type - 1], temp_hd->dependent_host_ptr, dep_type, &errors);
+		}
 	}
 
 	if (verify_config)

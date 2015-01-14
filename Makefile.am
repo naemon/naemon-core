@@ -50,7 +50,7 @@ pkginclude_HEADERS = \
 	src/naemon/objects_common.h src/naemon/objectlist.h src/naemon/objects_command.h \
 	src/naemon/objects_contact.h src/naemon/objects_contactgroup.h \
 	src/naemon/objects_host.h src/naemon/objects_hostgroup.h \
-	src/naemon/objects_service.h \
+	src/naemon/objects_hostdependency.h src/naemon/objects_service.h \
 	src/naemon/objects_servicegroup.h \
 	src/naemon/objects_timeperiod.h \
 	src/naemon/workers.h		src/naemon/checks.h			src/naemon/flapping.h		src/naemon/nebcallbacks.h \
@@ -93,6 +93,7 @@ common_sources = \
 	src/naemon/objects_contactgroup.c src/naemon/objects_contactgroup.h \
 	src/naemon/objects_host.c src/naemon/objects_host.h \
 	src/naemon/objects_hostgroup.c src/naemon/objects_hostgroup.h \
+	src/naemon/objects_hostdependency.c src/naemon/objects_hostdependency.h \
 	src/naemon/objects_service.c src/naemon/objects_service.h \
 	src/naemon/objects_servicegroup.c src/naemon/objects_servicegroup.h \
 	src/naemon/objects_timeperiod.c src/naemon/objects_timeperiod.h \

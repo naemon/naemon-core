@@ -14,7 +14,7 @@ BASE_SOURCE = \
 	src/naemon/objects_command.c src/naemon/objects_contact.c \
 	src/naemon/objects_contactgroup.c src/naemon/objects_host.c \
 	src/naemon/objects_hostgroup.c \
-	src/naemon/objects_service.c \
+	src/naemon/objects_hostdependency.c src/naemon/objects_service.c \
 	src/naemon/objects_servicegroup.c src/naemon/objects_timeperiod.c \
 	src/naemon/perfdata.c src/naemon/query-handler.c \
 	src/naemon/sehandlers.c src/naemon/shared.c src/naemon/sretention.c \
