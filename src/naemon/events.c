@@ -258,16 +258,16 @@ int event_poll(void)
 	/* get next scheduled event */
 	evt = evheap_head(event_queue);
 
-	/* if we don't have any events to handle, exit */
-	if (!evt) {
-		log_debug_info(DEBUGL_EVENTS, 0, "There aren't any events that need to be handled! Exiting...\n");
-		return -1;
-	}
-	time_diff = timespec_msdiff(&evt->event_time, &current_time);
-	if (time_diff < 0)
-		time_diff = 0;
-	else if (time_diff >= 1500)
+	if (evt) {
+		time_diff = timespec_msdiff(&evt->event_time, &current_time);
+		if (time_diff < 0)
+			time_diff = 0;
+		else if (time_diff >= 1500)
+			time_diff = 1500;
+	} else {
+		/* no scheduled events at all? then we can afford quite a bit of sleeping */
 		time_diff = 1500;
+	}
 
 	if (!iobroker_push(nagios_iobs)) {
 		/* There is a backlog for data sending? Catch up at "idle
@@ -297,6 +297,13 @@ int event_poll(void)
 	 */
 	if (inputs > 0) {
 		log_debug_info(DEBUGL_EVENTS, 0, "Event was cancelled by iobroker input\n");
+		return 0;
+	}
+
+	/*
+	 * There were no timed events, so don't try to run them.
+	 */
+	if (!evt) {
 		return 0;
 	}
 
