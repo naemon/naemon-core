@@ -20,9 +20,6 @@ void handle_sigxfsz(void);				/* handle SIGXFSZ */
 int daemon_init(void);				     		/* switches to daemon mode */
 int drop_privileges(char *, char *);				/* drops privileges before startup */
 
-int my_system(char *, int, int *, double *, char **, int);         	/* executes a command via popen(), but also protects against timeouts */
-int my_system_r(nagios_macros *mac, char *, int, int *, double *, char **, int); /* thread-safe version of the above */
-
 int init_check_stats(void);
 int update_check_stats(int, time_t);
 int generate_check_stats(void);
@@ -32,7 +29,6 @@ int reset_variables(void);                           	/* reset all global variab
 void free_notification_list(void);		     	/* frees all memory allocated to the notification list */
 
 void sighandler(int);                                	/* handles signals */
-void my_system_sighandler(int);				/* handles timeouts when executing commands via my_system() */
 /* FIXME: unused? */
 char *get_next_string_from_buf(char *buf, int *start_index, int bufsize);
 int compare_strings(char *, char *);                    /* compares two strings for equality */
