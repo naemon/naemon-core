@@ -43,7 +43,7 @@ nobase_pkginclude_HEADERS = \
 	lib/dkhash.h    lib/libnaemon.h   lib/nspath.h   lib/snprintf.h \
 	lib/fanout.h    lib/libnagios.h   lib/nsutils.h  lib/squeue.h \
 	lib/iobroker.h  lib/lnae-utils.h  lib/pqueue.h   lib/t-utils.h \
-	lib/iocache.h   lib/lnag-utils.h  lib/runcmd.h   lib/worker.h \
+	lib/bufferqueue.h   lib/lnag-utils.h  lib/runcmd.h   lib/worker.h \
 	lib/rbtree.h
 
 pkginclude_HEADERS = \
@@ -130,11 +130,11 @@ lib_LTLIBRARIES = libnaemon.la
 # details on library version numbers https://www.sourceware.org/autobook/autobook/autobook_91.html
 libnaemon_la_LDFLAGS = -version-info 0:0:0
 libnaemon_la_SOURCES = $(pkginclude_HEADERS) \
-	lib/bitmap.c lib/dkhash.c lib/fanout.c lib/iobroker.c lib/iocache.c \
+	lib/bitmap.c lib/dkhash.c lib/fanout.c lib/iobroker.c lib/bufferqueue.c \
 	lib/kvvec.c lib/kvvec_ekvstr.c lib/nsock.c lib/nspath.c lib/nsutils.c lib/pqueue.c \
 	lib/rbtree.c lib/runcmd.c lib/snprintf.c lib/squeue.c lib/worker.c
 
-check_PROGRAMS = test-bitmap test-dkhash test-fanout test-iobroker test-iocache \
+check_PROGRAMS = test-bitmap test-dkhash test-fanout test-iobroker test-bufferqueue \
 	test-nsutils test-runcmd test-squeue
 
 LIBTEST_UTILS = lib/t-utils.c lib/t-utils.h
@@ -142,7 +142,7 @@ test_bitmap_SOURCES = lib/test-bitmap.c $(LIBTEST_UTILS)
 test_dkhash_SOURCES = lib/test-dkhash.c $(LIBTEST_UTILS)
 test_fanout_SOURCES = lib/test-fanout.c $(LIBTEST_UTILS)
 test_iobroker_SOURCES = lib/test-iobroker.c $(LIBTEST_UTILS)
-test_iocache_SOURCES = lib/test-iocache.c $(LIBTEST_UTILS)
+test_bufferqueue_SOURCES = lib/test-bufferqueue.c $(LIBTEST_UTILS)
 test_nsutils_SOURCES = lib/test-nsutils.c $(LIBTEST_UTILS)
 test_runcmd_SOURCES = lib/test-runcmd.c $(LIBTEST_UTILS)
 test_squeue_SOURCES = lib/test-squeue.c $(LIBTEST_UTILS)

@@ -112,7 +112,7 @@ extern int send_kvvec(int sd, struct kvvec *kvv)
  * @param[in] flags Currently unused
  * @return A buffer from the iocache on succes; NULL on errors
  */
-extern char *worker_ioc2msg(iocache *ioc, unsigned long *size, int flags);
+extern char *worker_ioc2msg(nm_bufferqueue *ioc, unsigned long *size, int flags);
 
 /**
  * Set some common socket options

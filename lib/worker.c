@@ -153,9 +153,12 @@ int send_kvvec(int sd, struct kvvec *kvv)
 	return worker_send_kvvec(sd, kvv);
 }
 
-char *worker_ioc2msg(iocache *ioc, unsigned long *size, int flags)
+char *worker_ioc2msg(nm_bufferqueue *bq, unsigned long *size, int flags)
 {
-	return iocache_use_delim(ioc, MSG_DELIM, MSG_DELIM_LEN, size);
+	char *res;
+	nm_bufferqueue_unshift_to_delim(bq, MSG_DELIM, MSG_DELIM_LEN, size, (void **)&res);
+	*size -= MSG_DELIM_LEN;
+	return res;
 }
 
 #define kvvec_add_long(kvv, key, value) \
@@ -528,7 +531,7 @@ int start_cmd(child_process *cp)
 	return 0;
 }
 
-static iocache *ioc;
+static nm_bufferqueue *bq;
 
 static child_process *parse_command_kvvec(struct kvvec *kvv)
 {
@@ -547,11 +550,6 @@ static child_process *parse_command_kvvec(struct kvvec *kvv)
 		return NULL;
 	}
 
-	/*
-	 * we must copy from the vector, since it points to data
-	 * found in the iocache where we read the command, which will
-	 * be overwritten when we receive one next
-	 */
 	for (i = 0; i < kvv->kv_pairs; i++) {
 		struct key_value *kv = &kvv->kv[i];
 		char *key = kv->key;
@@ -620,10 +618,10 @@ static int receive_command(int sd, int events, void *arg)
 	char *buf;
 	unsigned long size;
 
-	if (!ioc) {
-		ioc = iocache_create(512 * 1024);
+	if (!bq) {
+		bq = nm_bufferqueue_create();
 	}
-	ioc_ret = iocache_read(ioc, sd);
+	ioc_ret = nm_bufferqueue_read(bq, sd);
 
 	if (ioc_ret == 0) {
 		iobroker_close(iobs, sd);
@@ -639,12 +637,13 @@ static int receive_command(int sd, int events, void *arg)
 	 * now loop over all inbound messages in the iocache.
 	 * Since KV_TERMINATOR is a nul-byte, they're separated by 3 nuls
 	 */
-	while ((buf = iocache_use_delim(ioc, MSG_DELIM, MSG_DELIM_LEN, &size))) {
+	while (!nm_bufferqueue_unshift_to_delim(bq, MSG_DELIM, MSG_DELIM_LEN, &size, (void **)&buf)) {
 		struct kvvec *kvv;
 		/* we must copy vars here, as we preserve them for the response */
-		kvv = buf2kvvec(buf, (unsigned int)size, KV_SEP, PAIR_SEP, KVVEC_COPY);
+		kvv = buf2kvvec(buf, (unsigned int)size - MSG_DELIM_LEN, KV_SEP, PAIR_SEP, KVVEC_COPY);
 		if (kvv)
 			spawn_job(kvv, arg);
+		free(buf);
 	}
 
 	return 0;

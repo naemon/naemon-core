@@ -41,7 +41,7 @@ struct wproc_worker {
 	int jobs_running; /**< jobs running */
 	int jobs_started; /**< jobs started */
 	int job_index; /**< round-robin slot allocator (this wraps) */
-	iocache *ioc;  /**< iocache for reading from worker */
+	nm_bufferqueue *bq;  /**< bufferqueue for reading from worker */
 	fanout_table *jobs; /**< array of jobs */
 	struct wproc_list *wp_list;
 };
@@ -205,8 +205,8 @@ static int wproc_destroy(struct wproc_worker *wp, int flags)
 		return 0;
 
 	/* free all memory when either forcing or a worker called us */
-	iocache_destroy(wp->ioc);
-	wp->ioc = NULL;
+	nm_bufferqueue_destroy(wp->bq);
+	wp->bq = NULL;
 	nm_free(wp->name);
 	fanout_destroy(wp->jobs, fo_destroy_job);
 	wp->jobs = NULL;
@@ -430,14 +430,10 @@ static int handle_worker_result(int sd, int events, void *arg)
 	static struct kvvec kvv = KVVEC_INITIALIZER;
 	struct wproc_worker *wp = (struct wproc_worker *)arg;
 
-	if (iocache_capacity(wp->ioc) == 0) {
-		nm_log(NSLOG_RUNTIME_WARNING, "wproc: iocache_capacity() is 0 for worker %s.\n", wp->name);
-	}
-
-	ret = iocache_read(wp->ioc, wp->sd);
+	ret = nm_bufferqueue_read(wp->bq, wp->sd);
 
 	if (ret < 0) {
-		nm_log(NSLOG_RUNTIME_WARNING, "wproc: iocache_read() from %s returned %d: %s\n",
+		nm_log(NSLOG_RUNTIME_WARNING, "wproc: nm_bufferqueue_read() from %s returned %d: %s\n",
 		       wp->name, ret, strerror(errno));
 		return 0;
 	} else if (ret == 0) {
@@ -456,13 +452,14 @@ static int handle_worker_result(int sd, int events, void *arg)
 		wproc_destroy(wp, 0);
 		return 0;
 	}
-	while ((buf = worker_ioc2msg(wp->ioc, &size, 0))) {
+	while ((buf = worker_ioc2msg(wp->bq, &size, 0))) {
 		struct wproc_job *job;
 		wproc_result wpres;
 
 		/* log messages are handled first */
 		if (size > 5 && !memcmp(buf, "log=", 4)) {
 			nm_log(NSLOG_INFO_MESSAGE, "wproc: %s: %s\n", wp->name, buf + 4);
+			nm_free(buf);
 			continue;
 		}
 
@@ -471,8 +468,10 @@ static int handle_worker_result(int sd, int events, void *arg)
 			nm_log(NSLOG_RUNTIME_ERROR,
 			       "wproc: Failed to parse key/value vector from worker response with len %lu. First kv=%s",
 			       size, buf ? buf : "(NULL)");
+			nm_free(buf);
 			continue;
 		}
+		nm_free(buf);
 
 		memset(&wpres, 0, sizeof(wpres));
 		wpres.job_id = -1;
@@ -552,7 +551,7 @@ static int register_worker(int sd, char *buf, unsigned int len)
 	}
 
 	worker->sd = sd;
-	worker->ioc = iocache_create(1 * 1024 * 1024);
+	worker->bq = nm_bufferqueue_create();
 
 	iobroker_unregister(nagios_iobs, sd);
 	iobroker_register(nagios_iobs, sd, worker, handle_worker_result);
@@ -604,7 +603,7 @@ static int register_worker(int sd, char *buf, unsigned int len)
 	kvvec_destroy(info, 0);
 	nsock_printf_nul(sd, "OK");
 
-	/* signal query handler to release its iocache for this one */
+	/* signal query handler to release its bufferqueue for this one */
 	return QH_TAKEOVER;
 }
 
