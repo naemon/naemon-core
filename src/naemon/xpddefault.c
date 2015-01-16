@@ -139,12 +139,18 @@ int xpddefault_initialize_performance_data(const char *cfgfile)
 
 	/* periodically process the host perfdata file */
 	if (host_perfdata_file_processing_interval > 0 && host_perfdata_file_processing_command != NULL) {
-		schedule_event(host_perfdata_file_processing_interval, xpddefault_process_host_perfdata_file, NULL);
+		if (host_perfdata_file_pipe)
+			nm_log(NSLOG_RUNTIME_WARNING, "Warning: Host performance file is configured to be a pipe - ignoring host_perfdata_file_processing_interval");
+		else
+			schedule_event(host_perfdata_file_processing_interval, xpddefault_process_host_perfdata_file, NULL);
 	}
 
 	/* periodically process the service perfdata file */
 	if (service_perfdata_file_processing_interval > 0 && service_perfdata_file_processing_command != NULL) {
-		schedule_event(service_perfdata_file_processing_interval, xpddefault_process_service_perfdata_file, NULL);
+		if (service_perfdata_file_pipe)
+			nm_log(NSLOG_RUNTIME_WARNING, "Warning: Service performance file is configured to be a pipe - ignoring service_perfdata_file_processing_interval");
+		else
+			schedule_event(service_perfdata_file_processing_interval, xpddefault_process_service_perfdata_file, NULL);
 	}
 
 	/* save the host perf data file macro */
