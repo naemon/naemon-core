@@ -687,6 +687,8 @@ int main(int argc, char **argv)
 
 		registered_commands_init(200);
 		register_core_commands();
+		/* fire up command file worker */
+		launch_command_file_worker();
 		timing_point("Command file worker launched\n");
 
 #ifdef USE_EVENT_BROKER
@@ -723,6 +725,8 @@ int main(int argc, char **argv)
 		else if (sigrestart == TRUE)
 			broker_program_state(NEBTYPE_PROCESS_RESTART, NEBFLAG_USER_INITIATED, NEBATTR_RESTART_NORMAL, NULL);
 #endif
+
+		disconnect_command_file_worker();
 
 		/* save service and host state information */
 		save_state_information(FALSE);
