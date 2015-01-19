@@ -30,11 +30,14 @@ static int test_delimiter(const char *delim, size_t delim_len)
 	for (i = 0; sc[i].str; i++) {
 		nm_bufferqueue_push(bq, sc[i].str, sc[i].len);
 		nm_bufferqueue_push(bq, delim, delim_len);
+		test(!nm_bufferqueue_peek(bq, sc[i].len, NULL), "peek should succeed when it reads less than is in the buffer");
+		test(!nm_bufferqueue_peek(bq, delim_len, NULL), "peek should succeed when it reads less than is in the buffer");
 	}
 
 	for (i = 0; sc[i].str; i++) {
 		char *ptr = NULL;
 		unsigned long len = 0;
+		test(nm_bufferqueue_get_available(bq) >= sc[i].len + delim_len, "There should be data left");
 		nm_bufferqueue_unshift_to_delim(bq, delim, delim_len, &len, (void **)&ptr);
 		t_req(ptr != NULL);
 		test(len == sc[i].len + delim_len, "len check, delim '%s' on string %d(%s), expected %ld, was %ld", delim, i, sc[i].str, sc[i].len + delim_len, len);

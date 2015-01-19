@@ -98,7 +98,6 @@ int nm_bufferqueue_peek(nm_bufferqueue *bq, size_t size, void *buffer)
 				buffer + used,
 				current_buf->bqb_buf + current_buf->bqb_offset,
 				size);
-		current_buf->bqb_offset += size;
 	}
 
 	return 0;
