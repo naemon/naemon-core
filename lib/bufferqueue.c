@@ -105,7 +105,6 @@ int nm_bufferqueue_peek(nm_bufferqueue *bq, size_t size, void *buffer)
 
 int nm_bufferqueue_drop(nm_bufferqueue *bq, size_t size)
 {
-	size_t used = 0;
 	size_t left_in_buffer = 0;
 	if (!bq || bq->bq_available < size)
 		return -1;
@@ -114,12 +113,11 @@ int nm_bufferqueue_drop(nm_bufferqueue *bq, size_t size)
 	while ((left_in_buffer = bq->bq_front->bqb_bufsize - bq->bq_front->bqb_offset) <= size) {
 		struct bufferqueue_buffer *new_head = bq->bq_front->bqb_next;
 		size -= left_in_buffer;
-		used += left_in_buffer;
 		bufferqueue_buffer_destroy(bq->bq_front);
 		bq->bq_front = new_head;
+		bq->bq_available -= left_in_buffer;
 		if (!bq->bq_front) {
 			bq->bq_back = NULL;
-			bq->bq_available -= used;
 			if (!size)
 				return 0;
 			else
@@ -129,8 +127,8 @@ int nm_bufferqueue_drop(nm_bufferqueue *bq, size_t size)
 
 	if (size) {
 		bq->bq_front->bqb_offset += size;
+		bq->bq_available -= size;
 	}
-	bq->bq_available -= used;
 	return 0;
 }
 
