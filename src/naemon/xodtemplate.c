@@ -6114,7 +6114,7 @@ static int xodtemplate_register_hostgroup(void *hgrp, void *discard)
 		return OK;
 
 	/* add the  host group */
-	new_hostgroup = add_hostgroup(this_hostgroup->hostgroup_name, this_hostgroup->alias, this_hostgroup->notes, this_hostgroup->notes_url, this_hostgroup->action_url);
+	new_hostgroup = create_hostgroup(this_hostgroup->hostgroup_name, this_hostgroup->alias, this_hostgroup->notes, this_hostgroup->notes_url, this_hostgroup->action_url);
 
 	/* return with an error if we couldn't add the hostgroup */
 	if (new_hostgroup == NULL) {
@@ -6122,7 +6122,7 @@ static int xodtemplate_register_hostgroup(void *hgrp, void *discard)
 		return ERROR;
 	}
 
-	return OK;
+	return register_hostgroup(new_hostgroup);
 }
 
 
