@@ -58,6 +58,7 @@ extern int use_syslog;
 extern char *log_file;
 extern char *log_archive_path;
 extern int log_notifications;
+extern int enable_notification_suppression_reason_logging;
 extern int log_service_retries;
 extern int log_host_retries;
 extern int log_event_handlers;

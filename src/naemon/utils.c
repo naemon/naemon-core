@@ -70,6 +70,7 @@ int	use_syslog = DEFAULT_USE_SYSLOG;
 char *log_file = NULL;
 char *log_archive_path = NULL;
 int log_notifications = DEFAULT_NOTIFICATION_LOGGING;
+int enable_notification_suppression_reason_logging = DEFAULT_NSR_LOGGING;
 int log_service_retries = DEFAULT_LOG_SERVICE_RETRIES;
 int log_host_retries = DEFAULT_LOG_HOST_RETRIES;
 int log_event_handlers = DEFAULT_LOG_EVENT_HANDLERS;
@@ -2251,6 +2252,7 @@ int reset_variables(void)
 	log_host_retries = DEFAULT_LOG_HOST_RETRIES;
 	log_initial_states = DEFAULT_LOG_INITIAL_STATES;
 
+	enable_notification_suppression_reason_logging = DEFAULT_NSR_LOGGING;
 	log_notifications = DEFAULT_NOTIFICATION_LOGGING;
 	log_event_handlers = DEFAULT_LOG_EVENT_HANDLERS;
 	log_external_commands = DEFAULT_LOG_EXTERNAL_COMMANDS;
