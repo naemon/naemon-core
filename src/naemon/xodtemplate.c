@@ -6443,8 +6443,7 @@ static int xodtemplate_register_servicegroup(void *sgrp, void *discard)
 	if (this_servicegroup->register_object == FALSE)
 		return OK;
 
-	/* add the  service group */
-	new_servicegroup = add_servicegroup(this_servicegroup->servicegroup_name, this_servicegroup->alias, this_servicegroup->notes, this_servicegroup->notes_url, this_servicegroup->action_url);
+	new_servicegroup = create_servicegroup(this_servicegroup->servicegroup_name, this_servicegroup->alias, this_servicegroup->notes, this_servicegroup->notes_url, this_servicegroup->action_url);
 
 	/* return with an error if we couldn't add the servicegroup */
 	if (new_servicegroup == NULL) {
@@ -6452,7 +6451,7 @@ static int xodtemplate_register_servicegroup(void *sgrp, void *discard)
 		return ERROR;
 	}
 
-	return OK;
+	return register_servicegroup(new_servicegroup);
 }
 
 

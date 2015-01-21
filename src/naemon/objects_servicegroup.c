@@ -34,8 +34,7 @@ void destroy_objects_servicegroup()
 	num_objects.servicegroups = 0;
 }
 
-/* add a new service group to the list in memory */
-servicegroup *add_servicegroup(char *name, char *alias, char *notes, char *notes_url, char *action_url)
+servicegroup *create_servicegroup(char *name, char *alias, char *notes, char *notes_url, char *action_url)
 {
 	servicegroup *new_servicegroup = NULL;
 	int result = OK;
@@ -55,37 +54,36 @@ servicegroup *add_servicegroup(char *name, char *alias, char *notes, char *notes
 	new_servicegroup->notes_url = notes_url;
 	new_servicegroup->action_url = action_url;
 
-	/* add new service group to hash table */
-	if (result == OK) {
-		result = dkhash_insert(servicegroup_hash_table, new_servicegroup->group_name, NULL, new_servicegroup);
-		switch (result) {
-		case DKHASH_EDUPE:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Servicegroup '%s' has already been defined\n", name);
-			result = ERROR;
-			break;
-		case DKHASH_OK:
-			result = OK;
-			break;
-		default:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add servicegroup '%s' to hash table\n", name);
-			result = ERROR;
-			break;
-		}
-	}
-
 	/* handle errors */
 	if (result == ERROR) {
 		nm_free(new_servicegroup);
 		return NULL;
 	}
+	return new_servicegroup;
+}
 
+int register_servicegroup(servicegroup *new_servicegroup)
+{
+	int result = dkhash_insert(servicegroup_hash_table, new_servicegroup->group_name, NULL, new_servicegroup);
+	switch (result) {
+	case DKHASH_EDUPE:
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Servicegroup '%s' has already been defined\n", new_servicegroup->group_name);
+		return ERROR;
+		break;
+	case DKHASH_OK:
+		break;
+	default:
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add servicegroup '%s' to hash table\n", new_servicegroup->group_name);
+		return ERROR;
+		break;
+	}
 	new_servicegroup->id = num_objects.servicegroups++;
 	servicegroup_ary[new_servicegroup->id] = new_servicegroup;
 	if (new_servicegroup->id)
 		servicegroup_ary[new_servicegroup->id - 1]->next = new_servicegroup;
 	else
 		servicegroup_list = new_servicegroup;
-	return new_servicegroup;
+	return OK;
 }
 
 void destroy_servicegroup(servicegroup *this_servicegroup)
