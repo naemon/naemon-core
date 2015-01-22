@@ -38,7 +38,8 @@ int worker_set_sockopts(int sd, int bufsize)
 char *worker_ioc2msg(nm_bufferqueue *bq, unsigned long *size, int flags)
 {
 	char *res;
-	nm_bufferqueue_unshift_to_delim(bq, MSG_DELIM, MSG_DELIM_LEN, size, (void **)&res);
+	if (nm_bufferqueue_unshift_to_delim(bq, MSG_DELIM, MSG_DELIM_LEN, size, (void **)&res))
+		return NULL;
 	*size -= MSG_DELIM_LEN;
 	return res;
 }
