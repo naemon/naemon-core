@@ -459,7 +459,6 @@ static int handle_worker_result(int sd, int events, void *arg)
 			nm_free(buf);
 			continue;
 		}
-		nm_free(buf);
 
 		memset(&wpres, 0, sizeof(wpres));
 		wpres.job_id = -1;
@@ -470,6 +469,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 		job = get_job(wp, wpres.job_id);
 		if (!job) {
 			nm_log(NSLOG_RUNTIME_WARNING, "wproc: Job with id '%d' doesn't exist on %s.\n", wpres.job_id, wp->name);
+			nm_free(buf);
 			continue;
 		}
 
@@ -504,6 +504,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 		run_job_callback(job, &wpres, 0);
 
 		destroy_job(job);
+		nm_free(buf);
 	}
 
 	return 0;
