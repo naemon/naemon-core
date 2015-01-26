@@ -1173,7 +1173,6 @@ static int xodtemplate_init_trees(void)
 /* starts a new object definition */
 static int xodtemplate_begin_object_definition(char *input, int cfgfile, int start_line)
 {
-	int result = OK;
 	xodtemplate_timeperiod *new_timeperiod = NULL;
 	xodtemplate_command *new_command = NULL;
 	xodtemplate_contactgroup *new_contactgroup = NULL;
@@ -1189,106 +1188,8 @@ static int xodtemplate_begin_object_definition(char *input, int cfgfile, int sta
 	xodtemplate_hostextinfo *new_hostextinfo = NULL;
 	xodtemplate_serviceextinfo *new_serviceextinfo = NULL;
 
-	if (!strcmp(input, "service"))
+	if (!strcmp(input, "service")) {
 		xodtemplate_current_object_type = XODTEMPLATE_SERVICE;
-	else if (!strcmp(input, "host"))
-		xodtemplate_current_object_type = XODTEMPLATE_HOST;
-	else if (!strcmp(input, "command"))
-		xodtemplate_current_object_type = XODTEMPLATE_COMMAND;
-	else if (!strcmp(input, "contact"))
-		xodtemplate_current_object_type = XODTEMPLATE_CONTACT;
-	else if (!strcmp(input, "contactgroup"))
-		xodtemplate_current_object_type = XODTEMPLATE_CONTACTGROUP;
-	else if (!strcmp(input, "hostgroup"))
-		xodtemplate_current_object_type = XODTEMPLATE_HOSTGROUP;
-	else if (!strcmp(input, "servicegroup"))
-		xodtemplate_current_object_type = XODTEMPLATE_SERVICEGROUP;
-	else if (!strcmp(input, "timeperiod"))
-		xodtemplate_current_object_type = XODTEMPLATE_TIMEPERIOD;
-	else if (!strcmp(input, "servicedependency"))
-		xodtemplate_current_object_type = XODTEMPLATE_SERVICEDEPENDENCY;
-	else if (!strcmp(input, "serviceescalation"))
-		xodtemplate_current_object_type = XODTEMPLATE_SERVICEESCALATION;
-	else if (!strcmp(input, "hostdependency"))
-		xodtemplate_current_object_type = XODTEMPLATE_HOSTDEPENDENCY;
-	else if (!strcmp(input, "hostescalation"))
-		xodtemplate_current_object_type = XODTEMPLATE_HOSTESCALATION;
-	else if (!strcmp(input, "hostextinfo")) {
-		xodtemplate_current_object_type = XODTEMPLATE_HOSTEXTINFO;
-		nm_log(NSLOG_CONFIG_WARNING, "WARNING: Extinfo objects are deprecated and will be removed in future versions\n");
-	} else if (!strcmp(input, "serviceextinfo")) {
-		xodtemplate_current_object_type = XODTEMPLATE_SERVICEEXTINFO;
-		nm_log(NSLOG_CONFIG_WARNING, "WARNING: Extinfo objects are deprecated and will be removed in future versions\n");
-	} else {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid object definition type '%s' in file '%s' on line %d.\n", input, xodtemplate_config_file_name(cfgfile), start_line);
-		return ERROR;
-	}
-
-
-	/* add a new (blank) object */
-	switch (xodtemplate_current_object_type) {
-	case XODTEMPLATE_TIMEPERIOD:
-		xod_begin_def(timeperiod);
-		break;
-
-	case XODTEMPLATE_COMMAND:
-		xod_begin_def(command);
-		break;
-
-	case XODTEMPLATE_CONTACTGROUP:
-		xod_begin_def(contactgroup);
-		break;
-
-	case XODTEMPLATE_HOSTGROUP:
-		xod_begin_def(hostgroup);
-		break;
-
-	case XODTEMPLATE_SERVICEGROUP:
-		xod_begin_def(servicegroup);
-		break;
-
-	case XODTEMPLATE_SERVICEDEPENDENCY:
-		xod_begin_def(servicedependency);
-		break;
-
-	case XODTEMPLATE_SERVICEESCALATION:
-		xod_begin_def(serviceescalation);
-		new_serviceescalation->first_notification = -2;
-		new_serviceescalation->last_notification = -2;
-		break;
-
-	case XODTEMPLATE_CONTACT:
-		xod_begin_def(contact);
-		new_contact->minimum_value = 1;
-		new_contact->host_notifications_enabled = TRUE;
-		new_contact->service_notifications_enabled = TRUE;
-		new_contact->can_submit_commands = TRUE;
-		new_contact->retain_status_information = TRUE;
-		new_contact->retain_nonstatus_information = TRUE;
-		break;
-
-	case XODTEMPLATE_HOST:
-		xod_begin_def(host);
-		new_host->hourly_value = 1;
-		new_host->check_interval = 5.0;
-		new_host->retry_interval = 1.0;
-		new_host->active_checks_enabled = TRUE;
-		new_host->passive_checks_enabled = TRUE;
-		new_host->obsess = TRUE;
-		new_host->max_check_attempts = -2;
-		new_host->event_handler_enabled = TRUE;
-		new_host->flap_detection_enabled = TRUE;
-		new_host->flap_detection_options = OPT_ALL;
-		new_host->notifications_enabled = TRUE;
-		new_host->notification_interval = 30.0;
-		new_host->process_perf_data = TRUE;
-		new_host->x_2d = -1;
-		new_host->y_2d = -1;
-		new_host->retain_status_information = TRUE;
-		new_host->retain_nonstatus_information = TRUE;
-		break;
-
-	case XODTEMPLATE_SERVICE:
 		xod_begin_def(service);
 		new_service->hourly_value = 1;
 		new_service->initial_state = STATE_OK;
@@ -1309,34 +1210,82 @@ static int xodtemplate_begin_object_definition(char *input, int cfgfile, int sta
 
 		/* true service, so is not from host group */
 		new_service->is_from_hostgroup = 0;
-		break;
-
-	case XODTEMPLATE_HOSTDEPENDENCY:
+	} else if (!strcmp(input, "host")) {
+		xodtemplate_current_object_type = XODTEMPLATE_HOST;
+		xod_begin_def(host);
+		new_host->hourly_value = 1;
+		new_host->check_interval = 5.0;
+		new_host->retry_interval = 1.0;
+		new_host->active_checks_enabled = TRUE;
+		new_host->passive_checks_enabled = TRUE;
+		new_host->obsess = TRUE;
+		new_host->max_check_attempts = -2;
+		new_host->event_handler_enabled = TRUE;
+		new_host->flap_detection_enabled = TRUE;
+		new_host->flap_detection_options = OPT_ALL;
+		new_host->notifications_enabled = TRUE;
+		new_host->notification_interval = 30.0;
+		new_host->process_perf_data = TRUE;
+		new_host->x_2d = -1;
+		new_host->y_2d = -1;
+		new_host->retain_status_information = TRUE;
+		new_host->retain_nonstatus_information = TRUE;
+	} else if (!strcmp(input, "command")) {
+		xodtemplate_current_object_type = XODTEMPLATE_COMMAND;
+		xod_begin_def(command);
+	} else if (!strcmp(input, "contact")) {
+		xodtemplate_current_object_type = XODTEMPLATE_CONTACT;
+		xod_begin_def(contact);
+		new_contact->minimum_value = 1;
+		new_contact->host_notifications_enabled = TRUE;
+		new_contact->service_notifications_enabled = TRUE;
+		new_contact->can_submit_commands = TRUE;
+		new_contact->retain_status_information = TRUE;
+		new_contact->retain_nonstatus_information = TRUE;
+	} else if (!strcmp(input, "contactgroup")) {
+		xodtemplate_current_object_type = XODTEMPLATE_CONTACTGROUP;
+		xod_begin_def(contactgroup);
+	} else if (!strcmp(input, "hostgroup")) {
+		xodtemplate_current_object_type = XODTEMPLATE_HOSTGROUP;
+		xod_begin_def(hostgroup);
+	} else if (!strcmp(input, "servicegroup")) {
+		xodtemplate_current_object_type = XODTEMPLATE_SERVICEGROUP;
+		xod_begin_def(servicegroup);
+	} else if (!strcmp(input, "timeperiod")) {
+		xodtemplate_current_object_type = XODTEMPLATE_TIMEPERIOD;
+		xod_begin_def(timeperiod);
+	} else if (!strcmp(input, "servicedependency")) {
+		xodtemplate_current_object_type = XODTEMPLATE_SERVICEDEPENDENCY;
+		xod_begin_def(servicedependency);
+	} else if (!strcmp(input, "serviceescalation")) {
+		xodtemplate_current_object_type = XODTEMPLATE_SERVICEESCALATION;
+		xod_begin_def(serviceescalation);
+		new_serviceescalation->first_notification = -2;
+		new_serviceescalation->last_notification = -2;
+	} else if (!strcmp(input, "hostdependency")) {
+		xodtemplate_current_object_type = XODTEMPLATE_HOSTDEPENDENCY;
 		xod_begin_def(hostdependency);
-		break;
-
-	case XODTEMPLATE_HOSTESCALATION:
+	} else if (!strcmp(input, "hostescalation")) {
+		xodtemplate_current_object_type = XODTEMPLATE_HOSTESCALATION;
 		xod_begin_def(hostescalation);
 		new_hostescalation->first_notification = -2;
 		new_hostescalation->last_notification = -2;
-		break;
-
-	case XODTEMPLATE_HOSTEXTINFO:
+	} else if (!strcmp(input, "hostextinfo")) {
+		xodtemplate_current_object_type = XODTEMPLATE_HOSTEXTINFO;
+		nm_log(NSLOG_CONFIG_WARNING, "WARNING: Extinfo objects are deprecated and will be removed in future versions\n");
 		xod_begin_def(hostextinfo);
 		new_hostextinfo->x_2d = -1;
 		new_hostextinfo->y_2d = -1;
-		break;
-
-	case XODTEMPLATE_SERVICEEXTINFO:
+	} else if (!strcmp(input, "serviceextinfo")) {
+		xodtemplate_current_object_type = XODTEMPLATE_SERVICEEXTINFO;
+		nm_log(NSLOG_CONFIG_WARNING, "WARNING: Extinfo objects are deprecated and will be removed in future versions\n");
 		xod_begin_def(serviceextinfo);
-		break;
-
-	default:
+	} else {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid object definition type '%s' in file '%s' on line %d.\n", input, xodtemplate_config_file_name(cfgfile), start_line);
 		return ERROR;
-		break;
 	}
 
-	return result;
+	return OK;
 }
 #undef xod_begin_def /* we don't need this anymore */
 
