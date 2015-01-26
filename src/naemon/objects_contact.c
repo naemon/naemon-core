@@ -321,7 +321,7 @@ void fcache_contact(FILE *fp, contact *temp_contact)
 		fprintf(fp, "\temail\t%s\n", temp_contact->email);
 	if (temp_contact->pager)
 		fprintf(fp, "\tpager\t%s\n", temp_contact->pager);
-	for (x = 0; x < MAX_XODTEMPLATE_CONTACT_ADDRESSES; x++) {
+	for (x = 0; x < MAX_CONTACT_ADDRESSES; x++) {
 		if (temp_contact->address[x])
 			fprintf(fp, "\taddress%d\t%s\n", x + 1, temp_contact->address[x]);
 	}

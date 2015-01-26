@@ -6,6 +6,7 @@
 #endif
 
 #include "objects_timeperiod.h"
+#include "objects_contact.h"
 #include "objectlist.h"
 
 /*********** GENERAL DEFINITIONS ************/
@@ -13,8 +14,6 @@
 #define XODTEMPLATE_NULL                  "null"
 
 #define MAX_XODTEMPLATE_INPUT_BUFFER      1024
-
-#define MAX_XODTEMPLATE_CONTACT_ADDRESSES 6
 
 #define XODTEMPLATE_NONE                  0
 #define XODTEMPLATE_TIMEPERIOD            1
@@ -119,7 +118,7 @@ typedef struct xodtemplate_contact_struct {
     char      *contact_groups;
     char      *email;
     char      *pager;
-    char      *address[MAX_XODTEMPLATE_CONTACT_ADDRESSES];
+    char      *address[MAX_CONTACT_ADDRESSES];
     char      *host_notification_period;
     char      *host_notification_commands;
     int       host_notification_options;
@@ -137,7 +136,7 @@ typedef struct xodtemplate_contact_struct {
     char have_contact_groups;
     char have_email;
     char have_pager;
-    char have_address[MAX_XODTEMPLATE_CONTACT_ADDRESSES];
+    char have_address[MAX_CONTACT_ADDRESSES];
     char have_host_notification_period;
     char have_host_notification_commands;
     char have_service_notification_period;

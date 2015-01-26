@@ -329,7 +329,7 @@ static void xodtemplate_free_memory(void)
 			nm_free(this_contact->alias);
 			nm_free(this_contact->email);
 			nm_free(this_contact->pager);
-			for (x = 0; x < MAX_XODTEMPLATE_CONTACT_ADDRESSES; x++)
+			for (x = 0; x < MAX_CONTACT_ADDRESSES; x++)
 				nm_free(this_contact->address[x]);
 		}
 		nm_free(this_contact);
@@ -3944,7 +3944,7 @@ static int xodtemplate_resolve_contact(xodtemplate_contact *this_contact)
 
 		xod_inherit_str(this_contact, template_contact, email);
 		xod_inherit_str(this_contact, template_contact, pager);
-		for (x = 0; x < MAX_XODTEMPLATE_CONTACT_ADDRESSES; x++)
+		for (x = 0; x < MAX_CONTACT_ADDRESSES; x++)
 			xod_inherit_str(this_contact, template_contact, address[x]);
 
 		xodtemplate_get_inherited_string(&template_contact->have_contact_groups, &template_contact->contact_groups, &this_contact->have_contact_groups, &this_contact->contact_groups);
@@ -7527,7 +7527,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_contact->have_pager = TRUE;
 		} else if (strstr(variable, "address") == variable) {
 			x = atoi(variable + 7);
-			if (x < 1 || x > MAX_XODTEMPLATE_CONTACT_ADDRESSES)
+			if (x < 1 || x > MAX_CONTACT_ADDRESSES)
 				result = ERROR;
 			else if (strcmp(value, XODTEMPLATE_NULL)) {
 				temp_contact->address[x - 1] = nm_strdup(value);
