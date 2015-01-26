@@ -15,7 +15,7 @@
 int __nagios_object_structure_version = CURRENT_OBJECT_STRUCTURE_VERSION;
 
 /* read all host configuration data from external source */
-int read_object_config_data(const char *main_config_file, int options)
+int read_object_config_data(const char *main_config_file)
 {
 	int result = OK;
 
@@ -23,7 +23,7 @@ int read_object_config_data(const char *main_config_file, int options)
 	memset(&num_objects, 0, sizeof(num_objects));
 
 	/* read in data from all text host config files (template-based) */
-	result = xodtemplate_read_config_data(main_config_file, options);
+	result = xodtemplate_read_config_data(main_config_file);
 	return result;
 }
 

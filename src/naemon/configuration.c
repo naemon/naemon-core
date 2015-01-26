@@ -30,12 +30,9 @@ static objectlist *maincfg_dirs = NULL;
 int read_all_object_data(const char *main_config_file)
 {
 	int result = OK;
-	int options = 0;
-
-	options = READ_ALL_OBJECT_DATA;
 
 	/* read in all host configuration data from external sources */
-	result = read_object_config_data(main_config_file, options);
+	result = read_object_config_data(main_config_file);
 	if (result != OK)
 		return ERROR;
 
