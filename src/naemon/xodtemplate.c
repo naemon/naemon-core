@@ -2996,7 +2996,6 @@ static int xodtemplate_duplicate_services(void)
 	/* INDEXING STUFF FOR FAST SORT/SEARCH */
 	/***************************************/
 
-	/* First loop for single host service definition*/
 	for (temp_service = xodtemplate_service_list; temp_service != NULL; temp_service = temp_service->next) {
 		/* skip services that shouldn't be registered */
 		if (temp_service->register_object == FALSE)
@@ -3005,38 +3004,6 @@ static int xodtemplate_duplicate_services(void)
 		/* skip service definitions without enough data */
 		if (temp_service->host_name == NULL || temp_service->service_description == NULL)
 			continue;
-
-		if (temp_service->is_from_hostgroup) {
-			continue;
-		}
-
-
-		prev = rbtree_insert(xobject_tree[OBJTYPE_SERVICE], (void *)temp_service);
-		if (prev) {
-			nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for service '%s' on host '%s' (config file '%s', starting on line %d)\n", temp_service->service_description, temp_service->host_name, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
-			result = ERROR;
-		} else {
-			xodcount.services++;
-		}
-	}
-
-
-	/* second loop for host group service definition*/
-	for (temp_service = xodtemplate_service_list; temp_service != NULL; temp_service = temp_service->next) {
-
-		/* skip services that shouldn't be registered */
-		if (temp_service->register_object == FALSE)
-			continue;
-
-		/* skip service definitions without enough data */
-		if (temp_service->host_name == NULL || temp_service->service_description == NULL)
-			continue;
-
-		if (!temp_service->is_from_hostgroup) {
-			continue;
-		}
-
-		temp_service->is_from_hostgroup = 0;
 
 		prev = rbtree_insert(xobject_tree[OBJTYPE_SERVICE], (void *)temp_service);
 		if (prev) {
