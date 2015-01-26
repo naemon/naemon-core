@@ -111,9 +111,10 @@ static int update_notification_suppression_reason(enum NotificationSuppressionTy
 	return FALSE;
 }
 
-#define _log_nsr(S) if (update_notification_suppression_reason(type, objid, reason)) { \
-	nm_log(log_level, "%s NOTIFICATION SUPPRESSED: %s;%s", type_name, objname, S); \
-} else { log_debug_info(DEBUGL_NOTIFICATIONS, DEBUGV_BASIC, "%s NOTIFICATION SUPPRESSED: %s;%s", type_name, objname, S);}
+#define _log_nsr(S) if (enable_notification_suppression_reason_logging) { \
+	if (update_notification_suppression_reason(type, objid, reason)) { \
+		nm_log(log_level, "%s NOTIFICATION SUPPRESSED: %s;%s", type_name, objname, S); \
+	} else { log_debug_info(DEBUGL_NOTIFICATIONS, DEBUGV_BASIC, "%s NOTIFICATION SUPPRESSED: %s;%s", type_name, objname, S);}}
 void log_notification_suppression_reason(enum NotificationSuppressionReason reason,
 		enum NotificationSuppressionType type, void *primary_obj, void *secondary_obj)
 {

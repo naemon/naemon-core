@@ -290,7 +290,16 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 
 			log_notifications = (atoi(value) > 0) ? TRUE : FALSE;
 		}
+		else if (!strcmp(variable, "enable_notification_suppression_reason_logging")) {
+			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
+				nm_asprintf(&error_message, "Illegal value for enable_notification_suppression_reason_logging");
+				error = TRUE;
+				break;
+			}
 
+			enable_notification_suppression_reason_logging = (atoi(value) > 0) ? TRUE : FALSE;
+
+		}
 		else if (!strcmp(variable, "log_service_retries")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
