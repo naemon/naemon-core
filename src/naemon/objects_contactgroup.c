@@ -34,8 +34,7 @@ void destroy_objects_contactgroup()
 	num_objects.contacts = 0;
 }
 
-/* add a new contact group to the list in memory */
-contactgroup *add_contactgroup(char *name, char *alias)
+contactgroup *create_contactgroup(char *name, char *alias)
 {
 	contactgroup *new_contactgroup = NULL;
 	int result = OK;
@@ -52,28 +51,29 @@ contactgroup *add_contactgroup(char *name, char *alias)
 	new_contactgroup->group_name = name;
 	new_contactgroup->alias = alias ? alias : name;
 
-	/* add new contact group to hash table */
-	if (result == OK) {
-		result = dkhash_insert(contactgroup_hash_table, new_contactgroup->group_name, NULL, new_contactgroup);
-		switch (result) {
-		case DKHASH_EDUPE:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Contactgroup '%s' has already been defined\n", name);
-			result = ERROR;
-			break;
-		case DKHASH_OK:
-			result = OK;
-			break;
-		default:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add contactgroup '%s' to hash table\n", name);
-			result = ERROR;
-			break;
-		}
-	}
-
 	/* handle errors */
 	if (result == ERROR) {
 		free(new_contactgroup);
 		return NULL;
+	}
+
+	return new_contactgroup;
+}
+
+int register_contactgroup(contactgroup *new_contactgroup)
+{
+	int result = dkhash_insert(contactgroup_hash_table, new_contactgroup->group_name, NULL, new_contactgroup);
+	switch (result) {
+	case DKHASH_EDUPE:
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Contactgroup '%s' has already been defined\n", new_contactgroup->group_name);
+		return ERROR;
+		break;
+	case DKHASH_OK:
+		break;
+	default:
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add contactgroup '%s' to hash table\n", new_contactgroup->group_name);
+		return ERROR;
+		break;
 	}
 
 	new_contactgroup->id = num_objects.contactgroups++;
@@ -82,7 +82,7 @@ contactgroup *add_contactgroup(char *name, char *alias)
 		contactgroup_ary[new_contactgroup->id - 1]->next = new_contactgroup;
 	else
 		contactgroup_list = new_contactgroup;
-	return new_contactgroup;
+	return OK;
 }
 
 void destroy_contactgroup(contactgroup *this_contactgroup)

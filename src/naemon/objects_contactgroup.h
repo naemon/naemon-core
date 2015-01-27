@@ -34,7 +34,8 @@ struct contactgroupsmember {
 int init_objects_contactgroup(int elems);
 void destroy_objects_contactgroup(void);
 
-struct contactgroup *add_contactgroup(char *, char *);
+struct contactgroup *create_contactgroup(char *, char *);
+int register_contactgroup(contactgroup *new_contactgroup);
 void destroy_contactgroup(contactgroup *this_contactgroup);
 contactgroupsmember *add_contactgroup_to_object(contactgroupsmember **cg_list, const char *group_name);
 struct contactsmember *add_contact_to_contactgroup(contactgroup *, char *);
