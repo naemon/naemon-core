@@ -38,6 +38,8 @@ AS_IF([test "x$with_tests" != "xno"], [
 ])
 AM_CONDITIONAL([HAVE_CHECK], [test "x$with_tests" = "xyes"])
 
+PKG_CHECK_MODULES([GLIB], [glib-2.0])
+
 AM_MISSING_PROG([PROVE], [prove])
 AM_MISSING_PROG([GPERF], [gperf])
 AM_MISSING_PROG(HELP2MAN, help2man)
