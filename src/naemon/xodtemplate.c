@@ -5806,13 +5806,16 @@ static int xodtemplate_register_timeperiod(void *tprd, void *discard)
 		return OK;
 
 	/* add the timeperiod */
-	new_timeperiod = add_timeperiod(this_timeperiod->timeperiod_name, this_timeperiod->alias);
+	new_timeperiod = create_timeperiod(this_timeperiod->timeperiod_name, this_timeperiod->alias);
 
 	/* return with an error if we couldn't add the timeperiod */
 	if (new_timeperiod == NULL) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not register timeperiod (config file '%s', starting on line %d)\n", xodtemplate_config_file_name(this_timeperiod->_config_file), this_timeperiod->_start_line);
 		return ERROR;
 	}
+
+	if (register_timeperiod(new_timeperiod) != OK)
+		return ERROR;
 
 	/* add all exceptions to timeperiod */
 	for (x = 0; x < DATERANGE_TYPES; x++) {
