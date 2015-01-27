@@ -713,15 +713,6 @@ typedef struct xodtemplate_memberlist_struct {
 } xodtemplate_memberlist;
 
 
-/***** CHAINED HASH DATA STRUCTURES ******/
-
-typedef struct xodtemplate_service_cursor_struct {
-    int xodtemplate_service_iterator;
-    xodtemplate_service *current_xodtemplate_service;
-} xodtemplate_service_cursor;
-
-
-
 /********* FUNCTION DEFINITIONS **********/
 
 int xodtemplate_read_config_data(const char *, int);    /* top-level routine processes all config files */
