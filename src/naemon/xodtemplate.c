@@ -5932,14 +5932,16 @@ static int xodtemplate_register_contact(void *contact_, void *discard)
 	if (this_contact->register_object == FALSE)
 		return OK;
 
-	/* add the contact */
-	new_contact = add_contact(this_contact->contact_name, this_contact->alias, this_contact->email, this_contact->pager, this_contact->address, this_contact->service_notification_period, this_contact->host_notification_period, this_contact->service_notification_options, this_contact->host_notification_options, this_contact->host_notifications_enabled, this_contact->service_notifications_enabled, this_contact->can_submit_commands, this_contact->retain_status_information, this_contact->retain_nonstatus_information, this_contact->minimum_value);
+	new_contact = create_contact(this_contact->contact_name, this_contact->alias, this_contact->email, this_contact->pager, this_contact->address, this_contact->service_notification_period, this_contact->host_notification_period, this_contact->service_notification_options, this_contact->host_notification_options, this_contact->host_notifications_enabled, this_contact->service_notifications_enabled, this_contact->can_submit_commands, this_contact->retain_status_information, this_contact->retain_nonstatus_information, this_contact->minimum_value);
 
 	/* return with an error if we couldn't add the contact */
 	if (new_contact == NULL) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not register contact (config file '%s', starting on line %d)\n", xodtemplate_config_file_name(this_contact->_config_file), this_contact->_start_line);
 		return ERROR;
 	}
+
+	if (register_contact(new_contact) != OK)
+		return ERROR;
 
 	/* add all the host notification commands */
 	if (this_contact->host_notification_commands != NULL) {
