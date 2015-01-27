@@ -5907,8 +5907,7 @@ static int xodtemplate_register_command(void *cmnd, void *discard)
 	if (this_command->register_object == FALSE)
 		return OK;
 
-	/* add the command */
-	new_command = add_command(this_command->command_name, this_command->command_line);
+	new_command = create_command(this_command->command_name, this_command->command_line);
 
 	/* return with an error if we couldn't add the command */
 	if (new_command == NULL) {
@@ -5916,7 +5915,7 @@ static int xodtemplate_register_command(void *cmnd, void *discard)
 		return ERROR;
 	}
 
-	return OK;
+	return register_command(new_command);
 }
 
 

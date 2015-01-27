@@ -36,7 +36,8 @@ struct commandsmember {
 int init_objects_command(int elems);
 void destroy_objects_command(void);
 
-struct command *add_command(char *, char *);
+struct command *create_command(char *, char *);
+int register_command(command *new_command);
 void destroy_command(command *this_command);
 
 struct command *find_bang_command(char *);
