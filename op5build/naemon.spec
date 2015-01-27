@@ -28,14 +28,11 @@ BuildRequires: gperf, help2man
 BuildRequires: perl(Test::Simple)
 BuildRequires: perl(Test::Harness)
 %if 0%{?suse_version}
-Requires: php53
-Requires: apache2-mod_php53
 #The suse distribution of glibc <= 2.11.3-17.43
 #contains a dlclose/dlopen bug which caused globals
 #in neb modules to never become unmapped - leading
 #to weird behaviour on reload (HUP).
 Requires: glibc >= 2.11.3-17.43.1
-BuildRequires: apache2-mod_php53
 BuildRequires: pwdutils
 %else
 BuildRequires: shadow-utils
