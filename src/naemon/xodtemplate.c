@@ -1171,7 +1171,7 @@ static int xodtemplate_init_trees(void)
 
 
 /* starts a new object definition */
-static int xodtemplate_begin_object_definition(char *input, int options, int cfgfile, int start_line)
+static int xodtemplate_begin_object_definition(char *input, int cfgfile, int start_line)
 {
 	int result = OK;
 	xodtemplate_timeperiod *new_timeperiod = NULL;
@@ -1222,69 +1222,6 @@ static int xodtemplate_begin_object_definition(char *input, int options, int cfg
 	} else {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid object definition type '%s' in file '%s' on line %d.\n", input, xodtemplate_config_file_name(cfgfile), start_line);
 		return ERROR;
-	}
-
-	/* check to see if we should process this type of object */
-	switch (xodtemplate_current_object_type) {
-	case XODTEMPLATE_TIMEPERIOD:
-		if (!(options & READ_TIMEPERIODS))
-			return OK;
-		break;
-	case XODTEMPLATE_COMMAND:
-		if (!(options & READ_COMMANDS))
-			return OK;
-		break;
-	case XODTEMPLATE_CONTACT:
-		if (!(options & READ_CONTACTS))
-			return OK;
-		break;
-	case XODTEMPLATE_CONTACTGROUP:
-		if (!(options & READ_CONTACTGROUPS))
-			return OK;
-		break;
-	case XODTEMPLATE_HOST:
-		if (!(options & READ_HOSTS))
-			return OK;
-		break;
-	case XODTEMPLATE_HOSTGROUP:
-		if (!(options & READ_HOSTGROUPS))
-			return OK;
-		break;
-	case XODTEMPLATE_SERVICEGROUP:
-		if (!(options & READ_SERVICEGROUPS))
-			return OK;
-		break;
-	case XODTEMPLATE_SERVICE:
-		if (!(options & READ_SERVICES))
-			return OK;
-		break;
-	case XODTEMPLATE_SERVICEDEPENDENCY:
-		if (!(options & READ_SERVICEDEPENDENCIES))
-			return OK;
-		break;
-	case XODTEMPLATE_SERVICEESCALATION:
-		if (!(options & READ_SERVICEESCALATIONS))
-			return OK;
-		break;
-	case XODTEMPLATE_HOSTDEPENDENCY:
-		if (!(options & READ_HOSTDEPENDENCIES))
-			return OK;
-		break;
-	case XODTEMPLATE_HOSTESCALATION:
-		if (!(options & READ_HOSTESCALATIONS))
-			return OK;
-		break;
-	case XODTEMPLATE_HOSTEXTINFO:
-		if (!(options & READ_HOSTEXTINFO))
-			return OK;
-		break;
-	case XODTEMPLATE_SERVICEEXTINFO:
-		if (!(options & READ_SERVICEEXTINFO))
-			return OK;
-		break;
-	default:
-		return ERROR;
-		break;
 	}
 
 
@@ -1411,7 +1348,7 @@ static int xodtemplate_begin_object_definition(char *input, int options, int cfg
 		} \
 	} while(0)
 /* completes an object definition */
-static int xodtemplate_end_object_definition(int options)
+static int xodtemplate_end_object_definition(void)
 {
 	int result = OK;
 
@@ -7008,7 +6945,7 @@ static int xodtemplate_register_objects(void)
 
 
 /* adds a property to an object definition */
-static int xodtemplate_add_object_property(char *input, int options)
+static int xodtemplate_add_object_property(char *input)
 {
 	int result = OK;
 	struct rbnode *prev;
@@ -7037,69 +6974,6 @@ static int xodtemplate_add_object_property(char *input, int options)
 	/* should some object definitions be indexed immediately? */
 	if (use_precached_objects == TRUE)
 		force_index = TRUE;
-
-	/* check to see if we should process this type of object */
-	switch (xodtemplate_current_object_type) {
-	case XODTEMPLATE_TIMEPERIOD:
-		if (!(options & READ_TIMEPERIODS))
-			return OK;
-		break;
-	case XODTEMPLATE_COMMAND:
-		if (!(options & READ_COMMANDS))
-			return OK;
-		break;
-	case XODTEMPLATE_CONTACT:
-		if (!(options & READ_CONTACTS))
-			return OK;
-		break;
-	case XODTEMPLATE_CONTACTGROUP:
-		if (!(options & READ_CONTACTGROUPS))
-			return OK;
-		break;
-	case XODTEMPLATE_HOST:
-		if (!(options & READ_HOSTS))
-			return OK;
-		break;
-	case XODTEMPLATE_HOSTGROUP:
-		if (!(options & READ_HOSTGROUPS))
-			return OK;
-		break;
-	case XODTEMPLATE_SERVICEGROUP:
-		if (!(options & READ_SERVICEGROUPS))
-			return OK;
-		break;
-	case XODTEMPLATE_SERVICE:
-		if (!(options & READ_SERVICES))
-			return OK;
-		break;
-	case XODTEMPLATE_SERVICEDEPENDENCY:
-		if (!(options & READ_SERVICEDEPENDENCIES))
-			return OK;
-		break;
-	case XODTEMPLATE_SERVICEESCALATION:
-		if (!(options & READ_SERVICEESCALATIONS))
-			return OK;
-		break;
-	case XODTEMPLATE_HOSTDEPENDENCY:
-		if (!(options & READ_HOSTDEPENDENCIES))
-			return OK;
-		break;
-	case XODTEMPLATE_HOSTESCALATION:
-		if (!(options & READ_HOSTESCALATIONS))
-			return OK;
-		break;
-	case XODTEMPLATE_HOSTEXTINFO:
-		if (!(options & READ_HOSTEXTINFO))
-			return OK;
-		break;
-	case XODTEMPLATE_SERVICEEXTINFO:
-		if (!(options & READ_SERVICEEXTINFO))
-			return OK;
-		break;
-	default:
-		return ERROR;
-		break;
-	}
 
 	/* get variable name */
 	variable = input;
@@ -8817,9 +8691,9 @@ static int xodtemplate_add_object_property(char *input, int options)
 
 
 /* forward decl */
-static int xodtemplate_process_config_dir(char *dir_name, int options);
+static int xodtemplate_process_config_dir(char *dir_name);
 /* process data in a specific config file */
-static int xodtemplate_process_config_file(char *filename, int options)
+static int xodtemplate_process_config_file(char *filename)
 {
 	mmapfile *thefile = NULL;
 	char *input = NULL;
@@ -8907,7 +8781,7 @@ static int xodtemplate_process_config_file(char *filename, int options)
 			}
 
 			/* start a new definition */
-			if (xodtemplate_begin_object_definition(input, options, xodtemplate_current_config_file, current_line) == ERROR) {
+			if (xodtemplate_begin_object_definition(input, xodtemplate_current_config_file, current_line) == ERROR) {
 				nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add object definition in file '%s' on line %d.\n", filename, current_line);
 				result = ERROR;
 				break;
@@ -8925,7 +8799,7 @@ static int xodtemplate_process_config_file(char *filename, int options)
 				in_definition = FALSE;
 
 				/* close out current definition */
-				if (xodtemplate_end_object_definition(options) == ERROR) {
+				if (xodtemplate_end_object_definition() == ERROR) {
 					nm_log(NSLOG_CONFIG_ERROR, "Error: Could not complete object definition in file '%s' on line %d. Have you named all your objects?\n", filename, current_line);
 					result = ERROR;
 					break;
@@ -8936,7 +8810,7 @@ static int xodtemplate_process_config_file(char *filename, int options)
 			else {
 
 				/* add directive to object definition */
-				if (xodtemplate_add_object_property(input, options) == ERROR) {
+				if (xodtemplate_add_object_property(input) == ERROR) {
 					nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add object property in file '%s' on line %d.\n", filename, current_line);
 					result = ERROR;
 					break;
@@ -8951,7 +8825,7 @@ static int xodtemplate_process_config_file(char *filename, int options)
 			ptr = strtok(NULL, "\n");
 
 			if (ptr != NULL) {
-				result = xodtemplate_process_config_file(ptr, options);
+				result = xodtemplate_process_config_file(ptr);
 				if (result == ERROR)
 					break;
 			}
@@ -8964,7 +8838,7 @@ static int xodtemplate_process_config_file(char *filename, int options)
 			ptr = strtok(NULL, "\n");
 
 			if (ptr != NULL) {
-				result = xodtemplate_process_config_dir(ptr, options);
+				result = xodtemplate_process_config_dir(ptr);
 				if (result == ERROR)
 					break;
 			}
@@ -8993,7 +8867,7 @@ static int xodtemplate_process_config_file(char *filename, int options)
 
 
 /* process all files in a specific config directory */
-static int xodtemplate_process_config_dir(char *dir_name, int options)
+static int xodtemplate_process_config_dir(char *dir_name)
 {
 	char file[MAX_FILENAME_LENGTH];
 	DIR *dirp = NULL;
@@ -9038,7 +8912,7 @@ static int xodtemplate_process_config_dir(char *dir_name, int options)
 				break;
 
 			/* process the config file */
-			result = xodtemplate_process_config_file(file, options);
+			result = xodtemplate_process_config_file(file);
 
 			if (result == ERROR) {
 				closedir(dirp);
@@ -9049,7 +8923,7 @@ static int xodtemplate_process_config_dir(char *dir_name, int options)
 
 		case S_IFDIR:
 			/* recurse into subdirectories... */
-			result = xodtemplate_process_config_dir(file, options);
+			result = xodtemplate_process_config_dir(file);
 
 			if (result == ERROR) {
 				closedir(dirp);
@@ -9071,7 +8945,7 @@ static int xodtemplate_process_config_dir(char *dir_name, int options)
 
 
 /* process all config files - both core and CGIs pass in name of main config file */
-int xodtemplate_read_config_data(const char *main_config_file, int options)
+int xodtemplate_read_config_data(const char *main_config_file)
 {
 	int result = OK;
 
@@ -9113,16 +8987,16 @@ int xodtemplate_read_config_data(const char *main_config_file, int options)
 
 	/* only process the precached object file as long as we're not regenerating it and we're not verifying the config */
 	if (use_precached_objects == TRUE)
-		result = xodtemplate_process_config_file(object_precache_file, options);
+		result = xodtemplate_process_config_file(object_precache_file);
 
 	/* process object config files normally... */
 	else {
 		objectlist *entry;
 		for (entry = objcfg_files; entry; entry = entry->next) {
-			result |= xodtemplate_process_config_file(entry->object_ptr, options);
+			result |= xodtemplate_process_config_file(entry->object_ptr);
 		}
 		for (entry = objcfg_dirs; entry; entry = entry->next) {
-			result = xodtemplate_process_config_dir(entry->object_ptr, options);
+			result = xodtemplate_process_config_dir(entry->object_ptr);
 		}
 	}
 

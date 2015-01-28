@@ -715,7 +715,7 @@ typedef struct xodtemplate_memberlist_struct {
 
 /********* FUNCTION DEFINITIONS **********/
 
-int xodtemplate_read_config_data(const char *, int);    /* top-level routine processes all config files */
+int xodtemplate_read_config_data(const char *);    /* top-level routine processes all config files */
 
 NAGIOS_END_DECL
 
