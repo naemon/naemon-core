@@ -39,8 +39,7 @@ void destroy_objects_host()
 	num_objects.hosts = 0;
 }
 
-/* add a new host definition */
-host *add_host(char *name, char *display_name, char *alias, char *address, char *check_period, int initial_state, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, char *notification_period, int notifications_enabled, char *check_command, int checks_enabled, int accept_passive_checks, char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, char *notes, char *notes_url, char *action_url, char *icon_image, char *icon_image_alt, char *vrml_image, char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int should_be_drawn, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
+host *create_host(char *name, char *display_name, char *alias, char *address, char *check_period, int initial_state, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, char *notification_period, int notifications_enabled, char *check_command, int checks_enabled, int accept_passive_checks, char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, char *notes, char *notes_url, char *action_url, char *icon_image, char *icon_image_alt, char *vrml_image, char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int should_be_drawn, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
 {
 	host *new_host = NULL;
 	timeperiod *check_tp = NULL, *notify_tp = NULL;
@@ -145,28 +144,29 @@ host *add_host(char *name, char *display_name, char *alias, char *address, char 
 	new_host->notifications_enabled = (notifications_enabled > 0) ? TRUE : FALSE;
 	new_host->check_options = CHECK_OPTION_NONE;
 
-	/* add new host to hash table */
-	if (result == OK) {
-		result = dkhash_insert(host_hash_table, new_host->name, NULL, new_host);
-		switch (result) {
-		case DKHASH_EDUPE:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Host '%s' has already been defined\n", name);
-			result = ERROR;
-			break;
-		case DKHASH_OK:
-			result = OK;
-			break;
-		default:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add host '%s' to hash table\n", name);
-			result = ERROR;
-			break;
-		}
-	}
-
 	/* handle errors */
 	if (result == ERROR) {
 		nm_free(new_host);
 		return NULL;
+	}
+
+	return new_host;
+}
+
+int register_host(host *new_host)
+{
+	int result = dkhash_insert(host_hash_table, new_host->name, NULL, new_host);
+	switch (result) {
+	case DKHASH_EDUPE:
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Host '%s' has already been defined\n", new_host->name);
+		return ERROR;
+		break;
+	case DKHASH_OK:
+		break;
+	default:
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add host '%s' to hash table\n", new_host->name);
+		return ERROR;
+		break;
 	}
 
 	new_host->id = num_objects.hosts++;
@@ -175,7 +175,8 @@ host *add_host(char *name, char *display_name, char *alias, char *address, char 
 		host_ary[new_host->id - 1]->next = new_host;
 	else
 		host_list = new_host;
-	return new_host;
+
+	return OK;
 }
 
 void destroy_host(host *this_host)
