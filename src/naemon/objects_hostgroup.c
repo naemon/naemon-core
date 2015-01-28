@@ -35,8 +35,7 @@ void destroy_objects_hostgroup()
 	num_objects.hostgroups = 0;
 }
 
-/* add a new host group to the list in memory */
-hostgroup *add_hostgroup(char *name, char *alias, char *notes, char *notes_url, char *action_url)
+hostgroup *create_hostgroup(char *name, char *alias, char *notes, char *notes_url, char *action_url)
 {
 	hostgroup *new_hostgroup = NULL;
 	int result = OK;
@@ -56,37 +55,37 @@ hostgroup *add_hostgroup(char *name, char *alias, char *notes, char *notes_url, 
 	new_hostgroup->notes_url = notes_url;
 	new_hostgroup->action_url = action_url;
 
-	/* add new host group to hash table */
-	if (result == OK) {
-		result = dkhash_insert(hostgroup_hash_table, new_hostgroup->group_name, NULL, new_hostgroup);
-		switch (result) {
-		case DKHASH_EDUPE:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Hostgroup '%s' has already been defined\n", name);
-			result = ERROR;
-			break;
-		case DKHASH_OK:
-			result = OK;
-			break;
-		default:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add hostgroup '%s' to hash table\n", name);
-			result = ERROR;
-			break;
-		}
-	}
-
 	/* handle errors */
 	if (result == ERROR) {
 		free(new_hostgroup);
 		return NULL;
 	}
+	return new_hostgroup;
+}
 
+int register_hostgroup(hostgroup *new_hostgroup)
+{
+	int result = dkhash_insert(hostgroup_hash_table, new_hostgroup->group_name, NULL, new_hostgroup);
+	switch (result) {
+	case DKHASH_EDUPE:
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Hostgroup '%s' has already been defined\n", new_hostgroup->group_name);
+		return ERROR;
+		break;
+	case DKHASH_OK:
+		break;
+	default:
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add hostgroup '%s' to hash table\n", new_hostgroup->group_name);
+		return ERROR;
+		break;
+	}
 	new_hostgroup->id = num_objects.hostgroups++;
 	hostgroup_ary[new_hostgroup->id] = new_hostgroup;
 	if (new_hostgroup->id)
 		hostgroup_ary[new_hostgroup->id - 1]->next = new_hostgroup;
 	else
 		hostgroup_list = new_hostgroup;
-	return new_hostgroup;
+
+	return OK;
 }
 
 void destroy_hostgroup(hostgroup *this_hostgroup)
