@@ -39,8 +39,7 @@ void destroy_objects_service()
 	num_objects.services = 0;
 }
 
-/* add a new service to the list in memory */
-service *add_service(char *host_name, char *description, char *display_name, char *check_period, int initial_state, int max_attempts, int accept_passive_checks, double check_interval, double retry_interval, double notification_interval, double first_notification_delay, char *notification_period, int notification_options, int notifications_enabled, int is_volatile, char *event_handler, int event_handler_enabled, char *check_command, int checks_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, char *notes, char *notes_url, char *action_url, char *icon_image, char *icon_image_alt, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
+service *create_service(char *host_name, char *description, char *display_name, char *check_period, int initial_state, int max_attempts, int accept_passive_checks, double check_interval, double retry_interval, double notification_interval, double first_notification_delay, char *notification_period, int notification_options, int notifications_enabled, int is_volatile, char *event_handler, int event_handler_enabled, char *check_command, int checks_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, char *notes, char *notes_url, char *action_url, char *icon_image, char *icon_image_alt, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
 {
 	host *h;
 	timeperiod *cp = NULL, *np = NULL;
@@ -165,24 +164,6 @@ service *add_service(char *host_name, char *description, char *display_name, cha
 	new_service->state_type = HARD_STATE;
 	new_service->check_options = CHECK_OPTION_NONE;
 
-	/* add new service to hash table */
-	if (result == OK) {
-		result = dkhash_insert(service_hash_table, new_service->host_name, new_service->description, new_service);
-		switch (result) {
-		case DKHASH_EDUPE:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Service '%s' on host '%s' has already been defined\n", description, host_name);
-			result = ERROR;
-			break;
-		case DKHASH_OK:
-			result = OK;
-			break;
-		default:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add service '%s' on host '%s' to hash table\n", description, host_name);
-			result = ERROR;
-			break;
-		}
-	}
-
 	/* handle errors */
 	if (result == ERROR) {
 		nm_free(new_service->perf_data);
@@ -196,6 +177,31 @@ service *add_service(char *host_name, char *description, char *display_name, cha
 		return NULL;
 	}
 
+	return new_service;
+}
+
+int register_service(service *new_service)
+{
+	host *h;
+	int result = dkhash_insert(service_hash_table, new_service->host_name, new_service->description, new_service);
+	switch (result) {
+	case DKHASH_EDUPE:
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Service '%s' on host '%s' has already been defined\n", new_service->description, new_service->host_name);
+		return ERROR;
+		break;
+	case DKHASH_OK:
+		break;
+	default:
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add service '%s' on host '%s' to hash table\n", new_service->description, new_service->host_name);
+		return ERROR;
+		break;
+	}
+
+	if (!(h = find_host(new_service->host_name))) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Unable to locate host '%s' for service '%s'\n",
+		           new_service->host_name, new_service->description);
+		return ERROR;
+	}
 	add_service_link_to_host(h, new_service);
 
 	new_service->id = num_objects.services++;
@@ -204,7 +210,7 @@ service *add_service(char *host_name, char *description, char *display_name, cha
 		service_ary[new_service->id - 1]->next = new_service;
 	else
 		service_list = new_service;
-	return new_service;
+	return OK;
 }
 
 servicesmember *add_parent_service_to_service(service *svc, char *host_name, char *description)
