@@ -8,8 +8,9 @@
 #include "logging.h"
 #include "nm_alloc.h"
 #include <string.h>
+#include <glib.h>
 
-static dkhash_table *contact_hash_table = NULL;
+static GHashTable *contact_hash_table = NULL;
 contact *contact_list = NULL;
 contact **contact_ary = NULL;
 
@@ -21,7 +22,7 @@ int init_objects_contact(int elems)
 		return ERROR;
 	}
 	contact_ary = nm_calloc(elems, sizeof(contact*));
-	contact_hash_table = dkhash_create(elems * 1.5);
+	contact_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;
 }
 
@@ -33,7 +34,7 @@ void destroy_objects_contact()
 		destroy_contact(this_contact);
 	}
 	contact_list = NULL;
-	dkhash_destroy(contact_hash_table);
+	g_hash_table_destroy(contact_hash_table);
 	contact_hash_table = NULL;
 	nm_free(contact_ary);
 	num_objects.contacts = 0;
@@ -58,6 +59,10 @@ contact *create_contact(const char *name, const char *alias, const char *email, 
 	if (host_notification_period && !(htp = find_timeperiod(host_notification_period))) {
 		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Host notification period '%s' specified for contact '%s' is not defined anywhere!\n",
 		       host_notification_period, name);
+		return NULL;
+	}
+	if (find_contact(name)) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Contact '%s' has already been defined\n", name);
 		return NULL;
 	}
 
@@ -90,19 +95,12 @@ contact *create_contact(const char *name, const char *alias, const char *email, 
 
 int register_contact(contact *new_contact)
 {
-	int result = dkhash_insert(contact_hash_table, new_contact->name, NULL, new_contact);
-	switch (result) {
-	case DKHASH_EDUPE:
+	if ((find_contact(new_contact->name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Contact '%s' has already been defined\n", new_contact->name);
 		return ERROR;
-		break;
-	case DKHASH_OK:
-		break;
-	default:
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add contact '%s' to hash table\n", new_contact->name);
-		return ERROR;
-		break;
 	}
+
+	g_hash_table_insert(contact_hash_table, new_contact->name, new_contact);
 
 	new_contact->id = num_objects.contacts++;
 	contact_ary[new_contact->id] = new_contact;
@@ -272,7 +270,7 @@ contactsmember *add_contact_to_object(contactsmember **object_ptr, char *contact
 
 contact *find_contact(const char *name)
 {
-	return dkhash_get(contact_hash_table, name, NULL);
+	return g_hash_table_lookup(contact_hash_table, name);
 }
 
 void fcache_contactlist(FILE *fp, const char *prefix, contactsmember *list)

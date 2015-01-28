@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <string.h>
+#include <glib.h>
 
 /* A registered handler */
 struct query_handler {
@@ -26,7 +27,7 @@ static struct query_handler *qhandlers;
 static int qh_listen_sock = -1; /* the listening socket */
 static unsigned int qh_running;
 unsigned int qh_max_running = 0; /* defaults to unlimited */
-static dkhash_table *qh_table;
+static GHashTable *qh_table;
 
 /* the echo service. stupid, but useful for testing */
 static int qh_echo(int sd, char *buf, unsigned int len)
@@ -41,7 +42,7 @@ static int qh_echo(int sd, char *buf, unsigned int len)
 
 static struct query_handler *qh_find_handler(const char *name)
 {
-	return (struct query_handler *)dkhash_get(qh_table, name, NULL);
+	return g_hash_table_lookup(qh_table, name);
 }
 
 /* subset of http error codes */
@@ -220,12 +221,11 @@ static int qh_registration_input(int sd, int events, void *bq_)
 	return 0;
 }
 
-int qh_deregister_handler(const char *name)
+static void qh_remove(struct query_handler *qh)
 {
-	struct query_handler *qh, *next, *prev;
-
-	if (!(qh = dkhash_remove(qh_table, name, NULL)))
-		return 0;
+	struct query_handler *next, *prev;
+	if (!qh)
+		return;
 
 	next = qh->next_qh;
 	prev = qh->prev_qh;
@@ -236,15 +236,18 @@ int qh_deregister_handler(const char *name)
 	else
 		qhandlers = next;
 
-	free(qh);
+	nm_free(qh);
+}
 
+int qh_deregister_handler(const char *name)
+{
+	g_hash_table_remove(qh_table, name);
 	return 0;
 }
 
 int qh_register_handler(const char *name, const char *description, unsigned int options, qh_handler handler)
 {
 	struct query_handler *qh;
-	int result;
 
 	if (!name)
 		return -1;
@@ -275,33 +278,19 @@ int qh_register_handler(const char *name, const char *description, unsigned int 
 		qhandlers->prev_qh = qh;
 	qhandlers = qh;
 
-	result = dkhash_insert(qh_table, qh->name, NULL, qh);
-	if (result < 0) {
-		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to insert query handler '%s' (%p) into hash table %p (%d): %s\n",
-		       name, qh, qh_table, result, strerror(errno));
-		free(qh);
-		return result;
-	}
+	g_hash_table_insert(qh_table, nm_strdup(qh->name), qh);
 
 	return 0;
 }
 
 void qh_deinit(const char *path)
 {
-	struct query_handler *qh, *next;
-
-	for (qh = qhandlers; qh; qh = next) {
-		next = qh->next_qh;
-		qh_deregister_handler(qh->name);
-	}
-	dkhash_destroy(qh_table);
+	g_hash_table_destroy(qh_table);
 	qh_table = NULL;
 	qhandlers = NULL;
 
-	if (!path)
-		return;
-
-	unlink(path);
+	if (path)
+		unlink(path);
 }
 
 static int qh_help(int sd, char *buf, unsigned int len)
@@ -395,16 +384,12 @@ int qh_init(const char *path)
 	(void)fcntl(qh_listen_sock, F_SETFD, FD_CLOEXEC);
 
 	/* most likely overkill, but it's small, so... */
-	if (!(qh_table = dkhash_create(1024))) {
-		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to create hash table\n");
-		close(qh_listen_sock);
-		return ERROR;
-	}
-
+	qh_table = g_hash_table_new_full(g_str_hash, g_str_equal,
+					free, (GDestroyNotify) qh_remove);
 	errno = 0;
 	result = iobroker_register(nagios_iobs, qh_listen_sock, NULL, qh_registration_input);
 	if (result < 0) {
-		dkhash_destroy(qh_table);
+		g_hash_table_destroy(qh_table);
 		close(qh_listen_sock);
 		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to register socket with io broker: %s; errno=%d: %s\n", iobroker_strerror(result), errno, strerror(errno));
 		return ERROR;

@@ -4,8 +4,9 @@
 #include "nm_alloc.h"
 #include "logging.h"
 #include <string.h>
+#include <glib.h>
 
-static dkhash_table *contactgroup_hash_table = NULL;
+static GHashTable *contactgroup_hash_table = NULL;
 contactgroup *contactgroup_list = NULL;
 contactgroup **contactgroup_ary = NULL;
 
@@ -17,7 +18,7 @@ int init_objects_contactgroup(int elems)
 		return ERROR;
 	}
 	contactgroup_ary = nm_calloc(elems, sizeof(contactgroup*));
-	contactgroup_hash_table = dkhash_create(elems * 1.5);
+	contactgroup_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;
 }
 
@@ -29,7 +30,7 @@ void destroy_objects_contactgroup()
 		destroy_contactgroup(this_contactgroup);
 	}
 	contactgroup_list = NULL;
-	dkhash_destroy(contactgroup_hash_table);
+	g_hash_table_destroy(contactgroup_hash_table);
 	contactgroup_hash_table = NULL;
 	nm_free(contactgroup_ary);
 	num_objects.contacts = 0;
@@ -45,9 +46,13 @@ contactgroup *create_contactgroup(const char *name, const char *alias)
 		return NULL;
 	}
 
+	if (find_contactgroup(name)) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Contactgroup '%s' has already been defined\n", name);
+		return NULL;
+	}
+
 	new_contactgroup = nm_calloc(1, sizeof(*new_contactgroup));
 
-	/* assign vars */
 	new_contactgroup->group_name = name ? nm_strdup(name) : NULL;
 	new_contactgroup->alias = alias ? nm_strdup(alias) : new_contactgroup->group_name;
 
@@ -56,19 +61,12 @@ contactgroup *create_contactgroup(const char *name, const char *alias)
 
 int register_contactgroup(contactgroup *new_contactgroup)
 {
-	int result = dkhash_insert(contactgroup_hash_table, new_contactgroup->group_name, NULL, new_contactgroup);
-	switch (result) {
-	case DKHASH_EDUPE:
+	if ((find_contactgroup(new_contactgroup->group_name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Contactgroup '%s' has already been defined\n", new_contactgroup->group_name);
 		return ERROR;
-		break;
-	case DKHASH_OK:
-		break;
-	default:
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add contactgroup '%s' to hash table\n", new_contactgroup->group_name);
-		return ERROR;
-		break;
 	}
+
+	g_hash_table_insert(contactgroup_hash_table, new_contactgroup->group_name, new_contactgroup);
 
 	new_contactgroup->id = num_objects.contactgroups++;
 	contactgroup_ary[new_contactgroup->id] = new_contactgroup;
@@ -154,7 +152,7 @@ contactgroupsmember *add_contactgroup_to_object(contactgroupsmember **cg_list, c
 
 contactgroup *find_contactgroup(const char *name)
 {
-	return dkhash_get(contactgroup_hash_table, name, NULL);
+	return g_hash_table_lookup(contactgroup_hash_table, name);
 }
 
 /*

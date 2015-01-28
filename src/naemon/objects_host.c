@@ -12,7 +12,7 @@
 #include <string.h>
 #include <glib.h>
 
-static dkhash_table *host_hash_table = NULL;
+static GHashTable *host_hash_table = NULL;
 host *host_list = NULL;
 host **host_ary = NULL;
 
@@ -24,7 +24,7 @@ int init_objects_host(int elems)
 		return ERROR;
 	}
 	host_ary = nm_calloc(elems, sizeof(host*));
-	host_hash_table = dkhash_create(elems * 1.5);
+	host_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;
 }
 
@@ -36,7 +36,7 @@ void destroy_objects_host()
 		destroy_host(this_host);
 	}
 	host_list = NULL;
-	dkhash_destroy(host_hash_table);
+	g_hash_table_destroy(host_hash_table);
 	host_hash_table = NULL;
 	nm_free(host_ary);
 	num_objects.hosts = 0;
@@ -63,6 +63,11 @@ host *create_host(const char *name, const char *display_name, const char *alias,
 	/* make sure we have the data we need */
 	if (name == NULL || !strcmp(name, "")) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Host name is NULL\n");
+		return NULL;
+	}
+
+	if (find_host(name)) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Host '%s' has already been defined\n", name);
 		return NULL;
 	}
 
@@ -166,19 +171,12 @@ host *create_host(const char *name, const char *display_name, const char *alias,
 
 int register_host(host *new_host)
 {
-	int result = dkhash_insert(host_hash_table, new_host->name, NULL, new_host);
-	switch (result) {
-	case DKHASH_EDUPE:
+	if ((find_host(new_host->name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Host '%s' has already been defined\n", new_host->name);
 		return ERROR;
-		break;
-	case DKHASH_OK:
-		break;
-	default:
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add host '%s' to hash table\n", new_host->name);
-		return ERROR;
-		break;
 	}
+
+	g_hash_table_insert(host_hash_table, new_host->name, new_host);
 
 	new_host->id = num_objects.hosts++;
 	host_ary[new_host->id] = new_host;
@@ -272,7 +270,7 @@ void destroy_host(host *this_host)
 
 host *find_host(const char *name)
 {
-	return dkhash_get(host_hash_table, name, NULL);
+	return g_hash_table_lookup(host_hash_table, name);
 }
 
 const char *host_state_name(int state)

@@ -23,6 +23,7 @@
 
 /* perfect hash function for wproc response codes */
 #include "wpres-phash.h"
+#include <glib.h>
 
 struct wproc_worker;
 
@@ -58,7 +59,7 @@ struct wproc_list {
 
 static struct wproc_list workers = {0, 0, NULL};
 
-static dkhash_table *specialized_workers;
+static GHashTable *specialized_workers;
 static struct wproc_list *to_remove = NULL;
 
 unsigned int wproc_num_workers_online = 0, wproc_num_workers_desired = 0;
@@ -111,9 +112,9 @@ static struct wproc_list *get_wproc_list(const char *cmd)
 		slash = strrchr(cmd_name, '/');
 	}
 
-	wp_list = dkhash_get(specialized_workers, cmd_name ? cmd_name : cmd, NULL);
+	wp_list = g_hash_table_lookup(specialized_workers, cmd_name ? cmd_name : cmd);
 	if (!wp_list && slash) {
-		wp_list = dkhash_get(specialized_workers, ++slash, NULL);
+		wp_list = g_hash_table_lookup(specialized_workers, ++slash);
 	}
 	if (wp_list != NULL) {
 		log_debug_info(DEBUGL_CHECKS, 1, "Found specialized worker(s) for '%s'", (slash && *slash != '/') ? slash : cmd_name);
@@ -223,11 +224,9 @@ static int wproc_destroy(struct wproc_worker *wp, int flags)
 }
 
 /* remove the worker list pointed to by to_remove */
-static int remove_specialized(void *data)
+static gboolean remove_specialized(gpointer key, gpointer value, gpointer data)
 {
-	if (data == to_remove)
-		return DKHASH_WALK_REMOVE;
-	return 0;
+	return value == data;
 }
 
 /* remove worker from job assignment list */
@@ -246,7 +245,7 @@ static void remove_worker(struct wproc_worker *worker)
 		return;
 
 	to_remove = wpl;
-	dkhash_walk_data(specialized_workers, remove_specialized);
+	g_hash_table_foreach_remove(specialized_workers, remove_specialized, to_remove);
 }
 
 
@@ -269,9 +268,8 @@ void free_worker_memory(int flags)
 
 		free(workers.wps);
 	}
-	to_remove = NULL;
-	dkhash_walk_data(specialized_workers, remove_specialized);
-	dkhash_destroy(specialized_workers);
+	g_hash_table_foreach_remove(specialized_workers, remove_specialized, NULL);
+	g_hash_table_destroy(specialized_workers);
 	workers.wps = NULL;
 	workers.len = 0;
 	workers.idx = 0;
@@ -556,12 +554,12 @@ static int register_worker(int sd, char *buf, unsigned int len)
 		} else if (!strcmp(kv->key, "plugin")) {
 			struct wproc_list *command_handlers;
 			is_global = 0;
-			if (!(command_handlers = dkhash_get(specialized_workers, kv->value, NULL))) {
+			if (!(command_handlers = g_hash_table_lookup(specialized_workers, kv->value))) {
 				command_handlers = nm_calloc(1, sizeof(struct wproc_list));
 				command_handlers->wps = nm_calloc(1, sizeof(struct wproc_worker **));
 				command_handlers->len = 1;
 				command_handlers->wps[0] = worker;
-				dkhash_insert(specialized_workers, nm_strdup(kv->value), NULL, command_handlers);
+				g_hash_table_insert(specialized_workers, nm_strdup(kv->value), command_handlers);
 			} else {
 				command_handlers->len++;
 				command_handlers->wps = nm_realloc(command_handlers->wps, command_handlers->len * sizeof(struct wproc_worker **));
@@ -655,7 +653,9 @@ int init_workers(int desired_workers)
 	 * we register our query handler before launching workers,
 	 * so other workers can join us whenever they're ready
 	 */
-	specialized_workers = dkhash_create(512);
+	specialized_workers = g_hash_table_new_full(g_str_hash, g_str_equal,
+			free, NULL
+			);
 	if (!qh_register_handler("wproc", "Worker process management and info", 0, wproc_query_handler))
 		nm_log(NSLOG_INFO_MESSAGE, "wproc: Successfully registered manager as @wproc with query handler\n");
 	else

@@ -4,8 +4,9 @@
 #include "logging.h"
 #include "globals.h"
 #include <string.h>
+#include <glib.h>
 
-static dkhash_table *servicegroup_hash_table = NULL;
+static GHashTable *servicegroup_hash_table = NULL;
 servicegroup *servicegroup_list = NULL;
 servicegroup **servicegroup_ary = NULL;
 
@@ -17,7 +18,7 @@ int init_objects_servicegroup(int elems)
 		return ERROR;
 	}
 	servicegroup_ary = nm_calloc(elems, sizeof(servicegroup*));
-	servicegroup_hash_table = dkhash_create(elems * 1.5);
+	servicegroup_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;
 }
 
@@ -29,7 +30,7 @@ void destroy_objects_servicegroup()
 		destroy_servicegroup(this_servicegroup);
 	}
 	servicegroup_list = NULL;
-	dkhash_destroy(servicegroup_hash_table);
+	g_hash_table_destroy(servicegroup_hash_table);
 	servicegroup_hash_table = NULL;
 	nm_free(servicegroup_ary);
 	num_objects.servicegroups = 0;
@@ -43,6 +44,10 @@ servicegroup *create_servicegroup(const char *name, const char *alias, const cha
 	if (name == NULL || !strcmp(name, "")) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Servicegroup name is NULL\n");
 		return NULL;
+	}
+
+	if (find_servicegroup(name)) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Servicegroup '%s' has already been defined\n", name);
 	}
 
 	new_servicegroup = nm_calloc(1, sizeof(*new_servicegroup));
@@ -59,19 +64,13 @@ servicegroup *create_servicegroup(const char *name, const char *alias, const cha
 
 int register_servicegroup(servicegroup *new_servicegroup)
 {
-	int result = dkhash_insert(servicegroup_hash_table, new_servicegroup->group_name, NULL, new_servicegroup);
-	switch (result) {
-	case DKHASH_EDUPE:
+	if ((find_servicegroup(new_servicegroup->group_name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Servicegroup '%s' has already been defined\n", new_servicegroup->group_name);
 		return ERROR;
-		break;
-	case DKHASH_OK:
-		break;
-	default:
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add servicegroup '%s' to hash table\n", new_servicegroup->group_name);
-		return ERROR;
-		break;
 	}
+
+	g_hash_table_insert(servicegroup_hash_table, new_servicegroup->group_name, new_servicegroup);
+
 	new_servicegroup->id = num_objects.servicegroups++;
 	servicegroup_ary[new_servicegroup->id] = new_servicegroup;
 	if (new_servicegroup->id)
@@ -176,7 +175,7 @@ servicesmember *add_service_to_servicegroup(servicegroup *temp_servicegroup, cha
 
 servicegroup *find_servicegroup(const char *name)
 {
-	return dkhash_get(servicegroup_hash_table, name, NULL);
+	return g_hash_table_lookup(servicegroup_hash_table, name);
 }
 
 /*  tests whether a host is a member of a particular servicegroup */

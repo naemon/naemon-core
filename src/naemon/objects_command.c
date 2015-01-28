@@ -2,8 +2,9 @@
 #include "nm_alloc.h"
 #include "logging.h"
 #include <string.h>
+#include <glib.h>
 
-static dkhash_table *command_hash_table = NULL;
+static GHashTable *command_hash_table = NULL;
 command *command_list = NULL;
 command **command_ary = NULL;
 
@@ -15,7 +16,7 @@ int init_objects_command(int elems)
 		return ERROR;
 	}
 	command_ary = nm_calloc(elems, sizeof(command*));
-	command_hash_table = dkhash_create(elems * 1.5);
+	command_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;
 }
 
@@ -27,7 +28,7 @@ void destroy_objects_command()
 		destroy_command(this_command);
 	}
 	command_list = NULL;
-	dkhash_destroy(command_hash_table);
+	g_hash_table_destroy(command_hash_table);
 	command_hash_table = NULL;
 	nm_free(command_ary);
 	num_objects.commands = 0;
@@ -43,6 +44,10 @@ command *create_command(const char *name, const char *value)
 		return NULL;
 	}
 
+	if (find_command(name)) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Command '%s' has already been defined\n", name);
+		return NULL;
+	}
 	/* allocate memory for the new command */
 	new_command = nm_calloc(1, sizeof(*new_command));
 
@@ -56,19 +61,11 @@ command *create_command(const char *name, const char *value)
 int register_command(command *new_command)
 {
 	/* add new command to hash table */
-	int result = dkhash_insert(command_hash_table, new_command->name, NULL, new_command);
-	switch (result) {
-	case DKHASH_EDUPE:
+	if ((find_command(new_command->name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Command '%s' has already been defined\n", new_command->name);
 		return ERROR;
-		break;
-	case DKHASH_OK:
-		break;
-	default:
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add command '%s' to hash table\n", new_command->name);
-		return ERROR;
-		break;
 	}
+	g_hash_table_insert(command_hash_table, new_command->name, new_command);
 
 	new_command->id = num_objects.commands++;
 	command_ary[new_command->id] = new_command;
@@ -107,7 +104,7 @@ command *find_bang_command(char *name)
 
 command *find_command(const char *name)
 {
-	return dkhash_get(command_hash_table, name, NULL);
+	return g_hash_table_lookup(command_hash_table, name);
 }
 
 void fcache_command(FILE *fp, command *temp_command)

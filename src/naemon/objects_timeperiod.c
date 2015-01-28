@@ -2,8 +2,9 @@
 #include "nm_alloc.h"
 #include "logging.h"
 #include <string.h>
+#include <glib.h>
 
-static dkhash_table *timeperiod_hash_table = NULL;
+static GHashTable *timeperiod_hash_table = NULL;
 timeperiod **timeperiod_ary = NULL;
 timeperiod *timeperiod_list = NULL;
 
@@ -15,7 +16,7 @@ int init_objects_timeperiod(int elems)
 		return ERROR;
 	}
 	timeperiod_ary = nm_calloc(elems, sizeof(timeperiod*));
-	timeperiod_hash_table = dkhash_create(elems * 1.5);
+	timeperiod_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;
 }
 
@@ -27,7 +28,7 @@ void destroy_objects_timeperiod()
 		destroy_timeperiod(this_timeperiod);
 	}
 	timeperiod_list = NULL;
-	dkhash_destroy(timeperiod_hash_table);
+	g_hash_table_destroy(timeperiod_hash_table);
 	timeperiod_hash_table = NULL;
 	nm_free(timeperiod_ary);
 	num_objects.timeperiods = 0;
@@ -43,6 +44,10 @@ timeperiod *create_timeperiod(const char *name, const char *alias)
 		return NULL;
 	}
 
+	if (find_timeperiod(name)) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Timeperiod '%s' has already been defined\n", name);
+		return NULL;
+	}
 	new_timeperiod = nm_calloc(1, sizeof(*new_timeperiod));
 
 	/* copy string vars */
@@ -54,19 +59,12 @@ timeperiod *create_timeperiod(const char *name, const char *alias)
 
 int register_timeperiod(timeperiod *new_timeperiod)
 {
-	int result = dkhash_insert(timeperiod_hash_table, new_timeperiod->name, NULL, new_timeperiod);
-	switch (result) {
-	case DKHASH_EDUPE:
+	if ((find_timeperiod(new_timeperiod->name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Timeperiod '%s' has already been defined\n", new_timeperiod->name);
 		return ERROR;
-		break;
-	case DKHASH_OK:
-		break;
-	default:
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add timeperiod '%s' to hash table\n", new_timeperiod->name);
-		return ERROR;
-		break;
 	}
+
+	g_hash_table_insert(timeperiod_hash_table, new_timeperiod->name, new_timeperiod);
 
 	new_timeperiod->id = num_objects.timeperiods++;
 	if (new_timeperiod->id)
@@ -74,6 +72,7 @@ int register_timeperiod(timeperiod *new_timeperiod)
 	else
 		timeperiod_list = new_timeperiod;
 	timeperiod_ary[new_timeperiod->id] = new_timeperiod;
+
 	return OK;
 }
 
@@ -256,7 +255,7 @@ timerange *add_timerange_to_daterange(daterange *drange, unsigned long start_tim
 
 timeperiod *find_timeperiod(const char *name)
 {
-	return dkhash_get(timeperiod_hash_table, name, NULL);
+	return g_hash_table_lookup(timeperiod_hash_table, name);
 }
 
 static const char *timerange2str(const timerange *tr)

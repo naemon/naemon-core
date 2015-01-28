@@ -6,8 +6,9 @@
 #include "globals.h"
 #include "utils.h"
 #include <string.h>
+#include <glib.h>
 
-static dkhash_table *hostgroup_hash_table = NULL;
+static GHashTable *hostgroup_hash_table = NULL;
 hostgroup *hostgroup_list = NULL;
 hostgroup **hostgroup_ary = NULL;
 
@@ -19,7 +20,7 @@ int init_objects_hostgroup(int elems)
 		return ERROR;
 	}
 	hostgroup_ary = nm_calloc(elems, sizeof(hostgroup*));
-	hostgroup_hash_table = dkhash_create(elems * 1.5);
+	hostgroup_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;
 }
 
@@ -31,7 +32,7 @@ void destroy_objects_hostgroup()
 		destroy_hostgroup(this_hostgroup);
 	}
 	hostgroup_list = NULL;
-	dkhash_destroy(hostgroup_hash_table);
+	g_hash_table_destroy(hostgroup_hash_table);
 	hostgroup_hash_table = NULL;
 	nm_free(hostgroup_ary);
 	num_objects.hostgroups = 0;
@@ -44,6 +45,11 @@ hostgroup *create_hostgroup(const char *name, const char *alias, const char *not
 	/* make sure we have the data we need */
 	if (name == NULL || !strcmp(name, "")) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Hostgroup name is NULL\n");
+		return NULL;
+	}
+
+	if (find_hostgroup(name)) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Hostgroup '%s' has already been defined\n", name);
 		return NULL;
 	}
 
@@ -62,19 +68,13 @@ hostgroup *create_hostgroup(const char *name, const char *alias, const char *not
 
 int register_hostgroup(hostgroup *new_hostgroup)
 {
-	int result = dkhash_insert(hostgroup_hash_table, new_hostgroup->group_name, NULL, new_hostgroup);
-	switch (result) {
-	case DKHASH_EDUPE:
+	if ((find_host(new_hostgroup->group_name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Hostgroup '%s' has already been defined\n", new_hostgroup->group_name);
 		return ERROR;
-		break;
-	case DKHASH_OK:
-		break;
-	default:
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add hostgroup '%s' to hash table\n", new_hostgroup->group_name);
-		return ERROR;
-		break;
 	}
+
+	g_hash_table_insert(hostgroup_hash_table, new_hostgroup->group_name, new_hostgroup);
+
 	new_hostgroup->id = num_objects.hostgroups++;
 	hostgroup_ary[new_hostgroup->id] = new_hostgroup;
 	if (new_hostgroup->id)
@@ -118,7 +118,7 @@ int add_host_to_hostgroup(hostgroup *temp_hostgroup, host *h)
 
 hostgroup *find_hostgroup(const char *name)
 {
-	return dkhash_get(hostgroup_hash_table, name, NULL);
+	return g_hash_table_lookup(hostgroup_hash_table, name);
 }
 
 /*  tests whether a host is a member of a particular hostgroup */

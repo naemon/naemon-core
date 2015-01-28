@@ -9,10 +9,49 @@
 #include "nm_alloc.h"
 #include "logging.h"
 #include "globals.h"
+#include <glib.h>
 
-static dkhash_table *service_hash_table;
+static GHashTable *service_hash_table;
 service *service_list = NULL;
 service **service_ary = NULL;
+
+typedef struct {
+	char *hostname;
+	char *service_description;
+} service_key;
+
+gboolean nm_service_equal(gconstpointer a, gconstpointer b)
+{
+	const service_key *k1 = a, *k2 = b;
+	if (!k1 || !k2)
+		return (k1 == NULL && k2 == NULL);
+
+	if (!g_str_equal(k1->hostname, k2->hostname))
+		return FALSE;
+
+	return g_str_equal(k1->service_description, k2->service_description);
+}
+
+guint nm_service_hash(gconstpointer key)
+{
+	const service_key *k = key;
+	return (g_str_hash(k->hostname) ^ g_str_hash(k->service_description));
+}
+
+service_key * service_key_create(const char *hostname, const char *service_description)
+{
+	service_key *k = nm_malloc(sizeof(*k));
+	k->hostname = nm_strdup(hostname);
+	k->service_description = nm_strdup(service_description);
+	return k;
+}
+
+void service_key_destroy(service_key *k)
+{
+	nm_free(k->hostname);
+	nm_free(k->service_description);
+	nm_free(k);
+}
 
 int init_objects_service(int elems)
 {
@@ -22,7 +61,8 @@ int init_objects_service(int elems)
 		return ERROR;
 	}
 	service_ary = nm_calloc(elems, sizeof(service*));
-	service_hash_table = dkhash_create(elems * 1.5);
+	service_hash_table = g_hash_table_new_full(nm_service_hash, nm_service_equal,
+			(GDestroyNotify) service_key_destroy, NULL);
 	return OK;
 }
 
@@ -34,7 +74,7 @@ void destroy_objects_service()
 		destroy_service(this_service);
 	}
 	service_list = NULL;
-	dkhash_destroy(service_hash_table);
+	g_hash_table_destroy(service_hash_table);
 	service_hash_table = NULL;
 	nm_free(service_ary);
 	num_objects.services = 0;
@@ -54,6 +94,11 @@ service *create_service(const char *host_name, const char *description, const ch
 	if (!(h = find_host(host_name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Unable to locate host '%s' for service '%s'\n",
 		           host_name, description);
+		return NULL;
+	}
+
+	if (find_service(host_name, description)) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Service '%s' on host '%s' has already been defined\n", description, host_name);
 		return NULL;
 	}
 	if (description == NULL || !*description) {
@@ -170,19 +215,6 @@ service *create_service(const char *host_name, const char *description, const ch
 int register_service(service *new_service)
 {
 	host *h;
-	int result = dkhash_insert(service_hash_table, new_service->host_name, new_service->description, new_service);
-	switch (result) {
-	case DKHASH_EDUPE:
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Service '%s' on host '%s' has already been defined\n", new_service->description, new_service->host_name);
-		return ERROR;
-		break;
-	case DKHASH_OK:
-		break;
-	default:
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add service '%s' on host '%s' to hash table\n", new_service->description, new_service->host_name);
-		return ERROR;
-		break;
-	}
 
 	if (!(h = find_host(new_service->host_name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Unable to locate host '%s' for service '%s'\n",
@@ -191,12 +223,21 @@ int register_service(service *new_service)
 	}
 	add_service_link_to_host(h, new_service);
 
+	if ((find_service(new_service->host_name, new_service->description))) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Service '%s' on host '%s' has already been defined\n", new_service->description, new_service->host_name);
+		return ERROR;
+	}
+
+	g_hash_table_insert(service_hash_table,
+			service_key_create(new_service->host_name, new_service->description), new_service);
+
 	new_service->id = num_objects.services++;
 	service_ary[new_service->id] = new_service;
 	if (new_service->id)
 		service_ary[new_service->id - 1]->next = new_service;
 	else
 		service_list = new_service;
+
 	return OK;
 }
 
@@ -295,7 +336,7 @@ void destroy_service(service *this_service)
 
 service *find_service(const char *host_name, const char *svc_desc)
 {
-	return dkhash_get(service_hash_table, host_name, svc_desc);
+	return g_hash_table_lookup(service_hash_table, &((service_key){(char *)host_name, (char *)svc_desc}));
 }
 
 int get_service_count(void)
