@@ -32,7 +32,7 @@ void destroy_objects_timeperiod()
 	num_objects.timeperiods = 0;
 }
 
-timeperiod *add_timeperiod(char *name, char *alias)
+timeperiod *create_timeperiod(char *name, char *alias)
 {
 	timeperiod *new_timeperiod = NULL;
 	int result = OK;
@@ -49,28 +49,29 @@ timeperiod *add_timeperiod(char *name, char *alias)
 	new_timeperiod->name = name;
 	new_timeperiod->alias = alias ? alias : name;
 
-	/* add new timeperiod to hash table */
-	if (result == OK) {
-		result = dkhash_insert(timeperiod_hash_table, new_timeperiod->name, NULL, new_timeperiod);
-		switch (result) {
-		case DKHASH_EDUPE:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Timeperiod '%s' has already been defined\n", name);
-			result = ERROR;
-			break;
-		case DKHASH_OK:
-			result = OK;
-			break;
-		default:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add timeperiod '%s' to hash table\n", name);
-			result = ERROR;
-			break;
-		}
-	}
-
 	/* handle errors */
 	if (result == ERROR) {
 		free(new_timeperiod);
 		return NULL;
+	}
+
+	return new_timeperiod;
+}
+
+int register_timeperiod(timeperiod *new_timeperiod)
+{
+	int result = dkhash_insert(timeperiod_hash_table, new_timeperiod->name, NULL, new_timeperiod);
+	switch (result) {
+	case DKHASH_EDUPE:
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Timeperiod '%s' has already been defined\n", new_timeperiod->name);
+		return ERROR;
+		break;
+	case DKHASH_OK:
+		break;
+	default:
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add timeperiod '%s' to hash table\n", new_timeperiod->name);
+		return ERROR;
+		break;
 	}
 
 	new_timeperiod->id = num_objects.timeperiods++;
@@ -79,7 +80,7 @@ timeperiod *add_timeperiod(char *name, char *alias)
 	else
 		timeperiod_list = new_timeperiod;
 	timeperiod_ary[new_timeperiod->id] = new_timeperiod;
-	return new_timeperiod;
+	return OK;
 }
 
 void destroy_timeperiod(timeperiod *this_timeperiod)
