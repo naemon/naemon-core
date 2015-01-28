@@ -32,7 +32,7 @@ void destroy_objects_command()
 	num_objects.commands = 0;
 }
 
-command *add_command(char *name, char *value)
+command *create_command(char *name, char *value)
 {
 	command *new_command = NULL;
 	int result = OK;
@@ -50,28 +50,29 @@ command *add_command(char *name, char *value)
 	new_command->name = name;
 	new_command->command_line = value;
 
-	/* add new command to hash table */
-	if (result == OK) {
-		result = dkhash_insert(command_hash_table, new_command->name, NULL, new_command);
-		switch (result) {
-		case DKHASH_EDUPE:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Command '%s' has already been defined\n", name);
-			result = ERROR;
-			break;
-		case DKHASH_OK:
-			result = OK;
-			break;
-		default:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add command '%s' to hash table\n", name);
-			result = ERROR;
-			break;
-		}
-	}
-
 	/* handle errors */
 	if (result == ERROR) {
 		nm_free(new_command);
 		return NULL;
+	}
+	return new_command;
+}
+
+int register_command(command *new_command)
+{
+	/* add new command to hash table */
+	int result = dkhash_insert(command_hash_table, new_command->name, NULL, new_command);
+	switch (result) {
+	case DKHASH_EDUPE:
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Command '%s' has already been defined\n", new_command->name);
+		return ERROR;
+		break;
+	case DKHASH_OK:
+		break;
+	default:
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add command '%s' to hash table\n", new_command->name);
+		return ERROR;
+		break;
 	}
 
 	new_command->id = num_objects.commands++;
@@ -80,7 +81,8 @@ command *add_command(char *name, char *value)
 		command_ary[new_command->id - 1]->next = new_command;
 	else
 		command_list = new_command;
-	return new_command;
+
+	return OK;
 }
 
 void destroy_command(command *this_command)
