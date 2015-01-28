@@ -38,8 +38,7 @@ void destroy_objects_contact()
 	num_objects.contacts = 0;
 }
 
-/* add a new contact to the list in memory */
-contact *add_contact(char *name, char *alias, char *email, char *pager, char **addresses, char *svc_notification_period, char *host_notification_period, int service_notification_options, int host_notification_options, int host_notifications_enabled, int service_notifications_enabled, int can_submit_commands, int retain_status_information, int retain_nonstatus_information, unsigned int minimum_value)
+contact *create_contact(char *name, char *alias, char *email, char *pager, char **addresses, char *svc_notification_period, char *host_notification_period, int service_notification_options, int host_notification_options, int host_notifications_enabled, int service_notifications_enabled, int can_submit_commands, int retain_status_information, int retain_nonstatus_information, unsigned int minimum_value)
 {
 	contact *new_contact = NULL;
 	timeperiod *htp = NULL, *stp = NULL;
@@ -86,28 +85,29 @@ contact *add_contact(char *name, char *alias, char *email, char *pager, char **a
 	new_contact->retain_status_information = (retain_status_information > 0) ? TRUE : FALSE;
 	new_contact->retain_nonstatus_information = (retain_nonstatus_information > 0) ? TRUE : FALSE;
 
-	/* add new contact to hash table */
-	if (result == OK) {
-		result = dkhash_insert(contact_hash_table, new_contact->name, NULL, new_contact);
-		switch (result) {
-		case DKHASH_EDUPE:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Contact '%s' has already been defined\n", name);
-			result = ERROR;
-			break;
-		case DKHASH_OK:
-			result = OK;
-			break;
-		default:
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add contact '%s' to hash table\n", name);
-			result = ERROR;
-			break;
-		}
-	}
-
 	/* handle errors */
 	if (result == ERROR) {
 		free(new_contact);
 		return NULL;
+	}
+
+	return new_contact;
+}
+
+int register_contact(contact *new_contact)
+{
+	int result = dkhash_insert(contact_hash_table, new_contact->name, NULL, new_contact);
+	switch (result) {
+	case DKHASH_EDUPE:
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Contact '%s' has already been defined\n", new_contact->name);
+		return ERROR;
+		break;
+	case DKHASH_OK:
+		break;
+	default:
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add contact '%s' to hash table\n", new_contact->name);
+		return ERROR;
+		break;
 	}
 
 	new_contact->id = num_objects.contacts++;
@@ -116,7 +116,8 @@ contact *add_contact(char *name, char *alias, char *email, char *pager, char **a
 		contact_ary[new_contact->id - 1]->next = new_contact;
 	else
 		contact_list = new_contact;
-	return new_contact;
+
+	return OK;
 }
 
 void destroy_contact(contact *this_contact)
