@@ -5990,7 +5990,7 @@ static int xodtemplate_register_contactgroup(void *cgrp, void *discard)
 		return OK;
 
 	/* add the contact group */
-	new_contactgroup = add_contactgroup(this_contactgroup->contactgroup_name, this_contactgroup->alias);
+	new_contactgroup = create_contactgroup(this_contactgroup->contactgroup_name, this_contactgroup->alias);
 
 	/* return with an error if we couldn't add the contactgroup */
 	if (new_contactgroup == NULL) {
@@ -5998,7 +5998,7 @@ static int xodtemplate_register_contactgroup(void *cgrp, void *discard)
 		return ERROR;
 	}
 
-	return OK;
+	return register_contactgroup(new_contactgroup);
 }
 
 
