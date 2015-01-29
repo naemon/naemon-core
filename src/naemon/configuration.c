@@ -1838,11 +1838,6 @@ int pre_flight_object_check(int *w, int *e)
 #define DFS_UNCHECKED                    0  /* default value */
 #define DFS_TEMP_CHECKED                 1  /* check just one time */
 #define DFS_OK                           2  /* no problem */
-#define DFS_NEAR_LOOP                    3  /* has trouble sons */
-#define DFS_LOOPY                        4  /* is a part of a loop */
-
-#define dfs_get_status(obj) (obj ? ary[obj->id] : DFS_OK)
-#define dfs_set_status(obj, value) ary[obj->id] = (value)
 
 /**
  * Modified version of Depth-first Search
@@ -1871,48 +1866,36 @@ int pre_flight_object_check(int *w, int *e)
  * backwards, since core Nagios doesn't need the child pointer at
  * later stages.
  */
-static int dfs_servicedep_path(char *ary, service *root, int dep_type, int *errors)
+static int dfs_servicedep_path(char *ary, servicedependency *root)
 {
 	objectlist *olist;
-	int status;
 
-	status = dfs_get_status(root);
-	if (status != DFS_UNCHECKED)
-		return status;
+	if (!root)
+		return 0;
+	if (ary[root->id] == DFS_TEMP_CHECKED) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Circular %s dependency detected between service '%s;%s' and '%s;%s'\n",
+		       root->dependency_type == NOTIFICATION_DEPENDENCY ? "notification" : "execution",
+		       root->dependent_host_name, root->dependent_service_description,
+		       root->master_service_ptr->host_name, root->master_service_ptr->description);
+		return 1;
+	}
+	else if (ary[root->id] != DFS_UNCHECKED)
+		return ary[root->id] != DFS_OK;
 
-	dfs_set_status(root, DFS_TEMP_CHECKED);
 
-	if (dep_type == NOTIFICATION_DEPENDENCY) {
-		olist = root->notify_deps;
+	ary[root->id] = DFS_TEMP_CHECKED;
+
+	if (root->dependency_type == NOTIFICATION_DEPENDENCY) {
+		for (olist = root->master_service_ptr->notify_deps; olist; olist = olist->next) {
+			int ret = dfs_servicedep_path(ary, olist->object_ptr);
+			if (ret)
+				return ret;
+		}
 	} else {
-		olist = root->exec_deps;
-	}
-
-	if (!olist) { /* no children, so we can't be loopy */
-		dfs_set_status(root, DFS_OK);
-		return DFS_OK;
-	}
-	for (; olist; olist = olist->next) {
-		int child_status;
-		service *child;
-		servicedependency *child_dep = (servicedependency *)olist->object_ptr;
-
-		/* tree is upside down, so look to master */
-		child = child_dep->master_service_ptr;
-		child_status = dfs_servicedep_path(ary, child, dep_type, errors);
-
-		if (child_status == DFS_OK)
-			continue;
-
-		if (child_status == DFS_TEMP_CHECKED) {
-			nm_log(NSLOG_VERIFICATION_ERROR, "Error: Circular %s dependency detected for services '%s;%s' and '%s;%s'\n",
-			       dep_type == NOTIFICATION_DEPENDENCY ? "notification" : "execution",
-			       root->host_name, root->description,
-			       child->host_name, child->description);
-			(*errors)++;
-			dfs_set_status(child, DFS_LOOPY);
-			dfs_set_status(root, DFS_LOOPY);
-			continue;
+		for (olist = root->master_service_ptr->exec_deps; olist; olist = olist->next) {
+			int ret = dfs_servicedep_path(ary, olist->object_ptr);
+			if (ret)
+				return ret;
 		}
 	}
 
@@ -1920,48 +1903,42 @@ static int dfs_servicedep_path(char *ary, service *root, int dep_type, int *erro
 	 * if we've hit ourself, we'll have marked us as loopy
 	 * above, so if we're TEMP_CHECKED still we're ok
 	 */
-	if (dfs_get_status(root) == DFS_TEMP_CHECKED)
-		dfs_set_status(root, DFS_OK);
-	return dfs_get_status(root);
+	if (ary[root->id] == DFS_TEMP_CHECKED)
+		ary[root->id] = DFS_OK;
+	return ary[root->id] != DFS_OK;
 }
 
 
-static int dfs_hostdep_path(char *ary, host *root, int dep_type, int *errors)
+static int dfs_hostdep_path(char *ary, hostdependency *root)
 {
 	objectlist *olist;
-	int status;
 
-	status = dfs_get_status(root);
-	if (status != DFS_UNCHECKED)
-		return status;
+	if (!root)
+		return 0;
 
-	dfs_set_status(root, DFS_TEMP_CHECKED);
-
-	if (dep_type == NOTIFICATION_DEPENDENCY) {
-		olist = root->notify_deps;
-	} else {
-		olist = root->exec_deps;
+	if (ary[root->id] == DFS_TEMP_CHECKED) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Circular %s dependency detected between host '%s' and '%s'\n",
+		       root->dependency_type == NOTIFICATION_DEPENDENCY ? "notification" : "execution",
+		       root->dependent_host_name,
+		       root->master_host_ptr->name);
+		return 1;
 	}
+	else if (ary[root->id] != DFS_UNCHECKED)
+		return ary[root->id] != DFS_OK;
 
-	for (; olist; olist = olist->next) {
-		int child_status;
-		host *child;
-		hostdependency *child_dep = (hostdependency *)olist->object_ptr;
+	ary[root->id] = DFS_TEMP_CHECKED;
 
-		child = child_dep->master_host_ptr;
-		child_status = dfs_hostdep_path(ary, child, dep_type, errors);
-
-		if (child_status == DFS_OK)
-			continue;
-
-		if (child_status == DFS_TEMP_CHECKED) {
-			nm_log(NSLOG_VERIFICATION_ERROR, "Error: Circular %s dependency detected for hosts '%s' and '%s'\n",
-			       dep_type == NOTIFICATION_DEPENDENCY ? "notification" : "execution",
-			       root->name, child->name);
-			dfs_set_status(child, DFS_LOOPY);
-			dfs_set_status(root, DFS_LOOPY);
-			(*errors)++;
-			continue;
+	if (root->dependency_type == NOTIFICATION_DEPENDENCY) {
+		for (olist = root->master_host_ptr->notify_deps; olist; olist = olist->next) {
+			int ret = dfs_hostdep_path(ary, olist->object_ptr);
+			if (ret)
+				return ret;
+		}
+	} else {
+		for (olist = root->master_host_ptr->exec_deps; olist; olist = olist->next) {
+			int ret = dfs_hostdep_path(ary, olist->object_ptr);
+			if (ret)
+				return ret;
 		}
 	}
 
@@ -1969,80 +1946,71 @@ static int dfs_hostdep_path(char *ary, host *root, int dep_type, int *errors)
 	 * if we've hit ourself, we'll have marked us as loopy
 	 * above, so if we're still TEMP_CHECKED we're ok
 	 */
-	if (dfs_get_status(root) == DFS_TEMP_CHECKED)
-		dfs_set_status(root, DFS_OK);
-	return dfs_get_status(root);
+	if (ary[root->id] == DFS_TEMP_CHECKED)
+		ary[root->id] = DFS_OK;
+	return ary[root->id] != DFS_OK;
 }
 
 
-static int dfs_host_path(char *ary, host *root, int *errors)
+static int dfs_host_path(char *ary, host *root)
 {
 	hostsmember *child = NULL;
+	if (!root)
+		return 0;
 
-	if (dfs_get_status(root) != DFS_UNCHECKED)
-		return dfs_get_status(root);
+	if (ary[root->id] == DFS_TEMP_CHECKED) {
+		nm_log(
+			NSLOG_VERIFICATION_ERROR,
+			"Error: The host '%s' is part of a circular parent/child chain!",
+			root->name);
+		return 1;
+	}
+	else if (ary[root->id] != DFS_UNCHECKED)
+		return ary[root->id] != DFS_OK;
 
 	/* Mark the root temporary checked */
-	dfs_set_status(root, DFS_TEMP_CHECKED);
+	ary[root->id] = DFS_TEMP_CHECKED;
 
-	/* We are scanning the children */
 	for (child = root->child_hosts; child != NULL; child = child->next) {
-		int child_status = dfs_host_path(ary, child->host_ptr, errors);
-
-		/* we can move on quickly if child is ok */
-		if (child_status == DFS_OK)
-			continue;
-
-		/* If a child already temporary checked, its a problem,
-		 * loop inside, and its a acked status */
-		if (child_status == DFS_TEMP_CHECKED) {
-			nm_log(NSLOG_VERIFICATION_ERROR, "Error: The hosts '%s' and '%s' form or lead into a circular parent/child chain!",
-			       root->name, child->host_ptr->name);
-			(*errors)++;
-			dfs_set_status(child->host_ptr, DFS_LOOPY);
-			dfs_set_status(root, DFS_LOOPY);
-			continue;
-		}
+		int ret = dfs_host_path(ary, child->host_ptr);
+		if (ret)
+			return ret;
 	}
 
-	/*
-	 * If root have been modified, do not set it OK
-	 * A node is OK if and only if all of his children are OK
-	 * If it does not have child, goes ok
-	 */
-	if (dfs_get_status(root) == DFS_TEMP_CHECKED)
-		dfs_set_status(root, DFS_OK);
-	return dfs_get_status(root);
+	if (ary[root->id] == DFS_TEMP_CHECKED)
+		ary[root->id] = DFS_OK;
+
+	return ary[root->id] != DFS_OK;
 }
 
 
-static int dfs_timeperiod_path(char *ary, timeperiod *root, int *errors)
+static int dfs_timeperiod_path(char *ary, timeperiod *root)
 {
 	timeperiodexclusion *exc;
 
-	if (dfs_get_status(root) != DFS_UNCHECKED)
-		return dfs_get_status(root);
+	if (!root)
+		return 0;
+
+	if (ary[root->id] == DFS_TEMP_CHECKED) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: The timeperiod '%s' is part of a circular exclusion chain!",
+		       root->name);
+		return 1;
+	}
+	else if (ary[root->id] != DFS_UNCHECKED)
+		return ary[root->id] != DFS_OK;
 
 	/* Mark the root temporary checked */
-	dfs_set_status(root, DFS_TEMP_CHECKED);
+	ary[root->id] = DFS_TEMP_CHECKED;
 
 	for (exc = root->exclusions; exc; exc = exc->next) {
-		int child_status = dfs_timeperiod_path(ary, exc->timeperiod_ptr, errors);
-
-		if (child_status == DFS_TEMP_CHECKED) {
-			nm_log(NSLOG_VERIFICATION_ERROR, "Error: The timeperiods '%s' and '%s' form or lead into a circular exclusion chain!",
-			       root->name, exc->timeperiod_ptr->name);
-			(*errors)++;
-			dfs_set_status(exc->timeperiod_ptr, DFS_LOOPY);
-			dfs_set_status(root, DFS_LOOPY);
-			continue;
-		}
+		int ret = dfs_timeperiod_path(ary, exc->timeperiod_ptr);
+		if (ret)
+			return ret;
 	}
 
-	if (dfs_get_status(root) == DFS_TEMP_CHECKED)
-		dfs_set_status(root, DFS_OK);
-
-	return dfs_get_status(root);
+	if (ary[root->id] == DFS_TEMP_CHECKED)
+		ary[root->id] = DFS_OK;
+	return ary[root->id] != DFS_OK;
 }
 
 
@@ -2055,8 +2023,8 @@ int pre_flight_circular_check(int *w, int *e)
 	timeperiod *tp;
 	unsigned int i;
 	int errors = 0;
-	unsigned int alloc, dep_type;
-	char *ary[2];
+	unsigned int alloc;
+	char *ary;
 
 	if (num_objects.hosts > num_objects.services)
 		alloc = num_objects.hosts;
@@ -2064,10 +2032,12 @@ int pre_flight_circular_check(int *w, int *e)
 		alloc = num_objects.services;
 	if (num_objects.timeperiods > alloc)
 		alloc = num_objects.timeperiods;
+	if (num_objects.hostdependencies > alloc)
+		alloc = num_objects.hostdependencies;
+	if (num_objects.servicedependencies > alloc)
+		alloc = num_objects.servicedependencies;
 
-	for (i = 0; i < ARRAY_SIZE(ary); i++) {
-		ary[i] = nm_calloc(1, alloc);
-	}
+	ary = nm_calloc(1, alloc);
 
 
 	/********************************************/
@@ -2077,7 +2047,7 @@ int pre_flight_circular_check(int *w, int *e)
 		printf("Checking for circular paths...\n");
 
 	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
-		dfs_host_path(ary[0], temp_host, &errors);
+		errors += dfs_host_path(ary, temp_host);
 	}
 	if (verify_config)
 		printf("\tChecked %u hosts\n", num_objects.hosts);
@@ -2087,38 +2057,32 @@ int pre_flight_circular_check(int *w, int *e)
 	/********************************************/
 	/* check service dependencies */
 	/* We must clean the dfs status from previous check */
-	for (i = 0; i < ARRAY_SIZE(ary); i++)
-		memset(ary[i], 0, alloc);
+	memset(ary, 0, alloc);
 	for (i = 0; i < num_objects.services; i++) {
 		struct objectlist *deplist;
 		for (deplist = service_ary[i]->notify_deps; deplist; deplist = deplist->next) {
 			temp_sd = deplist->object_ptr;
-			dep_type = temp_sd->dependency_type;
-			dfs_servicedep_path(ary[dep_type - 1], temp_sd->dependent_service_ptr, dep_type, &errors);
+			errors += dfs_servicedep_path(ary, temp_sd);
 		}
 		for (deplist = service_ary[i]->exec_deps; deplist; deplist = deplist->next) {
 			temp_sd = deplist->object_ptr;
-			dep_type = temp_sd->dependency_type;
-			dfs_servicedep_path(ary[dep_type - 1], temp_sd->dependent_service_ptr, dep_type, &errors);
+			errors += dfs_servicedep_path(ary, temp_sd);
 		}
 	}
 	if (verify_config)
 		printf("\tChecked %u service dependencies\n", num_objects.servicedependencies);
 
 	/* check host dependencies */
-	for (i = 0; i < ARRAY_SIZE(ary); i++)
-		memset(ary[i], 0, alloc);
+	memset(ary, 0, alloc);
 	for (i = 0; i < num_objects.hosts; i++) {
 		struct objectlist *deplist;
 		for (deplist = host_ary[i]->notify_deps; deplist; deplist = deplist->next) {
 			temp_hd = deplist->object_ptr;
-			dep_type = temp_hd->dependency_type;
-			dfs_hostdep_path(ary[dep_type - 1], temp_hd->dependent_host_ptr, dep_type, &errors);
+			errors += dfs_hostdep_path(ary, temp_hd);
 		}
 		for (deplist = host_ary[i]->exec_deps; deplist; deplist = deplist->next) {
 			temp_hd = deplist->object_ptr;
-			dep_type = temp_hd->dependency_type;
-			dfs_hostdep_path(ary[dep_type - 1], temp_hd->dependent_host_ptr, dep_type, &errors);
+			errors += dfs_hostdep_path(ary, temp_hd);
 		}
 	}
 
@@ -2126,10 +2090,9 @@ int pre_flight_circular_check(int *w, int *e)
 		printf("\tChecked %u host dependencies\n", num_objects.hostdependencies);
 
 	/* check timeperiod exclusion chains */
-	for (i = 0; i < ARRAY_SIZE(ary); i++)
-		memset(ary[i], 0, alloc);
+	memset(ary, 0, alloc);
 	for (tp = timeperiod_list; tp; tp = tp->next) {
-		dfs_timeperiod_path(ary[0], tp, &errors);
+		errors += dfs_timeperiod_path(ary, tp);
 	}
 	if (verify_config)
 		printf("\tChecked %u timeperiods\n", num_objects.timeperiods);
@@ -2137,8 +2100,7 @@ int pre_flight_circular_check(int *w, int *e)
 	/* update warning and error count */
 	*e += errors;
 
-	for (i = 0; i < ARRAY_SIZE(ary); i++)
-		free(ary[i]);
+	free(ary);
 
 	return (errors > 0) ? ERROR : OK;
 }
