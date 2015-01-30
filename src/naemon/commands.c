@@ -43,6 +43,61 @@ static struct {
 	nm_bufferqueue *bq;
 } command_worker = { "command file", "command file worker", 0, 0, NULL };
 
+static void disable_service_checks(service *);			/* disables a service check */
+static void enable_service_checks(service *);			/* enables a service check */
+static void enable_all_notifications(void);                    /* enables notifications on a program-wide basis */
+static void disable_all_notifications(void);                   /* disables notifications on a program-wide basis */
+static void enable_service_notifications(service *);		/* enables service notifications */
+static void disable_service_notifications(service *);		/* disables service notifications */
+static void enable_host_notifications(host *);			/* enables host notifications */
+static void disable_host_notifications(host *);		/* disables host notifications */
+static void enable_and_propagate_notifications(host *, int, int, int, int);   /* enables notifications for all hosts and services beyond a given host */
+static void disable_and_propagate_notifications(host *, int, int, int, int);  /* disables notifications for all hosts and services beyond a given host */
+static void schedule_and_propagate_downtime(host *, time_t, char *, char *, time_t, time_t, int, unsigned long, unsigned long); /* schedules downtime for all hosts beyond a given host */
+static void acknowledge_host_problem(host *, char *, char *, int, int, int);	/* acknowledges a host problem */
+static void acknowledge_service_problem(service *, char *, char *, int, int, int);	/* acknowledges a service problem */
+static void remove_host_acknowledgement(host *);		/* removes a host acknowledgement */
+static void remove_service_acknowledgement(service *);		/* removes a service acknowledgement */
+static void start_executing_service_checks(void);		/* starts executing service checks */
+static void stop_executing_service_checks(void);		/* stops executing service checks */
+static void start_accepting_passive_service_checks(void);	/* starts accepting passive service check results */
+static void stop_accepting_passive_service_checks(void);	/* stops accepting passive service check results */
+static void enable_passive_service_checks(service *);	        /* enables passive service checks for a particular service */
+static void disable_passive_service_checks(service *);         /* disables passive service checks for a particular service */
+static void start_using_event_handlers(void);			/* enables event handlers on a program-wide basis */
+static void stop_using_event_handlers(void);			/* disables event handlers on a program-wide basis */
+static void enable_service_event_handler(service *);		/* enables the event handler for a particular service */
+static void disable_service_event_handler(service *);		/* disables the event handler for a particular service */
+static void enable_host_event_handler(host *);			/* enables the event handler for a particular host */
+static void disable_host_event_handler(host *);		/* disables the event handler for a particular host */
+static void enable_host_checks(host *);			/* enables checks of a particular host */
+static void disable_host_checks(host *);			/* disables checks of a particular host */
+static void start_obsessing_over_service_checks(void);		/* start obsessing about service check results */
+static void stop_obsessing_over_service_checks(void);		/* stop obsessing about service check results */
+static void start_obsessing_over_host_checks(void);		/* start obsessing about host check results */
+static void stop_obsessing_over_host_checks(void);		/* stop obsessing about host check results */
+static void enable_service_freshness_checks(void);		/* enable service freshness checks */
+static void disable_service_freshness_checks(void);		/* disable service freshness checks */
+static void enable_host_freshness_checks(void);		/* enable host freshness checks */
+static void disable_host_freshness_checks(void);		/* disable host freshness checks */
+static void enable_performance_data(void);                     /* enables processing of performance data on a program-wide basis */
+static void disable_performance_data(void);                    /* disables processing of performance data on a program-wide basis */
+static void start_executing_host_checks(void);			/* starts executing host checks */
+static void stop_executing_host_checks(void);			/* stops executing host checks */
+static void start_accepting_passive_host_checks(void);		/* starts accepting passive host check results */
+static void stop_accepting_passive_host_checks(void);		/* stops accepting passive host check results */
+static void enable_passive_host_checks(host *);	        /* enables passive host checks for a particular host */
+static void disable_passive_host_checks(host *);         	/* disables passive host checks for a particular host */
+static void start_obsessing_over_service(service *);		/* start obsessing about specific service check results */
+static void stop_obsessing_over_service(service *);		/* stop obsessing about specific service check results */
+static void start_obsessing_over_host(host *);			/* start obsessing about specific host check results */
+static void stop_obsessing_over_host(host *);			/* stop obsessing about specific host check results */
+static void set_host_notification_number(host *, int);		/* sets current notification number for a specific host */
+static void set_service_notification_number(service *, int);	/* sets current notification number for a specific service */
+static void enable_contact_host_notifications(contact *);      /* enables host notifications for a specific contact */
+static void disable_contact_host_notifications(contact *);     /* disables host notifications for a specific contact */
+static void enable_contact_service_notifications(contact *);   /* enables service notifications for a specific contact */
+static void disable_contact_service_notifications(contact *);  /* disables service notifications for a specific contact */
 
 /******************************************************************/
 /************* EXTERNAL COMMAND WORKER CONTROLLERS ****************/
@@ -3320,7 +3375,7 @@ int process_passive_host_check(time_t check_time, char *host_name, int return_co
 }
 
 /* temporarily disables a service check */
-void disable_service_checks(service *svc)
+static void disable_service_checks(service *svc)
 {
 	unsigned long attr = MODATTR_ACTIVE_CHECKS_ENABLED;
 
@@ -3348,7 +3403,7 @@ void disable_service_checks(service *svc)
 
 
 /* enables a service check */
-void enable_service_checks(service *svc)
+static void enable_service_checks(service *svc)
 {
 	unsigned long attr = MODATTR_ACTIVE_CHECKS_ENABLED;
 
@@ -3376,7 +3431,7 @@ void enable_service_checks(service *svc)
 
 
 /* enable notifications on a program-wide basis */
-void enable_all_notifications(void)
+static void enable_all_notifications(void)
 {
 	unsigned long attr = MODATTR_NOTIFICATIONS_ENABLED;
 
@@ -3404,7 +3459,7 @@ void enable_all_notifications(void)
 
 
 /* disable notifications on a program-wide basis */
-void disable_all_notifications(void)
+static void disable_all_notifications(void)
 {
 	unsigned long attr = MODATTR_NOTIFICATIONS_ENABLED;
 
@@ -3432,7 +3487,7 @@ void disable_all_notifications(void)
 
 
 /* enables notifications for a service */
-void enable_service_notifications(service *svc)
+static void enable_service_notifications(service *svc)
 {
 	unsigned long attr = MODATTR_NOTIFICATIONS_ENABLED;
 
@@ -3461,7 +3516,7 @@ void enable_service_notifications(service *svc)
 
 
 /* disables notifications for a service */
-void disable_service_notifications(service *svc)
+static void disable_service_notifications(service *svc)
 {
 	unsigned long attr = MODATTR_NOTIFICATIONS_ENABLED;
 
@@ -3490,7 +3545,7 @@ void disable_service_notifications(service *svc)
 
 
 /* enables notifications for a host */
-void enable_host_notifications(host *hst)
+static void enable_host_notifications(host *hst)
 {
 	unsigned long attr = MODATTR_NOTIFICATIONS_ENABLED;
 
@@ -3519,7 +3574,7 @@ void enable_host_notifications(host *hst)
 
 
 /* disables notifications for a host */
-void disable_host_notifications(host *hst)
+static void disable_host_notifications(host *hst)
 {
 	unsigned long attr = MODATTR_NOTIFICATIONS_ENABLED;
 
@@ -3548,7 +3603,7 @@ void disable_host_notifications(host *hst)
 
 
 /* enables notifications for all hosts and services "beyond" a given host */
-void enable_and_propagate_notifications(host *hst, int level, int affect_top_host, int affect_hosts, int affect_services)
+static void enable_and_propagate_notifications(host *hst, int level, int affect_top_host, int affect_hosts, int affect_services)
 {
 	host *child_host = NULL;
 	service *temp_service = NULL;
@@ -3586,7 +3641,7 @@ void enable_and_propagate_notifications(host *hst, int level, int affect_top_hos
 
 
 /* disables notifications for all hosts and services "beyond" a given host */
-void disable_and_propagate_notifications(host *hst, int level, int affect_top_host, int affect_hosts, int affect_services)
+static void disable_and_propagate_notifications(host *hst, int level, int affect_top_host, int affect_hosts, int affect_services)
 {
 	host *child_host = NULL;
 	service *temp_service = NULL;
@@ -3627,7 +3682,7 @@ void disable_and_propagate_notifications(host *hst, int level, int affect_top_ho
 
 
 /* enables host notifications for a contact */
-void enable_contact_host_notifications(contact *cntct)
+static void enable_contact_host_notifications(contact *cntct)
 {
 	unsigned long attr = MODATTR_NOTIFICATIONS_ENABLED;
 
@@ -3656,7 +3711,7 @@ void enable_contact_host_notifications(contact *cntct)
 
 
 /* disables host notifications for a contact */
-void disable_contact_host_notifications(contact *cntct)
+static void disable_contact_host_notifications(contact *cntct)
 {
 	unsigned long attr = MODATTR_NOTIFICATIONS_ENABLED;
 
@@ -3685,7 +3740,7 @@ void disable_contact_host_notifications(contact *cntct)
 
 
 /* enables service notifications for a contact */
-void enable_contact_service_notifications(contact *cntct)
+static void enable_contact_service_notifications(contact *cntct)
 {
 	unsigned long attr = MODATTR_NOTIFICATIONS_ENABLED;
 
@@ -3714,7 +3769,7 @@ void enable_contact_service_notifications(contact *cntct)
 
 
 /* disables service notifications for a contact */
-void disable_contact_service_notifications(contact *cntct)
+static void disable_contact_service_notifications(contact *cntct)
 {
 	unsigned long attr = MODATTR_NOTIFICATIONS_ENABLED;
 
@@ -3743,7 +3798,7 @@ void disable_contact_service_notifications(contact *cntct)
 
 
 /* schedules downtime for all hosts "beyond" a given host */
-void schedule_and_propagate_downtime(host *temp_host, time_t entry_time, char *author, char *comment_data, time_t start_time, time_t end_time, int fixed, unsigned long triggered_by, unsigned long duration)
+static void schedule_and_propagate_downtime(host *temp_host, time_t entry_time, char *author, char *comment_data, time_t start_time, time_t end_time, int fixed, unsigned long triggered_by, unsigned long duration)
 {
 	host *child_host = NULL;
 	hostsmember *temp_hostsmember = NULL;
@@ -3765,7 +3820,7 @@ void schedule_and_propagate_downtime(host *temp_host, time_t entry_time, char *a
 
 
 /* acknowledges a host problem */
-void acknowledge_host_problem(host *hst, char *ack_author, char *ack_data, int type, int notify, int persistent)
+static void acknowledge_host_problem(host *hst, char *ack_author, char *ack_data, int type, int notify, int persistent)
 {
 	time_t current_time = 0L;
 
@@ -3800,7 +3855,7 @@ void acknowledge_host_problem(host *hst, char *ack_author, char *ack_data, int t
 
 
 /* acknowledges a service problem */
-void acknowledge_service_problem(service *svc, char *ack_author, char *ack_data, int type, int notify, int persistent)
+static void acknowledge_service_problem(service *svc, char *ack_author, char *ack_data, int type, int notify, int persistent)
 {
 	time_t current_time = 0L;
 
@@ -3835,7 +3890,7 @@ void acknowledge_service_problem(service *svc, char *ack_author, char *ack_data,
 
 
 /* removes a host acknowledgement */
-void remove_host_acknowledgement(host *hst)
+static void remove_host_acknowledgement(host *hst)
 {
 
 	/* set the acknowledgement flag */
@@ -3852,7 +3907,7 @@ void remove_host_acknowledgement(host *hst)
 
 
 /* removes a service acknowledgement */
-void remove_service_acknowledgement(service *svc)
+static void remove_service_acknowledgement(service *svc)
 {
 
 	/* set the acknowledgement flag */
@@ -3869,7 +3924,7 @@ void remove_service_acknowledgement(service *svc)
 
 
 /* starts executing service checks */
-void start_executing_service_checks(void)
+static void start_executing_service_checks(void)
 {
 	unsigned long attr = MODATTR_ACTIVE_CHECKS_ENABLED;
 
@@ -3896,7 +3951,7 @@ void start_executing_service_checks(void)
 
 
 /* stops executing service checks */
-void stop_executing_service_checks(void)
+static void stop_executing_service_checks(void)
 {
 	unsigned long attr = MODATTR_ACTIVE_CHECKS_ENABLED;
 
@@ -3923,7 +3978,7 @@ void stop_executing_service_checks(void)
 
 
 /* starts accepting passive service checks */
-void start_accepting_passive_service_checks(void)
+static void start_accepting_passive_service_checks(void)
 {
 	unsigned long attr = MODATTR_PASSIVE_CHECKS_ENABLED;
 
@@ -3950,7 +4005,7 @@ void start_accepting_passive_service_checks(void)
 
 
 /* stops accepting passive service checks */
-void stop_accepting_passive_service_checks(void)
+static void stop_accepting_passive_service_checks(void)
 {
 	unsigned long attr = MODATTR_PASSIVE_CHECKS_ENABLED;
 
@@ -3977,7 +4032,7 @@ void stop_accepting_passive_service_checks(void)
 
 
 /* enables passive service checks for a particular service */
-void enable_passive_service_checks(service *svc)
+static void enable_passive_service_checks(service *svc)
 {
 	unsigned long attr = MODATTR_PASSIVE_CHECKS_ENABLED;
 
@@ -4006,7 +4061,7 @@ void enable_passive_service_checks(service *svc)
 
 
 /* disables passive service checks for a particular service */
-void disable_passive_service_checks(service *svc)
+static void disable_passive_service_checks(service *svc)
 {
 	unsigned long attr = MODATTR_PASSIVE_CHECKS_ENABLED;
 
@@ -4035,7 +4090,7 @@ void disable_passive_service_checks(service *svc)
 
 
 /* starts executing host checks */
-void start_executing_host_checks(void)
+static void start_executing_host_checks(void)
 {
 	unsigned long attr = MODATTR_ACTIVE_CHECKS_ENABLED;
 
@@ -4062,7 +4117,7 @@ void start_executing_host_checks(void)
 
 
 /* stops executing host checks */
-void stop_executing_host_checks(void)
+static void stop_executing_host_checks(void)
 {
 	unsigned long attr = MODATTR_ACTIVE_CHECKS_ENABLED;
 
@@ -4089,7 +4144,7 @@ void stop_executing_host_checks(void)
 
 
 /* starts accepting passive host checks */
-void start_accepting_passive_host_checks(void)
+static void start_accepting_passive_host_checks(void)
 {
 	unsigned long attr = MODATTR_PASSIVE_CHECKS_ENABLED;
 
@@ -4116,7 +4171,7 @@ void start_accepting_passive_host_checks(void)
 
 
 /* stops accepting passive host checks */
-void stop_accepting_passive_host_checks(void)
+static void stop_accepting_passive_host_checks(void)
 {
 	unsigned long attr = MODATTR_PASSIVE_CHECKS_ENABLED;
 
@@ -4143,7 +4198,7 @@ void stop_accepting_passive_host_checks(void)
 
 
 /* enables passive host checks for a particular host */
-void enable_passive_host_checks(host *hst)
+static void enable_passive_host_checks(host *hst)
 {
 	unsigned long attr = MODATTR_PASSIVE_CHECKS_ENABLED;
 
@@ -4172,7 +4227,7 @@ void enable_passive_host_checks(host *hst)
 
 
 /* disables passive host checks for a particular host */
-void disable_passive_host_checks(host *hst)
+static void disable_passive_host_checks(host *hst)
 {
 	unsigned long attr = MODATTR_PASSIVE_CHECKS_ENABLED;
 
@@ -4201,7 +4256,7 @@ void disable_passive_host_checks(host *hst)
 
 
 /* enables event handlers on a program-wide basis */
-void start_using_event_handlers(void)
+static void start_using_event_handlers(void)
 {
 	unsigned long attr = MODATTR_EVENT_HANDLER_ENABLED;
 
@@ -4229,7 +4284,7 @@ void start_using_event_handlers(void)
 
 
 /* disables event handlers on a program-wide basis */
-void stop_using_event_handlers(void)
+static void stop_using_event_handlers(void)
 {
 	unsigned long attr = MODATTR_EVENT_HANDLER_ENABLED;
 
@@ -4257,7 +4312,7 @@ void stop_using_event_handlers(void)
 
 
 /* enables the event handler for a particular service */
-void enable_service_event_handler(service *svc)
+static void enable_service_event_handler(service *svc)
 {
 	unsigned long attr = MODATTR_EVENT_HANDLER_ENABLED;
 
@@ -4286,7 +4341,7 @@ void enable_service_event_handler(service *svc)
 
 
 /* disables the event handler for a particular service */
-void disable_service_event_handler(service *svc)
+static void disable_service_event_handler(service *svc)
 {
 	unsigned long attr = MODATTR_EVENT_HANDLER_ENABLED;
 
@@ -4315,7 +4370,7 @@ void disable_service_event_handler(service *svc)
 
 
 /* enables the event handler for a particular host */
-void enable_host_event_handler(host *hst)
+static void enable_host_event_handler(host *hst)
 {
 	unsigned long attr = MODATTR_EVENT_HANDLER_ENABLED;
 
@@ -4344,7 +4399,7 @@ void enable_host_event_handler(host *hst)
 
 
 /* disables the event handler for a particular host */
-void disable_host_event_handler(host *hst)
+static void disable_host_event_handler(host *hst)
 {
 	unsigned long attr = MODATTR_EVENT_HANDLER_ENABLED;
 
@@ -4373,7 +4428,7 @@ void disable_host_event_handler(host *hst)
 
 
 /* disables checks of a particular host */
-void disable_host_checks(host *hst)
+static void disable_host_checks(host *hst)
 {
 	unsigned long attr = MODATTR_ACTIVE_CHECKS_ENABLED;
 
@@ -4402,7 +4457,7 @@ void disable_host_checks(host *hst)
 
 
 /* enables checks of a particular host */
-void enable_host_checks(host *hst)
+static void enable_host_checks(host *hst)
 {
 	unsigned long attr = MODATTR_ACTIVE_CHECKS_ENABLED;
 
@@ -4430,7 +4485,7 @@ void enable_host_checks(host *hst)
 
 
 /* start obsessing over service check results */
-void start_obsessing_over_service_checks(void)
+static void start_obsessing_over_service_checks(void)
 {
 	unsigned long attr = MODATTR_OBSESSIVE_HANDLER_ENABLED;
 
@@ -4457,7 +4512,7 @@ void start_obsessing_over_service_checks(void)
 
 
 /* stop obsessing over service check results */
-void stop_obsessing_over_service_checks(void)
+static void stop_obsessing_over_service_checks(void)
 {
 	unsigned long attr = MODATTR_OBSESSIVE_HANDLER_ENABLED;
 
@@ -4484,7 +4539,7 @@ void stop_obsessing_over_service_checks(void)
 
 
 /* start obsessing over host check results */
-void start_obsessing_over_host_checks(void)
+static void start_obsessing_over_host_checks(void)
 {
 	unsigned long attr = MODATTR_OBSESSIVE_HANDLER_ENABLED;
 
@@ -4511,7 +4566,7 @@ void start_obsessing_over_host_checks(void)
 
 
 /* stop obsessing over host check results */
-void stop_obsessing_over_host_checks(void)
+static void stop_obsessing_over_host_checks(void)
 {
 	unsigned long attr = MODATTR_OBSESSIVE_HANDLER_ENABLED;
 
@@ -4538,7 +4593,7 @@ void stop_obsessing_over_host_checks(void)
 
 
 /* enables service freshness checking */
-void enable_service_freshness_checks(void)
+static void enable_service_freshness_checks(void)
 {
 	unsigned long attr = MODATTR_FRESHNESS_CHECKS_ENABLED;
 
@@ -4565,7 +4620,7 @@ void enable_service_freshness_checks(void)
 
 
 /* disables service freshness checking */
-void disable_service_freshness_checks(void)
+static void disable_service_freshness_checks(void)
 {
 	unsigned long attr = MODATTR_FRESHNESS_CHECKS_ENABLED;
 
@@ -4592,7 +4647,7 @@ void disable_service_freshness_checks(void)
 
 
 /* enables host freshness checking */
-void enable_host_freshness_checks(void)
+static void enable_host_freshness_checks(void)
 {
 	unsigned long attr = MODATTR_FRESHNESS_CHECKS_ENABLED;
 
@@ -4619,7 +4674,7 @@ void enable_host_freshness_checks(void)
 
 
 /* disables host freshness checking */
-void disable_host_freshness_checks(void)
+static void disable_host_freshness_checks(void)
 {
 	unsigned long attr = MODATTR_FRESHNESS_CHECKS_ENABLED;
 
@@ -4646,7 +4701,7 @@ void disable_host_freshness_checks(void)
 
 
 /* enable performance data on a program-wide basis */
-void enable_performance_data(void)
+static void enable_performance_data(void)
 {
 	unsigned long attr = MODATTR_PERFORMANCE_DATA_ENABLED;
 
@@ -4673,7 +4728,7 @@ void enable_performance_data(void)
 
 
 /* disable performance data on a program-wide basis */
-void disable_performance_data(void)
+static void disable_performance_data(void)
 {
 	unsigned long attr = MODATTR_PERFORMANCE_DATA_ENABLED;
 
@@ -4700,7 +4755,7 @@ void disable_performance_data(void)
 
 
 /* start obsessing over a particular service */
-void start_obsessing_over_service(service *svc)
+static void start_obsessing_over_service(service *svc)
 {
 	unsigned long attr = MODATTR_OBSESSIVE_HANDLER_ENABLED;
 
@@ -4727,7 +4782,7 @@ void start_obsessing_over_service(service *svc)
 
 
 /* stop obsessing over a particular service */
-void stop_obsessing_over_service(service *svc)
+static void stop_obsessing_over_service(service *svc)
 {
 	unsigned long attr = MODATTR_OBSESSIVE_HANDLER_ENABLED;
 
@@ -4754,7 +4809,7 @@ void stop_obsessing_over_service(service *svc)
 
 
 /* start obsessing over a particular host */
-void start_obsessing_over_host(host *hst)
+static void start_obsessing_over_host(host *hst)
 {
 	unsigned long attr = MODATTR_OBSESSIVE_HANDLER_ENABLED;
 
@@ -4781,7 +4836,7 @@ void start_obsessing_over_host(host *hst)
 
 
 /* stop obsessing over a particular host */
-void stop_obsessing_over_host(host *hst)
+static void stop_obsessing_over_host(host *hst)
 {
 	unsigned long attr = MODATTR_OBSESSIVE_HANDLER_ENABLED;
 
@@ -4808,7 +4863,7 @@ void stop_obsessing_over_host(host *hst)
 
 
 /* sets the current notification number for a specific host */
-void set_host_notification_number(host *hst, int num)
+static void set_host_notification_number(host *hst, int num)
 {
 
 	/* set the notification number */
@@ -4822,7 +4877,7 @@ void set_host_notification_number(host *hst, int num)
 
 
 /* sets the current notification number for a specific service */
-void set_service_notification_number(service *svc, int num)
+static void set_service_notification_number(service *svc, int num)
 {
 
 	/* set the notification number */
