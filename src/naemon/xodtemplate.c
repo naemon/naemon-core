@@ -5790,13 +5790,11 @@ static int xodtemplate_register_timeperiod(void *tprd, void *discard)
 	timeperiod *new_timeperiod = NULL;
 	daterange *new_daterange = NULL;
 	timerange *new_timerange = NULL;
-	timeperiodexclusion *new_timeperiodexclusion = NULL;
 	int day = 0;
 	int range = 0;
 	int x = 0;
 	char *day_range_ptr = NULL;
 	char *day_range_start_buffer = NULL;
-	char *temp_ptr = NULL;
 	unsigned long range_start_time = 0L;
 	unsigned long range_end_time = 0L;
 
@@ -5881,8 +5879,20 @@ static int xodtemplate_register_timeperiod(void *tprd, void *discard)
 				return ERROR;
 			}
 		}
-
 	}
+	return OK;
+}
+
+static int xodtemplate_register_timeperiod_relations(void *tprd, void *discard)
+{
+	timeperiodexclusion *new_timeperiodexclusion = NULL;
+	char *temp_ptr = NULL;
+	xodtemplate_timeperiod *this_timeperiod = (xodtemplate_timeperiod *)tprd;
+	timeperiod *new_timeperiod;
+
+	new_timeperiod = find_timeperiod(this_timeperiod->timeperiod_name);
+	if (!new_timeperiod)
+		return OK;
 
 	/* add timeperiod exclusions */
 	if (this_timeperiod->exclusions) {
@@ -5927,8 +5937,6 @@ static int xodtemplate_register_contact(void *contact_, void *discard)
 {
 	xodtemplate_contact *this_contact = (xodtemplate_contact *)contact_;
 	contact *new_contact = NULL;
-	char *command_name = NULL;
-	commandsmember *new_commandsmember = NULL;
 	xodtemplate_customvariablesmember *temp_customvariablesmember = NULL;
 
 	/* bail out if we shouldn't register this object */
@@ -5943,8 +5951,27 @@ static int xodtemplate_register_contact(void *contact_, void *discard)
 		return ERROR;
 	}
 
-	if (register_contact(new_contact) != OK)
-		return ERROR;
+	/* add all custom variables */
+	for (temp_customvariablesmember = this_contact->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
+		if ((add_custom_variable_to_contact(new_contact, temp_customvariablesmember->variable_name, temp_customvariablesmember->variable_value)) == NULL) {
+			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not custom variable to contact (config file '%s', starting on line %d)\n", xodtemplate_config_file_name(this_contact->_config_file), this_contact->_start_line);
+			return ERROR;
+		}
+	}
+
+	return register_contact(new_contact);
+}
+
+static int xodtemplate_register_contact_relations(void *contact_, void *discard)
+{
+	xodtemplate_contact *this_contact = (xodtemplate_contact *)contact_;
+	char *command_name = NULL;
+	commandsmember *new_commandsmember = NULL;
+	contact *new_contact;
+
+	new_contact = find_contact(this_contact->contact_name);
+	if (!new_contact)
+		return OK;
 
 	/* add all the host notification commands */
 	if (this_contact->host_notification_commands != NULL) {
@@ -5967,14 +5994,6 @@ static int xodtemplate_register_contact(void *contact_, void *discard)
 				nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add service notification command '%s' to contact (config file '%s', starting on line %d)\n", command_name, xodtemplate_config_file_name(this_contact->_config_file), this_contact->_start_line);
 				return ERROR;
 			}
-		}
-	}
-
-	/* add all custom variables */
-	for (temp_customvariablesmember = this_contact->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
-		if ((add_custom_variable_to_contact(new_contact, temp_customvariablesmember->variable_name, temp_customvariablesmember->variable_value)) == NULL) {
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not custom variable to contact (config file '%s', starting on line %d)\n", xodtemplate_config_file_name(this_contact->_config_file), this_contact->_start_line);
-			return ERROR;
 		}
 	}
 
@@ -6005,17 +6024,17 @@ static int xodtemplate_register_contactgroup(void *cgrp, void *discard)
 }
 
 
-static int xodtemplate_register_contactgroup_members(void *cgrp, void *cookie)
+static int xodtemplate_register_contactgroup_relations(void *cgrp, void *cookie)
 {
 	xodtemplate_contactgroup *this_contactgroup = (xodtemplate_contactgroup *)cgrp;
 	objectlist *list;
 	struct contactgroup *cg;
 	unsigned int *counter = (unsigned int *)cookie;
 
-	if (!this_contactgroup->register_object)
-		return 0;
-
 	cg = find_contactgroup(this_contactgroup->contactgroup_name);
+	if (!cg)
+		return OK;
+
 	for (list = this_contactgroup->member_list; list; list = list->next) {
 		xodtemplate_contact *c = (xodtemplate_contact *)list->object_ptr;
 		if (!add_contact_to_contactgroup(cg, c->contact_name)) {
@@ -6033,12 +6052,6 @@ static int xodtemplate_register_host(void *host_, void *discard)
 {
 	xodtemplate_host *this_host = (xodtemplate_host *)host_;
 	host *new_host = NULL;
-	char *parent_host = NULL;
-	hostsmember *new_hostsmember = NULL;
-	contactsmember *new_contactsmember = NULL;
-	contactgroupsmember *new_contactgroupsmember = NULL;
-	char *contact_name = NULL;
-	char *contact_group = NULL;
 	xodtemplate_customvariablesmember *temp_customvariablesmember = NULL;
 
 	/* bail out if we shouldn't register this object */
@@ -6055,8 +6068,32 @@ static int xodtemplate_register_host(void *host_, void *discard)
 		return ERROR;
 	}
 
-	if (register_host(new_host) != OK)
-		return ERROR;
+	/* add all custom variables */
+	for (temp_customvariablesmember = this_host->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
+		if ((add_custom_variable_to_host(new_host, temp_customvariablesmember->variable_name, temp_customvariablesmember->variable_value)) == NULL) {
+			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not custom variable to host (config file '%s', starting on line %d)\n", xodtemplate_config_file_name(this_host->_config_file), this_host->_start_line);
+			return ERROR;
+		}
+	}
+
+
+	return register_host(new_host);
+}
+
+static int xodtemplate_register_host_relations(void *host_, void *discard)
+{
+	xodtemplate_host *this_host = (xodtemplate_host *)host_;
+	host *new_host = NULL;
+	char *parent_host = NULL;
+	hostsmember *new_hostsmember = NULL;
+	char *contact_name = NULL;
+	char *contact_group = NULL;
+	contactsmember *new_contactsmember = NULL;
+	contactgroupsmember *new_contactgroupsmember = NULL;
+
+	new_host = find_host(this_host->host_name);
+	if (!new_host)
+		return OK;
 
 	/* add the parent hosts */
 	if (this_host->parents != NULL) {
@@ -6099,14 +6136,6 @@ static int xodtemplate_register_host(void *host_, void *discard)
 		}
 	}
 
-	/* add all custom variables */
-	for (temp_customvariablesmember = this_host->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
-		if ((add_custom_variable_to_host(new_host, temp_customvariablesmember->variable_name, temp_customvariablesmember->variable_value)) == NULL) {
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not custom variable to host (config file '%s', starting on line %d)\n", xodtemplate_config_file_name(this_host->_config_file), this_host->_start_line);
-			return ERROR;
-		}
-	}
-
 	return OK;
 }
 
@@ -6134,26 +6163,26 @@ static int xodtemplate_register_hostgroup(void *hgrp, void *discard)
 }
 
 
-static int xodtemplate_register_hostgroup_members(void *hgrp, void *cookie)
+static int xodtemplate_register_hostgroup_relations(void *hgrp, void *cookie)
 {
 	xodtemplate_hostgroup *this_hostgroup = (xodtemplate_hostgroup *)hgrp;
 	objectlist *list;
 	struct hostgroup *hg;
 	unsigned int *counter = (unsigned int *)cookie;
 
-	if (!this_hostgroup->register_object)
-		return 0;
-
 	hg = find_hostgroup(this_hostgroup->hostgroup_name);
+	if (!hg)
+		return OK;
+
 	for (list = this_hostgroup->member_list; list; list = list->next) {
 		xodtemplate_host *h = (xodtemplate_host *)list->object_ptr;
 		if (!add_host_to_hostgroup(hg, h->host_name)) {
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Bad member of hostgrop '%s' (config file '%s', starting on line %d)\n", hg->group_name, xodtemplate_config_file_name(this_hostgroup->_config_file), this_hostgroup->_start_line);
+			nm_log(NSLOG_CONFIG_ERROR, "Error: Bad member '%s' of hostgroup '%s' (config file '%s', starting on line %d)\n", h->host_name, hg->group_name, xodtemplate_config_file_name(this_hostgroup->_config_file), this_hostgroup->_start_line);
 			return -1;
 		}
 		(*counter)++;
 	}
-	return 0;
+	return OK;
 }
 
 
@@ -6337,10 +6366,6 @@ static int xodtemplate_register_service(void *srv, void *discard)
 {
 	xodtemplate_service *this_service = (xodtemplate_service *)srv;
 	service *new_service = NULL;
-	contactsmember *new_contactsmember = NULL;
-	contactgroupsmember *new_contactgroupsmember = NULL;
-	char *contact_name = NULL;
-	char *contact_group = NULL;
 	xodtemplate_customvariablesmember *temp_customvariablesmember = NULL;
 
 	/* bail out if we shouldn't register this object */
@@ -6356,8 +6381,29 @@ static int xodtemplate_register_service(void *srv, void *discard)
 		return ERROR;
 	}
 
-	if (register_service(new_service) != OK)
-		return ERROR;
+	/* add all custom variables */
+	for (temp_customvariablesmember = this_service->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
+		if ((add_custom_variable_to_service(new_service, temp_customvariablesmember->variable_name, temp_customvariablesmember->variable_value)) == NULL) {
+			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not custom variable to service (config file '%s', starting on line %d)\n", xodtemplate_config_file_name(this_service->_config_file), this_service->_start_line);
+			return ERROR;
+		}
+	}
+
+	return register_service(new_service);
+}
+
+static int xodtemplate_register_service_relations(void *srv, void *discard)
+{
+	xodtemplate_service *this_service = (xodtemplate_service *)srv;
+	service *new_service = NULL;
+	contactsmember *new_contactsmember = NULL;
+	contactgroupsmember *new_contactgroupsmember = NULL;
+	char *contact_name = NULL;
+	char *contact_group = NULL;
+
+	new_service = find_service(this_service->host_name, this_service->service_description);
+	if (!new_service)
+		return OK;
 
 	/* add all service parents */
 	if (this_service->parents != NULL) {
@@ -6432,14 +6478,6 @@ static int xodtemplate_register_service(void *srv, void *discard)
 		}
 	}
 
-	/* add all custom variables */
-	for (temp_customvariablesmember = this_service->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
-		if ((add_custom_variable_to_service(new_service, temp_customvariablesmember->variable_name, temp_customvariablesmember->variable_value)) == NULL) {
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not custom variable to service (config file '%s', starting on line %d)\n", xodtemplate_config_file_name(this_service->_config_file), this_service->_start_line);
-			return ERROR;
-		}
-	}
-
 	return OK;
 }
 
@@ -6466,28 +6504,28 @@ static int xodtemplate_register_servicegroup(void *sgrp, void *discard)
 }
 
 
-static int xodtemplate_register_servicegroup_members(void *sgrp, void *cookie)
+static int xodtemplate_register_servicegroup_relations(void *sgrp, void *cookie)
 {
 	xodtemplate_servicegroup *this_servicegroup = (xodtemplate_servicegroup *)sgrp;
 	objectlist *list, *next;
 	struct servicegroup *sg;
 	unsigned int *counter = (unsigned int *)cookie;
 
-	if (!this_servicegroup->register_object)
-		return 0;
-
 	sg = find_servicegroup(this_servicegroup->servicegroup_name);
+	if (!sg)
+		return OK;
+
 	for (list = this_servicegroup->member_list; list; list = next) {
 		xodtemplate_service *s = (xodtemplate_service *)list->object_ptr;
 		next = list->next;
 		if (!add_service_to_servicegroup(sg, s->host_name, s->service_description)) {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Bad member of servicegroup '%s' (config file '%s', starting on line %d)\n", sg->group_name, xodtemplate_config_file_name(this_servicegroup->_config_file), this_servicegroup->_start_line);
-			return -1;
+			return ERROR;
 		}
 		(*counter)++;
 	}
 
-	return 0;
+	return OK;
 }
 
 
@@ -6764,37 +6802,15 @@ static int xodtemplate_register_and_destroy_serviceescalation(void *se_)
 	return result;
 }
 
-
-/*
- * registers object definitions
- * The order goes like this:
- *   Timeperiods
- *   Commands
- *   Contactgroups
- *   Hostgroups
- *   Servicegroups
- *   Contacts
- *   Hosts
- *   Services
- *   Servicedependencies
- *   Serviceescalations
- *   Hostdependencies
- *   Hostescalations
- *
- * Why are contactgroups done before contacts? A reasonable assumption
- * would be that contacts should be flattened and added to the checked
- * objects directly rather than forcing us to fiddle with that crap
- * during runtime.
- */
 static int xodtemplate_register_objects(void)
 {
 	xodtemplate_hostdependency *hd, *next_hd;
 	xodtemplate_hostescalation *he, *next_he;
 	xodtemplate_servicedependency *sd, *next_sd;
 	xodtemplate_serviceescalation *se, *next_se;
-	/* +4 for dependencies and escalations */
 	unsigned int tot_members = 0;
 
+	/* first, load all object types */
 	init_objects_command(xodcount.commands);
 	init_objects_timeperiod(xodcount.timeperiods);
 	init_objects_host(xodcount.hosts);
@@ -6804,56 +6820,50 @@ static int xodtemplate_register_objects(void)
 	init_objects_hostgroup(xodcount.hostgroups);
 	init_objects_servicegroup(xodcount.servicegroups);
 
-	/* register timeperiods */
-	rbtree_traverse(xobject_tree[OBJTYPE_TIMEPERIOD], xodtemplate_register_timeperiod, NULL, rbinorder);
-	timing_point("%u timeperiods registered\n", num_objects.timeperiods);
-
-	/* register commands */
-	rbtree_traverse(xobject_tree[OBJTYPE_COMMAND], xodtemplate_register_command, NULL, rbinorder);
-	timing_point("%u commands registered\n", num_objects.commands);
-
-	/* register contactgroups */
-	rbtree_traverse(xobject_tree[OBJTYPE_CONTACTGROUP], xodtemplate_register_contactgroup, NULL, rbinorder);
-	timing_point("%u contactgroups registered\n", num_objects.contactgroups);
-
-	/* register hostgroups */
-	rbtree_traverse(xobject_tree[OBJTYPE_HOSTGROUP], xodtemplate_register_hostgroup, NULL, rbinorder);
-	timing_point("%u hostgroups registered\n", num_objects.hostgroups);
-
-	/* register servicegroups */
-	rbtree_traverse(xobject_tree[OBJTYPE_SERVICEGROUP], xodtemplate_register_servicegroup, NULL, rbinorder);
-	timing_point("%u servicegroups registered\n", num_objects.servicegroups);
-
-	/* register contacts */
-	rbtree_traverse(xobject_tree[OBJTYPE_CONTACT], xodtemplate_register_contact, NULL, rbinorder);
-	timing_point("%u contacts registered\n", num_objects.contacts);
-
-	/* register hosts */
-	rbtree_traverse(xobject_tree[OBJTYPE_HOST], xodtemplate_register_host, NULL, rbinorder);
-	timing_point("%u hosts registered\n", num_objects.hosts);
-
-	/* register services */
-	rbtree_traverse(xobject_tree[OBJTYPE_SERVICE], xodtemplate_register_service, NULL, rbinorder);
-	timing_point("%u services registered\n", num_objects.services);
-
-	/* groups and objects are registered, so join them up */
-	/* register contactgroup members */
-	tot_members = 0;
-	if (rbtree_traverse(xobject_tree[OBJTYPE_CONTACTGROUP], xodtemplate_register_contactgroup_members, (void *)&tot_members, rbinorder))
+	/* Then register the core object itself. Ideally, this would be
+	 * done much sooner in the config parse process. This is only for
+	 *independent objects that can be registered without slaves
+	 *(i.e. no services, dependencies, escalations, or extinfo).
+	 */
+	if (rbtree_traverse(xobject_tree[OBJTYPE_TIMEPERIOD], xodtemplate_register_timeperiod, NULL, rbinorder))
 		return ERROR;
-	timing_point("%u contactgroup memberships registered\n", tot_members);
-
-	/* register hostgroup members */
-	tot_members = 0;
-	if (rbtree_traverse(xobject_tree[OBJTYPE_HOSTGROUP], xodtemplate_register_hostgroup_members, (void *)&tot_members, rbinorder))
+	if (rbtree_traverse(xobject_tree[OBJTYPE_COMMAND], xodtemplate_register_command, NULL, rbinorder))
 		return ERROR;
-	timing_point("%u hostgroup memberships registered\n", tot_members);
-
-	/* register servicegroup members */
-	tot_members = 0;
-	if ((rbtree_traverse(xobject_tree[OBJTYPE_SERVICEGROUP], xodtemplate_register_servicegroup_members, (void *)&tot_members, rbinorder)))
+	if (rbtree_traverse(xobject_tree[OBJTYPE_CONTACTGROUP], xodtemplate_register_contactgroup, NULL, rbinorder))
 		return ERROR;
-	timing_point("%u servicegroup memberships registered\n", tot_members);
+	if (rbtree_traverse(xobject_tree[OBJTYPE_HOSTGROUP], xodtemplate_register_hostgroup, NULL, rbinorder))
+		return ERROR;
+	if (rbtree_traverse(xobject_tree[OBJTYPE_SERVICEGROUP], xodtemplate_register_servicegroup, NULL, rbinorder))
+		return ERROR;
+	if (rbtree_traverse(xobject_tree[OBJTYPE_CONTACT], xodtemplate_register_contact, NULL, rbinorder))
+		return ERROR;
+	if (rbtree_traverse(xobject_tree[OBJTYPE_HOST], xodtemplate_register_host, NULL, rbinorder))
+		return ERROR;
+
+	/* With all objects available, it is now safe to register any relations
+	 * between them. This means any host parent can know for sure that the host
+	 * parent is registered above if it at all exists.
+	 */
+	if (rbtree_traverse(xobject_tree[OBJTYPE_TIMEPERIOD], xodtemplate_register_timeperiod_relations, NULL, rbinorder))
+		return ERROR;
+	if (rbtree_traverse(xobject_tree[OBJTYPE_CONTACT], xodtemplate_register_contact_relations, NULL, rbinorder))
+		return ERROR;
+	if (rbtree_traverse(xobject_tree[OBJTYPE_HOST], xodtemplate_register_host_relations, NULL, rbinorder))
+		return ERROR;
+	if (rbtree_traverse(xobject_tree[OBJTYPE_CONTACTGROUP], xodtemplate_register_contactgroup_relations, (void *)&tot_members, rbinorder))
+		return ERROR;
+	if (rbtree_traverse(xobject_tree[OBJTYPE_HOSTGROUP], xodtemplate_register_hostgroup_relations, (void *)&tot_members, rbinorder))
+		return ERROR;
+
+	/* And now, go for slave objects, and objects that can depend on
+	 * slaves.
+	 */
+	if (rbtree_traverse(xobject_tree[OBJTYPE_SERVICE], xodtemplate_register_service, NULL, rbinorder))
+		return ERROR;
+	if (rbtree_traverse(xobject_tree[OBJTYPE_SERVICEGROUP], xodtemplate_register_servicegroup_relations, (void *)&tot_members, rbinorder))
+		return ERROR;
+	if (rbtree_traverse(xobject_tree[OBJTYPE_SERVICE], xodtemplate_register_service_relations, NULL, rbinorder))
+		return ERROR;
 
 	/*
 	 * These aren't indexed at all, but it's safe to destroy
