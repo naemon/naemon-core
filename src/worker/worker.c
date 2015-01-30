@@ -5,10 +5,11 @@
 #include <sys/socket.h>
 #include <string.h>
 #include <stdarg.h>
+#include <glib.h>
 
 static unsigned int started, running_jobs, timeouts, reapable;
 static int master_sd;
-static fanout_table *ptab;
+static GHashTable *ptab;
 
 struct execution_information {
 	timed_event *timed_event;
@@ -149,7 +150,8 @@ static void destroy_job(child_process *cp)
 	 */
 	destroy_event(cp->ei->timed_event);
 	running_jobs--;
-	fanout_remove(ptab, cp->ei->pid);
+	/*XXX: Maybe let this function be the value destructor for ptab? */
+	g_hash_table_remove(ptab, GINT_TO_POINTER(cp->ei->pid));
 
 	if (cp->outstd.buf) {
 		free(cp->outstd.buf);
@@ -431,7 +433,7 @@ static void reap_jobs(void)
 			struct child_process *cp;
 
 			reapable--;
-			if (!(cp = fanout_get(ptab, pid))) {
+			if (!(cp = g_hash_table_lookup(ptab, GINT_TO_POINTER(pid)))) {
 				/* we reaped a lost child. Odd that */
 				continue;
 			}
@@ -470,7 +472,7 @@ int start_cmd(child_process *cp)
 		wlog("Failed to register iobroker for stdout");
 	if (iobroker_register(nagios_iobs, cp->outerr.fd, cp, stderr_handler))
 		wlog("Failed to register iobroker for stderr");
-	fanout_add(ptab, cp->ei->pid, cp);
+	g_hash_table_insert(ptab, GINT_TO_POINTER(cp->ei->pid), cp);
 
 	return 0;
 }
@@ -605,7 +607,7 @@ void enter_worker(int sd, int (*cb)(child_process *))
 		// now what?
 	}
 
-	ptab = fanout_create(4096);
+	ptab = g_hash_table_new(g_direct_hash, g_direct_equal);
 
 	if (setpgid(0, 0)) {
 		/* XXX: handle error somehow, or maybe just ignore it */
