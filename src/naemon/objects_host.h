@@ -166,9 +166,6 @@ struct customvariablesmember *add_custom_variable_to_host(host *, char *, char *
 struct servicesmember *add_service_link_to_host(host *, service *);
 
 struct host *find_host(const char *);
-int is_host_immediate_child_of_host(struct host *, struct host *);
-int is_host_primary_immediate_child_of_host(struct host *, struct host *);
-int is_host_immediate_parent_of_host(struct host *, struct host *);
 int is_contact_for_host(struct host *, struct contact *);
 int is_escalated_contact_for_host(struct host *, struct contact *);
 int number_of_immediate_child_hosts(struct host *);

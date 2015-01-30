@@ -396,41 +396,6 @@ int get_host_count(void)
 	return num_objects.hosts;
 }
 
-int is_host_immediate_child_of_host(host *parent_host, host *child_host)
-{
-	hostsmember *temp_hostsmember = NULL;
-
-	/* not enough data */
-	if (child_host == NULL)
-		return FALSE;
-
-	/* root/top-level hosts */
-	if (parent_host == NULL) {
-		if (child_host->parent_hosts == NULL)
-			return TRUE;
-	}
-
-	/* mid-level/bottom hosts */
-	else {
-
-		for (temp_hostsmember = child_host->parent_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-			if (temp_hostsmember->host_ptr == parent_host)
-				return TRUE;
-		}
-	}
-
-	return FALSE;
-}
-
-int is_host_immediate_parent_of_host(host *child_host, host *parent_host)
-{
-
-	if (is_host_immediate_child_of_host(parent_host, child_host) == TRUE)
-		return TRUE;
-
-	return FALSE;
-}
-
 int is_contact_for_host(host *hst, contact *cntct)
 {
 	contactsmember *temp_contactsmember = NULL;
