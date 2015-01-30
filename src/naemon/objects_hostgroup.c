@@ -4,6 +4,7 @@
 #include "nm_alloc.h"
 #include "logging.h"
 #include "globals.h"
+#include "utils.h"
 #include <string.h>
 
 static dkhash_table *hostgroup_hash_table = NULL;
@@ -54,6 +55,7 @@ hostgroup *create_hostgroup(char *name, char *alias, char *notes, char *notes_ur
 	new_hostgroup->notes = notes;
 	new_hostgroup->notes_url = notes_url;
 	new_hostgroup->action_url = action_url;
+	new_hostgroup->members = rbtree_create(compare_host);
 
 	return new_hostgroup;
 }
@@ -85,13 +87,8 @@ int register_hostgroup(hostgroup *new_hostgroup)
 
 void destroy_hostgroup(hostgroup *this_hostgroup)
 {
-	/* free memory for the group members */
-	hostsmember *this_hostsmember = this_hostgroup->members;
-	while (this_hostsmember != NULL) {
-		hostsmember *next_hostsmember = this_hostsmember->next;
-		nm_free(this_hostsmember);
-		this_hostsmember = next_hostsmember;
-	}
+	rbtree_destroy(this_hostgroup->members, NULL);
+	this_hostgroup->members = NULL;
 
 	if (this_hostgroup->alias != this_hostgroup->group_name)
 		nm_free(this_hostgroup->alias);
@@ -102,60 +99,26 @@ void destroy_hostgroup(hostgroup *this_hostgroup)
 	nm_free(this_hostgroup);
 }
 
-/* add a new host to a host group */
-hostsmember *add_host_to_hostgroup(hostgroup *temp_hostgroup, char *host_name)
+int add_host_to_hostgroup(hostgroup *temp_hostgroup, char *host_name)
 {
-	hostsmember *new_member = NULL;
-	hostsmember *last_member = NULL;
-	hostsmember *temp_member = NULL;
 	struct host *h;
 
 	/* make sure we have the data we need */
 	if (temp_hostgroup == NULL || (host_name == NULL || !strcmp(host_name, ""))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Hostgroup or group member is NULL\n");
-		return NULL;
+		return ERROR;
 	}
 	if (!(h = find_host(host_name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Failed to locate host '%s' for hostgroup '%s'\n", host_name, temp_hostgroup->group_name);
-		return NULL;
+		return ERROR;
 	}
-
-	/* allocate memory for a new member */
-	new_member = nm_calloc(1, sizeof(hostsmember));
-	/* assign vars */
-	new_member->host_name = h->name;
-	new_member->host_ptr = h;
 
 	/* add (unsorted) link from the host to its group */
 	prepend_object_to_objectlist(&h->hostgroups_ptr, (void *)temp_hostgroup);
 
-	/* add the new member to the member list, sorted by host name */
-	if (use_large_installation_tweaks == TRUE) {
-		new_member->next = temp_hostgroup->members;
-		temp_hostgroup->members = new_member;
-		return new_member;
-	}
-	last_member = temp_hostgroup->members;
-	for (temp_member = temp_hostgroup->members; temp_member != NULL; temp_member = temp_member->next) {
-		if (strcmp(new_member->host_name, temp_member->host_name) < 0) {
-			new_member->next = temp_member;
-			if (temp_member == temp_hostgroup->members)
-				temp_hostgroup->members = new_member;
-			else
-				last_member->next = new_member;
-			break;
-		} else
-			last_member = temp_member;
-	}
-	if (temp_hostgroup->members == NULL) {
-		new_member->next = NULL;
-		temp_hostgroup->members = new_member;
-	} else if (temp_member == NULL) {
-		new_member->next = NULL;
-		last_member->next = new_member;
-	}
+	rbtree_insert(temp_hostgroup->members, h);
 
-	return new_member;
+	return OK;
 }
 
 hostgroup *find_hostgroup(const char *name)
@@ -167,16 +130,8 @@ hostgroup *find_hostgroup(const char *name)
 /* NOTE: This function is only used by external modules */
 int is_host_member_of_hostgroup(hostgroup *group, host *hst)
 {
-	hostsmember *temp_hostsmember = NULL;
-
-	if (group == NULL || hst == NULL)
-		return FALSE;
-
-	for (temp_hostsmember = group->members; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-		if (temp_hostsmember->host_ptr == hst)
-			return TRUE;
-	}
-
+	if (rbtree_find(group->members, hst))
+		return TRUE;
 	return FALSE;
 }
 
@@ -187,10 +142,9 @@ void fcache_hostgroup(FILE *fp, hostgroup *temp_hostgroup)
 	if (temp_hostgroup->alias)
 		fprintf(fp, "\talias\t%s\n", temp_hostgroup->alias);
 	if (temp_hostgroup->members) {
-		hostsmember *list;
-		fprintf(fp, "\tmembers\t");
-		for (list = temp_hostgroup->members; list; list = list->next)
-			fprintf(fp, "%s%c", list->host_name, list->next ? ',' : '\n');
+		char *members = implode_hosttree(temp_hostgroup->members, ",");
+		fprintf(fp, "\tmembers\t%s\n", members);
+		nm_free(members);
 	}
 	if (temp_hostgroup->notes)
 		fprintf(fp, "\tnotes\t%s\n", temp_hostgroup->notes);

@@ -40,7 +40,6 @@ int main(int argc, char **argv)
 	int c = 0;
 	struct host *host1, *host2;
 	hostgroup *temp_hostgroup = NULL;
-	hostsmember *temp_member = NULL;
 
 	plan_tests(19);
 
@@ -74,15 +73,7 @@ int main(int argc, char **argv)
 	ok(c == 2, "Found all hostgroups");
 
 	temp_hostgroup = find_hostgroup("hostgroup1");
-	for (temp_member = temp_hostgroup->members; temp_member != NULL; temp_member = temp_member->next) {
-		//printf("host pointer=%d\n", temp_member->host_ptr);
-	}
-
 	temp_hostgroup = find_hostgroup("hostgroup2");
-	for (temp_member = temp_hostgroup->members; temp_member != NULL; temp_member = temp_member->next) {
-		//printf("host pointer=%d\n", temp_member->host_ptr);
-	}
-
 	host1 = find_host("host1");
 	host2 = find_host("host2");
 	ok(host1 != NULL && host2 != NULL, "find_host() should work");

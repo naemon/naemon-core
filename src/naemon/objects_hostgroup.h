@@ -23,7 +23,7 @@ struct hostgroup {
 	unsigned int id;
 	char	*group_name;
 	char    *alias;
-	struct hostsmember *members;
+	struct rbtree *members;
 	char    *notes;
 	char    *notes_url;
 	char    *action_url;
@@ -36,7 +36,7 @@ void destroy_objects_hostgroup(void);
 hostgroup *create_hostgroup(char *name, char *alias, char *notes, char *notes_url, char *action_url);
 int register_hostgroup(hostgroup *new_hostgroup);
 void destroy_hostgroup(hostgroup *this_hostgroup);
-struct hostsmember *add_host_to_hostgroup(hostgroup *, char *);
+int add_host_to_hostgroup(hostgroup *, char *);
 
 struct hostgroup *find_hostgroup(const char *);
 int is_host_member_of_hostgroup(struct hostgroup *, struct host *);		       /* tests whether or not a host is a member of a specific hostgroup */

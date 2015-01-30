@@ -17,8 +17,6 @@ NAGIOS_BEGIN_DECL
 
 struct host;
 typedef struct host host;
-struct hostsmember;
-typedef struct hostsmember hostsmember;
 
 extern struct host **host_ary;
 extern struct host *host_list;
@@ -135,12 +133,6 @@ struct host {
 	struct objectlist *escalation_list;
 	struct  host *next;
 	struct timed_event *next_check_event;
-};
-
-struct hostsmember {
-	char    *host_name;
-	struct host    *host_ptr;
-	struct hostsmember *next;
 };
 
 static const struct flag_map host_flag_map[] = {

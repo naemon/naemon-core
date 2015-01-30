@@ -8,6 +8,7 @@
 #include "globals.h"
 #include "nm_alloc.h"
 #include <string.h>
+#include <glib.h>
 
 static char *macro_x_names[MACRO_X_COUNT]; /* the macro names */
 char *macro_user[MAX_USER_MACROS]; /* $USERx$ macros */
@@ -568,12 +569,40 @@ int grab_macro_value(char *macro_buffer, char **output, int *clean_options, int 
 	return grab_macro_value_r(&global_macros, macro_buffer, output, clean_options, free_macro);
 }
 
+struct grab_macro_value_parameters
+{
+	nagios_macros *mac;
+	int macro_type;
+	GString *buffer;
+	char *delimiter;
+};
+
+static int concat_macrox_value(void *_hst, void *user_data)
+{
+	int free_sub_macro = FALSE;
+	char *temp_buffer = NULL;
+	host *temp_host = (host *)_hst;
+	struct grab_macro_value_parameters *params = (struct grab_macro_value_parameters *)user_data;
+
+	grab_standard_host_macro_r(params->mac, params->macro_type, temp_host, &temp_buffer, &free_sub_macro);
+
+	if (temp_buffer == NULL)
+		return 0;
+
+	if (params->buffer->len > 0)
+		g_string_append(params->buffer, params->delimiter);
+	g_string_append(params->buffer, temp_buffer);
+
+	if (free_sub_macro == TRUE)
+		nm_free(temp_buffer);
+
+	return 0;
+}
 
 int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, char *arg2, char **output, int *free_macro)
 {
 	host *temp_host = NULL;
 	hostgroup *temp_hostgroup = NULL;
-	hostsmember *temp_hostsmember = NULL;
 	service *temp_service = NULL;
 	servicegroup *temp_servicegroup = NULL;
 	servicesmember *temp_servicesmember = NULL;
@@ -682,34 +711,27 @@ int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, char *ar
 
 		/* a host macro with a hostgroup name and delimiter */
 		else {
+			struct grab_macro_value_parameters params;
 
 			if ((temp_hostgroup = find_hostgroup(arg1)) == NULL)
 				return ERROR;
 
-			delimiter_len = strlen(arg2);
+			params.mac = mac;
+			params.macro_type = macro_type;
+			params.buffer = g_string_new("");
+			params.delimiter = arg2;
 
-			/* concatenate macro values for all hostgroup members */
-			for (temp_hostsmember = temp_hostgroup->members; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-
-				temp_host = temp_hostsmember->host_ptr;
-
-				/* get the macro value for this host */
-				grab_standard_host_macro_r(mac, macro_type, temp_host, &temp_buffer, &free_sub_macro);
-
-				if (temp_buffer == NULL)
-					continue;
-
-				/* add macro value to already running macro */
-				if (*output == NULL)
-					*output = nm_strdup(temp_buffer);
-				else {
-					*output = nm_realloc(*output, strlen(*output) + strlen(temp_buffer) + delimiter_len + 1);
-					strcat(*output, arg2);
-					strcat(*output, temp_buffer);
-				}
-				if (free_sub_macro == TRUE)
-					nm_free(temp_buffer);
+			/* can this ever trigger? */
+			if (*output) {
+				g_string_append(params.buffer, *output);
+				nm_free(*output);
 			}
+
+			rbtree_traverse(temp_hostgroup->members, concat_macrox_value, &params, rbinorder);
+			*output = nm_malloc(params.buffer->len + 1);
+			strncpy(*output, params.buffer->str, params.buffer->len);
+			*output[params.buffer->len] = 0;
+			g_string_free(params.buffer, TRUE);
 		}
 		break;
 
@@ -1185,13 +1207,37 @@ int grab_macrox_value(int macro_type, char *arg1, char *arg2, char **output, int
 	return grab_macrox_value_r(&global_macros, macro_type, arg1, arg2, output, free_macro);
 }
 
+struct grab_custom_value_parameters
+{
+	nagios_macros *mac;
+	char *macro_name;
+	GString *buffer;
+	char *delimiter;
+};
+
+static int concat_custom_macro_value(void *_hst, void *user_data)
+{
+	char *temp_buffer;
+	host *temp_host = (host *)_hst;
+	struct grab_custom_value_parameters *params = (struct grab_custom_value_parameters *)user_data;
+
+	/* get the macro value for this host */
+	grab_custom_macro_value_r(params->mac, params->macro_name, temp_host->name, NULL, &temp_buffer);
+
+	if (temp_buffer == NULL)
+		return 0;
+
+	if (params->buffer->len > 0)
+		g_string_append(params->buffer, params->delimiter);
+	g_string_append(params->buffer, temp_buffer);
+	return 0;
+}
 
 /* calculates the value of a custom macro */
 int grab_custom_macro_value_r(nagios_macros *mac, char *macro_name, char *arg1, char *arg2, char **output)
 {
 	host *temp_host = NULL;
 	hostgroup *temp_hostgroup = NULL;
-	hostsmember *temp_hostsmember = NULL;
 	service *temp_service = NULL;
 	servicegroup *temp_servicegroup = NULL;
 	servicesmember *temp_servicesmember = NULL;
@@ -1227,32 +1273,27 @@ int grab_custom_macro_value_r(nagios_macros *mac, char *macro_name, char *arg1, 
 
 		/* a host macro with a hostgroup name and delimiter */
 		else {
+			struct grab_custom_value_parameters params;
+
 			if ((temp_hostgroup = find_hostgroup(arg1)) == NULL)
 				return ERROR;
 
-			delimiter_len = strlen(arg2);
+			params.mac = mac;
+			params.macro_name = macro_name;
+			params.buffer = g_string_new("");
+			params.delimiter = arg2;
 
-			/* concatenate macro values for all hostgroup members */
-			for (temp_hostsmember = temp_hostgroup->members; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-
-				temp_host = temp_hostsmember->host_ptr;
-
-				/* get the macro value for this host */
-				grab_custom_macro_value_r(mac, macro_name, temp_host->name, NULL, &temp_buffer);
-
-				if (temp_buffer == NULL)
-					continue;
-
-				/* add macro value to already running macro */
-				if (*output == NULL)
-					*output = nm_strdup(temp_buffer);
-				else {
-					*output = nm_realloc(*output, strlen(*output) + strlen(temp_buffer) + delimiter_len + 1);
-					strcat(*output, arg2);
-					strcat(*output, temp_buffer);
-				}
-				nm_free(temp_buffer);
+			/* can this ever trigger? */
+			if (*output) {
+				g_string_append(params.buffer, *output);
+				nm_free(*output);
 			}
+
+			rbtree_traverse(temp_hostgroup->members, concat_custom_macro_value, &params, rbinorder);
+			*output = nm_malloc(params.buffer->len + 1);
+			strncpy(*output, params.buffer->str, params.buffer->len);
+			*output[params.buffer->len] = 0;
+			g_string_free(params.buffer, TRUE);
 		}
 	}
 
@@ -1748,10 +1789,7 @@ int grab_standard_host_macro(int macro_type, host *temp_host, char **output, int
 /* computes a hostgroup macro */
 int grab_standard_hostgroup_macro_r(nagios_macros *mac, int macro_type, hostgroup *temp_hostgroup, char **output)
 {
-	hostsmember *temp_hostsmember = NULL;
 	char *temp_buffer = NULL;
-	unsigned int	temp_len = 0;
-	unsigned int	init_len = 0;
 
 	if (temp_hostgroup == NULL || output == NULL)
 		return ERROR;
@@ -1766,41 +1804,7 @@ int grab_standard_hostgroup_macro_r(nagios_macros *mac, int macro_type, hostgrou
 			*output = temp_hostgroup->alias;
 		break;
 	case MACRO_HOSTGROUPMEMBERS:
-		/* make the calculations for total string length */
-		for (temp_hostsmember = temp_hostgroup->members; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-			if (temp_hostsmember->host_name == NULL)
-				continue;
-			if (temp_len == 0) {
-				temp_len += strlen(temp_hostsmember->host_name) + 1;
-			} else {
-				temp_len += strlen(temp_hostsmember->host_name) + 2;
-			}
-		}
-		if (!temp_len) {
-			/* empty group, so return the nul string */
-			*output = nm_calloc(1, 1);
-			return OK;
-		}
-
-		/* allocate or reallocate the memory buffer */
-		if (*output == NULL) {
-			*output = nm_malloc(temp_len);
-		} else {
-			init_len = strlen(*output);
-			temp_len += init_len;
-			*output = nm_realloc(*output, temp_len);
-		}
-		/* now fill in the string with the member names */
-		for (temp_hostsmember = temp_hostgroup->members; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-			if (temp_hostsmember->host_name == NULL)
-				continue;
-			temp_buffer = *output + init_len;
-			if (init_len == 0) { /* If our buffer didn't contain anything, we just need to write "%s,%s" */
-				init_len += sprintf(temp_buffer, "%s", temp_hostsmember->host_name);
-			} else {
-				init_len += sprintf(temp_buffer, ",%s", temp_hostsmember->host_name);
-			}
-		}
+		*output = implode_hosttree(temp_hostgroup->members, ",");
 		break;
 	case MACRO_HOSTGROUPACTIONURL:
 		if (temp_hostgroup->action_url)

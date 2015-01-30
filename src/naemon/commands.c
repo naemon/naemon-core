@@ -1569,13 +1569,13 @@ static int global_command_handler(const struct external_command *ext_command, ti
 	}
 }
 
-static void foreach_service_on_host(host *target_host, void (*service_fn)(service *))
+static int foreach_service_on_host(host *target_host, void (*service_fn)(service *))
 {
 	servicesmember *servicesmember_p = NULL;
 	for(servicesmember_p = target_host->services; servicesmember_p != NULL; servicesmember_p = servicesmember_p->next) {
 		service_fn(servicesmember_p->service_ptr);
 	}
-
+	return 0;
 }
 
 static void foreach_service_in_servicegroup(servicegroup *target_servicegroup, void (*service_fn)(service *))
@@ -1598,20 +1598,21 @@ static void foreach_host_in_servicegroup(servicegroup *target_servicegroup, void
 	}
 }
 
+static int cb_wrapper(void *object, void *_fn)
+{
+	void (*fn)(void *) = (void (*)(void *))_fn;
+	fn(object);
+	return 0;
+}
+
 static void foreach_host_in_hostgroup(hostgroup *target_hostgroup, void (*host_fn)(host *))
 {
-	hostsmember *hostsmember_p = NULL;
-	for (hostsmember_p = target_hostgroup->members; hostsmember_p != NULL; hostsmember_p = hostsmember_p->next) {
-		host_fn(hostsmember_p->host_ptr);
-	}
+	rbtree_traverse(target_hostgroup->members, cb_wrapper, host_fn, rbinorder);
 }
 
 static void foreach_service_in_hostgroup(hostgroup *target_hostgroup, void (*service_fn)(service *))
 {
-	hostsmember *hostsmember_p = NULL;
-	for (hostsmember_p = target_hostgroup->members; hostsmember_p != NULL; hostsmember_p = hostsmember_p->next) {
-		foreach_service_on_host(hostsmember_p->host_ptr, service_fn);
-	}
+	rbtree_traverse(target_hostgroup->members, (int (*)(void *, void *))foreach_service_on_host, service_fn, rbinorder);
 }
 
 static void foreach_contact_in_contactgroup(contactgroup *target_contactgroup, void (*contact_fn)(contact *))
@@ -1622,11 +1623,30 @@ static void foreach_contact_in_contactgroup(contactgroup *target_contactgroup, v
 	}
 }
 
+struct matches_arg {
+	struct external_command *ext_command;
+	int deleted;
+};
+static int delete_if_matches(void *_hst, void *user_data)
+{
+	struct matches_arg *match = (struct matches_arg *)user_data;
+	struct external_command *ext_command = match->ext_command;
+	host *host_ptr = (host *)_hst;
+	if (strcmp(GV_STRING("hostname"), "") && !strcmp(host_ptr->name, GV("hostname")))
+		return 0;
+	match->deleted += delete_downtime_by_hostname_service_description_start_time_comment(
+		!strcmp(GV_STRING("hostname"), "") ? NULL : GV("hostname"),
+		!strcmp(GV_STRING("service_description"), "") ? NULL : GV("service_description"),
+		GV_TIMESTAMP("downtime_start_time"),
+		!strcmp(GV_STRING("comment"), "") ? NULL : GV("comment")
+		);
+	return 0;
+}
+
 static int del_downtime_by_filter_handler(const struct external_command *ext_command, time_t entry_time)
 {
 	hostgroup *hostgroup_p = NULL;
-	hostsmember *hostsmember_p = NULL;
-	int deleted = 0;
+	struct matches_arg match;
 	switch (ext_command->id) {
 		case CMD_DEL_DOWNTIME_BY_HOST_NAME:
 			if(delete_downtime_by_hostname_service_description_start_time_comment(
@@ -1639,18 +1659,8 @@ static int del_downtime_by_filter_handler(const struct external_command *ext_com
 			return OK;
 		case CMD_DEL_DOWNTIME_BY_HOSTGROUP_NAME:
 			hostgroup_p = GV("hostgroup_name");
-
-			for(hostsmember_p = hostgroup_p->members; hostsmember_p != NULL; hostsmember_p = hostsmember_p->next) {
-				if (strcmp(GV_STRING("hostname"), "") && !strcmp(hostsmember_p->host_ptr->name, GV("hostname")))
-					continue;
-				deleted += delete_downtime_by_hostname_service_description_start_time_comment(
-							!strcmp(GV_STRING("hostname"), "") ? NULL : GV("hostname"),
-							!strcmp(GV_STRING("service_description"), "") ? NULL : GV("service_description"),
-							GV_TIMESTAMP("downtime_start_time"),
-							!strcmp(GV_STRING("comment"), "") ? NULL : GV("comment")
-							);
-			}
-			if (deleted == 0) {
+			rbtree_traverse(hostgroup_p->members, delete_if_matches, &match, rbinorder);
+			if (match.deleted == 0) {
 				return ERROR;
 			}
 			return OK;
@@ -1979,15 +1989,60 @@ static int host_command_handler(const struct external_command *ext_command, time
 	}
 }
 
+static int schedule_host_downtime_from_command(void *_hst, void *user_data)
+{
+	unsigned long downtime_id = 0L;
+	unsigned long duration = 0L;
+	const struct external_command *ext_command = (const struct external_command *)user_data;
+	host *hst = (host *)_hst;
+	if (GV_BOOL("fixed") > 0) {
+		duration = (GV_TIMESTAMP("end_time")) - (GV_TIMESTAMP("start_time"));
+	}
+	else {
+		duration = GV_ULONG("duration");
+	}
+
+	return schedule_downtime(
+		HOST_DOWNTIME, hst->name, NULL, ext_command->entry_time, GV("author"), GV("comment"),
+		GV_TIMESTAMP("start_time"), GV_TIMESTAMP("end_time"), GV_BOOL("fixed"),
+		GV_ULONG("trigger_id"), duration,
+		&downtime_id);
+}
+
+static int schedule_service_downtime_from_command(void *_hst, void *user_data)
+{
+	unsigned long downtime_id = 0L;
+	unsigned long duration = 0L;
+	const struct external_command *ext_command = (const struct external_command *)user_data;
+	host *hst = (host *)_hst;
+	servicesmember *servicesmember_p = NULL;
+	service *service_p;
+	int ret;
+
+	if (GV_BOOL("fixed") > 0) {
+		duration = (GV_TIMESTAMP("end_time")) - (GV_TIMESTAMP("start_time"));
+	}
+	else {
+		duration = GV_ULONG("duration");
+	}
+	for (servicesmember_p = hst->services; servicesmember_p != NULL; servicesmember_p = servicesmember_p->next) {
+		if ((service_p = servicesmember_p->service_ptr) == NULL)
+			continue;
+		ret = schedule_downtime(
+			SERVICE_DOWNTIME, service_p->host_name, service_p->description, ext_command->entry_time, GV("author"),
+			GV("comment"), GV_TIMESTAMP("start_time"), GV_TIMESTAMP("end_time"), GV_BOOL("fixed"),
+			GV_ULONG("trigger_id"), duration,
+			&downtime_id);
+
+		if (ret != 0)
+			return 1;
+	}
+	return 0;
+}
+
 static int hostgroup_command_handler(const struct external_command *ext_command, time_t entry_time)
 {
 	hostgroup *target_hostgroup = GV_HOSTGROUP("hostgroup_name");
-	unsigned long downtime_id = 0L;
-	unsigned long duration = 0L;
-	hostsmember *hostsmember_p = NULL;
-	servicesmember *servicesmember_p = NULL;
-	service *service_p;
-	int ret = 0;
 	switch (ext_command->id) {
 
 		case CMD_ENABLE_HOSTGROUP_HOST_NOTIFICATIONS:
@@ -2015,21 +2070,8 @@ static int hostgroup_command_handler(const struct external_command *ext_command,
 			foreach_host_in_hostgroup(target_hostgroup, disable_passive_host_checks);
 			return OK;
 		case CMD_SCHEDULE_HOSTGROUP_HOST_DOWNTIME:
-			if (GV_BOOL("fixed") > 0) {
-				duration = (GV_TIMESTAMP("end_time")) - (GV_TIMESTAMP("start_time"));
-			}
-			else {
-				duration = GV_ULONG("duration");
-			}
-
-			for (hostsmember_p = target_hostgroup->members; hostsmember_p != NULL; hostsmember_p = hostsmember_p->next) {
-				ret = schedule_downtime(HOST_DOWNTIME, hostsmember_p->host_name, NULL, entry_time, GV("author"), GV("comment"),
-					GV_TIMESTAMP("start_time"), GV_TIMESTAMP("end_time"), GV_BOOL("fixed"),
-					GV_ULONG("trigger_id"), duration,
-					&downtime_id);
-				if (ret != 0)
-					return ERROR;
-			}
+			if (rbtree_traverse(target_hostgroup->members, schedule_host_downtime_from_command, (void *)ext_command, rbinorder))
+				return ERROR;
 			return OK;
 		case CMD_ENABLE_HOSTGROUP_SVC_CHECKS:
 			foreach_service_in_hostgroup(target_hostgroup, enable_service_checks);
@@ -2044,25 +2086,8 @@ static int hostgroup_command_handler(const struct external_command *ext_command,
 			foreach_service_in_hostgroup(target_hostgroup, disable_passive_service_checks);
 			return OK;
 		case CMD_SCHEDULE_HOSTGROUP_SVC_DOWNTIME:
-			if (GV_BOOL("fixed") > 0) {
-				duration = (GV_TIMESTAMP("end_time")) - (GV_TIMESTAMP("start_time"));
-			}
-			else {
-				duration = GV_ULONG("duration");
-			}
-			for (hostsmember_p = target_hostgroup->members; hostsmember_p != NULL; hostsmember_p = hostsmember_p->next) {
-				for (servicesmember_p = (hostsmember_p->host_ptr)->services; servicesmember_p != NULL; servicesmember_p = servicesmember_p->next) {
-					if ((service_p = servicesmember_p->service_ptr) == NULL)
-						continue;
-					ret = schedule_downtime(SERVICE_DOWNTIME, service_p->host_name, service_p->description, entry_time, GV("author"),
-							GV("comment"), GV_TIMESTAMP("start_time"), GV_TIMESTAMP("end_time"), GV_BOOL("fixed"),
-							GV_ULONG("trigger_id"), duration,
-							&downtime_id);
-
-					if (ret != 0)
-						return ERROR;
-				}
-			}
+			if (rbtree_traverse(target_hostgroup->members, schedule_service_downtime_from_command, (void *)ext_command, rbinorder))
+				return ERROR;
 			return OK;
 
 		default:
