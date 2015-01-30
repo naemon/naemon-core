@@ -11,7 +11,6 @@
  * @brief Compat header to facilitate using Nagios projects with Naemon
  */
 #include "lnae-utils.h"
-#include "fanout.h"
 #include "nsutils.h"
 #include "kvvec.h"
 #include "kvvec_ekvstr.h"
