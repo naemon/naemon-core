@@ -608,12 +608,43 @@ static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags)
 	free(cr);
 }
 
+static int propagate_when_not_up(void *_hst, void *user_data)
+{
+	host *hst = (host *)_hst;
+	char *direction = (char *)user_data;
+	if (hst->current_state != STATE_UP) {
+		schedule_next_host_check(hst, 0, CHECK_OPTION_NONE);
+		log_debug_info(DEBUGL_CHECKS, 1, "Check of %s host '%s' queued.\n", direction, hst->name);
+	}
+	return 0;
+}
+
+static int propagate_when_up(void *_hst, void *user_data)
+{
+	host *hst = (host *)_hst;
+	char *direction = (char *)user_data;
+	if (hst->current_state == STATE_UP) {
+		schedule_next_host_check(hst, 0, CHECK_OPTION_NONE);
+		log_debug_info(DEBUGL_CHECKS, 1, "Check of %s host '%s' queued.\n", direction, hst->name);
+	}
+	return 0;
+}
+
+static int propagate_when_not_unreachable(void *_hst, void *user_data)
+{
+	host *hst = (host *)_hst;
+	char *direction = (char *)user_data;
+	if (hst->current_state != STATE_UNREACHABLE) {
+		schedule_next_host_check(hst, 0, CHECK_OPTION_NONE);
+		log_debug_info(DEBUGL_CHECKS, 1, "Check of %s host '%s' queued.\n", direction, hst->name);
+	}
+	return 0;
+}
+
+
 /* processes the result of a synchronous or asynchronous host check */
 static int process_host_check_result(host *hst, int new_state, char *old_plugin_output, char *old_long_plugin_output, int check_options, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded)
 {
-	hostsmember *temp_hostsmember = NULL;
-	host *child_host = NULL;
-	host *parent_host = NULL;
 	host *master_host = NULL;
 	time_t current_time = 0L;
 
@@ -658,25 +689,12 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 			/* propagate checks to immediate parents if they are not already UP */
 			/* we do this because a parent host (or grandparent) may have recovered somewhere and we should catch the recovery as soon as possible */
 			log_debug_info(DEBUGL_CHECKS, 1, "Propagating checks to parent host(s)...\n");
-			for (temp_hostsmember = hst->parent_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-				parent_host = temp_hostsmember->host_ptr;
-				if (parent_host->current_state != STATE_UP) {
-					log_debug_info(DEBUGL_CHECKS, 1, "Check of parent host '%s' queued.\n", parent_host->name);
-					schedule_next_host_check(parent_host, 0, CHECK_OPTION_NONE);
-				}
-			}
+			rbtree_traverse(hst->parent_hosts, propagate_when_not_up, "parent", rbinorder);
 
 			/* propagate checks to immediate children if they are not already UP */
 			/* we do this because children may currently be UNREACHABLE, but may (as a result of this recovery) switch to UP or DOWN states */
 			log_debug_info(DEBUGL_CHECKS, 1, "Propagating checks to child host(s)...\n");
-			for (temp_hostsmember = hst->child_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-				child_host = temp_hostsmember->host_ptr;
-				if (child_host->current_state != STATE_UP) {
-					log_debug_info(DEBUGL_CHECKS, 1, "Check of child host '%s' queued.\n", child_host->name);
-					schedule_next_host_check(child_host, 0, CHECK_OPTION_NONE);
-				}
-			}
-
+			rbtree_traverse(hst->child_hosts, propagate_when_not_up, "child", rbinorder);
 		}
 
 		/***** HOST IS STILL DOWN/UNREACHABLE *****/
@@ -766,25 +784,12 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 			/* we do this because a parent host (or grandparent) may have gone down and blocked our route */
 			/* checking the parents ASAP will allow us to better determine the final state (DOWN/UNREACHABLE) of this host later */
 			log_debug_info(DEBUGL_CHECKS, 1, "Propagating checks to immediate parent hosts that are UP...\n");
-
-			for (temp_hostsmember = hst->parent_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-				parent_host = temp_hostsmember->host_ptr;
-				if (parent_host->current_state == STATE_UP) {
-					schedule_next_host_check(parent_host, 0, CHECK_OPTION_NONE);
-					log_debug_info(DEBUGL_CHECKS, 1, "Check of host '%s' queued.\n", parent_host->name);
-				}
-			}
+			rbtree_traverse(hst->parent_hosts, propagate_when_up, "parent", rbinorder);
 
 			/* propagate checks to immediate children if they are not UNREACHABLE */
 			/* we do this because we may now be blocking the route to child hosts */
 			log_debug_info(DEBUGL_CHECKS, 1, "Propagating checks to immediate non-UNREACHABLE child hosts...\n");
-			for (temp_hostsmember = hst->child_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-				child_host = temp_hostsmember->host_ptr;
-				if (child_host->current_state != STATE_UNREACHABLE) {
-					log_debug_info(DEBUGL_CHECKS, 1, "Check of child host '%s' queued.\n", child_host->name);
-					schedule_next_host_check(child_host, 0, CHECK_OPTION_NONE);
-				}
-			}
+			rbtree_traverse(hst->child_hosts, propagate_when_not_unreachable, "child", rbinorder);
 
 			/* check dependencies on second to last host check */
 			if (enable_predictive_host_dependency_checks == TRUE && hst->current_attempt == (hst->max_attempts - 1)) {
@@ -1266,16 +1271,18 @@ static int is_host_result_fresh(host *temp_host, time_t current_time, int log_th
 	return TRUE;
 }
 
+static int is_host_up(void *_hst, void *user_data)
+{
+	host *hst = (host *)_hst;
+	if (hst->current_state == STATE_UP)
+		return 1;
+	return 0;
+}
+
 /* determination of the host's state based on route availability*/
 /* used only to determine difference between DOWN and UNREACHABLE states */
 static int determine_host_reachability(host *hst)
 {
-	host *parent_host = NULL;
-	hostsmember *temp_hostsmember = NULL;
-
-	if (hst == NULL)
-		return STATE_DOWN;
-
 	log_debug_info(DEBUGL_CHECKS, 2, "Determining state of host '%s': current state=%d (%s)\n", hst->name, hst->current_state, host_state_name(hst->current_state));
 
 	/* host is UP - no translation needed */
@@ -1284,25 +1291,11 @@ static int determine_host_reachability(host *hst)
 		return STATE_UP;
 	}
 
-	/* host has no parents, so it is DOWN */
-	if (hst->parent_hosts == NULL) {
-		log_debug_info(DEBUGL_CHECKS, 2, "Host has no parents, so it is DOWN.\n");
+	if (rbtree_num_nodes(hst->parent_hosts) == 0)
 		return STATE_DOWN;
-	}
 
-	/* check all parent hosts to see if we're DOWN or UNREACHABLE */
-	else {
-		for (temp_hostsmember = hst->parent_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-			parent_host = temp_hostsmember->host_ptr;
-			log_debug_info(DEBUGL_CHECKS, 2, "   Parent '%s' is %s\n", parent_host->name, host_state_name(parent_host->current_state));
-			/* bail out as soon as we find one parent host that is UP */
-			if (parent_host->current_state == STATE_UP) {
-				/* set the current state */
-				log_debug_info(DEBUGL_CHECKS, 2, "At least one parent (%s) is up, so host is DOWN.\n", parent_host->name);
-				return STATE_DOWN;
-			}
-		}
-	}
+	if (rbtree_traverse(hst->parent_hosts, is_host_up, NULL, rbinorder))
+		return STATE_DOWN;
 
 	log_debug_info(DEBUGL_CHECKS, 2, "No parents were up, so host is UNREACHABLE.\n");
 	return STATE_UNREACHABLE;

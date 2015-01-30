@@ -43,6 +43,24 @@ static struct {
 	nm_bufferqueue *bq;
 } command_worker = { "command file", "command file worker", 0, 0, NULL };
 
+struct propagation_parameters {
+	int level;
+	int affect_top_host;
+	int affect_hosts;
+	int affect_services;
+};
+
+struct downtime_parameters {
+	time_t entry_time;
+	char *author;
+	char *comment_data;
+	time_t start_time;
+	time_t end_time;
+	int fixed;
+	unsigned long triggered_by;
+	unsigned long duration;
+};
+
 static void disable_service_checks(service *);			/* disables a service check */
 static void enable_service_checks(service *);			/* enables a service check */
 static void enable_all_notifications(void);                    /* enables notifications on a program-wide basis */
@@ -51,9 +69,9 @@ static void enable_service_notifications(service *);		/* enables service notific
 static void disable_service_notifications(service *);		/* disables service notifications */
 static void enable_host_notifications(host *);			/* enables host notifications */
 static void disable_host_notifications(host *);		/* disables host notifications */
-static void enable_and_propagate_notifications(host *hst, int level, int affect_top_host, int affect_hosts, int affect_services);
-static void disable_and_propagate_notifications(host *hst, int level, int affect_top_host, int affect_hosts, int affect_services);
-static void schedule_and_propagate_downtime(host *temp_host, time_t entry_time, char *author, char *comment_data, time_t start_time, time_t end_time, int fixed, unsigned long triggered_by, unsigned long duration);
+static void enable_and_propagate_notifications(host *hst, struct propagation_parameters *params);
+static void disable_and_propagate_notifications(host *hst, struct propagation_parameters *params);
+static void schedule_and_propagate_downtime(host *temp_host, struct downtime_parameters *params);
 static void acknowledge_host_problem(host *, char *, char *, int, int, int);	/* acknowledges a host problem */
 static void acknowledge_service_problem(service *, char *, char *, int, int, int);	/* acknowledges a service problem */
 static void remove_host_acknowledgement(host *);		/* removes a host acknowledgement */
@@ -1700,11 +1718,25 @@ static int host_command_handler(const struct external_command *ext_command, time
 			disable_host_notifications(target_host);
 			return OK;
 		case CMD_ENABLE_ALL_NOTIFICATIONS_BEYOND_HOST:
-			enable_and_propagate_notifications(target_host, 0, FALSE, TRUE, TRUE);
+		{
+			struct propagation_parameters params;
+			params.level = 0;
+			params.affect_top_host = FALSE;
+			params.affect_hosts = TRUE;
+			params.affect_services = TRUE;
+			enable_and_propagate_notifications(target_host, &params);
 			return OK;
+		}
 		case CMD_DISABLE_ALL_NOTIFICATIONS_BEYOND_HOST:
-			disable_and_propagate_notifications(target_host, 0, FALSE, TRUE, TRUE);
+		{
+			struct propagation_parameters params;
+			params.level = 0;
+			params.affect_top_host = FALSE;
+			params.affect_hosts = TRUE;
+			params.affect_services = TRUE;
+			disable_and_propagate_notifications(target_host, &params);
 			return OK;
+		}
 		case CMD_ENABLE_HOST_SVC_NOTIFICATIONS:
 			foreach_service_on_host(target_host, enable_service_notifications);
 			return OK;
@@ -1820,6 +1852,8 @@ static int host_command_handler(const struct external_command *ext_command, time
 			return OK;
 
 		case CMD_SCHEDULE_AND_PROPAGATE_TRIGGERED_HOST_DOWNTIME:
+		{
+			struct downtime_parameters params;
 			if (GV_BOOL("fixed") > 0) {
 				duration = (GV_TIMESTAMP("end_time")) - (GV_TIMESTAMP("start_time"));
 			}
@@ -1830,15 +1864,40 @@ static int host_command_handler(const struct external_command *ext_command, time
 			schedule_downtime(HOST_DOWNTIME, target_host->name, NULL, entry_time, GV("author"), GV("comment"), GV_TIMESTAMP("start_time"), GV_TIMESTAMP("end_time"), GV_BOOL("fixed"), GV_ULONG("trigger_id"), duration, &downtime_id);
 
 			/* schedule triggered downtime for all child hosts */
-			schedule_and_propagate_downtime(target_host, entry_time, GV("author"), GV("comment"), GV_TIMESTAMP("start_time"), GV_TIMESTAMP("end_time"), GV_BOOL("fixed"), downtime_id, duration);
+			params.entry_time = entry_time;
+			params.author = GV("author");
+			params.comment_data = GV("comment");
+			params.start_time = GV_TIMESTAMP("start_time");
+			params.end_time = GV_TIMESTAMP("end_time");
+			params.fixed = GV_BOOL("fixed");
+			params.triggered_by = downtime_id;
+			params.duration = duration;
+			schedule_and_propagate_downtime(target_host, &params);
 			return OK;
+		}
 		case CMD_ENABLE_HOST_AND_CHILD_NOTIFICATIONS:
-			enable_and_propagate_notifications(target_host, 0, TRUE, TRUE, FALSE);
+		{
+			struct propagation_parameters params;
+			params.level = 0;
+			params.affect_top_host = TRUE;
+			params.affect_hosts = TRUE;
+			params.affect_services = FALSE;
+			enable_and_propagate_notifications(target_host, &params);
 			return OK;
+		}
 		case CMD_DISABLE_HOST_AND_CHILD_NOTIFICATIONS:
-			disable_and_propagate_notifications(target_host, 0, TRUE, TRUE, FALSE);
+		{
+			struct propagation_parameters params;
+			params.level = 0;
+			params.affect_top_host = TRUE;
+			params.affect_hosts = TRUE;
+			params.affect_services = FALSE;
+			disable_and_propagate_notifications(target_host, &params);
 			return OK;
+		}
 		case CMD_SCHEDULE_AND_PROPAGATE_HOST_DOWNTIME:
+		{
+			struct downtime_parameters params;
 			if (GV_BOOL("fixed") > 0) {
 				duration = (GV_TIMESTAMP("end_time")) - (GV_TIMESTAMP("start_time"));
 			}
@@ -1849,8 +1908,17 @@ static int host_command_handler(const struct external_command *ext_command, time
 			schedule_downtime(HOST_DOWNTIME, target_host->name, NULL, entry_time, GV("author"), GV("comment"), GV_TIMESTAMP("start_time"), GV_TIMESTAMP("end_time"), GV_BOOL("fixed"), GV_ULONG("trigger_id"), duration, &downtime_id);
 
 			/* schedule (non-triggered) downtime for all child hosts */
-			schedule_and_propagate_downtime(target_host, entry_time, GV("author"), GV("comment"), GV_TIMESTAMP("start_time"), GV_TIMESTAMP("end_time"), GV_BOOL("fixed"), 0, duration);
+			params.entry_time = entry_time;
+			params.author = GV("author");
+			params.comment_data = GV("comment");
+			params.start_time = GV_TIMESTAMP("start_time");
+			params.end_time = GV_TIMESTAMP("end_time");
+			params.fixed = GV_BOOL("fixed");
+			params.triggered_by = 0;
+			params.duration = duration;
+			schedule_and_propagate_downtime(target_host, &params);
 			return OK;
+		}
 		case CMD_SET_HOST_NOTIFICATION_NUMBER:
 			set_host_notification_number(target_host, GV_INT("notification_number"));
 			return OK;
@@ -3601,83 +3669,79 @@ static void disable_host_notifications(host *hst)
 	return;
 }
 
-
-/* enables notifications for all hosts and services "beyond" a given host */
-static void enable_and_propagate_notifications(host *hst, int level, int affect_top_host, int affect_hosts, int affect_services)
+static int enable_and_propagate_notifications_cb(void *_hst, void *user_data)
 {
-	host *child_host = NULL;
-	service *temp_service = NULL;
-	servicesmember *temp_servicesmember = NULL;
-	hostsmember *temp_hostsmember = NULL;
+	host *hst = (host *)_hst;
+	struct propagation_parameters *params = (struct propagation_parameters *)user_data;
 
-	/* enable notification for top level host */
-	if (affect_top_host == TRUE && level == 0)
+	struct propagation_parameters child_params = *params;
+	child_params.level += 1;
+	enable_and_propagate_notifications(hst, &child_params);
+
+	/* enable notifications for this host */
+	if (params->affect_hosts == TRUE)
 		enable_host_notifications(hst);
 
-	/* check all child hosts... */
-	for (temp_hostsmember = hst->child_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-
-		child_host = temp_hostsmember->host_ptr;
-
-		/* recurse... */
-		enable_and_propagate_notifications(child_host, level + 1, affect_top_host, affect_hosts, affect_services);
-
-		/* enable notifications for this host */
-		if (affect_hosts == TRUE)
-			enable_host_notifications(child_host);
-
-		/* enable notifications for all services on this host... */
-		if (affect_services == TRUE) {
-			for (temp_servicesmember = child_host->services; temp_servicesmember != NULL; temp_servicesmember = temp_servicesmember->next) {
-				if ((temp_service = temp_servicesmember->service_ptr) == NULL)
-					continue;
-				enable_service_notifications(temp_service);
-			}
+	/* enable notifications for all services on this host... */
+	if (params->affect_services == TRUE) {
+		servicesmember *temp_servicesmember = NULL;
+		for (temp_servicesmember = hst->services; temp_servicesmember != NULL; temp_servicesmember = temp_servicesmember->next) {
+			service *temp_service = NULL;
+			if ((temp_service = temp_servicesmember->service_ptr) == NULL)
+				continue;
+			enable_service_notifications(temp_service);
 		}
 	}
+	return 0;
+}
 
-	return;
+/* enables notifications for all hosts and services "beyond" a given host */
+static void enable_and_propagate_notifications(host *hst, struct propagation_parameters *params)
+{
+	/* enable notification for top level host */
+	if (params->affect_top_host == TRUE && params->level == 0)
+		enable_host_notifications(hst);
+
+	rbtree_traverse(hst->child_hosts, enable_and_propagate_notifications_cb, params, rbinorder);
 }
 
 
-/* disables notifications for all hosts and services "beyond" a given host */
-static void disable_and_propagate_notifications(host *hst, int level, int affect_top_host, int affect_hosts, int affect_services)
+static int disable_and_propagate_notifications_cb(void *_hst, void *user_data)
 {
-	host *child_host = NULL;
-	service *temp_service = NULL;
-	servicesmember *temp_servicesmember = NULL;
-	hostsmember *temp_hostsmember = NULL;
+	host *hst = (host *)_hst;
+	struct propagation_parameters *params = (struct propagation_parameters *)user_data;
+	struct propagation_parameters child_params = *params;
+	child_params.level += 1;
+	disable_and_propagate_notifications(hst, &child_params);
 
+	/* disable notifications for this host */
+	if (params->affect_hosts == TRUE)
+		disable_host_notifications(hst);
+
+	/* disable notifications for all services on this host... */
+	if (params->affect_services == TRUE) {
+		servicesmember *temp_servicesmember = NULL;
+		for (temp_servicesmember = hst->services; temp_servicesmember != NULL; temp_servicesmember = temp_servicesmember->next) {
+			service *temp_service = NULL;
+			if ((temp_service = temp_servicesmember->service_ptr) == NULL)
+				continue;
+			disable_service_notifications(temp_service);
+		}
+	}
+	return 0;
+}
+
+/* disables notifications for all hosts and services "beyond" a given host */
+static void disable_and_propagate_notifications(host *hst, struct propagation_parameters *params)
+{
 	if (hst == NULL)
 		return;
 
 	/* disable notifications for top host */
-	if (affect_top_host == TRUE && level == 0)
+	if (params->affect_top_host == TRUE && params->level == 0)
 		disable_host_notifications(hst);
 
-	/* check all child hosts... */
-	for (temp_hostsmember = hst->child_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-
-		child_host = temp_hostsmember->host_ptr;
-
-		/* recurse... */
-		disable_and_propagate_notifications(child_host, level + 1, affect_top_host, affect_hosts, affect_services);
-
-		/* disable notifications for this host */
-		if (affect_hosts == TRUE)
-			disable_host_notifications(child_host);
-
-		/* disable notifications for all services on this host... */
-		if (affect_services == TRUE) {
-			for (temp_servicesmember = child_host->services; temp_servicesmember != NULL; temp_servicesmember = temp_servicesmember->next) {
-				if ((temp_service = temp_servicesmember->service_ptr) == NULL)
-					continue;
-				disable_service_notifications(temp_service);
-			}
-		}
-	}
-
-	return;
+	rbtree_traverse(hst->child_hosts, disable_and_propagate_notifications_cb, params, rbinorder);
 }
 
 
@@ -3796,26 +3860,24 @@ static void disable_contact_service_notifications(contact *cntct)
 	return;
 }
 
+static int schedule_and_propagate_downtime_cb(void *_hst, void *user_data)
+{
+	struct downtime_parameters *params = (struct downtime_parameters *)user_data;
+	host *hst = (host *)_hst;
+
+	schedule_and_propagate_downtime(hst, params);
+	schedule_downtime(
+		HOST_DOWNTIME, hst->name, NULL, params->entry_time,
+		params->author, params->comment_data, params->start_time,
+		params->end_time, params->fixed, params->triggered_by,
+		params->duration, NULL);
+	return 0;
+}
 
 /* schedules downtime for all hosts "beyond" a given host */
-static void schedule_and_propagate_downtime(host *temp_host, time_t entry_time, char *author, char *comment_data, time_t start_time, time_t end_time, int fixed, unsigned long triggered_by, unsigned long duration)
+static void schedule_and_propagate_downtime(host *temp_host, struct downtime_parameters *params)
 {
-	host *child_host = NULL;
-	hostsmember *temp_hostsmember = NULL;
-
-	/* check all child hosts... */
-	for (temp_hostsmember = temp_host->child_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-
-		child_host = temp_hostsmember->host_ptr;
-
-		/* recurse... */
-		schedule_and_propagate_downtime(child_host, entry_time, author, comment_data, start_time, end_time, fixed, triggered_by, duration);
-
-		/* schedule downtime for this host */
-		schedule_downtime(HOST_DOWNTIME, child_host->name, NULL, entry_time, author, comment_data, start_time, end_time, fixed, triggered_by, duration, NULL);
-	}
-
-	return;
+	rbtree_traverse(temp_host->child_hosts, schedule_and_propagate_downtime_cb, params, rbinorder);
 }
 
 

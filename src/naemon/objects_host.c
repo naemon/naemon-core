@@ -7,8 +7,10 @@
 #include "objectlist.h"
 #include "logging.h"
 #include "nm_alloc.h"
+#include "utils.h"
 
 #include <string.h>
+#include <glib.h>
 
 static dkhash_table *host_hash_table = NULL;
 host *host_list = NULL;
@@ -40,11 +42,23 @@ void destroy_objects_host()
 	num_objects.hosts = 0;
 }
 
+int compare_host(const void *_host1, const void *_host2)
+{
+	host *host1 = (host *)_host1;
+	host *host2 = (host *)_host2;
+	if (!host1 && host2)
+		return -1;
+	if (host1 && !host2)
+		return 1;
+	if (!host1 && !host2)
+		return 0;
+	return strcmp(host1->name, host2->name);
+}
+
 host *create_host(char *name, char *display_name, char *alias, char *address, char *check_period, int initial_state, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, char *notification_period, int notifications_enabled, char *check_command, int checks_enabled, int accept_passive_checks, char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, char *notes, char *notes_url, char *action_url, char *icon_image, char *icon_image_alt, char *vrml_image, char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int should_be_drawn, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
 {
 	host *new_host = NULL;
 	timeperiod *check_tp = NULL, *notify_tp = NULL;
-	int result = OK;
 
 	/* make sure we have the data we need */
 	if (name == NULL || !strcmp(name, "")) {
@@ -144,12 +158,8 @@ host *create_host(char *name, char *display_name, char *alias, char *address, ch
 	new_host->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
 	new_host->notifications_enabled = (notifications_enabled > 0) ? TRUE : FALSE;
 	new_host->check_options = CHECK_OPTION_NONE;
-
-	/* handle errors */
-	if (result == ERROR) {
-		nm_free(new_host);
-		return NULL;
-	}
+	new_host->child_hosts = rbtree_create(compare_host);
+	new_host->parent_hosts = rbtree_create(compare_host);
 
 	return new_host;
 }
@@ -182,29 +192,11 @@ int register_host(host *new_host)
 
 void destroy_host(host *this_host)
 {
-	struct hostsmember *this_hostsmember, *next_hostsmember;
 	struct servicesmember *this_servicesmember, *next_servicesmember;
 	struct contactgroupsmember *this_contactgroupsmember, *next_contactgroupsmember;
 	struct contactsmember *this_contactsmember, *next_contactsmember;
 	struct customvariablesmember *this_customvariablesmember, *next_customvariablesmember;
 	struct objectlist *slavelist;
-
-	/* free memory for parent hosts */
-	this_hostsmember = this_host->parent_hosts;
-	while (this_hostsmember != NULL) {
-		next_hostsmember = this_hostsmember->next;
-		nm_free(this_hostsmember->host_name);
-		nm_free(this_hostsmember);
-		this_hostsmember = next_hostsmember;
-	}
-
-	/* free memory for child host links */
-	this_hostsmember = this_host->child_hosts;
-	while (this_hostsmember != NULL) {
-		next_hostsmember = this_hostsmember->next;
-		nm_free(this_hostsmember);
-		this_hostsmember = next_hostsmember;
-	}
 
 	/* free memory for service links */
 	this_servicesmember = this_host->services;
@@ -246,6 +238,11 @@ void destroy_host(host *this_host)
 		destroy_hostdependency(slavelist->object_ptr);
 	for (slavelist = this_host->escalation_list; slavelist; slavelist = slavelist->next)
 		destroy_hostescalation(slavelist->object_ptr);
+
+	rbtree_destroy(this_host->child_hosts, NULL);
+	this_host->child_hosts = NULL;
+	rbtree_destroy(this_host->parent_hosts, NULL);
+	this_host->parent_hosts = NULL;
 
 	if (this_host->display_name != this_host->name)
 		nm_free(this_host->display_name);
@@ -289,62 +286,34 @@ const char *host_state_name(int state)
 	return "(unknown)";
 }
 
-hostsmember *add_parent_host_to_host(host *hst, char *host_name)
+int add_parent_to_host(host *hst, host *parent)
 {
-	hostsmember *new_hostsmember = NULL;
-	int result = OK;
-
 	/* make sure we have the data we need */
-	if (hst == NULL || host_name == NULL || !strcmp(host_name, "")) {
+	if (hst == NULL || parent == NULL) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Host is NULL or parent host name is NULL\n");
-		return NULL;
+		return ERROR;
 	}
 
 	/* a host cannot be a parent/child of itself */
-	if (!strcmp(host_name, hst->name)) {
+	if (hst == parent) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Host '%s' cannot be a child/parent of itself\n", hst->name);
-		return NULL;
+		return ERROR;
 	}
 
-	/* allocate memory */
-	new_hostsmember = nm_calloc(1, sizeof(hostsmember));
-	/* duplicate string vars */
-	new_hostsmember->host_name = nm_strdup(host_name);
+	rbtree_insert(hst->parent_hosts, parent);
 
-	/* handle errors */
-	if (result == ERROR) {
-		nm_free(new_hostsmember->host_name);
-		nm_free(new_hostsmember);
-		return NULL;
-	}
-
-	/* add the parent host entry to the host definition */
-	new_hostsmember->next = hst->parent_hosts;
-	hst->parent_hosts = new_hostsmember;
-
-	return new_hostsmember;
+	return OK;
 }
 
-hostsmember *add_child_link_to_host(host *hst, host *child_ptr)
+int add_child_to_host(host *hst, host *child_ptr)
 {
-	hostsmember *new_hostsmember = NULL;
-
 	/* make sure we have the data we need */
 	if (hst == NULL || child_ptr == NULL)
-		return NULL;
+		return ERROR;
 
-	/* allocate memory */
-	new_hostsmember = nm_malloc(sizeof(hostsmember));
+	rbtree_insert(hst->child_hosts, child_ptr);
 
-	/* assign values */
-	new_hostsmember->host_name = child_ptr->name;
-	new_hostsmember->host_ptr = child_ptr;
-
-	/* add the child entry to the host definition */
-	new_hostsmember->next = hst->child_hosts;
-	hst->child_hosts = new_hostsmember;
-
-	return new_hostsmember;
+	return OK;
 }
 
 /* add a new contactgroup to a host */
@@ -463,14 +432,34 @@ unsigned int host_services_value(host *h)
 	return ret;
 }
 
-static void fcache_hostlist(FILE *fp, const char *prefix, hostsmember *list)
+struct implode_parameters {
+	char *delimiter;
+	GString *buf;
+};
+
+static int implode_helper(void *_hst, void *user_data)
 {
-	if (list) {
-		hostsmember *l;
-		fprintf(fp, "%s", prefix);
-		for (l = list; l; l = l->next)
-			fprintf(fp, "%s%c", l->host_name, l->next ? ',' : '\n');
-	}
+	host *hst = (host *)_hst;
+	struct implode_parameters *params = (struct implode_parameters *)user_data;
+	if (params->buf->len > 0)
+		g_string_append(params->buf, params->delimiter);
+	g_string_append(params->buf, hst->name);
+
+	return 0;
+}
+
+char * implode_hosttree(struct rbtree *tree, char *delimiter)
+{
+	char *result;
+	struct implode_parameters params;
+	params.delimiter = delimiter;
+	params.buf = g_string_new("");
+	rbtree_traverse(tree, implode_helper, &params, rbinorder);
+	result = malloc(params.buf->len + 1);
+	strncpy(result, params.buf->str, params.buf->len);
+	result[params.buf->len] = 0;
+	g_string_free(params.buf, TRUE);
+	return result;
 }
 
 void fcache_host(FILE *fp, host *temp_host)
@@ -483,7 +472,12 @@ void fcache_host(FILE *fp, host *temp_host)
 		fprintf(fp, "\talias\t%s\n", temp_host->alias);
 	if (temp_host->address)
 		fprintf(fp, "\taddress\t%s\n", temp_host->address);
-	fcache_hostlist(fp, "\tparents\t", temp_host->parent_hosts);
+	if (rbtree_num_nodes(temp_host->parent_hosts)) {
+		char *parents;
+		parents = implode_hosttree(temp_host->parent_hosts, ",");
+		fprintf(fp, "\tparents\t%s\n", parents);
+		nm_free(parents);
+	}
 	if (temp_host->check_period)
 		fprintf(fp, "\tcheck_period\t%s\n", temp_host->check_period);
 	if (temp_host->check_command)

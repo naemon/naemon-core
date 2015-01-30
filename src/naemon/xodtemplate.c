@@ -6085,7 +6085,6 @@ static int xodtemplate_register_host_relations(void *host_, void *discard)
 	xodtemplate_host *this_host = (xodtemplate_host *)host_;
 	host *new_host = NULL;
 	char *parent_host = NULL;
-	hostsmember *new_hostsmember = NULL;
 	char *contact_name = NULL;
 	char *contact_group = NULL;
 	contactsmember *new_contactsmember = NULL;
@@ -6099,12 +6098,13 @@ static int xodtemplate_register_host_relations(void *host_, void *discard)
 	if (this_host->parents != NULL) {
 
 		for (parent_host = strtok(this_host->parents, ","); parent_host != NULL; parent_host = strtok(NULL, ",")) {
+			host *parent;
 			strip(parent_host);
-			new_hostsmember = add_parent_host_to_host(new_host, parent_host);
-			if (new_hostsmember == NULL) {
+			parent = find_host(parent_host);
+			if (add_parent_to_host(new_host, parent) != OK)
 				nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add parent host '%s' to host (config file '%s', starting on line %d)\n", parent_host, xodtemplate_config_file_name(this_host->_config_file), this_host->_start_line);
-				return ERROR;
-			}
+			if (add_child_to_host(parent, new_host) != OK)
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add child host to host '%s' (config file '%s', starting on line %d)\n", parent_host, xodtemplate_config_file_name(this_host->_config_file), this_host->_start_line);
 		}
 	}
 

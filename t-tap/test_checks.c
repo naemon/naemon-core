@@ -43,16 +43,28 @@ void setup_check_result(void)
 	tmp_check_result->finish_time = finish_time;
 }
 
+void destroy_objects(void)
+{
+	destroy_objects_host();
+	destroy_objects_service();
+	destroy_objects_command();
+}
+
 void setup_objects(time_t when)
 {
+	command *cmd1;
+	init_objects_host(1);
+	init_objects_service(2);
+	init_objects_command(1);
+
 	enable_predictive_service_dependency_checks = FALSE;
 
-	host1 = (host *)calloc(1, sizeof(host));
-	host1->name = strdup("Host1");
-	host1->address = strdup("127.0.0.1");
-	host1->retry_interval = 1;
-	host1->check_interval = 5;
-	host1->check_options = 0;
+	cmd1 = create_command(strdup("a_command"), strdup("command_line"));
+	register_command(cmd1);
+
+	host1 = create_host(strdup("Host1"), NULL, NULL, strdup("127.0.0.1"), NULL, 0, 0.0, 0.0, 5, 0, 0.0, 0.0, NULL, 0, strdup("a_command"), 0, 0, NULL, 0, 0, 0.0, 0.0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL ,NULL ,NULL ,0, 0, 0, 0, 0.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0);
+	ok(host1 != NULL, "Host creation was successful");
+	register_host(host1);
 	host1->state_type = SOFT_STATE;
 	host1->current_state = STATE_DOWN;
 	host1->has_been_checked = TRUE;
@@ -60,18 +72,14 @@ void setup_objects(time_t when)
 	host1->next_check = when;
 
 	/* First service is a normal one */
-	svc1 = (service *)calloc(1, sizeof(service));
-	svc1->host_name = strdup("Host1");
-	svc1->host_ptr = host1;
-	svc1->description = strdup("Normal service");
+	svc1 = create_service("Host1", "Normal service", NULL, NULL, 0, 4, 0, 5, 1, 0, 0, NULL, 0, 0, 0, NULL, 0, "a_command", 0, 0, 0.0, 0.0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0);
+	ok(svc1 != NULL, "First service creation was successful");
+	register_service(svc1);
 	svc1->check_options = 0;
 	svc1->next_check = when;
 	svc1->state_type = SOFT_STATE;
 	svc1->current_state = STATE_CRITICAL;
-	svc1->retry_interval = 1;
-	svc1->check_interval = 5;
 	svc1->current_attempt = 1;
-	svc1->max_attempts = 4;
 	svc1->last_state_change = 0;
 	svc1->last_state_change = 0;
 	svc1->last_check = (time_t)1234560000;
@@ -80,16 +88,12 @@ void setup_objects(time_t when)
 	svc1->last_hard_state_change = (time_t)1111111111;
 
 	/* Second service .... to be configured! */
-	svc2 = (service *)calloc(1, sizeof(service));
-	svc2->host_name = strdup("Host1");
-	svc2->description = strdup("To be nudged");
-	svc2->check_options = 0;
+	svc2 = create_service("Host1", "To be nudged", NULL, NULL, 0, 4, 0, 5, 1, 0, 0, NULL, 0, 0, 0, NULL, 0, "a_command", 0, 0, 0.0, 0.0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0);
+	ok(svc2 != NULL, "First service creation was successful");
+	register_service(svc2);
 	svc2->next_check = when;
 	svc2->state_type = SOFT_STATE;
 	svc2->current_state = STATE_OK;
-	svc2->retry_interval = 1;
-	svc2->check_interval = 5;
-
 }
 
 int main(int argc, char **argv)
@@ -97,10 +101,9 @@ int main(int argc, char **argv)
 	time_t now = 0L;
 
 
-	plan_tests(35);
+	plan_tests(50);
 
 	init_event_queue();
-
 	time(&now);
 
 
@@ -172,6 +175,7 @@ int main(int argc, char **argv)
 *	ok(svc1->state_type == HARD_STATE, "This should be a HARD state since the host is in a failure state");
 *	ok(svc1->current_attempt == 1, "Previous status was OK, so this failure should show current_attempt=1") || diag("Current attempt=%d", svc1->current_attempt);
 **/
+	destroy_objects();
 
 
 
@@ -214,6 +218,7 @@ int main(int argc, char **argv)
 	handle_async_service_check_result(svc1, tmp_check_result);
 
 	ok(svc1->acknowledgement_type == ACKNOWLEDGEMENT_NONE, "Ack reset to none");
+	destroy_objects();
 
 
 
@@ -272,6 +277,7 @@ int main(int argc, char **argv)
 	tmp_check_result->output = strdup("Back to OK");
 	handle_async_service_check_result(svc1, tmp_check_result);
 	ok(svc1->acknowledgement_type == ACKNOWLEDGEMENT_NONE, "Ack removed");
+	destroy_objects();
 
 
 
@@ -310,6 +316,7 @@ int main(int argc, char **argv)
 	tmp_check_result->output = strdup("Back to OK");
 	handle_async_service_check_result(svc1, tmp_check_result);
 	ok(svc1->acknowledgement_type == ACKNOWLEDGEMENT_NONE, "Ack removed");
+	destroy_objects();
 
 
 	/* Test case:
@@ -370,6 +377,7 @@ int main(int argc, char **argv)
 		diag("current_attempt=%d", host1->current_attempt);
 	if (!ok(strcmp(host1->plugin_output, "UP again") == 0, "output set"))
 		diag("plugin_output=%s", host1->plugin_output);
+	destroy_objects();
 
 	destroy_event_queue();
 

@@ -273,6 +273,7 @@ static const char *host_parent_path(host *leaf, char sep)
 	unsigned int len = 0, pos = 0;
 	objectlist *stack = NULL, *list, *next;
 	host *h = leaf;
+	struct rbnode *node;
 
 	if (!h->parent_hosts)
 		return h->name;
@@ -284,13 +285,13 @@ static const char *host_parent_path(host *leaf, char sep)
 		return host_parent_path_cache[h->id];
 	}
 
-	while (h) {
+	node = rbtree_first(h->parent_hosts);
+
+	while (node != &h->parent_hosts->nil) {
+		h = node->data;
 		len += strlen(h->name) + 2; /* room for separator */
 		prepend_object_to_objectlist(&stack, h->name);
-		if (h->parent_hosts && h->parent_hosts->host_ptr)
-			h = h->parent_hosts->host_ptr;
-		else
-			break;
+		node = rbtree_first(h->parent_hosts);
 	}
 
 	ret = nm_malloc(len + 1);

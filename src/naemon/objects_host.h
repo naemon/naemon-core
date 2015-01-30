@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <time.h>
 #include "lib/lnae-utils.h"
+#include "lib/rbtree.h"
 #include "defaults.h"
 #include "objects_common.h"
 #include "objects_service.h"
@@ -28,8 +29,8 @@ struct host {
 	char    *display_name;
 	char	*alias;
 	char    *address;
-	struct hostsmember *parent_hosts;
-	struct hostsmember *child_hosts;
+	struct rbtree *parent_hosts;
+	struct rbtree *child_hosts;
 	struct servicesmember *services;
 	char    *check_command;
 	int     initial_state;
@@ -155,16 +156,18 @@ static const struct flag_map host_flag_map[] = {
 int init_objects_host(int elems);
 void destroy_objects_host(void);
 
-struct host *create_host(char *name, char *display_name, char *alias, char *address, char *check_period, int initial_state, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, char *notification_period, int notifications_enabled, char *check_command, int checks_enabled, int accept_passive_checks, char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, char *notes, char *notes_url, char *action_url, char *icon_image, char *icon_image_alt, char *vrml_image, char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int should_be_drawn, int retain_status_information, int retain_nonstatus_information, int obsess_over_host, unsigned int hourly_value);struct hostsmember *add_parent_host_to_host(host *, char *);
+struct host *create_host(char *name, char *display_name, char *alias, char *address, char *check_period, int initial_state, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, char *notification_period, int notifications_enabled, char *check_command, int checks_enabled, int accept_passive_checks, char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, char *notes, char *notes_url, char *action_url, char *icon_image, char *icon_image_alt, char *vrml_image, char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int should_be_drawn, int retain_status_information, int retain_nonstatus_information, int obsess_over_host, unsigned int hourly_value);
 int register_host(host *new_host);
 void destroy_host(host *this_host);
 
-struct hostsmember *add_child_link_to_host(host *, host *);
+int add_parent_to_host(host *, host *);
+int add_child_to_host(host *, host *);
 struct contactgroupsmember *add_contactgroup_to_host(host *, char *);
 struct contactsmember *add_contact_to_host(host *, char *);
 struct customvariablesmember *add_custom_variable_to_host(host *, char *, char *);
 struct servicesmember *add_service_link_to_host(host *, service *);
 
+int compare_host(const void *_host1, const void *_host2);
 struct host *find_host(const char *);
 int is_contact_for_host(struct host *, struct contact *);
 int is_escalated_contact_for_host(struct host *, struct contact *);
@@ -177,6 +180,7 @@ const char *host_state_name(int state);
 int get_host_count(void);
 unsigned int host_services_value(struct host *h);
 
+char * implode_hosttree(struct rbtree *tree, char *delimiter);
 void fcache_host(FILE *fp, struct host *temp_host);
 
 int log_host_event(host *);

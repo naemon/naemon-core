@@ -1408,8 +1408,6 @@ int pre_flight_object_check(int *w, int *e)
 	commandsmember *temp_commandsmember = NULL;
 	contactgroup *temp_contactgroup = NULL;
 	host *temp_host = NULL;
-	host *temp_host2 = NULL;
-	hostsmember *temp_hostsmember = NULL;
 	servicesmember *sm = NULL;
 	hostgroup *temp_hostgroup = NULL;
 	servicegroup *temp_servicegroup = NULL;
@@ -1588,21 +1586,6 @@ int pre_flight_object_check(int *w, int *e)
 
 			/* save the pointer to the notification timeperiod for later */
 			temp_host->notification_period_ptr = temp_timeperiod;
-		}
-
-		/* check all parent parent host */
-		for (temp_hostsmember = temp_host->parent_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-
-			if ((temp_host2 = find_host(temp_hostsmember->host_name)) == NULL) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: '%s' is not a valid parent for host '%s'!", temp_hostsmember->host_name, temp_host->name);
-				errors++;
-			}
-
-			/* save the parent host pointer for later */
-			temp_hostsmember->host_ptr = temp_host2;
-
-			/* add a reverse (child) link to make searches faster later on */
-			add_child_link_to_host(temp_host2, temp_host);
 		}
 
 		/* check for sane recovery options */
@@ -1866,6 +1849,12 @@ int pre_flight_object_check(int *w, int *e)
  * backwards, since core Nagios doesn't need the child pointer at
  * later stages.
  */
+
+struct dfs_parameters {
+	char *ary;
+	int *errors;
+};
+
 static int dfs_servicedep_path(char *ary, servicedependency *root)
 {
 	objectlist *olist;
@@ -1952,9 +1941,10 @@ static int dfs_hostdep_path(char *ary, hostdependency *root)
 }
 
 
-static int dfs_host_path(char *ary, host *root)
+static int dfs_host_path(host *root, struct dfs_parameters *params)
 {
-	hostsmember *child = NULL;
+	char *ary = params->ary;
+	int *errors = params->errors;
 	if (!root)
 		return 0;
 
@@ -1963,24 +1953,26 @@ static int dfs_host_path(char *ary, host *root)
 			NSLOG_VERIFICATION_ERROR,
 			"Error: The host '%s' is part of a circular parent/child chain!",
 			root->name);
-		return 1;
+		(*errors)++;
+		return 0;
 	}
-	else if (ary[root->id] != DFS_UNCHECKED)
-		return ary[root->id] != DFS_OK;
+	else if (ary[root->id] != DFS_UNCHECKED) {
+		if (ary[root->id] != DFS_OK)
+			(*errors)++;
+		return 0;
+	}
 
 	/* Mark the root temporary checked */
 	ary[root->id] = DFS_TEMP_CHECKED;
 
-	for (child = root->child_hosts; child != NULL; child = child->next) {
-		int ret = dfs_host_path(ary, child->host_ptr);
-		if (ret)
-			return ret;
-	}
+	rbtree_traverse(root->child_hosts, (int (*)(void *, void *))dfs_host_path, params, rbinorder);
 
 	if (ary[root->id] == DFS_TEMP_CHECKED)
 		ary[root->id] = DFS_OK;
 
-	return ary[root->id] != DFS_OK;
+	if (ary[root->id] != DFS_OK)
+		(*errors)++;
+	return 0;
 }
 
 
@@ -2025,6 +2017,7 @@ int pre_flight_circular_check(int *w, int *e)
 	int errors = 0;
 	unsigned int alloc;
 	char *ary;
+	struct dfs_parameters params;
 
 	if (num_objects.hosts > num_objects.services)
 		alloc = num_objects.hosts;
@@ -2046,8 +2039,10 @@ int pre_flight_circular_check(int *w, int *e)
 	if (verify_config)
 		printf("Checking for circular paths...\n");
 
+	params.ary = ary;
+	params.errors = &errors;
 	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
-		errors += dfs_host_path(ary, temp_host);
+		dfs_host_path(temp_host, &params);
 	}
 	if (verify_config)
 		printf("\tChecked %u hosts\n", num_objects.hosts);
