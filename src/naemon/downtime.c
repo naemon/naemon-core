@@ -10,11 +10,12 @@
 #include "globals.h"
 #include "nm_alloc.h"
 #include <string.h>
+#include <glib.h>
 
 
 scheduled_downtime *scheduled_downtime_list = NULL;
 int		   defer_downtime_sorting = 0;
-static fanout_table *dt_fanout;
+static GHashTable *dt_hashtable;
 
 
 #define DT_ENULL (-1)
@@ -87,7 +88,6 @@ static int downtime_compar(const void *p1, const void *p2)
 
 static int downtime_add(scheduled_downtime *dt)
 {
-	unsigned long prev_downtime_id;
 	scheduled_downtime *trigger = NULL;
 	struct host *h;
 	struct service *s;
@@ -131,17 +131,13 @@ static int downtime_add(scheduled_downtime *dt)
 	}
 
 	/* set downtime_id if not already set */
-	prev_downtime_id = next_downtime_id;
 	if (!dt->downtime_id) {
 		dt->downtime_id = next_downtime_id++;
 	} else if (dt->downtime_id > next_downtime_id) {
 		next_downtime_id = dt->downtime_id + 1;
 	}
 
-	if (fanout_add(dt_fanout, dt->downtime_id, dt) < 0) {
-		next_downtime_id = prev_downtime_id;
-		return errno;
-	}
+	g_hash_table_insert(dt_hashtable, GINT_TO_POINTER(dt->downtime_id), dt);
 
 	if (defer_downtime_sorting || !scheduled_downtime_list ||
 	    downtime_compar(&dt, &scheduled_downtime_list) < 0) {
@@ -178,7 +174,7 @@ static int downtime_add(scheduled_downtime *dt)
 
 static void downtime_remove(scheduled_downtime *dt)
 {
-	fanout_remove(dt_fanout, dt->downtime_id);
+	g_hash_table_remove(dt_hashtable, GINT_TO_POINTER(dt->downtime_id));
 	if (scheduled_downtime_list == dt) {
 		scheduled_downtime_list = dt->next;
 		if (scheduled_downtime_list)
@@ -198,9 +194,9 @@ static void downtime_remove(scheduled_downtime *dt)
 /* initializes scheduled downtime data */
 int initialize_downtime_data(void)
 {
-	dt_fanout = fanout_create(16384);
+	dt_hashtable = g_hash_table_new(g_direct_hash, g_direct_equal);
 	next_downtime_id = 1;
-	return dt_fanout ? OK : ERROR;
+	return OK;
 }
 
 
@@ -1221,7 +1217,7 @@ scheduled_downtime *find_downtime(int type, unsigned long downtime_id)
 {
 	scheduled_downtime *dt = NULL;
 
-	dt = fanout_get(dt_fanout, downtime_id);
+	dt = g_hash_table_lookup(dt_hashtable, GINT_TO_POINTER(downtime_id));
 	if (dt && (type == ANY_DOWNTIME || type == dt->type))
 		return dt;
 	return NULL;
@@ -1252,8 +1248,8 @@ void free_downtime_data(void)
 	scheduled_downtime *this_downtime = NULL;
 	scheduled_downtime *next_downtime = NULL;
 
-	fanout_destroy(dt_fanout, NULL);
-	dt_fanout = NULL;
+	g_hash_table_destroy(dt_hashtable);
+	dt_hashtable = NULL;
 
 	/* free memory for the scheduled_downtime list */
 	for (this_downtime = scheduled_downtime_list; this_downtime != NULL; this_downtime = next_downtime) {
