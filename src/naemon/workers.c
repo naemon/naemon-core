@@ -43,11 +43,10 @@ struct wproc_worker {
 	int sd;     /**< communication socket */
 	pid_t pid;  /**< pid */
 	int max_jobs; /**< Max number of jobs the worker can handle */
-	int jobs_running; /**< jobs running */
 	int jobs_started; /**< jobs started */
 	int job_index; /**< round-robin slot allocator (this wraps) */
 	nm_bufferqueue *bq;  /**< bufferqueue for reading from worker */
-	fanout_table *jobs; /**< array of jobs */
+	GHashTable *jobs; /**< array of jobs */
 	struct wproc_list *wp_list;
 };
 
@@ -92,7 +91,7 @@ static int get_job_id(struct wproc_worker *wp)
 
 static struct wproc_job *get_job(struct wproc_worker *wp, int job_id)
 {
-	return fanout_remove(wp->jobs, job_id);
+	return g_hash_table_lookup(wp->jobs, GINT_TO_POINTER(job_id));
 }
 
 
@@ -128,6 +127,8 @@ static struct wproc_list *get_wproc_list(const char *cmd)
 static struct wproc_worker *get_worker(const char *cmd)
 {
 	struct wproc_list *wp_list;
+	struct wproc_worker *worker = NULL;
+	size_t i, idx, boundary;
 
 	if (!cmd)
 		return NULL;
@@ -136,7 +137,20 @@ static struct wproc_worker *get_worker(const char *cmd)
 	if (!wp_list || !wp_list->wps || !wp_list->len)
 		return NULL;
 
-	return wp_list->wps[wp_list->idx++ % wp_list->len];
+	/* Try to find a worker that is not overloaded. We go one lap around the
+	 * list before giving up. */
+	boundary = wp_list->idx % wp_list->len;
+	for (i = wp_list->idx + 1; (i % wp_list->len) != boundary; ++i) {
+		idx = i % wp_list->len;
+		if (g_hash_table_size(wp_list->wps[idx]->jobs) < (unsigned int) wp_list->wps[idx]->max_jobs) {
+			/* We found one! */
+			wp_list->idx = i;
+			worker = wp_list->wps[idx];
+			break;
+		}
+	}
+
+	return worker;
 }
 
 static void run_job_callback(struct wproc_job *job, struct wproc_result *wpres, int val)
@@ -148,8 +162,9 @@ static void run_job_callback(struct wproc_job *job, struct wproc_result *wpres, 
 	job->callback = NULL;
 }
 
-static void destroy_job(struct wproc_job *job)
+static void destroy_job(gpointer job_)
 {
+	struct wproc_job *job = job_;
 	if (!job)
 		return;
 
@@ -157,17 +172,7 @@ static void destroy_job(struct wproc_job *job)
 	run_job_callback(job, NULL, 0);
 
 	nm_free(job->command);
-	if (job->wp) {
-		fanout_remove(job->wp->jobs, job->id);
-		job->wp->jobs_running--;
-	}
-
 	free(job);
-}
-
-static void fo_destroy_job(void *job)
-{
-	destroy_job((struct wproc_job *)job);
 }
 
 static int wproc_is_alive(struct wproc_worker *wp)
@@ -197,7 +202,7 @@ static int wproc_destroy(struct wproc_worker *wp, int flags)
 	nm_bufferqueue_destroy(wp->bq);
 	wp->bq = NULL;
 	nm_free(wp->name);
-	fanout_destroy(wp->jobs, fo_destroy_job);
+	g_hash_table_destroy(wp->jobs);
 	wp->jobs = NULL;
 
 	/* workers must never control other workers, so they return early */
@@ -398,15 +403,8 @@ static int parse_worker_result(wproc_result *wpres, struct kvvec *kvv)
 	return 0;
 }
 
+static struct wproc_job *create_job(void (*callback)(struct wproc_result *, void *, int), void *data, time_t timeout, const char *cmd);
 static int wproc_run_job(struct wproc_job *job, nagios_macros *mac);
-static void fo_reassign_wproc_job(void *job_)
-{
-	struct wproc_job *job = (struct wproc_job *)job_;
-	job->wp = get_worker(job->command);
-	job->id = get_job_id(job->wp);
-	/* macros aren't used right now anyways */
-	wproc_run_job(job, NULL);
-}
 
 static int handle_worker_result(int sd, int events, void *arg)
 {
@@ -423,6 +421,8 @@ static int handle_worker_result(int sd, int events, void *arg)
 		       wp->name, ret, strerror(errno));
 		return 0;
 	} else if (ret == 0) {
+		GHashTableIter iter;
+		gpointer job_;
 		nm_log(NSLOG_INFO_MESSAGE, "wproc: Socket to worker %s broken, removing", wp->name);
 		wproc_num_workers_online--;
 		iobroker_unregister(nagios_iobs, sd);
@@ -432,9 +432,21 @@ static int handle_worker_result(int sd, int events, void *arg)
 			 */
 			nm_log(NSLOG_RUNTIME_ERROR, "wproc: All our workers are dead, we can't do anything!");
 		}
+
+		/* remove worker from worker list - this ensures that we don't reassign
+		 * its jobs back to itself*/
 		remove_worker(wp);
-		fanout_destroy(wp->jobs, fo_reassign_wproc_job);
-		wp->jobs = NULL;
+
+		/* reassign this dead worker's jobs */
+		g_hash_table_iter_init(&iter, wp->jobs);
+		while (g_hash_table_iter_next(&iter, NULL, &job_)) {
+			struct wproc_job *job = job_;
+			wproc_run_job(
+					create_job(job->callback, job->data, job->timeout, job->command),
+					NULL
+					);
+		}
+
 		wproc_destroy(wp, 0);
 		return 0;
 	}
@@ -500,8 +512,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 		nm_free(error_reason);
 
 		run_job_callback(job, &wpres, 0);
-
-		destroy_job(job);
+		g_hash_table_remove(wp->jobs, GINT_TO_POINTER(job->id));
 		nm_free(buf);
 	}
 
@@ -571,14 +582,17 @@ static int register_worker(int sd, char *buf, unsigned int len)
 
 	if (!worker->max_jobs) {
 		/*
-		 * each worker uses two filedescriptors per job, one to
+		 * each default worker uses two filedescriptors per job, one to
 		 * connect to the master and about 13 to handle libraries
 		 * and memory allocation, so this guesstimate shouldn't
 		 * be too far off (for local workers, at least).
 		 */
 		worker->max_jobs = (iobroker_max_usable_fds() / 2) - 50;
 	}
-	worker->jobs = fanout_create(worker->max_jobs);
+
+	worker->jobs = g_hash_table_new_full(
+			g_direct_hash, g_direct_equal,
+			NULL, destroy_job);
 
 	if (is_global) {
 		workers.len++;
@@ -623,7 +637,7 @@ static int wproc_query_handler(int sd, char *buf, unsigned int len)
 			struct wproc_worker *wp = workers.wps[i];
 			nsock_printf(sd, "name=%s;pid=%d;jobs_running=%u;jobs_started=%u\n",
 			             wp->name, wp->pid,
-			             wp->jobs_running, wp->jobs_started);
+			             g_hash_table_size(wp->jobs), wp->jobs_started);
 		}
 		return 0;
 	}
@@ -710,12 +724,7 @@ static struct wproc_job *create_job(void (*callback)(struct wproc_result *, void
 	job->data = data;
 	job->timeout = timeout;
 	job->command = nm_strdup(cmd);
-	if (fanout_add(wp->jobs, job->id, job) < 0) {
-		my_free(job->command);
-		my_free(job);
-		return NULL;
-	}
-
+	g_hash_table_insert(wp->jobs, GINT_TO_POINTER(job->id), job);
 	return job;
 }
 
@@ -755,16 +764,13 @@ static int wproc_run_job(struct wproc_job *job, nagios_macros *mac)
 	if (ret < 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "wproc: '%s' seems to be choked. ret = %d; bufsize = %lu: errno = %d (%s)\n",
 		       wp->name, ret, kvvb->bufsize, errno, strerror(errno));
-		// these two will be decremented by destroy_job, so preemptively increment them
-		wp->jobs_running++;
-		destroy_job(job);
+		g_hash_table_remove(wp->jobs, GINT_TO_POINTER(job->id));
 		result = ERROR;
 	} else {
-		wp->jobs_running++;
 		wp->jobs_started++;
 	}
-	free(kvvb->buf);
-	free(kvvb);
+	nm_free(kvvb->buf);
+	nm_free(kvvb);
 
 	return result;
 }
