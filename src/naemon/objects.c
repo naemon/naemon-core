@@ -7,25 +7,12 @@
 #include "objects_hostescalation.h"
 #include "objects_servicedependency.h"
 #include "objects_serviceescalation.h"
-#include "xodtemplate.h"
+#include "objects_timeperiod.h"
 #include "logging.h"
 #include "globals.h"
 #include "nm_alloc.h"
 
 int __nagios_object_structure_version = CURRENT_OBJECT_STRUCTURE_VERSION;
-
-/* read all host configuration data from external source */
-int read_object_config_data(const char *main_config_file)
-{
-	int result = OK;
-
-	/* reset object counts */
-	memset(&num_objects, 0, sizeof(num_objects));
-
-	/* read in data from all text host config files (template-based) */
-	result = xodtemplate_read_config_data(main_config_file);
-	return result;
-}
 
 /* writes cached object definitions for use by web interface */
 int fcache_objects(char *cache_file)

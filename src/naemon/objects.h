@@ -13,7 +13,6 @@ NAGIOS_BEGIN_DECL
 /* Nagios 3 starts at 300, Nagios 4 at 400, etc. */
 #define CURRENT_OBJECT_STRUCTURE_VERSION        402
 
-int read_object_config_data(const char *main_config_file);
 int fcache_objects(char *cache_file);
 
 NAGIOS_END_DECL

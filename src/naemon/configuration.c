@@ -5,6 +5,7 @@
 #include "objects_command.h"
 #include "objects_hostdependency.h"
 #include "objects_servicedependency.h"
+#include "xodtemplate.h"
 #include "macros.h"
 #include "broker.h"
 #include "nebmods.h"
@@ -29,14 +30,8 @@ static objectlist *maincfg_dirs = NULL;
 /* read all configuration data */
 int read_all_object_data(const char *main_config_file)
 {
-	int result = OK;
-
-	/* read in all host configuration data from external sources */
-	result = read_object_config_data(main_config_file);
-	if (result != OK)
-		return ERROR;
-
-	return OK;
+	memset(&num_objects, 0, sizeof(num_objects));
+	return xodtemplate_read_config_data(main_config_file);
 }
 
 
