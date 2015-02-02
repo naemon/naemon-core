@@ -1008,6 +1008,9 @@ int update_host_status_data(char * host_name) {
                        "last_time_up",
                        "acknowledged",
                        "acknowledgement_type",
+                       "last_hard_state",
+                       "last_hard_state_change",        // 35
+                       "last_state",
     };
     int columns_size = sizeof(columns)/sizeof(columns[0]);
 
@@ -1087,6 +1090,9 @@ int update_host_status_data(char * host_name) {
             hst->last_time_up                   = atoi(row->set[31]);
             hst->problem_has_been_acknowledged  = atoi(row->set[32]);
             hst->acknowledgement_type           = atoi(row->set[33]);
+            hst->last_hard_state                = atoi(row->set[34]);
+            hst->last_hard_state_change         = atoi(row->set[35]);
+            hst->last_state                     = atoi(row->set[36]);
             row = row->next;
         }
     }
@@ -1143,6 +1149,9 @@ int update_service_status_data(char * host_name, char * service_description) {
                        "last_time_critical",
                        "acknowledged",
                        "acknowledgement_type",          // 35
+                       "last_state",
+                       "last_hard_state",
+                       "last_hard_state_change",
     };
     int columns_size = sizeof(columns)/sizeof(columns[0]);
 
@@ -1222,6 +1231,9 @@ int update_service_status_data(char * host_name, char * service_description) {
             svc->last_time_critical             = atoi(row->set[33]);
             svc->problem_has_been_acknowledged  = atoi(row->set[34]);
             svc->acknowledgement_type           = atoi(row->set[35]);
+            svc->last_state                     = atoi(row->set[36]);
+            svc->last_hard_state                = atoi(row->set[37]);
+            svc->last_hard_state_change         = atoi(row->set[38]);
             row = row->next;
         }
     }
