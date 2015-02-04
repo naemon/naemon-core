@@ -11,5 +11,5 @@ naemon_group=@naemon_grp@
 Name: Naemon
 Description: Naemon network monitoring
 Version: @VERSION@
-Libs: -L${libdir} -lnaemon
+Libs: -L${libdir} -lnaemon -ldl -lm
 Cflags: -I${includedir}

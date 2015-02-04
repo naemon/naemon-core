@@ -136,27 +136,22 @@ CLEANFILES = naemon-uninstalled.pc naemon.pc naemon.8 naemonstats.8 shadownaemon
 CLEANFILES += src/naemon/wpres-phash.h src/naemon/buildopts.h
 CLEANFILES += $(CONFIG_FILES)
 
-src_naemon_naemon_SOURCES = src/naemon/naemon.c $(common_sources)
+src_naemon_naemon_SOURCES = src/naemon/naemon.c
 src_naemon_naemon_CPPFLAGS = $(AM_CPPFLAGS) -DPREFIX='"$(prefix)"'
-src_naemon_naemon_CFLAGS = $(GLIB_CFLAGS) $(AM_CFLAGS)
-src_naemon_naemon_LDADD = libnaemon.la -lm -ldl $(GLIB_LIBS)
 src_naemon_naemon_LDFLAGS = -rdynamic
 
-src_naemonstats_naemonstats_SOURCES = src/naemonstats/naemonstats.c src/naemon/buildopts.h src/naemon/defaults.h src/naemon/defaults.c src/naemon/common.h
-src_naemonstats_naemonstats_LDADD = libnaemon.la
+src_naemonstats_naemonstats_SOURCES = src/naemonstats/naemonstats.c src/naemon/buildopts.h src/naemon/common.h
 
-src_shadownaemon_shadownaemon_SOURCES = src/shadownaemon/shadownaemon.c src/shadownaemon/shadownaemon.h $(common_sources)
-src_shadownaemon_shadownaemon_CFLAGS = $(GLIB_CFLAGS) $(AM_CFLAGS)
-src_shadownaemon_shadownaemon_LDADD = libnaemon.la -lm -ldl
+src_shadownaemon_shadownaemon_SOURCES = src/shadownaemon/shadownaemon.c src/shadownaemon/shadownaemon.h
 src_shadownaemon_shadownaemon_LDFLAGS = -rdynamic
 
-LDADD = -lnaemon
+LDADD = libnaemon.la -lm -ldl
 lib_LTLIBRARIES = libnaemon.la
 
 # details on library version numbers https://www.sourceware.org/autobook/autobook/autobook_91.html
-libnaemon_la_LDFLAGS = -version-info 0:0:0 $(GLIB_LIBS)
-libnaemon_la_CFLAGS = $(GLIB_CFLAGS)
-libnaemon_la_SOURCES = $(pkginclude_HEADERS) \
+libnaemon_la_LDFLAGS = -version-info 0:0:0
+libnaemon_la_LIBADD = $(GLIB_LIBS)
+libnaemon_la_SOURCES = $(pkginclude_HEADERS) $(common_sources) \
 	lib/bitmap.c lib/dkhash.c lib/fanout.c lib/iobroker.c lib/bufferqueue.c \
 	lib/kvvec.c lib/kvvec_ekvstr.c lib/nsock.c lib/nspath.c lib/nsutils.c \
 	lib/rbtree.c lib/runcmd.c lib/snprintf.c lib/worker.c
@@ -166,19 +161,12 @@ check_PROGRAMS = test-bitmap test-dkhash test-fanout test-iobroker test-bufferqu
 
 LIBTEST_UTILS = lib/t-utils.c lib/t-utils.h
 test_bitmap_SOURCES = lib/test-bitmap.c $(LIBTEST_UTILS)
-test_bitmap_DEPENDENCIES = libnaemon.la
 test_dkhash_SOURCES = lib/test-dkhash.c $(LIBTEST_UTILS)
-test_dkhash_DEPENDENCIES = libnaemon.la
 test_fanout_SOURCES = lib/test-fanout.c $(LIBTEST_UTILS)
-test_fanout_DEPENDENCIES = libnaemon.la
 test_iobroker_SOURCES = lib/test-iobroker.c $(LIBTEST_UTILS)
-test_iobroker_DEPENDENCIES = libnaemon.la
 test_bufferqueue_SOURCES = lib/test-bufferqueue.c $(LIBTEST_UTILS)
-test_bufferqueue_DEPENDENCIES = libnaemon.la
 test_nsutils_SOURCES = lib/test-nsutils.c $(LIBTEST_UTILS)
-test_nsutils_DEPENDENCIES = libnaemon.la
 test_runcmd_SOURCES = lib/test-runcmd.c $(LIBTEST_UTILS)
-test_runcmd_DEPENDENCIES = libnaemon.la
 
 COV_CFLAGS = -ggdb3 -O0 -ftest-coverage -fprofile-arcs -pg
 cov-build:
