@@ -15,6 +15,7 @@ URL: http://www.op5.se
 Source0: %name-%version.tar.gz
 Requires: sed >= 4.0.9
 Requires: monitor-config >= 7.1.0
+Requires: glib2
 BuildRoot: %{_tmppath}/%{name}-%{version}
 Obsoletes: monitor <= 6
 Provides: monitor = 7
@@ -27,6 +28,7 @@ BuildRequires: autoconf, automake, libtool
 BuildRequires: gperf, help2man
 BuildRequires: perl(Test::Simple)
 BuildRequires: perl(Test::Harness)
+BuildRequires: glib2-devel
 %if 0%{?suse_version}
 #The suse distribution of glibc <= 2.11.3-17.43
 #contains a dlclose/dlopen bug which caused globals

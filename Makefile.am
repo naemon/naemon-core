@@ -138,13 +138,15 @@ CLEANFILES += $(CONFIG_FILES)
 
 src_naemon_naemon_SOURCES = src/naemon/naemon.c $(common_sources)
 src_naemon_naemon_CPPFLAGS = $(AM_CPPFLAGS) -DPREFIX='"$(prefix)"'
-src_naemon_naemon_LDADD = libnaemon.la -lm -ldl
+src_naemon_naemon_CFLAGS = $(GLIB_CFLAGS) $(AM_CFLAGS)
+src_naemon_naemon_LDADD = libnaemon.la -lm -ldl $(GLIB_LIBS)
 src_naemon_naemon_LDFLAGS = -rdynamic
 
 src_naemonstats_naemonstats_SOURCES = src/naemonstats/naemonstats.c src/naemon/buildopts.h src/naemon/defaults.h src/naemon/defaults.c src/naemon/common.h
 src_naemonstats_naemonstats_LDADD = libnaemon.la
 
 src_shadownaemon_shadownaemon_SOURCES = src/shadownaemon/shadownaemon.c src/shadownaemon/shadownaemon.h $(common_sources)
+src_shadownaemon_shadownaemon_CFLAGS = $(GLIB_CFLAGS) $(AM_CFLAGS)
 src_shadownaemon_shadownaemon_LDADD = libnaemon.la -lm -ldl
 src_shadownaemon_shadownaemon_LDFLAGS = -rdynamic
 
@@ -152,7 +154,8 @@ LDADD = -lnaemon
 lib_LTLIBRARIES = libnaemon.la
 
 # details on library version numbers https://www.sourceware.org/autobook/autobook/autobook_91.html
-libnaemon_la_LDFLAGS = -version-info 0:0:0
+libnaemon_la_LDFLAGS = -version-info 0:0:0 $(GLIB_LIBS)
+libnaemon_la_CFLAGS = $(GLIB_CFLAGS)
 libnaemon_la_SOURCES = $(pkginclude_HEADERS) \
 	lib/bitmap.c lib/dkhash.c lib/fanout.c lib/iobroker.c lib/bufferqueue.c \
 	lib/kvvec.c lib/kvvec_ekvstr.c lib/nsock.c lib/nspath.c lib/nsutils.c \
