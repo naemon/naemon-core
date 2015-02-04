@@ -99,17 +99,12 @@ void destroy_hostgroup(hostgroup *this_hostgroup)
 	nm_free(this_hostgroup);
 }
 
-int add_host_to_hostgroup(hostgroup *temp_hostgroup, char *host_name)
+int add_host_to_hostgroup(hostgroup *temp_hostgroup, host *h)
 {
-	struct host *h;
 
 	/* make sure we have the data we need */
-	if (temp_hostgroup == NULL || (host_name == NULL || !strcmp(host_name, ""))) {
+	if (temp_hostgroup == NULL || h == NULL) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Hostgroup or group member is NULL\n");
-		return ERROR;
-	}
-	if (!(h = find_host(host_name))) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Failed to locate host '%s' for hostgroup '%s'\n", host_name, temp_hostgroup->group_name);
 		return ERROR;
 	}
 
