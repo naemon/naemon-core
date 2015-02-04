@@ -18,10 +18,10 @@ START_TEST(services)
 	objcfg_dirs = NULL;
 	res = reset_variables();
 	ck_assert_int_eq(OK, res);
-	config_file_dir = nspath_absolute_dirname(SYSCONFDIR "services/naemon.cfg", NULL);
-	res = read_main_config_file(SYSCONFDIR "services/naemon.cfg");
+	config_file_dir = nspath_absolute_dirname(TESTDIR "services/naemon.cfg", NULL);
+	res = read_main_config_file(TESTDIR "services/naemon.cfg");
 	ck_assert_int_eq(OK, res);
-	res = read_all_object_data(SYSCONFDIR "services/naemon.cfg");
+	res = read_all_object_data(TESTDIR "services/naemon.cfg");
 	ck_assert_int_eq(OK, res);
 	for (s = service_list, hits=0; s; s = s->next, hits++) {
 		if (!strcmp(s->description, "service3")) {
@@ -51,10 +51,10 @@ START_TEST(recursive)
 	objcfg_dirs = NULL;
 	res = reset_variables();
 	ck_assert_int_eq(OK, res);
-	config_file_dir = nspath_absolute_dirname(SYSCONFDIR "recursive/naemon.cfg", NULL);
-	res = read_main_config_file(SYSCONFDIR "recursive/naemon.cfg");
+	config_file_dir = nspath_absolute_dirname(TESTDIR "recursive/naemon.cfg", NULL);
+	res = read_main_config_file(TESTDIR "recursive/naemon.cfg");
 	ck_assert_int_eq(OK, res);
-	res = read_all_object_data(SYSCONFDIR "recursive/naemon.cfg");
+	res = read_all_object_data(TESTDIR "recursive/naemon.cfg");
 	ck_assert_int_eq(OK, res);
 	for (h = host_list, hits=0; h; h = h->next, hits++) {
 		if (!strcmp(h->name, "host1")) {
@@ -75,12 +75,12 @@ END_TEST
 START_TEST(main_include)
 {
 	int res;
-	char *file_cfg = nspath_normalize(SYSCONFDIR "includes/a_file.cfg");
-	char *dir_cfg = nspath_normalize(SYSCONFDIR "includes/a_dir");
+	char *file_cfg = nspath_normalize(TESTDIR "includes/a_file.cfg");
+	char *dir_cfg = nspath_normalize(TESTDIR "includes/a_dir");
 	objcfg_files = NULL;
 	objcfg_dirs = NULL;
-	config_file_dir = nspath_absolute_dirname(SYSCONFDIR "includes/naemon.cfg", NULL);
-	res = read_main_config_file(SYSCONFDIR "includes/naemon.cfg");
+	config_file_dir = nspath_absolute_dirname(TESTDIR "includes/naemon.cfg", NULL);
+	res = read_main_config_file(TESTDIR "includes/naemon.cfg");
 	ck_assert_int_eq(OK, res);
 	ck_assert_int_eq(1448, event_handler_timeout);
 	// leave files without .cfg suffix alone:

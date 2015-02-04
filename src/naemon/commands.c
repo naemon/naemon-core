@@ -51,9 +51,9 @@ static void enable_service_notifications(service *);		/* enables service notific
 static void disable_service_notifications(service *);		/* disables service notifications */
 static void enable_host_notifications(host *);			/* enables host notifications */
 static void disable_host_notifications(host *);		/* disables host notifications */
-static void enable_and_propagate_notifications(host *, int, int, int, int);   /* enables notifications for all hosts and services beyond a given host */
-static void disable_and_propagate_notifications(host *, int, int, int, int);  /* disables notifications for all hosts and services beyond a given host */
-static void schedule_and_propagate_downtime(host *, time_t, char *, char *, time_t, time_t, int, unsigned long, unsigned long); /* schedules downtime for all hosts beyond a given host */
+static void enable_and_propagate_notifications(host *hst, int level, int affect_top_host, int affect_hosts, int affect_services);
+static void disable_and_propagate_notifications(host *hst, int level, int affect_top_host, int affect_hosts, int affect_services);
+static void schedule_and_propagate_downtime(host *temp_host, time_t entry_time, char *author, char *comment_data, time_t start_time, time_t end_time, int fixed, unsigned long triggered_by, unsigned long duration);
 static void acknowledge_host_problem(host *, char *, char *, int, int, int);	/* acknowledges a host problem */
 static void acknowledge_service_problem(service *, char *, char *, int, int, int);	/* acknowledges a service problem */
 static void remove_host_acknowledgement(host *);		/* removes a host acknowledgement */
