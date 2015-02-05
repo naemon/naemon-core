@@ -1126,7 +1126,9 @@ int read_main_config_file(const char *main_config_file)
 	if ((mac->x[MACRO_MAINCONFIGFILE] = nm_strdup(main_config_file)))
 		strip(mac->x[MACRO_MAINCONFIGFILE]);
 
-	read_config_file(main_config_file, mac);
+	if (read_config_file(main_config_file, mac) != OK)
+		return ERROR;
+
 	free_objectlist(&maincfg_files);
 	free_objectlist(&maincfg_dirs);
 
