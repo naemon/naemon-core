@@ -218,12 +218,12 @@ int cleanup_downtime_data(void)
 
 static void handle_downtime_start_event(struct nm_event_execution_properties *evprop)
 {
-	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
-		/* process scheduled downtime info */
-		if (evprop->user_data) {
+	if (evprop->user_data) {
+		if(evprop->execution_type == EVENT_EXEC_NORMAL) {
+			/* process scheduled downtime info */
 			handle_scheduled_downtime_by_id(*(unsigned long *)evprop->user_data);
-			free(evprop->user_data);
 		}
+		nm_free(evprop->user_data);
 	}
 }
 
