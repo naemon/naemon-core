@@ -31,6 +31,7 @@ void destroy_objects_hostgroup()
 	}
 	hostgroup_list = NULL;
 	dkhash_destroy(hostgroup_hash_table);
+	hostgroup_hash_table = NULL;
 	nm_free(hostgroup_ary);
 	num_objects.hostgroups = 0;
 }

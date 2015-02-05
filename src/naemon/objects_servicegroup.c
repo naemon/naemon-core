@@ -30,6 +30,7 @@ void destroy_objects_servicegroup()
 	}
 	servicegroup_list = NULL;
 	dkhash_destroy(servicegroup_hash_table);
+	servicegroup_hash_table = NULL;
 	nm_free(servicegroup_ary);
 	num_objects.servicegroups = 0;
 }

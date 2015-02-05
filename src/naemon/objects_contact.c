@@ -34,6 +34,7 @@ void destroy_objects_contact()
 	}
 	contact_list = NULL;
 	dkhash_destroy(contact_hash_table);
+	contact_hash_table = NULL;
 	nm_free(contact_ary);
 	num_objects.contacts = 0;
 }

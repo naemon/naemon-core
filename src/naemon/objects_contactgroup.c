@@ -30,6 +30,7 @@ void destroy_objects_contactgroup()
 	}
 	contactgroup_list = NULL;
 	dkhash_destroy(contactgroup_hash_table);
+	contactgroup_hash_table = NULL;
 	nm_free(contactgroup_ary);
 	num_objects.contacts = 0;
 }

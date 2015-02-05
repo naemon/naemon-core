@@ -35,6 +35,7 @@ void destroy_objects_service()
 	}
 	service_list = NULL;
 	dkhash_destroy(service_hash_table);
+	service_hash_table = NULL;
 	nm_free(service_ary);
 	num_objects.services = 0;
 }

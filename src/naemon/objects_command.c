@@ -28,6 +28,7 @@ void destroy_objects_command()
 	}
 	command_list = NULL;
 	dkhash_destroy(command_hash_table);
+	command_hash_table = NULL;
 	nm_free(command_ary);
 	num_objects.commands = 0;
 }

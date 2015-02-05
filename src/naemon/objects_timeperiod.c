@@ -28,6 +28,7 @@ void destroy_objects_timeperiod()
 	}
 	timeperiod_list = NULL;
 	dkhash_destroy(timeperiod_hash_table);
+	timeperiod_hash_table = NULL;
 	nm_free(timeperiod_ary);
 	num_objects.timeperiods = 0;
 }

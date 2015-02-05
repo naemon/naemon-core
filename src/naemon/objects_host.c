@@ -35,6 +35,7 @@ void destroy_objects_host()
 	}
 	host_list = NULL;
 	dkhash_destroy(host_hash_table);
+	host_hash_table = NULL;
 	nm_free(host_ary);
 	num_objects.hosts = 0;
 }
