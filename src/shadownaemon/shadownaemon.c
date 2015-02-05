@@ -1267,7 +1267,7 @@ int update_external_commands() {
     return(OK);
 }
 
-/* updates downtimes based on remote sites data */
+/* updates downtimes based on remote sites data, use 0 id to fetch all downtimes */
 int update_downtime_data_by_id(unsigned long id) {
     int num, result;
     result_list *row = NULL;
@@ -1292,9 +1292,13 @@ int update_downtime_data_by_id(unsigned long id) {
     };
     int columns_size = sizeof(columns)/sizeof(columns[0]);
 
-    /* add filter by highest downtime id, we only need new ones */
-    filtered_query = nm_malloc(1000);
-    sprintf(filtered_query, "%s\nFilter: id = %lu\n", query, id);
+    /* add filter by downtime id */
+    if(id > 0) {
+        filtered_query = nm_malloc(1000);
+        sprintf(filtered_query, "%s\nFilter: id = %lu\n", query, id);
+    } else {
+        filtered_query = nm_strdup(query);
+    }
 
     num = livestatus_query(&answer, (char*)input_source, filtered_query, columns, columns_size);
     nm_free(filtered_query);
@@ -1305,61 +1309,68 @@ int update_downtime_data_by_id(unsigned long id) {
         return(ERROR);
     }
 
-    row = answer;
-    /* host downtime */
-    if(!strcmp(row->set[2], "")) {
-        result = add_host_downtime(row->set[1],             // host_name
-                                   atoi(row->set[5]),       // entry_time
-                                   row->set[3],             // author
-                                   row->set[4],             // comment_data
-                                   atoi(row->set[6]),       // start_time
-                                   0,                       // flex_downtime_start,
-                                   atoi(row->set[7]),       // end_time
-                                   atoi(row->set[11]),      // fixed
-                                   atol(row->set[8]),       // triggered_by
-                                   atol(row->set[10]),      // duration
-                                   id,                      // id
-                                   TRUE,                    // is_in_effect,
-                                   FALSE                    // start_notification_sent
-                                );
-        if(result != OK) {
-            nm_log(NSLOG_INFO_MESSAGE, "adding host downtime failed (id: %s, host: '%s'), something is seriously wrong\n", row->set[0], row->set[1]);
-            exit(EXIT_FAILURE);
-        }
-        update_host_status_data(row->set[1]);
-        if(now > atoi(row->set[6])) {
-            hst    = find_host(row->set[1]);
-            hst->scheduled_downtime_depth++;
-        }
-    } else {
-        /* service downtime */
-        result = add_service_downtime(
-                                   row->set[1],             // host_name
-                                   row->set[2],             // svc_description
-                                   atoi(row->set[5]),       // entry_time
-                                   row->set[3],             // author
-                                   row->set[4],             // comment_data
-                                   atoi(row->set[6]),       // start_time
-                                   0,                       // flex_downtime_start,
-                                   atoi(row->set[7]),       // end_time
-                                   atoi(row->set[11]),      // fixed
-                                   atol(row->set[8]),       // triggered_by
-                                   atol(row->set[10]),      // duration
-                                   id,                      // id
-                                   TRUE,                    // is_in_effect,
-                                   FALSE                    // start_notification_sent
-                                );
-        if(result != OK) {
-            nm_log(NSLOG_INFO_MESSAGE, "adding service downtime failed (id: %s, host: '%s', service: '%s'), something is seriously wrong\n", row->set[0], row->set[1], row->set[2]);
-            exit(EXIT_FAILURE);
-        }
-        update_service_status_data(row->set[1], row->set[2]);
-        if(now > atoi(row->set[6])) {
-            svc    = find_service(row->set[1], row->set[2]);
-            svc->scheduled_downtime_depth++;
+    if(num > 0) {
+        row = answer;
+        while(row != NULL) {
+            /* host downtime */
+            if(!strcmp(row->set[2], "")) {
+                result = add_host_downtime(row->set[1],             // host_name
+                                           atoi(row->set[5]),       // entry_time
+                                           row->set[3],             // author
+                                           row->set[4],             // comment_data
+                                           atoi(row->set[6]),       // start_time
+                                           0,                       // flex_downtime_start,
+                                           atoi(row->set[7]),       // end_time
+                                           atoi(row->set[11]),      // fixed
+                                           atol(row->set[8]),       // triggered_by
+                                           atol(row->set[10]),      // duration
+                                           atoi(row->set[0]),       // id
+                                           TRUE,                    // is_in_effect,
+                                           FALSE                    // start_notification_sent
+                                        );
+                if(result != OK) {
+                    nm_log(NSLOG_INFO_MESSAGE, "adding host downtime failed (id: %s, host: '%s'), something is seriously wrong\n", row->set[0], row->set[1]);
+                    exit(EXIT_FAILURE);
+                }
+                update_host_status_data(row->set[1]);
+                if(now > atoi(row->set[6])) {
+                    hst    = find_host(row->set[1]);
+                    hst->scheduled_downtime_depth++;
+                }
+            } else {
+                /* service downtime */
+                result = add_service_downtime(
+                                           row->set[1],             // host_name
+                                           row->set[2],             // svc_description
+                                           atoi(row->set[5]),       // entry_time
+                                           row->set[3],             // author
+                                           row->set[4],             // comment_data
+                                           atoi(row->set[6]),       // start_time
+                                           0,                       // flex_downtime_start,
+                                           atoi(row->set[7]),       // end_time
+                                           atoi(row->set[11]),      // fixed
+                                           atol(row->set[8]),       // triggered_by
+                                           atol(row->set[10]),      // duration
+                                           atoi(row->set[0]),       // id
+                                           TRUE,                    // is_in_effect,
+                                           FALSE                    // start_notification_sent
+                                        );
+                if(result != OK) {
+                    nm_log(NSLOG_INFO_MESSAGE, "adding service downtime failed (id: %s, host: '%s', service: '%s'), something is seriously wrong\n", row->set[0], row->set[1], row->set[2]);
+                    exit(EXIT_FAILURE);
+                }
+                update_service_status_data(row->set[1], row->set[2]);
+                if(now > atoi(row->set[6])) {
+                    svc    = find_service(row->set[1], row->set[2]);
+                    svc->scheduled_downtime_depth++;
+                }
+            }
+            row = row->next;
         }
     }
     free_livestatus_result(answer, columns_size);
+    if(id == 0)
+        timing_point("added %d new downtimes\n", num);
     return(OK);
 }
 
@@ -1416,6 +1427,7 @@ int update_downtime_data() {
             }
         }
     }
+    timing_point("removed %d old downtimes\n", removed);
 
     // add missing downtimes
     added = 0;
@@ -1440,14 +1452,12 @@ int update_downtime_data() {
         }
         row = row->next;
     }
-    timing_point("added %d new comments\n", added);
-
     free_livestatus_result(answer, columns_size);
-    timing_point("removed %d old downtimes\n", removed);
+    timing_point("added %d downtimes comments\n", added);
     return(OK);
 }
 
-/* updates comments based on remote sites data */
+/* updates comments based on remote sites data, use id=0 to fetch all comments */
 int update_comment_data_by_id(unsigned long id) {
     int num, result;
     result_list *row = NULL;
@@ -1468,9 +1478,13 @@ int update_comment_data_by_id(unsigned long id) {
     };
     int columns_size = sizeof(columns)/sizeof(columns[0]);
 
-    /* add filter by highest comment id, we only need new ones */
-    filtered_query = nm_malloc(1000);
-    sprintf(filtered_query, "%s\nFilter: id = %lu\n", query, id);
+    /* add filter by comment id */
+    if(id > 0) {
+        filtered_query = nm_malloc(1000);
+        sprintf(filtered_query, "%s\nFilter: id = %lu\n", query, id);
+    } else {
+        filtered_query = nm_strdup(query);
+    }
 
     num = livestatus_query(&answer, (char*)input_source, filtered_query, columns, columns_size);
     nm_free(filtered_query);
@@ -1480,46 +1494,52 @@ int update_comment_data_by_id(unsigned long id) {
         return(ERROR);
     }
 
-    row = answer;
-    /* host comments */
-    if(!strcmp(row->set[2], "")) {
-        result = add_host_comment(atoi(row->set[6]),    // entry_type
-                                  row->set[1],          // host_name
-                                  atoi(row->set[5]),    // entry_time
-                                  row->set[3],          // author
-                                  row->set[4],          // comment_data
-                                  id,                   // comment_id
-                                  atoi(row->set[9]),    // persistent
-                                  atoi(row->set[8]),    // expires
-                                  atoi(row->set[7]),    // expire_time
-                                  atoi(row->set[10])    // source
-                                );
-        if(result != OK) {
-            nm_log(NSLOG_INFO_MESSAGE, "adding host comment failed (id: %s, host: '%s'), something is seriously wrong\n", row->set[0], row->set[1]);
-            exit(EXIT_FAILURE);
-        }
-    } else {
-        /* service comments */
-        result = add_service_comment(
-                                  atoi(row->set[6]),    // entry_type
-                                  row->set[1],          // host_name
-                                  row->set[2],          // svc_description
-                                  atoi(row->set[5]),    // entry_time
-                                  row->set[3],          // author
-                                  row->set[4],          // comment_data
-                                  id,                   // comment_id
-                                  atoi(row->set[9]),    // persistent
-                                  atoi(row->set[8]),    // expires
-                                  atoi(row->set[7]),    // expire_time
-                                  atoi(row->set[10])    // source
-                                );
-        if(result != OK) {
-            nm_log(NSLOG_INFO_MESSAGE, "adding service comment failed (id: %s, host: '%s', service: '%s'), something is seriously wrong\n", row->set[0], row->set[1], row->set[2]);
-            exit(EXIT_FAILURE);
+    if(num > 0) {
+        row = answer;
+        while(row != NULL) {
+            /* host comments */
+            if(!strcmp(row->set[2], "")) {
+                result = add_host_comment(atoi(row->set[6]),    // entry_type
+                                          row->set[1],          // host_name
+                                          atoi(row->set[5]),    // entry_time
+                                          row->set[3],          // author
+                                          row->set[4],          // comment_data
+                                          atoi(row->set[0]),    // comment_id
+                                          atoi(row->set[9]),    // persistent
+                                          atoi(row->set[8]),    // expires
+                                          atoi(row->set[7]),    // expire_time
+                                          atoi(row->set[10])    // source
+                                        );
+                if(result != OK) {
+                    nm_log(NSLOG_INFO_MESSAGE, "adding host comment failed (id: %s, host: '%s'), something is seriously wrong\n", row->set[0], row->set[1]);
+                    exit(EXIT_FAILURE);
+                }
+            } else {
+                /* service comments */
+                result = add_service_comment(
+                                          atoi(row->set[6]),    // entry_type
+                                          row->set[1],          // host_name
+                                          row->set[2],          // svc_description
+                                          atoi(row->set[5]),    // entry_time
+                                          row->set[3],          // author
+                                          row->set[4],          // comment_data
+                                          atoi(row->set[0]),    // comment_id
+                                          atoi(row->set[9]),    // persistent
+                                          atoi(row->set[8]),    // expires
+                                          atoi(row->set[7]),    // expire_time
+                                          atoi(row->set[10])    // source
+                                        );
+                if(result != OK) {
+                    nm_log(NSLOG_INFO_MESSAGE, "adding service comment failed (id: %s, host: '%s', service: '%s'), something is seriously wrong\n", row->set[0], row->set[1], row->set[2]);
+                    exit(EXIT_FAILURE);
+                }
+            }
+            row = row->next;
         }
     }
     free_livestatus_result(answer, columns_size);
-    timing_point("added %d new comments\n", num);
+    if(id == 0)
+        timing_point("added %d new comments\n", num);
     return(OK);
 }
 
@@ -1646,7 +1666,7 @@ int run_refresh_loop() {
     initialize_core();
 
     /* fetch runtime data once before starting livestatus */
-    if(update_all_runtime_data() != OK) {
+    if(update_downtime_data_by_id(0) != OK || update_comment_data_by_id(0) != OK || update_all_runtime_data() != OK) {
         deinitialize_core();
         return(ERROR);
     }
