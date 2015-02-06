@@ -110,6 +110,8 @@ int main(int argc, char **argv)
 	ok(find_service_downtime(1110) != NULL, "Found service downtime 1110");
 	ok(find_host_downtime(1234567888) == NULL, "No such host downtime");
 
+	cleanup_downtime_data();
+	cleanup_retention_data();
 	cleanup();
 
 	nm_free(config_file);

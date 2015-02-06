@@ -34,6 +34,8 @@ START_TEST(services)
 	}
 	ck_assert_int_eq(2, s5_hits);
 	ck_assert_int_eq(5, hits);
+	nm_free(config_file_dir);
+	cleanup();
 }
 END_TEST
 
@@ -65,6 +67,8 @@ START_TEST(recursive)
 		}
 	}
 	ck_assert_msg(hits == 2, "Expected 2 hosts, found %i", hits);
+	nm_free(config_file_dir);
+	cleanup();
 }
 END_TEST
 
@@ -88,6 +92,8 @@ START_TEST(main_include)
 	ck_assert_str_eq(dir_cfg, objcfg_dirs->object_ptr);
 	nm_free(file_cfg);
 	nm_free(dir_cfg);
+	nm_free(config_file_dir);
+	cleanup();
 }
 END_TEST
 

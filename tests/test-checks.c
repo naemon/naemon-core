@@ -156,7 +156,7 @@ checks_suite(void)
 {
 	Suite *s = suite_create("Checks");
 	TCase *tc_output = tcase_create("Output parsing");
-	tcase_add_unchecked_fixture(tc_output, setup, teardown);
+	tcase_add_checked_fixture(tc_output, setup, teardown);
 	tcase_add_test(tc_output, one_line_no_perfdata);
 	tcase_add_test(tc_output, one_line_with_perfdata);
 	tcase_add_test(tc_output, multiple_line_output_no_perfdata);
