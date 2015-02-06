@@ -44,7 +44,6 @@ contact *create_contact(char *name, char *alias, char *email, char *pager, char 
 	contact *new_contact = NULL;
 	timeperiod *htp = NULL, *stp = NULL;
 	int x = 0;
-	int result = OK;
 
 	/* make sure we have the data we need */
 	if (name == NULL || !*name) {
@@ -85,12 +84,6 @@ contact *create_contact(char *name, char *alias, char *email, char *pager, char 
 	new_contact->can_submit_commands = (can_submit_commands > 0) ? TRUE : FALSE;
 	new_contact->retain_status_information = (retain_status_information > 0) ? TRUE : FALSE;
 	new_contact->retain_nonstatus_information = (retain_nonstatus_information > 0) ? TRUE : FALSE;
-
-	/* handle errors */
-	if (result == ERROR) {
-		free(new_contact);
-		return NULL;
-	}
 
 	return new_contact;
 }

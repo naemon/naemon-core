@@ -36,7 +36,6 @@ void destroy_objects_timeperiod()
 timeperiod *create_timeperiod(char *name, char *alias)
 {
 	timeperiod *new_timeperiod = NULL;
-	int result = OK;
 
 	/* make sure we have the data we need */
 	if ((name == NULL || !strcmp(name, "")) || (alias == NULL || !strcmp(alias, ""))) {
@@ -49,12 +48,6 @@ timeperiod *create_timeperiod(char *name, char *alias)
 	/* copy string vars */
 	new_timeperiod->name = name;
 	new_timeperiod->alias = alias ? alias : name;
-
-	/* handle errors */
-	if (result == ERROR) {
-		free(new_timeperiod);
-		return NULL;
-	}
 
 	return new_timeperiod;
 }

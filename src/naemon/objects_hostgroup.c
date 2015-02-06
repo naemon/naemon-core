@@ -39,7 +39,6 @@ void destroy_objects_hostgroup()
 hostgroup *create_hostgroup(char *name, char *alias, char *notes, char *notes_url, char *action_url)
 {
 	hostgroup *new_hostgroup = NULL;
-	int result = OK;
 
 	/* make sure we have the data we need */
 	if (name == NULL || !strcmp(name, "")) {
@@ -56,11 +55,6 @@ hostgroup *create_hostgroup(char *name, char *alias, char *notes, char *notes_ur
 	new_hostgroup->notes_url = notes_url;
 	new_hostgroup->action_url = action_url;
 
-	/* handle errors */
-	if (result == ERROR) {
-		free(new_hostgroup);
-		return NULL;
-	}
 	return new_hostgroup;
 }
 

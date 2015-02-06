@@ -38,7 +38,6 @@ void destroy_objects_servicegroup()
 servicegroup *create_servicegroup(char *name, char *alias, char *notes, char *notes_url, char *action_url)
 {
 	servicegroup *new_servicegroup = NULL;
-	int result = OK;
 
 	/* make sure we have the data we need */
 	if (name == NULL || !strcmp(name, "")) {
@@ -55,11 +54,6 @@ servicegroup *create_servicegroup(char *name, char *alias, char *notes, char *no
 	new_servicegroup->notes_url = notes_url;
 	new_servicegroup->action_url = action_url;
 
-	/* handle errors */
-	if (result == ERROR) {
-		nm_free(new_servicegroup);
-		return NULL;
-	}
 	return new_servicegroup;
 }
 

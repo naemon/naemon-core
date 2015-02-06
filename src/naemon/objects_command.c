@@ -36,7 +36,6 @@ void destroy_objects_command()
 command *create_command(char *name, char *value)
 {
 	command *new_command = NULL;
-	int result = OK;
 
 	/* make sure we have the data we need */
 	if ((name == NULL || !strcmp(name, "")) || (value == NULL || !strcmp(value, ""))) {
@@ -51,11 +50,6 @@ command *create_command(char *name, char *value)
 	new_command->name = name;
 	new_command->command_line = value;
 
-	/* handle errors */
-	if (result == ERROR) {
-		nm_free(new_command);
-		return NULL;
-	}
 	return new_command;
 }
 

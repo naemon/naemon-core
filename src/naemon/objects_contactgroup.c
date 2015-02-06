@@ -38,7 +38,6 @@ void destroy_objects_contactgroup()
 contactgroup *create_contactgroup(char *name, char *alias)
 {
 	contactgroup *new_contactgroup = NULL;
-	int result = OK;
 
 	/* make sure we have the data we need */
 	if (name == NULL || !strcmp(name, "")) {
@@ -51,12 +50,6 @@ contactgroup *create_contactgroup(char *name, char *alias)
 	/* assign vars */
 	new_contactgroup->group_name = name;
 	new_contactgroup->alias = alias ? alias : name;
-
-	/* handle errors */
-	if (result == ERROR) {
-		free(new_contactgroup);
-		return NULL;
-	}
 
 	return new_contactgroup;
 }

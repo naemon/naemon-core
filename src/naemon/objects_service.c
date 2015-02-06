@@ -45,7 +45,6 @@ service *create_service(char *host_name, char *description, char *display_name, 
 	host *h;
 	timeperiod *cp = NULL, *np = NULL;
 	service *new_service = NULL;
-	int result = OK;
 
 	/* make sure we have everything we need */
 	if (host_name == NULL) {
@@ -164,19 +163,6 @@ service *create_service(char *host_name, char *description, char *display_name, 
 	new_service->last_hard_state = initial_state;
 	new_service->state_type = HARD_STATE;
 	new_service->check_options = CHECK_OPTION_NONE;
-
-	/* handle errors */
-	if (result == ERROR) {
-		nm_free(new_service->perf_data);
-		nm_free(new_service->plugin_output);
-		nm_free(new_service->long_plugin_output);
-		nm_free(new_service->event_handler);
-		nm_free(new_service->check_command);
-		nm_free(new_service->description);
-		if (display_name)
-			nm_free(new_service->display_name);
-		return NULL;
-	}
 
 	return new_service;
 }
