@@ -20,6 +20,7 @@
 #include "nm_alloc.h"
 #include "defaults.h"
 #include <string.h>
+#include <glib.h>
 
 /* for process_check_result_* */
 #include <sys/types.h>
@@ -100,7 +101,7 @@ static void reap_check_results(struct nm_event_execution_properties *evprop)
 struct check_output *parse_output(const char *buf, struct check_output *check_output) {
 	char *saveptr = NULL, *tmpbuf = NULL;
 	char *p = NULL, *tmp = NULL;
-	dbuf perf_data_dbuf;
+	GString *perf_data_string;
 
 	check_output->perf_data = NULL;
 	check_output->long_output = NULL;
@@ -109,7 +110,7 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 		return check_output;
 	tmpbuf = nm_strdup(buf);
 
-	dbuf_init(&perf_data_dbuf, 1024);
+	perf_data_string = g_string_new(NULL);
 	tmp = strtok_r(tmpbuf, "\n", &saveptr);
 	p = strpbrk((const char *) tmp, "|");
 	if (p == NULL) {
@@ -130,7 +131,7 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 		else {
 			check_output->short_output = nm_strdup("");
 		}
-		dbuf_strcat(&perf_data_dbuf, tmp+(p-tmp)+1);
+		perf_data_string = g_string_append(perf_data_string, tmp+(p-tmp)+1);
 	}
 
 	/*
@@ -167,16 +168,16 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 				 * it this way in order to not break existing installations.
 				 * */
 				if (*tmp != ' ') {
-					dbuf_strcat(&perf_data_dbuf, " ");
+					perf_data_string = g_string_append_c(perf_data_string, ' ');
 				}
-				dbuf_strcat(&perf_data_dbuf, tmp);
+				perf_data_string = g_string_append(perf_data_string, tmp);
 				tmp = strtok_r(NULL, "\n", &saveptr);
 			}
 		}
 	}
 
-	check_output->perf_data = perf_data_dbuf.buf != NULL ? nm_strdup(perf_data_dbuf.buf) : NULL;
-	dbuf_free(&perf_data_dbuf);
+	check_output->perf_data = strcmp(perf_data_string->str, "") != 0 ? nm_strdup(perf_data_string->str) : NULL;
+	g_string_free(perf_data_string, TRUE);
 	free(tmpbuf);
 	return check_output;
 }

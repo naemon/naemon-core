@@ -26,6 +26,7 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <poll.h>
+#include <glib.h>
 
 
 static int command_file_fd;
@@ -646,7 +647,7 @@ static struct external_command * parse_kv_command(const char * cmdstr, int *erro
 	struct external_command *stored_command;
 	struct external_command *extcmd = NULL;
 	char *cmd_name = NULL;
-	dbuf raw_args;
+	GString *raw_args;
 	int i;
 	int parse_error;
 
@@ -677,7 +678,7 @@ static struct external_command * parse_kv_command(const char * cmdstr, int *erro
 
 	extcmd = external_command_copy(stored_command);
 	extcmd->entry_time = time(NULL);
-	dbuf_init(&raw_args, 16);
+	raw_args = g_string_new(NULL);
 
 	for (i=0;i<extcmd->argc;i++) {
 		tmpkv = kvvec_fetch(kvv, extcmd->arguments[i]->name, 0);
@@ -750,11 +751,11 @@ static struct external_command * parse_kv_command(const char * cmdstr, int *erro
 		}
 
 		if (i!=0)
-			dbuf_strcat(&raw_args, ";");
-		dbuf_strcat(&raw_args, tmpkv->value);
+			raw_args = g_string_append_c(raw_args, ';');
+		raw_args = g_string_append(raw_args, tmpkv->value);
 	}
-	extcmd->raw_arguments = nm_strdup(raw_args.buf);
-	dbuf_free(&raw_args);
+	extcmd->raw_arguments = nm_strdup(raw_args->str);
+	g_string_free(raw_args, TRUE);
 
 cleanup:
 

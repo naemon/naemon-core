@@ -1,7 +1,7 @@
 BROKEN = test_downtime test_nagios_config test_xsddefault
 
-T_TAP_AM_CPPFLAGS = $(AM_CPPFLAGS) -I$(abs_srcdir)/tap/src -DNAEMON_BUILDOPTS_H__ '-DNAEMON_SYSCONFDIR="$(abs_builddir)/t-tap/smallconfig/"' '-DNAEMON_LOCALSTATEDIR="$(abs_builddir)/t-tap/"' '-DNAEMON_LOGDIR="$(abs_builddir)/t-tap/"' '-DNAEMON_LOCKFILE="$(lockfile)"' -DNAEMON_COMPILATION
-T_TAP_LDADD = -ltap -L$(top_builddir)/tap/src -L$(top_builddir)/lib -lnaemon -ldl -lm
+T_TAP_AM_CPPFLAGS = $(AM_CPPFLAGS) $(GLIB_CFLAGS) -I$(abs_srcdir)/tap/src -DNAEMON_BUILDOPTS_H__ '-DNAEMON_SYSCONFDIR="$(abs_builddir)/t-tap/smallconfig/"' '-DNAEMON_LOCALSTATEDIR="$(abs_builddir)/t-tap/"' '-DNAEMON_LOGDIR="$(abs_builddir)/t-tap/"' '-DNAEMON_LOCKFILE="$(lockfile)"' -DNAEMON_COMPILATION
+T_TAP_LDADD = -ltap -L$(top_builddir)/tap/src -L$(top_builddir)/lib -lnaemon -ldl -lm $(GLIB_LIBS)
 BASE_DEPS = libnaemon.la
 TAP_DEPS = $(BASE_DEPS) tap/src/libtap.la
 BASE_SOURCE = \
@@ -81,10 +81,10 @@ TESTS_ENVIRONMENT = \
 					   fi; \
 					   builddir=$(abs_builddir); export builddir;
 if HAVE_CHECK
-TESTS_LDADD = @CHECK_LIBS@ libnaemon.la -Llib -lm -ldl
+TESTS_LDADD = @CHECK_LIBS@ libnaemon.la -Llib -lm -ldl $(GLIB_LIBS)
 TESTS_LDFLAGS = -static
 TESTS_AM_CPPFLAGS = $(AM_CPPFLAGS) -Isrc '-DSYSCONFDIR="$(abs_srcdir)/tests/configs/"' -DNAEMON_COMPILATION
-AM_CFLAGS += @CHECK_CFLAGS@
+AM_CFLAGS += @CHECK_CFLAGS@ $(GLIB_CFLAGS)
 
 tests_test_checks_SOURCES = tests/test-checks.c $(BASE_SOURCE) src/naemon/utils.c src/naemon/logging.c src/naemon/events.c src/naemon/commands.c
 tests_test_checks_LDADD = $(TESTS_LDADD)

@@ -13,13 +13,6 @@
 
 NAGIOS_BEGIN_DECL
 
-typedef struct dbuf {
-	char *buf;
-	unsigned long used_size;
-	unsigned long allocated_size;
-	unsigned long chunk_size;
-} dbuf;
-
 #define CHECK_STATS_BUCKETS                  15
 
 /* used for tracking host and service check statistics */
@@ -78,9 +71,6 @@ time_t calculate_time_from_day_of_month(int, int, int);	/* calculates midnight t
 void get_next_valid_time(time_t, time_t *, timeperiod *);	/* get the next valid time in a time period */
 /* to events.c? */
 time_t get_next_log_rotation_time(void);	     	/* determine the next time to schedule a log rotation */
-int dbuf_init(dbuf *, int);
-int dbuf_free(dbuf *);
-int dbuf_strcat(dbuf *, const char *);
 int set_environment_var(char *, char *, int);           /* sets/clears and environment variable */
 
 const char *get_program_version(void);
