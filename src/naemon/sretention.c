@@ -58,11 +58,11 @@ int cleanup_retention_data(void)
 	for (i = 0; i < num_objects.hosts; i++) {
 		nm_free(premod_hosts[i]);
 	}
+	nm_free(premod_hosts);
 	for (i = 0; i < num_objects.services; i++) {
 		nm_free(premod_services[i]);
 	}
-	premod_hosts = NULL;
-	premod_services = NULL;
+	nm_free(premod_services);
 
 	return xrddefault_cleanup_retention_data();
 }
