@@ -10,48 +10,11 @@
 #include "logging.h"
 #include "globals.h"
 #include <glib.h>
+#include "lib/libnaemon.h"
 
 static GHashTable *service_hash_table;
 service *service_list = NULL;
 service **service_ary = NULL;
-
-typedef struct {
-	char *hostname;
-	char *service_description;
-} service_key;
-
-gboolean nm_service_equal(gconstpointer a, gconstpointer b)
-{
-	const service_key *k1 = a, *k2 = b;
-	if (!k1 || !k2)
-		return (k1 == NULL && k2 == NULL);
-
-	if (!g_str_equal(k1->hostname, k2->hostname))
-		return FALSE;
-
-	return g_str_equal(k1->service_description, k2->service_description);
-}
-
-guint nm_service_hash(gconstpointer key)
-{
-	const service_key *k = key;
-	return (g_str_hash(k->hostname) ^ g_str_hash(k->service_description));
-}
-
-service_key * service_key_create(const char *hostname, const char *service_description)
-{
-	service_key *k = nm_malloc(sizeof(*k));
-	k->hostname = nm_strdup(hostname);
-	k->service_description = nm_strdup(service_description);
-	return k;
-}
-
-void service_key_destroy(service_key *k)
-{
-	nm_free(k->hostname);
-	nm_free(k->service_description);
-	nm_free(k);
-}
 
 int init_objects_service(int elems)
 {
@@ -62,7 +25,7 @@ int init_objects_service(int elems)
 	}
 	service_ary = nm_calloc(elems, sizeof(service*));
 	service_hash_table = g_hash_table_new_full(nm_service_hash, nm_service_equal,
-			(GDestroyNotify) service_key_destroy, NULL);
+			(GDestroyNotify) nm_service_key_destroy, NULL);
 	return OK;
 }
 
@@ -229,7 +192,7 @@ int register_service(service *new_service)
 	}
 
 	g_hash_table_insert(service_hash_table,
-			service_key_create(new_service->host_name, new_service->description), new_service);
+			nm_service_key_create(new_service->host_name, new_service->description), new_service);
 
 	new_service->id = num_objects.services++;
 	service_ary[new_service->id] = new_service;
@@ -336,7 +299,7 @@ void destroy_service(service *this_service)
 
 service *find_service(const char *host_name, const char *svc_desc)
 {
-	return g_hash_table_lookup(service_hash_table, &((service_key){(char *)host_name, (char *)svc_desc}));
+	return g_hash_table_lookup(service_hash_table, &((nm_service_key){(char *)host_name, (char *)svc_desc}));
 }
 
 int get_service_count(void)

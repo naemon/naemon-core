@@ -23,4 +23,5 @@
 #include "nsock.h"
 #include "nspath.h"
 #include "snprintf.h"
+#include "objutils.h"
 #endif /* LIB_libnaemon_h__ */
