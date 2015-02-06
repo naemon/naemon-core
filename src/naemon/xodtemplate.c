@@ -209,10 +209,8 @@ static void xodtemplate_free_memory(void)
 		next_timeperiod = this_timeperiod->next;
 		nm_free(this_timeperiod->template);
 		nm_free(this_timeperiod->name);
-		if (!this_timeperiod->register_object) {
-			nm_free(this_timeperiod->timeperiod_name);
-			nm_free(this_timeperiod->alias);
-		}
+		nm_free(this_timeperiod->timeperiod_name);
+		nm_free(this_timeperiod->alias);
 		for (x = 0; x < 7; x++)
 			nm_free(this_timeperiod->timeranges[x]);
 		for (x = 0; x < DATERANGE_TYPES; x++) {
@@ -233,10 +231,8 @@ static void xodtemplate_free_memory(void)
 		next_command = this_command->next;
 		nm_free(this_command->template);
 		nm_free(this_command->name);
-		if (!this_command->register_object) {
-			nm_free(this_command->command_name);
-			nm_free(this_command->command_line);
-		}
+		nm_free(this_command->command_name);
+		nm_free(this_command->command_line);
 		nm_free(this_command);
 	}
 	xodtemplate_command_list = NULL;
@@ -252,10 +248,8 @@ static void xodtemplate_free_memory(void)
 		bitmap_destroy(this_contactgroup->member_map);
 		free_objectlist(&this_contactgroup->member_list);
 		free_objectlist(&this_contactgroup->group_list);
-		if (!this_contactgroup->register_object) {
-			nm_free(this_contactgroup->contactgroup_name);
-			nm_free(this_contactgroup->alias);
-		}
+		nm_free(this_contactgroup->contactgroup_name);
+		nm_free(this_contactgroup->alias);
 		nm_free(this_contactgroup);
 	}
 	xodtemplate_contactgroup_list = NULL;
@@ -271,13 +265,11 @@ static void xodtemplate_free_memory(void)
 		bitmap_destroy(this_hostgroup->member_map);
 		free_objectlist(&this_hostgroup->member_list);
 		free_objectlist(&this_hostgroup->group_list);
-		if (!this_hostgroup->register_object) {
-			nm_free(this_hostgroup->hostgroup_name);
-			nm_free(this_hostgroup->alias);
-			nm_free(this_hostgroup->notes);
-			nm_free(this_hostgroup->notes_url);
-			nm_free(this_hostgroup->action_url);
-		}
+		nm_free(this_hostgroup->hostgroup_name);
+		nm_free(this_hostgroup->alias);
+		nm_free(this_hostgroup->notes);
+		nm_free(this_hostgroup->notes_url);
+		nm_free(this_hostgroup->action_url);
 		nm_free(this_hostgroup);
 	}
 	xodtemplate_hostgroup_list = NULL;
@@ -293,13 +285,11 @@ static void xodtemplate_free_memory(void)
 		free_objectlist(&this_servicegroup->group_list);
 		nm_free(this_servicegroup->template);
 		nm_free(this_servicegroup->name);
-		if (!this_servicegroup->register_object) {
-			nm_free(this_servicegroup->servicegroup_name);
-			nm_free(this_servicegroup->alias);
-			nm_free(this_servicegroup->notes);
-			nm_free(this_servicegroup->notes_url);
-			nm_free(this_servicegroup->action_url);
-		}
+		nm_free(this_servicegroup->servicegroup_name);
+		nm_free(this_servicegroup->alias);
+		nm_free(this_servicegroup->notes);
+		nm_free(this_servicegroup->notes_url);
+		nm_free(this_servicegroup->action_url);
 		nm_free(this_servicegroup);
 	}
 	xodtemplate_servicegroup_list = NULL;
@@ -324,14 +314,12 @@ static void xodtemplate_free_memory(void)
 		nm_free(this_contact->service_notification_commands);
 		nm_free(this_contact->host_notification_period);
 		nm_free(this_contact->host_notification_commands);
-		if (!this_contact->register_object) {
-			nm_free(this_contact->contact_name);
-			nm_free(this_contact->alias);
-			nm_free(this_contact->email);
-			nm_free(this_contact->pager);
-			for (x = 0; x < MAX_CONTACT_ADDRESSES; x++)
-				nm_free(this_contact->address[x]);
-		}
+		nm_free(this_contact->contact_name);
+		nm_free(this_contact->alias);
+		nm_free(this_contact->email);
+		nm_free(this_contact->pager);
+		for (x = 0; x < MAX_CONTACT_ADDRESSES; x++)
+			nm_free(this_contact->address[x]);
 		nm_free(this_contact);
 	}
 	xodtemplate_contact_list = NULL;
@@ -358,21 +346,19 @@ static void xodtemplate_free_memory(void)
 		nm_free(this_host->contact_groups);
 		nm_free(this_host->contacts);
 		nm_free(this_host->notification_period);
-		if (!this_host->register_object) {
-			nm_free(this_host->host_name);
-			nm_free(this_host->alias);
-			nm_free(this_host->display_name);
-			nm_free(this_host->address);
-			nm_free(this_host->check_command);
-			nm_free(this_host->event_handler);
-			nm_free(this_host->notes);
-			nm_free(this_host->notes_url);
-			nm_free(this_host->action_url);
-			nm_free(this_host->icon_image);
-			nm_free(this_host->icon_image_alt);
-			nm_free(this_host->statusmap_image);
-			nm_free(this_host->vrml_image);
-		}
+		nm_free(this_host->host_name);
+		nm_free(this_host->alias);
+		nm_free(this_host->display_name);
+		nm_free(this_host->address);
+		nm_free(this_host->check_command);
+		nm_free(this_host->event_handler);
+		nm_free(this_host->notes);
+		nm_free(this_host->notes_url);
+		nm_free(this_host->action_url);
+		nm_free(this_host->icon_image);
+		nm_free(this_host->icon_image_alt);
+		nm_free(this_host->statusmap_image);
+		nm_free(this_host->vrml_image);
 		nm_free(this_host);
 	}
 	xodtemplate_host_list = NULL;
@@ -385,7 +371,7 @@ static void xodtemplate_free_memory(void)
 		nm_free(this_service->contacts);
 		nm_free(this_service->service_groups);
 
-		if (this_service->is_copy == FALSE || !this_service->register_object) {
+		if (this_service->is_copy == FALSE) {
 			/* free custom variables */
 			this_customvariablesmember = this_service->custom_variables;
 			while (this_customvariablesmember != NULL) {

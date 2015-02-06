@@ -34,7 +34,7 @@ struct servicegroup {
 int init_objects_servicegroup(int elems);
 void destroy_objects_servicegroup(void);
 
-servicegroup *create_servicegroup(char *name, char *alias, char *notes, char *notes_url, char *action_url);
+servicegroup *create_servicegroup(const char *name, const char *alias, const char *notes, const char *notes_url, const char *action_url);
 int register_servicegroup(servicegroup *this_servicegroup);
 void destroy_servicegroup(servicegroup *this_servicegroup);
 struct servicesmember *add_service_to_servicegroup(servicegroup *, char *, char *);

@@ -39,7 +39,7 @@ void destroy_objects_contact()
 	num_objects.contacts = 0;
 }
 
-contact *create_contact(char *name, char *alias, char *email, char *pager, char **addresses, char *svc_notification_period, char *host_notification_period, int service_notification_options, int host_notification_options, int host_notifications_enabled, int service_notifications_enabled, int can_submit_commands, int retain_status_information, int retain_nonstatus_information, unsigned int minimum_value)
+contact *create_contact(const char *name, const char *alias, const char *email, const char *pager, char * const *addresses, const char *svc_notification_period, const char *host_notification_period, int service_notification_options, int host_notification_options, int host_notifications_enabled, int service_notifications_enabled, int can_submit_commands, int retain_status_information, int retain_nonstatus_information, unsigned int minimum_value)
 {
 	contact *new_contact = NULL;
 	timeperiod *htp = NULL, *stp = NULL;
@@ -67,13 +67,13 @@ contact *create_contact(char *name, char *alias, char *email, char *pager, char 
 	new_contact->service_notification_period = stp ? stp->name : NULL;
 	new_contact->host_notification_period_ptr = htp;
 	new_contact->service_notification_period_ptr = stp;
-	new_contact->name = name;
-	new_contact->alias = alias ? alias : name;
-	new_contact->email = email;
-	new_contact->pager = pager;
+	new_contact->name = nm_strdup(name);
+	new_contact->alias = alias ? nm_strdup(alias) : new_contact->name;
+	new_contact->email = email ? nm_strdup(email) : NULL;
+	new_contact->pager = pager ? nm_strdup(pager) : NULL;
 	if (addresses) {
 		for (x = 0; x < MAX_CONTACT_ADDRESSES; x++)
-			new_contact->address[x] = addresses[x];
+			new_contact->address[x] = addresses[x] ? nm_strdup(addresses[x]) : NULL;
 	}
 
 	new_contact->minimum_value = minimum_value;

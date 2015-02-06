@@ -37,7 +37,7 @@ void destroy_objects_hostgroup()
 	num_objects.hostgroups = 0;
 }
 
-hostgroup *create_hostgroup(char *name, char *alias, char *notes, char *notes_url, char *action_url)
+hostgroup *create_hostgroup(const char *name, const char *alias, const char *notes, const char *notes_url, const char *action_url)
 {
 	hostgroup *new_hostgroup = NULL;
 
@@ -50,11 +50,11 @@ hostgroup *create_hostgroup(char *name, char *alias, char *notes, char *notes_ur
 	new_hostgroup = nm_calloc(1, sizeof(*new_hostgroup));
 
 	/* assign vars */
-	new_hostgroup->group_name = name;
-	new_hostgroup->alias = alias ? alias : name;
-	new_hostgroup->notes = notes;
-	new_hostgroup->notes_url = notes_url;
-	new_hostgroup->action_url = action_url;
+	new_hostgroup->group_name = nm_strdup(name);
+	new_hostgroup->alias = alias ? nm_strdup(alias) : new_hostgroup->group_name;
+	new_hostgroup->notes = notes ? nm_strdup(notes) : NULL;
+	new_hostgroup->notes_url = notes_url ? nm_strdup(notes_url) : NULL;
+	new_hostgroup->action_url = action_url ? nm_strdup(action_url) : NULL;
 	new_hostgroup->members = rbtree_create(compare_host);
 
 	return new_hostgroup;

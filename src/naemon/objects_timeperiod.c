@@ -33,7 +33,7 @@ void destroy_objects_timeperiod()
 	num_objects.timeperiods = 0;
 }
 
-timeperiod *create_timeperiod(char *name, char *alias)
+timeperiod *create_timeperiod(const char *name, const char *alias)
 {
 	timeperiod *new_timeperiod = NULL;
 
@@ -46,8 +46,8 @@ timeperiod *create_timeperiod(char *name, char *alias)
 	new_timeperiod = nm_calloc(1, sizeof(*new_timeperiod));
 
 	/* copy string vars */
-	new_timeperiod->name = name;
-	new_timeperiod->alias = alias ? alias : name;
+	new_timeperiod->name = nm_strdup(name);
+	new_timeperiod->alias = alias ? nm_strdup(alias) : new_timeperiod->name;
 
 	return new_timeperiod;
 }

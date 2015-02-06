@@ -35,7 +35,7 @@ void destroy_objects_servicegroup()
 	num_objects.servicegroups = 0;
 }
 
-servicegroup *create_servicegroup(char *name, char *alias, char *notes, char *notes_url, char *action_url)
+servicegroup *create_servicegroup(const char *name, const char *alias, const char *notes, const char *notes_url, const char *action_url)
 {
 	servicegroup *new_servicegroup = NULL;
 
@@ -48,11 +48,11 @@ servicegroup *create_servicegroup(char *name, char *alias, char *notes, char *no
 	new_servicegroup = nm_calloc(1, sizeof(*new_servicegroup));
 
 	/* duplicate vars */
-	new_servicegroup->group_name = name;
-	new_servicegroup->alias = alias ? alias : name;
-	new_servicegroup->notes = notes;
-	new_servicegroup->notes_url = notes_url;
-	new_servicegroup->action_url = action_url;
+	new_servicegroup->group_name = nm_strdup(name);
+	new_servicegroup->alias = alias ? nm_strdup(alias) : new_servicegroup->group_name;
+	new_servicegroup->notes = notes ? nm_strdup(notes) : NULL;
+	new_servicegroup->notes_url = notes_url ? nm_strdup(notes_url) : NULL;
+	new_servicegroup->action_url = action_url ? nm_strdup(action_url) : NULL;
 
 	return new_servicegroup;
 }

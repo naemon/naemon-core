@@ -33,7 +33,7 @@ void destroy_objects_command()
 	num_objects.commands = 0;
 }
 
-command *create_command(char *name, char *value)
+command *create_command(const char *name, const char *value)
 {
 	command *new_command = NULL;
 
@@ -47,8 +47,8 @@ command *create_command(char *name, char *value)
 	new_command = nm_calloc(1, sizeof(*new_command));
 
 	/* assign vars */
-	new_command->name = name;
-	new_command->command_line = value;
+	new_command->name = nm_strdup(name);
+	new_command->command_line = nm_strdup(value);
 
 	return new_command;
 }

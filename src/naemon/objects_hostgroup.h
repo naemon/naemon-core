@@ -33,7 +33,7 @@ struct hostgroup {
 int init_objects_hostgroup(int elems);
 void destroy_objects_hostgroup(void);
 
-hostgroup *create_hostgroup(char *name, char *alias, char *notes, char *notes_url, char *action_url);
+hostgroup *create_hostgroup(const char *name, const char *alias, const char *notes, const char *notes_url, const char *action_url);
 int register_hostgroup(hostgroup *new_hostgroup);
 void destroy_hostgroup(hostgroup *this_hostgroup);
 int add_host_to_hostgroup(hostgroup *, host *);

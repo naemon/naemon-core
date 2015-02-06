@@ -62,7 +62,7 @@ struct contactsmember {
 int init_objects_contact(int elems);
 void destroy_objects_contact(void);
 
-struct contact *create_contact(char *name, char *alias, char *email, char *pager, char **addresses, char *svc_notification_period, char *host_notification_period, int service_notification_options, int host_notification_options, int service_notifications_enabled, int host_notifications_enabled, int can_submit_commands, int retain_status_information, int retain_nonstatus_information, unsigned int minimum_value);
+struct contact *create_contact(const char *name, const char *alias, const char *email, const char *pager, char * const *addresses, const char *svc_notification_period, const char *host_notification_period, int service_notification_options, int host_notification_options, int service_notifications_enabled, int host_notifications_enabled, int can_submit_commands, int retain_status_information, int retain_nonstatus_information, unsigned int minimum_value);
 int register_contact(contact *new_contact);
 void destroy_contact(contact *this_contact);
 struct commandsmember *add_service_notification_command_to_contact(contact *, char *);

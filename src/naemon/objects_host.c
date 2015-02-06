@@ -55,7 +55,7 @@ int compare_host(const void *_host1, const void *_host2)
 	return strcmp(host1->name, host2->name);
 }
 
-host *create_host(char *name, char *display_name, char *alias, char *address, char *check_period, int initial_state, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, char *notification_period, int notifications_enabled, char *check_command, int checks_enabled, int accept_passive_checks, char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, char *notes, char *notes_url, char *action_url, char *icon_image, char *icon_image_alt, char *vrml_image, char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int should_be_drawn, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
+host *create_host(const char *name, const char *display_name, const char *alias, const char *address, const char *check_period, int initial_state, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, const char *notification_period, int notifications_enabled, const char *check_command, int checks_enabled, int accept_passive_checks, const char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, const char *vrml_image, const char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int should_be_drawn, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
 {
 	host *new_host = NULL;
 	timeperiod *check_tp = NULL, *notify_tp = NULL;
@@ -101,23 +101,23 @@ host *create_host(char *name, char *display_name, char *alias, char *address, ch
 	new_host = nm_calloc(1, sizeof(*new_host));
 
 	/* assign string vars */
-	new_host->name = name;
-	new_host->display_name = display_name ? display_name : new_host->name;
-	new_host->alias = alias ? alias : new_host->name;
-	new_host->address = address ? address : new_host->name;
+	new_host->name = nm_strdup(name);
+	new_host->display_name = display_name ? nm_strdup(display_name) : new_host->name;
+	new_host->alias = alias ? nm_strdup(alias) : new_host->name;
+	new_host->address = address ? nm_strdup(address) : new_host->name;
 	new_host->check_period = check_tp ? check_tp->name : NULL;
 	new_host->notification_period = notify_tp ? notify_tp->name : NULL;
 	new_host->notification_period_ptr = notify_tp;
 	new_host->check_period_ptr = check_tp;
-	new_host->check_command = check_command;
-	new_host->event_handler = event_handler;
-	new_host->notes = notes;
-	new_host->notes_url = notes_url;
-	new_host->action_url = action_url;
-	new_host->icon_image = icon_image;
-	new_host->icon_image_alt = icon_image_alt;
-	new_host->vrml_image = vrml_image;
-	new_host->statusmap_image = statusmap_image;
+	new_host->check_command = check_command ? nm_strdup(check_command) : NULL;
+	new_host->event_handler = event_handler ? nm_strdup(event_handler) : NULL;
+	new_host->notes = notes ? nm_strdup(notes) : NULL;
+	new_host->notes_url = notes_url ? nm_strdup(notes_url) : NULL;
+	new_host->action_url = action_url ? nm_strdup(action_url) : NULL;
+	new_host->icon_image = icon_image ? nm_strdup(icon_image) : NULL;
+	new_host->icon_image_alt = icon_image_alt ? nm_strdup(icon_image_alt) : NULL;
+	new_host->vrml_image = vrml_image ? nm_strdup(vrml_image) : NULL;
+	new_host->statusmap_image = statusmap_image ? nm_strdup(statusmap_image) : NULL;
 
 	/* duplicate non-string vars */
 	new_host->hourly_value = hourly_value;

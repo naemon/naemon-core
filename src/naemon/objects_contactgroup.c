@@ -35,7 +35,7 @@ void destroy_objects_contactgroup()
 	num_objects.contacts = 0;
 }
 
-contactgroup *create_contactgroup(char *name, char *alias)
+contactgroup *create_contactgroup(const char *name, const char *alias)
 {
 	contactgroup *new_contactgroup = NULL;
 
@@ -48,8 +48,8 @@ contactgroup *create_contactgroup(char *name, char *alias)
 	new_contactgroup = nm_calloc(1, sizeof(*new_contactgroup));
 
 	/* assign vars */
-	new_contactgroup->group_name = name;
-	new_contactgroup->alias = alias ? alias : name;
+	new_contactgroup->group_name = name ? nm_strdup(name) : NULL;
+	new_contactgroup->alias = alias ? nm_strdup(alias) : new_contactgroup->group_name;
 
 	return new_contactgroup;
 }

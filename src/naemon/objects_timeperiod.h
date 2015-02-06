@@ -74,7 +74,7 @@ struct timeperiodexclusion {
 int init_objects_timeperiod(int elems);
 void destroy_objects_timeperiod(void);
 
-struct timeperiod *create_timeperiod(char *, char *);
+struct timeperiod *create_timeperiod(const char *, const char *);
 int register_timeperiod(timeperiod *new_timeperiod);
 void destroy_timeperiod(timeperiod *period);
 
