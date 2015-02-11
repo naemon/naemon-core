@@ -118,48 +118,8 @@ servicesmember *add_service_to_servicegroup(servicegroup *temp_servicegroup, ser
 	/* add (unsorted) link from the service to its groups */
 	prepend_object_to_objectlist(&svc->servicegroups_ptr, temp_servicegroup);
 
-	/*
-	 * add new member to member list, sorted by host name then
-	 * service description, unless we're a large installation, in
-	 * which case insertion-sorting will take far too long
-	 */
-	if (use_large_installation_tweaks == TRUE) {
-		new_member->next = temp_servicegroup->members;
-		temp_servicegroup->members = new_member;
-		return new_member;
-	}
-	last_member = temp_servicegroup->members;
-	for (temp_member = temp_servicegroup->members; temp_member != NULL; temp_member = temp_member->next) {
-
-		if (strcmp(new_member->host_name, temp_member->host_name) < 0) {
-			new_member->next = temp_member;
-			if (temp_member == temp_servicegroup->members)
-				temp_servicegroup->members = new_member;
-			else
-				last_member->next = new_member;
-			break;
-		}
-
-		else if (strcmp(new_member->host_name, temp_member->host_name) == 0 && strcmp(new_member->service_description, temp_member->service_description) < 0) {
-			new_member->next = temp_member;
-			if (temp_member == temp_servicegroup->members)
-				temp_servicegroup->members = new_member;
-			else
-				last_member->next = new_member;
-			break;
-		}
-
-		else
-			last_member = temp_member;
-	}
-	if (temp_servicegroup->members == NULL) {
-		new_member->next = NULL;
-		temp_servicegroup->members = new_member;
-	} else if (temp_member == NULL) {
-		new_member->next = NULL;
-		last_member->next = new_member;
-	}
-
+	new_member->next = temp_servicegroup->members;
+	temp_servicegroup->members = new_member;
 	return new_member;
 }
 
