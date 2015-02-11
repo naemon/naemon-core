@@ -43,7 +43,7 @@ static double flapping_pct(int *history, int idx, int len)
 }
 
 /* detects service flapping */
-void check_for_service_flapping(service *svc, int update, int allow_flapstart_notification)
+void check_for_service_flapping(service *svc, int update)
 {
 	int is_flapping = FALSE;
 	double low_threshold = 0.0;
@@ -105,7 +105,7 @@ void check_for_service_flapping(service *svc, int update, int allow_flapstart_no
 
 	/* did the service just start flapping? */
 	if (is_flapping == TRUE && svc->is_flapping == FALSE)
-		set_service_flap(svc, svc->percent_state_change, high_threshold, low_threshold, allow_flapstart_notification);
+		set_service_flap(svc, svc->percent_state_change, high_threshold, low_threshold);
 
 	/* did the service just stop flapping? */
 	else if (is_flapping == FALSE && svc->is_flapping == TRUE)
@@ -114,7 +114,7 @@ void check_for_service_flapping(service *svc, int update, int allow_flapstart_no
 
 
 /* detects host flapping */
-void check_for_host_flapping(host *hst, int update, int actual_check, int allow_flapstart_notification)
+void check_for_host_flapping(host *hst, int update, int actual_check)
 {
 	int is_flapping = FALSE;
 	unsigned long wait_threshold = 0L;
@@ -190,7 +190,7 @@ void check_for_host_flapping(host *hst, int update, int actual_check, int allow_
 
 	/* did the host just start flapping? */
 	if (is_flapping == TRUE && hst->is_flapping == FALSE)
-		set_host_flap(hst, hst->percent_state_change, high_threshold, low_threshold, allow_flapstart_notification);
+		set_host_flap(hst, hst->percent_state_change, high_threshold, low_threshold);
 
 	/* did the host just stop flapping? */
 	else if (is_flapping == FALSE && hst->is_flapping == TRUE)
@@ -203,7 +203,7 @@ void check_for_host_flapping(host *hst, int update, int actual_check, int allow_
 /******************************************************************/
 
 /* handles a service that is flapping */
-void set_service_flap(service *svc, double percent_change, double high_threshold, double low_threshold, int allow_flapstart_notification)
+void set_service_flap(service *svc, double percent_change, double high_threshold, double low_threshold)
 {
 	char *temp_buffer = NULL;
 
@@ -234,9 +234,7 @@ void set_service_flap(service *svc, double percent_change, double high_threshold
 	else
 		svc->check_flapping_recovery_notification = FALSE;
 
-	/* send a notification */
-	if (allow_flapstart_notification == TRUE)
-		service_notification(svc, NOTIFICATION_FLAPPINGSTART, NULL, NULL, NOTIFICATION_OPTION_NONE);
+	service_notification(svc, NOTIFICATION_FLAPPINGSTART, NULL, NULL, NOTIFICATION_OPTION_NONE);
 
 	return;
 }
@@ -282,7 +280,7 @@ void clear_service_flap(service *svc, double percent_change, double high_thresho
 
 
 /* handles a host that is flapping */
-void set_host_flap(host *hst, double percent_change, double high_threshold, double low_threshold, int allow_flapstart_notification)
+void set_host_flap(host *hst, double percent_change, double high_threshold, double low_threshold)
 {
 	char *temp_buffer = NULL;
 
@@ -314,8 +312,7 @@ void set_host_flap(host *hst, double percent_change, double high_threshold, doub
 		hst->check_flapping_recovery_notification = FALSE;
 
 	/* send a notification */
-	if (allow_flapstart_notification == TRUE)
-		host_notification(hst, NOTIFICATION_FLAPPINGSTART, NULL, NULL, NOTIFICATION_OPTION_NONE);
+	host_notification(hst, NOTIFICATION_FLAPPINGSTART, NULL, NULL, NOTIFICATION_OPTION_NONE);
 
 	return;
 }
@@ -391,9 +388,9 @@ void enable_flap_detection_routines(void)
 
 	/* check for flapping */
 	for (i = 0; i < num_objects.hosts; i++)
-		check_for_host_flapping(host_ary[i], FALSE, FALSE, TRUE);
+		check_for_host_flapping(host_ary[i], FALSE, FALSE);
 	for (i = 0; i < num_objects.services; i++)
-		check_for_service_flapping(service_ary[i], FALSE, TRUE);
+		check_for_service_flapping(service_ary[i], FALSE);
 
 }
 
@@ -459,7 +456,7 @@ void enable_host_flap_detection(host *hst)
 #endif
 
 	/* check for flapping */
-	check_for_host_flapping(hst, FALSE, FALSE, TRUE);
+	check_for_host_flapping(hst, FALSE, FALSE);
 
 	/* update host status */
 	update_host_status(hst, FALSE);
@@ -569,7 +566,7 @@ void enable_service_flap_detection(service *svc)
 #endif
 
 	/* check for flapping */
-	check_for_service_flapping(svc, FALSE, TRUE);
+	check_for_service_flapping(svc, FALSE);
 
 	/* update service status */
 	update_service_status(svc, FALSE);
