@@ -921,25 +921,15 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			daemon_dumps_core = (atoi(value) > 0) ? TRUE : FALSE;
 		}
 
-		else if (!strcmp(variable, "use_large_installation_tweaks")) {
-
-			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				nm_asprintf(&error_message, "Illegal value for use_large_installation_tweaks ");
-				error = TRUE;
-				break;
-			}
-
-			use_large_installation_tweaks = (atoi(value) > 0) ? TRUE : FALSE;
-		}
-
+		/*** workers removed the need for these ***/
+		else if (!strcmp(variable, "use_large_installation_tweaks"))
+			obsoleted_warning(variable, "Naemon should always be fast");
 		else if (!strcmp(variable, "enable_environment_macros"))
-			enable_environment_macros = (atoi(value) > 0) ? TRUE : FALSE;
-
+			obsoleted_warning(variable, NULL);
 		else if (!strcmp(variable, "free_child_process_memory"))
-			free_child_process_memory = (atoi(value) > 0) ? TRUE : FALSE;
-
+			obsoleted_warning(variable, NULL);
 		else if (!strcmp(variable, "child_processes_fork_twice"))
-			child_processes_fork_twice = (atoi(value) > 0) ? TRUE : FALSE;
+			obsoleted_warning(variable, NULL);
 
 		/*** embedded perl variables are deprecated now ***/
 		else if (!strcmp(variable, "enable_embedded_perl"))
@@ -1182,12 +1172,6 @@ int read_main_config_file(const char *main_config_file)
 	if (use_timezone != NULL)
 		set_environment_var("TZ", use_timezone, 1);
 	tzset();
-
-	/* adjust tweaks */
-	if (free_child_process_memory == -1)
-		free_child_process_memory = (use_large_installation_tweaks == TRUE) ? FALSE : TRUE;
-	if (child_processes_fork_twice == -1)
-		child_processes_fork_twice = (use_large_installation_tweaks == TRUE) ? FALSE : TRUE;
 
 	/* make sure a log file has been specified */
 	strip(log_file);
