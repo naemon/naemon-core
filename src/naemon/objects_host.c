@@ -236,6 +236,8 @@ void destroy_host(host *this_host)
 		destroy_hostdependency(slavelist->object_ptr);
 	for (slavelist = this_host->escalation_list; slavelist; slavelist = slavelist->next)
 		destroy_hostescalation(slavelist->object_ptr);
+	for (slavelist = this_host->hostgroups_ptr; slavelist; slavelist = slavelist->next)
+		remove_host_from_hostgroup(slavelist->object_ptr, this_host);
 
 	if (this_host->child_hosts) {
 		while (!rbtree_isempty(this_host->child_hosts))
