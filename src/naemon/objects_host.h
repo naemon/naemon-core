@@ -153,6 +153,7 @@ int register_host(host *new_host);
 void destroy_host(host *this_host);
 
 int add_parent_to_host(host *, host *);
+int remove_parent_from_host(host *hst, host *parent);
 struct contactgroupsmember *add_contactgroup_to_host(host *, char *);
 struct contactsmember *add_contact_to_host(host *, char *);
 struct customvariablesmember *add_custom_variable_to_host(host *, char *, char *);
