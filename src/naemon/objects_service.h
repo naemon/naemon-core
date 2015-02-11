@@ -154,7 +154,7 @@ void destroy_service(service *svc);
 
 struct contactgroupsmember *add_contactgroup_to_service(service *, char *);					/* adds a contact group to a service definition */
 struct contactsmember *add_contact_to_service(service *, char *);                                              /* adds a contact to a host definition */
-struct servicesmember *add_parent_service_to_service(service *, char *host_name, char *description);
+struct servicesmember *add_parent_to_service(service *svc, service *parent);
 struct customvariablesmember *add_custom_variable_to_service(service *, char *, char *);                       /* adds a custom variable to a service definition */
 
 struct service *find_service(const char *, const char *);

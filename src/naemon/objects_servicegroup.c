@@ -100,20 +100,13 @@ void destroy_servicegroup(servicegroup *this_servicegroup)
 }
 
 /* add a new service to a service group */
-servicesmember *add_service_to_servicegroup(servicegroup *temp_servicegroup, char *host_name, char *svc_description)
+servicesmember *add_service_to_servicegroup(servicegroup *temp_servicegroup, service *svc)
 {
 	servicesmember *new_member = NULL;
-	servicesmember *last_member = NULL;
-	servicesmember *temp_member = NULL;
-	struct service *svc;
 
 	/* make sure we have the data we need */
-	if (temp_servicegroup == NULL || (host_name == NULL || !strcmp(host_name, "")) || (svc_description == NULL || !strcmp(svc_description, ""))) {
+	if (temp_servicegroup == NULL || svc == NULL) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Servicegroup or group member is NULL\n");
-		return NULL;
-	}
-	if (!(svc = find_service(host_name, svc_description))) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Failed to locate service '%s' on host '%s' for servicegroup '%s'\n", svc_description, host_name, temp_servicegroup->group_name);
 		return NULL;
 	}
 
