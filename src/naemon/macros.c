@@ -1804,6 +1804,7 @@ int grab_standard_hostgroup_macro_r(nagios_macros *mac, int macro_type, hostgrou
 			*output = temp_hostgroup->alias;
 		break;
 	case MACRO_HOSTGROUPMEMBERS:
+		nm_free(*output);
 		*output = implode_hosttree(temp_hostgroup->members, ",");
 		break;
 	case MACRO_HOSTGROUPACTIONURL:
