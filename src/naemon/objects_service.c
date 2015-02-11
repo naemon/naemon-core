@@ -268,6 +268,8 @@ void destroy_service(service *this_service)
 		nm_free(this_customvariablesmember);
 		this_customvariablesmember = next_customvariablesmember;
 	}
+	for (slavelist = this_service->servicegroups_ptr; slavelist; slavelist = slavelist->next)
+		remove_service_from_servicegroup(slavelist->object_ptr, this_service);
 
 	for (slavelist = this_service->notify_deps; slavelist; slavelist = slavelist->next)
 		destroy_servicedependency(slavelist->object_ptr);

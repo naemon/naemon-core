@@ -38,6 +38,7 @@ servicegroup *create_servicegroup(const char *name, const char *alias, const cha
 int register_servicegroup(servicegroup *this_servicegroup);
 void destroy_servicegroup(servicegroup *this_servicegroup);
 struct servicesmember *add_service_to_servicegroup(servicegroup *, service *);
+void remove_service_from_servicegroup(servicegroup *temp_servicegroup, service *svc);
 
 struct servicegroup *find_servicegroup(const char *);
 int is_host_member_of_servicegroup(struct servicegroup *, struct host *);	       /* tests whether or not a service is a member of a specific servicegroup */
