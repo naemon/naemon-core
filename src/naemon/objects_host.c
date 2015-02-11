@@ -299,17 +299,7 @@ int add_parent_to_host(host *hst, host *parent)
 	}
 
 	rbtree_insert(hst->parent_hosts, parent);
-
-	return OK;
-}
-
-int add_child_to_host(host *hst, host *child_ptr)
-{
-	/* make sure we have the data we need */
-	if (hst == NULL || child_ptr == NULL)
-		return ERROR;
-
-	rbtree_insert(hst->child_hosts, child_ptr);
+	rbtree_insert(parent->child_hosts, hst);
 
 	return OK;
 }
