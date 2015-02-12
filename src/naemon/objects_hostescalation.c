@@ -53,7 +53,11 @@ void destroy_hostescalation(hostescalation *this_hostescalation)
 {
 	contactsmember *this_contactsmember;
 	/* free memory for the contact group members */
-	contactgroupsmember *this_contactgroupsmember = this_hostescalation->contact_groups;
+	contactgroupsmember *this_contactgroupsmember;
+	if (!this_hostescalation)
+		return;
+	this_contactgroupsmember = this_hostescalation->contact_groups;
+
 	while (this_contactgroupsmember != NULL) {
 		contactgroupsmember *next_contactgroupsmember = this_contactgroupsmember->next;
 		nm_free(this_contactgroupsmember);

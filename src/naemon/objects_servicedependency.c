@@ -73,6 +73,8 @@ servicedependency *add_service_dependency(char *dependent_host_name, char *depen
 
 void destroy_servicedependency(servicedependency *this_servicedependency)
 {
+	if (!this_servicedependency)
+		return;
 	nm_free(this_servicedependency);
 	num_objects.servicedependencies--;
 }

@@ -63,6 +63,8 @@ hostdependency *add_host_dependency(char *dependent_host_name, char *host_name, 
 
 void destroy_hostdependency(hostdependency *this_hostdependency)
 {
+	if (!this_hostdependency)
+		return;
 	nm_free(this_hostdependency);
 	num_objects.hostdependencies--;
 }

@@ -82,6 +82,9 @@ int register_hostgroup(hostgroup *new_hostgroup)
 
 void destroy_hostgroup(hostgroup *this_hostgroup)
 {
+	if (!this_hostgroup)
+		return;
+
 	if (this_hostgroup->members) {
 		while (!rbtree_isempty(this_hostgroup->members))
 			remove_host_from_hostgroup(this_hostgroup, rbtree_first(this_hostgroup->members)->data);
