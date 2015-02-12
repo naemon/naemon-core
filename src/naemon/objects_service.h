@@ -35,7 +35,6 @@ struct service {
 	double	check_interval;
 	double  retry_interval;
 	int	max_attempts;
-	int     reserved1;   /* placeholder var to not break interface, was parallelize before */
 	struct contactgroupsmember *contact_groups;
 	struct contactsmember *contacts;
 	double	notification_interval;
@@ -79,7 +78,6 @@ struct service {
 	char    *perf_data;
 	int     state_type;
 	time_t	next_check;
-	int     reserved2; /* placeholder var to not break interface, was should_be_scheduled before */
 	time_t	last_check;
 	int	current_attempt;
 	unsigned long current_event_id;
@@ -117,7 +115,6 @@ struct service {
 	struct command *event_handler_ptr;
 	char *event_handler_args;
 	struct command *check_command_ptr;
-	char *check_command_args;
 	struct timeperiod *check_period_ptr;
 	struct timeperiod *notification_period_ptr;
 	struct objectlist *servicegroups_ptr;

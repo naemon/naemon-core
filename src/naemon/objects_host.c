@@ -77,7 +77,7 @@ host *create_host(const char *name)
 	return new_host;
 }
 
-int setup_host_variables(host *new_host, const char *display_name, const char *alias, const char *address, const char *check_period, int initial_state, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, const char *notification_period, int notifications_enabled, const char *check_command, int checks_enabled, int accept_passive_checks, const char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, const char *vrml_image, const char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int should_be_drawn, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
+int setup_host_variables(host *new_host, const char *display_name, const char *alias, const char *address, const char *check_period, int initial_state, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, const char *notification_period, int notifications_enabled, const char *check_command, int checks_enabled, int accept_passive_checks, const char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, const char *vrml_image, const char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
 {
 	timeperiod *check_tp = NULL, *notify_tp = NULL;
 
@@ -160,7 +160,6 @@ int setup_host_variables(host *new_host, const char *display_name, const char *a
 	new_host->y_3d = y_3d;
 	new_host->z_3d = z_3d;
 	new_host->have_3d_coords = (have_3d_coords > 0) ? TRUE : FALSE;
-	new_host->should_be_drawn = (should_be_drawn > 0) ? TRUE : FALSE;
 	new_host->obsess = (obsess > 0) ? TRUE : FALSE;
 	new_host->retain_status_information = (retain_status_information > 0) ? TRUE : FALSE;
 	new_host->retain_nonstatus_information = (retain_nonstatus_information > 0) ? TRUE : FALSE;
