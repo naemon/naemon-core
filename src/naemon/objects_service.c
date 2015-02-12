@@ -43,84 +43,95 @@ void destroy_objects_service()
 	num_objects.services = 0;
 }
 
-service *create_service(const char *host_name, const char *description, const char *display_name, const char *check_period, int initial_state, int max_attempts, int accept_passive_checks, double check_interval, double retry_interval, double notification_interval, double first_notification_delay, char *notification_period, int notification_options, int notifications_enabled, int is_volatile, const char *event_handler, int event_handler_enabled, const char *check_command, int checks_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
+service *create_service(host *hst, const char *description, const char *check_command)
 {
-	host *h;
-	timeperiod *cp = NULL, *np = NULL;
 	service *new_service = NULL;
+	servicesmember *new_servicesmember = NULL;
 
-	/* make sure we have everything we need */
-	if (host_name == NULL) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Host name not provided for service\n");
-		return NULL;
-	}
-	if (!(h = find_host(host_name))) {
+	if (!hst) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Unable to locate host '%s' for service '%s'\n",
-		           host_name, description);
+		           hst->name, description);
 		return NULL;
 	}
 
-	if (find_service(host_name, description)) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Service '%s' on host '%s' has already been defined\n", description, host_name);
-		return NULL;
-	}
 	if (description == NULL || !*description) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Found service on host '%s' with no service description\n", host_name);
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Found service on host '%s' with no service description\n", hst->name);
 		return NULL;
 	}
 	if (check_command == NULL || !*check_command) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: No check command provided for service '%s' on host '%s'\n", host_name, description);
-		return NULL;
-	}
-	if (notification_period && !(np = find_timeperiod(notification_period))) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: notification_period '%s' for service '%s' on host '%s' could not be found!\n", notification_period, description, host_name);
-		return NULL;
-	}
-	if (check_period && !(cp = find_timeperiod(check_period))) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: check_period '%s' for service '%s' on host '%s' not found!\n",
-		       check_period, description, host_name);
-		return NULL;
-	}
-
-	/* check values */
-	if (max_attempts <= 0) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: max_check_attempts must be a positive integer for service '%s' on host '%s'\n", description, host_name);
-		return NULL;
-	}
-	if (check_interval < 0) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: check_interval must be a non-negative integer for service '%s' on host '%s'\n", description, host_name);
-		return NULL;
-	}
-	if (retry_interval <= 0) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: retry_interval must be a positive integer for service '%s' on host '%s'\n", description, host_name);
-		return NULL;
-	}
-	if (notification_interval < 0) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: notification_interval must be a non-negative integer for service '%s' on host '%s'\n", description, host_name);
-		return NULL;
-	}
-	if (first_notification_delay < 0) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: first_notification_delay must be a non-negative integer for service '%s' on host '%s'\n", description, host_name);
+		nm_log(NSLOG_CONFIG_ERROR, "Error: No check command provided for service '%s' on host '%s'\n", hst->name, description);
 		return NULL;
 	}
 
 	/* allocate memory */
 	new_service = nm_calloc(1, sizeof(*new_service));
 
+	new_service->host_ptr = hst;
+	new_service->host_name = hst->name;
+
+	new_servicesmember = nm_calloc(1, sizeof(servicesmember));
+	new_servicesmember->host_name = new_service->host_name;
+	new_servicesmember->service_description = new_service->description;
+	new_servicesmember->service_ptr = new_service;
+	new_servicesmember->next = hst->services;
+	hst->services = new_servicesmember;
+	hst->total_services++;
+
+	new_service->description = nm_strdup(description);
+	new_service->display_name = new_service->description;
+	new_service->check_command = nm_strdup(check_command);
+	new_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+	new_service->check_type = CHECK_TYPE_ACTIVE;
+	new_service->state_type = HARD_STATE;
+	new_service->check_options = CHECK_OPTION_NONE;
+	return new_service;
+}
+
+int setup_service_variables(service *new_service, const char *display_name, const char *check_period, int initial_state, int max_attempts, int accept_passive_checks, double check_interval, double retry_interval, double notification_interval, double first_notification_delay, char *notification_period, int notification_options, int notifications_enabled, int is_volatile, const char *event_handler, int event_handler_enabled, int checks_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
+{
+	timeperiod *cp = NULL, *np = NULL;
+
+	/* make sure we have everything we need */
+	if (notification_period && !(np = find_timeperiod(notification_period))) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: notification_period '%s' for service '%s' on host '%s' could not be found!\n", notification_period, new_service->description, new_service->host_name);
+		return -1;
+	}
+	if (check_period && !(cp = find_timeperiod(check_period))) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: check_period '%s' for service '%s' on host '%s' not found!\n",
+		       check_period, new_service->description, new_service->host_name);
+		return -1;
+	}
+
+	/* check values */
+	if (max_attempts <= 0) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: max_check_attempts must be a positive integer for service '%s' on host '%s'\n", new_service->description, new_service->host_name);
+		return -1;
+	}
+	if (check_interval < 0) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: check_interval must be a non-negative integer for service '%s' on host '%s'\n", new_service->description, new_service->host_name);
+		return -1;
+	}
+	if (retry_interval <= 0) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: retry_interval must be a positive integer for service '%s' on host '%s'\n", new_service->description, new_service->host_name);
+		return -1;
+	}
+	if (notification_interval < 0) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: notification_interval must be a non-negative integer for service '%s' on host '%s'\n", new_service->description, new_service->host_name);
+		return -1;
+	}
+	if (first_notification_delay < 0) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: first_notification_delay must be a non-negative integer for service '%s' on host '%s'\n", new_service->description, new_service->host_name);
+		return -1;
+	}
+
 	/* duplicate vars, but assign what we can */
 	new_service->notification_period_ptr = np;
 	new_service->check_period_ptr = cp;
-	new_service->host_ptr = h;
 	new_service->check_period = cp ? cp->name : NULL;
 	new_service->notification_period = np ? np->name : NULL;
-	new_service->host_name = h->name;
-	new_service->description = nm_strdup(description);
 	if (display_name) {
 		new_service->display_name = nm_strdup(display_name);
-	} else {
-		new_service->display_name = new_service->description;
 	}
-	new_service->check_command = nm_strdup(check_command);
 	if (event_handler) {
 		new_service->event_handler = nm_strdup(event_handler);
 	}
@@ -163,16 +174,12 @@ service *create_service(const char *host_name, const char *description, const ch
 	new_service->retain_nonstatus_information = (retain_nonstatus_information > 0) ? TRUE : FALSE;
 	new_service->notifications_enabled = (notifications_enabled > 0) ? TRUE : FALSE;
 	new_service->obsess = (obsess > 0) ? TRUE : FALSE;
-	new_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
-	new_service->check_type = CHECK_TYPE_ACTIVE;
 	new_service->current_attempt = (initial_state == STATE_OK) ? 1 : max_attempts;
 	new_service->current_state = initial_state;
 	new_service->last_state = initial_state;
 	new_service->last_hard_state = initial_state;
-	new_service->state_type = HARD_STATE;
-	new_service->check_options = CHECK_OPTION_NONE;
 
-	return new_service;
+	return 0;
 }
 
 int register_service(service *new_service)
@@ -184,7 +191,6 @@ int register_service(service *new_service)
 		           new_service->host_name, new_service->description);
 		return ERROR;
 	}
-	add_service_link_to_host(h, new_service);
 
 	if ((find_service(new_service->host_name, new_service->description))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Service '%s' on host '%s' has already been defined\n", new_service->description, new_service->host_name);

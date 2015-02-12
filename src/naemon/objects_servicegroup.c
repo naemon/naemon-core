@@ -46,10 +46,6 @@ servicegroup *create_servicegroup(const char *name, const char *alias, const cha
 		return NULL;
 	}
 
-	if (find_servicegroup(name)) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Servicegroup '%s' has already been defined\n", name);
-	}
-
 	new_servicegroup = nm_calloc(1, sizeof(*new_servicegroup));
 
 	/* duplicate vars */

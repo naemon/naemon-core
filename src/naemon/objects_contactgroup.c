@@ -46,11 +46,6 @@ contactgroup *create_contactgroup(const char *name, const char *alias)
 		return NULL;
 	}
 
-	if (find_contactgroup(name)) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Contactgroup '%s' has already been defined\n", name);
-		return NULL;
-	}
-
 	new_contactgroup = nm_calloc(1, sizeof(*new_contactgroup));
 
 	new_contactgroup->group_name = name ? nm_strdup(name) : NULL;
@@ -80,6 +75,9 @@ int register_contactgroup(contactgroup *new_contactgroup)
 void destroy_contactgroup(contactgroup *this_contactgroup)
 {
 	contactsmember *this_contactsmember;
+
+	if (!this_contactgroup)
+		return;
 
 	/* free memory for the group members */
 	this_contactsmember = this_contactgroup->members;

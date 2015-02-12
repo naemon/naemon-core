@@ -11,12 +11,13 @@
 #include "lib/rbtree.h"
 #include "defaults.h"
 #include "objects_common.h"
-#include "objects_service.h"
+#include "objects_contact.h"
 
 NAGIOS_BEGIN_DECL
 
 struct host;
 typedef struct host host;
+struct servicesmember;
 
 extern struct host **host_ary;
 extern struct host *host_list;
@@ -147,7 +148,9 @@ static const struct flag_map host_flag_map[] = {
 int init_objects_host(int elems);
 void destroy_objects_host(void);
 
-struct host *create_host(const char *name, const char *display_name, const char *alias, const char *address, const char *check_period, int initial_state, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, const char *notification_period, int notifications_enabled, const char *check_command, int checks_enabled, int accept_passive_checks, const char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, const char *vrml_image, const char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int should_be_drawn, int retain_status_information, int retain_nonstatus_information, int obsess_over_host, unsigned int hourly_value);
+host *create_host(const char *name);
+/** This is an evil legacy function which you should never, ever use */
+int setup_host_variables(host *new_host, const char *display_name, const char *alias, const char *address, const char *check_period, int initial_state, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, const char *notification_period, int notifications_enabled, const char *check_command, int checks_enabled, int accept_passive_checks, const char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, const char *vrml_image, const char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int should_be_drawn, int retain_status_information, int retain_nonstatus_information, int obsess_over_host, unsigned int hourly_value);
 int register_host(host *new_host);
 void destroy_host(host *this_host);
 
@@ -156,7 +159,6 @@ int remove_parent_from_host(host *hst, host *parent);
 struct contactgroupsmember *add_contactgroup_to_host(host *, char *);
 struct contactsmember *add_contact_to_host(host *, char *);
 struct customvariablesmember *add_custom_variable_to_host(host *, char *, char *);
-struct servicesmember *add_service_link_to_host(host *, service *);
 
 int compare_host(const void *_host1, const void *_host2);
 struct host *find_host(const char *);

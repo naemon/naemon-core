@@ -44,10 +44,6 @@ timeperiod *create_timeperiod(const char *name, const char *alias)
 		return NULL;
 	}
 
-	if (find_timeperiod(name)) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Timeperiod '%s' has already been defined\n", name);
-		return NULL;
-	}
 	new_timeperiod = nm_calloc(1, sizeof(*new_timeperiod));
 
 	/* copy string vars */
