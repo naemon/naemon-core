@@ -121,7 +121,6 @@ struct host {
 	unsigned long flapping_comment_id;
 	double  percent_state_change;
 	int     total_services;
-	unsigned long total_service_check_interval;
 	unsigned long modified_attributes;
 	struct command *event_handler_ptr;
 	struct command *check_command_ptr;

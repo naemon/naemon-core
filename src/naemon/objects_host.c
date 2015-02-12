@@ -357,12 +357,11 @@ servicesmember *add_service_link_to_host(host *hst, service *service_ptr)
 	new_servicesmember->host_name = service_ptr->host_name;
 	new_servicesmember->service_description = service_ptr->description;
 	new_servicesmember->service_ptr = service_ptr;
-	hst->total_services++;
 
 	/* add the child entry to the host definition */
 	new_servicesmember->next = hst->services;
 	hst->services = new_servicesmember;
-	hst->hourly_value += service_ptr->hourly_value;
+	hst->total_service++;
 
 	return new_servicesmember;
 }
