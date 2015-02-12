@@ -145,6 +145,14 @@ int kvvec_sort(struct kvvec *kvv)
 	return 0;
 }
 
+char *kvvec_fetch_str_str(struct kvvec *kvv, const char *key)
+{
+	struct key_value *val = kvvec_fetch(kvv, key, strlen(key));
+	if (val)
+		return val->value;
+	return NULL;
+}
+
 struct key_value *kvvec_fetch(struct kvvec *kvv, const char *key, int keylen)
 {
 	int i;
