@@ -140,11 +140,6 @@ extern double high_service_flap_threshold;
 extern double low_host_flap_threshold;
 extern double high_host_flap_threshold;
 
-extern int use_large_installation_tweaks;
-extern int enable_environment_macros;
-extern int free_child_process_memory;
-extern int child_processes_fork_twice;
-
 extern char *use_timezone;
 
 extern time_t max_check_result_file_age;

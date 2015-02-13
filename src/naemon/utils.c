@@ -169,11 +169,6 @@ double high_service_flap_threshold = DEFAULT_HIGH_SERVICE_FLAP_THRESHOLD;
 double low_host_flap_threshold = DEFAULT_LOW_HOST_FLAP_THRESHOLD;
 double high_host_flap_threshold = DEFAULT_HIGH_HOST_FLAP_THRESHOLD;
 
-int use_large_installation_tweaks = DEFAULT_USE_LARGE_INSTALLATION_TWEAKS;
-int enable_environment_macros = TRUE;
-int free_child_process_memory = -1;
-int child_processes_fork_twice = -1;
-
 char *use_timezone = NULL;
 
 int allow_empty_hostgroup_assignment = DEFAULT_ALLOW_EMPTY_HOSTGROUP_ASSIGNMENT;
@@ -2262,11 +2257,6 @@ int reset_variables(void)
 
 	translate_passive_host_checks = DEFAULT_TRANSLATE_PASSIVE_HOST_CHECKS;
 	passive_host_checks_are_soft = DEFAULT_PASSIVE_HOST_CHECKS_SOFT;
-
-	use_large_installation_tweaks = DEFAULT_USE_LARGE_INSTALLATION_TWEAKS;
-	enable_environment_macros = FALSE;
-	free_child_process_memory = FALSE;
-	child_processes_fork_twice = FALSE;
 
 	additional_freshness_latency = DEFAULT_ADDITIONAL_FRESHNESS_LATENCY;
 
