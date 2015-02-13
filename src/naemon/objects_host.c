@@ -237,9 +237,17 @@ void destroy_host(host *this_host)
 	for (slavelist = this_host->escalation_list; slavelist; slavelist = slavelist->next)
 		destroy_hostescalation(slavelist->object_ptr);
 
-	rbtree_destroy(this_host->child_hosts, NULL);
+	if (this_host->child_hosts) {
+		while (!rbtree_isempty(this_host->child_hosts))
+			remove_parent_from_host(rbtree_first(this_host->child_hosts)->data, this_host);
+		rbtree_destroy(this_host->child_hosts, NULL);
+	}
+	if (this_host->parent_hosts) {
+		while (!rbtree_isempty(this_host->parent_hosts))
+			remove_parent_from_host(this_host, rbtree_first(this_host->parent_hosts)->data);
+		rbtree_destroy(this_host->parent_hosts, NULL);
+	}
 	this_host->child_hosts = NULL;
-	rbtree_destroy(this_host->parent_hosts, NULL);
 	this_host->parent_hosts = NULL;
 
 	if (this_host->display_name != this_host->name)
@@ -302,6 +310,15 @@ int add_parent_to_host(host *hst, host *parent)
 	rbtree_insert(parent->child_hosts, hst);
 
 	return OK;
+}
+
+int remove_parent_from_host(host *hst, host *parent)
+{
+	if (hst->parent_hosts)
+		rbtree_delete(hst->parent_hosts, rbtree_find_node(hst->parent_hosts, parent));
+	if (parent->child_hosts)
+		rbtree_delete(parent->child_hosts, rbtree_find_node(parent->child_hosts, hst));
+	return 0;
 }
 
 /* add a new contactgroup to a host */
