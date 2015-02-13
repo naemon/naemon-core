@@ -53,7 +53,8 @@ TESTS_ENVIRONMENT = \
 					   chmod -R u+w ${abs_builddir}/t/etc ${abs_builddir}/t/var \
 							${abs_builddir}/t-tap/smallconfig; \
 					   fi; \
-					   builddir=$(abs_builddir); export builddir;
+					   builddir=$(abs_builddir); export builddir; \
+					   G_DEBUG=fatal-criticals; export G_DEBUG;
 
 if HAVE_CHECK
 TESTSLDADD = $(LDADD) $(CHECK_LIBS) $(GLIB_LIBS)
