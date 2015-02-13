@@ -198,7 +198,6 @@ int main(void)
 
 	test_escaping(mac);
 
-	cleanup();
 	free(mac);
 
 	return exit_status();
