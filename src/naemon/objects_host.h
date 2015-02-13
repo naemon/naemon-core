@@ -74,7 +74,6 @@ struct host {
 	double  x_3d;
 	double  y_3d;
 	double  z_3d;
-	int     should_be_drawn;
 	customvariablesmember *custom_variables;
 	int     problem_has_been_acknowledged;
 	int     acknowledgement_type;
@@ -99,7 +98,6 @@ struct host {
 	time_t  last_notification;
 	time_t  next_notification;
 	time_t  next_check;
-	int     reserved2; /* placeholder var to not break interface, was should_be_scheduled before */
 	time_t  last_check;
 	time_t	last_state_change;
 	time_t	last_hard_state_change;
@@ -150,7 +148,7 @@ void destroy_objects_host(void);
 
 host *create_host(const char *name);
 /** This is an evil legacy function which you should never, ever use */
-int setup_host_variables(host *new_host, const char *display_name, const char *alias, const char *address, const char *check_period, int initial_state, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, const char *notification_period, int notifications_enabled, const char *check_command, int checks_enabled, int accept_passive_checks, const char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, const char *vrml_image, const char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int should_be_drawn, int retain_status_information, int retain_nonstatus_information, int obsess_over_host, unsigned int hourly_value);
+int setup_host_variables(host *new_host, const char *display_name, const char *alias, const char *address, const char *check_period, int initial_state, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, const char *notification_period, int notifications_enabled, const char *check_command, int checks_enabled, int accept_passive_checks, const char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, const char *vrml_image, const char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int retain_status_information, int retain_nonstatus_information, int obsess_over_host, unsigned int hourly_value);
 int register_host(host *new_host);
 void destroy_host(host *this_host);
 
