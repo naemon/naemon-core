@@ -836,7 +836,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 	}
 
 	/* check to see if the associated host is flapping */
-	check_for_host_flapping(hst, TRUE, TRUE, TRUE);
+	check_for_host_flapping(hst, TRUE, TRUE);
 
 	/* If there is a problem, and the state still is soft, use retry interval  */
 	if (hst->current_state != STATE_UP && hst->state_type == SOFT_STATE) {
