@@ -69,11 +69,6 @@ int setup_contact_variables(contact *new_contact, const char *alias, const char 
 		       host_notification_period, new_contact->name);
 		return -1;
 	}
-	if (find_contact(name)) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Contact '%s' has already been defined\n", name);
-		return NULL;
-	}
-
 
 	new_contact->host_notification_period = htp ? htp->name : NULL;
 	new_contact->service_notification_period = stp ? stp->name : NULL;
