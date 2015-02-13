@@ -125,6 +125,9 @@ void destroy_contact(contact *this_contact)
 	commandsmember *this_commandsmember;
 	customvariablesmember *this_customvariablesmember;
 
+	if (!this_contact)
+		return;
+
 	/* free memory for the host notification commands */
 	this_commandsmember = this_contact->host_notification_commands;
 	while (this_commandsmember != NULL) {

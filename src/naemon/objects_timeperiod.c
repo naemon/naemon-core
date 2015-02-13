@@ -76,6 +76,9 @@ void destroy_timeperiod(timeperiod *this_timeperiod)
 {
 	int x;
 	timeperiodexclusion *this_timeperiodexclusion, *next_timeperiodexclusion;
+
+	if (!this_timeperiod)
+		return;
 	/* free the exception time ranges contained in this timeperiod */
 	for (x = 0; x < DATERANGE_TYPES; x++) {
 		daterange *this_daterange, *next_daterange;

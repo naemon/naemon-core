@@ -249,6 +249,9 @@ void destroy_service(service *this_service)
 	struct customvariablesmember *this_customvariablesmember, *next_customvariablesmember;
 	struct objectlist *slavelist;
 
+	if (!this_service)
+		return;
+
 	/* free memory for contact groups */
 	this_contactgroupsmember = this_service->contact_groups;
 	while (this_contactgroupsmember != NULL) {

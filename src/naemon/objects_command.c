@@ -75,6 +75,8 @@ int register_command(command *new_command)
 
 void destroy_command(command *this_command)
 {
+	if (!this_command)
+		return;
 	nm_free(this_command->name);
 	nm_free(this_command->command_line);
 	nm_free(this_command);

@@ -55,8 +55,11 @@ serviceescalation *add_serviceescalation(char *host_name, char *description, int
 void destroy_serviceescalation(serviceescalation *this_serviceescalation)
 {
 	contactsmember *this_contactsmember;
-	/* free memory for the contact group members */
-	contactgroupsmember *this_contactgroupsmember = this_serviceescalation->contact_groups;
+	contactgroupsmember *this_contactgroupsmember;
+	if (!this_serviceescalation)
+		return;
+
+	this_contactgroupsmember = this_serviceescalation->contact_groups;
 	while (this_contactgroupsmember != NULL) {
 		contactgroupsmember *next_contactgroupsmember = this_contactgroupsmember->next;
 		nm_free(this_contactgroupsmember);

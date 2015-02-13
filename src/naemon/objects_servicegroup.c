@@ -78,7 +78,9 @@ int register_servicegroup(servicegroup *new_servicegroup)
 
 void destroy_servicegroup(servicegroup *this_servicegroup)
 {
-	/* free memory for the group members */
+	if (!this_servicegroup)
+		return;
+
 	while (this_servicegroup->members != NULL) {
 		remove_service_from_servicegroup(this_servicegroup, this_servicegroup->members->service_ptr);
 	}
