@@ -44,8 +44,8 @@ service *create_service(host *hst, const char *description, const char *check_co
 	servicesmember *new_servicesmember = NULL;
 
 	if (!hst) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Unable to locate host '%s' for service '%s'\n",
-		           hst->name, description);
+		nm_log(NSLOG_CONFIG_ERROR, "Error: No host provided for service '%s'\n",
+		           description);
 		return NULL;
 	}
 
