@@ -204,17 +204,18 @@ int register_service(service *new_service)
 	return OK;
 }
 
-servicesmember *add_parent_service_to_service(service *svc, char *host_name, char *description)
+servicesmember *add_parent_to_service(service *svc, service *parent)
 {
 	servicesmember *sm;
 
-	if (!svc || !host_name || !description || !*host_name || !*description)
+	if (!svc || !parent)
 		return NULL;
 
 	sm = nm_calloc(1, sizeof(*sm));
 
-	sm->host_name = nm_strdup(host_name);
-	sm->service_description = nm_strdup(description);
+	sm->host_name = parent->host_name;
+	sm->service_description = parent->description;
+	sm->service_ptr = parent;
 	sm->next = svc->parents;
 	svc->parents = sm;
 	return sm;
@@ -267,6 +268,8 @@ void destroy_service(service *this_service)
 		nm_free(this_customvariablesmember);
 		this_customvariablesmember = next_customvariablesmember;
 	}
+	for (slavelist = this_service->servicegroups_ptr; slavelist; slavelist = slavelist->next)
+		remove_service_from_servicegroup(slavelist->object_ptr, this_service);
 
 	for (slavelist = this_service->notify_deps; slavelist; slavelist = slavelist->next)
 		destroy_servicedependency(slavelist->object_ptr);

@@ -6396,7 +6396,8 @@ static int xodtemplate_register_service_relations(void *srv, void *discard)
 		char *comma = strchr(this_service->parents, ',');
 
 		if (!comma) { /* same-host single-service parent */
-			new_servicesmember = add_parent_service_to_service(new_service, new_service->host_name, this_service->parents);
+			service *svc = find_service(new_service->host_name, this_service->parents);
+			new_servicesmember = add_parent_to_service(new_service, svc);
 			if (new_servicesmember == NULL) {
 				nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add same-host service parent '%s' to service (config file '%s', starting on line %d)\n",
 				       this_service->parents,
@@ -6416,9 +6417,10 @@ static int xodtemplate_register_service_relations(void *srv, void *discard)
 			}
 			for (; list; list = next) {
 				xodtemplate_service *parent = (xodtemplate_service *)list->object_ptr;
+				service *parentsvc = find_service(parent->host_name, parent->service_description);
 				next = list->next;
 				free(list);
-				new_servicesmember = add_parent_service_to_service(new_service, parent->host_name, parent->service_description);
+				new_servicesmember = add_parent_to_service(new_service, parentsvc);
 				if (new_servicesmember == NULL) {
 					nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add service '%s' on host '%s' as parent to service '%s' on host '%s' (config file '%s', starting on line %d)\n",
 					       parent->host_name, parent->service_description,
@@ -6502,8 +6504,9 @@ static int xodtemplate_register_servicegroup_relations(void *sgrp, void *cookie)
 
 	for (list = this_servicegroup->member_list; list; list = next) {
 		xodtemplate_service *s = (xodtemplate_service *)list->object_ptr;
+		service *svc = find_service(s->host_name, s->service_description);
 		next = list->next;
-		if (!add_service_to_servicegroup(sg, s->host_name, s->service_description)) {
+		if (!add_service_to_servicegroup(sg, svc)) {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Bad member of servicegroup '%s' (config file '%s', starting on line %d)\n", sg->group_name, xodtemplate_config_file_name(this_servicegroup->_config_file), this_servicegroup->_start_line);
 			return ERROR;
 		}

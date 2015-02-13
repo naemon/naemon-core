@@ -83,11 +83,8 @@ int register_servicegroup(servicegroup *new_servicegroup)
 void destroy_servicegroup(servicegroup *this_servicegroup)
 {
 	/* free memory for the group members */
-	servicesmember *this_servicesmember = this_servicegroup->members;
-	while (this_servicesmember != NULL) {
-		servicesmember *next_servicesmember = this_servicesmember->next;
-		nm_free(this_servicesmember);
-		this_servicesmember = next_servicesmember;
+	while (this_servicegroup->members != NULL) {
+		remove_service_from_servicegroup(this_servicegroup, this_servicegroup->members->service_ptr);
 	}
 
 	if (this_servicegroup->alias != this_servicegroup->group_name)
@@ -100,20 +97,13 @@ void destroy_servicegroup(servicegroup *this_servicegroup)
 }
 
 /* add a new service to a service group */
-servicesmember *add_service_to_servicegroup(servicegroup *temp_servicegroup, char *host_name, char *svc_description)
+servicesmember *add_service_to_servicegroup(servicegroup *temp_servicegroup, service *svc)
 {
 	servicesmember *new_member = NULL;
-	servicesmember *last_member = NULL;
-	servicesmember *temp_member = NULL;
-	struct service *svc;
 
 	/* make sure we have the data we need */
-	if (temp_servicegroup == NULL || (host_name == NULL || !strcmp(host_name, "")) || (svc_description == NULL || !strcmp(svc_description, ""))) {
+	if (temp_servicegroup == NULL || svc == NULL) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Servicegroup or group member is NULL\n");
-		return NULL;
-	}
-	if (!(svc = find_service(host_name, svc_description))) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Failed to locate service '%s' on host '%s' for servicegroup '%s'\n", svc_description, host_name, temp_servicegroup->group_name);
 		return NULL;
 	}
 
@@ -171,6 +161,40 @@ servicesmember *add_service_to_servicegroup(servicegroup *temp_servicegroup, cha
 	}
 
 	return new_member;
+}
+
+void remove_service_from_servicegroup(servicegroup *temp_servicegroup, service *svc)
+{
+	servicesmember *this_servicesmember, *next_servicesmember, *prev_servicesmember;
+	objectlist *item, *next, *prev;
+	for (prev = NULL, item = svc->servicegroups_ptr;
+		 item;
+		 prev = item, item = next)
+	{
+		next = item->next;
+		if (item->object_ptr == temp_servicegroup) {
+			if (prev)
+				prev->next = next;
+			else
+				svc->servicegroups_ptr = next;
+			nm_free(item);
+			item = prev;
+		}
+	}
+	for (prev_servicesmember = NULL, this_servicesmember = temp_servicegroup->members;
+		 this_servicesmember;
+		 prev_servicesmember = this_servicesmember, this_servicesmember = next_servicesmember)
+	{
+		next_servicesmember = this_servicesmember->next;
+		if (this_servicesmember->service_ptr == svc) {
+			if (prev_servicesmember)
+				prev_servicesmember->next = next_servicesmember;
+			else
+				temp_servicegroup->members = next_servicesmember;
+			nm_free(this_servicesmember);
+			this_servicesmember = prev_servicesmember;
+		}
+	}
 }
 
 servicegroup *find_servicegroup(const char *name)

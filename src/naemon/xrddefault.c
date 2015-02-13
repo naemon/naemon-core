@@ -513,8 +513,6 @@ int xrddefault_read_state_information(void)
 	unsigned long process_service_attribute_mask = 0L;
 	int remove_comment = FALSE;
 	int ack = FALSE;
-	int was_flapping = FALSE;
-	int allow_flapstart_notification = TRUE;
 	int found_directive = FALSE;
 	int is_in_effect = FALSE;
 	int start_notification_sent = FALSE;
@@ -631,29 +629,6 @@ int xrddefault_read_state_information(void)
 					if (temp_host->current_state != STATE_UP && temp_host->state_type == HARD_STATE)
 						temp_host->current_attempt = temp_host->max_attempts;
 
-
-					/* ADDED 02/20/08 assume same flapping state if large install tweaks enabled */
-					if (use_large_installation_tweaks == TRUE) {
-						temp_host->is_flapping = was_flapping;
-					}
-					/* else use normal startup flap detection logic */
-					else {
-						/* host was flapping before program started */
-						/* 11/10/07 don't allow flapping notifications to go out */
-						if (was_flapping == TRUE)
-							allow_flapstart_notification = FALSE;
-						else
-							/* flapstart notifications are okay */
-							allow_flapstart_notification = TRUE;
-
-						/* check for flapping */
-						check_for_host_flapping(temp_host, FALSE, FALSE, allow_flapstart_notification);
-
-						/* host was flapping before and isn't now, so clear recovery check variable if host isn't flapping now */
-						if (was_flapping == TRUE && temp_host->is_flapping == FALSE)
-							temp_host->check_flapping_recovery_notification = FALSE;
-					}
-
 					/* handle new vars added in 2.x */
 					if (temp_host->last_hard_state_change == (time_t)0)
 						temp_host->last_hard_state_change = temp_host->last_state_change;
@@ -661,10 +636,6 @@ int xrddefault_read_state_information(void)
 					/* update host status */
 					update_host_status(temp_host, FALSE);
 				}
-
-				/* reset vars */
-				was_flapping = FALSE;
-				allow_flapstart_notification = TRUE;
 
 				temp_host = NULL;
 				break;
@@ -700,29 +671,6 @@ int xrddefault_read_state_information(void)
 					if (temp_service->current_state != STATE_OK && temp_service->state_type == HARD_STATE)
 						temp_service->current_attempt = temp_service->max_attempts;
 
-
-					/* ADDED 02/20/08 assume same flapping state if large install tweaks enabled */
-					if (use_large_installation_tweaks == TRUE) {
-						temp_service->is_flapping = was_flapping;
-					}
-					/* else use normal startup flap detection logic */
-					else {
-						/* service was flapping before program started */
-						/* 11/10/07 don't allow flapping notifications to go out */
-						if (was_flapping == TRUE)
-							allow_flapstart_notification = FALSE;
-						else
-							/* flapstart notifications are okay */
-							allow_flapstart_notification = TRUE;
-
-						/* check for flapping */
-						check_for_service_flapping(temp_service, FALSE, allow_flapstart_notification);
-
-						/* service was flapping before and isn't now, so clear recovery check variable if service isn't flapping now */
-						if (was_flapping == TRUE && temp_service->is_flapping == FALSE)
-							temp_service->check_flapping_recovery_notification = FALSE;
-					}
-
 					/* handle new vars added in 2.x */
 					if (temp_service->last_hard_state_change == (time_t)0)
 						temp_service->last_hard_state_change = temp_service->last_state_change;
@@ -730,10 +678,6 @@ int xrddefault_read_state_information(void)
 					/* update service status */
 					update_service_status(temp_service, FALSE);
 				}
-
-				/* reset vars */
-				was_flapping = FALSE;
-				allow_flapstart_notification = TRUE;
 
 				nm_free(host_name);
 				temp_service = NULL;
@@ -1050,7 +994,7 @@ int xrddefault_read_state_information(void)
 						else if (!strcmp(var, "current_notification_id"))
 							temp_host->current_notification_id = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "is_flapping"))
-							was_flapping = atoi(val);
+							temp_host->is_flapping = atoi(val);
 						else if (!strcmp(var, "percent_state_change"))
 							temp_host->percent_state_change = strtod(val, NULL);
 						else if (!strcmp(var, "check_flapping_recovery_notification"))
@@ -1311,7 +1255,7 @@ int xrddefault_read_state_information(void)
 						else if (!strcmp(var, "last_notification"))
 							temp_service->last_notification = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "is_flapping"))
-							was_flapping = atoi(val);
+							temp_service->is_flapping = atoi(val);
 						else if (!strcmp(var, "percent_state_change"))
 							temp_service->percent_state_change = strtod(val, NULL);
 						else if (!strcmp(var, "check_flapping_recovery_notification"))
