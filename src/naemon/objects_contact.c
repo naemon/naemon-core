@@ -40,26 +40,34 @@ void destroy_objects_contact()
 	num_objects.contacts = 0;
 }
 
-contact *create_contact(const char *name, const char *alias, const char *email, const char *pager, char * const *addresses, const char *svc_notification_period, const char *host_notification_period, int service_notification_options, int host_notification_options, int host_notifications_enabled, int service_notifications_enabled, int can_submit_commands, int retain_status_information, int retain_nonstatus_information, unsigned int minimum_value)
+contact *create_contact(const char *name)
 {
 	contact *new_contact = NULL;
-	timeperiod *htp = NULL, *stp = NULL;
-	int x = 0;
 
-	/* make sure we have the data we need */
 	if (name == NULL || !*name) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Contact name is NULL\n");
 		return NULL;
 	}
+	new_contact = nm_calloc(1, sizeof(*new_contact));
+	new_contact->name = nm_strdup(name);
+	new_contact->alias = new_contact->name;
+	return new_contact;
+}
+
+int setup_contact_variables(contact *new_contact, const char *alias, const char *email, const char *pager, char * const *addresses, const char *svc_notification_period, const char *host_notification_period, int service_notification_options, int host_notification_options, int host_notifications_enabled, int service_notifications_enabled, int can_submit_commands, int retain_status_information, int retain_nonstatus_information, unsigned int minimum_value)
+{
+	timeperiod *htp = NULL, *stp = NULL;
+	int x = 0;
+
 	if (svc_notification_period && !(stp = find_timeperiod(svc_notification_period))) {
 		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Service notification period '%s' specified for contact '%s' is not defined anywhere!\n",
-		       svc_notification_period, name);
-		return NULL;
+		       svc_notification_period, new_contact->name);
+		return -1;
 	}
 	if (host_notification_period && !(htp = find_timeperiod(host_notification_period))) {
 		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Host notification period '%s' specified for contact '%s' is not defined anywhere!\n",
-		       host_notification_period, name);
-		return NULL;
+		       host_notification_period, new_contact->name);
+		return -1;
 	}
 	if (find_contact(name)) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Contact '%s' has already been defined\n", name);
@@ -67,13 +75,12 @@ contact *create_contact(const char *name, const char *alias, const char *email, 
 	}
 
 
-	new_contact = nm_calloc(1, sizeof(*new_contact));
 	new_contact->host_notification_period = htp ? htp->name : NULL;
 	new_contact->service_notification_period = stp ? stp->name : NULL;
 	new_contact->host_notification_period_ptr = htp;
 	new_contact->service_notification_period_ptr = stp;
-	new_contact->name = nm_strdup(name);
-	new_contact->alias = alias ? nm_strdup(alias) : new_contact->name;
+	if (alias)
+		new_contact->alias = nm_strdup(alias);
 	new_contact->email = email ? nm_strdup(email) : NULL;
 	new_contact->pager = pager ? nm_strdup(pager) : NULL;
 	if (addresses) {
@@ -90,7 +97,7 @@ contact *create_contact(const char *name, const char *alias, const char *email, 
 	new_contact->retain_status_information = (retain_status_information > 0) ? TRUE : FALSE;
 	new_contact->retain_nonstatus_information = (retain_nonstatus_information > 0) ? TRUE : FALSE;
 
-	return new_contact;
+	return 0;
 }
 
 int register_contact(contact *new_contact)

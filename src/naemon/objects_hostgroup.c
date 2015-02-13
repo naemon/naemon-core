@@ -48,11 +48,6 @@ hostgroup *create_hostgroup(const char *name, const char *alias, const char *not
 		return NULL;
 	}
 
-	if (find_hostgroup(name)) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Hostgroup '%s' has already been defined\n", name);
-		return NULL;
-	}
-
 	new_hostgroup = nm_calloc(1, sizeof(*new_hostgroup));
 
 	/* assign vars */

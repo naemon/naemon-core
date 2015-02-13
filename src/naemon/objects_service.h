@@ -10,6 +10,7 @@
 #include "defaults.h"
 #include "objects_common.h"
 #include "objects_contact.h"
+#include "objects_host.h"
 
 NAGIOS_BEGIN_DECL
 
@@ -148,7 +149,8 @@ static const struct flag_map service_flag_map[] = {
 int init_objects_service(int elems);
 void destroy_objects_service(void);
 
-struct service *create_service(const char *host_name, const char *description, const char *display_name, const char *check_period, int initial_state, int max_attempts, int accept_passive_checks, double check_interval, double retry_interval, double notification_interval, double first_notification_delay, char *notification_period, int notification_options, int notifications_enabled, int is_volatile, const char *event_handler, int event_handler_enabled, const char *check_command, int checks_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, int retain_status_information, int retain_nonstatus_information, int obsess_over_service, unsigned int hourly_value);
+service *create_service(host *hst, const char *description, const char *check_command);
+int setup_service_variables(service *svc, const char *display_name, const char *check_period, int initial_state, int max_attempts, int accept_passive_checks, double check_interval, double retry_interval, double notification_interval, double first_notification_delay, char *notification_period, int notification_options, int notifications_enabled, int is_volatile, const char *event_handler, int event_handler_enabled, int checks_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value);
 int register_service(service *new_service);
 void destroy_service(service *svc);
 

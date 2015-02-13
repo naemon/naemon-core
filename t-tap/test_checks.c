@@ -59,11 +59,14 @@ void setup_objects(time_t when)
 
 	enable_predictive_service_dependency_checks = FALSE;
 
-	cmd1 = create_command(strdup("a_command"), strdup("command_line"));
+	cmd1 = create_command("a_command", "command_line");
 	register_command(cmd1);
 
-	host1 = create_host(strdup("Host1"), NULL, NULL, strdup("127.0.0.1"), NULL, 0, 0.0, 0.0, 5, 0, 0.0, 0.0, NULL, 0, strdup("a_command"), 0, 0, NULL, 0, 0, 0.0, 0.0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL ,NULL ,NULL ,0, 0, 0, 0, 0.0, 0.0, 0.0, 0, 0, 0, 0, 0, 0);
+	host1 = create_host("Host1");
 	ok(host1 != NULL, "Host creation was successful");
+	host1->address = strdup("127.0.0.1");
+	host1->max_attempts = 5;
+	host1->check_command = strdup("a_command");
 	register_host(host1);
 	host1->state_type = SOFT_STATE;
 	host1->current_state = STATE_DOWN;
@@ -72,9 +75,12 @@ void setup_objects(time_t when)
 	host1->next_check = when;
 
 	/* First service is a normal one */
-	svc1 = create_service("Host1", "Normal service", NULL, NULL, 0, 4, 0, 5, 1, 0, 0, NULL, 0, 0, 0, NULL, 0, "a_command", 0, 0, 0.0, 0.0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0);
+	svc1 = create_service(host1, "Normal service", "a_command");
 	ok(svc1 != NULL, "First service creation was successful");
 	register_service(svc1);
+	svc1->max_attempts = 4;
+	svc1->check_interval = 5;
+	svc1->retry_interval = 1;
 	svc1->check_options = 0;
 	svc1->next_check = when;
 	svc1->state_type = SOFT_STATE;
@@ -88,9 +94,12 @@ void setup_objects(time_t when)
 	svc1->last_hard_state_change = (time_t)1111111111;
 
 	/* Second service .... to be configured! */
-	svc2 = create_service("Host1", "To be nudged", NULL, NULL, 0, 4, 0, 5, 1, 0, 0, NULL, 0, 0, 0, NULL, 0, "a_command", 0, 0, 0.0, 0.0, 0, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0);
+	svc2 = create_service(host1, "To be nudged", "a_command");
 	ok(svc2 != NULL, "First service creation was successful");
 	register_service(svc2);
+	svc2->max_attempts = 4;
+	svc2->check_interval = 5;
+	svc2->retry_interval = 1;
 	svc2->next_check = when;
 	svc2->state_type = SOFT_STATE;
 	svc2->current_state = STATE_OK;

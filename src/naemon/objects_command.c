@@ -44,10 +44,6 @@ command *create_command(const char *name, const char *value)
 		return NULL;
 	}
 
-	if (find_command(name)) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Command '%s' has already been defined\n", name);
-		return NULL;
-	}
 	/* allocate memory for the new command */
 	new_command = nm_calloc(1, sizeof(*new_command));
 

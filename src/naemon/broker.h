@@ -8,6 +8,7 @@
 #include "checks.h"
 #include "objects_host.h"
 #include "objects_contact.h"
+#include "objects_service.h"
 
 /*************** EVENT BROKER OPTIONS *****************/
 

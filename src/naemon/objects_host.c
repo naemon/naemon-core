@@ -55,61 +55,71 @@ int compare_host(const void *_host1, const void *_host2)
 	return strcmp(host1->name, host2->name);
 }
 
-host *create_host(const char *name, const char *display_name, const char *alias, const char *address, const char *check_period, int initial_state, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, const char *notification_period, int notifications_enabled, const char *check_command, int checks_enabled, int accept_passive_checks, const char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, const char *vrml_image, const char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int should_be_drawn, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
+host *create_host(const char *name)
 {
 	host *new_host = NULL;
-	timeperiod *check_tp = NULL, *notify_tp = NULL;
 
-	/* make sure we have the data we need */
 	if (name == NULL || !strcmp(name, "")) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Host name is NULL\n");
 		return NULL;
 	}
 
-	if (find_host(name)) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Host '%s' has already been defined\n", name);
-		return NULL;
-	}
+	new_host = nm_calloc(1, sizeof(*new_host));
+
+	new_host->name = new_host->display_name = new_host->alias = new_host->address = nm_strdup(name);
+	new_host->child_hosts = rbtree_create(compare_host);
+	new_host->parent_hosts = rbtree_create(compare_host);
+	new_host->check_type = CHECK_TYPE_ACTIVE;
+	new_host->state_type = HARD_STATE;
+	new_host->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+	new_host->check_options = CHECK_OPTION_NONE;
+
+	return new_host;
+}
+
+int setup_host_variables(host *new_host, const char *display_name, const char *alias, const char *address, const char *check_period, int initial_state, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, const char *notification_period, int notifications_enabled, const char *check_command, int checks_enabled, int accept_passive_checks, const char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, const char *vrml_image, const char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int should_be_drawn, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
+{
+	timeperiod *check_tp = NULL, *notify_tp = NULL;
 
 	if (check_period && !(check_tp = find_timeperiod(check_period))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Failed to locate check_period '%s' for host '%s'!\n",
-		       check_period, name);
-		return NULL;
+		       check_period, new_host->name);
+		return -1;
 	}
 	if (notification_period && !(notify_tp = find_timeperiod(notification_period))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Failed to locate notification_period '%s' for host '%s'!\n",
-		       notification_period, name);
-		return NULL;
+		       notification_period, new_host->name);
+		return -1;
 	}
 	/* check values */
 	if (max_attempts <= 0) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: max_check_attempts must be a positive integer host '%s'\n", name);
-		return NULL;
+		nm_log(NSLOG_CONFIG_ERROR, "Error: max_check_attempts must be a positive integer host '%s'\n", new_host->name);
+		return -1;
 	}
 	if (check_interval < 0) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid check_interval value for host '%s'\n", name);
-		return NULL;
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid check_interval value for host '%s'\n", new_host->name);
+		return -1;
 	}
 	if (notification_interval < 0) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid notification_interval value for host '%s'\n", name);
-		return NULL;
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid notification_interval value for host '%s'\n", new_host->name);
+		return -1;
 	}
 	if (first_notification_delay < 0) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid first_notification_delay value for host '%s'\n", name);
-		return NULL;
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid first_notification_delay value for host '%s'\n", new_host->name);
+		return -1;
 	}
 	if (freshness_threshold < 0) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid freshness_threshold value for host '%s'\n", name);
-		return NULL;
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid freshness_threshold value for host '%s'\n", new_host->name);
+		return -1;
 	}
 
-	new_host = nm_calloc(1, sizeof(*new_host));
-
 	/* assign string vars */
-	new_host->name = nm_strdup(name);
-	new_host->display_name = display_name ? nm_strdup(display_name) : new_host->name;
-	new_host->alias = alias ? nm_strdup(alias) : new_host->name;
-	new_host->address = address ? nm_strdup(address) : new_host->name;
+	if (display_name)
+		new_host->display_name = nm_strdup(display_name);
+	if (alias)
+		new_host->alias = nm_strdup(alias);
+	if (address)
+		new_host->address = nm_strdup(address);
 	new_host->check_period = check_tp ? check_tp->name : NULL;
 	new_host->notification_period = notify_tp ? notify_tp->name : NULL;
 	new_host->notification_period_ptr = notify_tp;
@@ -157,16 +167,10 @@ host *create_host(const char *name, const char *display_name, const char *alias,
 	new_host->current_state = initial_state;
 	new_host->last_state = initial_state;
 	new_host->last_hard_state = initial_state;
-	new_host->check_type = CHECK_TYPE_ACTIVE;
 	new_host->current_attempt = (initial_state == STATE_UP) ? 1 : max_attempts;
-	new_host->state_type = HARD_STATE;
-	new_host->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
 	new_host->notifications_enabled = (notifications_enabled > 0) ? TRUE : FALSE;
-	new_host->check_options = CHECK_OPTION_NONE;
-	new_host->child_hosts = rbtree_create(compare_host);
-	new_host->parent_hosts = rbtree_create(compare_host);
 
-	return new_host;
+	return 0;
 }
 
 int register_host(host *new_host)
@@ -341,29 +345,6 @@ customvariablesmember *add_custom_variable_to_host(host *hst, char *varname, cha
 {
 
 	return add_custom_variable_to_object(&hst->custom_variables, varname, varvalue);
-}
-
-servicesmember *add_service_link_to_host(host *hst, service *service_ptr)
-{
-	servicesmember *new_servicesmember = NULL;
-
-	/* make sure we have the data we need */
-	if (hst == NULL || service_ptr == NULL)
-		return NULL;
-
-	/* allocate memory */
-	new_servicesmember = nm_calloc(1, sizeof(servicesmember));
-	/* assign values */
-	new_servicesmember->host_name = service_ptr->host_name;
-	new_servicesmember->service_description = service_ptr->description;
-	new_servicesmember->service_ptr = service_ptr;
-
-	/* add the child entry to the host definition */
-	new_servicesmember->next = hst->services;
-	hst->services = new_servicesmember;
-	hst->total_service++;
-
-	return new_servicesmember;
 }
 
 int get_host_count(void)
