@@ -87,7 +87,11 @@ int register_hostgroup(hostgroup *new_hostgroup)
 
 void destroy_hostgroup(hostgroup *this_hostgroup)
 {
-	rbtree_destroy(this_hostgroup->members, NULL);
+	if (this_hostgroup->members) {
+		while (!rbtree_isempty(this_hostgroup->members))
+			remove_host_from_hostgroup(this_hostgroup, rbtree_first(this_hostgroup->members)->data);
+		rbtree_destroy(this_hostgroup->members, NULL);
+	}
 	this_hostgroup->members = NULL;
 
 	if (this_hostgroup->alias != this_hostgroup->group_name)
@@ -114,6 +118,28 @@ int add_host_to_hostgroup(hostgroup *temp_hostgroup, host *h)
 	rbtree_insert(temp_hostgroup->members, h);
 
 	return OK;
+}
+
+int remove_host_from_hostgroup(hostgroup *temp_hostgroup, host *h)
+{
+	objectlist *item, *next, *prev;
+	for (prev = NULL, item = h->hostgroups_ptr;
+		 item;
+		 prev = item, item = next)
+	{
+		next = item->next;
+		if (item->object_ptr == temp_hostgroup) {
+			if (prev)
+				prev->next = next;
+			else
+				h->hostgroups_ptr = next;
+			nm_free(item);
+			item = prev;
+		}
+	}
+	if (temp_hostgroup->members)
+		rbtree_delete(temp_hostgroup->members, rbtree_find_node(temp_hostgroup->members, h));
+	return 0;
 }
 
 hostgroup *find_hostgroup(const char *name)

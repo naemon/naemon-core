@@ -37,6 +37,7 @@ hostgroup *create_hostgroup(const char *name, const char *alias, const char *not
 int register_hostgroup(hostgroup *new_hostgroup);
 void destroy_hostgroup(hostgroup *this_hostgroup);
 int add_host_to_hostgroup(hostgroup *, host *);
+int remove_host_from_hostgroup(hostgroup *temp_hostgroup, host *h);
 
 struct hostgroup *find_hostgroup(const char *);
 int is_host_member_of_hostgroup(struct hostgroup *, struct host *);		       /* tests whether or not a host is a member of a specific hostgroup */
