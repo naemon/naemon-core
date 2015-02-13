@@ -10,11 +10,6 @@ timeperiod *timeperiod_list = NULL;
 
 int init_objects_timeperiod(int elems)
 {
-	if (!elems) {
-		timeperiod_ary = NULL;
-		timeperiod_hash_table = NULL;
-		return ERROR;
-	}
 	timeperiod_ary = nm_calloc(elems, sizeof(timeperiod*));
 	timeperiod_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;

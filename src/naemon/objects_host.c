@@ -18,11 +18,6 @@ host **host_ary = NULL;
 
 int init_objects_host(int elems)
 {
-	if (!elems) {
-		host_ary = NULL;
-		host_hash_table = NULL;
-		return ERROR;
-	}
 	host_ary = nm_calloc(elems, sizeof(host*));
 	host_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;

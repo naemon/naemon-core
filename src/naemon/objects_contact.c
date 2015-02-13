@@ -16,11 +16,6 @@ contact **contact_ary = NULL;
 
 int init_objects_contact(int elems)
 {
-	if (!elems) {
-		contact_ary = NULL;
-		contact_hash_table = NULL;
-		return ERROR;
-	}
 	contact_ary = nm_calloc(elems, sizeof(contact*));
 	contact_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;

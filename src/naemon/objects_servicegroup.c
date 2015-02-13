@@ -12,11 +12,6 @@ servicegroup **servicegroup_ary = NULL;
 
 int init_objects_servicegroup(int elems)
 {
-	if (!elems) {
-		servicegroup_ary = NULL;
-		servicegroup_hash_table = NULL;
-		return ERROR;
-	}
 	servicegroup_ary = nm_calloc(elems, sizeof(servicegroup*));
 	servicegroup_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;

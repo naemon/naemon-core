@@ -14,11 +14,6 @@ hostgroup **hostgroup_ary = NULL;
 
 int init_objects_hostgroup(int elems)
 {
-	if (!elems) {
-		hostgroup_ary = NULL;
-		hostgroup_hash_table = NULL;
-		return ERROR;
-	}
 	hostgroup_ary = nm_calloc(elems, sizeof(hostgroup*));
 	hostgroup_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;

@@ -18,11 +18,6 @@ service **service_ary = NULL;
 
 int init_objects_service(int elems)
 {
-	if (!elems) {
-		service_ary = NULL;
-		service_hash_table = NULL;
-		return ERROR;
-	}
 	service_ary = nm_calloc(elems, sizeof(service*));
 	service_hash_table = g_hash_table_new_full(nm_service_hash, nm_service_equal,
 			(GDestroyNotify) nm_service_key_destroy, NULL);
