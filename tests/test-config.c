@@ -93,7 +93,6 @@ START_TEST(main_include)
 	nm_free(file_cfg);
 	nm_free(dir_cfg);
 	nm_free(config_file_dir);
-	cleanup();
 }
 END_TEST
 
