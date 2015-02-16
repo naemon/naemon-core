@@ -128,7 +128,7 @@ static struct wproc_worker *get_worker(const char *cmd)
 {
 	struct wproc_list *wp_list;
 	struct wproc_worker *worker = NULL;
-	size_t i, idx, boundary;
+	size_t i, boundary;
 
 	if (!cmd)
 		return NULL;
@@ -139,16 +139,16 @@ static struct wproc_worker *get_worker(const char *cmd)
 
 	/* Try to find a worker that is not overloaded. We go one lap around the
 	 * list before giving up. */
-	boundary = wp_list->idx % wp_list->len;
-	for (i = wp_list->idx + 1; (i % wp_list->len) != boundary; ++i) {
-		idx = i % wp_list->len;
-		if (g_hash_table_size(wp_list->wps[idx]->jobs) < (unsigned int) wp_list->wps[idx]->max_jobs) {
+	i = boundary = wp_list->idx % wp_list->len;
+	do {
+		i = i + 1 % wp_list->len;
+		if (g_hash_table_size(wp_list->wps[i]->jobs) < (unsigned int) wp_list->wps[i]->max_jobs) {
 			/* We found one! */
 			wp_list->idx = i;
-			worker = wp_list->wps[idx];
+			worker = wp_list->wps[i];
 			break;
 		}
-	}
+	} while (i != boundary);
 
 	return worker;
 }
