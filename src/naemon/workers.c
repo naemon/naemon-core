@@ -141,7 +141,7 @@ static struct wproc_worker *get_worker(const char *cmd)
 	 * list before giving up. */
 	i = boundary = wp_list->idx % wp_list->len;
 	do {
-		i = i + 1 % wp_list->len;
+		i = (i + 1) % wp_list->len;
 		if (g_hash_table_size(wp_list->wps[i]->jobs) < (unsigned int) wp_list->wps[i]->max_jobs) {
 			/* We found one! */
 			wp_list->idx = i;
