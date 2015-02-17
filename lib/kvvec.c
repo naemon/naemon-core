@@ -103,17 +103,6 @@ int kvvec_addkv_wlen(struct kvvec *kvv, const char *key, int keylen, const char 
 	kv->value = (char *)value;
 	kv->value_len = valuelen;
 
-	if (!keylen) {
-		kv->key_len = strlen(key);
-	}
-	if (value) {
-		if (!valuelen) {
-			kv->value_len = strlen(value);
-		}
-	} else {
-		kv->value_len = 0;
-		kv->value = NULL;
-	}
 	kvv->kvv_sorted = 0;
 
 	return 0;
@@ -174,10 +163,6 @@ char *kvvec_fetch_str_str(struct kvvec *kvv, const char *key)
 struct key_value *kvvec_fetch(struct kvvec *kvv, const char *key, int keylen)
 {
 	int i;
-
-	/* If no keylen defined, key is a string, and strlen is used */
-	if (keylen == 0)
-		keylen = strlen(key);
 
 	/* If sorted, do a binary search */
 	if (kvv->kvv_sorted) {
