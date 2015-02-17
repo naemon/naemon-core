@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "kvvec.h"
+#include "nsutils.h"
 
 struct kvvec *kvvec_init(struct kvvec *kvv, int hint)
 {
@@ -65,6 +66,23 @@ int kvvec_grow(struct kvvec *kvv, int hint)
 		hint = (kvv->kv_alloc / 3) + 15;
 
 	return kvvec_resize(kvv, kvv->kv_alloc + hint);
+}
+
+int kvvec_addkv_long(struct kvvec *kvv, const char *key, long value)
+{
+	const char *buf = mkstr("%ld", value);
+	return kvvec_addkv_wlen(kvv, key, strlen(key), buf, strlen(buf));
+}
+
+int kvvec_addkv_tv(struct kvvec *kvv, const char *key, const struct timeval *value)
+{
+	const char *buf = mkstr("%ld.%06ld", (long)value->tv_sec, (long)value->tv_usec);
+	return kvvec_addkv_wlen(kvv, key, strlen(key), buf, strlen(buf));
+}
+
+int kvvec_addkv_str(struct kvvec *kvv, const char *key, const char *value)
+{
+	return kvvec_addkv_wlen(kvv, key, strlen(key), value, strlen(value));
 }
 
 int kvvec_addkv_wlen(struct kvvec *kvv, const char *key, int keylen, const char *value, int valuelen)

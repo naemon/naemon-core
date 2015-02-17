@@ -411,7 +411,6 @@ static int handle_worker_result(int sd, int events, void *arg)
 	char *buf, *error_reason = NULL;
 	unsigned long size;
 	int ret;
-	static struct kvvec kvv = KVVEC_INITIALIZER;
 	struct wproc_worker *wp = (struct wproc_worker *)arg;
 
 	ret = nm_bufferqueue_read(wp->bq, wp->sd);
@@ -451,6 +450,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 		return 0;
 	}
 	while ((buf = worker_ioc2msg(wp->bq, &size, 0))) {
+		static struct kvvec kvv = KVVEC_INITIALIZER;
 		struct wproc_job *job;
 		wproc_result wpres;
 
@@ -755,10 +755,10 @@ static int wproc_run_job(struct wproc_job *job, nagios_macros *mac)
 	if (!kvvec_init(&kvv, 4))	/* job_id, command and timeout */
 		return ERROR;
 
-	kvvec_addkv(&kvv, "job_id", (char *)mkstr("%d", job->id));
-	kvvec_addkv(&kvv, "type", "0");
-	kvvec_addkv(&kvv, "command", job->command);
-	kvvec_addkv(&kvv, "timeout", (char *)mkstr("%u", job->timeout));
+	kvvec_addkv_str(&kvv, "job_id", (char *)mkstr("%d", job->id));
+	kvvec_addkv_str(&kvv, "type", "0");
+	kvvec_addkv_str(&kvv, "command", job->command);
+	kvvec_addkv_str(&kvv, "timeout", (char *)mkstr("%u", job->timeout));
 	kvvb = build_kvvec_buf(&kvv);
 	ret = iobroker_write_packet(nagios_iobs, wp->sd, kvvb->buf, kvvb->bufsize);
 	if (ret < 0) {

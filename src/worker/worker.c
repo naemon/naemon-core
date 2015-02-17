@@ -95,7 +95,7 @@ static void job_error(child_process *cp, struct kvvec *kvv, const char *fmt, ...
 	len = vsnprintf(msg, sizeof(msg) - 1, fmt, ap);
 	va_end(ap);
 	if (cp) {
-		kvvec_addkv(kvv, "job_id", mkstr("%d", cp->id));
+		kvvec_addkv_str(kvv, "job_id", mkstr("%d", cp->id));
 	}
 	kvvec_addkv_wlen(kvv, "error_msg", 9, msg, len);
 	ret = worker_send_kvvec(master_sd, kvv);
@@ -125,18 +125,6 @@ int send_kvvec(int sd, struct kvvec *kvv)
 {
 	return worker_send_kvvec(sd, kvv);
 }
-
-#define kvvec_add_long(kvv, key, value) \
-	do { \
-		const char *buf = mkstr("%ld", value); \
-		kvvec_addkv_wlen(kvv, key, sizeof(key) - 1, buf, strlen(buf)); \
-	} while (0)
-
-#define kvvec_add_tv(kvv, key, value) \
-	do { \
-		const char *buf = mkstr("%ld.%06ld", (long)value.tv_sec, (long)value.tv_usec); \
-		kvvec_addkv_wlen(kvv, key, sizeof(key) - 1, buf, strlen(buf)); \
-	} while (0)
 
 /* forward declaration */
 static void gather_output(child_process *cp, iobuf *io, int final);
@@ -213,23 +201,23 @@ int finish_job(child_process *cp, int reason)
 		}
 		kvvec_addkv_wlen(&resp, kv->key, kv->key_len, kv->value, kv->value_len);
 	}
-	kvvec_addkv(&resp, "wait_status", mkstr("%d", cp->ret));
-	kvvec_add_tv(&resp, "start", cp->ei->start);
-	kvvec_add_tv(&resp, "stop", cp->ei->stop);
-	kvvec_addkv(&resp, "runtime", mkstr("%f", cp->ei->runtime));
+	kvvec_addkv_str(&resp, "wait_status", mkstr("%d", cp->ret));
+	kvvec_addkv_tv(&resp, "start", &cp->ei->start);
+	kvvec_addkv_tv(&resp, "stop", &cp->ei->stop);
+	kvvec_addkv_str(&resp, "runtime", mkstr("%f", cp->ei->runtime));
 	if (!reason) {
 		/* child exited nicely (or with a signal, so check wait_status) */
-		kvvec_addkv(&resp, "exited_ok", "1");
-		kvvec_add_tv(&resp, "ru_utime", ru->ru_utime);
-		kvvec_add_tv(&resp, "ru_stime", ru->ru_stime);
-		kvvec_add_long(&resp, "ru_minflt", ru->ru_minflt);
-		kvvec_add_long(&resp, "ru_majflt", ru->ru_majflt);
-		kvvec_add_long(&resp, "ru_inblock", ru->ru_inblock);
-		kvvec_add_long(&resp, "ru_oublock", ru->ru_oublock);
+		kvvec_addkv_str(&resp, "exited_ok", "1");
+		kvvec_addkv_tv(&resp, "ru_utime", &ru->ru_utime);
+		kvvec_addkv_tv(&resp, "ru_stime", &ru->ru_stime);
+		kvvec_addkv_long(&resp, "ru_minflt", ru->ru_minflt);
+		kvvec_addkv_long(&resp, "ru_majflt", ru->ru_majflt);
+		kvvec_addkv_long(&resp, "ru_inblock", ru->ru_inblock);
+		kvvec_addkv_long(&resp, "ru_oublock", ru->ru_oublock);
 	} else {
 		/* some error happened */
-		kvvec_addkv(&resp, "exited_ok", "0");
-		kvvec_addkv(&resp, "error_code", mkstr("%d", reason));
+		kvvec_addkv_str(&resp, "exited_ok", "0");
+		kvvec_addkv_str(&resp, "error_code", mkstr("%d", reason));
 	}
 	buflen = nm_bufferqueue_get_available(cp->outerr.buf);
 	buferr = malloc(buflen);

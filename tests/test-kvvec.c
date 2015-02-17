@@ -86,7 +86,7 @@ static void add_vars(struct kvvec *kvv, const char **ary, int len)
 		if (eq) {
 			*eq++ = 0;
 		}
-		kvvec_addkv(kvv, strdup(arg), eq ? strdup(eq) : NULL);
+		kvvec_addkv_str(kvv, strdup(arg), eq ? strdup(eq) : NULL);
 		free(arg);
 	}
 }
@@ -179,41 +179,41 @@ START_TEST( kvvec_test_lookup_unsorted ) {
 	kvv = kvvec_create(1);
 	ck_assert(kvv != NULL);
 
-	kvvec_addkv(kvv, "golf", "7");
-	kvvec_addkv(kvv, "alfa", "1");
-	kvvec_addkv(kvv, "echo", "5");
-	kvvec_addkv(kvv, "foxtrot", "6");
-	kvvec_addkv(kvv, "bravo", "2");
-	kvvec_addkv(kvv, "hotel", "8");
-	kvvec_addkv(kvv, "charlie", "3");
-	kvvec_addkv(kvv, "delta", "4");
+	kvvec_addkv_str(kvv, "golf", "7");
+	kvvec_addkv_str(kvv, "alfa", "1");
+	kvvec_addkv_str(kvv, "echo", "5");
+	kvvec_addkv_str(kvv, "foxtrot", "6");
+	kvvec_addkv_str(kvv, "bravo", "2");
+	kvvec_addkv_str(kvv, "hotel", "8");
+	kvvec_addkv_str(kvv, "charlie", "3");
+	kvvec_addkv_str(kvv, "delta", "4");
 
 	ck_assert_int_eq(kvv->kv_pairs, 8);
 
-	kv = kvvec_fetch(kvv, "foxtrot", 0);
+	kv = kvvec_fetch(kvv, "foxtrot", strlen("foxtrot"));
 	ck_assert(kv != NULL);
 	ck_assert_str_eq(kv->key, "foxtrot");
 	ck_assert_str_eq(kv->value, "6");
 
-	kv = kvvec_fetch(kvv, "hotel", 0);
+	kv = kvvec_fetch(kvv, "hotel", strlen("hotel"));
 	ck_assert(kv != NULL);
 	ck_assert_str_eq(kv->key, "hotel");
 	ck_assert_str_eq(kv->value, "8");
 
-	kv = kvvec_fetch(kvv, "delta", 0);
+	kv = kvvec_fetch(kvv, "delta", strlen("delta"));
 	ck_assert(kv != NULL);
 	ck_assert_str_eq(kv->key, "delta");
 	ck_assert_str_eq(kv->value, "4");
 
-	kv = kvvec_fetch(kvv, "golf", 0);
+	kv = kvvec_fetch(kvv, "golf", strlen("golf"));
 	ck_assert(kv != NULL);
 	ck_assert_str_eq(kv->key, "golf");
 	ck_assert_str_eq(kv->value, "7");
 
-	kv = kvvec_fetch(kvv, "fox", 0);
+	kv = kvvec_fetch(kvv, "fox", strlen("fox"));
 	ck_assert(kv == NULL);
 
-	kv = kvvec_fetch(kvv, "foxtrottrot", 0);
+	kv = kvvec_fetch(kvv, "foxtrottrot", strlen("foxtrotrot"));
 	ck_assert(kv == NULL);
 
 	kvvec_destroy(kvv, 0);
@@ -226,43 +226,43 @@ START_TEST( kvvec_test_lookup_sorted ) {
 	kvv = kvvec_create(1);
 	ck_assert(kvv != NULL);
 
-	kvvec_addkv(kvv, "golf", "7");
-	kvvec_addkv(kvv, "alfa", "1");
-	kvvec_addkv(kvv, "echo", "5");
-	kvvec_addkv(kvv, "foxtrot", "6");
-	kvvec_addkv(kvv, "bravo", "2");
-	kvvec_addkv(kvv, "hotel", "8");
-	kvvec_addkv(kvv, "charlie", "3");
-	kvvec_addkv(kvv, "delta", "4");
+	kvvec_addkv_str(kvv, "golf", "7");
+	kvvec_addkv_str(kvv, "alfa", "1");
+	kvvec_addkv_str(kvv, "echo", "5");
+	kvvec_addkv_str(kvv, "foxtrot", "6");
+	kvvec_addkv_str(kvv, "bravo", "2");
+	kvvec_addkv_str(kvv, "hotel", "8");
+	kvvec_addkv_str(kvv, "charlie", "3");
+	kvvec_addkv_str(kvv, "delta", "4");
 
 	kvvec_sort(kvv);
 
 	ck_assert_int_eq(kvv->kv_pairs, 8);
 
-	kv = kvvec_fetch(kvv, "foxtrot", 0);
+	kv = kvvec_fetch(kvv, "foxtrot", strlen("foxtrot"));
 	ck_assert(kv != NULL);
 	ck_assert_str_eq(kv->key, "foxtrot");
 	ck_assert_str_eq(kv->value, "6");
 
-	kv = kvvec_fetch(kvv, "hotel", 0);
+	kv = kvvec_fetch(kvv, "hotel", strlen("hotel"));
 	ck_assert(kv != NULL);
 	ck_assert_str_eq(kv->key, "hotel");
 	ck_assert_str_eq(kv->value, "8");
 
-	kv = kvvec_fetch(kvv, "delta", 0);
+	kv = kvvec_fetch(kvv, "delta", strlen("delta"));
 	ck_assert(kv != NULL);
 	ck_assert_str_eq(kv->key, "delta");
 	ck_assert_str_eq(kv->value, "4");
 
-	kv = kvvec_fetch(kvv, "golf", 0);
+	kv = kvvec_fetch(kvv, "golf", strlen("golf"));
 	ck_assert(kv != NULL);
 	ck_assert_str_eq(kv->key, "golf");
 	ck_assert_str_eq(kv->value, "7");
 
-	kv = kvvec_fetch(kvv, "fox", 0);
+	kv = kvvec_fetch(kvv, "fox", strlen("fox"));
 	ck_assert(kv == NULL);
 
-	kv = kvvec_fetch(kvv, "foxtrottrot", 0);
+	kv = kvvec_fetch(kvv, "foxtrottrot", strlen("foxtrottrot"));
 	ck_assert(kv == NULL);
 
 	kvvec_destroy(kvv, 0);
@@ -284,17 +284,17 @@ START_TEST( kvvec_test_lookup_sorted_uses_binary ) {
 	kvv = kvvec_create(1);
 	ck_assert(kvv != NULL);
 
-	kvvec_addkv(kvv, "bravo", "2");
-	kvvec_addkv(kvv, "charlie", "3");
-	kvvec_addkv(kvv, "delta", "4");
-	kvvec_addkv(kvv, "echo", "5");
-	kvvec_addkv(kvv, "foxtrot", "6");
-	kvvec_addkv(kvv, "golf", "7");
-	kvvec_addkv(kvv, "hotel", "8");
-	kvvec_addkv(kvv, "alfa", "1");
+	kvvec_addkv_str(kvv, "bravo", "2");
+	kvvec_addkv_str(kvv, "charlie", "3");
+	kvvec_addkv_str(kvv, "delta", "4");
+	kvvec_addkv_str(kvv, "echo", "5");
+	kvvec_addkv_str(kvv, "foxtrot", "6");
+	kvvec_addkv_str(kvv, "golf", "7");
+	kvvec_addkv_str(kvv, "hotel", "8");
+	kvvec_addkv_str(kvv, "alfa", "1");
 
 	/* Using non-sorted lookup alfa should be found */
-	kv = kvvec_fetch(kvv, "alfa", 0);
+	kv = kvvec_fetch(kvv, "alfa", strlen("alfa"));
 	ck_assert(kv != NULL);
 	ck_assert_str_eq(kv->key, "alfa");
 	ck_assert_str_eq(kv->value, "1");
@@ -303,7 +303,7 @@ START_TEST( kvvec_test_lookup_sorted_uses_binary ) {
 	kvv->kvv_sorted = 1;
 
 	/* alfa shouldn't be found, since binary search reduces to first half */
-	kv = kvvec_fetch(kvv, "alfa", 0);
+	kv = kvvec_fetch(kvv, "alfa", strlen("alfa"));
 	ck_assert(kv == NULL);
 
 	kvvec_destroy(kvv, 0);

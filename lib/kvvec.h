@@ -144,6 +144,39 @@ extern char *kvvec_fetch_str_str(struct kvvec *kvv, const char *key);
 extern struct key_value *kvvec_fetch(struct kvvec *kvv, const char *key, int keylen);
 
 /**
+ * Add a string key with a long value to an existing key/value vector. This
+ * assumes the key is a valid C string. If it does, you need to use
+ * kvvec_addkv_wlen.
+ * @param kvv The key/value vector to add this key/value pair to
+ * @param key The string key
+ * @param value The long value
+ * @return 0 on success, < 0 on errors
+ */
+int kvvec_addkv_long(struct kvvec *kvv, const char *key, long value);
+
+/**
+ * Add a string key with a timeval value to an existing key/value vector. This
+ * assumes the key is a valid C string. If it isn't, you need to use
+ * kvvec_addkv_wlen.
+ * @param kvv The key/value vector to add this key/value pair to
+ * @param key The string key
+ * @param value The long value
+ * @return 0 on success, < 0 on errors
+ */
+int kvvec_addkv_tv(struct kvvec *kvv, const char *key, const struct timeval *value);
+
+/**
+ * Add a string key with a string value to an existing key/value vector. This
+ * assumes both the key and the value is a valid C string. If either
+ * isn't, you need to use kvvec_addkv_wlen.
+ * @param kvv The key/value vector to add this key/value pair to
+ * @param key The string key
+ * @param value The long value
+ * @return 0 on success, < 0 on errors
+ */
+int kvvec_addkv_str(struct kvvec *kvv, const char *key, const char *value);
+
+/**
  * Add a key/value pair to an existing key/value vector, with
  * lengths of strings already calculated
  * @param kvv The key/value vector to add this key/value pair to
@@ -154,15 +187,6 @@ extern struct key_value *kvvec_fetch(struct kvvec *kvv, const char *key, int key
  * @return 0 on success, < 0 on errors
  */
 extern int kvvec_addkv_wlen(struct kvvec *kvv, const char *key, int keylen, const char *value, int valuelen);
-
-/**
- * Shortcut to kvvec_addkv_wlen() when lengths aren't known
- * @param kvv The key/value vector to add this key/value pair to
- * @param key The key
- * @param value The value
- * @return 0 on success, < 0 on errors
- */
-#define kvvec_addkv(kvv, key, value) kvvec_addkv_wlen(kvv, key, 0, value, 0)
 
 /**
  * Walk each key/value pair in a key/value vector, sending them

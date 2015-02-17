@@ -716,7 +716,6 @@ static int parse_integer(const char *str, int *error) {
 static struct external_command * parse_kv_command(const char * cmdstr, int *error)
 {
 	struct kvvec *kvv;
-	struct key_value *tmpkv;
 	struct external_command *stored_command;
 	struct external_command *extcmd = NULL;
 	char *cmd_name = NULL;
@@ -735,13 +734,11 @@ static struct external_command * parse_kv_command(const char * cmdstr, int *erro
 	/* Sorted kvvec.s is faster when using kvvec_fetch */
 	(void)kvvec_sort(kvv);
 
-	tmpkv = kvvec_fetch(kvv, "command", 0);
-	if (tmpkv == NULL) {
+	cmd_name = kvvec_fetch_str_str(kvv, "command");
+	if (cmd_name == NULL) {
 		*error = CMD_ERROR_UNKNOWN_COMMAND;
 		goto cleanup;
 	}
-
-	cmd_name = nm_strdup(tmpkv->value);
 
 	stored_command = command_lookup(cmd_name);
 	if(stored_command == NULL) {
@@ -754,8 +751,9 @@ static struct external_command * parse_kv_command(const char * cmdstr, int *erro
 	raw_args = g_string_new(NULL);
 
 	for (i=0;i<extcmd->argc;i++) {
-		tmpkv = kvvec_fetch(kvv, extcmd->arguments[i]->name, 0);
-		if (tmpkv == NULL) {
+		char *tmpval;
+		tmpval = kvvec_fetch_str_str(kvv, extcmd->arguments[i]->name);
+		if (tmpval == NULL) {
 			*error = CMD_ERROR_PARSE_MISSING_ARG;
 			command_destroy(extcmd);
 			extcmd = NULL;
@@ -767,7 +765,7 @@ static struct external_command * parse_kv_command(const char * cmdstr, int *erro
 		case SERVICE:
 			/* TODO: Test if string contains ; */
 			/* ret = CMD_ERROR_PARSE_TYPE_MISMATCH; */
-			extcmd->arguments[i]->argval->val = nm_strdup(tmpkv->value);
+			extcmd->arguments[i]->argval->val = nm_strdup(tmpval);
 			break;
 		case CONTACT:
 		case CONTACTGROUP:
@@ -776,32 +774,32 @@ static struct external_command * parse_kv_command(const char * cmdstr, int *erro
 		case STRING:
 		case SERVICEGROUP:
 		case HOSTGROUP:
-			extcmd->arguments[i]->argval->val = nm_strdup(tmpkv->value);
+			extcmd->arguments[i]->argval->val = nm_strdup(tmpval);
 			break;
 		case BOOL:
 			nm_free(extcmd->arguments[i]->argval->val);
 			extcmd->arguments[i]->argval->val = nm_malloc(sizeof(int));
-			*(int *)(extcmd->arguments[i]->argval->val) = parse_integer(tmpkv->value, &parse_error);
+			*(int *)(extcmd->arguments[i]->argval->val) = parse_integer(tmpval, &parse_error);
 			break;
 		case INTEGER:
 			nm_free(extcmd->arguments[i]->argval->val);
 			extcmd->arguments[i]->argval->val = nm_malloc(sizeof(int));
-			*(int *)(extcmd->arguments[i]->argval->val) = parse_integer(tmpkv->value, &parse_error);
+			*(int *)(extcmd->arguments[i]->argval->val) = parse_integer(tmpval, &parse_error);
 			break;
 		case ULONG:
 			nm_free(extcmd->arguments[i]->argval->val);
 			extcmd->arguments[i]->argval->val = nm_malloc(sizeof(unsigned long));
-			*(unsigned long *)(extcmd->arguments[i]->argval->val) = parse_ulong(tmpkv->value, &parse_error);
+			*(unsigned long *)(extcmd->arguments[i]->argval->val) = parse_ulong(tmpval, &parse_error);
 			break;
 		case TIMESTAMP:
 			nm_free(extcmd->arguments[i]->argval->val);
 			extcmd->arguments[i]->argval->val = nm_malloc(sizeof(time_t));
-			*(time_t *)(extcmd->arguments[i]->argval->val) = (time_t)parse_ulong(tmpkv->value, &parse_error);
+			*(time_t *)(extcmd->arguments[i]->argval->val) = (time_t)parse_ulong(tmpval, &parse_error);
 			break;
 		case DOUBLE:
 			nm_free(extcmd->arguments[i]->argval->val);
 			extcmd->arguments[i]->argval->val = nm_malloc(sizeof(double));
-			*(double *)(extcmd->arguments[i]->argval->val) = parse_double(tmpkv->value, &parse_error);
+			*(double *)(extcmd->arguments[i]->argval->val) = parse_double(tmpval, &parse_error);
 			break;
 		default:
 			*error = CMD_ERROR_UNSUPPORTED_ARG_TYPE;
@@ -825,7 +823,7 @@ static struct external_command * parse_kv_command(const char * cmdstr, int *erro
 
 		if (i!=0)
 			raw_args = g_string_append_c(raw_args, ';');
-		raw_args = g_string_append(raw_args, tmpkv->value);
+		raw_args = g_string_append(raw_args, tmpval);
 	}
 	extcmd->raw_arguments = nm_strdup(raw_args->str);
 	g_string_free(raw_args, TRUE);
@@ -833,7 +831,6 @@ static struct external_command * parse_kv_command(const char * cmdstr, int *erro
 cleanup:
 
 	kvvec_destroy(kvv, KVVEC_FREE_ALL);
-	nm_free(cmd_name);
 	return extcmd;
 }
 
