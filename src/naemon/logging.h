@@ -5,6 +5,7 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
+#include <glib.h>
 #include "lib/lnae-utils.h"
 
 /******************* LOGGING TYPES ********************/
@@ -93,6 +94,12 @@ int open_debug_log(void);
 int close_debug_log(void);
 int close_log_file(void);
 int fix_log_file_owner(uid_t uid, gid_t gid);
+
+/* GLib log handler (GLogFunc*) that maps GLib log messages to their
+ * corresponding Naemon levels. Only intended for use as a regular handler,
+ * don't invoke directly through application code*/
+void nm_g_log_handler(const gchar *domain, GLogLevelFlags log_level,
+		const gchar *message, gpointer udata);
 
 NAGIOS_END_DECL
 #endif

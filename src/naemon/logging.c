@@ -351,3 +351,22 @@ int log_debug_info(int level, int verbosity, const char *fmt, ...)
 
 	return OK;
 }
+
+void nm_g_log_handler(const gchar *domain, GLogLevelFlags log_level,
+		const gchar *message, gpointer udata) {
+	int nm_log_type = 0;
+	if (log_level & G_LOG_LEVEL_ERROR || log_level & G_LOG_LEVEL_CRITICAL)
+		nm_log_type |= NSLOG_RUNTIME_ERROR;
+
+	if (log_level & G_LOG_LEVEL_WARNING)
+		nm_log_type |= NSLOG_RUNTIME_WARNING;
+
+	if (log_level & G_LOG_LEVEL_MESSAGE || log_level & G_LOG_LEVEL_INFO)
+		nm_log_type |= NSLOG_INFO_MESSAGE;
+
+	if (nm_log_type != 0)
+		nm_log(nm_log_type, message, NULL);
+
+	if (log_level & G_LOG_LEVEL_DEBUG)
+		log_debug_info(DEBUGL_ALL, 1, message, NULL);
+}

@@ -192,6 +192,16 @@ int main(int argc, char **argv)
 #define getopt(argc, argv, o) getopt_long(argc, argv, o, long_options, &option_index)
 #endif
 
+	/* Make all GLib domain messages go to the usual places. This also maps
+	 * GLib levels to an approximation of their corresponding Naemon levels
+	 * (including debug).
+	 *
+	 * Note that because of the GLib domain restriction, log messages from
+	 * other domains (such as if we did g_message(...) ourseleves from inside
+	 * Naemon) do not currently go to this handler.
+	 **/
+	g_log_set_handler("GLib", G_LOG_LEVEL_MASK | G_LOG_FLAG_FATAL |
+			G_LOG_FLAG_RECURSION, nm_g_log_handler, NULL);
 	mac = get_global_macros();
 
 	/* make sure we have the correct number of command line arguments */
