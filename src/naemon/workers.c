@@ -745,13 +745,6 @@ static int wproc_run_job(struct wproc_job *job, nagios_macros *mac)
 
 	wp = job->wp;
 
-	/*
-	 * XXX FIXME: add environment macros as
-	 *  kvvec_addkv(kvv, "env", "NAGIOS_LALAMACRO=VALUE");
-	 *  kvvec_addkv(kvv, "env", "NAGIOS_LALAMACRO2=VALUE");
-	 * so workers know to add them to environment. For now,
-	 * we don't support that though.
-	 */
 	if (!kvvec_init(&kvv, 4))	/* job_id, command and timeout */
 		return ERROR;
 
