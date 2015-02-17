@@ -194,6 +194,9 @@ void destroy_host(host *this_host)
 	struct customvariablesmember *this_customvariablesmember, *next_customvariablesmember;
 	struct objectlist *slavelist;
 
+	if (!this_host)
+		return;
+
 	/* free memory for service links */
 	this_servicesmember = this_host->services;
 	while (this_servicesmember != NULL) {
