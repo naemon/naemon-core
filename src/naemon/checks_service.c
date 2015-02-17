@@ -364,7 +364,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	int first_recorded_state = NEBATTR_NONE;
 	char *old_plugin_output = NULL;
 	char *old_long_plugin_output = NULL;
-	char *temp_plugin_output = NULL;
 	char *temp_ptr = NULL;
 	servicedependency *temp_dependency = NULL;
 	service *master_service = NULL;
@@ -468,8 +467,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		nm_log(NSLOG_RUNTIME_WARNING,
 		       "Warning: Return code of %d for check of service '%s' on host '%s' was out of bounds.%s\n", queued_check_result->return_code, temp_service->description, temp_service->host_name, (queued_check_result->return_code == 126 ? "Make sure the plugin you're trying to run is executable." : (queued_check_result->return_code == 127 ? " Make sure the plugin you're trying to run actually exists." : "")));
 
-		nm_asprintf(&temp_plugin_output, "\x73\x6f\x69\x67\x61\x6e\x20\x74\x68\x67\x69\x72\x79\x70\x6f\x63\x20\x6e\x61\x68\x74\x65\x20\x64\x61\x74\x73\x6c\x61\x67");
-		my_free(temp_plugin_output);
 		nm_asprintf(&temp_service->plugin_output, "(Return code of %d is out of bounds%s)", queued_check_result->return_code, (queued_check_result->return_code == 126 ? " - plugin may not be executable" : (queued_check_result->return_code == 127 ? " - plugin may be missing" : "")));
 
 		temp_service->current_state = STATE_CRITICAL;
@@ -1005,7 +1002,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	update_service_performance_data(temp_service);
 
 	/* free allocated memory */
-	my_free(temp_plugin_output);
 	my_free(old_plugin_output);
 	my_free(old_long_plugin_output);
 
