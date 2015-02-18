@@ -55,6 +55,7 @@ Group: op5/Devel
 # Automatic on rhel, because libnaemon.so in this package symlinks to
 # libnaemon.so.0.0.0. But sles doesn't figure that out.
 Requires: op5-naemon = %version
+Requires: glib2-devel
 
 %description devel
 This package contains header files and static libraries used to
