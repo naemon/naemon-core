@@ -40,7 +40,7 @@ struct command *create_command(const char *, const char *);
 int register_command(command *new_command);
 void destroy_command(command *this_command);
 
-struct command *find_bang_command(char *);
+struct command *find_bang_command(const char *);
 struct command *find_command(const char *);
 
 void fcache_command(FILE *fp, struct command *temp_command);

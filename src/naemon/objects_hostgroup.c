@@ -43,6 +43,11 @@ hostgroup *create_hostgroup(const char *name, const char *alias, const char *not
 		return NULL;
 	}
 
+	if (contains_illegal_object_chars(name) == TRUE) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: The name of hostgroup '%s' contains one or more illegal characters.", name);
+		return NULL;
+	}
+
 	new_hostgroup = nm_calloc(1, sizeof(*new_hostgroup));
 
 	/* assign vars */

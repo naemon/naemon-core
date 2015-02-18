@@ -43,6 +43,10 @@ contact *create_contact(const char *name)
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Contact name is NULL\n");
 		return NULL;
 	}
+	if (contains_illegal_object_chars(name) == TRUE) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: The name of contact '%s' contains one or more illegal characters.", name);
+		return NULL;
+	}
 	new_contact = nm_calloc(1, sizeof(*new_contact));
 	new_contact->name = nm_strdup(name);
 	new_contact->alias = new_contact->name;
@@ -164,11 +168,17 @@ void destroy_contact(contact *this_contact)
 commandsmember *add_host_notification_command_to_contact(contact *cntct, char *command_name)
 {
 	commandsmember *new_commandsmember = NULL;
-	int result = OK;
+	command *cmd;
 
 	/* make sure we have the data we need */
 	if (cntct == NULL || (command_name == NULL || !strcmp(command_name, ""))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Contact or host notification command is NULL\n");
+		return NULL;
+	}
+
+	cmd = find_bang_command(command_name);
+	if (cmd == NULL) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Host notification command '%s' specified for contact '%s' is not defined anywhere!", new_commandsmember->command, cntct->name);
 		return NULL;
 	}
 
@@ -177,13 +187,7 @@ commandsmember *add_host_notification_command_to_contact(contact *cntct, char *c
 
 	/* duplicate vars */
 	new_commandsmember->command = nm_strdup(command_name);
-
-	/* handle errors */
-	if (result == ERROR) {
-		nm_free(new_commandsmember->command);
-		nm_free(new_commandsmember);
-		return NULL;
-	}
+	new_commandsmember->command_ptr = cmd;
 
 	/* add the notification command */
 	new_commandsmember->next = cntct->host_notification_commands;
@@ -197,11 +201,17 @@ commandsmember *add_host_notification_command_to_contact(contact *cntct, char *c
 commandsmember *add_service_notification_command_to_contact(contact *cntct, char *command_name)
 {
 	commandsmember *new_commandsmember = NULL;
-	int result = OK;
+	command *cmd = NULL;
 
 	/* make sure we have the data we need */
 	if (cntct == NULL || (command_name == NULL || !strcmp(command_name, ""))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Contact or service notification command is NULL\n");
+		return NULL;
+	}
+
+	cmd = find_bang_command(command_name);
+	if (cmd == NULL) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Service notification command '%s' specified for contact '%s' is not defined anywhere!", new_commandsmember->command, cntct->name);
 		return NULL;
 	}
 
@@ -210,13 +220,7 @@ commandsmember *add_service_notification_command_to_contact(contact *cntct, char
 
 	/* duplicate vars */
 	new_commandsmember->command = nm_strdup(command_name);
-
-	/* handle errors */
-	if (result == ERROR) {
-		nm_free(new_commandsmember->command);
-		nm_free(new_commandsmember);
-		return NULL;
-	}
+	new_commandsmember->command_ptr = cmd;
 
 	/* add the notification command */
 	new_commandsmember->next = cntct->service_notification_commands;

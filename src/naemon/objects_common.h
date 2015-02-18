@@ -11,6 +11,8 @@
 
 NAGIOS_BEGIN_DECL
 
+extern char *illegal_object_chars;
+
 #define MAX_STATE_HISTORY_ENTRIES		21	/* max number of old states to keep track of for flap detection */
 
 /*
@@ -64,6 +66,8 @@ const char *opts2str(int opts, const struct flag_map *map, char ok_char);
 
 const char *state_type_name(int state_type);
 const char *check_type_name(int check_type);
+
+int contains_illegal_object_chars(const char *name);
 
 NAGIOS_END_DECL
 #endif

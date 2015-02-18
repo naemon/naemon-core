@@ -49,8 +49,6 @@ extern char *global_service_event_handler;
 extern command *global_host_event_handler_ptr;
 extern command *global_service_event_handler_ptr;
 
-extern char *illegal_object_chars;
-
 extern int use_regexp_matches;
 extern int use_true_regexp_matching;
 

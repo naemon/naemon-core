@@ -41,6 +41,11 @@ servicegroup *create_servicegroup(const char *name, const char *alias, const cha
 		return NULL;
 	}
 
+	if (contains_illegal_object_chars(name) == TRUE) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: The name of servicegroup '%s' contains one or more illegal characters.", name);
+		return NULL;
+	}
+
 	new_servicegroup = nm_calloc(1, sizeof(*new_servicegroup));
 
 	/* duplicate vars */

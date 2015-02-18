@@ -59,6 +59,11 @@ host *create_host(const char *name)
 		return NULL;
 	}
 
+	if (contains_illegal_object_chars(name) == TRUE) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: The name of host '%s' contains one or more illegal characters.", name);
+		return NULL;
+	}
+
 	new_host = nm_calloc(1, sizeof(*new_host));
 
 	new_host->name = new_host->display_name = new_host->alias = new_host->address = nm_strdup(name);
@@ -68,6 +73,7 @@ host *create_host(const char *name)
 	new_host->state_type = HARD_STATE;
 	new_host->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
 	new_host->check_options = CHECK_OPTION_NONE;
+
 
 	return new_host;
 }
@@ -115,12 +121,28 @@ int setup_host_variables(host *new_host, const char *display_name, const char *a
 		new_host->alias = nm_strdup(alias);
 	if (address)
 		new_host->address = nm_strdup(address);
-	new_host->check_period = check_tp ? check_tp->name : NULL;
+	if (check_tp) {
+		new_host->check_period = check_tp->name;
+		new_host->check_period_ptr = check_tp;
+	}
 	new_host->notification_period = notify_tp ? notify_tp->name : NULL;
 	new_host->notification_period_ptr = notify_tp;
-	new_host->check_period_ptr = check_tp;
-	new_host->check_command = check_command ? nm_strdup(check_command) : NULL;
-	new_host->event_handler = event_handler ? nm_strdup(event_handler) : NULL;
+	if (check_command) {
+		new_host->check_command = nm_strdup(check_command);
+		new_host->check_command_ptr = find_bang_command(check_command);
+		if (new_host->check_command_ptr == NULL) {
+			nm_log(NSLOG_VERIFICATION_ERROR, "Error: Host check command '%s' specified for host '%s' is not defined anywhere!", new_host->check_command, new_host->name);
+			return -1;
+		}
+	}
+	if (event_handler) {
+		new_host->event_handler = nm_strdup(event_handler);
+		new_host->event_handler_ptr = find_bang_command(event_handler);
+		if (new_host->event_handler_ptr == NULL) {
+			nm_log(NSLOG_VERIFICATION_ERROR, "Error: Event handler command '%s' specified for host '%s' not defined anywhere", new_host->event_handler, new_host->name);
+			return -1;
+		}
+	}
 	new_host->notes = notes ? nm_strdup(notes) : NULL;
 	new_host->notes_url = notes_url ? nm_strdup(notes_url) : NULL;
 	new_host->action_url = action_url ? nm_strdup(action_url) : NULL;

@@ -42,6 +42,7 @@ service *create_service(host *hst, const char *description, const char *check_co
 {
 	service *new_service = NULL;
 	servicesmember *new_servicesmember = NULL;
+	command *cmd;
 
 	if (!hst) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: No host provided for service '%s'\n",
@@ -55,6 +56,18 @@ service *create_service(host *hst, const char *description, const char *check_co
 	}
 	if (check_command == NULL || !*check_command) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: No check command provided for service '%s' on host '%s'\n", hst->name, description);
+		return NULL;
+	}
+
+	/* check for illegal characters in service description */
+	if (contains_illegal_object_chars(description) == TRUE) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: The description string for service '%s' on host '%s' contains one or more illegal characters.", description, hst->name);
+		return NULL;
+	}
+
+	cmd = find_bang_command(check_command);
+	if (cmd == NULL) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Service check command '%s' specified in service '%s' for host '%s' not defined anywhere!", check_command, description, hst->name);
 		return NULL;
 	}
 
@@ -75,10 +88,12 @@ service *create_service(host *hst, const char *description, const char *check_co
 	new_service->description = nm_strdup(description);
 	new_service->display_name = new_service->description;
 	new_service->check_command = nm_strdup(check_command);
+	new_service->check_command_ptr = cmd;
 	new_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
 	new_service->check_type = CHECK_TYPE_ACTIVE;
 	new_service->state_type = HARD_STATE;
 	new_service->check_options = CHECK_OPTION_NONE;
+
 	return new_service;
 }
 
@@ -129,6 +144,11 @@ int setup_service_variables(service *new_service, const char *display_name, cons
 	}
 	if (event_handler) {
 		new_service->event_handler = nm_strdup(event_handler);
+		new_service->event_handler_ptr = find_bang_command(event_handler);
+		if (new_service->event_handler_ptr == NULL) {
+			nm_log(NSLOG_VERIFICATION_ERROR, "Error: Event handler command '%s' specified in service '%s' for host '%s' not defined anywhere", new_service->event_handler, new_service->description, new_service->host_name);
+			return -1;
+		}
 	}
 	if (notes) {
 		new_service->notes = nm_strdup(notes);
@@ -173,6 +193,8 @@ int setup_service_variables(service *new_service, const char *display_name, cons
 	new_service->current_state = initial_state;
 	new_service->last_state = initial_state;
 	new_service->last_hard_state = initial_state;
+
+	/* check the service check_command */
 
 	return 0;
 }
@@ -219,6 +241,7 @@ servicesmember *add_parent_to_service(service *svc, service *parent)
 	sm->service_ptr = parent;
 	sm->next = svc->parents;
 	svc->parents = sm;
+
 	return sm;
 }
 

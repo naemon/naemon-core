@@ -39,6 +39,11 @@ command *create_command(const char *name, const char *value)
 		return NULL;
 	}
 
+	if (contains_illegal_object_chars(name) == TRUE) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: The name of command '%s' contains one or more illegal characters.", name);
+		return NULL;
+	}
+
 	/* allocate memory for the new command */
 	new_command = nm_calloc(1, sizeof(*new_command));
 
@@ -78,7 +83,7 @@ void destroy_command(command *this_command)
 }
 
 /* find a command with arguments still attached */
-command *find_bang_command(char *name)
+command *find_bang_command(const char *name)
 {
 	char *bang;
 	command *cmd;

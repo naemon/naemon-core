@@ -38,6 +38,10 @@ timeperiod *create_timeperiod(const char *name, const char *alias)
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Name or alias for timeperiod is NULL\n");
 		return NULL;
 	}
+	if (contains_illegal_object_chars(name) == TRUE) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: The name of time period '%s' contains one or more illegal characters.", name);
+		return NULL;
+	}
 
 	new_timeperiod = nm_calloc(1, sizeof(*new_timeperiod));
 
@@ -115,13 +119,21 @@ void destroy_timeperiod(timeperiod *this_timeperiod)
 timeperiodexclusion *add_exclusion_to_timeperiod(timeperiod *period, char *name)
 {
 	timeperiodexclusion *new_timeperiodexclusion = NULL;
+	timeperiod *temp_timeperiod2;
 
 	/* make sure we have enough data */
 	if (period == NULL || name == NULL)
 		return NULL;
 
+	temp_timeperiod2 = find_timeperiod(name);
+	if (temp_timeperiod2 == NULL) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Excluded time period '%s' specified in timeperiod '%s' is not defined anywhere!", name, period->name);
+		return NULL;
+	}
+
 	new_timeperiodexclusion = nm_malloc(sizeof(timeperiodexclusion));
 	new_timeperiodexclusion->timeperiod_name = nm_strdup(name);
+	new_timeperiodexclusion->timeperiod_ptr = temp_timeperiod2;
 
 	new_timeperiodexclusion->next = period->exclusions;
 	period->exclusions = new_timeperiodexclusion;

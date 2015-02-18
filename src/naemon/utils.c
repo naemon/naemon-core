@@ -61,8 +61,6 @@ command *ochp_command_ptr = NULL;
 int ocsp_timeout = DEFAULT_OCSP_TIMEOUT;
 int ochp_timeout = DEFAULT_OCHP_TIMEOUT;
 
-char *illegal_object_chars = NULL;
-
 int use_regexp_matches;
 int use_true_regexp_matching;
 
@@ -1509,29 +1507,6 @@ char *get_next_string_from_buf(char *buf, int *start_index, int bufsize)
 	*start_index += x + 1;
 
 	return sptr;
-}
-
-
-/* determines whether or not an object name (host, service, etc) contains illegal characters */
-int contains_illegal_object_chars(char *name)
-{
-	register int x = 0;
-	register int y = 0;
-
-	if (name == NULL || illegal_object_chars == NULL)
-		return FALSE;
-
-	x = (int)strlen(name) - 1;
-
-	for (; x >= 0; x--) {
-		/* illegal user-specified characters */
-		if (illegal_object_chars != NULL)
-			for (y = 0; illegal_object_chars[y]; y++)
-				if (name[x] == illegal_object_chars[y])
-					return TRUE;
-	}
-
-	return FALSE;
 }
 
 

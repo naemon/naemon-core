@@ -4,6 +4,8 @@
 #include "xodtemplate.h"
 #include <string.h>
 
+char *illegal_object_chars = NULL;
+
 customvariablesmember *add_custom_variable_to_object(customvariablesmember **object_ptr, char *varname, char *varvalue)
 {
 	customvariablesmember *new_customvariablesmember = NULL;
@@ -84,4 +86,26 @@ void fcache_customvars(FILE *fp, customvariablesmember *cvlist)
 		for (l = cvlist; l; l = l->next)
 			fprintf(fp, "\t_%s\t%s\n", l->variable_name, (l->variable_value == NULL) ? XODTEMPLATE_NULL : l->variable_value);
 	}
+}
+
+/* determines whether or not an object name (host, service, etc) contains illegal characters */
+int contains_illegal_object_chars(const char *name)
+{
+	register int x = 0;
+	register int y = 0;
+
+	if (name == NULL || illegal_object_chars == NULL)
+		return FALSE;
+
+	x = (int)strlen(name) - 1;
+
+	for (; x >= 0; x--) {
+		/* illegal user-specified characters */
+		if (illegal_object_chars != NULL)
+			for (y = 0; illegal_object_chars[y]; y++)
+				if (name[x] == illegal_object_chars[y])
+					return TRUE;
+	}
+
+	return FALSE;
 }
