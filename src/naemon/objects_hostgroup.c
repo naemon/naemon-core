@@ -155,7 +155,7 @@ void fcache_hostgroup(FILE *fp, hostgroup *temp_hostgroup)
 	fprintf(fp, "\thostgroup_name\t%s\n", temp_hostgroup->group_name);
 	if (temp_hostgroup->alias)
 		fprintf(fp, "\talias\t%s\n", temp_hostgroup->alias);
-	if (temp_hostgroup->members) {
+	if (rbtree_num_nodes(temp_hostgroup->members)) {
 		char *members = implode_hosttree(temp_hostgroup->members, ",");
 		fprintf(fp, "\tmembers\t%s\n", members);
 		nm_free(members);
