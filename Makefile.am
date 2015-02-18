@@ -145,7 +145,7 @@ src_naemonstats_naemonstats_SOURCES = src/naemonstats/naemonstats.c src/naemon/b
 src_shadownaemon_shadownaemon_SOURCES = src/shadownaemon/shadownaemon.c src/shadownaemon/shadownaemon.h
 src_shadownaemon_shadownaemon_LDFLAGS = -rdynamic
 
-LDADD = libnaemon.la -lm -ldl
+LDADD = libnaemon.la $(GLIB_LIBS) -lm -ldl
 lib_LTLIBRARIES = libnaemon.la
 
 # details on library version numbers https://www.sourceware.org/autobook/autobook/autobook_91.html
