@@ -13,5 +13,5 @@ naemon_group=@naemon_grp@
 Name: Naemon Uninstalled
 Description: Naemon network monitoring, Not Installed
 Version: @VERSION@
-Libs: -L${libdir} -lnaemon
-Cflags: -I${includedir} -I${libdir} -ldl -lm
+Libs: -L${libdir} -lnaemon @GLIB_LIBS@
+Cflags: -I${includedir} -I${libdir} -ldl -lm @GLIB_CFLAGS@
