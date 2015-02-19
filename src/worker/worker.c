@@ -131,12 +131,6 @@ static void gather_output(child_process *cp, iobuf *io, int final);
 
 static void destroy_job(child_process *cp)
 {
-	/*
-	 * we must remove the job's timeout ticker,
-	 * or we'll end up accessing an already free()'d
-	 * pointer, or the pointer to a different child.
-	 */
-	destroy_event(cp->ei->timed_event);
 	running_jobs--;
 	/*XXX: Maybe let this function be the value destructor for ptab? */
 	g_hash_table_remove(ptab, GINT_TO_POINTER(cp->ei->pid));
@@ -342,7 +336,6 @@ static void kill_job(struct nm_event_execution_properties *event)
 			cp->ei->state = ESTALE;
 			finish_job(cp, ETIME);
 		}
-		destroy_event(cp->ei->timed_event);
 		cp->ei->timed_event = schedule_event(delay,  kill_job, cp);
 	} else {
 		if (cp->ei->state != ESTALE)
@@ -430,6 +423,7 @@ static void reap_jobs(void)
 			reaped++;
 			if (cp->ei->state != ESTALE)
 				finish_job(cp, cp->ei->state);
+			destroy_event(cp->ei->timed_event);
 			destroy_job(cp);
 		} else if (!pid || (pid < 0 && errno == ECHILD)) {
 			reapable = 0;
