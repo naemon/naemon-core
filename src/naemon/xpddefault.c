@@ -387,7 +387,7 @@ static int xpddefault_open_perfdata_file(char *perfdata_file, int is_pipe, int a
 		/* must open read-write to avoid failure if the other end isn't ready yet */
 		perfdata_fd = open(perfdata_file, O_NONBLOCK | O_RDWR | O_CREAT, 0644);
 	} else
-		perfdata_fd = open(perfdata_file, O_WRONLY | (append ? O_APPEND : O_TRUNC));
+		perfdata_fd = open(perfdata_file, O_CREAT | O_WRONLY | (append ? O_APPEND : O_TRUNC));
 
 	if (perfdata_fd == -1) {
 
