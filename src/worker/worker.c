@@ -234,36 +234,6 @@ int finish_job(child_process *cp, int reason)
 	return 0;
 }
 
-static int check_completion(child_process *cp, int flags)
-{
-	int result, status;
-
-	if (!cp || !cp->ei->pid) {
-		return 0;
-	}
-
-	/*
-	 * we mustn't let EINTR interrupt us, since it could well
-	 * be a SIGCHLD from the properly exiting process doing it
-	 */
-	do {
-		errno = 0;
-		result = wait4(cp->ei->pid, &status, flags, &cp->ei->rusage);
-	} while (result < 0 && errno == EINTR);
-
-	if (result == cp->ei->pid || (result < 0 && errno == ECHILD)) {
-		cp->ret = status;
-		finish_job(cp, 0);
-		destroy_job(cp);
-		return 0;
-	}
-
-	if (!result)
-		return -1;
-
-	return -errno;
-}
-
 /*
  * "What can the harvest hope for, if not for the care
  * of the Reaper Man?"
@@ -293,10 +263,9 @@ static void kill_job(struct nm_event_execution_properties *event)
 	 * first attempt at reaping, so see if we just failed to
 	 * notice that things were going wrong her
 	 */
-	if (cp->ei->state != ESTALE && !check_completion(cp, WNOHANG)) {
+	if (cp->ei->state != ESTALE) {
 		timeouts++;
-		wlog("job %d with pid %d reaped at timeout. timeouts=%u; started=%u", id, pid, timeouts, started);
-		return;
+		wlog("Killing job %d with pid %d due to timeout. timeouts=%u; started=%u", id, pid, timeouts, started);
 	}
 
 	/* brutal but efficient */
@@ -377,8 +346,6 @@ static void gather_output(child_process *cp, iobuf *io, int final)
 		if (rd <= 0 || final) {
 			iobroker_close(nagios_iobs, io->fd);
 			io->fd = -1;
-			if (!final)
-				check_completion(cp, WNOHANG);
 			return;
 		}
 	}
@@ -413,11 +380,11 @@ static void reap_jobs(void)
 		if (pid > 0) {
 			struct child_process *cp;
 
-			reapable--;
 			if (!(cp = g_hash_table_lookup(ptab, GINT_TO_POINTER(pid)))) {
 				/* we reaped a lost child. Odd that */
 				continue;
 			}
+			reapable--;
 			cp->ret = status;
 			memcpy(&cp->ei->rusage, &ru, sizeof(ru));
 			reaped++;
@@ -585,7 +552,7 @@ void enter_worker(int sd, int (*cb)(child_process *))
 {
 	/* created with socketpair(), usually */
 	master_sd = sd;
-	if (!chdir("/")) {
+	if (!chdir("/tmp/coredumps-here")) {
 		// now what?
 	}
 
@@ -613,8 +580,6 @@ void enter_worker(int sd, int (*cb)(child_process *))
 	iobroker_register(nagios_iobs, master_sd, cb, receive_command);
 	for (;;) {
 		event_poll();
-
-		if (reapable)
-			reap_jobs();
+		reap_jobs();
 	}
 }
