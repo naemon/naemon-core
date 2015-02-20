@@ -30,6 +30,59 @@
 
 static int is_worker;
 
+static struct wrk_test {
+		char *name;
+		char *command;
+		int expect_ret;
+		int timeout;
+} test_jobs[] = {
+	{ "Well-behaved plugin with output", "echo HELLO WORLD", 0, 3 },
+	{ "Well-behaved plugin without output", "sleep 1", 0, 3 },
+	{ "Timeout handling, no output", "sleep 50", 0, 3 },
+};
+static int wrk_test_reaped;
+
+void wrk_test_sighandler(int signo)
+{
+	printf("Caught signal %d. Aborting\n", signo);
+	_exit(1);
+}
+
+void wrk_test_cb(struct wproc_result *wpres, void *data, int flags)
+{
+	struct wrk_test *t = (struct wrk_test *)data;
+
+	wrk_test_reaped++;
+	printf("Reaping job '%s' (%s)\n", t->name, t->command);
+}
+
+static int wrk_test_run(void)
+{
+	int result;
+	unsigned int i;
+	time_t max_timeout = 0;
+	int num_tests = sizeof(test_jobs) / sizeof(test_jobs[0]);
+
+	signal(SIGCHLD, wrk_test_sighandler);
+	for (i = 0; i < sizeof(test_jobs) / sizeof(test_jobs[0]); i++) {
+		struct wrk_test *j = &test_jobs[i];
+		if (j->timeout > max_timeout)
+			max_timeout = j->timeout;
+		result = wproc_run_callback(j->command, j->timeout, wrk_test_cb, j, NULL);
+		if (result) {
+			printf("Failed to spawn job %d. Aborting\n", i);
+			exit(1);
+		}
+	}
+
+	do {
+		iobroker_poll(nagios_iobs, max_timeout * 1000);
+	} while (wrk_test_reaped < num_tests);
+
+	timing_point("Exiting normally\n");
+	return 0;
+}
+
 static int test_path_access(const char *program, int mode)
 {
 	char *envpath, *p, *colon;
@@ -174,6 +227,7 @@ int main(int argc, char **argv)
 	nagios_macros *mac;
 	const char *worker_socket = NULL;
 	int i;
+	int test_workers = 0;
 
 #ifdef HAVE_GETOPT_H
 	int option_index = 0;
@@ -187,6 +241,7 @@ int main(int argc, char **argv)
 		{"use-precached-objects", no_argument, 0, 'u'},
 		{"enable-timing-point", no_argument, 0, 'T'},
 		{"worker", required_argument, 0, 'W'},
+		{"test-workers", no_argument, 0, 'Q'},
 		{0, 0, 0, 0}
 	};
 #define getopt(argc, argv, o) getopt_long(argc, argv, o, long_options, &option_index)
@@ -254,6 +309,11 @@ int main(int argc, char **argv)
 
 		case 'x':
 			printf("Warning: -x is deprecated and will be removed\n");
+			break;
+
+		case 'Q':
+			test_workers = 1;
+			enable_timing_point = 1;
 			break;
 
 		default:
@@ -471,6 +531,7 @@ int main(int argc, char **argv)
 		       strerror(errno));
 		exit(EXIT_FAILURE);
 	}
+	timing_point("IO broker set created\n");
 
 	/* keep monitoring things until we get a shutdown command */
 	do {
@@ -549,6 +610,15 @@ int main(int argc, char **argv)
 		/* open debug log now that we're the right user */
 		open_debug_log();
 
+		/*
+		 * the queue has to be initialized befor loading the neb modules
+		 * to give them the chance to register user events.
+		 * (initializing event queue requires number of objects, so do
+		 * this after parsing the objects)
+		 */
+		init_event_queue();
+		timing_point("Event queue initialized\n");
+
 #ifdef USE_EVENT_BROKER
 		/* initialize modules */
 		neb_init_modules();
@@ -584,19 +654,13 @@ int main(int argc, char **argv)
 			i++;
 		}
 		timing_point("%u workers connected\n", wproc_num_workers_online);
+		if (test_workers) {
+			exit(wrk_test_run());
+		}
 
 		/* read in all object config data */
 		if (result == OK)
 			result = read_all_object_data(config_file);
-
-		/*
-		 * the queue has to be initialized befor loading the neb modules
-		 * to give them the chance to register user events.
-		 * (initializing event queue requires number of objects, so do
-		 * this after parsing the objects)
-		 */
-		init_event_queue();
-		timing_point("Event queue initialized\n");
 
 #ifdef USE_EVENT_BROKER
 		/* load modules */
