@@ -391,7 +391,7 @@ static int xpddefault_open_perfdata_file(char *perfdata_file, int is_pipe, int a
 
 	if (perfdata_fd == -1) {
 
-		nm_log(NSLOG_RUNTIME_WARNING, "Warning: File '%s' could not be opened - performance data will not be written to file!\n", perfdata_file);
+		nm_log(NSLOG_RUNTIME_WARNING, "Warning: File '%s' could not be opened (%s) - performance data will not be written to file!\n", strerror(errno), perfdata_file);
 
 		return -1;
 	}
