@@ -552,9 +552,6 @@ void enter_worker(int sd, int (*cb)(child_process *))
 {
 	/* created with socketpair(), usually */
 	master_sd = sd;
-	if (!chdir("/tmp/coredumps-here")) {
-		// now what?
-	}
 
 	ptab = g_hash_table_new(g_direct_hash, g_direct_equal);
 
