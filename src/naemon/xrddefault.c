@@ -13,6 +13,7 @@
 #include "logging.h"
 #include "defaults.h"
 #include "nm_alloc.h"
+#include "broker.h"
 #include <string.h>
 
 /******************************************************************/
@@ -713,11 +714,11 @@ int xrddefault_read_state_information(void)
 			case XRDDEFAULT_HOSTCOMMENT_DATA:
 			case XRDDEFAULT_SERVICECOMMENT_DATA:
 
-				/* add the comment */
-				add_comment((data_type == XRDDEFAULT_HOSTCOMMENT_DATA) ? HOST_COMMENT : SERVICE_COMMENT, entry_type, host_name, service_description, entry_time, author, comment_data, comment_id, persistent, expires, expire_time, source);
-
-				/* delete the comment if necessary */
-				/* it seems a bit backwards to add and then immediately delete the comment, but its necessary to track comment deletions in the event broker */
+				/*
+				 * delete the comment if its object has disappeared
+				 * This only matters for eventbroker modules that
+				 * track comments outside of Naemon's core.
+				 */
 				remove_comment = FALSE;
 				/* host no longer exists */
 				if ((temp_host = find_host(host_name)) == NULL)
@@ -739,8 +740,20 @@ int xrddefault_read_state_information(void)
 				else if (persistent == FALSE)
 					remove_comment = TRUE;
 
-				if (remove_comment == TRUE)
-					delete_comment((data_type == XRDDEFAULT_HOSTCOMMENT_DATA) ? HOST_COMMENT : SERVICE_COMMENT, comment_id);
+				if (remove_comment == TRUE) {
+#ifdef USE_EVENT_BROKER
+					broker_comment_data
+						(NEBTYPE_COMMENT_DELETE, NEBFLAG_NONE, NEBATTR_NONE,
+						 (data_type == XRDDEFAULT_HOSTCOMMENT_DATA) ? HOST_COMMENT : SERVICE_COMMENT,
+						 entry_type, host_name, service_description,
+						 entry_time, author, comment_data, persistent, source,
+						 expires, expire_time, comment_id, NULL
+						);
+#endif
+				} else {
+					/* add the comment */
+					add_comment((data_type == XRDDEFAULT_HOSTCOMMENT_DATA) ? HOST_COMMENT : SERVICE_COMMENT, entry_type, host_name, service_description, entry_time, author, comment_data, comment_id, persistent, expires, expire_time, source);
+				}
 
 				/* free temp memory */
 				nm_free(host_name);

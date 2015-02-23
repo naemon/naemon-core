@@ -1,4 +1,5 @@
 #include <string.h>
+#include "logging.h"
 #include "config.h"
 #include "common.h"
 #include "comments.h"
@@ -74,6 +75,12 @@ int add_new_host_comment(int entry_type, char *host_name, time_t entry_time, cha
 {
 	int result = OK;
 
+	if (!find_host(host_name)) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Ignoring request to add comment to non-existing host '%s'.\n",
+		       host_name);
+		return ERROR;
+	}
+
 	/* find the next valid comment id */
 	while (find_comment(next_comment_id, HOST_COMMENT | SERVICE_COMMENT) != NULL)
 		next_comment_id++;
@@ -101,6 +108,12 @@ int add_new_host_comment(int entry_type, char *host_name, time_t entry_time, cha
 /* adds a new service comment */
 int add_new_service_comment(int entry_type, char *host_name, char *svc_description, time_t entry_time, char *author_name, char *comment_data, int persistent, int source, int expires, time_t expire_time, unsigned long *comment_id)
 {
+	if (!find_service(host_name, svc_description)) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Ignoring request to add comment to non-existing service '%s' on host '%s'\n",
+		       svc_description, host_name);
+		return ERROR;
+	}
+
 	/* find the next valid comment id */
 	while (find_comment(next_comment_id, HOST_COMMENT | SERVICE_COMMENT) != NULL)
 		next_comment_id++;
