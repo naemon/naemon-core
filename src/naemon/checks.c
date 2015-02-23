@@ -112,7 +112,9 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 
 	perf_data_string = g_string_new(NULL);
 	tmp = strtok_r(tmpbuf, "\n", &saveptr);
-	p = strpbrk((const char *) tmp, "|");
+	if (tmp != NULL) {
+		p = strpbrk((const char *) tmp, "|");
+	}
 	if (p == NULL) {
 		/* No perfdata in first line of output. */
 			check_output->short_output = tmp ? nm_strdup(tmp) : nm_strdup("");
