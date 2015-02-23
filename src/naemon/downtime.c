@@ -926,6 +926,12 @@ int add_new_host_downtime(char *host_name, time_t entry_time, char *author, char
 	if (host_name == NULL)
 		return ERROR;
 
+	if (!find_host(host_name)) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Ignoring request to add downtime for non-existing host '%s'\n",
+		       host_name);
+		return ERROR;
+	}
+
 	new_downtime_id = get_next_downtime_id();
 	result = add_host_downtime(host_name, entry_time, author, comment_data, start_time, 0, end_time, fixed, triggered_by, duration, new_downtime_id, is_in_effect, start_notification_sent);
 
@@ -953,6 +959,12 @@ int add_new_service_downtime(char *host_name, char *service_description, time_t 
 		               "Host name (%s) or service description (%s) is null\n",
 		               ((NULL == host_name) ? "null" : host_name),
 		               ((NULL == service_description) ? "null" : service_description));
+		return ERROR;
+	}
+
+	if (!find_service(host_name, service_description)) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Ignoring request to add downtime to non-existing service '%s' on host '%s'\n",
+		       service_description, host_name);
 		return ERROR;
 	}
 

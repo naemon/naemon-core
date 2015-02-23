@@ -512,7 +512,7 @@ int xrddefault_read_state_information(void)
 	unsigned long contact_service_attribute_mask = 0L;
 	unsigned long process_host_attribute_mask = 0L;
 	unsigned long process_service_attribute_mask = 0L;
-	int remove_comment = FALSE;
+	int force_remove = FALSE;
 	int ack = FALSE;
 	int found_directive = FALSE;
 	int is_in_effect = FALSE;
@@ -719,13 +719,13 @@ int xrddefault_read_state_information(void)
 				 * This only matters for eventbroker modules that
 				 * track comments outside of Naemon's core.
 				 */
-				remove_comment = FALSE;
+				force_remove = FALSE;
 				/* host no longer exists */
 				if ((temp_host = find_host(host_name)) == NULL)
-					remove_comment = TRUE;
+					force_remove = TRUE;
 				/* service no longer exists */
 				else if (data_type == XRDDEFAULT_SERVICECOMMENT_DATA && (temp_service = find_service(host_name, service_description)) == NULL)
-					remove_comment = TRUE;
+					force_remove = TRUE;
 				/* acknowledgement comments get deleted if they're not persistent and the original problem is no longer acknowledged */
 				else if (entry_type == ACKNOWLEDGEMENT_COMMENT) {
 					ack = FALSE;
@@ -734,13 +734,13 @@ int xrddefault_read_state_information(void)
 					else
 						ack = temp_service->problem_has_been_acknowledged;
 					if (ack == FALSE && persistent == FALSE)
-						remove_comment = TRUE;
+						force_remove = TRUE;
 				}
 				/* non-persistent comments don't last past restarts UNLESS they're acks (see above) */
 				else if (persistent == FALSE)
-					remove_comment = TRUE;
+					force_remove = TRUE;
 
-				if (remove_comment == TRUE) {
+				if (force_remove == TRUE) {
 #ifdef USE_EVENT_BROKER
 					broker_comment_data
 						(NEBTYPE_COMMENT_DELETE, NEBFLAG_NONE, NEBATTR_NONE,
@@ -775,14 +775,44 @@ int xrddefault_read_state_information(void)
 			case XRDDEFAULT_HOSTDOWNTIME_DATA:
 			case XRDDEFAULT_SERVICEDOWNTIME_DATA:
 
-				/* add the downtime */
-				if (data_type == XRDDEFAULT_HOSTDOWNTIME_DATA)
-					add_host_downtime(host_name, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent);
-				else
-					add_service_downtime(host_name, service_description, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent);
+				/*
+				 * Delete the downtime if its objects no longer exist
+				 * This only matters for eventbroker modules that track
+				 * downtime outside of Naemon's core, and even then only
+				 * for hosts and services that reappear in the config
+				 * when the old version of their names were in scheduled
+				 * downtime at the time they got deleted.
+				 */
+				force_remove = FALSE;
+				if (data_type == XRDDEFAULT_HOSTDOWNTIME_DATA) {
+					if (!host_name || !find_host(host_name))
+						force_remove = TRUE;
+				} else {
+					if (!host_name || !service_description || !find_service(host_name, service_description))
+						force_remove = TRUE;
+				}
 
-				/* must register the downtime with Nagios so it can schedule it, add comments, etc. */
-				register_downtime((data_type == XRDDEFAULT_HOSTDOWNTIME_DATA) ? HOST_DOWNTIME : SERVICE_DOWNTIME, downtime_id);
+				if (force_remove == TRUE) {
+#ifdef USE_EVENT_BROKER
+					broker_downtime_data
+						(NEBTYPE_DOWNTIME_STOP, NEBFLAG_NONE,
+						 NEBATTR_DOWNTIME_STOP_CANCELLED,
+						 data_type == XRDDEFAULT_HOSTDOWNTIME_DATA ? HOST_DOWNTIME : SERVICE_DOWNTIME,
+						 host_name, service_description,
+						 entry_time, author, comment_data,
+						 start_time, end_time, fixed, triggered_by,
+						 duration, downtime_id, NULL
+						);
+#endif
+				} else {
+					/* add the downtime */
+					if (data_type == XRDDEFAULT_HOSTDOWNTIME_DATA)
+						add_host_downtime(host_name, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent);
+					else
+						add_service_downtime(host_name, service_description, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent);
+					/* must register the downtime with Nagios so it can schedule it, add comments, etc. */
+					register_downtime((data_type == XRDDEFAULT_HOSTDOWNTIME_DATA) ? HOST_DOWNTIME : SERVICE_DOWNTIME, downtime_id);
+				}
 
 				/* free temp memory */
 				nm_free(host_name);
