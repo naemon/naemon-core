@@ -214,78 +214,30 @@ nagios_macros *get_global_macros(void);
 /*
  * Replace macros with their actual values
  * This function modifies the global_macros struct and is thus
- * not thread-safe.
+ * not thread-safe. It's not used in-core, and its use in
+ * modules is discouraged.
  */
 int process_macros(char *, char **, int);
 
 /* thread-safe version of the above */
 int process_macros_r(nagios_macros *mac, char *, char **, int);
 
-/* cleans macros characters before insertion into output string */
-char *clean_macro_chars(char *, int);
-
 /*
- * These functions updates **macros with the values from
+ * These functions updates *mac with the values from
  * their respective object type.
  */
-int grab_service_macros(service *);
-int grab_host_macros(host *);
-int grab_servicegroup_macros(servicegroup *);
-int grab_hostgroup_macros(hostgroup *);
-int grab_contact_macros(contact *);
-
-int grab_macro_value(char *, char **, int *, int *);
-int grab_macrox_value(int, char *, char *, char **, int *);
-int grab_custom_macro_value(char *, char *, char *, char **);
-int grab_datetime_macro(int, char *, char *, char **);
-int grab_standard_host_macro(int, host *, char **, int *);
-int grab_standard_hostgroup_macro(int, hostgroup *, char **);
-int grab_standard_service_macro(int, service *, char **, int *);
-int grab_standard_servicegroup_macro(int, servicegroup *, char **);
-int grab_standard_contact_macro(int, contact *, char **);
-int grab_contact_address_macro(int, contact *, char **);
-int grab_standard_contactgroup_macro(int, contactgroup *, char **);
-int grab_custom_object_macro(char *, customvariablesmember *, char **);
-
-/* thread-safe version of the above */
 int grab_service_macros_r(nagios_macros *mac, service *);
 int grab_host_macros_r(nagios_macros *mac, host *);
 int grab_servicegroup_macros_r(nagios_macros *mac, servicegroup *);
 int grab_hostgroup_macros_r(nagios_macros *mac, hostgroup *);
 int grab_contact_macros_r(nagios_macros *mac, contact *);
 
-int grab_macro_value_r(nagios_macros *mac, char *, char **, int *, int *);
-int grab_macrox_value_r(nagios_macros *mac, int, char *, char *, char **, int *);
-int grab_custom_macro_value_r(nagios_macros *mac, char *, char *, char *, char **);
-int grab_datetime_macro_r(nagios_macros *mac, int, char *, char *, char **);
-int grab_standard_host_macro_r(nagios_macros *mac, int, host *, char **, int *);
-int grab_standard_hostgroup_macro_r(nagios_macros *mac, int, hostgroup *, char **);
-int grab_standard_service_macro_r(nagios_macros *mac, int, service *, char **, int *);
-int grab_standard_servicegroup_macro_r(nagios_macros *mac, int, servicegroup *, char **);
-int grab_standard_contact_macro_r(nagios_macros *mac, int, contact *, char **);
-int grab_custom_object_macro_r(nagios_macros *mac, char *, customvariablesmember *, char **);
-
-
-char *get_url_encoded_string(char *);			/* URL encode a string */
-
+/* init/deinit functions */
 int init_macros(void);
 int init_macrox_names(void);
 int free_macrox_names(void);
 
-void copy_constant_macros(char **dest);
-
-/* clear macros */
-int clear_argv_macros(void);
-int clear_volatile_macros(void);
-int clear_host_macros(void);
-int clear_service_macros(void);
-int clear_hostgroup_macros(void);
-int clear_servicegroup_macros(void);
-int clear_contact_macros(void);
-int clear_contactgroup_macros(void);
-int clear_summary_macros(void);
-
-/* thread-safe version of the above */
+/* clear out memory from *mac */
 int clear_argv_macros_r(nagios_macros *mac);
 int clear_volatile_macros_r(nagios_macros *mac);
 int clear_host_macros_r(nagios_macros *mac);
