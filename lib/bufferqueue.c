@@ -5,6 +5,10 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 
+
+/* The minimum amount of bytes allocated for each read() */
+#define READ_SIZE 1024
+
 /**
  * The struct that represents a single buffer in the nm_bufferqueue.
  */
@@ -215,33 +219,18 @@ int nm_bufferqueue_unshift_to_delim(nm_bufferqueue *bq, const char *delim, size_
 
 int nm_bufferqueue_read(nm_bufferqueue *bq, int fd)
 {
-	char *buffer;
-	int avail = 0;
+	int bytes_read;
+	char *buffer = calloc(READ_SIZE, 1);
 
-	if (ioctl(fd, FIONREAD, &avail) < 0) {
+	if (!bq || fd < 0)
 		return -1;
-	}
 
-	if (avail <= 0) { // EOF? Or just nothing yet? Let's go with "nothing yet"
-		errno = EAGAIN;
-		return -1;
-	}
-
-	if ((buffer = malloc(avail)) == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	if (read(fd, buffer, avail) < 0) {
-		return -1;
-	}
-
-	if (nm_bufferqueue_push_block(bq, buffer, avail)) {
+	bytes_read = read(fd, buffer, READ_SIZE);
+	if (nm_bufferqueue_push(bq, buffer, bytes_read)) {
 		free(buffer);
-		errno = ENOMEM;
 		return -1;
 	}
-	return avail;
+	return bytes_read;
 }
 
 int nm_bufferqueue_push_block(nm_bufferqueue *bq, void *buf, size_t len)
