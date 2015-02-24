@@ -38,11 +38,10 @@ void destroy_objects_service()
 	num_objects.services = 0;
 }
 
-service *create_service(host *hst, const char *description, const char *check_command)
+service *create_service(host *hst, const char *description)
 {
 	service *new_service = NULL;
 	servicesmember *new_servicesmember = NULL;
-	command *cmd;
 
 	if (!hst) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: No host provided for service '%s'\n",
@@ -54,20 +53,9 @@ service *create_service(host *hst, const char *description, const char *check_co
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Found service on host '%s' with no service description\n", hst->name);
 		return NULL;
 	}
-	if (check_command == NULL || !*check_command) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: No check command provided for service '%s' on host '%s'\n", hst->name, description);
-		return NULL;
-	}
 
-	/* check for illegal characters in service description */
 	if (contains_illegal_object_chars(description) == TRUE) {
 		nm_log(NSLOG_VERIFICATION_ERROR, "Error: The description string for service '%s' on host '%s' contains one or more illegal characters.", description, hst->name);
-		return NULL;
-	}
-
-	cmd = find_bang_command(check_command);
-	if (cmd == NULL) {
-		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Service check command '%s' specified in service '%s' for host '%s' not defined anywhere!", check_command, description, hst->name);
 		return NULL;
 	}
 
@@ -87,8 +75,6 @@ service *create_service(host *hst, const char *description, const char *check_co
 
 	new_service->description = nm_strdup(description);
 	new_service->display_name = new_service->description;
-	new_service->check_command = nm_strdup(check_command);
-	new_service->check_command_ptr = cmd;
 	new_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
 	new_service->check_type = CHECK_TYPE_ACTIVE;
 	new_service->state_type = HARD_STATE;
@@ -97,9 +83,10 @@ service *create_service(host *hst, const char *description, const char *check_co
 	return new_service;
 }
 
-int setup_service_variables(service *new_service, const char *display_name, const char *check_period, int initial_state, int max_attempts, int accept_passive_checks, double check_interval, double retry_interval, double notification_interval, double first_notification_delay, char *notification_period, int notification_options, int notifications_enabled, int is_volatile, const char *event_handler, int event_handler_enabled, int checks_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
+int setup_service_variables(service *new_service, const char *display_name, const char *check_command, const char *check_period, int initial_state, int max_attempts, int accept_passive_checks, double check_interval, double retry_interval, double notification_interval, double first_notification_delay, char *notification_period, int notification_options, int notifications_enabled, int is_volatile, const char *event_handler, int event_handler_enabled, int checks_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
 {
 	timeperiod *cp = NULL, *np = NULL;
+	command *cmd;
 
 	/* make sure we have everything we need */
 	if (notification_period && !(np = find_timeperiod(notification_period))) {
@@ -112,7 +99,17 @@ int setup_service_variables(service *new_service, const char *display_name, cons
 		return -1;
 	}
 
-	/* check values */
+	if (check_command == NULL || !*check_command) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: No check command provided for service '%s' on host '%s'\n", new_service->check_command, new_service->description);
+		return -1;
+	}
+	cmd = find_bang_command(check_command);
+	if (cmd == NULL) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Service check command '%s' specified in service '%s' for host '%s' not defined anywhere!", check_command, new_service->description, new_service->host_name);
+		return -1;
+	}
+
+
 	if (max_attempts <= 0) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: max_check_attempts must be a positive integer for service '%s' on host '%s'\n", new_service->description, new_service->host_name);
 		return -1;
@@ -139,6 +136,8 @@ int setup_service_variables(service *new_service, const char *display_name, cons
 	new_service->check_period_ptr = cp;
 	new_service->check_period = cp ? cp->name : NULL;
 	new_service->notification_period = np ? np->name : NULL;
+	new_service->check_command = nm_strdup(check_command);
+	new_service->check_command_ptr = cmd;
 	if (display_name) {
 		new_service->display_name = nm_strdup(display_name);
 	}

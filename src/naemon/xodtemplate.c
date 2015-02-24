@@ -6368,13 +6368,13 @@ static int xodtemplate_register_service(void *srv, void *discard)
 
 	/* add the service */
 	hst = find_host(this_service->host_name);
-	new_service = create_service(hst, this_service->service_description, this_service->check_command);
+	new_service = create_service(hst, this_service->service_description);
 	/* return with an error if we couldn't add the service */
 	if (new_service == NULL) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not register service (config file '%s', starting on line %d)\n", xodtemplate_config_file_name(this_service->_config_file), this_service->_start_line);
 		return ERROR;
 	}
-	if (setup_service_variables(new_service, this_service->display_name, this_service->check_period, this_service->initial_state, this_service->max_check_attempts, this_service->passive_checks_enabled, this_service->check_interval, this_service->retry_interval, this_service->notification_interval, this_service->first_notification_delay, this_service->notification_period, this_service->notification_options, this_service->notifications_enabled, this_service->is_volatile, this_service->event_handler, this_service->event_handler_enabled, this_service->active_checks_enabled, this_service->flap_detection_enabled, this_service->low_flap_threshold, this_service->high_flap_threshold, this_service->flap_detection_options, this_service->stalking_options, this_service->process_perf_data, this_service->check_freshness, this_service->freshness_threshold, this_service->notes, this_service->notes_url, this_service->action_url, this_service->icon_image, this_service->icon_image_alt, this_service->retain_status_information, this_service->retain_nonstatus_information, this_service->obsess, this_service->hourly_value)) {
+	if (setup_service_variables(new_service, this_service->display_name, this_service->check_command, this_service->check_period, this_service->initial_state, this_service->max_check_attempts, this_service->passive_checks_enabled, this_service->check_interval, this_service->retry_interval, this_service->notification_interval, this_service->first_notification_delay, this_service->notification_period, this_service->notification_options, this_service->notifications_enabled, this_service->is_volatile, this_service->event_handler, this_service->event_handler_enabled, this_service->active_checks_enabled, this_service->flap_detection_enabled, this_service->low_flap_threshold, this_service->high_flap_threshold, this_service->flap_detection_options, this_service->stalking_options, this_service->process_perf_data, this_service->check_freshness, this_service->freshness_threshold, this_service->notes, this_service->notes_url, this_service->action_url, this_service->icon_image, this_service->icon_image_alt, this_service->retain_status_information, this_service->retain_nonstatus_information, this_service->obsess, this_service->hourly_value)) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not register service (config file '%s', starting on line %d)\n", xodtemplate_config_file_name(this_service->_config_file), this_service->_start_line);
 		return ERROR;
 	}

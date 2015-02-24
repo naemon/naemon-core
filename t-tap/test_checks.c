@@ -47,20 +47,14 @@ void destroy_objects(void)
 {
 	destroy_objects_host();
 	destroy_objects_service();
-	destroy_objects_command();
 }
 
 void setup_objects(time_t when)
 {
-	command *cmd1;
 	init_objects_host(1);
 	init_objects_service(2);
-	init_objects_command(1);
 
 	enable_predictive_service_dependency_checks = FALSE;
-
-	cmd1 = create_command("a_command", "command_line");
-	register_command(cmd1);
 
 	host1 = create_host("Host1");
 	ok(host1 != NULL, "Host creation was successful");
@@ -75,7 +69,7 @@ void setup_objects(time_t when)
 	host1->next_check = when;
 
 	/* First service is a normal one */
-	svc1 = create_service(host1, "Normal service", "a_command");
+	svc1 = create_service(host1, "Normal service");
 	ok(svc1 != NULL, "First service creation was successful");
 	register_service(svc1);
 	svc1->max_attempts = 4;
@@ -94,7 +88,7 @@ void setup_objects(time_t when)
 	svc1->last_hard_state_change = (time_t)1111111111;
 
 	/* Second service .... to be configured! */
-	svc2 = create_service(host1, "To be nudged", "a_command");
+	svc2 = create_service(host1, "To be nudged");
 	ok(svc2 != NULL, "First service creation was successful");
 	register_service(svc2);
 	svc2->max_attempts = 4;
