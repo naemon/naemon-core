@@ -142,7 +142,7 @@ int remove_host_from_hostgroup(hostgroup *temp_hostgroup, host *h)
 
 hostgroup *find_hostgroup(const char *name)
 {
-	return g_hash_table_lookup(hostgroup_hash_table, name);
+	return name ? g_hash_table_lookup(hostgroup_hash_table, name) : NULL;
 }
 
 /*  tests whether a host is a member of a particular hostgroup */

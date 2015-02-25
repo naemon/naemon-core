@@ -303,7 +303,7 @@ void destroy_host(host *this_host)
 
 host *find_host(const char *name)
 {
-	return g_hash_table_lookup(host_hash_table, name);
+	return name ? g_hash_table_lookup(host_hash_table, name) : NULL;
 }
 
 const char *host_state_name(int state)

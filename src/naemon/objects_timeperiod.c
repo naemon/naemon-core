@@ -261,7 +261,7 @@ timerange *add_timerange_to_daterange(daterange *drange, unsigned long start_tim
 
 timeperiod *find_timeperiod(const char *name)
 {
-	return g_hash_table_lookup(timeperiod_hash_table, name);
+	return name ? g_hash_table_lookup(timeperiod_hash_table, name) : NULL;
 }
 
 static const char *timerange2str(const timerange *tr)

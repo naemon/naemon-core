@@ -274,7 +274,7 @@ contactsmember *add_contact_to_object(contactsmember **object_ptr, char *contact
 
 contact *find_contact(const char *name)
 {
-	return g_hash_table_lookup(contact_hash_table, name);
+	return name ? g_hash_table_lookup(contact_hash_table, name) : NULL;
 }
 
 void fcache_contactlist(FILE *fp, const char *prefix, contactsmember *list)

@@ -157,7 +157,7 @@ void remove_service_from_servicegroup(servicegroup *temp_servicegroup, service *
 
 servicegroup *find_servicegroup(const char *name)
 {
-	return g_hash_table_lookup(servicegroup_hash_table, name);
+	return name ? g_hash_table_lookup(servicegroup_hash_table, name) : NULL;
 }
 
 /*  tests whether a host is a member of a particular servicegroup */
