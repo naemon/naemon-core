@@ -121,11 +121,6 @@ int worker_send_kvvec(int sd, struct kvvec *kvv)
 	return ret;
 }
 
-int send_kvvec(int sd, struct kvvec *kvv)
-{
-	return worker_send_kvvec(sd, kvv);
-}
-
 /* forward declaration */
 static void gather_output(child_process *cp, iobuf *io, int final);
 
