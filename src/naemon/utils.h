@@ -41,7 +41,6 @@ int generate_check_stats(void);
 
 void free_memory(nagios_macros *mac);                              	/* free memory allocated to all linked lists in memory */
 int reset_variables(void);                           	/* reset all global variables */
-void free_notification_list(void);		     	/* frees all memory allocated to the notification list */
 
 void sighandler(int);                                	/* handles signals */
 /* FIXME: unused? */

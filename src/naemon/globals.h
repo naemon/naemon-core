@@ -185,8 +185,6 @@ extern int     host_perfdata_process_empty_results;
 extern int     service_perfdata_process_empty_results;
 /*** end perfdata variables */
 
-extern struct notify_list *notification_list;
-
 extern struct check_engine nagios_check_engine;
 
 NAGIOS_END_DECL

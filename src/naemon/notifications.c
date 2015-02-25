@@ -22,6 +22,23 @@ struct notification_job {
 	contact *ctc;
 };
 
+static notification * create_notification_list_from_host(nagios_macros *mac, host *hst, int options, int *escalated, int type);
+static notification * create_notification_list_from_service(nagios_macros *mac, service *svc, int options, int *escalated, int type);
+static int add_notification(notification **notification_list, nagios_macros *mac, contact *);						/* adds a notification instance */
+
+static void free_notification_list(notification *notification_list)
+{
+	notification *temp_notification = NULL;
+	notification *next_notification = NULL;
+
+	temp_notification = notification_list;
+	while (temp_notification != NULL) {
+		next_notification = temp_notification->next;
+		nm_free(temp_notification);
+		temp_notification = next_notification;
+	}
+}
+
 /*** silly helpers ****/
 static contact *find_contact_by_name_or_alias(const char *name)
 {
@@ -317,6 +334,7 @@ static void notification_handle_job_result(struct wproc_result *wpres, void *dat
 /* notify contacts about a service problem or recovery */
 int service_notification(service *svc, int type, char *not_author, char *not_data, int options)
 {
+	notification *notification_list = NULL;
 	host *temp_host = NULL;
 	notification *temp_notification = NULL;
 	contact *temp_contact = NULL;
@@ -353,7 +371,6 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	neb_result = broker_notification_data(NEBTYPE_NOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, start_time, end_time, (void *)svc, not_author, not_data, escalated, 0, NULL);
 	if (neb_result == NEBERROR_CALLBACKCANCEL || neb_result == NEBERROR_CALLBACKOVERRIDE) {
 		LOG_SERVICE_NSR(NSR_NEB_BLOCKED);
-		free_notification_list();
 		return neb_result == NEBERROR_CALLBACKOVERRIDE ? OK : ERROR;
 	}
 #endif
@@ -390,7 +407,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	 * note: checks against timeperiod will happen now(),
 	 * and not when the notification is actually being sent.
 	 */
-	create_notification_list_from_service(&mac, svc, options, &escalated, type);
+	notification_list = create_notification_list_from_service(&mac, svc, options, &escalated, type);
 
 	/* we have contacts to notify... */
 	if (notification_list != NULL) {
@@ -464,7 +481,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 				contacts_notified++;
 		}
 
-		free_notification_list();
+		free_notification_list(notification_list);
 
 		/* clear out all macros we created */
 		nm_free(mac.x[MACRO_NOTIFICATIONNUMBER]);
@@ -1091,8 +1108,9 @@ int should_service_notification_be_escalated(service *svc)
 
 
 /* given a service, create a list of contacts to be notified, removing duplicates, checking contact notification viability */
-int create_notification_list_from_service(nagios_macros *mac, service *svc, int options, int *escalated, int type)
+static notification * create_notification_list_from_service(nagios_macros *mac, service *svc, int options, int *escalated, int type)
 {
+	notification *notification_list = NULL;
 	serviceescalation *temp_se = NULL;
 	contactsmember *temp_contactsmember = NULL;
 	contact *temp_contact = NULL;
@@ -1105,9 +1123,6 @@ int create_notification_list_from_service(nagios_macros *mac, service *svc, int 
 
 	/* set the escalation flag */
 	*escalated = escalate_notification;
-
-	/* make sure there aren't any leftover contacts */
-	free_notification_list();
 
 	/* set the escalation macro */
 	mac->x[MACRO_NOTIFICATIONISESCALATED] = nm_strdup(escalate_notification ? "1" : "0");
@@ -1137,7 +1152,7 @@ int create_notification_list_from_service(nagios_macros *mac, service *svc, int 
 					continue;
 				/* check now if the contact can be notified */
 				if (check_contact_service_notification_viability(temp_contact, svc, type, options) == OK)
-					add_notification(mac, temp_contact);
+					add_notification(&notification_list, mac, temp_contact);
 				else
 					log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Not adding contact '%s'\n", temp_contact->name);
 			}
@@ -1154,7 +1169,7 @@ int create_notification_list_from_service(nagios_macros *mac, service *svc, int 
 						continue;
 					/* check now if the contact can be notified */
 					if (check_contact_service_notification_viability(temp_contact, svc, type, options) == OK)
-						add_notification(mac, temp_contact);
+						add_notification(&notification_list, mac, temp_contact);
 					else
 						log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Not adding contact '%s'\n", temp_contact->name);
 				}
@@ -1173,7 +1188,7 @@ int create_notification_list_from_service(nagios_macros *mac, service *svc, int 
 				continue;
 			/* check now if the contact can be notified */
 			if (check_contact_service_notification_viability(temp_contact, svc, type, options) == OK)
-				add_notification(mac, temp_contact);
+				add_notification(&notification_list, mac, temp_contact);
 			else
 				log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Not adding contact '%s'\n", temp_contact->name);
 		}
@@ -1188,14 +1203,14 @@ int create_notification_list_from_service(nagios_macros *mac, service *svc, int 
 					continue;
 				/* check now if the contact can be notified */
 				if (check_contact_service_notification_viability(temp_contact, svc, type, options) == OK)
-					add_notification(mac, temp_contact);
+					add_notification(&notification_list, mac, temp_contact);
 				else
 					log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Not adding contact '%s'\n", temp_contact->name);
 			}
 		}
 	}
 
-	return OK;
+	return notification_list;
 }
 
 
@@ -1207,6 +1222,7 @@ int create_notification_list_from_service(nagios_macros *mac, service *svc, int 
 /* notify all contacts for a host that the entire host is down or up */
 int host_notification(host *hst, int type, char *not_author, char *not_data, int options)
 {
+	notification *notification_list = NULL;
 	notification *temp_notification = NULL;
 	contact *temp_contact = NULL;
 	time_t current_time;
@@ -1240,7 +1256,6 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 	neb_result = broker_notification_data(NEBTYPE_NOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, start_time, end_time, (void *)hst, not_author, not_data, escalated, 0, NULL);
 	if (neb_result == NEBERROR_CALLBACKCANCEL || neb_result == NEBERROR_CALLBACKOVERRIDE) {
 		LOG_HOST_NSR(NSR_NEB_BLOCKED);
-		free_notification_list();
 		return neb_result == NEBERROR_CALLBACKOVERRIDE ? OK : ERROR;
 	}
 #endif
@@ -1275,7 +1290,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 	 * note: checks against timeperiod will happen now(),
 	 * and not when the notification is actually being sent.
 	 */
-	create_notification_list_from_host(&mac, hst, options, &escalated, type);
+	notification_list = create_notification_list_from_host(&mac, hst, options, &escalated, type);
 
 	/* there are contacts to be notified... */
 	if (notification_list != NULL) {
@@ -1352,7 +1367,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 				contacts_notified++;
 		}
 
-		free_notification_list();
+		free_notification_list(notification_list);
 
 		/* clear out all macros we created */
 		nm_free(mac.x[MACRO_HOSTNOTIFICATIONID]);
@@ -1941,8 +1956,9 @@ int should_host_notification_be_escalated(host *hst)
 
 
 /* given a host, create a list of contacts to be notified, removing duplicates, checking contact notification viability */
-int create_notification_list_from_host(nagios_macros *mac, host *hst, int options, int *escalated, int type)
+static notification * create_notification_list_from_host(nagios_macros *mac, host *hst, int options, int *escalated, int type)
 {
+	notification *notification_list = NULL;
 	hostescalation *temp_he = NULL;
 	contactsmember *temp_contactsmember = NULL;
 	contact *temp_contact = NULL;
@@ -1955,9 +1971,6 @@ int create_notification_list_from_host(nagios_macros *mac, host *hst, int option
 
 	/* set the escalation flag */
 	*escalated = escalate_notification;
-
-	/* make sure there aren't any leftover contacts */
-	free_notification_list();
 
 	/* set the escalation macro */
 	mac->x[MACRO_NOTIFICATIONISESCALATED] = nm_strdup(escalate_notification ? "1" : "0");
@@ -1987,7 +2000,7 @@ int create_notification_list_from_host(nagios_macros *mac, host *hst, int option
 					continue;
 				/* check now if the contact can be notified */
 				if (check_contact_host_notification_viability(temp_contact, hst, type, options) == OK)
-					add_notification(mac, temp_contact);
+					add_notification(&notification_list, mac, temp_contact);
 				else
 					log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Not adding contact '%s'\n", temp_contact->name);
 			}
@@ -2004,7 +2017,7 @@ int create_notification_list_from_host(nagios_macros *mac, host *hst, int option
 						continue;
 					/* check now if the contact can be notified */
 					if (check_contact_host_notification_viability(temp_contact, hst, type, options) == OK)
-						add_notification(mac, temp_contact);
+						add_notification(&notification_list, mac, temp_contact);
 					else
 						log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Not adding contact '%s'\n", temp_contact->name);
 				}
@@ -2025,7 +2038,7 @@ int create_notification_list_from_host(nagios_macros *mac, host *hst, int option
 				continue;
 			/* check now if the contact can be notified */
 			if (check_contact_host_notification_viability(temp_contact, hst, type, options) == OK)
-				add_notification(mac, temp_contact);
+				add_notification(&notification_list, mac, temp_contact);
 			else
 				log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Not adding contact '%s'\n", temp_contact->name);
 		}
@@ -2043,14 +2056,14 @@ int create_notification_list_from_host(nagios_macros *mac, host *hst, int option
 					continue;
 				/* check now if the contact can be notified */
 				if (check_contact_host_notification_viability(temp_contact, hst, type, options) == OK)
-					add_notification(mac, temp_contact);
+					add_notification(&notification_list, mac, temp_contact);
 				else
 					log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Not adding contact '%s'\n", temp_contact->name);
 			}
 		}
 	}
 
-	return OK;
+	return notification_list;
 }
 
 
@@ -2177,7 +2190,7 @@ time_t get_next_host_notification_time(host *hst, time_t offset)
 /******************************************************************/
 
 /* given a contact name, find the notification entry for them for the list in memory */
-notification *find_notification(contact *cntct)
+static notification *find_notification(notification *notification_list, contact *cntct)
 {
 	notification *temp_notification = NULL;
 
@@ -2195,7 +2208,7 @@ notification *find_notification(contact *cntct)
 
 
 /* add a new notification to the list in memory */
-int add_notification(nagios_macros *mac, contact *cntct)
+int add_notification(notification **notification_list, nagios_macros *mac, contact *cntct)
 {
 	notification *new_notification = NULL;
 	notification *temp_notification = NULL;
@@ -2206,7 +2219,7 @@ int add_notification(nagios_macros *mac, contact *cntct)
 	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Adding contact '%s' to notification list.\n", cntct->name);
 
 	/* don't add anything if this contact is already on the notification list */
-	if ((temp_notification = find_notification(cntct)) != NULL)
+	if ((temp_notification = find_notification(*notification_list, cntct)) != NULL)
 		return OK;
 
 	/* allocate memory for a new contact in the notification list */
@@ -2216,8 +2229,8 @@ int add_notification(nagios_macros *mac, contact *cntct)
 	new_notification->contact = cntct;
 
 	/* add new notification to head of list */
-	new_notification->next = notification_list;
-	notification_list = new_notification;
+	new_notification->next = *notification_list;
+	*notification_list = new_notification;
 
 	/* add contact to notification recipients macro */
 	if (mac->x[MACRO_NOTIFICATIONRECIPIENTS] == NULL)

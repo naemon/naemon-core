@@ -193,8 +193,6 @@ int     service_perfdata_process_empty_results = DEFAULT_SERVICE_PERFDATA_PROCES
 
 static long long check_file_size(char *, unsigned long, struct rlimit);
 
-notification    *notification_list;
-
 time_t max_check_result_file_age = DEFAULT_MAX_CHECK_RESULT_AGE;
 
 check_stats     check_statistics[MAX_CHECK_STATS_TYPES];
@@ -2019,9 +2017,6 @@ void free_memory(nagios_macros *mac)
 	nm_free(global_host_event_handler);
 	nm_free(global_service_event_handler);
 
-	/* free any notification list that may have been overlooked */
-	free_notification_list();
-
 	/* free obsessive compulsive commands */
 	nm_free(ocsp_command);
 	nm_free(ochp_command);
@@ -2090,27 +2085,6 @@ void free_memory(nagios_macros *mac)
 
 	return;
 }
-
-
-/* free a notification list that was created */
-void free_notification_list(void)
-{
-	notification *temp_notification = NULL;
-	notification *next_notification = NULL;
-
-	temp_notification = notification_list;
-	while (temp_notification != NULL) {
-		next_notification = temp_notification->next;
-		nm_free(temp_notification);
-		temp_notification = next_notification;
-	}
-
-	/* reset notification list pointer */
-	notification_list = NULL;
-
-	return;
-}
-
 
 /* reset all system-wide variables, so when we've receive a SIGHUP we can restart cleanly */
 int reset_variables(void)
