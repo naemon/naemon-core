@@ -501,7 +501,7 @@ int initialize_core() {
     timing_point("Modules loaded\n");
 
     /* send program data to broker */
-    broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+    broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE);
     timing_point("First callback made\n");
 
     /* run the pre-flight check to make sure everything looks okay*/
@@ -514,7 +514,7 @@ int initialize_core() {
     }
 
     /* send program data to broker */
-    broker_program_state(NEBTYPE_PROCESS_START, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+    broker_program_state(NEBTYPE_PROCESS_START, NEBFLAG_NONE, NEBATTR_NONE);
 
     /* initialize scheduled downtime data */
     initialize_downtime_data();
@@ -562,11 +562,11 @@ int deinitialize_core() {
     registered_commands_deinit();
 
     /* send program data to broker */
-    broker_program_state(NEBTYPE_PROCESS_EVENTLOOPEND, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+    broker_program_state(NEBTYPE_PROCESS_EVENTLOOPEND, NEBFLAG_NONE, NEBATTR_NONE);
     if(sigrestart) {
-        broker_program_state(NEBTYPE_PROCESS_RESTART, NEBFLAG_USER_INITIATED, NEBATTR_RESTART_NORMAL, NULL);
+        broker_program_state(NEBTYPE_PROCESS_RESTART, NEBFLAG_USER_INITIATED, NEBATTR_RESTART_NORMAL);
     } else {
-        broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_USER_INITIATED, NEBATTR_SHUTDOWN_NORMAL, NULL);
+        broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_USER_INITIATED, NEBATTR_SHUTDOWN_NORMAL);
     }
 
     cleanup_retention_data();
@@ -953,7 +953,7 @@ int update_program_status_data() {
             *last_command_check      = (uint64_t)atoll(answer->set[35]);
 
             /* send broker event to make wait headers work */
-            broker_adaptive_program_data(NEBTYPE_ADAPTIVEPROGRAM_UPDATE, NEBFLAG_NONE, NEBATTR_NONE, CMD_NONE, MODATTR_NONE, MODATTR_NONE, MODATTR_NONE, MODATTR_NONE, NULL);
+            broker_adaptive_program_data(NEBTYPE_ADAPTIVEPROGRAM_UPDATE, NEBFLAG_NONE, NEBATTR_NONE, CMD_NONE, MODATTR_NONE, MODATTR_NONE, MODATTR_NONE, MODATTR_NONE);
         }
     } else {
         nm_log(NSLOG_INFO_MESSAGE, "updating program status failed\n");
@@ -1625,7 +1625,7 @@ int run_refresh_loop() {
     }
 
     /* send program data to broker, which also starts livestatus */
-    broker_program_state(NEBTYPE_PROCESS_EVENTLOOPSTART, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+    broker_program_state(NEBTYPE_PROCESS_EVENTLOOPSTART, NEBFLAG_NONE, NEBATTR_NONE);
 
     /* main action, run broker... */
     daemon_mode = FALSE;

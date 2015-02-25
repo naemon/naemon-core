@@ -674,7 +674,7 @@ int main(int argc, char **argv)
 		timing_point("Modules loaded\n");
 
 		/* send program data to broker */
-		broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+		broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE);
 		timing_point("First callback made\n");
 #endif
 
@@ -701,7 +701,7 @@ int main(int argc, char **argv)
 
 #ifdef USE_EVENT_BROKER
 			/* send program data to broker */
-			broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_PROCESS_INITIATED, NEBATTR_SHUTDOWN_ABNORMAL, NULL);
+			broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_PROCESS_INITIATED, NEBATTR_SHUTDOWN_ABNORMAL);
 #endif
 			cleanup();
 			exit(ERROR);
@@ -715,7 +715,7 @@ int main(int argc, char **argv)
 
 #ifdef USE_EVENT_BROKER
 		/* send program data to broker */
-		broker_program_state(NEBTYPE_PROCESS_START, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+		broker_program_state(NEBTYPE_PROCESS_START, NEBFLAG_NONE, NEBATTR_NONE);
 #endif
 
 		initialize_status_data(config_file);
@@ -767,7 +767,7 @@ int main(int argc, char **argv)
 
 #ifdef USE_EVENT_BROKER
 		/* send program data to broker */
-		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPSTART, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPSTART, NEBFLAG_NONE, NEBATTR_NONE);
 #endif
 
 		/* get event start time and save as macro */
@@ -793,11 +793,11 @@ int main(int argc, char **argv)
 
 #ifdef USE_EVENT_BROKER
 		/* send program data to broker */
-		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPEND, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPEND, NEBFLAG_NONE, NEBATTR_NONE);
 		if (sigshutdown == TRUE)
-			broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_USER_INITIATED, NEBATTR_SHUTDOWN_NORMAL, NULL);
+			broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_USER_INITIATED, NEBATTR_SHUTDOWN_NORMAL);
 		else if (sigrestart == TRUE)
-			broker_program_state(NEBTYPE_PROCESS_RESTART, NEBFLAG_USER_INITIATED, NEBATTR_RESTART_NORMAL, NULL);
+			broker_program_state(NEBTYPE_PROCESS_RESTART, NEBFLAG_USER_INITIATED, NEBATTR_RESTART_NORMAL);
 #endif
 
 		disconnect_command_file_worker();

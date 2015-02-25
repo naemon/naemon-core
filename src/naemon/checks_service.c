@@ -215,7 +215,7 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	end_time.tv_usec = 0L;
 
 	/* send data to event broker */
-	neb_result = broker_service_check(NEBTYPE_SERVICECHECK_ASYNC_PRECHECK, NEBFLAG_NONE, NEBATTR_NONE, svc, CHECK_TYPE_ACTIVE, start_time, end_time, svc->check_command, svc->latency, 0.0, 0, FALSE, 0, NULL, NULL, NULL);
+	neb_result = broker_service_check(NEBTYPE_SERVICECHECK_ASYNC_PRECHECK, NEBFLAG_NONE, NEBATTR_NONE, svc, CHECK_TYPE_ACTIVE, start_time, end_time, svc->check_command, svc->latency, 0.0, 0, FALSE, 0, NULL, NULL);
 
 	if (neb_result == NEBERROR_CALLBACKCANCEL || neb_result == NEBERROR_CALLBACKOVERRIDE) {
 		log_debug_info(DEBUGL_CHECKS, 0, "Check of service '%s' on host '%s' (id=%u) was %s by a module\n",
@@ -282,7 +282,7 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
-	neb_result = broker_service_check(NEBTYPE_SERVICECHECK_INITIATE, NEBFLAG_NONE, NEBATTR_NONE, svc, CHECK_TYPE_ACTIVE, start_time, end_time, svc->check_command, svc->latency, 0.0, service_check_timeout, FALSE, 0, processed_command, NULL, cr);
+	neb_result = broker_service_check(NEBTYPE_SERVICECHECK_INITIATE, NEBFLAG_NONE, NEBATTR_NONE, svc, CHECK_TYPE_ACTIVE, start_time, end_time, svc->check_command, svc->latency, 0.0, service_check_timeout, FALSE, 0, processed_command, cr);
 
 	/* neb module wants to override the service check - perhaps it will check the service itself */
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
@@ -981,7 +981,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		service_check_timeout,
 		queued_check_result->early_timeout,
 		queued_check_result->return_code,
-		NULL,
 		NULL,
 		queued_check_result);
 #endif

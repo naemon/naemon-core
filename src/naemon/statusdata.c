@@ -48,14 +48,14 @@ int update_all_status_data(void)
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
-	broker_aggregated_status_data(NEBTYPE_AGGREGATEDSTATUS_STARTDUMP, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+	broker_aggregated_status_data(NEBTYPE_AGGREGATEDSTATUS_STARTDUMP, NEBFLAG_NONE, NEBATTR_NONE);
 #endif
 
 	result = xsddefault_save_status_data();
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
-	broker_aggregated_status_data(NEBTYPE_AGGREGATEDSTATUS_ENDDUMP, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+	broker_aggregated_status_data(NEBTYPE_AGGREGATEDSTATUS_ENDDUMP, NEBFLAG_NONE, NEBATTR_NONE);
 #endif
 	return result;
 }
@@ -75,7 +75,7 @@ int update_program_status(int aggregated_dump)
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker (non-aggregated dumps only) */
 	if (aggregated_dump == FALSE)
-		broker_program_status(NEBTYPE_PROGRAMSTATUS_UPDATE, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+		broker_program_status(NEBTYPE_PROGRAMSTATUS_UPDATE, NEBFLAG_NONE, NEBATTR_NONE);
 #endif
 
 	return OK;
@@ -89,7 +89,7 @@ int update_host_status(host *hst, int aggregated_dump)
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker (non-aggregated dumps only) */
 	if (aggregated_dump == FALSE)
-		broker_host_status(NEBTYPE_HOSTSTATUS_UPDATE, NEBFLAG_NONE, NEBATTR_NONE, hst, NULL);
+		broker_host_status(NEBTYPE_HOSTSTATUS_UPDATE, NEBFLAG_NONE, NEBATTR_NONE, hst);
 #endif
 
 	return OK;
@@ -103,7 +103,7 @@ int update_service_status(service *svc, int aggregated_dump)
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker (non-aggregated dumps only) */
 	if (aggregated_dump == FALSE)
-		broker_service_status(NEBTYPE_SERVICESTATUS_UPDATE, NEBFLAG_NONE, NEBATTR_NONE, svc, NULL);
+		broker_service_status(NEBTYPE_SERVICESTATUS_UPDATE, NEBFLAG_NONE, NEBATTR_NONE, svc);
 #endif
 
 	return OK;
@@ -117,7 +117,7 @@ int update_contact_status(contact *cntct, int aggregated_dump)
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker (non-aggregated dumps only) */
 	if (aggregated_dump == FALSE)
-		broker_contact_status(NEBTYPE_CONTACTSTATUS_UPDATE, NEBFLAG_NONE, NEBATTR_NONE, cntct, NULL);
+		broker_contact_status(NEBTYPE_CONTACTSTATUS_UPDATE, NEBFLAG_NONE, NEBATTR_NONE, cntct);
 #endif
 
 	return OK;

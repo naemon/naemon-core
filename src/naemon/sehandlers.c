@@ -195,7 +195,7 @@ int handle_service_event(service *svc)
 
 #ifdef USE_EVENT_BROKER
 	/* send event data to broker */
-	broker_statechange_data(NEBTYPE_STATECHANGE_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_STATECHANGE, (void *)svc, svc->current_state, svc->state_type, svc->current_attempt, svc->max_attempts, NULL);
+	broker_statechange_data(NEBTYPE_STATECHANGE_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_STATECHANGE, (void *)svc, svc->current_state, svc->state_type, svc->current_attempt, svc->max_attempts);
 #endif
 
 	/* bail out if we shouldn't be running event handlers */
@@ -287,7 +287,7 @@ int run_global_service_event_handler(nagios_macros *mac, service *svc)
 	/* send event data to broker */
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
-	neb_result = broker_event_handler(NEBTYPE_EVENTHANDLER_START, NEBFLAG_NONE, NEBATTR_NONE, GLOBAL_SERVICE_EVENTHANDLER, (void *)svc, svc->current_state, svc->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, global_service_event_handler, processed_command, NULL, NULL);
+	neb_result = broker_event_handler(NEBTYPE_EVENTHANDLER_START, NEBFLAG_NONE, NEBATTR_NONE, GLOBAL_SERVICE_EVENTHANDLER, (void *)svc, svc->current_state, svc->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, global_service_event_handler, processed_command, NULL);
 
 	/* neb module wants to override (or cancel) the event handler - perhaps it will run the eventhandler itself */
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
@@ -312,7 +312,7 @@ int run_global_service_event_handler(nagios_macros *mac, service *svc)
 
 #ifdef USE_EVENT_BROKER
 	/* send event data to broker */
-	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, GLOBAL_SERVICE_EVENTHANDLER, (void *)svc, svc->current_state, svc->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, global_service_event_handler, processed_command, command_output, NULL);
+	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, GLOBAL_SERVICE_EVENTHANDLER, (void *)svc, svc->current_state, svc->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, global_service_event_handler, processed_command, command_output);
 #endif
 
 	nm_free(command_output);
@@ -382,7 +382,7 @@ int run_service_event_handler(nagios_macros *mac, service *svc)
 	/* send event data to broker */
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
-	neb_result = broker_event_handler(NEBTYPE_EVENTHANDLER_START, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_EVENTHANDLER, (void *)svc, svc->current_state, svc->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, svc->event_handler, processed_command, NULL, NULL);
+	neb_result = broker_event_handler(NEBTYPE_EVENTHANDLER_START, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_EVENTHANDLER, (void *)svc, svc->current_state, svc->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, svc->event_handler, processed_command, NULL);
 
 	/* neb module wants to override (or cancel) the event handler - perhaps it will run the eventhandler itself */
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
@@ -407,7 +407,7 @@ int run_service_event_handler(nagios_macros *mac, service *svc)
 
 #ifdef USE_EVENT_BROKER
 	/* send event data to broker */
-	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_EVENTHANDLER, (void *)svc, svc->current_state, svc->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, svc->event_handler, processed_command, command_output, NULL);
+	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_EVENTHANDLER, (void *)svc, svc->current_state, svc->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, svc->event_handler, processed_command, command_output);
 #endif
 
 	nm_free(command_output);
@@ -433,7 +433,7 @@ int handle_host_event(host *hst)
 
 #ifdef USE_EVENT_BROKER
 	/* send event data to broker */
-	broker_statechange_data(NEBTYPE_STATECHANGE_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_STATECHANGE, (void *)hst, hst->current_state, hst->state_type, hst->current_attempt, hst->max_attempts, NULL);
+	broker_statechange_data(NEBTYPE_STATECHANGE_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_STATECHANGE, (void *)hst, hst->current_state, hst->state_type, hst->current_attempt, hst->max_attempts);
 #endif
 
 	/* bail out if we shouldn't be running event handlers */
@@ -518,7 +518,7 @@ int run_global_host_event_handler(nagios_macros *mac, host *hst)
 	/* send event data to broker */
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
-	neb_result = broker_event_handler(NEBTYPE_EVENTHANDLER_START, NEBFLAG_NONE, NEBATTR_NONE, GLOBAL_HOST_EVENTHANDLER, (void *)hst, hst->current_state, hst->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, global_host_event_handler, processed_command, NULL, NULL);
+	neb_result = broker_event_handler(NEBTYPE_EVENTHANDLER_START, NEBFLAG_NONE, NEBATTR_NONE, GLOBAL_HOST_EVENTHANDLER, (void *)hst, hst->current_state, hst->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, global_host_event_handler, processed_command, NULL);
 
 	/* neb module wants to override (or cancel) the event handler - perhaps it will run the eventhandler itself */
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
@@ -543,7 +543,7 @@ int run_global_host_event_handler(nagios_macros *mac, host *hst)
 
 #ifdef USE_EVENT_BROKER
 	/* send event data to broker */
-	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, GLOBAL_HOST_EVENTHANDLER, (void *)hst, hst->current_state, hst->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, global_host_event_handler, processed_command, command_output, NULL);
+	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, GLOBAL_HOST_EVENTHANDLER, (void *)hst, hst->current_state, hst->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, global_host_event_handler, processed_command, command_output);
 #endif
 
 	nm_free(command_output);
@@ -612,7 +612,7 @@ int run_host_event_handler(nagios_macros *mac, host *hst)
 	/* send event data to broker */
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
-	neb_result = broker_event_handler(NEBTYPE_EVENTHANDLER_START, NEBFLAG_NONE, NEBATTR_NONE, HOST_EVENTHANDLER, (void *)hst, hst->current_state, hst->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, hst->event_handler, processed_command, NULL, NULL);
+	neb_result = broker_event_handler(NEBTYPE_EVENTHANDLER_START, NEBFLAG_NONE, NEBATTR_NONE, HOST_EVENTHANDLER, (void *)hst, hst->current_state, hst->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, hst->event_handler, processed_command, NULL);
 
 	/* neb module wants to override (or cancel) the event handler - perhaps it will run the eventhandler itself */
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
@@ -637,7 +637,7 @@ int run_host_event_handler(nagios_macros *mac, host *hst)
 
 #ifdef USE_EVENT_BROKER
 	/* send event data to broker */
-	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_EVENTHANDLER, (void *)hst, hst->current_state, hst->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, hst->event_handler, processed_command, command_output, NULL);
+	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_EVENTHANDLER, (void *)hst, hst->current_state, hst->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, hst->event_handler, processed_command, command_output);
 #endif
 
 	nm_free(command_output);

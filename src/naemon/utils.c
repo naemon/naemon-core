@@ -1378,7 +1378,7 @@ int daemon_init(void)
 
 #ifdef USE_EVENT_BROKER
 	/* send program data to broker */
-	broker_program_state(NEBTYPE_PROCESS_DAEMONIZE, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+	broker_program_state(NEBTYPE_PROCESS_DAEMONIZE, NEBFLAG_NONE, NEBATTR_NONE);
 #endif
 
 	return OK;

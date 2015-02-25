@@ -93,7 +93,7 @@ int add_new_host_comment(int entry_type, char *host_name, time_t entry_time, cha
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
-	broker_comment_data(NEBTYPE_COMMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, HOST_COMMENT, entry_type, host_name, NULL, entry_time, author_name, comment_data, persistent, source, expires, expire_time, next_comment_id, NULL);
+	broker_comment_data(NEBTYPE_COMMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, HOST_COMMENT, entry_type, host_name, NULL, entry_time, author_name, comment_data, persistent, source, expires, expire_time, next_comment_id);
 #endif
 
 	/* increment the comment id, AFTER, broker_comment_data(),
@@ -126,7 +126,7 @@ int add_new_service_comment(int entry_type, char *host_name, char *svc_descripti
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
-	broker_comment_data(NEBTYPE_COMMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_COMMENT, entry_type, host_name, svc_description, entry_time, author_name, comment_data, persistent, source, expires, expire_time, next_comment_id, NULL);
+	broker_comment_data(NEBTYPE_COMMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_COMMENT, entry_type, host_name, svc_description, entry_time, author_name, comment_data, persistent, source, expires, expire_time, next_comment_id);
 #endif
 
 	/*
@@ -170,7 +170,7 @@ int delete_comment(int type, unsigned long comment_id)
 	/* remove the comment from the list in memory */
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
-	broker_comment_data(NEBTYPE_COMMENT_DELETE, NEBFLAG_NONE, NEBATTR_NONE, type, this_comment->entry_type, this_comment->host_name, this_comment->service_description, this_comment->entry_time, this_comment->author, this_comment->comment_data, this_comment->persistent, this_comment->source, this_comment->expires, this_comment->expire_time, comment_id, NULL);
+	broker_comment_data(NEBTYPE_COMMENT_DELETE, NEBFLAG_NONE, NEBATTR_NONE, type, this_comment->entry_type, this_comment->host_name, this_comment->service_description, this_comment->entry_time, this_comment->author, this_comment->comment_data, this_comment->persistent, this_comment->source, this_comment->expires, this_comment->expire_time, comment_id);
 #endif
 
 	/* first remove from chained hash list */
@@ -477,7 +477,7 @@ int add_comment(int comment_type, int entry_type, char *host_name, char *svc_des
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
-	broker_comment_data(NEBTYPE_COMMENT_LOAD, NEBFLAG_NONE, NEBATTR_NONE, comment_type, entry_type, host_name, svc_description, entry_time, author, comment_data, persistent, source, expires, expire_time, comment_id, NULL);
+	broker_comment_data(NEBTYPE_COMMENT_LOAD, NEBFLAG_NONE, NEBATTR_NONE, comment_type, entry_type, host_name, svc_description, entry_time, author, comment_data, persistent, source, expires, expire_time, comment_id);
 #endif
 
 	return OK;

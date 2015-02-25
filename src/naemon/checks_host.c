@@ -230,7 +230,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	end_time.tv_usec = 0L;
 
 	/* send data to event broker */
-	neb_result = broker_host_check(NEBTYPE_HOSTCHECK_ASYNC_PRECHECK, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, host_check_timeout, FALSE, 0, NULL, NULL, NULL, NULL, NULL, NULL);
+	neb_result = broker_host_check(NEBTYPE_HOSTCHECK_ASYNC_PRECHECK, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, host_check_timeout, FALSE, 0, NULL, NULL, NULL, NULL, NULL);
 
 	if (neb_result == NEBERROR_CALLBACKCANCEL || neb_result == NEBERROR_CALLBACKOVERRIDE) {
 		log_debug_info(DEBUGL_CHECKS, 0, "Check of host '%s' (id=%u) was %s by a module\n",
@@ -299,7 +299,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 
 #ifdef USE_EVENT_BROKER
 	/* send data to event broker */
-	neb_result = broker_host_check(NEBTYPE_HOSTCHECK_INITIATE, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, host_check_timeout, FALSE, 0, processed_command, NULL, NULL, NULL, NULL, cr);
+	neb_result = broker_host_check(NEBTYPE_HOSTCHECK_INITIATE, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, host_check_timeout, FALSE, 0, processed_command, NULL, NULL, NULL, cr);
 
 	/* neb module wants to override the service check - perhaps it will check the service itself */
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
@@ -568,7 +568,6 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 		temp_host->plugin_output,
 		temp_host->long_plugin_output,
 		temp_host->perf_data,
-		NULL,
 		queued_check_result);
 #endif
 

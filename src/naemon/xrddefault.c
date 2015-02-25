@@ -747,7 +747,7 @@ int xrddefault_read_state_information(void)
 						 (data_type == XRDDEFAULT_HOSTCOMMENT_DATA) ? HOST_COMMENT : SERVICE_COMMENT,
 						 entry_type, host_name, service_description,
 						 entry_time, author, comment_data, persistent, source,
-						 expires, expire_time, comment_id, NULL
+						 expires, expire_time, comment_id
 						);
 #endif
 				} else {
@@ -801,7 +801,7 @@ int xrddefault_read_state_information(void)
 						 host_name, service_description,
 						 entry_time, author, comment_data,
 						 start_time, end_time, fixed, triggered_by,
-						 duration, downtime_id, NULL
+						 duration, downtime_id
 						);
 #endif
 				} else {
