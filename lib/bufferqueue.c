@@ -222,17 +222,29 @@ int nm_bufferqueue_read(nm_bufferqueue *bq, int fd)
 		return -1;
 	}
 
-	if (avail == 0) // Probably EOF
-		return 0;
+	if (avail == 0) {
+		/* EOF or EAGAIN? With a bit of luck, read() will fail and tell us.
+		 * Without luck, it was EAGAIN, but now it isn't,
+		 * so we have to deal with that, too...
+		 */
+		char failbuf[128];
+		avail = read(fd, failbuf, 128);
+		if (avail > 0)
+			nm_bufferqueue_push(bq, failbuf, avail);
+		return avail;
+	}
 
-	if ((buffer = malloc(avail)) == NULL)
+	if ((buffer = malloc(avail)) == NULL) {
+		errno = -ENOMEM;
 		return -1;
+	}
 
 	if (read(fd, buffer, avail) < 0) {
 		return -1;
 	}
 
 	if (nm_bufferqueue_push_block(bq, buffer, avail)) {
+		errno = -ENOMEM;
 		free(buffer);
 		return -1;
 	}
