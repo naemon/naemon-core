@@ -246,7 +246,9 @@ static char *expect_string(const char **inptr, int *length, char endchar) {
 			break;
 		if (chr == '\\') {
 			chr = *(inp++);
-			if (chr != 'x') {
+			if (chr == '\0') {
+				break;
+			} else if (chr != 'x') {
 				*(outp++) = table_unescape[(unsigned char) chr];
 			} else {
 				chr = *(inp++);
