@@ -250,10 +250,13 @@ int finish_job(child_process *cp, int reason)
 static void kill_job(struct nm_event_execution_properties *event)
 {
 	child_process *cp = event->user_data;
-	int ret, status, reaped = 0;
-	int pid = cp ? cp->ei->pid : 0;
-	int id = cp->id;
+	int pid, id, ret, status, reaped = 0;
 
+	g_return_if_fail(cp != NULL);
+	g_return_if_fail(cp->ei != NULL);
+
+	pid = cp->ei->pid;
+	id = cp->id;
 	if (event->execution_type == EVENT_EXEC_ABORTED) {
 		(void)kill(-cp->ei->pid, SIGKILL);
 		return;
