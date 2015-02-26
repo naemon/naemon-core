@@ -8790,7 +8790,7 @@ static int xodtemplate_process_config_file(char *filename)
 		/* include another file */
 		else if (strstr(input, "include_file=") == input) {
 
-			ptr = strtok(input, "=");
+			(void)strtok(input, "=");
 			ptr = strtok(NULL, "\n");
 
 			if (ptr != NULL) {
@@ -8803,7 +8803,7 @@ static int xodtemplate_process_config_file(char *filename)
 		/* include a directory */
 		else if (strstr(input, "include_dir") == input) {
 
-			ptr = strtok(input, "=");
+			(void)strtok(input, "=");
 			ptr = strtok(NULL, "\n");
 
 			if (ptr != NULL) {
