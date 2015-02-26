@@ -727,7 +727,6 @@ int xrddefault_read_state_information(void)
 					remove_comment = TRUE;
 				/* acknowledgement comments get deleted if they're not persistent and the original problem is no longer acknowledged */
 				else if (entry_type == ACKNOWLEDGEMENT_COMMENT) {
-					ack = FALSE;
 					if (data_type == XRDDEFAULT_HOSTCOMMENT_DATA)
 						ack = temp_host->problem_has_been_acknowledged;
 					else
