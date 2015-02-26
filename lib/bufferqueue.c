@@ -220,16 +220,14 @@ int nm_bufferqueue_unshift_to_delim(nm_bufferqueue *bq, const char *delim, size_
 int nm_bufferqueue_read(nm_bufferqueue *bq, int fd)
 {
 	int bytes_read;
-	char buffer[READ_SIZE];
+	char *buffer = calloc(READ_SIZE, 1);
 
 	if (!bq || fd < 0)
 		return -1;
 
 	bytes_read = read(fd, buffer, READ_SIZE);
-	if (bytes_read <= 0)
-		return bytes_read;
-
 	if (nm_bufferqueue_push(bq, buffer, bytes_read)) {
+		free(buffer);
 		return -1;
 	}
 	return bytes_read;
