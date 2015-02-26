@@ -222,15 +222,11 @@ int nm_bufferqueue_read(nm_bufferqueue *bq, int fd)
 		return -1;
 	}
 
-	if (avail <= 0) { // EOF? Or just nothing yet? Let's go with "nothing yet"
-		errno = EAGAIN;
-		return -1;
-	}
+	if (avail == 0) // Probably EOF
+		return 0;
 
-	if ((buffer = malloc(avail)) == NULL) {
-		errno = ENOMEM;
+	if ((buffer = malloc(avail)) == NULL)
 		return -1;
-	}
 
 	if (read(fd, buffer, avail) < 0) {
 		return -1;
@@ -238,7 +234,6 @@ int nm_bufferqueue_read(nm_bufferqueue *bq, int fd)
 
 	if (nm_bufferqueue_push_block(bq, buffer, avail)) {
 		free(buffer);
-		errno = ENOMEM;
 		return -1;
 	}
 	return avail;
