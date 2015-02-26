@@ -1008,7 +1008,6 @@ admin_pager=page@naemon_user@@localhost
 # Values: 1 - Allow core dumps
 #         0 - Do not allow core dumps (default)
 
-daemon_dumps_core=0
 
 
 

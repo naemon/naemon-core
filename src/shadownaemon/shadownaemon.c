@@ -201,7 +201,6 @@ int main(int argc, char **argv) {
 #endif
         setenv("HOME", cwd, 1);
         free(cwd);
-        daemon_dumps_core = TRUE;
         if (daemon_init() == ERROR) {
 #ifndef HAVE_GET_CURRENT_DIR_NAME
 error_out:

@@ -911,14 +911,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			use_true_regexp_matching = (atoi(value) > 0) ? TRUE : FALSE;
 
 		else if (!strcmp(variable, "daemon_dumps_core")) {
-
-			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				nm_asprintf(&error_message, "Illegal value for daemon_dumps_core");
-				error = TRUE;
-				break;
-			}
-
-			daemon_dumps_core = (atoi(value) > 0) ? TRUE : FALSE;
+			obsoleted_warning(variable, "Use system facilities to control coredump behaviour instead");
 		}
 
 		/*** workers removed the need for these ***/

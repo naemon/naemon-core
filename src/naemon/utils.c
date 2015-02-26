@@ -32,9 +32,6 @@
 #include <math.h>
 #include <poll.h>
 #include <string.h>
-#ifdef HAVE_SYS_PRCTL_H
-#include <sys/prctl.h>
-#endif
 
 #define SECS_PER_DAY 86400
 /* global varaiables only used by the daemon */
@@ -144,8 +141,6 @@ volatile sig_atomic_t sigrestart = FALSE;
 volatile sig_atomic_t sigrotate = FALSE;
 volatile sig_atomic_t sigfilesize = FALSE;
 volatile sig_atomic_t sig_id = 0;
-
-int daemon_dumps_core = TRUE;
 
 int max_parallel_service_checks = DEFAULT_MAX_PARALLEL_SERVICE_CHECKS;
 int currently_running_service_checks = 0;
@@ -1262,9 +1257,14 @@ static long long check_file_size(char *path, unsigned long fudge,
 /******************************************************************/
 /************************ DAEMON FUNCTIONS ************************/
 /******************************************************************/
-static void set_working_directory(void) {
+static void set_working_directory(void)
+{
+	/*
+	 * we shouldn't block the unmounting of
+	 * filesystems, so chdir() to the root
+	 */
 	if (chdir("/") != 0) {
-		nm_log(NSLOG_RUNTIME_ERROR, "Aborting. Failed to set daemon working directory (/): %s\n", strerror(errno));
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Aborting. Failed to set daemon working directory (/): %s\n", strerror(errno));
 		cleanup();
 		exit(ERROR);
 	}
@@ -1278,7 +1278,7 @@ int daemon_init(void)
 	int val = 0;
 	char buf[256];
 	struct flock lock;
-	struct rlimit limit;
+
 	set_working_directory();
 	umask(S_IWGRP | S_IWOTH);
 
@@ -1352,13 +1352,6 @@ int daemon_init(void)
 
 		cleanup();
 		exit(ERROR);
-	}
-
-	/* prevent daemon from dumping a core file... */
-	if (daemon_dumps_core == FALSE) {
-		getrlimit(RLIMIT_CORE, &limit);
-		limit.rlim_cur = 0;
-		setrlimit(RLIMIT_CORE, &limit);
 	}
 
 	/* write PID to lockfile... */
@@ -1465,11 +1458,6 @@ int drop_privileges(char *user, char *group)
 		nm_log(NSLOG_RUNTIME_WARNING, "Warning: Could not set effective UID=%d", (int)uid);
 		result = ERROR;
 	}
-
-#ifdef HAVE_SYS_PRCTL_H
-	if (daemon_dumps_core)
-		prctl(PR_SET_DUMPABLE, 1);
-#endif
 
 	return result;
 }
