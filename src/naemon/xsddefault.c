@@ -12,22 +12,6 @@
 #include "nm_alloc.h"
 #include <string.h>
 
-time_t program_start;
-int daemon_mode;
-time_t last_log_rotation;
-int enable_notifications;
-int execute_service_checks;
-int accept_passive_service_checks;
-int execute_host_checks;
-int accept_passive_host_checks;
-int enable_event_handlers;
-int obsess_over_services;
-int obsess_over_hosts;
-int check_service_freshness;
-int check_host_freshness;
-int enable_flap_detection;
-int process_performance_data;
-int nagios_pid;
 int buffer_stats[1][3];
 int program_stats[MAX_CHECK_STATS_TYPES][3];
 
