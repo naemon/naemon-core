@@ -82,7 +82,7 @@ static const char table_dehex[256] = { 255, 255, 255, 255, 255, 255, 255, 255,
 static const char table_hex[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8',
 		'9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
-static char *expect_string(const char **inptr, int *length, char endchar);
+static char *expect_string(const char **inptr, int *length, char endchar, char reserved);
 
 char *kvvec_to_ekvstr(const struct kvvec *kvv) {
 	register unsigned char *buf;
@@ -198,7 +198,7 @@ char *kvvec_to_ekvstr(const struct kvvec *kvv) {
 	return (char*) buf;
 }
 
-static char *expect_string(const char **inptr, int *length, char endchar) {
+static char *expect_string(const char **inptr, int *length, char endchar, char reserved) {
 	char *buf = NULL;
 	register const char *inp;
 	register char *outp;
@@ -211,6 +211,8 @@ static char *expect_string(const char **inptr, int *length, char endchar) {
 
 	for (;;) {
 		chr = *(inp++);
+		if (chr == reserved)
+			return NULL;
 		if (chr == '\0')
 			break;
 		if (chr == endchar)
@@ -289,13 +291,13 @@ struct kvvec *ekvstr_to_kvvec(const char *inbuf) {
 		key = value = NULL;
 		key_len = value_len = 0;
 
-		key = expect_string(&inptr, &key_len, '=');
+		key = expect_string(&inptr, &key_len, '=', ';');
 		FAIL_IF(key == NULL);
 		FAIL_IF(*inptr != '=');
 
 		inptr++;
 
-		value = expect_string(&inptr, &value_len, ';');
+		value = expect_string(&inptr, &value_len, ';', '=');
 		FAIL_IF(value == NULL);
 
 		kvvec_addkv_wlen(kvv, key, key_len, value, value_len);
