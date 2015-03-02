@@ -34,6 +34,8 @@ src/naemon/buildopts.h: src/naemon/buildopts.h.in
 	 -e 's,@@NAEMON_LOCALSTATEDIR@@,$(localstatedir)/cache/naemon,' \
 	 -e 's,@@NAEMON_LOGDIR@@,$(logdir),' \
 	 -e 's,@@NAEMON_LOCKFILE@@,$(lockfile),' \
+	 -e 's,@@NAEMON_USER@@,$(naemon_user),' \
+	 -e 's,@@NAEMON_GROUP@@,$(naemon_group),' \
 	$< > $@
 
 
@@ -180,9 +182,8 @@ $(CONFIG_FILES) : % : %.in
 		-e 's,@localstatedir[@],$(localstatedir),g' \
 		-e 's,@lockfile[@],$(lockfile),g' \
 		-e 's,@logdir[@],$(logdir),g' \
-		-e 's,@naemon_grp[@],$(naemon_grp),g' \
-		-e 's,@naemon_user[@],$(naemon_user),g' \
 		-e 's,@pkgconfdir[@],$(pkgconfdir),g' \
+		-e 's,@naemon_user[@],$(naemon_user),g' \
 		-e 's,@CHECKRESULTDIR[@],$(CHECKRESULTDIR),g' \
 		-e 's,@TMPDIR[@],$(TMPDIR),g' \
 		-e 's,@VERSION[@],$(VERSION),g' \

@@ -171,16 +171,14 @@ AC_ARG_WITH([naemon-user],
 [], [with_naemon_user="naemon"])
 naemon_user="$with_naemon_user"
 AC_SUBST(naemon_user)
-AC_DEFINE_UNQUOTED(DEFAULT_NAEMON_USER, "$naemon_user", [Default user name to run naemon as])
 
 # Determine the naemon group
 AC_ARG_WITH([naemon-group],
 [AS_HELP_STRING([--with-naemon-group],
 [specify the naemon group @<:@default="naemon"@:>@])],
 [], [with_naemon_group="naemon"])
-naemon_grp="$with_naemon_group"
-AC_SUBST(naemon_grp)
-AC_DEFINE_UNQUOTED(DEFAULT_NAEMON_GROUP, "$naemon_grp", [Default group name to run naemon as])
+naemon_group="$with_naemon_group"
+AC_SUBST(naemon_group)
 
 # Determine the lockfile
 AC_ARG_WITH([lockfile],

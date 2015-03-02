@@ -51,9 +51,6 @@ objectlist *objcfg_dirs = NULL;
 int num_check_workers = 0; /* auto-decide */
 char *qh_socket_path = NULL; /* disabled */
 
-char *naemon_user = NULL;
-char *naemon_group = NULL;
-
 char *ocsp_command = NULL;
 char *ochp_command = NULL;
 command *ocsp_command_ptr = NULL;
@@ -2053,10 +2050,6 @@ void free_memory(nagios_macros *mac)
 	nm_free(illegal_object_chars);
 	nm_free(illegal_output_chars);
 
-	/* free naemon user and group */
-	nm_free(naemon_user);
-	nm_free(naemon_group);
-
 	/* free file/path variables */
 	nm_free(status_file);
 	nm_free(debug_file);
@@ -2104,9 +2097,6 @@ int reset_variables(void)
 
 	object_cache_file = nm_strdup(get_default_object_cache_file());
 	object_precache_file = nm_strdup(get_default_precached_object_file());
-
-	naemon_user = nm_strdup(DEFAULT_NAEMON_USER);
-	naemon_group = nm_strdup(DEFAULT_NAEMON_GROUP);
 
 	use_regexp_matches = FALSE;
 	use_true_regexp_matching = FALSE;

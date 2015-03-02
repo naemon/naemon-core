@@ -237,14 +237,11 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			ochp_command = nm_strdup(value);
 		}
 
-		else if (!strcmp(variable, "nagios_user") || !strcmp(variable, "naemon_user")) {
-			nm_free(naemon_user);
-			naemon_user = nm_strdup(value);
-		}
-
-		else if (!strcmp(variable, "nagios_group") || !strcmp(variable, "naemon_group")) {
-			nm_free(naemon_group);
-			naemon_group = nm_strdup(value);
+		else if (!strcmp(variable, "nagios_user") ||
+				!strcmp(variable, "naemon_user") ||
+				!strcmp(variable, "nagios_group") ||
+				!strcmp(variable, "naemon_group")) {
+			obsoleted_warning(variable, "Naemon is compiled to be run as " NAEMON_USER ":" NAEMON_GROUP);
 		}
 
 		else if (!strcmp(variable, "admin_email")) {
