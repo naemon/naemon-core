@@ -163,7 +163,9 @@ int nm_bufferqueue_unshift_to_delim(nm_bufferqueue *bq, const char *delim, size_
 {
 	struct bufferqueue_buffer *bqbuffer;
 
-	if (buffer)
+	if (!buffer)
+		return -1;
+	else
 		*buffer = NULL;
 
 	if (!bq || !bq->bq_front)
@@ -197,8 +199,9 @@ int nm_bufferqueue_unshift_to_delim(nm_bufferqueue *bq, const char *delim, size_
 			*size += (size_t)ptr - ioc_start;
 			*size += delim_len;
 
-			if (buffer)
-				*buffer = calloc(*size, 1);
+			if ((*buffer = calloc(*size, 1)) == NULL )
+				return -1;
+
 			if (nm_bufferqueue_unshift(bq, *size, *buffer)) {
 				/* we fucked up */
 				free(*buffer);
