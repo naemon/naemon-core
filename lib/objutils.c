@@ -24,10 +24,17 @@ nm_service_key * nm_service_key_create(const char *hostname, const char *service
 	nm_service_key *k = calloc(1, sizeof(*k));
 	if (!k)
 		return NULL;
-	if ((k->hostname = strdup(hostname)) == NULL)
+
+	if ((k->hostname = strdup(hostname)) == NULL) {
+		free(k);
 		return NULL;
-	if ((k->service_description = strdup(service_description)) == NULL)
+	}
+
+	if ((k->service_description = strdup(service_description)) == NULL) {
+		free(k->hostname);
+		free(k);
 		return NULL;
+	}
 
 	return k;
 }

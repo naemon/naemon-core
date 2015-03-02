@@ -51,6 +51,7 @@ START_TEST( kvvec_ekvstr_unpack ) {
 
 	/* common alfanum */
 	kvv = ekvstr_to_kvvec("abc=def");
+	ck_assert( kvv != NULL);
 	ck_assert_msg( kvv->kv_pairs == 1, "Invalid pair count");
 	ck_assert_str_eq( kvv->kv[0].key, "abc");
 	ck_assert_str_eq( kvv->kv[0].value, "def");
@@ -58,6 +59,7 @@ START_TEST( kvvec_ekvstr_unpack ) {
 
 	/* multiple pairs alfanum */
 	kvv = ekvstr_to_kvvec("abc=def;ghi=jkl;mno=pqr");
+	ck_assert( kvv != NULL);
 	ck_assert_msg( kvv->kv_pairs == 3, "Invalid pair count");
 	ck_assert_str_eq( kvv->kv[0].key, "abc");
 	ck_assert_str_eq( kvv->kv[0].value, "def");
@@ -69,11 +71,13 @@ START_TEST( kvvec_ekvstr_unpack ) {
 
 	/* empty */
 	kvv = ekvstr_to_kvvec("");
+	ck_assert( kvv != NULL);
 	ck_assert_msg( kvv->kv_pairs == 0, "Invalid pair count");
 	kvvec_destroy(kvv, KVVEC_FREE_ALL);
 
 	/* quote escaping */
 	kvv = ekvstr_to_kvvec("\\=\\;\\=\\=\\;=\\=\\;\\;\\=");
+	ck_assert( kvv != NULL);
 	ck_assert_msg( kvv->kv_pairs == 1, "Invalid pair count");
 	ck_assert_str_eq( kvv->kv[0].key, "=;==;");
 	ck_assert_str_eq( kvv->kv[0].value, "=;;=");
@@ -81,9 +85,25 @@ START_TEST( kvvec_ekvstr_unpack ) {
 
 	/* backslash escaping */
 	kvv = ekvstr_to_kvvec("\\\\abc=\\\\def");
+	ck_assert( kvv != NULL);
 	ck_assert_msg( kvv->kv_pairs == 1, "Invalid pair count");
 	ck_assert_str_eq( kvv->kv[0].key, "\\abc");
 	ck_assert_str_eq( kvv->kv[0].value, "\\def");
+	kvvec_destroy(kvv, KVVEC_FREE_ALL);
+
+	/* only escape char */
+	kvv = ekvstr_to_kvvec("\\");
+	ck_assert( kvv == NULL);
+
+	kvv = ekvstr_to_kvvec("abc\\");
+	ck_assert( kvv == NULL);
+
+	/* Trailing escape char */
+	kvv = ekvstr_to_kvvec("abc=def\\");
+	ck_assert( kvv != NULL);
+	ck_assert_msg( kvv->kv_pairs == 1, "Invalid pair count");
+	ck_assert_str_eq( kvv->kv[0].key, "abc");
+	ck_assert_str_eq( kvv->kv[0].value, "def");
 	kvvec_destroy(kvv, KVVEC_FREE_ALL);
 }
 END_TEST
@@ -138,7 +158,7 @@ int main(void) {
 	int number_failed = 0;
 	Suite *s = kvvec_ekvstr_suite();
 	SRunner *sr = srunner_create(s);
-	srunner_run_all(sr, CK_NORMAL);
+	srunner_run_all(sr, CK_ENV);
 	number_failed = srunner_ntests_failed(sr);
 	srunner_free(sr);
 	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
