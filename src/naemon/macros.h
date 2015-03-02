@@ -248,19 +248,5 @@ int clear_contact_macros_r(nagios_macros *mac);
 int clear_contactgroup_macros_r(nagios_macros *mac);
 int clear_summary_macros_r(nagios_macros *mac);
 
-int set_all_macro_environment_vars(int);
-int set_macrox_environment_vars(int);
-int set_argv_macro_environment_vars(int);
-int set_custom_macro_environment_vars(int);
-int set_contact_address_environment_vars(int);
-int set_macro_environment_var(char *, char *, int);
-
-/* thread-safe version of the above */
-int set_all_macro_environment_vars_r(nagios_macros *mac, int);
-int set_macrox_environment_vars_r(nagios_macros *mac, int);
-int set_argv_macro_environment_vars_r(nagios_macros *mac, int);
-int set_custom_macro_environment_vars_r(nagios_macros *mac, int);
-int set_contact_address_environment_vars_r(nagios_macros *mac, int);
-
 NAGIOS_END_DECL
 #endif
