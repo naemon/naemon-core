@@ -98,7 +98,43 @@ START_TEST( kvvec_ekvstr_unpack ) {
 	kvv = ekvstr_to_kvvec("abc\\");
 	ck_assert( kvv == NULL);
 
-	/* Trailing escape char */
+	kvv = ekvstr_to_kvvec("a;b=c");
+	ck_assert( kvv == NULL);
+
+	kvv = ekvstr_to_kvvec("a\\;b=c");
+	ck_assert_msg( kvv->kv_pairs == 1, "Invalid pair count");
+	ck_assert_str_eq( kvv->kv[0].key, "a;b");
+	ck_assert_str_eq( kvv->kv[0].value, "c");
+	kvvec_destroy(kvv, KVVEC_FREE_ALL);
+
+	kvv = ekvstr_to_kvvec("=");
+	ck_assert_msg( kvv->kv_pairs == 1, "Invalid pair count");
+	ck_assert_str_eq( kvv->kv[0].key, "");
+	ck_assert_str_eq( kvv->kv[0].value, "");
+	kvvec_destroy(kvv, KVVEC_FREE_ALL);
+
+	kvv = ekvstr_to_kvvec("==");
+	ck_assert( kvv == NULL);
+
+	kvv = ekvstr_to_kvvec("===");
+	ck_assert( kvv == NULL);
+
+	kvv = ekvstr_to_kvvec(";");
+	ck_assert( kvv == NULL);
+
+	kvv = ekvstr_to_kvvec("=;");
+	ck_assert_msg( kvv->kv_pairs == 1, "Invalid pair count");
+	ck_assert_str_eq( kvv->kv[0].key, "");
+	ck_assert_str_eq( kvv->kv[0].value, "");
+	kvvec_destroy(kvv, KVVEC_FREE_ALL);
+
+	kvv = ekvstr_to_kvvec("\\==\\=");
+	ck_assert_msg( kvv->kv_pairs == 1, "Invalid pair count");
+	ck_assert_str_eq( kvv->kv[0].key, "=");
+	ck_assert_str_eq( kvv->kv[0].value, "=");
+	kvvec_destroy(kvv, KVVEC_FREE_ALL);
+
+	/* Trailing escape char is ignored */
 	kvv = ekvstr_to_kvvec("abc=def\\");
 	ck_assert( kvv != NULL);
 	ck_assert_msg( kvv->kv_pairs == 1, "Invalid pair count");
