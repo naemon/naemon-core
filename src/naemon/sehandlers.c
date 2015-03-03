@@ -19,6 +19,11 @@
 #include "neberrors.h"
 #endif
 
+static int run_service_event_handler(nagios_macros *mac, service *);			/* runs the event handler for a specific service */
+static int run_global_service_event_handler(nagios_macros *mac, service *);		/* runs the global service event handler */
+static int run_host_event_handler(nagios_macros *mac, const host * const);				/* runs the event handler for a specific host */
+static int run_global_host_event_handler(nagios_macros *mac, const host * const);			/* runs the global host event handler */
+
 struct obsessive_compulsive_job {
 	host *hst;
 	service *svc;
@@ -226,7 +231,7 @@ int handle_service_event(service *svc)
 
 
 /* runs the global service event handler */
-int run_global_service_event_handler(nagios_macros *mac, service *svc)
+static int run_global_service_event_handler(nagios_macros *mac, service *svc)
 {
 	char *raw_command = NULL;
 	char *processed_command = NULL;
@@ -325,7 +330,7 @@ int run_global_service_event_handler(nagios_macros *mac, service *svc)
 
 
 /* runs a service event handler command */
-int run_service_event_handler(nagios_macros *mac, service *svc)
+static int run_service_event_handler(nagios_macros *mac, service *svc)
 {
 	char *raw_command = NULL;
 	char *processed_command = NULL;
@@ -458,7 +463,7 @@ int handle_host_event(host *hst)
 
 
 /* runs the global host event handler */
-int run_global_host_event_handler(nagios_macros *mac, host *hst)
+static int run_global_host_event_handler(nagios_macros *mac, const host * const hst)
 {
 	char *raw_command = NULL;
 	char *processed_command = NULL;
@@ -556,7 +561,7 @@ int run_global_host_event_handler(nagios_macros *mac, host *hst)
 
 
 /* runs a host event handler command */
-int run_host_event_handler(nagios_macros *mac, host *hst)
+static int run_host_event_handler(nagios_macros *mac, const host * const hst)
 {
 	char *raw_command = NULL;
 	char *processed_command = NULL;
