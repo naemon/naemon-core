@@ -103,7 +103,6 @@ status_update_interval=10
 # This determines the effective user that Naemon should run as.
 # You can either supply a username or a UID.
 
-naemon_user=@naemon_user@
 
 
 
@@ -111,7 +110,6 @@ naemon_user=@naemon_user@
 # This determines the effective group that Naemon should run as.
 # You can either supply a group name or a GID.
 
-naemon_group=@naemon_grp@
 
 
 

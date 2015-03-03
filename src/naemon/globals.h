@@ -32,9 +32,6 @@ extern unsigned int nofile_limit, nproc_limit, max_apps;
 extern int num_check_workers;
 extern char *qh_socket_path;
 
-extern char *naemon_user;
-extern char *naemon_group;
-
 extern char *macro_user[MAX_USER_MACROS];
 
 extern char *ocsp_command;
