@@ -27,9 +27,11 @@
  *****************************************************************************/
 #include <string.h>
 
-#include "naemon/utils.c"
+#include "naemon/objects_timeperiod.c"
+#include "naemon/utils.h"
 #include "naemon/configuration.h"
 #include "naemon/defaults.h"
+#include "naemon/globals.h"
 #include "tap.h"
 
 #define RUN_24x7_TESTS 1

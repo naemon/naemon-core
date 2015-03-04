@@ -52,12 +52,6 @@ int my_rename(char *, char *);                          /* renames a file - work
 int my_fcopy(char *, char *);                           /* copies a file - works across filesystems */
 int my_fdcopy(char *, char *, int);                     /* copies a named source to an already opened destination file */
 
-int check_time_against_period(time_t, timeperiod *);	/* check to see if a specific time is covered by a time period */
-int is_daterange_single_day(daterange *);
-time_t calculate_time_from_weekday_of_month(int, int, int, int);	/* calculates midnight time of specific (3rd, last, etc.) weekday of a particular month */
-time_t calculate_time_from_day_of_month(int, int, int);	/* calculates midnight time of specific (1st, last, etc.) day of a particular month */
-void get_next_valid_time(time_t, time_t *, timeperiod *);	/* get the next valid time in a time period */
-/* to events.c? */
 time_t get_next_log_rotation_time(void);	     	/* determine the next time to schedule a log rotation */
 int set_environment_var(char *, char *, int);           /* sets/clears and environment variable */
 

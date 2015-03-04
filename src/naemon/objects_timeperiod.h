@@ -87,5 +87,11 @@ struct timeperiod *find_timeperiod(const char *);
 
 void fcache_timeperiod(FILE *fp, struct timeperiod *temp_timeperiod);
 
+int check_time_against_period(time_t, timeperiod *);	/* check to see if a specific time is covered by a time period */
+int is_daterange_single_day(daterange *);
+time_t calculate_time_from_weekday_of_month(int, int, int, int);	/* calculates midnight time of specific (3rd, last, etc.) weekday of a particular month */
+time_t calculate_time_from_day_of_month(int, int, int);	/* calculates midnight time of specific (1st, last, etc.) day of a particular month */
+void get_next_valid_time(time_t, time_t *, timeperiod *);	/* get the next valid time in a time period */
+
 NAGIOS_END_DECL
 #endif
