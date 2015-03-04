@@ -6,6 +6,10 @@
 
 #define SECS_PER_DAY 86400
 
+static int is_daterange_single_day(daterange *);
+static time_t calculate_time_from_weekday_of_month(int, int, int, int);	/* calculates midnight time of specific (3rd, last, etc.) weekday of a particular month */
+static time_t calculate_time_from_day_of_month(int, int, int);	/* calculates midnight time of specific (1st, last, etc.) day of a particular month */
+
 static GHashTable *timeperiod_hash_table = NULL;
 timeperiod **timeperiod_ary = NULL;
 timeperiod *timeperiod_list = NULL;
@@ -906,7 +910,7 @@ void get_next_valid_time(time_t pref_time, time_t *valid_time, timeperiod *tperi
 
 
 /* tests if a date range covers just a single day */
-int is_daterange_single_day(daterange *dr)
+static int is_daterange_single_day(daterange *dr)
 {
 
 	if (dr == NULL)
@@ -928,7 +932,7 @@ int is_daterange_single_day(daterange *dr)
 
 
 /* returns a time (midnight) of particular (3rd, last) day in a given month */
-time_t calculate_time_from_day_of_month(int year, int month, int monthday)
+static time_t calculate_time_from_day_of_month(int year, int month, int monthday)
 {
 	time_t midnight;
 	int day = 0;
@@ -998,7 +1002,7 @@ time_t calculate_time_from_day_of_month(int year, int month, int monthday)
 
 
 /* returns a time (midnight) of particular (3rd, last) weekday in a given month */
-time_t calculate_time_from_weekday_of_month(int year, int month, int weekday, int weekday_offset)
+static time_t calculate_time_from_weekday_of_month(int year, int month, int weekday, int weekday_offset)
 {
 	time_t midnight;
 	int days = 0;
