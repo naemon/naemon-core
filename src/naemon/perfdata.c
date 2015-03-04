@@ -4,13 +4,32 @@
 #include "macros.h"
 #include "objects_command.h"
 #include "events.h"
-#include "globals.h"
 #include "logging.h"
 #include "workers.h"
 #include "utils.h"
+#include "nm_alloc.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <string.h>
+
+int     perfdata_timeout;
+char    *host_perfdata_command = NULL;
+char    *service_perfdata_command = NULL;
+char    *host_perfdata_file_template = NULL;
+char    *service_perfdata_file_template = NULL;
+char    *host_perfdata_file = NULL;
+char    *service_perfdata_file = NULL;
+int     host_perfdata_file_append = TRUE;
+int     service_perfdata_file_append = TRUE;
+int     host_perfdata_file_pipe = FALSE;
+int     service_perfdata_file_pipe = FALSE;
+unsigned long host_perfdata_file_processing_interval = 0L;
+unsigned long service_perfdata_file_processing_interval = 0L;
+char    *host_perfdata_file_processing_command = NULL;
+char    *service_perfdata_file_processing_command = NULL;
+int     host_perfdata_process_empty_results = DEFAULT_HOST_PERFDATA_PROCESS_EMPTY_RESULTS;
+int     service_perfdata_process_empty_results = DEFAULT_SERVICE_PERFDATA_PROCESS_EMPTY_RESULTS;
 
 static command *host_perfdata_command_ptr = NULL;
 static command *service_perfdata_command_ptr = NULL;

@@ -15,6 +15,7 @@
 #include "events.h"
 #include "logging.h"
 #include "globals.h"
+#include "perfdata.h"
 #include "nm_alloc.h"
 #include <sys/types.h>
 #include <dirent.h>

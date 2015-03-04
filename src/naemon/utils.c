@@ -22,6 +22,7 @@
 #include "defaults.h"
 #include "globals.h"
 #include "nm_alloc.h"
+#include "perfdata.h"
 #include <assert.h>
 #include <limits.h>
 #include <sys/types.h>
@@ -162,26 +163,6 @@ double high_host_flap_threshold = DEFAULT_HIGH_HOST_FLAP_THRESHOLD;
 char *use_timezone = NULL;
 
 int allow_empty_hostgroup_assignment = DEFAULT_ALLOW_EMPTY_HOSTGROUP_ASSIGNMENT;
-
-/*** perfdata variables ***/
-int     perfdata_timeout;
-char    *host_perfdata_command = NULL;
-char    *service_perfdata_command = NULL;
-char    *host_perfdata_file_template = NULL;
-char    *service_perfdata_file_template = NULL;
-char    *host_perfdata_file = NULL;
-char    *service_perfdata_file = NULL;
-int     host_perfdata_file_append = TRUE;
-int     service_perfdata_file_append = TRUE;
-int     host_perfdata_file_pipe = FALSE;
-int     service_perfdata_file_pipe = FALSE;
-unsigned long host_perfdata_file_processing_interval = 0L;
-unsigned long service_perfdata_file_processing_interval = 0L;
-char    *host_perfdata_file_processing_command = NULL;
-char    *service_perfdata_file_processing_command = NULL;
-int     host_perfdata_process_empty_results = DEFAULT_HOST_PERFDATA_PROCESS_EMPTY_RESULTS;
-int     service_perfdata_process_empty_results = DEFAULT_SERVICE_PERFDATA_PROCESS_EMPTY_RESULTS;
-/*** end perfdata variables */
 
 static long long check_file_size(char *, unsigned long, struct rlimit);
 
