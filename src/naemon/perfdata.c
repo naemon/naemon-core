@@ -6,7 +6,6 @@
 #include "events.h"
 #include "logging.h"
 #include "workers.h"
-#include "utils.h"
 #include "nm_alloc.h"
 #include <sys/types.h>
 #include <sys/stat.h>

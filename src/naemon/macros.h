@@ -12,6 +12,7 @@
 #include "objects_contactgroup.h"
 #include "objects_service.h"
 #include "objects_servicegroup.h"
+#include "objects_command.h"
 
 
 /****************** LENGTH LIMITATIONS ****************/
@@ -221,6 +222,9 @@ int process_macros(char *, char **, int);
 
 /* thread-safe version of the above */
 int process_macros_r(nagios_macros *mac, char *, char **, int);
+
+/* given a raw command line, determine the actual command to run */
+int get_raw_command_line_r(nagios_macros *mac, command *, char *, char **, int);
 
 /*
  * These functions updates *mac with the values from

@@ -119,6 +119,74 @@ static int grab_custom_object_macro_r(nagios_macros *mac, char *macro_name, cust
 	return result;
 }
 
+/* given a "raw" command, return the "expanded" or "whole" command line */
+int get_raw_command_line_r(nagios_macros *mac, command *cmd_ptr, char *cmd, char **full_command, int macro_options)
+{
+	char temp_arg[MAX_COMMAND_BUFFER] = "";
+	char *arg_buffer = NULL;
+	register int x = 0;
+	register int y = 0;
+	register int arg_index = 0;
+
+	/* clear the argv macros */
+	clear_argv_macros_r(mac);
+
+	/* make sure we've got all the requirements */
+	if (cmd_ptr == NULL || full_command == NULL)
+		return ERROR;
+
+	log_debug_info(DEBUGL_COMMANDS | DEBUGL_CHECKS | DEBUGL_MACROS, 2, "Raw Command Input: %s\n", cmd_ptr->command_line);
+
+	/* get the full command line */
+	*full_command = nm_strdup((cmd_ptr->command_line == NULL) ? "" : cmd_ptr->command_line);
+
+	/* XXX: Crazy indent */
+	/* get the command arguments */
+	if (cmd != NULL) {
+
+		/* skip the command name (we're about to get the arguments)... */
+		for (arg_index = 0;; arg_index++) {
+			if (cmd[arg_index] == '!' || cmd[arg_index] == '\x0')
+				break;
+		}
+
+		/* get each command argument */
+		for (x = 0; x < MAX_COMMAND_ARGUMENTS; x++) {
+
+			/* we reached the end of the arguments... */
+			if (cmd[arg_index] == '\x0')
+				break;
+
+			/* get the next argument */
+			/* can't use strtok(), as that's used in process_macros... */
+			for (arg_index++, y = 0; y < (int)sizeof(temp_arg) - 1; arg_index++) {
+
+				/* handle escaped argument delimiters */
+				if (cmd[arg_index] == '\\' && cmd[arg_index + 1] == '!') {
+					arg_index++;
+				} else if (cmd[arg_index] == '!' || cmd[arg_index] == '\x0') {
+					/* end of argument */
+					break;
+				}
+
+				/* copy the character */
+				temp_arg[y] = cmd[arg_index];
+				y++;
+			}
+			temp_arg[y] = '\x0';
+
+			/* ADDED 01/29/04 EG */
+			/* process any macros we find in the argument */
+			process_macros_r(mac, temp_arg, &arg_buffer, macro_options);
+
+			mac->argv[x] = arg_buffer;
+		}
+	}
+
+	log_debug_info(DEBUGL_COMMANDS | DEBUGL_CHECKS | DEBUGL_MACROS, 2, "Expanded Command Output: %s\n", *full_command);
+
+	return OK;
+}
 
 /* grab macros that are specific to a particular host */
 int grab_host_macros_r(nagios_macros *mac, host *hst)
