@@ -449,7 +449,7 @@ static int xpddefault_update_service_performance_data_file(nagios_macros *mac, s
 	if (service_perfdata_file_template == NULL)
 		return OK;
 
-	nm_asprintf(&raw_output, "%s\n", host_perfdata_file_template);
+	nm_asprintf(&raw_output, "%s\n", service_perfdata_file_template);
 	log_debug_info(DEBUGL_PERFDATA, 2, "Raw service performance data file output: %s", raw_output);
 
 	/* process any macros in the raw output */
