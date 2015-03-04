@@ -115,7 +115,6 @@ common_sources = \
 	src/naemon/utils.c src/naemon/utils.h \
 	src/naemon/workers.c src/naemon/workers.h \
 	src/naemon/xodtemplate.c src/naemon/xodtemplate.h \
-	src/naemon/xpddefault.c src/naemon/xpddefault.h \
 	src/naemon/xrddefault.c src/naemon/xrddefault.h \
 	src/naemon/xsddefault.c src/naemon/xsddefault.h \
 	src/naemon/nagios.h src/naemon/naemon.h \

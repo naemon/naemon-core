@@ -5,7 +5,6 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
-#include "common.h"
 #include "objects_host.h"
 #include "objects_service.h"
 
