@@ -161,7 +161,7 @@ void log_notification_suppression_reason(enum NotificationSuppressionReason reas
 		modattr = ((struct service *)primary_obj)->modified_attributes;
 		break;
 	case NS_TYPE_SERVICE_CONTACT:
-		nm_asprintf(&objname, "%s for %s;%s",
+		nm_asprintf(&objname, "%s;%s;%s",
 				((contact *)primary_obj)->name,
 				((service *)secondary_obj)->host_name,
 				((service *)secondary_obj)->description
@@ -172,7 +172,7 @@ void log_notification_suppression_reason(enum NotificationSuppressionReason reas
 		modattr = ((struct service *)secondary_obj)->modified_attributes;
 		break;
 	case NS_TYPE_HOST_CONTACT:
-		nm_asprintf(&objname, "%s for %s",
+		nm_asprintf(&objname, "%s;%s",
 				((contact *)primary_obj)->name,
 				((host *)secondary_obj)->name
 				);
