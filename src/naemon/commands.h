@@ -6,6 +6,7 @@
 #endif
 
 #include <time.h>
+#include <glib.h>
 #include "objects_contact.h"
 #include "objects_host.h"
 #include "objects_service.h"
@@ -13,18 +14,22 @@
 NAGIOS_BEGIN_DECL
 
 /**************************** COMMAND ERRORS *****************************/
-#define CMD_ERROR_OK 0 /* No errors encountered */
-#define CMD_ERROR_UNKNOWN_COMMAND 1 /* Unknown/unsupported command */
-#define CMD_ERROR_MALFORMED_COMMAND 2 /* Command malformed/missing timestamp? */
-#define CMD_ERROR_INTERNAL_ERROR 3 /* Internal error */
-#define CMD_ERROR_FAILURE 4 /* Command routine failed */
-#define CMD_ERROR_PARSE_MISSING_ARG 5 /*Missing required argument for command*/
-#define CMD_ERROR_PARSE_EXCESS_ARG 6 /*Too many arguments for command*/
-#define CMD_ERROR_PARSE_TYPE_MISMATCH 7 /*Wrong type for argument, the argument could not be parsed*/
-#define CMD_ERROR_UNSUPPORTED_ARG_TYPE 8 /*Unsupported argument type - indicative of implementation bug*/
-#define CMD_ERROR_VALIDATION_FAILURE 9 /*Invalid value for argument (validator failed)*/
-#define CMD_ERROR_UNSUPPORTED_PARSE_MODE 10 /*Unsupported parse mode*/
-#define CMD_ERROR_CUSTOM_COMMAND 11 /*Backwards compat. custom command*/
+enum NmCommandError {
+	CMD_ERROR_OK  = 0, /* No errors encountered */
+	CMD_ERROR_UNKNOWN_COMMAND, /* Unknown/unsupported command */
+	CMD_ERROR_MALFORMED_COMMAND, /* Command malformed/missing timestamp? */
+	CMD_ERROR_INTERNAL_ERROR, /* Internal error */
+	CMD_ERROR_FAILURE, /* Command routine failed */
+	CMD_ERROR_PARSE_MISSING_ARG, /*Missing required argument for command*/
+	CMD_ERROR_PARSE_EXCESS_ARG, /*Too many arguments for command*/
+	CMD_ERROR_PARSE_TYPE_MISMATCH, /*Wrong type for argument, the argument could not be parsed*/
+	CMD_ERROR_UNSUPPORTED_ARG_TYPE, /*Unsupported argument type - indicative of implementation bug*/
+	CMD_ERROR_VALIDATION_FAILURE, /*Invalid value for argument (validator failed)*/
+	CMD_ERROR_UNSUPPORTED_PARSE_MODE, /*Unsupported parse mode*/
+	CMD_ERROR_CUSTOM_COMMAND, /*Backwards compat. custom command*/
+};
+#define NM_COMMAND_ERROR nm_command_error_quark ()
+GQuark nm_command_error_quark (void);
 
 #define GV(NAME) command_argument_get_value(ext_command, NAME)
 #define GV_INT(NAME) (*(int *) GV(NAME))
@@ -57,13 +62,6 @@ typedef enum {
 	TIMESTAMP,
 	DOUBLE
 } arg_t;
-
-/**
- * Convert a numeric command error code to a text string. The error message
- * is in English.
- * @param error_code The error code to convert
- */
-const char *cmd_error_strerror(int error_code);
 
 /*** PARSE MODES ***/
 
@@ -185,7 +183,7 @@ void command_destroy(struct external_command * command);
  * @param error Pointer to an integer in which to store error codes on failure. This code can be passed to cmd_error_strerror() for conversion to a human readable message.
  * @return The parsed command, or NULL on failure.
  */
-struct external_command /*@null@*/ * command_parse(const char * cmdstr, int mode, int * error);
+struct external_command /*@null@*/ * command_parse(const char * cmdstr, int mode, GError ** error);
 
 /**
  * Executes the handler associated with a command.
@@ -209,7 +207,7 @@ const char *command_name(const struct external_command * command);
 int open_command_file(void);					/* creates the external command file as a named pipe (FIFO) and opens it for reading */
 int close_command_file(void);					/* closes and deletes the external command file (FIFO) */
 
-int process_external_command(char *cmd, int mode); /* processes an external command given mode flags */
+int process_external_command(char *cmd, int mode, GError **error); /* processes an external command given mode flags */
 int process_external_command1(char *cmd); /* DEPRECATED: top-level external old style command processor */
 int process_external_command2(int cmd, time_t entry_time, char *args);  /* DEPRECATED: for backwards NEB compatibility only */
 int process_external_commands_from_file(char *, int); /* process external commands in a file */

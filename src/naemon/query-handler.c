@@ -345,11 +345,13 @@ static int qh_command(int sd, char *buf, unsigned int len)
 			mode = COMMAND_SYNTAX_KV;
 		}
 		if(mode != 0) {
-			int res = process_external_command(space, mode);
+			GError *error = NULL;
+			int res = process_external_command(space, mode, &error);
 			if (res == OK) {
 				return 200;
 			} else {
-				nsock_printf_nul(sd, "400: %s", cmd_error_strerror(res));
+				nsock_printf_nul(sd, "400: %s", error->message);
+				g_clear_error(&error);
 				return 0;
 			}
 		}

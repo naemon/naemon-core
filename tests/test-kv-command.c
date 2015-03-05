@@ -30,20 +30,20 @@ static void test_unload_commands(void) {
 
 START_TEST( kv_command_parsing) {
 	struct external_command *extcmd;
-	int error;
+	GError *error = NULL;
 	void *argval_ptr;
 
-	error = -1;
 	extcmd = command_parse("command=TEST_COMMAND;author=1;comment=boll\\;kaka;boll", COMMAND_SYNTAX_KV, &error);
-	ck_assert_int_eq(CMD_ERROR_MALFORMED_COMMAND, error);
+	ck_assert(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_MALFORMED_COMMAND));
 	ck_assert(extcmd == NULL);
+	g_clear_error(&error);
 
-	error = -1;
 	extcmd = command_parse("command=TEST_COMMAND;something_bool=1;author=1;comment=boll\\;kaka", COMMAND_SYNTAX_KV, &error);
-	ck_assert_int_eq(CMD_ERROR_OK, error);
+	ck_assert(error == NULL);
 	ck_assert(extcmd != NULL);
 	ck_assert_str_eq(extcmd->name, "TEST_COMMAND");
 	ck_assert(extcmd->handler == test_test_command_handler);
+	g_clear_error(&error);
 
 	argval_ptr = command_argument_get_value(extcmd,"something_bool");
 	ck_assert(argval_ptr != NULL);
@@ -63,45 +63,44 @@ END_TEST
 
 START_TEST( kv_command_undefined_command_name) {
 	struct external_command *extcmd;
-	int error;
+	GError *error = NULL;
 
-	error = -1;
 	extcmd = command_parse("somethingnotcommand=TEST_COMMAND;comment=boll\\;kaka", COMMAND_SYNTAX_KV, &error);
-	ck_assert_int_eq(CMD_ERROR_UNKNOWN_COMMAND, error);
+	ck_assert(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_UNKNOWN_COMMAND));
 	ck_assert(extcmd == NULL);
+	g_clear_error(&error);
 }
 END_TEST
 
 START_TEST( kv_command_undefined_variable) {
 	struct external_command *extcmd;
-	int error;
+	GError *error = NULL;
 
-	error = -1;
 	extcmd = command_parse("command=TEST_COMMAND;comment=boll\\;kaka", COMMAND_SYNTAX_KV, &error);
-	ck_assert_int_eq(CMD_ERROR_PARSE_MISSING_ARG, error);
+	ck_assert(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_PARSE_MISSING_ARG));
 	ck_assert(extcmd == NULL);
+	g_clear_error(&error);
 }
 END_TEST
 
 START_TEST( kv_command_variable_validator) {
 	struct external_command *extcmd;
-	int error;
+	GError *error = NULL;
 
-	error = -1;
 	extcmd = command_parse("command=TEST_COMMAND;something_bool=1;author=17;comment=boll", COMMAND_SYNTAX_KV, &error);
-	ck_assert_int_eq(CMD_ERROR_VALIDATION_FAILURE, error);
+	ck_assert(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_VALIDATION_FAILURE));
 	ck_assert(extcmd == NULL);
+	g_clear_error(&error);
 }
 END_TEST
 
 START_TEST( kv_command_raw_arguments_set) {
 	struct external_command *extcmd;
-	int error;
+	GError *error = NULL;
 	const char *raw_args;
 
-	error = -1;
 	extcmd = command_parse("command=TEST_COMMAND;something_bool=1;author=2;comment=kaka", COMMAND_SYNTAX_KV, &error);
-	ck_assert_int_eq(CMD_ERROR_OK, error);
+	ck_assert(error == NULL);
 	ck_assert(extcmd != NULL);
 
 	raw_args = command_raw_arguments(extcmd);

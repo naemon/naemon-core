@@ -28,7 +28,6 @@
 #include <poll.h>
 #include <glib.h>
 
-
 static int command_file_fd;
 static FILE *command_file_fp;
 static int command_file_created = FALSE;
@@ -224,13 +223,14 @@ static int command_input_handler(int sd, int events, void *discard)
 		return 0;
 	}
 	while (!nm_bufferqueue_unshift_to_delim(command_worker.bq, "\n", 1, &size, (void **)&buf)) {
+		GError *error = NULL;
 		buf[size - 1] = 0;
 		if (buf[0] == '[') {
 			/* raw external command */
 			log_debug_info(DEBUGL_COMMANDS, 1, "Read raw external command '%s'\n", buf);
 		}
-		if ((cmd_ret = process_external_command1(buf)) != CMD_ERROR_OK) {
-			nm_log(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING, "External command error: %s\n", cmd_error_strerror(cmd_ret));
+		if ((cmd_ret = process_external_command(buf, COMMAND_SYNTAX_NOKV, &error)) != CMD_ERROR_OK) {
+			nm_log(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING, "External command error: %s\n", error->message);
 		}
 		free(buf);
 	}
@@ -361,6 +361,12 @@ err_close:
 	command_worker.sd = -1;
 	return ERROR;
 }
+
+GQuark nm_command_error_quark (void)
+{
+  return g_quark_from_static_string ("nm-command-error-quark");
+}
+
 struct arg_val {
 	arg_t type;
 	void * val;
@@ -412,6 +418,27 @@ static size_t type_sz(arg_t type) {
 		default: return -1;
 	}
 }
+
+static const char * arg_t2str(arg_t type)
+{
+	switch(type) {
+		case CONTACT: return "contact";
+		case CONTACTGROUP: return "contactgroup";
+		case TIMEPERIOD: return "timeperiod";
+		case HOST: return "host";
+		case HOSTGROUP: return "hostgroup";
+		case SERVICE: return "service";
+		case SERVICEGROUP: return "servicegroup";
+		case STRING: return "string";
+		case BOOL: return "bool";
+		case INTEGER: return "integer";
+		case ULONG: return "ulong";
+		case TIMESTAMP: return "timestamp";
+		case DOUBLE: return "double";
+		default: return "Unknown type";
+	}
+}
+
 struct external_command * command_lookup(const char *ext_command)
 {
 	int i;
@@ -640,7 +667,7 @@ static int validate_bool(void *value)
 	return ret;
 }
 
-static unsigned long parse_ulong(const char *str, int *error)
+static unsigned long parse_ulong(const char *str, GError **error)
 {
 	unsigned long ret = 0;
 	char *endptr;
@@ -648,86 +675,108 @@ static unsigned long parse_ulong(const char *str, int *error)
 	*error = 0;
 	ret = strtoul(str, &endptr, 10);
 	if(errno != 0) {
-		/*error when parsing*/
-		nm_log(NSLOG_RUNTIME_ERROR, "Parse error: '%s' while parsing ulong '%s'", strerror(errno), str);
-		*error = 1;
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_PARSE_TYPE_MISMATCH,
+			"'%s' while parsing ulong '%s'",
+			strerror(errno),
+			str);
 	}
 	else if (endptr == str) {
-		/*no digits at all*/
-		nm_log(NSLOG_RUNTIME_WARNING, "Parse error: No digits found in ulong '%s'", str);
-		*error = 1;
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_PARSE_TYPE_MISMATCH,
+			"No digits found in ulong '%s'", str);
 	}
 	else if (*endptr != '\0') {
-		/*invalid character*/
-		nm_log(NSLOG_RUNTIME_WARNING, "Parse error: Invalid characters (%s) in ulong '%s'", endptr, str);
-		*error = 1;
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_PARSE_TYPE_MISMATCH,
+			"Invalid characters (%s) in ulong '%s'", endptr, str);
 	}
 	return ret;
 }
 
-static double parse_double(const char *str, int *error) {
+static double parse_double(const char *str, GError **error) {
 	double ret = 0.0;
 	char *endptr = NULL;
 	errno = 0;
 	*error = 0;
 	ret = strtod(str, &endptr);
 	if (errno != 0) {
-		/*don't bother checking whether this was an overflow/underflow, this error should be enough*/
-		nm_log(NSLOG_RUNTIME_ERROR, "Parse error: '%s' while parsing double '%s'", strerror(errno), str);
-		*error = 1;
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_PARSE_TYPE_MISMATCH,
+			"'%s' while parsing double '%s'", strerror(errno), str);
 	}
 	else if(endptr == str) {
-		/*no digits*/
-		nm_log(NSLOG_RUNTIME_WARNING, "Parse error: No digits found in double '%s'", str);
-		*error = 1;
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_PARSE_TYPE_MISMATCH,
+			"No digits found in double '%s'", str);
 	}
 	else if (*endptr != '\0') {
-		/*invalid character*/
-		nm_log(NSLOG_RUNTIME_WARNING, "Parse error: Invalid characters (%s) in double '%s'", endptr, str);
-		*error = 1;
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_PARSE_TYPE_MISMATCH,
+			"Invalid characters (%s) in double '%s'", endptr, str);
 	}
 	return ret;
 }
 
-static int parse_integer(const char *str, int *error) {
+static int parse_integer(const char *str, GError **error) {
 	int ret = 0;
 	char *endptr = NULL;
 	errno = 0;
 	*error = 0;
 	ret = strtol(str, &endptr, 10);
 	if(errno != 0) {
-		/*error when parsing*/
-		nm_log(NSLOG_RUNTIME_ERROR, "Parse error: '%s' while parsing integer '%s'", strerror(errno), str);
-		*error = 1;
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_PARSE_TYPE_MISMATCH,
+			"'%s' while parsing integer '%s'", strerror(errno), str);
 	}
 	else if (endptr == str) {
-		/*no digits at all*/
-		nm_log(NSLOG_RUNTIME_WARNING, "Parse error: No digits found in integer '%s'", str);
-		*error = 1;
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_PARSE_TYPE_MISMATCH,
+			"No digits found in integer '%s'", str);
 	}
 	else if (*endptr != '\0') {
-		/*invalid character*/
-		nm_log(NSLOG_RUNTIME_WARNING, "Parse error: Invalid characters (%s) in integer '%s'", endptr, str);
-		*error = 1;
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_PARSE_TYPE_MISMATCH,
+			"Invalid characters (%s) in integer '%s'", endptr, str);
 	}
 	return ret;
 }
 
-static struct external_command * parse_kv_command(const char * cmdstr, int *error)
+static struct external_command * parse_kv_command(const char * cmdstr, GError **error)
 {
 	struct kvvec *kvv;
 	struct external_command *stored_command;
 	struct external_command *extcmd = NULL;
 	char *cmd_name = NULL;
-	GString *raw_args;
+	GString *raw_args = NULL;
 	int i;
-	int parse_error;
-
-	*error = CMD_ERROR_OK;
+	GError *parse_error = NULL;
 
 	kvv = ekvstr_to_kvvec(cmdstr);
 	if (kvv == NULL) {
-		*error = CMD_ERROR_MALFORMED_COMMAND;
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_MALFORMED_COMMAND,
+			"Command string is not a valid kvvec: '%s'", cmdstr);
 		goto cleanup;
 	}
 
@@ -736,13 +785,21 @@ static struct external_command * parse_kv_command(const char * cmdstr, int *erro
 
 	cmd_name = kvvec_fetch_str_str(kvv, "command");
 	if (cmd_name == NULL) {
-		*error = CMD_ERROR_UNKNOWN_COMMAND;
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_UNKNOWN_COMMAND,
+			"No command name found - expected key 'command'");
 		goto cleanup;
 	}
 
 	stored_command = command_lookup(cmd_name);
 	if(stored_command == NULL) {
-		*error = CMD_ERROR_UNKNOWN_COMMAND;
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_UNKNOWN_COMMAND,
+			"Couldn't find a command named '%s'", cmd_name);
 		goto cleanup;
 	}
 
@@ -754,13 +811,16 @@ static struct external_command * parse_kv_command(const char * cmdstr, int *erro
 		char *tmpval;
 		tmpval = kvvec_fetch_str_str(kvv, extcmd->arguments[i]->name);
 		if (tmpval == NULL) {
-			*error = CMD_ERROR_PARSE_MISSING_ARG;
+			g_set_error(
+				error,
+				NM_COMMAND_ERROR,
+				CMD_ERROR_PARSE_MISSING_ARG,
+				"Missing argument %s", extcmd->arguments[i]->name);
 			command_destroy(extcmd);
 			extcmd = NULL;
 			goto cleanup;
 		}
 
-		parse_error = 0;
 		switch (extcmd->arguments[i]->argval->type) {
 		case SERVICE:
 			/* TODO: Test if string contains ; */
@@ -802,20 +862,29 @@ static struct external_command * parse_kv_command(const char * cmdstr, int *erro
 			*(double *)(extcmd->arguments[i]->argval->val) = parse_double(tmpval, &parse_error);
 			break;
 		default:
-			*error = CMD_ERROR_UNSUPPORTED_ARG_TYPE;
+			g_set_error(
+				error,
+				NM_COMMAND_ERROR,
+				CMD_ERROR_UNSUPPORTED_ARG_TYPE,
+				"Got unknown type code '%i'. This should never happen.",
+				extcmd->arguments[i]->argval->type);
 			command_destroy(extcmd);
 			extcmd = NULL;
 			goto cleanup;
 		}
 		if (parse_error) {
-			*error = CMD_ERROR_PARSE_TYPE_MISMATCH;
+			g_propagate_prefixed_error(error, parse_error, "Couldn't parse %s argument %s: ", arg_t2str(extcmd->arguments[i]->argval->type), extcmd->arguments[i]->name);
 			command_destroy(extcmd);
 			extcmd = NULL;
 			goto cleanup;
 		}
 		if (!(extcmd->arguments[i]->validator(extcmd->arguments[i]->argval->val)))
 		{
-			*error = CMD_ERROR_VALIDATION_FAILURE;
+			g_set_error(
+				error,
+				NM_COMMAND_ERROR,
+				CMD_ERROR_VALIDATION_FAILURE,
+				"Failed validation of %s as type %s", extcmd->arguments[i]->name, arg_t2str(extcmd->arguments[i]->argval->type));
 			command_destroy(extcmd);
 			extcmd = NULL;
 			goto cleanup;
@@ -826,42 +895,24 @@ static struct external_command * parse_kv_command(const char * cmdstr, int *erro
 		raw_args = g_string_append(raw_args, tmpval);
 	}
 	extcmd->raw_arguments = nm_strdup(raw_args->str);
-	g_string_free(raw_args, TRUE);
 
 cleanup:
-
+	if (raw_args)
+		g_string_free(raw_args, TRUE);
 	kvvec_destroy(kvv, KVVEC_FREE_ALL);
 	return extcmd;
 }
 
 
-static const char * arg_t2str(arg_t type)
-{
-	switch(type) {
-		case CONTACT: return "CONTACT";
-		case CONTACTGROUP: return "CONTACTGROUP";
-		case TIMEPERIOD: return "TIMEPERIOD";
-		case HOST: return "HOST";
-		case HOSTGROUP: return "HOSTGROUP";
-		case SERVICE: return "SERVICE";
-		case SERVICEGROUP: return "SERVICEGROUP";
-		case STRING: return "STRING";
-		case BOOL: return "BOOL";
-		case INTEGER: return "INTEGER";
-		case ULONG: return "ULONG";
-		case TIMESTAMP: return "TIMESTAMP";
-		case DOUBLE: return "DOUBLE";
-		default: return "Unknwon type";
-	}
-}
-static int parse_arguments(const char *s, struct external_command_argument **args, int argc)
+static int parse_arguments(const char *s, struct external_command_argument **args, int argc, GError **error)
 {
 	char *scopy, *next, *temp = NULL;
-	int i = 0, error = 0, ret = CMD_ERROR_OK;
+	int i = 0;
+	GError *parse_error = NULL;
 
 	scopy = nm_strdup(s);
 	/* stash ptr start for free()ing, since *s is const and we copy it */
-	for (temp = scopy; temp && ret == CMD_ERROR_OK; i++, temp = next ? next + 1 : NULL) {
+	for (temp = scopy; temp; i++, temp = next ? next + 1 : NULL) {
 		next = strchr(temp, ';');
 		if (next && i < argc) {
 			*next = '\0';
@@ -877,17 +928,28 @@ static int parse_arguments(const char *s, struct external_command_argument **arg
 		}
 
 		if (i >= argc) {
-			/* Too many arguments */
-			if (argc)
-				ret = CMD_ERROR_PARSE_EXCESS_ARG;
-			break;
+			if (argc) {
+				g_set_error(
+					error,
+					NM_COMMAND_ERROR,
+					CMD_ERROR_PARSE_EXCESS_ARG,
+					"Too many arguments to command - expected %i", argc);
+				goto cleanup;
+			} else {
+				/* not sure why, but apparently, this is not an error for legacy reasons? */
+				break;
+			}
 		}
 
 		/* empty argument, so check for default value */
 		if (!*temp) {
 			if (NULL == args[i]->argval->val) {
-				/*Nope, raise missing arg error*/
-				ret = CMD_ERROR_PARSE_MISSING_ARG;
+				g_set_error(
+					error,
+					NM_COMMAND_ERROR,
+					CMD_ERROR_PARSE_MISSING_ARG,
+					"No value for argument %s provided, and no default found", args[i]->name);
+				goto cleanup;
 			}
 			continue;
 		}
@@ -916,8 +978,11 @@ static int parse_arguments(const char *s, struct external_command_argument **arg
 			case SERVICE:
 				/* look-ahead for service name*/
 				if (!next) {
-					/*No service name*/
-					ret = CMD_ERROR_PARSE_TYPE_MISMATCH;
+					g_set_error(
+						error,
+						NM_COMMAND_ERROR,
+						CMD_ERROR_PARSE_TYPE_MISMATCH,
+						"No service description provided at argument %d", i + 1);
 					break;
 				}
 				*next = ';';
@@ -927,49 +992,45 @@ static int parse_arguments(const char *s, struct external_command_argument **arg
 				args[i]->argval->val = nm_strdup(temp);
 				break;
 			case BOOL:
-				*(int *)(args[i]->argval->val) = parse_integer(temp, &error);
-				if (error) {
-					ret = CMD_ERROR_PARSE_TYPE_MISMATCH;
-				}
+				*(int *)(args[i]->argval->val) = parse_integer(temp, &parse_error);
 				break;
 			case INTEGER:
-				*(int *)(args[i]->argval->val) = parse_integer(temp, &error);
-				if (error) {
-					ret = CMD_ERROR_PARSE_TYPE_MISMATCH;
-				}
+				*(int *)(args[i]->argval->val) = parse_integer(temp, &parse_error);
 				break;
 			case ULONG:
-				*(unsigned long *)(args[i]->argval->val) = parse_ulong(temp, &error);
-				if (error) {
-					ret = CMD_ERROR_PARSE_TYPE_MISMATCH;
-				}
+				*(unsigned long *)(args[i]->argval->val) = parse_ulong(temp, &parse_error);
 				break;
 			case TIMESTAMP:
-				*(time_t *)(args[i]->argval->val) = (time_t)parse_ulong(temp, &error);
-				if (error) {
-					ret = CMD_ERROR_PARSE_TYPE_MISMATCH;
-				}
+				*(time_t *)(args[i]->argval->val) = (time_t)parse_ulong(temp, &parse_error);
 				break;
 			case DOUBLE:
-				*(double *)(args[i]->argval->val) = parse_double(temp, &error);
-				if (error) {
-					ret = CMD_ERROR_PARSE_TYPE_MISMATCH;
-				}
+				*(double *)(args[i]->argval->val) = parse_double(temp, &parse_error);
 				break;
 			default:
-				ret = CMD_ERROR_UNSUPPORTED_ARG_TYPE;
+				g_set_error(
+					error,
+					NM_COMMAND_ERROR,
+					CMD_ERROR_UNSUPPORTED_ARG_TYPE,
+					"Got unknown type code '%i' for argument %s. This should never happen.",
+					args[i]->argval->type, args[i]->name);
 				break;
+		}
+		if (parse_error) {
+			g_propagate_prefixed_error(error, parse_error, "Couldn't parse %s argument %s (argument %d): ", arg_t2str(args[i]->argval->type), args[i]->name, i);
+			goto cleanup;
 		}
 		if (!(args[i]->validator(args[i]->argval->val)))
 		{
-			ret = CMD_ERROR_VALIDATION_FAILURE;
+			g_set_error(
+				error,
+				NM_COMMAND_ERROR,
+				CMD_ERROR_VALIDATION_FAILURE,
+				"Failed validation of %s as type %s (argument %d)", args[i]->name, arg_t2str(args[i]->argval->type), i);
+			goto cleanup;
 		}
 	}
 
-	free(scopy);
-
-	if (ret != CMD_ERROR_OK)
-		return ret;
+	nm_free(scopy);
 
 	/* discount trailing default values */
 	while (argc > i && args[i]->argval->val) {
@@ -977,10 +1038,19 @@ static int parse_arguments(const char *s, struct external_command_argument **arg
 	}
 
 	if (argc > i) { /* Still expecting arguments?*/
-		return CMD_ERROR_PARSE_MISSING_ARG;
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_PARSE_MISSING_ARG,
+			"Missing argument: expected %d arguments, found %d", argc, i);
+		goto cleanup;
 	}
 
-	return ret;
+	return 0;
+
+cleanup:
+	nm_free(scopy);
+	return -1;
 }
 
 int command_execute_handler(const struct external_command * ext_command)
@@ -990,32 +1060,48 @@ int command_execute_handler(const struct external_command * ext_command)
 	return ext_command->handler(ext_command, ext_command->entry_time);
 }
 
-static struct external_command * parse_nokv_command(const char * cmdstr, int *error)
+static struct external_command * parse_nokv_command(const char * cmdstr, GError **error)
 {
 	char *temp_ptr = NULL, *args = NULL;
-	int parse_error;
+	GError *parse_error;
 	struct external_command * ext_command = NULL, *command2 = NULL;
 	char *cmd = NULL;
 	char *cmd_name = NULL;
 	time_t entry_time = 0L;
-	*error = CMD_ERROR_OK;
 	if (cmdstr == NULL) {
-		*error = CMD_ERROR_MALFORMED_COMMAND;
-		return ext_command;
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_MALFORMED_COMMAND,
+			"Failed to find a command string to parse");
+		return NULL;
 	}
 	cmd = nm_strdup(cmdstr);
 	/* get the command entry time */
 	if((temp_ptr = my_strtok(cmd, "[")) == NULL || (temp_ptr = my_strtok(NULL, "]")) == NULL) {
-		*error = CMD_ERROR_MALFORMED_COMMAND;
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_MALFORMED_COMMAND,
+			"Commands must begin with a timestamp inside square brackets");
 	}
 	else {
 		entry_time = (time_t)parse_ulong(temp_ptr, &parse_error);
-		if (parse_error != 0) {
-			*error = CMD_ERROR_MALFORMED_COMMAND;
+		if (parse_error) {
+			g_set_error(
+				error,
+				NM_COMMAND_ERROR,
+				CMD_ERROR_MALFORMED_COMMAND,
+				"Failed to parse command timestamp: %s", parse_error->message);
+			g_clear_error(&parse_error);
 		}
 		/* get the command name */
 		else if((temp_ptr = my_strtok(NULL, ";")) == NULL) {
-			*error = CMD_ERROR_MALFORMED_COMMAND;
+			g_set_error(
+				error,
+				NM_COMMAND_ERROR,
+				CMD_ERROR_MALFORMED_COMMAND,
+				"Couldn't find command name: missing semicolon in command string");
 		}
 		else {
 			cmd_name = nm_strdup(temp_ptr + 1);
@@ -1030,24 +1116,33 @@ static struct external_command * parse_nokv_command(const char * cmdstr, int *er
 			}
 			if (cmd_name[0] == '_') {
 				/*command*/
-				*error = CMD_ERROR_CUSTOM_COMMAND;
+				g_set_error(
+					error,
+					NM_COMMAND_ERROR,
+					CMD_ERROR_CUSTOM_COMMAND,
+					"This is a custom command - it's not handled by naemon core");
 				command2 = command_create(cmd_name, NULL, "A custom command", NULL);
 				command2->entry_time = entry_time;
 				command2->raw_arguments = nm_strdup(args);
 			}
 
-			if (*error == CMD_ERROR_OK) {
+			else {
 				/* Find the command */
 				if ((ext_command = command_lookup(cmd_name)) == NULL) {
-					*error = CMD_ERROR_UNKNOWN_COMMAND;
+					g_set_error(
+						error,
+						NM_COMMAND_ERROR,
+						CMD_ERROR_UNKNOWN_COMMAND,
+						"Unknown command '%s'", cmd_name);
 				}
 				else {
 					/* Parse & verify arguments*/
 					command2 = external_command_copy(ext_command);
 					command2->entry_time = entry_time;
 					command2->raw_arguments = nm_strdup(args);
-					*error = parse_arguments(args, command2->arguments, command2->argc);
-					if (*error != CMD_ERROR_OK) {
+					parse_arguments(args, command2->arguments, command2->argc, &parse_error);
+					if (parse_error) {
+						g_propagate_error(error, parse_error);
 						command_destroy(command2);
 						command2 = NULL;
 					}
@@ -1062,35 +1157,48 @@ static struct external_command * parse_nokv_command(const char * cmdstr, int *er
 	return command2;
 }
 
-struct external_command /*@null@*/ * command_parse(const char * cmdstr, int mode, int *error)
+struct external_command /*@null@*/ * command_parse(const char * cmdstr, int mode, GError **error)
 {
+	GError *parse_error = NULL;
 	struct external_command * ext_command;
 	ext_command = NULL;
 	*error = CMD_ERROR_OK;
 	while ((!ext_command) && mode > 0) {
 		if (COMMAND_SYNTAX_NOKV & mode) {
-			ext_command = parse_nokv_command(cmdstr, error);
+			ext_command = parse_nokv_command(cmdstr, &parse_error);
 			mode ^= COMMAND_SYNTAX_NOKV;
 		}
 		else if (COMMAND_SYNTAX_KV & mode) {
-			ext_command = parse_kv_command(cmdstr, error);
+			ext_command = parse_kv_command(cmdstr, &parse_error);
 			mode ^=COMMAND_SYNTAX_KV;
 		}
 		else {
-			nm_log(NSLOG_RUNTIME_WARNING, "Warning: Invalid parse mode (%d) supplied to %s", mode, __func__);
-			*error = CMD_ERROR_UNSUPPORTED_PARSE_MODE;
+			g_set_error(
+				error,
+				NM_COMMAND_ERROR,
+				CMD_ERROR_UNSUPPORTED_PARSE_MODE,
+				"Invalid parse mode (%d) supplied to %s", mode, __func__);
 			return NULL;
 		}
 	}
-	if (ext_command == NULL && *error == CMD_ERROR_OK) {
-		nm_log(NSLOG_RUNTIME_ERROR, "Error: No command parsed but no error code set in %s - this is a bug, please report it", __func__);
-		*error = CMD_ERROR_INTERNAL_ERROR;
+	if (ext_command == NULL && parse_error == NULL) {
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_INTERNAL_ERROR,
+			"Error: No command parsed but no error code set in %s - this is a bug, please report it", __func__);
 	}
 
-	if (ext_command != NULL && *error != CMD_ERROR_OK && *error != CMD_ERROR_CUSTOM_COMMAND) {
-		nm_log(NSLOG_RUNTIME_ERROR, "Error: Command parsed but error code set in %s - this is a bug, please report it", __func__);
-		*error = CMD_ERROR_INTERNAL_ERROR;
+	if (ext_command != NULL && parse_error && !g_error_matches(parse_error, NM_COMMAND_ERROR, CMD_ERROR_CUSTOM_COMMAND)) {
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_INTERNAL_ERROR,
+			"Error: Command parsed but error code set in %s - this is a bug, please report it", __func__);
 	}
+
+	if (parse_error)
+		g_propagate_error(error, parse_error);
 	return ext_command;
 }
 
@@ -3199,7 +3307,8 @@ int process_external_commands_from_file(char *fname, int delete_file)
 
 	/* process all commands in the file */
 	while (1) {
-
+		GError *error = NULL;
+		int cmd_ret;
 		nm_free(input);
 
 		/* read the next line */
@@ -3207,7 +3316,9 @@ int process_external_commands_from_file(char *fname, int delete_file)
 			break;
 
 		/* process the command */
-		process_external_command1(input);
+		if ((cmd_ret = process_external_command(input, COMMAND_SYNTAX_NOKV, &error)) != CMD_ERROR_OK) {
+			nm_log(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING, "External command from file error: %s\n", error->message);
+		}
 	}
 
 	/* close the file */
@@ -3223,21 +3334,27 @@ int process_external_commands_from_file(char *fname, int delete_file)
 /* wrapper for processing old-style external commands */
 int process_external_command1(char *cmd)
 {
-	return process_external_command(cmd, COMMAND_SYNTAX_NOKV);
+	return process_external_command(cmd, COMMAND_SYNTAX_NOKV, NULL);
 }
 
 /* top-level external command processor */
-int process_external_command(char *cmd, int mode)
+int process_external_command(char *cmd, int mode, GError **error)
 {
 	char *temp_buffer = NULL;
 	char *args = NULL;
 	char *name = NULL;
 	int id = CMD_NONE;
-	int external_command_ret = OK;
+	GError *external_command_ret = NULL;
 	struct external_command *parsed_command;
 
-	if (cmd == NULL)
+	if (cmd == NULL) {
+		g_set_error(
+			error,
+			NM_COMMAND_ERROR,
+			CMD_ERROR_MALFORMED_COMMAND,
+			"No command submitted at all");
 		return CMD_ERROR_MALFORMED_COMMAND;
+	}
 
 	/* strip the command of newlines and carriage returns */
 	strip(cmd);
@@ -3245,14 +3362,16 @@ int process_external_command(char *cmd, int mode)
 	log_debug_info(DEBUGL_EXTERNALCOMMANDS, 2, "Raw command entry: %s\n", cmd);
 	/* is the command in the command register? */
 	parsed_command = command_parse(cmd, mode, &external_command_ret);
-	if ( external_command_ret == CMD_ERROR_CUSTOM_COMMAND ) {
+	if (g_error_matches(external_command_ret, NM_COMMAND_ERROR, CMD_ERROR_CUSTOM_COMMAND)) {
 		id = CMD_CUSTOM_COMMAND;
 		/*custom command, reset return value*/
-		external_command_ret = CMD_ERROR_OK;
+		g_clear_error(&external_command_ret);
 	}
-	else if (external_command_ret != CMD_ERROR_OK) {
-		nm_log(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING, "Warning: External command parse error %s (%s)\n", cmd, cmd_error_strerror(external_command_ret));
-		return external_command_ret;
+	else if (external_command_ret) {
+		int code = external_command_ret->code;
+		nm_log(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING, "Warning: External command parse error %s (%s)\n", cmd, external_command_ret->message);
+		g_propagate_error(error, external_command_ret);
+		return code;
 	}
 	else {
 		id = command_id(parsed_command);
@@ -3283,9 +3402,9 @@ int process_external_command(char *cmd, int mode)
 
 	/* custom commands aren't handled internally by Naemon, but may be by NEB modules */
 	if (id != CMD_CUSTOM_COMMAND) {
-		external_command_ret = command_execute_handler(parsed_command);
-		if (external_command_ret != CMD_ERROR_OK) {
-			nm_log(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING, "Error: External command failed -> %s;%s (%s)\n", name, args, cmd_error_strerror(external_command_ret));
+		int ret = command_execute_handler(parsed_command);
+		if (ret != OK) {
+			nm_log(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING, "Error: External command failed -> %s;%s\n", name, args);
 		}
 	}
 
@@ -3298,57 +3417,28 @@ int process_external_command(char *cmd, int mode)
 	free(name);
 	free(args);
 	command_destroy(parsed_command);
-	return external_command_ret;
+	return OK;
 }
 
 int process_external_command2(int cmd, time_t entry_time, char *args)
 {
 	struct external_command *ext_command = NULL;
-	int ret = CMD_ERROR_OK;
+	GError *error;
+	int ret;
 	log_debug_info(DEBUGL_EXTERNALCOMMANDS, 1, "External Command Type: %d\n", cmd);
 	log_debug_info(DEBUGL_EXTERNALCOMMANDS, 1, "Command Entry Time: %lu\n", (unsigned long)entry_time);
 	log_debug_info(DEBUGL_EXTERNALCOMMANDS, 1, "Command Arguments: %s\n", (args == NULL) ? "" : args);
 
 	ext_command = external_command_copy(registered_commands[cmd]);
 	ext_command->entry_time = entry_time;
-	ret = parse_arguments((const char *)args, ext_command->arguments, ext_command->argc);
-	if (ret == CMD_ERROR_OK) {
+	ret = parse_arguments((const char *)args, ext_command->arguments, ext_command->argc, &error);
+	if (ret == OK) {
 		ret = command_execute_handler(ext_command);
+	} else {
+		nm_log(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING, "Warning: External command parse error %s (%s)\n", ext_command->name, error->message);
 	}
 	command_destroy(ext_command);
 	return ret;
-}
-
-const char *cmd_error_strerror(int code)
-{
-	switch (code) {
-	case CMD_ERROR_OK:
-		return "No error";
-	case CMD_ERROR_FAILURE:
-	case ERROR:
-		return "Command failed";
-	case CMD_ERROR_INTERNAL_ERROR:
-		return "Internal error";
-	case CMD_ERROR_UNKNOWN_COMMAND:
-		return "Unknown or unsupported command";
-	case CMD_ERROR_MALFORMED_COMMAND:
-		return "Malformed command";
-	case CMD_ERROR_PARSE_MISSING_ARG:
-		return "Missing argument";
-	case CMD_ERROR_PARSE_EXCESS_ARG:
-		return "Too many arguments";
-	case CMD_ERROR_PARSE_TYPE_MISMATCH:
-		return "Wrong type for argument";
-	case CMD_ERROR_UNSUPPORTED_ARG_TYPE:
-		return "Unsupported argument type";
-	case CMD_ERROR_VALIDATION_FAILURE:
-		return "Invalid value";
-	case CMD_ERROR_UNSUPPORTED_PARSE_MODE:
-		return "Unsupported parse mode";
-	case CMD_ERROR_CUSTOM_COMMAND:
-		return "Custom command";
-	}
-	return "Unknown error";
 }
 
 /******************************************************************/
