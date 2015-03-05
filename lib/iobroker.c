@@ -263,6 +263,9 @@ int iobroker_unregister(iobroker_set *iobs, int fd)
 	if (fd < 0 || fd >= iobs->max_fds || !iobs->iobroker_fds[fd])
 		return IOBROKER_EINVAL;
 
+	nm_bufferqueue_destroy(iobs->iobroker_fds[fd]->bq_out);
+	iobs->iobroker_fds[fd]->bq_out = NULL;
+
 	free(iobs->iobroker_fds[fd]);
 	iobs->iobroker_fds[fd] = NULL;
 	if (iobs->num_fds > 0)
@@ -326,7 +329,6 @@ void iobroker_destroy(iobroker_set *iobs, int flags)
 	for (i = 0; i < iobs->max_fds; i++) {
 		if (iobs->iobroker_fds[i] == NULL)
 			continue;
-		nm_bufferqueue_destroy(iobs->iobroker_fds[i]->bq_out);
 		dereg(iobs, i);
 	}
 	free(iobs->iobroker_fds);
