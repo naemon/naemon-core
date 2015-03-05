@@ -264,10 +264,6 @@ int neb_unload_module(nebmodule *mod, int flags, int reason)
 
 	log_debug_info(DEBUGL_EVENTBROKER, 0, "Attempting to unload module '%s': flags=%d, reason=%d\n", mod->filename, flags, reason);
 
-	/* remove the module's demand-loaded file */
-	(void)unlink(mod->dl_file);
-	nm_free(mod->dl_file);
-
 	/* call the de-initialization function if available (and the module was initialized) */
 	if (mod->deinit_func && reason != NEBMODULE_ERROR_BAD_INIT) {
 
