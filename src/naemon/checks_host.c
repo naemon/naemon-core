@@ -551,7 +551,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 	broker_host_check(
 		NEBTYPE_HOSTCHECK_PROCESSED,
 		NEBFLAG_NONE,
-		alert_recorded + first_recorded_state,
+		alert_recorded | first_recorded_state,
 		temp_host,
 		temp_host->check_type,
 		temp_host->current_state,
