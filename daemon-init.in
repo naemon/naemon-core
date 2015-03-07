@@ -168,6 +168,8 @@ restart() {
 }
 
 reload() {
+    check_config
+    checkconfig="true"
     echo -n "Reloading $prog: "
     pkill -HUP -u ${user} -f ${exec}
     retval=$?
