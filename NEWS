@@ -1,4 +1,9 @@
-Unreleased
+1.0 - Feb 13 2015
+=================
+ * Fix shadownaemon comment and downtime syncronization
+ * Fix spelling errors
+
+0.9 - Jan 08 2015
 =================
  * livestatus module name change to livestatus.so, path changed to libdir/naemon/naemon-livestatus/livestatus.so
  * External commands are now validated
