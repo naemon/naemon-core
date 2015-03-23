@@ -297,7 +297,7 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	runchk_result = wproc_run_callback(processed_command, service_check_timeout, handle_worker_service_check, (void*)cr, &mac);
 	if (runchk_result == ERROR) {
 		nm_log(NSLOG_RUNTIME_ERROR,
-		       "Unable to run check for service '%s' on host '%s'\n", svc->description, svc->host_name);
+		       "Unable to send check for service '%s' on host '%s' to worker (ret=%d)\n", svc->description, svc->host_name, runchk_result);
 	} else {
 		/* do the book-keeping */
 		currently_running_service_checks++;
