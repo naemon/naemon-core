@@ -860,22 +860,20 @@ int update_program_status_data() {
                        "interval_length",
                        "connections",
                        "connections_rate",
-                       "external_commands",                 // 20
-                       "external_commands_rate",
-                       "forks",
+                       "forks",                             // 20
                        "forks_rate",
                        "host_checks",
-                       "host_checks_rate",                  // 25
+                       "host_checks_rate",
                        "neb_callbacks",
-                       "neb_callbacks_rate",
+                       "neb_callbacks_rate",                // 25
                        "requests",
                        "requests_rate",
-                       "service_checks",                    // 30
+                       "service_checks",
                        "service_checks_rate",
-                       "log_messages",
+                       "log_messages",                      // 30
                        "log_messages_rate",
                        "cached_log_messages",
-                       "last_command_check",                // 35
+                       "last_command_check",
     };
     int columns_size = sizeof(columns)/sizeof(columns[0]);
     uint64_t (*s_counters)[NUM_COUNTERS];
@@ -923,36 +921,33 @@ int update_program_status_data() {
             interval_length                 = atoi(answer->set[17]);
 
             /* update livestatus counter */
-            (*s_counters)[COUNTER_SERVICE_CHECKS] = (uint64_t)atoll(answer->set[30]);
-            (*s_counters)[COUNTER_HOST_CHECKS]    = (uint64_t)atoll(answer->set[24]);
-            (*s_counters)[COUNTER_NEB_CALLBACKS]  = (uint64_t)atoll(answer->set[26]);
-            (*s_counters)[COUNTER_REQUESTS]       = (uint64_t)atoll(answer->set[28]);
+            (*s_counters)[COUNTER_SERVICE_CHECKS] = (uint64_t)atoll(answer->set[28]);
+            (*s_counters)[COUNTER_HOST_CHECKS]    = (uint64_t)atoll(answer->set[22]);
+            (*s_counters)[COUNTER_NEB_CALLBACKS]  = (uint64_t)atoll(answer->set[24]);
+            (*s_counters)[COUNTER_REQUESTS]       = (uint64_t)atoll(answer->set[26]);
             (*s_counters)[COUNTER_CONNECTIONS]    = (uint64_t)atoll(answer->set[18]);
-            (*s_counters)[COUNTER_FORKS]          = (uint64_t)atoll(answer->set[22]);
-            (*s_counters)[COUNTER_COMMANDS]       = (uint64_t)atoll(answer->set[20]);
-            (*s_counters)[COUNTER_LOG_MESSAGES]   = (uint64_t)atoll(answer->set[32]);
+            (*s_counters)[COUNTER_FORKS]          = (uint64_t)atoll(answer->set[20]);
+            (*s_counters)[COUNTER_LOG_MESSAGES]   = (uint64_t)atoll(answer->set[30]);
             last_request_count = (uint64_t)atoll(answer->set[28]);
 
-            (*s_last_counter)[COUNTER_SERVICE_CHECKS] = (uint64_t)atoll(answer->set[30]);
-            (*s_last_counter)[COUNTER_HOST_CHECKS]    = (uint64_t)atoll(answer->set[24]);
-            (*s_last_counter)[COUNTER_NEB_CALLBACKS]  = (uint64_t)atoll(answer->set[26]);
+            (*s_last_counter)[COUNTER_SERVICE_CHECKS] = (uint64_t)atoll(answer->set[28]);
+            (*s_last_counter)[COUNTER_HOST_CHECKS]    = (uint64_t)atoll(answer->set[22]);
+            (*s_last_counter)[COUNTER_NEB_CALLBACKS]  = (uint64_t)atoll(answer->set[24]);
             (*s_last_counter)[COUNTER_REQUESTS]       = (uint64_t)atoll(answer->set[28]);
             (*s_last_counter)[COUNTER_CONNECTIONS]    = (uint64_t)atoll(answer->set[18]);
-            (*s_last_counter)[COUNTER_FORKS]          = (uint64_t)atoll(answer->set[22]);
-            (*s_last_counter)[COUNTER_COMMANDS]       = (uint64_t)atoll(answer->set[20]);
-            (*s_last_counter)[COUNTER_LOG_MESSAGES]   = (uint64_t)atoll(answer->set[32]);
+            (*s_last_counter)[COUNTER_FORKS]          = (uint64_t)atoll(answer->set[20]);
+            (*s_last_counter)[COUNTER_LOG_MESSAGES]   = (uint64_t)atoll(answer->set[30]);
 
-            (*s_counter_rate)[COUNTER_HOST_CHECKS]    = (double)atof(answer->set[25]);
-            (*s_counter_rate)[COUNTER_SERVICE_CHECKS] = (double)atof(answer->set[31]);
-            (*s_counter_rate)[COUNTER_NEB_CALLBACKS]  = (double)atof(answer->set[27]);
-            (*s_counter_rate)[COUNTER_REQUESTS]       = (double)atof(answer->set[29]);
+            (*s_counter_rate)[COUNTER_HOST_CHECKS]    = (double)atof(answer->set[23]);
+            (*s_counter_rate)[COUNTER_SERVICE_CHECKS] = (double)atof(answer->set[29]);
+            (*s_counter_rate)[COUNTER_NEB_CALLBACKS]  = (double)atof(answer->set[25]);
+            (*s_counter_rate)[COUNTER_REQUESTS]       = (double)atof(answer->set[27]);
             (*s_counter_rate)[COUNTER_CONNECTIONS]    = (double)atof(answer->set[19]);
-            (*s_counter_rate)[COUNTER_FORKS]          = (double)atof(answer->set[23]);
-            (*s_counter_rate)[COUNTER_COMMANDS]       = (double)atof(answer->set[21]);
-            (*s_counter_rate)[COUNTER_LOG_MESSAGES]   = (double)atof(answer->set[33]);
+            (*s_counter_rate)[COUNTER_FORKS]          = (double)atof(answer->set[21]);
+            (*s_counter_rate)[COUNTER_LOG_MESSAGES]   = (double)atof(answer->set[31]);
 
-            *num_cached_log_messages = (uint64_t)atoll(answer->set[34]);
-            *last_command_check      = (uint64_t)atoll(answer->set[35]);
+            *num_cached_log_messages = (uint64_t)atoll(answer->set[32]);
+            *last_command_check      = (uint64_t)atoll(answer->set[33]);
 
             /* send broker event to make wait headers work */
             broker_adaptive_program_data(NEBTYPE_ADAPTIVEPROGRAM_UPDATE, NEBFLAG_NONE, NEBATTR_NONE, CMD_NONE, MODATTR_NONE, MODATTR_NONE, MODATTR_NONE, MODATTR_NONE, NULL);
