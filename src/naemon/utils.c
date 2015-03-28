@@ -1208,7 +1208,9 @@ void _get_next_valid_time(time_t pref_time, time_t *valid_time, timeperiod *tper
 		}
 	}
 
-	if (depth == max_depth)
+	if(earliest_time < 0)
+		*valid_time = pref_time; /* 32bit time_t overflow detected */
+	else if (depth == max_depth)
 		*valid_time = pref_time;
 	else
 		*valid_time = earliest_time;
