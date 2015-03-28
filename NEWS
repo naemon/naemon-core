@@ -1,3 +1,8 @@
+1.0.2 - Mar 28 2015
+=================
+ * shadownaemon: remove external commands from shadownaemon (#104)
+ * shadownaemon: propagate last_hard_* values (Michael Kraus)
+
 1.0 - Feb 13 2015
 =================
  * Fix shadownaemon comment and downtime syncronization

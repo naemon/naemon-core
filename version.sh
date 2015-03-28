@@ -5,5 +5,5 @@ if test -e .git; then
 	exit 0
 fi
 
-VERSION=1.0.0
+VERSION=1.0.2
 echo -n "${VERSION}-source"
