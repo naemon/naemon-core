@@ -1,3 +1,7 @@
+1.0.3 - Mar 29 2015
+=================
+ * shadownaemon: fix request counter
+
 1.0.2 - Mar 28 2015
 =================
  * shadownaemon: remove external commands from shadownaemon (#104)
