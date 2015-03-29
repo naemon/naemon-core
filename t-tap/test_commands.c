@@ -459,8 +459,8 @@ void test_host_commands(void) {
 	free(cmdstr);
 	ok(pre == number_of_host_comments(host_name), "DEL_HOST_COMMENT deletes a host comment");
 
-	ok(CMD_ERROR_OK == process_external_command1("[1234567890] DELAY_HOST_NOTIFICATION;host1;9980283485"), "core command: DELAY_HOST_NOTIFICATION");
-	ok(9980283485 == target_host->next_notification, "DELAY_HOST_NOTIFICATION delays host notifications");
+	ok(CMD_ERROR_OK == process_external_command1("[1234567890] DELAY_HOST_NOTIFICATION;host1;1927587190"), "core command: DELAY_HOST_NOTIFICATION");
+	ok(1927587190 == target_host->next_notification, "DELAY_HOST_NOTIFICATION delays host notifications");
 
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] DISABLE_HOST_SVC_CHECKS;host1"), "core command: DISABLE_HOST_SVC_CHECKS");
 	ok(!target_host->services->service_ptr->checks_enabled, "DISABLE_HOST_SVC_CHECKS disables active checks for services on a host");
