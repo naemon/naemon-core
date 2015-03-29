@@ -209,10 +209,10 @@ install-exec-hook:
 uninstall-hook:
 	[ -z $(logrotatedir) ] || rm $(DESTDIR)$(logrotatedir)/naemon
 	[ -z $(initrddir) ]    || rm $(DESTDIR)$(initrddir)/naemon
-	rm $(DESTDIR)$(mandir)/man8/naemon.8
-	rm $(DESTDIR)$(mandir)/man8/naemonstats.8
-	rm $(DESTDIR)$(mandir)/man8/shadownaemon.8
-	rm $(DESTDIR)$(mandir)/man8/oconfsplit.8
+	rm -f $(DESTDIR)$(mandir)/man8/naemon.8
+	rm -f $(DESTDIR)$(mandir)/man8/naemonstats.8
+	rm -f $(DESTDIR)$(mandir)/man8/shadownaemon.8
+	rm -f $(DESTDIR)$(mandir)/man8/oconfsplit.8
 	rm $(DESTDIR)$(pkgconfdir)/naemon.cfg
 	rm $(DESTDIR)$(pkgconfdir)/resource.cfg
 	rm -r $(DESTDIR)$(pkgconfdir)/conf.d
