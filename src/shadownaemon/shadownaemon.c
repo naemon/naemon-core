@@ -933,7 +933,7 @@ int update_program_status_data() {
             (*s_last_counter)[COUNTER_SERVICE_CHECKS] = (uint64_t)atoll(answer->set[28]);
             (*s_last_counter)[COUNTER_HOST_CHECKS]    = (uint64_t)atoll(answer->set[22]);
             (*s_last_counter)[COUNTER_NEB_CALLBACKS]  = (uint64_t)atoll(answer->set[24]);
-            (*s_last_counter)[COUNTER_REQUESTS]       = (uint64_t)atoll(answer->set[28]);
+            (*s_last_counter)[COUNTER_REQUESTS]       = (uint64_t)atoll(answer->set[26]);
             (*s_last_counter)[COUNTER_CONNECTIONS]    = (uint64_t)atoll(answer->set[18]);
             (*s_last_counter)[COUNTER_FORKS]          = (uint64_t)atoll(answer->set[20]);
             (*s_last_counter)[COUNTER_LOG_MESSAGES]   = (uint64_t)atoll(answer->set[30]);
