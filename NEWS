@@ -1,3 +1,7 @@
+next - unreleased
+=================
+ * shadownaemon: fix segfault if plugin output contains csv separator
+
 1.0.3 - Mar 29 2015
 =================
  * shadownaemon: fix request counter

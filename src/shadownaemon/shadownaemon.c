@@ -305,6 +305,16 @@ char *get_default_livestatus_module() {
     return(NULL);
 }
 
+/* count number of characters */
+int count_characters(char* haystack, char ch) {
+    char * p;
+    int cnt = 0;
+    for(p = haystack; *p; p++) {
+        if (*p == ch) cnt++;
+    }
+    return(cnt);
+}
+
 /* remove all files from output folder */
 int clean_output_folder() {
     unlink(output_socket_path);
@@ -719,9 +729,16 @@ int livestatus_query_socket(result_list **result, char *socket_path, char *query
     }
     result_string[total_read] = '\0';
 
-    // split result in arrays of arrays
+    /* split result in arrays of arrays */
     while((ptr = strsep( &result_string, "\x1")) != NULL) {
         if(!strcmp(ptr, "")) break;
+
+        /* validate result row, otherwise we would error if there is a csv separator in the plugin output */
+        if(count_characters(ptr, '\x2') != columnssize-1) {
+            nm_log(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, "skipping corrupted result row: %s\n", ptr);
+            continue;
+        }
+
         if(row_size > 0) {
             curr->next = nm_malloc(sizeof(result_list));
             curr = curr->next;
