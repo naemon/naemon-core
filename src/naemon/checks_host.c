@@ -269,7 +269,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 
 	/* process any macros contained in the argument */
 	process_macros_r(&mac, raw_command, &processed_command, macro_options);
-	my_free(raw_command);
+	nm_free(raw_command);
 	if (processed_command == NULL) {
 		clear_volatile_macros_r(&mac);
 		log_debug_info(DEBUGL_CHECKS, 0, "Processed check command for host '%s' was NULL - aborting.\n", hst->name);
@@ -305,7 +305,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
 		clear_volatile_macros_r(&mac);
 		free_check_result(cr);
-		my_free(processed_command);
+		nm_free(processed_command);
 		return OK;
 	}
 #endif
@@ -324,7 +324,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 
 
 	clear_volatile_macros_r(&mac);
-	my_free(processed_command);
+	nm_free(processed_command);
 
 	return OK;
 }
@@ -435,9 +435,9 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 		old_long_plugin_output = nm_strdup(temp_host->long_plugin_output);
 
 	/* clear the old plugin output and perf data buffers */
-	my_free(temp_host->plugin_output);
-	my_free(temp_host->long_plugin_output);
-	my_free(temp_host->perf_data);
+	nm_free(temp_host->plugin_output);
+	nm_free(temp_host->long_plugin_output);
+	nm_free(temp_host->perf_data);
 
 	/* parse check output to get: (1) short output, (2) long output, (3) perf data */
 	parse_check_output(queued_check_result->output, &temp_host->plugin_output, &temp_host->long_plugin_output, &temp_host->perf_data, TRUE, FALSE);
@@ -467,9 +467,9 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 		if (queued_check_result->early_timeout) {
 			nm_log(NSLOG_RUNTIME_WARNING,
 			       "Warning: Check of host '%s' timed out after %.2lf seconds\n", temp_host->name, temp_host->execution_time);
-			my_free(temp_host->plugin_output);
-			my_free(temp_host->long_plugin_output);
-			my_free(temp_host->perf_data);
+			nm_free(temp_host->plugin_output);
+			nm_free(temp_host->long_plugin_output);
+			nm_free(temp_host->perf_data);
 			nm_asprintf(&temp_host->plugin_output, "(Host check timed out after %.2lf seconds)", temp_host->execution_time);
 			result = STATE_UNKNOWN;
 		}
@@ -480,9 +480,9 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 			nm_log(NSLOG_RUNTIME_WARNING,
 			       "Warning:  Check of host '%s' did not exit properly!\n", temp_host->name);
 
-			my_free(temp_host->plugin_output);
-			my_free(temp_host->long_plugin_output);
-			my_free(temp_host->perf_data);
+			nm_free(temp_host->plugin_output);
+			nm_free(temp_host->long_plugin_output);
+			nm_free(temp_host->perf_data);
 
 			temp_host->plugin_output = nm_strdup("(Host check did not exit properly)");
 
@@ -495,9 +495,9 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 			nm_log(NSLOG_RUNTIME_WARNING,
 			       "Warning: Return code of %d for check of host '%s' was out of bounds.%s\n", queued_check_result->return_code, temp_host->name, (queued_check_result->return_code == 126 || queued_check_result->return_code == 127) ? " Make sure the plugin you're trying to run actually exists." : "");
 
-			my_free(temp_host->plugin_output);
-			my_free(temp_host->long_plugin_output);
-			my_free(temp_host->perf_data);
+			nm_free(temp_host->plugin_output);
+			nm_free(temp_host->long_plugin_output);
+			nm_free(temp_host->perf_data);
 
 			nm_asprintf(&temp_host->plugin_output, "(Return code of %d is out of bounds%s)", queued_check_result->return_code, (queued_check_result->return_code == 126 || queued_check_result->return_code == 127) ? " - plugin may be missing" : "");
 
@@ -506,7 +506,7 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 
 		/* a NULL host check command means we should assume the host is UP */
 		if (temp_host->check_command == NULL) {
-			my_free(temp_host->plugin_output);
+			nm_free(temp_host->plugin_output);
 			temp_host->plugin_output = nm_strdup("(Host assumed to be UP)");
 			result = STATE_OK;
 		}
@@ -535,8 +535,8 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 	/* process the host check result */
 	process_host_check_result(temp_host, result, old_plugin_output, old_long_plugin_output, CHECK_OPTION_NONE, TRUE, cached_host_check_horizon, &alert_recorded);
 
-	my_free(old_plugin_output);
-	my_free(old_long_plugin_output);
+	nm_free(old_plugin_output);
+	nm_free(old_long_plugin_output);
 
 	log_debug_info(DEBUGL_CHECKS, 1, "** Async check result for host '%s' handled: new state=%d\n", temp_host->name, temp_host->current_state);
 

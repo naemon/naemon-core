@@ -273,7 +273,7 @@ int process_check_result_queue(char *dirname)
 			/* can we find the associated ok-to-go file ? */
 			nm_asprintf(&temp_buffer, "%s.ok", file);
 			result = stat(temp_buffer, &ok_stat_buf);
-			my_free(temp_buffer);
+			nm_free(temp_buffer);
 			if (result == -1)
 				continue;
 
@@ -370,7 +370,7 @@ int process_check_result_file(char *fname)
 	/* read in all lines from the file */
 	while (1) {
 
-		my_free(input);
+		nm_free(input);
 
 		/* read the next line */
 		if ((input = mmap_fgets_multiline(thefile)) == NULL)
@@ -461,7 +461,7 @@ int process_check_result_file(char *fname)
 
 	free_check_result(&cr);
 
-	my_free(input);
+	nm_free(input);
 	mmap_fclose(thefile);
 
 	/* delete the file (as well its ok-to-go file) */
@@ -482,7 +482,7 @@ int delete_check_result_file(char *fname)
 	/* delete the ok-to-go file */
 	nm_asprintf(&temp_buffer, "%s.ok", fname);
 	unlink(temp_buffer);
-	my_free(temp_buffer);
+	nm_free(temp_buffer);
 
 	return OK;
 }
@@ -526,9 +526,9 @@ int free_check_result(check_result *info)
 	if (info == NULL)
 		return OK;
 
-	my_free(info->host_name);
-	my_free(info->service_description);
-	my_free(info->output);
+	nm_free(info->host_name);
+	nm_free(info->service_description);
+	nm_free(info->output);
 
 	return OK;
 }

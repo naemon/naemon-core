@@ -575,7 +575,7 @@ static void xpddefault_process_host_perfdata_file(struct nm_event_execution_prop
 
 		/* process any macros in the raw command line */
 		process_macros_r(&mac, raw_command_line, &processed_command_line, macro_options);
-		my_free(raw_command_line);
+		nm_free(raw_command_line);
 		if (processed_command_line == NULL) {
 			clear_volatile_macros_r(&mac);
 			return; /* ERROR */
@@ -596,7 +596,7 @@ static void xpddefault_process_host_perfdata_file(struct nm_event_execution_prop
 		}
 
 		clear_volatile_macros_r(&mac);
-		my_free(processed_command_line);
+		nm_free(processed_command_line);
 	}
 }
 
@@ -643,7 +643,7 @@ static void xpddefault_process_service_perfdata_file(struct nm_event_execution_p
 
 		/* process any macros in the raw command line */
 		process_macros_r(&mac, raw_command_line, &processed_command_line, macro_options);
-		my_free(raw_command_line);
+		nm_free(raw_command_line);
 		if (processed_command_line == NULL) {
 			clear_volatile_macros_r(&mac);
 			return; /* ERROR */
@@ -663,6 +663,6 @@ static void xpddefault_process_service_perfdata_file(struct nm_event_execution_p
 			}
 		}
 		clear_volatile_macros_r(&mac);
-		my_free(processed_command_line);
+		nm_free(processed_command_line);
 	}
 }

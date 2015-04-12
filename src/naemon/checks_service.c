@@ -252,7 +252,7 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 
 	/* process any macros contained in the argument */
 	process_macros_r(&mac, raw_command, &processed_command, macro_options);
-	my_free(raw_command);
+	nm_free(raw_command);
 	if (processed_command == NULL) {
 		clear_volatile_macros_r(&mac);
 		log_debug_info(DEBUGL_CHECKS, 0, "Processed check command for service '%s' on host '%s' was NULL - aborting.\n", svc->description, svc->host_name);
@@ -288,7 +288,7 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
 		clear_volatile_macros_r(&mac);
 		free_check_result(cr);
-		my_free(processed_command);
+		nm_free(processed_command);
 		return OK;
 	}
 #endif
@@ -305,7 +305,7 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 		update_check_stats(ACTIVE_SCHEDULED_SERVICE_CHECK_STATS, start_time.tv_sec);
 	}
 
-	my_free(processed_command);
+	nm_free(processed_command);
 	clear_volatile_macros_r(&mac);
 
 	return OK;
@@ -440,9 +440,9 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	if (temp_service->long_plugin_output)
 		old_long_plugin_output = strdup(temp_service->long_plugin_output);
 	/* clear the old plugin output and perf data buffers */
-	my_free(temp_service->plugin_output);
-	my_free(temp_service->long_plugin_output);
-	my_free(temp_service->perf_data);
+	nm_free(temp_service->plugin_output);
+	nm_free(temp_service->long_plugin_output);
+	nm_free(temp_service->perf_data);
 
 	if (queued_check_result->early_timeout == TRUE) {
 		nm_log(NSLOG_RUNTIME_WARNING,
@@ -1001,8 +1001,8 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	update_service_performance_data(temp_service);
 
 	/* free allocated memory */
-	my_free(old_plugin_output);
-	my_free(old_long_plugin_output);
+	nm_free(old_plugin_output);
+	nm_free(old_long_plugin_output);
 
 	return OK;
 }
