@@ -71,11 +71,6 @@ echo %{version} > .version_number
 autoreconf -i -s
 %configure --with-naemon-user=%daemon_user --with-naemon-group=%daemon_group --with-pkgconfdir=/opt/monitor/etc --with-logdir=/opt/monitor/var
 
-# autofix modification time and program version with each package
-sed -i \
-	-e  's/^\(#define PROGRAM_MODIFICATION_DATE\).*/\1 \"'`date -I`'\"/' \
-		src/naemon/common.h
-
 %__make
 %__make check
 %__make distcheck

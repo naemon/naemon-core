@@ -1135,15 +1135,6 @@ const char *get_program_version(void)
 }
 
 
-/* returns Naemon modification date */
-const char *get_program_modification_date(void)
-{
-
-	return (const char *)PROGRAM_MODIFICATION_DATE;
-}
-
-
-
 /******************************************************************/
 /*********************** CLEANUP FUNCTIONS ************************/
 /******************************************************************/

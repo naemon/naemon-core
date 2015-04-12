@@ -56,7 +56,6 @@ time_t get_next_log_rotation_time(void);	     	/* determine the next time to sch
 int set_environment_var(char *, char *, int);           /* sets/clears and environment variable */
 
 const char *get_program_version(void);
-const char *get_program_modification_date(void);
 
 void cleanup(void);                                  	/* cleanup after ourselves (before quitting or restarting) */
 
