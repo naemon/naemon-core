@@ -93,7 +93,7 @@ status_file=@localstatedir@/status.dat
 # STATUS FILE UPDATE INTERVAL
 # This option determines the frequency (in seconds) that
 # naemon will periodically dump program, host, and
-# service status data.
+# service status data. Set it to 0 to disable updates.
 
 status_update_interval=10
 

@@ -14,9 +14,18 @@
 static void update_all_status_data_eventhandler(struct nm_event_execution_properties *evprop)
 {
 	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
+		/*
+		 * if status data updates are turned off we reschedule
+		 * with a short interval to avoid hammering the scheduling
+		 * queue. This makes it possible to update the variable at
+		 * runtime and have the new setting take effect fast-ish
+		 */
+		int interval = status_update_interval ? status_update_interval : 10;
 		/* Reschedule, so it becomes recurring */
-		schedule_event(status_update_interval, update_all_status_data_eventhandler, NULL);
+		schedule_event(interval, update_all_status_data_eventhandler, NULL);
 
+		if (!status_update_interval)
+			return;
 		update_all_status_data();
 	}
 }

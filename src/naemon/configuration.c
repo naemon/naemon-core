@@ -787,13 +787,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		}
 
 		else if (!strcmp(variable, "status_update_interval")) {
-
 			status_update_interval = atoi(value);
-			if (status_update_interval <= 1) {
-				nm_asprintf(&error_message, "Illegal value for status_update_interval");
-				error = TRUE;
-				break;
-			}
 		}
 
 		else if (!strcmp(variable, "time_change_threshold")) {
