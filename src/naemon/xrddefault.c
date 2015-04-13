@@ -740,7 +740,6 @@ int xrddefault_read_state_information(void)
 					force_remove = TRUE;
 
 				if (force_remove == TRUE) {
-#ifdef USE_EVENT_BROKER
 					broker_comment_data
 						(NEBTYPE_COMMENT_DELETE, NEBFLAG_NONE, NEBATTR_NONE,
 						 (data_type == XRDDEFAULT_HOSTCOMMENT_DATA) ? HOST_COMMENT : SERVICE_COMMENT,
@@ -748,7 +747,6 @@ int xrddefault_read_state_information(void)
 						 entry_time, author, comment_data, persistent, source,
 						 expires, expire_time, comment_id
 						);
-#endif
 				} else {
 					/* add the comment */
 					add_comment((data_type == XRDDEFAULT_HOSTCOMMENT_DATA) ? HOST_COMMENT : SERVICE_COMMENT, entry_type, host_name, service_description, entry_time, author, comment_data, comment_id, persistent, expires, expire_time, source);
@@ -792,7 +790,6 @@ int xrddefault_read_state_information(void)
 				}
 
 				if (force_remove == TRUE) {
-#ifdef USE_EVENT_BROKER
 					broker_downtime_data
 						(NEBTYPE_DOWNTIME_STOP, NEBFLAG_NONE,
 						 NEBATTR_DOWNTIME_STOP_CANCELLED,
@@ -802,7 +799,6 @@ int xrddefault_read_state_information(void)
 						 start_time, end_time, fixed, triggered_by,
 						 duration, downtime_id
 						);
-#endif
 				} else {
 					/* add the downtime */
 					if (data_type == XRDDEFAULT_HOSTDOWNTIME_DATA)

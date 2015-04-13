@@ -568,10 +568,7 @@ int daemon_init(void)
 	val |= FD_CLOEXEC;
 	fcntl(lockfile, F_SETFD, val);
 
-#ifdef USE_EVENT_BROKER
-	/* send program data to broker */
 	broker_program_state(NEBTYPE_PROCESS_DAEMONIZE, NEBFLAG_NONE, NEBATTR_NONE);
-#endif
 
 	return OK;
 }
@@ -1157,7 +1154,6 @@ void cleanup(void)
 	/* free event queue data */
 	destroy_event_queue();
 
-#ifdef USE_EVENT_BROKER
 	/* unload modules */
 	if (verify_config == FALSE) {
 		neb_free_callback_list();
@@ -1165,7 +1161,6 @@ void cleanup(void)
 		neb_free_module_list();
 		neb_deinit_modules();
 	}
-#endif
 
 	/* free all allocated memory - including macros */
 	free_memory(get_global_macros());

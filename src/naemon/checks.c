@@ -26,10 +26,6 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-#ifdef USE_EVENT_BROKER
-#include "neberrors.h"
-#endif
-
 /* forward declarations */
 static const char *spool_file_source_name(void *source);
 static void reap_check_results(struct nm_event_execution_properties *evprop);

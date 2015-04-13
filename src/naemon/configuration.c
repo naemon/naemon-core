@@ -891,7 +891,6 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		else if (!strcmp(variable, "broker_module")) {
 			modptr = strtok(value, " \n");
 			argptr = strtok(NULL, "\n");
-#ifdef USE_EVENT_BROKER
 			modptr = nspath_absolute(modptr, config_file_dir);
 			if (modptr) {
 				neb_add_module(modptr, argptr, TRUE);
@@ -899,7 +898,6 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			} else {
 				nm_log(NSLOG_RUNTIME_ERROR, "Error: Failed to allocate module path memory for '%s'\n", value);
 			}
-#endif
 		}
 
 		else if (!strcmp(variable, "use_regexp_matching"))

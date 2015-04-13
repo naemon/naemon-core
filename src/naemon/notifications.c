@@ -364,8 +364,6 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 0, "Notification viability test passed.\n");
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
 	neb_result = broker_notification_data(NEBTYPE_NOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, start_time, end_time, (void *)svc, not_author, not_data, escalated, 0);
@@ -373,7 +371,6 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 		LOG_SERVICE_NSR(NSR_NEB_BLOCKED);
 		return neb_result == NEBERROR_CALLBACKOVERRIDE ? OK : ERROR;
 	}
-#endif
 
 	/* should the notification number be increased? */
 	if (type == NOTIFICATION_NORMAL || (options & NOTIFICATION_OPTION_INCREMENT)) {
@@ -556,10 +553,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	/* get the time we finished */
 	gettimeofday(&end_time, NULL);
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
 	broker_notification_data(NEBTYPE_NOTIFICATION_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, start_time, end_time, (void *)svc, not_author, not_data, escalated, contacts_notified);
-#endif
 
 	/* update the status log with the service information */
 	update_service_status(svc, FALSE);
@@ -938,8 +932,6 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 	/* get start time */
 	gettimeofday(&start_time, NULL);
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
 	neb_result = broker_contact_notification_data(NEBTYPE_CONTACTNOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, start_time, end_time, (void *)svc, cntct, not_author, not_data, escalated);
@@ -947,7 +939,6 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 		return ERROR;
 	else if (NEBERROR_CALLBACKOVERRIDE == neb_result)
 		return OK;
-#endif
 
 	/* process all the notification commands this user has */
 	for (temp_commandsmember = cntct->service_notification_commands; temp_commandsmember != NULL; temp_commandsmember = temp_commandsmember->next) {
@@ -955,8 +946,6 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 		/* get start time */
 		gettimeofday(&method_start_time, NULL);
 
-#ifdef USE_EVENT_BROKER
-		/* send data to event broker */
 		method_end_time.tv_sec = 0L;
 		method_end_time.tv_usec = 0L;
 		neb_result = broker_contact_notification_method_data(NEBTYPE_CONTACTNOTIFICATIONMETHOD_START, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, method_start_time, method_end_time, (void *)svc, cntct, temp_commandsmember->command, not_author, not_data, escalated);
@@ -964,7 +953,6 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 			break ;
 		else if (NEBERROR_CALLBACKOVERRIDE == neb_result)
 			continue ;
-#endif
 
 		/* get the raw command line */
 		get_raw_command_line_r(mac, temp_commandsmember->command_ptr, temp_commandsmember->command, &raw_command, macro_options);
@@ -1018,10 +1006,7 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 		/* get end time */
 		gettimeofday(&method_end_time, NULL);
 
-#ifdef USE_EVENT_BROKER
-		/* send data to event broker */
 		broker_contact_notification_method_data(NEBTYPE_CONTACTNOTIFICATIONMETHOD_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, method_start_time, method_end_time, (void *)svc, cntct, temp_commandsmember->command, not_author, not_data, escalated);
-#endif
 	}
 
 	/* get end time */
@@ -1030,10 +1015,7 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 	/* update the contact's last service notification time */
 	cntct->last_service_notification = start_time.tv_sec;
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
 	broker_contact_notification_data(NEBTYPE_CONTACTNOTIFICATION_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, start_time, end_time, (void *)svc, cntct, not_author, not_data, escalated);
-#endif
 
 	return OK;
 }
@@ -1249,8 +1231,6 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 0, "Notification viability test passed.\n");
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
 	neb_result = broker_notification_data(NEBTYPE_NOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, start_time, end_time, (void *)hst, not_author, not_data, escalated, 0);
@@ -1258,7 +1238,6 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 		LOG_HOST_NSR(NSR_NEB_BLOCKED);
 		return neb_result == NEBERROR_CALLBACKOVERRIDE ? OK : ERROR;
 	}
-#endif
 
 	/* should the notification number be increased? */
 	if (type == NOTIFICATION_NORMAL || (options & NOTIFICATION_OPTION_INCREMENT)) {
@@ -1439,10 +1418,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 	/* get the time we finished */
 	gettimeofday(&end_time, NULL);
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
 	broker_notification_data(NEBTYPE_NOTIFICATION_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, start_time, end_time, (void *)hst, not_author, not_data, escalated, contacts_notified);
-#endif
 
 	/* update the status log with the host info */
 	update_host_status(hst, FALSE);
@@ -1784,8 +1760,6 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 	/* get start time */
 	gettimeofday(&start_time, NULL);
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
 	neb_result = broker_contact_notification_data(NEBTYPE_CONTACTNOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, start_time, end_time, (void *)hst, cntct, not_author, not_data, escalated);
@@ -1793,7 +1767,6 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 		return ERROR;
 	else if (NEBERROR_CALLBACKOVERRIDE == neb_result)
 		return OK;
-#endif
 
 	/* process all the notification commands this user has */
 	for (temp_commandsmember = cntct->host_notification_commands; temp_commandsmember != NULL; temp_commandsmember = temp_commandsmember->next) {
@@ -1801,8 +1774,6 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 		/* get start time */
 		gettimeofday(&method_start_time, NULL);
 
-#ifdef USE_EVENT_BROKER
-		/* send data to event broker */
 		method_end_time.tv_sec = 0L;
 		method_end_time.tv_usec = 0L;
 		neb_result = broker_contact_notification_method_data(NEBTYPE_CONTACTNOTIFICATIONMETHOD_START, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, method_start_time, method_end_time, (void *)hst, cntct, temp_commandsmember->command, not_author, not_data, escalated);
@@ -1810,7 +1781,6 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 			break ;
 		else if (NEBERROR_CALLBACKOVERRIDE == neb_result)
 			continue ;
-#endif
 
 		/* get the raw command line */
 		get_raw_command_line_r(mac, temp_commandsmember->command_ptr, temp_commandsmember->command, &raw_command, macro_options);
@@ -1866,10 +1836,7 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 		/* get end time */
 		gettimeofday(&method_end_time, NULL);
 
-#ifdef USE_EVENT_BROKER
-		/* send data to event broker */
 		broker_contact_notification_method_data(NEBTYPE_CONTACTNOTIFICATIONMETHOD_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, method_start_time, method_end_time, (void *)hst, cntct, temp_commandsmember->command, not_author, not_data, escalated);
-#endif
 	}
 
 	/* get end time */
@@ -1878,10 +1845,7 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 	/* update the contact's last host notification time */
 	cntct->last_host_notification = start_time.tv_sec;
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
 	broker_contact_notification_data(NEBTYPE_CONTACTNOTIFICATION_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, start_time, end_time, (void *)hst, cntct, not_author, not_data, escalated);
-#endif
 
 	return OK;
 }

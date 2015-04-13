@@ -507,11 +507,9 @@ int main(int argc, char **argv)
 		/* open debug log now that we're the right user */
 		open_debug_log();
 
-#ifdef USE_EVENT_BROKER
 		/* initialize modules */
 		neb_init_modules();
 		neb_init_callback_list();
-#endif
 		timing_point("NEB module API initialized\n");
 
 		/* handle signals (interrupts) before we do any socket I/O */
@@ -556,7 +554,6 @@ int main(int argc, char **argv)
 		init_event_queue();
 		timing_point("Event queue initialized\n");
 
-#ifdef USE_EVENT_BROKER
 		/* load modules */
 		if (neb_load_all_modules() != OK) {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Module loading failed. Aborting.\n");
@@ -566,10 +563,8 @@ int main(int argc, char **argv)
 		}
 		timing_point("Modules loaded\n");
 
-		/* send program data to broker */
 		broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE);
 		timing_point("First callback made\n");
-#endif
 
 		/* there was a problem reading the config files */
 		if (result != OK)
@@ -592,10 +587,8 @@ int main(int argc, char **argv)
 				cleanup_status_data(TRUE);
 			}
 
-#ifdef USE_EVENT_BROKER
-			/* send program data to broker */
 			broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_PROCESS_INITIATED, NEBATTR_SHUTDOWN_ABNORMAL);
-#endif
+
 			cleanup();
 			exit(ERROR);
 		}
@@ -606,10 +599,7 @@ int main(int argc, char **argv)
 		fcache_objects(object_cache_file);
 		timing_point("Objects cached\n");
 
-#ifdef USE_EVENT_BROKER
-		/* send program data to broker */
 		broker_program_state(NEBTYPE_PROCESS_START, NEBFLAG_NONE, NEBATTR_NONE);
-#endif
 
 		initialize_status_data(config_file);
 		timing_point("Status data initialized\n");
@@ -658,10 +648,7 @@ int main(int argc, char **argv)
 		launch_command_file_worker();
 		timing_point("Command file worker launched\n");
 
-#ifdef USE_EVENT_BROKER
-		/* send program data to broker */
 		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPSTART, NEBFLAG_NONE, NEBATTR_NONE);
-#endif
 
 		/* get event start time and save as macro */
 		event_start = time(NULL);
@@ -684,14 +671,11 @@ int main(int argc, char **argv)
 		 */
 		signal_react();
 
-#ifdef USE_EVENT_BROKER
-		/* send program data to broker */
 		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPEND, NEBFLAG_NONE, NEBATTR_NONE);
 		if (sigshutdown == TRUE)
 			broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_USER_INITIATED, NEBATTR_SHUTDOWN_NORMAL);
 		else if (sigrestart == TRUE)
 			broker_program_state(NEBTYPE_PROCESS_RESTART, NEBFLAG_USER_INITIATED, NEBATTR_RESTART_NORMAL);
-#endif
 
 		disconnect_command_file_worker();
 

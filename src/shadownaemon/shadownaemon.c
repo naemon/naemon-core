@@ -499,7 +499,6 @@ int initialize_core() {
     }
     timing_point("Modules loaded\n");
 
-    /* send program data to broker */
     broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE);
     timing_point("First callback made\n");
 
@@ -512,7 +511,6 @@ int initialize_core() {
         timing_point("Object configuration parsed and understood\n");
     }
 
-    /* send program data to broker */
     broker_program_state(NEBTYPE_PROCESS_START, NEBFLAG_NONE, NEBATTR_NONE);
 
     /* initialize scheduled downtime data */
@@ -560,7 +558,6 @@ int deinitialize_core() {
     /* remove core commands */
     registered_commands_deinit();
 
-    /* send program data to broker */
     broker_program_state(NEBTYPE_PROCESS_EVENTLOOPEND, NEBFLAG_NONE, NEBATTR_NONE);
     if(sigrestart) {
         broker_program_state(NEBTYPE_PROCESS_RESTART, NEBFLAG_USER_INITIATED, NEBATTR_RESTART_NORMAL);

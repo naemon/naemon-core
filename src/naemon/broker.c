@@ -12,8 +12,6 @@
 #include <string.h>
 #include <sys/time.h>
 
-#ifdef USE_EVENT_BROKER
-
 
 /* gets timestamp for use by broker */
 static inline void get_broker_timestamp(struct timeval *timestamp)
@@ -927,5 +925,3 @@ void broker_statechange_data(int type, int flags, int attr, int statechange_type
 
 	return;
 }
-
-#endif

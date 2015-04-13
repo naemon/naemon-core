@@ -103,10 +103,7 @@ static int write_to_log(char *buffer, unsigned long data_type, time_t *timestamp
 	fprintf(fp, "[%lu] %s\n", log_time, buffer);
 	fflush(fp);
 
-#ifdef USE_EVENT_BROKER
-	/* send data to the event broker */
-	broker_log_data(NEBTYPE_LOG_DATA, NEBFLAG_NONE, NEBATTR_NONE, buffer, data_type, log_time, NULL);
-#endif
+	broker_log_data(NEBTYPE_LOG_DATA, NEBFLAG_NONE, NEBATTR_NONE, buffer, data_type, log_time);
 
 	return OK;
 }

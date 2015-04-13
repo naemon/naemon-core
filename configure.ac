@@ -110,7 +110,6 @@ else
 fi
 
 AC_DEFINE(NAEMON_PROCESS_NAME, "Naemon Process", [Process name for naemon])
-AC_DEFINE(USE_EVENT_BROKER, 1, [Use event brokers])
 
 # Checks for library functions.
 AC_FUNC_CHOWN

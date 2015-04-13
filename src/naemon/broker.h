@@ -163,7 +163,6 @@
 
 /****** EVENT BROKER FUNCTIONS *************/
 
-#ifdef USE_EVENT_BROKER
 NAGIOS_BEGIN_DECL
 
 void broker_program_state(int, int, int);
@@ -193,6 +192,4 @@ void broker_acknowledgement_data(int, int, int, int, void *, char *, char *, int
 void broker_statechange_data(int, int, int, int, void *, int, int, int, int);
 
 NAGIOS_END_DECL
-#endif
-
 #endif

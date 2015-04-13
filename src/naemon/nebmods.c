@@ -7,8 +7,6 @@
 #include "nm_alloc.h"
 #include <string.h>
 
-#ifdef USE_EVENT_BROKER
-
 static nebmodule *neb_module_list;
 static nebcallback **neb_callback_list;
 
@@ -564,4 +562,3 @@ int neb_free_callback_list(void)
 
 	return OK;
 }
-#endif

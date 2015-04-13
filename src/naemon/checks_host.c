@@ -22,9 +22,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-#ifdef USE_EVENT_BROKER
 #include "neberrors.h"
-#endif
 
 /* Scheduling (before worker job is started) */
 static void handle_host_check_event(struct nm_event_execution_properties *evprop);
@@ -179,9 +177,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	check_result *cr;
 	int runchk_result = OK;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
-#ifdef USE_EVENT_BROKER
 	int neb_result = OK;
-#endif
 	time_t now = time(NULL);
 
 	log_debug_info(DEBUGL_CHECKS, 0, "** Running async check of host '%s'...\n", hst->name);
@@ -222,14 +218,12 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 
 	/******** GOOD TO GO FOR A REAL HOST CHECK AT THIS POINT ********/
 
-#ifdef USE_EVENT_BROKER
 	/* initialize start/end times */
 	start_time.tv_sec = 0L;
 	start_time.tv_usec = 0L;
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
 
-	/* send data to event broker */
 	neb_result = broker_host_check(NEBTYPE_HOSTCHECK_ASYNC_PRECHECK, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, host_check_timeout, FALSE, 0, NULL, NULL, NULL, NULL, NULL);
 
 	if (neb_result == NEBERROR_CALLBACKCANCEL || neb_result == NEBERROR_CALLBACKOVERRIDE) {
@@ -245,7 +239,6 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	/* neb module wants to override the host check - perhaps it will check the host itself */
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE)
 		return OK;
-#endif
 
 	log_debug_info(DEBUGL_CHECKS, 0, "Checking host '%s'...\n", hst->name);
 
@@ -297,8 +290,6 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	cr->return_code = STATE_OK;
 	cr->output = NULL;
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
 	neb_result = broker_host_check(NEBTYPE_HOSTCHECK_INITIATE, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, host_check_timeout, FALSE, 0, processed_command, NULL, NULL, NULL, cr);
 
 	/* neb module wants to override the service check - perhaps it will check the service itself */
@@ -308,7 +299,6 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 		nm_free(processed_command);
 		return OK;
 	}
-#endif
 
 	runchk_result = wproc_run_callback(processed_command, host_check_timeout, handle_worker_host_check, (void*)cr, &mac);
 	if (runchk_result == ERROR) {
@@ -546,8 +536,6 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 	/* high resolution end time for event broker */
 	gettimeofday(&end_time_hires, NULL);
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
 	broker_host_check(
 		NEBTYPE_HOSTCHECK_PROCESSED,
 		NEBFLAG_NONE,
@@ -569,7 +557,6 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 		temp_host->long_plugin_output,
 		temp_host->perf_data,
 		queued_check_result);
-#endif
 
 	return OK;
 }

@@ -22,10 +22,7 @@
 #include "objects_servicedependency.h"
 #include <string.h>
 #include <sys/time.h>
-
-#ifdef USE_EVENT_BROKER
 #include "neberrors.h"
-#endif
 
 /* Scheduling (before worker job is started) */
 static void handle_service_check_event(struct nm_event_execution_properties *evprop);
@@ -196,9 +193,7 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	check_result *cr;
 	int runchk_result = OK;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
-#ifdef USE_EVENT_BROKER
 	int neb_result = OK;
-#endif
 
 	/* latency is how long the event lagged behind the event queue */
 	svc->latency = latency;
@@ -207,14 +202,12 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 
 	/******** GOOD TO GO FOR A REAL SERVICE CHECK AT THIS POINT ********/
 
-#ifdef USE_EVENT_BROKER
 	/* initialize start/end times */
 	start_time.tv_sec = 0L;
 	start_time.tv_usec = 0L;
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
 
-	/* send data to event broker */
 	neb_result = broker_service_check(NEBTYPE_SERVICECHECK_ASYNC_PRECHECK, NEBFLAG_NONE, NEBATTR_NONE, svc, CHECK_TYPE_ACTIVE, start_time, end_time, svc->check_command, svc->latency, 0.0, 0, FALSE, 0, NULL, NULL);
 
 	if (neb_result == NEBERROR_CALLBACKCANCEL || neb_result == NEBERROR_CALLBACKOVERRIDE) {
@@ -232,7 +225,6 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	/* NOTE: if would be easier for modules to override checks when the NEBTYPE_SERVICECHECK_INITIATE event is called (later) */
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE)
 		return OK;
-#endif
 
 
 	log_debug_info(DEBUGL_CHECKS, 0, "Checking service '%s' on host '%s'...\n", svc->description, svc->host_name);
@@ -280,8 +272,6 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	cr->host_name = nm_strdup(svc->host_name);
 	cr->service_description = nm_strdup(svc->description);
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
 	neb_result = broker_service_check(NEBTYPE_SERVICECHECK_INITIATE, NEBFLAG_NONE, NEBATTR_NONE, svc, CHECK_TYPE_ACTIVE, start_time, end_time, svc->check_command, svc->latency, 0.0, service_check_timeout, FALSE, 0, processed_command, cr);
 
 	/* neb module wants to override the service check - perhaps it will check the service itself */
@@ -291,7 +281,6 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 		nm_free(processed_command);
 		return OK;
 	}
-#endif
 
 	/* paw off the check to a worker to run */
 	runchk_result = wproc_run_callback(processed_command, service_check_timeout, handle_worker_service_check, (void*)cr, &mac);
@@ -965,8 +954,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		}
 	}
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
 	broker_service_check(
 		NEBTYPE_SERVICECHECK_PROCESSED,
 		NEBFLAG_NONE,
@@ -983,7 +970,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		queued_check_result->return_code,
 		NULL,
 		queued_check_result);
-#endif
 
 	/* set the checked flag */
 	temp_service->has_been_checked = TRUE;

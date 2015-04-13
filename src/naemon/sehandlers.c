@@ -14,10 +14,7 @@
 #include "nm_alloc.h"
 #include <string.h>
 #include <sys/time.h>
-
-#ifdef USE_EVENT_BROKER
 #include "neberrors.h"
-#endif
 
 static int run_service_event_handler(nagios_macros *mac, service *);			/* runs the event handler for a specific service */
 static int run_global_service_event_handler(nagios_macros *mac, service *);		/* runs the global service event handler */
@@ -198,10 +195,7 @@ int handle_service_event(service *svc)
 	if (svc == NULL)
 		return ERROR;
 
-#ifdef USE_EVENT_BROKER
-	/* send event data to broker */
 	broker_statechange_data(NEBTYPE_STATECHANGE_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_STATECHANGE, (void *)svc, svc->current_state, svc->state_type, svc->current_attempt, svc->max_attempts);
-#endif
 
 	/* bail out if we shouldn't be running event handlers */
 	if (enable_event_handlers == FALSE)
@@ -241,11 +235,9 @@ static int run_global_service_event_handler(nagios_macros *mac, service *svc)
 	int early_timeout = FALSE;
 	double exectime = 0.0;
 	int result = 0;
-#ifdef USE_EVENT_BROKER
 	struct timeval start_time;
 	struct timeval end_time;
 	int neb_result = OK;
-#endif
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 
 	if (svc == NULL)
@@ -261,10 +253,8 @@ static int run_global_service_event_handler(nagios_macros *mac, service *svc)
 
 	log_debug_info(DEBUGL_EVENTHANDLERS, 1, "Running global event handler for service '%s' on host '%s'...\n", svc->description, svc->host_name);
 
-#ifdef USE_EVENT_BROKER
 	/* get start time */
 	gettimeofday(&start_time, NULL);
-#endif
 
 	/* get the raw command line */
 	get_raw_command_line_r(mac, global_service_event_handler_ptr, global_service_event_handler, &raw_command, macro_options);
@@ -288,8 +278,6 @@ static int run_global_service_event_handler(nagios_macros *mac, service *svc)
 		nm_log(NSLOG_EVENT_HANDLER, "%s", processed_logentry);
 	}
 
-#ifdef USE_EVENT_BROKER
-	/* send event data to broker */
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
 	neb_result = broker_event_handler(NEBTYPE_EVENTHANDLER_START, NEBFLAG_NONE, NEBATTR_NONE, GLOBAL_SERVICE_EVENTHANDLER, (void *)svc, svc->current_state, svc->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, global_service_event_handler, processed_command, NULL);
@@ -301,7 +289,6 @@ static int run_global_service_event_handler(nagios_macros *mac, service *svc)
 		nm_free(processed_logentry);
 		return OK;
 	}
-#endif
 
 	/* run the command through a worker */
 	result = wproc_run_callback(processed_command, event_handler_timeout, event_handler_job_handler, "Global service", mac);
@@ -310,15 +297,10 @@ static int run_global_service_event_handler(nagios_macros *mac, service *svc)
 	if (early_timeout == TRUE)
 		nm_log(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, "Warning: Global service event handler command '%s' timed out after %d seconds\n", processed_command, event_handler_timeout);
 
-#ifdef USE_EVENT_BROKER
 	/* get end time */
 	gettimeofday(&end_time, NULL);
-#endif
 
-#ifdef USE_EVENT_BROKER
-	/* send event data to broker */
 	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, GLOBAL_SERVICE_EVENTHANDLER, (void *)svc, svc->current_state, svc->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, global_service_event_handler, processed_command, command_output);
-#endif
 
 	nm_free(command_output);
 	nm_free(processed_command);
@@ -340,11 +322,9 @@ static int run_service_event_handler(nagios_macros *mac, service *svc)
 	int early_timeout = FALSE;
 	double exectime = 0.0;
 	int result = 0;
-#ifdef USE_EVENT_BROKER
 	struct timeval start_time;
 	struct timeval end_time;
 	int neb_result = OK;
-#endif
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 
 	if (svc == NULL)
@@ -356,11 +336,8 @@ static int run_service_event_handler(nagios_macros *mac, service *svc)
 
 	log_debug_info(DEBUGL_EVENTHANDLERS, 1, "Running event handler for service '%s' on host '%s'...\n", svc->description, svc->host_name);
 
-#ifdef USE_EVENT_BROKER
 	/* get start time */
 	gettimeofday(&start_time, NULL);
-#endif
-
 
 	/* get the raw command line */
 	get_raw_command_line_r(mac, svc->event_handler_ptr, svc->event_handler, &raw_command, macro_options);
@@ -383,8 +360,6 @@ static int run_service_event_handler(nagios_macros *mac, service *svc)
 		nm_log(NSLOG_EVENT_HANDLER, "%s", processed_logentry);
 	}
 
-#ifdef USE_EVENT_BROKER
-	/* send event data to broker */
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
 	neb_result = broker_event_handler(NEBTYPE_EVENTHANDLER_START, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_EVENTHANDLER, (void *)svc, svc->current_state, svc->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, svc->event_handler, processed_command, NULL);
@@ -396,7 +371,6 @@ static int run_service_event_handler(nagios_macros *mac, service *svc)
 		nm_free(processed_logentry);
 		return OK;
 	}
-#endif
 
 	/* run the command through a worker */
 	result = wproc_run_callback(processed_command, event_handler_timeout, event_handler_job_handler, "Service", mac);
@@ -405,15 +379,10 @@ static int run_service_event_handler(nagios_macros *mac, service *svc)
 	if (early_timeout == TRUE)
 		nm_log(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, "Warning: Service event handler command '%s' timed out after %d seconds\n", processed_command, event_handler_timeout);
 
-#ifdef USE_EVENT_BROKER
 	/* get end time */
 	gettimeofday(&end_time, NULL);
-#endif
 
-#ifdef USE_EVENT_BROKER
-	/* send event data to broker */
 	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_EVENTHANDLER, (void *)svc, svc->current_state, svc->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, svc->event_handler, processed_command, command_output);
-#endif
 
 	nm_free(command_output);
 	nm_free(processed_command);
@@ -436,10 +405,7 @@ int handle_host_event(host *hst)
 	if (hst == NULL)
 		return ERROR;
 
-#ifdef USE_EVENT_BROKER
-	/* send event data to broker */
 	broker_statechange_data(NEBTYPE_STATECHANGE_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_STATECHANGE, (void *)hst, hst->current_state, hst->state_type, hst->current_attempt, hst->max_attempts);
-#endif
 
 	/* bail out if we shouldn't be running event handlers */
 	if (enable_event_handlers == FALSE)
@@ -473,11 +439,9 @@ static int run_global_host_event_handler(nagios_macros *mac, const host * const 
 	int early_timeout = FALSE;
 	double exectime = 0.0;
 	int result = 0;
-#ifdef USE_EVENT_BROKER
 	struct timeval start_time;
 	struct timeval end_time;
 	int neb_result = OK;
-#endif
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 
 	if (hst == NULL)
@@ -493,10 +457,8 @@ static int run_global_host_event_handler(nagios_macros *mac, const host * const 
 
 	log_debug_info(DEBUGL_EVENTHANDLERS, 1, "Running global event handler for host '%s'..\n", hst->name);
 
-#ifdef USE_EVENT_BROKER
 	/* get start time */
 	gettimeofday(&start_time, NULL);
-#endif
 
 	/* get the raw command line */
 	get_raw_command_line_r(mac, global_host_event_handler_ptr, global_host_event_handler, &raw_command, macro_options);
@@ -519,8 +481,6 @@ static int run_global_host_event_handler(nagios_macros *mac, const host * const 
 		nm_log(NSLOG_EVENT_HANDLER, "%s", processed_logentry);
 	}
 
-#ifdef USE_EVENT_BROKER
-	/* send event data to broker */
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
 	neb_result = broker_event_handler(NEBTYPE_EVENTHANDLER_START, NEBFLAG_NONE, NEBATTR_NONE, GLOBAL_HOST_EVENTHANDLER, (void *)hst, hst->current_state, hst->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, global_host_event_handler, processed_command, NULL);
@@ -532,7 +492,6 @@ static int run_global_host_event_handler(nagios_macros *mac, const host * const 
 		nm_free(processed_logentry);
 		return OK;
 	}
-#endif
 
 	/* run the command through a worker */
 	result = wproc_run_callback(processed_command, event_handler_timeout, event_handler_job_handler, "Global host", mac);
@@ -541,15 +500,10 @@ static int run_global_host_event_handler(nagios_macros *mac, const host * const 
 	if (early_timeout == TRUE)
 		nm_log(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, "Warning: Global host event handler command '%s' timed out after %d seconds\n", processed_command, event_handler_timeout);
 
-#ifdef USE_EVENT_BROKER
 	/* get end time */
 	gettimeofday(&end_time, NULL);
-#endif
 
-#ifdef USE_EVENT_BROKER
-	/* send event data to broker */
 	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, GLOBAL_HOST_EVENTHANDLER, (void *)hst, hst->current_state, hst->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, global_host_event_handler, processed_command, command_output);
-#endif
 
 	nm_free(command_output);
 	nm_free(processed_command);
@@ -571,11 +525,9 @@ static int run_host_event_handler(nagios_macros *mac, const host * const hst)
 	int early_timeout = FALSE;
 	double exectime = 0.0;
 	int result = 0;
-#ifdef USE_EVENT_BROKER
 	struct timeval start_time;
 	struct timeval end_time;
 	int neb_result = OK;
-#endif
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 
 	if (hst == NULL)
@@ -587,10 +539,8 @@ static int run_host_event_handler(nagios_macros *mac, const host * const hst)
 
 	log_debug_info(DEBUGL_EVENTHANDLERS, 1, "Running event handler for host '%s'..\n", hst->name);
 
-#ifdef USE_EVENT_BROKER
 	/* get start time */
 	gettimeofday(&start_time, NULL);
-#endif
 
 	/* get the raw command line */
 	get_raw_command_line_r(mac, hst->event_handler_ptr, hst->event_handler, &raw_command, macro_options);
@@ -613,8 +563,6 @@ static int run_host_event_handler(nagios_macros *mac, const host * const hst)
 		nm_log(NSLOG_EVENT_HANDLER, "%s", processed_logentry);
 	}
 
-#ifdef USE_EVENT_BROKER
-	/* send event data to broker */
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
 	neb_result = broker_event_handler(NEBTYPE_EVENTHANDLER_START, NEBFLAG_NONE, NEBATTR_NONE, HOST_EVENTHANDLER, (void *)hst, hst->current_state, hst->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, hst->event_handler, processed_command, NULL);
@@ -626,7 +574,6 @@ static int run_host_event_handler(nagios_macros *mac, const host * const hst)
 		nm_free(processed_logentry);
 		return OK;
 	}
-#endif
 
 	/* run the command through a worker */
 	result = wproc_run_callback(processed_command, event_handler_timeout, event_handler_job_handler, "Host", mac);
@@ -635,15 +582,10 @@ static int run_host_event_handler(nagios_macros *mac, const host * const hst)
 	if (early_timeout == TRUE)
 		nm_log(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, "Warning: Host event handler command '%s' timed out after %d seconds\n", processed_command, event_handler_timeout);
 
-#ifdef USE_EVENT_BROKER
 	/* get end time */
 	gettimeofday(&end_time, NULL);
-#endif
 
-#ifdef USE_EVENT_BROKER
-	/* send event data to broker */
 	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_EVENTHANDLER, (void *)hst, hst->current_state, hst->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, hst->event_handler, processed_command, command_output);
-#endif
 
 	nm_free(command_output);
 	nm_free(processed_command);
