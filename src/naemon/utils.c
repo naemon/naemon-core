@@ -663,69 +663,6 @@ int drop_privileges(char *user, char *group)
 /************************ STRING FUNCTIONS ************************/
 /******************************************************************/
 
-/* gets the next string from a buffer in memory - strings are terminated by newlines, which are removed */
-char *get_next_string_from_buf(char *buf, int *start_index, int bufsize)
-{
-	char *sptr = NULL;
-	const char *nl = "\n";
-	int x;
-
-	if (buf == NULL || start_index == NULL)
-		return NULL;
-	if (bufsize < 0)
-		return NULL;
-	if (*start_index >= (bufsize - 1))
-		return NULL;
-
-	sptr = buf + *start_index;
-
-	/* end of buffer */
-	if (sptr[0] == '\x0')
-		return NULL;
-
-	x = strcspn(sptr, nl);
-	sptr[x] = '\x0';
-
-	*start_index += x + 1;
-
-	return sptr;
-}
-
-
-/* escapes newlines in a string */
-char *escape_newlines(char *rawbuf)
-{
-	char *newbuf = NULL;
-	register int x, y;
-
-	if (rawbuf == NULL)
-		return NULL;
-
-	/* allocate enough memory to escape all chars if necessary */
-	newbuf = nm_malloc((strlen(rawbuf) * 2) + 1);
-	for (x = 0, y = 0; rawbuf[x] != (char)'\x0'; x++) {
-
-		/* escape backslashes */
-		if (rawbuf[x] == '\\') {
-			newbuf[y++] = '\\';
-			newbuf[y++] = '\\';
-		}
-
-		/* escape newlines */
-		else if (rawbuf[x] == '\n') {
-			newbuf[y++] = '\\';
-			newbuf[y++] = 'n';
-		}
-
-		else
-			newbuf[y++] = rawbuf[x];
-	}
-	newbuf[y] = '\x0';
-
-	return newbuf;
-}
-
-
 /* compares strings */
 int compare_strings(char *val1a, char *val2a)
 {

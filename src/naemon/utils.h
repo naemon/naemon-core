@@ -43,11 +43,7 @@ void free_memory(nagios_macros *mac);                              	/* free memo
 int reset_variables(void);                           	/* reset all global variables */
 
 void sighandler(int);                                	/* handles signals */
-/* FIXME: unused? */
-char *get_next_string_from_buf(char *buf, int *start_index, int bufsize);
 int compare_strings(char *, char *);                    /* compares two strings for equality */
-/* FIXME: unused? */
-char *escape_newlines(char *);
 int my_rename(char *, char *);                          /* renames a file - works across filesystems */
 int my_fcopy(char *, char *);                           /* copies a file - works across filesystems */
 int my_fdcopy(char *, char *, int);                     /* copies a named source to an already opened destination file */
