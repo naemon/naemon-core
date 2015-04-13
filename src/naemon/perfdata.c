@@ -339,7 +339,6 @@ static int xpddefault_run_service_performance_data_command(nagios_macros *mac, s
 	if (service_perfdata_command == NULL)
 		return OK;
 
-	/* get the raw command line */
 	get_raw_command_line_r(mac, service_perfdata_command_ptr, service_perfdata_command, &raw_command_line, macro_options);
 	if (raw_command_line == NULL)
 		return ERROR;
@@ -376,7 +375,6 @@ static int xpddefault_run_host_performance_data_command(nagios_macros *mac, host
 	if (host_perfdata_command == NULL)
 		return OK;
 
-	/* get the raw command line */
 	get_raw_command_line_r(mac, host_perfdata_command_ptr, host_perfdata_command, &raw_command_line, macro_options);
 	if (raw_command_line == NULL)
 		return ERROR;
@@ -564,7 +562,6 @@ static void xpddefault_process_host_perfdata_file(struct nm_event_execution_prop
 		/* init macros */
 		memset(&mac, 0, sizeof(mac));
 
-		/* get the raw command line */
 		get_raw_command_line_r(&mac, host_perfdata_file_processing_command_ptr, host_perfdata_file_processing_command, &raw_command_line, macro_options);
 		if (raw_command_line == NULL) {
 			clear_volatile_macros_r(&mac);
@@ -632,7 +629,6 @@ static void xpddefault_process_service_perfdata_file(struct nm_event_execution_p
 		/* init macros */
 		memset(&mac, 0, sizeof(mac));
 
-		/* get the raw command line */
 		get_raw_command_line_r(&mac, service_perfdata_file_processing_command_ptr, service_perfdata_file_processing_command, &raw_command_line, macro_options);
 		if (raw_command_line == NULL) {
 			clear_volatile_macros_r(&mac);

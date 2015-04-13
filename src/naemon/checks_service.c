@@ -234,7 +234,6 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	grab_host_macros_r(&mac, temp_host);
 	grab_service_macros_r(&mac, svc);
 
-	/* get the raw command line */
 	get_raw_command_line_r(&mac, svc->check_command_ptr, svc->check_command, &raw_command, macro_options);
 	if (raw_command == NULL) {
 		clear_volatile_macros_r(&mac);

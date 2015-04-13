@@ -252,7 +252,6 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	memset(&mac, 0, sizeof(mac));
 	grab_host_macros_r(&mac, hst);
 
-	/* get the raw command line */
 	get_raw_command_line_r(&mac, hst->check_command_ptr, hst->check_command, &raw_command, macro_options);
 	if (raw_command == NULL) {
 		clear_volatile_macros_r(&mac);

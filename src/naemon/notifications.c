@@ -954,7 +954,6 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 		else if (NEBERROR_CALLBACKOVERRIDE == neb_result)
 			continue ;
 
-		/* get the raw command line */
 		get_raw_command_line_r(mac, temp_commandsmember->command_ptr, temp_commandsmember->command, &raw_command, macro_options);
 		if (raw_command == NULL)
 			continue;
@@ -1782,7 +1781,6 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 		else if (NEBERROR_CALLBACKOVERRIDE == neb_result)
 			continue ;
 
-		/* get the raw command line */
 		get_raw_command_line_r(mac, temp_commandsmember->command_ptr, temp_commandsmember->command, &raw_command, macro_options);
 		if (raw_command == NULL)
 			continue;

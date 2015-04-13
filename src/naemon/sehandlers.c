@@ -77,7 +77,6 @@ int obsessive_compulsive_service_check_processor(service *svc)
 	grab_host_macros_r(&mac, temp_host);
 	grab_service_macros_r(&mac, svc);
 
-	/* get the raw command line */
 	get_raw_command_line_r(&mac, ocsp_command_ptr, ocsp_command, &raw_command, macro_options);
 	if (raw_command == NULL) {
 		clear_volatile_macros_r(&mac);
@@ -136,7 +135,6 @@ int obsessive_compulsive_host_check_processor(host *hst)
 	memset(&mac, 0, sizeof(mac));
 	grab_host_macros_r(&mac, hst);
 
-	/* get the raw command line */
 	get_raw_command_line_r(&mac, ochp_command_ptr, ochp_command, &raw_command, macro_options);
 	if (raw_command == NULL) {
 		clear_volatile_macros_r(&mac);
@@ -256,7 +254,6 @@ static int run_global_service_event_handler(nagios_macros *mac, service *svc)
 	/* get start time */
 	gettimeofday(&start_time, NULL);
 
-	/* get the raw command line */
 	get_raw_command_line_r(mac, global_service_event_handler_ptr, global_service_event_handler, &raw_command, macro_options);
 	if (raw_command == NULL) {
 		return ERROR;
@@ -339,7 +336,6 @@ static int run_service_event_handler(nagios_macros *mac, service *svc)
 	/* get start time */
 	gettimeofday(&start_time, NULL);
 
-	/* get the raw command line */
 	get_raw_command_line_r(mac, svc->event_handler_ptr, svc->event_handler, &raw_command, macro_options);
 	if (raw_command == NULL)
 		return ERROR;
@@ -460,7 +456,6 @@ static int run_global_host_event_handler(nagios_macros *mac, const host * const 
 	/* get start time */
 	gettimeofday(&start_time, NULL);
 
-	/* get the raw command line */
 	get_raw_command_line_r(mac, global_host_event_handler_ptr, global_host_event_handler, &raw_command, macro_options);
 	if (raw_command == NULL)
 		return ERROR;
@@ -542,7 +537,6 @@ static int run_host_event_handler(nagios_macros *mac, const host * const hst)
 	/* get start time */
 	gettimeofday(&start_time, NULL);
 
-	/* get the raw command line */
 	get_raw_command_line_r(mac, hst->event_handler_ptr, hst->event_handler, &raw_command, macro_options);
 	if (raw_command == NULL)
 		return ERROR;
