@@ -1,4 +1,5 @@
 #include <string.h>
+#include "utils.h"
 #include "logging.h"
 #include "config.h"
 #include "common.h"
@@ -294,7 +295,7 @@ int delete_all_service_comments(char *host_name, char *svc_description)
 	/* delete service comments from memory */
 	for (temp_comment = comment_list; temp_comment != NULL; temp_comment = next_comment) {
 		next_comment = temp_comment->next;
-		if (temp_comment->comment_type == SERVICE_COMMENT && !strcmp(temp_comment->host_name, host_name) && !strcmp(temp_comment->service_description, svc_description))
+		if (temp_comment->comment_type == SERVICE_COMMENT && !g_strcmp0(temp_comment->host_name, host_name) && !g_strcmp0(temp_comment->service_description, svc_description))
 			delete_comment(SERVICE_COMMENT, temp_comment->comment_id);
 	}
 
@@ -315,7 +316,7 @@ int delete_service_acknowledgement_comments(service *svc)
 	/* delete comments from memory */
 	for (temp_comment = comment_list; temp_comment != NULL; temp_comment = next_comment) {
 		next_comment = temp_comment->next;
-		if (temp_comment->comment_type == SERVICE_COMMENT && !strcmp(temp_comment->host_name, svc->host_name) && !strcmp(temp_comment->service_description, svc->description)  && temp_comment->entry_type == ACKNOWLEDGEMENT_COMMENT && temp_comment->persistent == FALSE)
+		if (temp_comment->comment_type == SERVICE_COMMENT && !g_strcmp0(temp_comment->host_name, svc->host_name) && !g_strcmp0(temp_comment->service_description, svc->description)  && temp_comment->entry_type == ACKNOWLEDGEMENT_COMMENT && temp_comment->persistent == FALSE)
 			delete_comment(SERVICE_COMMENT, temp_comment->comment_id);
 	}
 
@@ -349,8 +350,8 @@ int add_comment_to_hashlist(comment *new_comment)
 
 	hashslot = hashfunc(new_comment->host_name, NULL, COMMENT_HASHSLOTS);
 	lastpointer = NULL;
-	for (temp_comment = comment_hashlist[hashslot]; temp_comment && compare_hashdata(temp_comment->host_name, NULL, new_comment->host_name, NULL) < 0; temp_comment = temp_comment->nexthash) {
-		if (compare_hashdata(temp_comment->host_name, NULL, new_comment->host_name, NULL) >= 0)
+	for (temp_comment = comment_hashlist[hashslot]; temp_comment && g_strcmp0(temp_comment->host_name, new_comment->host_name) < 0; temp_comment = temp_comment->nexthash) {
+		if (g_strcmp0(temp_comment->host_name, new_comment->host_name) >= 0)
 			break;
 		lastpointer = temp_comment;
 	}
@@ -577,7 +578,7 @@ int number_of_service_comments(char *host_name, char *svc_description)
 		return 0;
 
 	for (temp_comment = get_first_comment_by_host(host_name); temp_comment != NULL; temp_comment = get_next_comment_by_host(host_name, temp_comment)) {
-		if (temp_comment->comment_type == SERVICE_COMMENT && !strcmp(temp_comment->service_description, svc_description))
+		if (temp_comment->comment_type == SERVICE_COMMENT && !g_strcmp0(temp_comment->service_description, svc_description))
 			total_comments++;
 	}
 
@@ -608,9 +609,9 @@ comment *get_next_comment_by_host(char *host_name, comment *start)
 	else
 		temp_comment = start->nexthash;
 
-	for (; temp_comment && compare_hashdata(temp_comment->host_name, NULL, host_name, NULL) < 0; temp_comment = temp_comment->nexthash);
+	for (; temp_comment && g_strcmp0(temp_comment->host_name, host_name) < 0; temp_comment = temp_comment->nexthash);
 
-	if (temp_comment && compare_hashdata(temp_comment->host_name, NULL, host_name, NULL) == 0)
+	if (temp_comment && g_strcmp0(temp_comment->host_name, host_name) == 0)
 		return temp_comment;
 
 	return NULL;

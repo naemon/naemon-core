@@ -946,7 +946,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	}
 
 	/* if we're stalking this state type and state was not already logged AND the plugin output changed since last check, log it now.. */
-	if (temp_service->state_type == HARD_STATE && state_change == FALSE && !alert_recorded && (compare_strings(old_plugin_output, temp_service->plugin_output) || compare_strings(old_long_plugin_output, temp_service->long_plugin_output))) {
+	if (temp_service->state_type == HARD_STATE && state_change == FALSE && !alert_recorded && (g_strcmp0(old_plugin_output, temp_service->plugin_output) || g_strcmp0(old_long_plugin_output, temp_service->long_plugin_output))) {
 		if (should_stalk(temp_service)) {
 			log_service_event(temp_service);
 			alert_recorded = NEBATTR_CHECK_ALERT;

@@ -815,7 +815,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 	/******************** POST-PROCESSING STUFF *********************/
 
 	/* if the plugin output differs from previous check and no state change, log the current state/output if state stalking is enabled */
-	if (hst->last_state == hst->current_state && should_stalk(hst) && (compare_strings(old_plugin_output, hst->plugin_output) || compare_strings(old_long_plugin_output, hst->long_plugin_output))) {
+	if (hst->last_state == hst->current_state && should_stalk(hst) && (g_strcmp0(old_plugin_output, hst->plugin_output) || g_strcmp0(old_long_plugin_output, hst->long_plugin_output))) {
 		log_host_event(hst);
 		*alert_recorded = NEBATTR_CHECK_ALERT;
 	}

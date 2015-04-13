@@ -5,6 +5,7 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
+#include <string.h>
 #include "checks.h"
 #include "objects_timeperiod.h"
 #include "objects_command.h"
@@ -43,7 +44,6 @@ void free_memory(nagios_macros *mac);                              	/* free memo
 int reset_variables(void);                           	/* reset all global variables */
 
 void sighandler(int);                                	/* handles signals */
-int compare_strings(char *, char *);                    /* compares two strings for equality */
 int my_rename(char *, char *);                          /* renames a file - works across filesystems */
 int my_fcopy(char *, char *);                           /* copies a file - works across filesystems */
 int my_fdcopy(char *, char *, int);                     /* copies a named source to an already opened destination file */
