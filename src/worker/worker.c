@@ -84,6 +84,23 @@ static void wlog(const char *fmt, ...)
 	}
 }
 
+static int worker_send_kvvec(int sd, struct kvvec *kvv)
+{
+	int ret;
+	struct kvvec_buf *kvvb;
+
+	kvvb = build_kvvec_buf(kvv);
+	if (!kvvb)
+		return -1;
+
+	/* bufsize, not buflen, as it gets us the delimiter */
+	ret = iobroker_write_packet(nagios_iobs, sd, kvvb->buf, (size_t)kvvb->bufsize);
+	free(kvvb->buf);
+	free(kvvb);
+
+	return ret;
+}
+
 static void job_error(child_process *cp, struct kvvec *kvv, const char *fmt, ...)
 {
 	char msg[4096];
@@ -102,23 +119,6 @@ static void job_error(child_process *cp, struct kvvec *kvv, const char *fmt, ...
 	if (ret < 0 && errno == EPIPE)
 		exit_worker(1, "Failed to send job error key/value vector to master");
 	kvvec_destroy(kvv, 0);
-}
-
-int worker_send_kvvec(int sd, struct kvvec *kvv)
-{
-	int ret;
-	struct kvvec_buf *kvvb;
-
-	kvvb = build_kvvec_buf(kvv);
-	if (!kvvb)
-		return -1;
-
-	/* bufsize, not buflen, as it gets us the delimiter */
-	ret = iobroker_write_packet(nagios_iobs, sd, kvvb->buf, (size_t)kvvb->bufsize);
-	free(kvvb->buf);
-	free(kvvb);
-
-	return ret;
 }
 
 /* forward declaration */
@@ -148,7 +148,7 @@ static void destroy_job(child_process *cp)
 	free(cp);
 }
 
-int finish_job(child_process *cp, int reason)
+static int finish_job(child_process *cp, int reason)
 {
 	static struct kvvec resp = KVVEC_INITIALIZER;
 	struct rusage *ru = &cp->ei->rusage;
@@ -396,7 +396,7 @@ static void reap_jobs(void)
 	} while (reapable);
 }
 
-int start_cmd(child_process *cp)
+static int start_cmd(child_process *cp)
 {
 	int pfd[2] = { -1, -1}, pfderr[2] = { -1, -1};
 
@@ -540,13 +540,7 @@ static int receive_command(int sd, int events, void *arg)
 	return 0;
 }
 
-/* XXX: deprecated */
-int set_socket_options(int sd, int bufsize)
-{
-	return worker_set_sockopts(sd, bufsize);
-}
-
-void enter_worker(int sd, int (*cb)(child_process *))
+static void enter_worker(int sd, int (*cb)(child_process *))
 {
 	/* created with socketpair(), usually */
 	master_sd = sd;
@@ -577,4 +571,41 @@ void enter_worker(int sd, int (*cb)(child_process *))
 		event_poll();
 		reap_jobs();
 	}
+}
+
+int nm_core_worker(const char *path)
+{
+	int sd, ret;
+	char response[128];
+
+	sd = nsock_unix(path, NSOCK_TCP | NSOCK_CONNECT);
+	if (sd < 0) {
+		printf("Failed to connect to query socket '%s': %s: %s\n",
+		       path, nsock_strerror(sd), strerror(errno));
+		return 1;
+	}
+
+	ret = nsock_printf_nul(sd, "@wproc register name=Core Worker %d;pid=%d", getpid(), getpid());
+	if (ret < 0) {
+		printf("Failed to register as worker.\n");
+		return 1;
+	}
+
+	ret = read(sd, response, 3);
+	if (ret != 3) {
+		printf("Failed to read response from wproc manager\n");
+		return 1;
+	}
+	if (memcmp(response, "OK", 3)) {
+		if (read(sd, response + 3, sizeof(response) - 4) < 0) {
+			printf("Failed to register with wproc manager: %s\n", strerror(errno));
+		} else {
+			response[sizeof(response) - 2] = 0;
+			printf("Failed to register with wproc manager: %s\n", response);
+		}
+		return 1;
+	}
+
+	enter_worker(sd, start_cmd);
+	return 0;
 }

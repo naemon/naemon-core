@@ -28,8 +28,6 @@
 #include <getopt.h>
 #include <string.h>
 
-static int is_worker;
-
 static int test_path_access(const char *program, int mode)
 {
 	char *envpath, *p, *colon;
@@ -73,45 +71,6 @@ static int test_path_access(const char *program, int mode)
 		errno = our_errno;
 
 	return ret;
-}
-
-static int nagios_core_worker(const char *path)
-{
-	int sd, ret;
-	char response[128];
-
-	is_worker = 1;
-
-	sd = nsock_unix(path, NSOCK_TCP | NSOCK_CONNECT);
-	if (sd < 0) {
-		printf("Failed to connect to query socket '%s': %s: %s\n",
-		       path, nsock_strerror(sd), strerror(errno));
-		return 1;
-	}
-
-	ret = nsock_printf_nul(sd, "@wproc register name=Core Worker %d;pid=%d", getpid(), getpid());
-	if (ret < 0) {
-		printf("Failed to register as worker.\n");
-		return 1;
-	}
-
-	ret = read(sd, response, 3);
-	if (ret != 3) {
-		printf("Failed to read response from wproc manager\n");
-		return 1;
-	}
-	if (memcmp(response, "OK", 3)) {
-		if (read(sd, response + 3, sizeof(response) - 4) < 0) {
-			printf("Failed to register with wproc manager: %s\n", strerror(errno));
-		} else {
-			response[sizeof(response) - 2] = 0;
-			printf("Failed to register with wproc manager: %s\n", response);
-		}
-		return 1;
-	}
-
-	enter_worker(sd, start_cmd);
-	return 0;
 }
 
 /*
@@ -264,7 +223,7 @@ int main(int argc, char **argv)
 
 	/* if we're a worker we can skip everything below */
 	if (worker_socket) {
-		exit(nagios_core_worker(worker_socket));
+		exit(nm_core_worker(worker_socket));
 	}
 
 	if (daemon_mode == FALSE) {

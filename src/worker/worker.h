@@ -16,11 +16,13 @@
 
 /**
  * @file worker.h
- * @brief Worker implementation along with various helpers
+ * @brief Naemon core worker implementation
  *
- * This code isn't really in the "library" category, but it's tucked
- * in here to provide a good resource for writing remote workers and
- * as an example on how to use the API's found here.
+ * The default core worker accepts shell commands, executes them
+ * and returns a lot of details about the execution of that
+ * command. You can use worker.c as a template for writing a
+ * custom worker, but using functions from it in a custom worker
+ * will probably not be very useful (apart from wlog()).
  */
 
 #ifndef ETIME
@@ -47,32 +49,11 @@ typedef struct child_process {
 } child_process;
 
 /**
- * Callback for enter_worker that simply runs a command
+ * Core worker entry point
+ * @param path The path to the query socket this worker should connect to
+ * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int start_cmd(child_process *cp);
-
-/**
- * To be called when a child_process has completed to ship the result to nagios
- * @param cp The child_process that describes the job
- * @param reason 0 if everything was OK, 1 if the job was unable to run
- * @return 0 on success, non-zero otherwise
- */
-extern int finish_job(child_process *cp, int reason);
-
-/**
- * Start to poll the socket and call the callback when there are new tasks
- * @param sd A socket descriptor to poll
- * @param cb The callback to call upon completion
- */
-extern void enter_worker(int sd, int (*cb)(child_process*));
-
-/**
- * Send a key/value vector as a bytestream through a socket
- * @param[in] sd The socket descriptor to send to
- * @param kvv The key/value vector to send
- * @return The number of bytes sent, or -1 on errors
- */
-extern int worker_send_kvvec(int sd, struct kvvec *kvv);
+extern int nm_core_worker(const char *path);
 
 NAGIOS_END_DECL
 
