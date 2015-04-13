@@ -99,20 +99,6 @@ status_update_interval=10
 
 
 
-# NAEMON USER
-# This determines the effective user that Naemon should run as.
-# You can either supply a username or a UID.
-
-
-
-
-# NAEMON GROUP
-# This determines the effective group that Naemon should run as.
-# You can either supply a group name or a GID.
-
-
-
-
 # EXTERNAL COMMAND OPTION
 # This option allows you to specify whether or not Naemon should check
 # for external commands (in the command file defined below).  By default
@@ -995,32 +981,6 @@ use_true_regexp_matching=0
 admin_email=@naemon_user@@localhost
 admin_pager=page@naemon_user@@localhost
 
-
-
-# DAEMON CORE DUMP OPTION
-# This option determines whether or not Naemon is allowed to create
-# a core dump when it runs as a daemon.  Note that it is generally
-# considered bad form to allow this, but it may be useful for
-# debugging purposes.  Enabling this option doesn't guarantee that
-# a core file will be produced, but that's just life...
-# Values: 1 - Allow core dumps
-#         0 - Do not allow core dumps (default)
-
-
-
-
-# LARGE INSTALLATION TWEAKS OPTION
-# This option determines whether or not Naemon will take some shortcuts
-# which can save on memory and CPU usage in large Naemon installations.
-# Read the documentation for more information on the benefits/tradeoffs
-# of enabling this option.
-# Values: 1 - Enabled tweaks
-#         0 - Disable tweaks (default)
-
-use_large_installation_tweaks=0
-
-
-
 # ENABLE ENVIRONMENT MACROS
 # This option determines whether or not Naemon will make all standard
 # macros available as environment variables when host/service checks
@@ -1035,33 +995,6 @@ use_large_installation_tweaks=0
 #         0 - Disable environment variable macros (default)
 
 enable_environment_macros=0
-
-
-
-# CHILD PROCESS MEMORY OPTION
-# This option determines whether or not Naemon will free memory in
-# child processes (processed used to execute system commands and host/
-# service checks).  If you specify a value here, it will override
-# program defaults.
-# Value: 1 - Free memory in child processes
-#        0 - Do not free memory in child processes
-
-#free_child_process_memory=1
-
-
-
-# CHILD PROCESS FORKING BEHAVIOR
-# This option determines how Naemon will fork child processes
-# (used to execute system commands and host/service checks).  Normally
-# child processes are fork()ed twice, which provides a very high level
-# of isolation from problems.  Fork()ing once is probably enough and will
-# save a great deal on CPU usage (in large installs), so you might
-# want to consider using this.  If you specify a value here, it will
-# program defaults.
-# Value: 1 - Child processes fork() twice
-#        0 - Child processes fork() just once
-
-#child_processes_fork_twice=1
 
 
 
