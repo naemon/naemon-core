@@ -79,9 +79,6 @@
 #endif
 #define TRUE (!FALSE) /**< Not false */
 
-/** Useful macro to safely avoid double-free memory corruption */
-#define my_free(ptr) do { if(ptr) { free(ptr); ptr = NULL; } } while(0)
-
 #ifndef ARRAY_SIZE
 /** Useful for iterating over all elements in a static array */
 # define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
