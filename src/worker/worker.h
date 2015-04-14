@@ -12,7 +12,7 @@
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#include "lib/libnagios.h"
+#include "lib/libnaemon.h"
 
 /**
  * @file worker.h

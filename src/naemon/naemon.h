@@ -24,7 +24,6 @@
 #include "logging.h"
 #include "macros.h"
 #include "naemon.h"
-#include "nagios.h"
 #include "nebcallbacks.h"
 #include "neberrors.h"
 #include "nebmods.h"

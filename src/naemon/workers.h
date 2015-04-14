@@ -5,7 +5,7 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
-#include "lib/libnagios.h"
+#include "lib/libnaemon.h"
 #include "macros.h"
 
 #include <sys/resource.h>

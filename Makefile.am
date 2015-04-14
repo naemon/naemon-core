@@ -41,14 +41,13 @@ src/naemon/buildopts.h: src/naemon/buildopts.h.in
 
 nobase_pkginclude_HEADERS = \
 	lib/bitmap.h    lib/kvvec.h       lib/kvvec_ekvstr.h lib/nsock.h    \
-	lib/libnaemon.h   lib/nspath.h   lib/snprintf.h \
-	lib/libnagios.h   lib/nsutils.h  \
+	lib/libnaemon.h   lib/nspath.h   lib/snprintf.h lib/nsutils.h  \
 	lib/iobroker.h  lib/lnae-utils.h  lib/t-utils.h \
 	lib/bufferqueue.h   lib/lnag-utils.h  lib/runcmd.h   lib/worker.h \
 	lib/rbtree.h lib/objutils.h
 
 pkginclude_HEADERS = \
-	src/naemon/broker.h			src/naemon/events.h			src/naemon/nagios.h			src/naemon/objects.h \
+	src/naemon/broker.h src/naemon/events.h src/naemon/objects.h \
 	src/naemon/objects_common.h src/naemon/objectlist.h src/naemon/objects_command.h \
 	src/naemon/objects_contact.h src/naemon/objects_contactgroup.h \
 	src/naemon/objects_host.h src/naemon/objects_hostgroup.h \
@@ -117,7 +116,7 @@ common_sources = \
 	src/naemon/xodtemplate.c src/naemon/xodtemplate.h \
 	src/naemon/xrddefault.c src/naemon/xrddefault.h \
 	src/naemon/xsddefault.c src/naemon/xsddefault.h \
-	src/naemon/nagios.h src/naemon/naemon.h \
+	src/naemon/naemon.h \
 	src/worker/worker.c src/worker/worker.h \
 	src/naemon/wpres.gperf \
 	src/naemon/buildopts.h config.h
