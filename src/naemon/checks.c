@@ -2850,7 +2850,7 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 
 	dbuf_init(&perf_data_dbuf, 1024);
 	tmp = strtok_r(tmpbuf, "\n", &saveptr);
-	p = strpbrk((const char *) tmp, "|");
+	p = tmp ? strpbrk((const char *) tmp, "|") : NULL;
 	if (p == NULL) {
 		/* No perfdata in first line of output. */
 			check_output->short_output = tmp ? nm_strdup(tmp) : nm_strdup("");
