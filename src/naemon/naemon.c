@@ -88,7 +88,7 @@ static int test_configured_paths(void)
 	fp = fopen(log_file, "a+");
 	if (!fp) {
 		/*
-		 * we do some variable trashing here so logit() can
+		 * The variable trashing is so the logging code can
 		 * open the old logfile (if any), in case we got a
 		 * restart command or a SIGHUP
 		 */

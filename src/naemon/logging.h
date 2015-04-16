@@ -80,9 +80,6 @@ extern int log_initial_states;
 extern int log_current_states;
 
 /**** Logging Functions ****/
-/* logit is deprecated. People should use nm_log() instead */
-void logit(int, int, const char *, ...)
-__attribute__((__format__(__printf__, 3, 4), deprecated));
 void nm_log(int, const char *, ...)
 __attribute__((__format__(__printf__, 2, 3)));
 int log_debug_info(int, int, const char *, ...)
