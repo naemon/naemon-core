@@ -8841,7 +8841,6 @@ static int xodtemplate_process_config_file(char *filename)
 		}
 	}
 
-	/* free memory and close file */
 	nm_free(input);
 	mmap_fclose(thefile);
 

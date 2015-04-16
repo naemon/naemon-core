@@ -315,6 +315,7 @@ void signal_react() {
 	sig_id = 0;
 }
 
+
 /**
  * Handle the SIGXFSZ signal. A SIGXFSZ signal is received when a file exceeds
  * the maximum allowable size either as dictated by the fzise paramater in
@@ -1063,7 +1064,6 @@ int generate_check_stats(void)
 /* returns Naemon version */
 const char *get_program_version(void)
 {
-
 	return (const char *)VERSION;
 }
 
