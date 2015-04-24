@@ -149,7 +149,7 @@ if [ ! -f /etc/sysconfig/naemon ]; then
 	cat <<"RAMDISKDOC" >> /etc/sysconfig/naemon
 # Check if we are going to use RAMDISK or not to save
 # our perfdata ans checkresults, to lower I/O load
-if [ $USE_RAMDISK == 1 ]; then
+if [ ${USE_RAMDISK:-0} == 1 ]; then
 	if [ ! -d /dev/shm/monitor/var/spool/perfdata ]; then
 		mkdir -p /dev/shm/monitor/var/spool/perfdata
 	fi
