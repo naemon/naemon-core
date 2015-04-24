@@ -157,7 +157,7 @@ if [ ${USE_RAMDISK:-0} == 1 ]; then
 		mkdir -p /dev/shm/monitor/var/spool/checkresults
 	fi
 	chmod -R 775 /dev/shm/monitor/var/spool
-	chown -R monitor:apache /dev/shm/monitor
+	chown -R %{daemon_user}:%{daemon_group} /dev/shm/monitor
 fi
 RAMDISKDOC
 fi
