@@ -61,33 +61,6 @@ pidof_naemon() {
     return 1
 }
 
-check_config() {
-    TMPFILE=$(mktemp /tmp/.configtest.XXXXXXXX)
-    $0 configtest > "$TMPFILE"
-    WARN=`grep ^"Total Warnings:" "$TMPFILE" |awk -F: '{print \$2}' |sed s/' '//g`
-    ERR=`grep ^"Total Errors:" "$TMPFILE" |awk -F: '{print \$2}' |sed s/' '//g`
-
-    if test "${ERR}" != "0"; then
-        # We'll write out the errors to a file we can have a
-        # script watching for
-        echo "WARNING: Errors in config files - see log for details: $TMPFILE" > @TMPDIR@/naemon.configtest
-        grep -i ^error "$TMPFILE" >> @TMPDIR@/naemon.configtest
-        chmod 0644 @TMPDIR@/naemon.configtest
-        cat "$TMPFILE"
-        exit 8
-    elif test "${WARN}" != "0"; then
-        # Warnings don't need to be saved, so just print them and
-        # be done with it.
-        echo "WARNING: Warnings in config files - see log for details: $TMPFILE" > @TMPDIR@/naemon.configtest
-        cat "$TMPFILE"
-    else
-        echo "OK - Configuration check verified" > @TMPDIR@/naemon.configtest
-        chmod 0644 @TMPDIR@/naemon.configtest
-        /bin/rm "$TMPFILE"
-    fi
-    return 0
-}
-
 naemon_wait_stop() {
     pidtmp=$(pidof_naemon) || true
     if kill -0 "${pidtmp:-}" 2> /dev/null; then
@@ -118,7 +91,13 @@ start() {
     test -x $exec || exit 5
     test -f $config || exit 6
     if [ "$checkconfig" = "false" ]; then
-        check_config
+        $0 configtest > /dev/null
+        retval=$?
+        if [ "$retval" != "0" ]; then
+            echo "Cowardly refusing to start, failed to verify config"
+            echo "Run '$0 configtest' for more info"
+            exit $retval
+        fi
     fi
     echo -n "Starting $prog: "
     # Create PID folder if it does not exist
@@ -159,7 +138,13 @@ stop() {
 
 
 restart() {
-    check_config
+    $0 configtest > /dev/null
+    retval=$?
+    if [ "$retval" != "0" ]; then
+        echo "Cowardly refusing to restart, failed to verify config"
+        echo "Run '$0 configtest' for more info"
+        exit $retval
+    fi
     checkconfig="true"
     pid=$(pidof_naemon) || true
     naemon_wait_stop
@@ -217,10 +202,10 @@ case "$1" in
         else
           /bin/su - -s /bin/sh $user -c "$corelimit >/dev/null 2>&1 ; $exec -vp $config"
         fi
-        RETVAL=$?
+        retval=$?
         ;;
     *)
         echo "Usage: $0 {start|stop|status|restart|condrestart|try-restart|reload|force-reload|configtest}"
         exit 2
 esac
-exit $?
+exit $retval
