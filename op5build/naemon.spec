@@ -29,6 +29,8 @@ BuildRequires: gperf, help2man
 BuildRequires: perl(Test::Simple)
 BuildRequires: perl(Test::Harness)
 BuildRequires: glib2-devel
+BuildRequires: check
+BuildRequires: check-devel
 %if 0%{?suse_version}
 #The suse distribution of glibc <= 2.11.3-17.43
 #contains a dlclose/dlopen bug which caused globals
