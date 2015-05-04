@@ -100,7 +100,7 @@ start() {
 stop() {
     echo -n "Stopping $prog: "
     if [ "x${is_suse}" == "xyes" ]; then
-        killproc -p ${pidfile} -t 10
+        killproc -p ${pidfile} -t 10 $exec
     elif type start-stop-daemon >/dev/null 2>&1; then
         start-stop-daemon --stop --name ${prog} --pidfile ${pidfile} --exec ${exec}
     else
