@@ -2855,6 +2855,7 @@ static int xodtemplate_duplicate_services(void)
 				if (!next && !hlist->next) {
 					temp_service->id = xodcount.services++;
 					temp_service->host_name = h->host_name;
+					temp_service->is_from_hostgroup = (hg != &fake_hg);
 				} else {
 					/* duplicate service definition */
 					result = xodtemplate_duplicate_service(temp_service, h->host_name, hg != &fake_hg);
@@ -2879,8 +2880,27 @@ static int xodtemplate_duplicate_services(void)
 
 		prev = rbtree_insert(xobject_tree[OBJTYPE_SERVICE], (void *)temp_service);
 		if (prev) {
-			nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for service '%s' on host '%s' (config file '%s', starting on line %d)\n", temp_service->service_description, temp_service->host_name, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
-			result = ERROR;
+			/*
+			 * If we find a node in the tree, it is a duplicate.
+			 * Duplicates are not necessary wrong, since it's allowed to have
+			 * one service from hostgroup and one from the host itself.
+			 *
+			 * But two services on the host itself is wrong.
+			 *
+			 * Also, two services from different hostgroups is ambigous, thus
+			 * treat them as a problem too.
+			 *
+			 * The corner case, two services from different host groups, one
+			 * on the host itself might be a warning, if the second host group
+			 * services is loaded before the host service.
+			 */
+			if(((xodtemplate_service*)prev->data)->is_from_hostgroup && !temp_service->is_from_hostgroup) {
+				rbtree_delete(xobject_tree[OBJTYPE_SERVICE], prev);
+				rbtree_insert(xobject_tree[OBJTYPE_SERVICE], (void *)temp_service);
+			} else if(!((xodtemplate_service*)prev->data)->is_from_hostgroup && !temp_service->is_from_hostgroup) {
+				nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for service '%s' on host '%s' (config file '%s', starting on line %d)\n", temp_service->service_description, temp_service->host_name, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
+				result = ERROR;
+			}
 		} else {
 			xodcount.services++;
 		}
