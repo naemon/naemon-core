@@ -1342,8 +1342,8 @@ int pre_flight_check(void)
 	/* check if we can write to check_result_path */
 	nm_asprintf(&buf, "%s/nagiosXXXXXX", check_result_path);
 	if ((temp_path_fd = mkstemp(buf)) == -1) {
-		nm_log(NSLOG_VERIFICATION_WARNING, "\tError: Unable to write to check_result_path ('%s') - %s\n", check_result_path, strerror(errno));
-		errors++;
+		nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Unable to write to check_result_path ('%s') - %s\n", check_result_path, strerror(errno));
+		warnings++;
 	} else {
 		close(temp_path_fd);
 		remove(buf);

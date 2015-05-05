@@ -1,6 +1,7 @@
 /test*.log
 /test*.trs
 /test-checks
+/test-obj-config-parse
 /test-event-heap
 /test-kv-command
 /test-config

@@ -29,6 +29,8 @@ BuildRequires: gperf, help2man
 BuildRequires: perl(Test::Simple)
 BuildRequires: perl(Test::Harness)
 BuildRequires: glib2-devel
+BuildRequires: check
+BuildRequires: check-devel
 %if 0%{?suse_version}
 #The suse distribution of glibc <= 2.11.3-17.43
 #contains a dlclose/dlopen bug which caused globals
@@ -123,6 +125,39 @@ fi
 
 chkconfig --add naemon
 
+#Do nagios/monitor legacy init migrations (MON-7972 & MON-7975)
+if [ ! -f /etc/sysconfig/naemon ]; then
+	if [ -f /etc/profile.d/check_oracle.sh ]; then
+		#Migrate check_oracle.sh solution from /etc/profile.d as suggested by KB to
+		# /etc/sysconfig/naemon
+		#We don't remove the check_oracle.sh thing, since users might make use of it
+		# in interactive sessions or whatever, and it costs us nothing to keep it around
+		cat /etc/profile.d/check_oracle.sh >> /etc/sysconfig/naemon
+	fi
+	if [ -f /etc/sysconfig/monitor ]; then
+		# Migrate /etc/sysconfig/monitor to /etc/sysconfig/naemon and remove it
+		cat /etc/sysconfig/monitor >> /etc/sysconfig/naemon
+		rm /etc/sysconfig/monitor
+	fi
+	# Link the old path to the new path for backwards compat.
+	ln -s /etc/sysconfig/naemon /etc/sysconfig/monitor
+	# Now, do ramdisk directory creation if configured above (presumably,
+	# $USE_RAMDISK was set in /etc/sysconfig/monitor above)
+	cat <<"RAMDISKDOC" >> /etc/sysconfig/naemon
+# Check if we are going to use RAMDISK or not to save
+# our perfdata ans checkresults, to lower I/O load
+if [ ${USE_RAMDISK:-0} == 1 ]; then
+	if [ ! -d /dev/shm/monitor/var/spool/perfdata ]; then
+		mkdir -p /dev/shm/monitor/var/spool/perfdata
+	fi
+	if [ ! -d /dev/shm/monitor/var/spool/checkresults ]; then
+		mkdir -p /dev/shm/monitor/var/spool/checkresults
+	fi
+	chmod -R 775 /dev/shm/monitor/var/spool
+	chown -R %{daemon_user}:%{daemon_group} /dev/shm/monitor
+fi
+RAMDISKDOC
+fi
 
 %posttrans
 # this is run after all other transactions, which means we
