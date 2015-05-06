@@ -444,7 +444,7 @@ static long long check_file_size(char *path, unsigned long fudge,
 /******************************************************************/
 /************************ DAEMON FUNCTIONS ************************/
 /******************************************************************/
-static void set_working_directory(void)
+static int set_working_directory(void)
 {
 	/*
 	 * we shouldn't block the unmounting of
@@ -452,9 +452,9 @@ static void set_working_directory(void)
 	 */
 	if (chdir("/") != 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Error: Aborting. Failed to set daemon working directory (/): %s\n", strerror(errno));
-		cleanup();
-		exit(ERROR);
+		return (ERROR);
 	}
+	return (OK);
 }
 
 int daemon_init(void)
@@ -466,7 +466,10 @@ int daemon_init(void)
 	char buf[256];
 	struct flock lock;
 
-	set_working_directory();
+	if (set_working_directory() == (ERROR)) {
+		return (ERROR);
+	}
+
 	umask(S_IWGRP | S_IWOTH);
 
 	/* close existing stdin, stdout, stderr */
@@ -485,24 +488,20 @@ int daemon_init(void)
 	if (lockfile < 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Failed to obtain lock on file %s: %s\n", lock_file, strerror(errno));
 		nm_log(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, "Bailing out due to errors encountered while attempting to daemonize... (PID=%d)", (int)getpid());
-
-		cleanup();
-		exit(ERROR);
+		return (ERROR);
 	}
 
 	/* see if we can read the contents of the lockfile */
 	if ((val = read(lockfile, buf, (size_t)10)) < 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Lockfile exists but cannot be read");
-		cleanup();
-		exit(ERROR);
+		return (ERROR);
 	}
 
 	/* we read something - check the PID */
 	if (val > 0) {
 		if ((val = sscanf(buf, "%d", &pidno)) < 1) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Lockfile '%s' does not contain a valid PID (%s)", lock_file, buf);
-			cleanup();
-			exit(ERROR);
+			return (ERROR);
 		}
 	}
 
@@ -537,16 +536,14 @@ int daemon_init(void)
 		} else
 			nm_log(NSLOG_RUNTIME_ERROR, "Cannot lock lockfile '%s': %s. Bailing out...", lock_file, strerror(errno));
 
-		cleanup();
-		exit(ERROR);
+		return (ERROR);
 	}
 
 	/* write PID to lockfile... */
 	lseek(lockfile, 0, SEEK_SET);
 	if (ftruncate(lockfile, 0) != 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Cannot truncate lockfile '%s': %s. Bailing out...", lock_file, strerror(errno));
-		cleanup();
-		exit(ERROR);
+		return (ERROR);
 	}
 	sprintf(buf, "%d\n", (int)getpid());
 	nsock_write_all(lockfile, buf, strlen(buf));
