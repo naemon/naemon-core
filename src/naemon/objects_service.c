@@ -32,7 +32,9 @@ void destroy_objects_service()
 		destroy_service(this_service);
 	}
 	service_list = NULL;
-	g_hash_table_destroy(service_hash_table);
+	if (service_hash_table)
+		g_hash_table_destroy(service_hash_table);
+
 	service_hash_table = NULL;
 	nm_free(service_ary);
 	num_objects.services = 0;

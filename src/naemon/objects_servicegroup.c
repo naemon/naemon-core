@@ -25,7 +25,9 @@ void destroy_objects_servicegroup()
 		destroy_servicegroup(this_servicegroup);
 	}
 	servicegroup_list = NULL;
-	g_hash_table_destroy(servicegroup_hash_table);
+	if(servicegroup_hash_table)
+		g_hash_table_destroy(servicegroup_hash_table);
+
 	servicegroup_hash_table = NULL;
 	nm_free(servicegroup_ary);
 	num_objects.servicegroups = 0;

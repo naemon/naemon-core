@@ -29,7 +29,9 @@ void destroy_objects_contact()
 		destroy_contact(this_contact);
 	}
 	contact_list = NULL;
-	g_hash_table_destroy(contact_hash_table);
+	if (contact_hash_table)
+		g_hash_table_destroy(contact_hash_table);
+
 	contact_hash_table = NULL;
 	nm_free(contact_ary);
 	num_objects.contacts = 0;

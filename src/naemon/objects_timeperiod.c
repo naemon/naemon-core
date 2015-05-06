@@ -29,7 +29,9 @@ void destroy_objects_timeperiod()
 		destroy_timeperiod(this_timeperiod);
 	}
 	timeperiod_list = NULL;
-	g_hash_table_destroy(timeperiod_hash_table);
+	if (timeperiod_hash_table)
+		g_hash_table_destroy(timeperiod_hash_table);
+
 	timeperiod_hash_table = NULL;
 	nm_free(timeperiod_ary);
 	num_objects.timeperiods = 0;

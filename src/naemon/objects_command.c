@@ -23,7 +23,9 @@ void destroy_objects_command()
 		destroy_command(this_command);
 	}
 	command_list = NULL;
-	g_hash_table_destroy(command_hash_table);
+	if (command_hash_table)
+		g_hash_table_destroy(command_hash_table);
+
 	command_hash_table = NULL;
 	nm_free(command_ary);
 	num_objects.commands = 0;

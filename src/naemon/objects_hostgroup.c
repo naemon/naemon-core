@@ -27,7 +27,9 @@ void destroy_objects_hostgroup()
 		destroy_hostgroup(this_hostgroup);
 	}
 	hostgroup_list = NULL;
-	g_hash_table_destroy(hostgroup_hash_table);
+	if(hostgroup_hash_table)
+		g_hash_table_destroy(hostgroup_hash_table);
+
 	hostgroup_hash_table = NULL;
 	nm_free(hostgroup_ary);
 	num_objects.hostgroups = 0;
