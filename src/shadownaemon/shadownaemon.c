@@ -928,7 +928,7 @@ int update_program_status_data() {
             (*s_counters)[COUNTER_CONNECTIONS]    = (uint64_t)atoll(answer->set[18]);
             (*s_counters)[COUNTER_FORKS]          = (uint64_t)atoll(answer->set[20]);
             (*s_counters)[COUNTER_LOG_MESSAGES]   = (uint64_t)atoll(answer->set[30]);
-            last_request_count = (uint64_t)atoll(answer->set[28]);
+            last_request_count = (uint64_t)atoll(answer->set[26]);
 
             (*s_last_counter)[COUNTER_SERVICE_CHECKS] = (uint64_t)atoll(answer->set[28]);
             (*s_last_counter)[COUNTER_HOST_CHECKS]    = (uint64_t)atoll(answer->set[22]);
