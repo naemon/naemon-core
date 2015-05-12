@@ -32,7 +32,7 @@
 #endif
 
 #define SECS_PER_DAY 86400
-/* global varaiables only used by the daemon */
+/* global variables only used by the daemon */
 char *naemon_binary_path = NULL;
 char *config_file = NULL;
 char *command_file = NULL;
@@ -1045,7 +1045,7 @@ static void _get_next_invalid_time(time_t pref_time, time_t *invalid_time, timep
 		temp_timerange = _get_matching_timerange(earliest_time, tperiod);
 
 		for (; temp_timerange; last_range = temp_timerange, temp_timerange = temp_timerange->next) {
-			/* ranges with start/end of zero mean exlude this day */
+			/* ranges with start/end of zero mean exclude this day */
 
 			day_range_start = (time_t)(midnight + temp_timerange->range_start);
 			day_range_end = (time_t)(midnight + temp_timerange->range_end);
@@ -1151,7 +1151,7 @@ void _get_next_valid_time(time_t pref_time, time_t *valid_time, timeperiod *tper
 
 		for (; temp_timerange != NULL; temp_timerange = temp_timerange->next) {
 			depth++;
-			/* ranges with start/end of zero mean exlude this day */
+			/* ranges with start/end of zero mean exclude this day */
 			if (temp_timerange->range_start == 0 && temp_timerange->range_end == 0) {
 				continue;
 			}
@@ -1494,7 +1494,7 @@ void my_system_sighandler(int sig)
 
 /**
  * Handle the SIGXFSZ signal. A SIGXFSZ signal is received when a file exceeds
- * the maximum allowable size either as dictated by the fzise paramater in
+ * the maximum allowable size either as dictated by the fzise parameter in
  * /etc/security/limits.conf (ulimit -f) or by the maximum size allowed by
  * the filesystem
  */

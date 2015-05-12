@@ -675,7 +675,7 @@ static const char * arg_t2str(arg_t type)
 		case ULONG: return "ULONG";
 		case TIMESTAMP: return "TIMESTAMP";
 		case DOUBLE: return "DOUBLE";
-		default: return "Unknwon type";
+		default: return "Unknown type";
 	}
 }
 static int parse_arguments(const char *s, struct external_command_argument **args, int argc)
@@ -2299,11 +2299,11 @@ void register_core_commands(void)
 	command_register(core_command, CMD_SCHEDULE_SVC_CHECK);
 
 	core_command = command_create("DELAY_SVC_NOTIFICATION", service_command_handler,
-			"Delays the next notification for a parciular service until 'notification_time'. The 'notification_time' argument is specified in time_t format (seconds since the UNIX epoch). Note that this will only have an affect if the service stays in the same problem state that it is currently in. If the service changes to another state, a new notification may go out before the time you specify in the 'notification_time' argument.", "service=service;timestamp=notification_time");
+			"Delays the next notification for a particular service until 'notification_time'. The 'notification_time' argument is specified in time_t format (seconds since the UNIX epoch). Note that this will only have an affect if the service stays in the same problem state that it is currently in. If the service changes to another state, a new notification may go out before the time you specify in the 'notification_time' argument.", "service=service;timestamp=notification_time");
 	command_register(core_command, CMD_DELAY_SVC_NOTIFICATION);
 
 	core_command = command_create("DELAY_HOST_NOTIFICATION", host_command_handler,
-			"Delays the next notification for a parciular service until 'notification_time'. The 'notification_time' argument is specified in time_t format (seconds since the UNIX epoch). Note that this will only have an affect if the service stays in the same problem state that it is currently in. If the service changes to another state, a new notification may go out before the time you specify in the 'notification_time' argument.", "host=host_name;timestamp=notification_time");
+			"Delays the next notification for a particular service until 'notification_time'. The 'notification_time' argument is specified in time_t format (seconds since the UNIX epoch). Note that this will only have an affect if the service stays in the same problem state that it is currently in. If the service changes to another state, a new notification may go out before the time you specify in the 'notification_time' argument.", "host=host_name;timestamp=notification_time");
 	command_register(core_command, CMD_DELAY_HOST_NOTIFICATION);
 
 	core_command = command_create("DISABLE_NOTIFICATIONS", global_command_handler,
@@ -2877,7 +2877,7 @@ void register_core_commands(void)
 	command_register(core_command, CMD_CHANGE_HOST_CHECK_TIMEPERIOD);
 
 	core_command = command_create("CHANGE_SVC_CHECK_TIMEPERIOD", service_command_handler,
-			"Changes the check timeperiod for a particular service to what is specified by the 'check_timeperiod' option. The 'check_timeperiod' option should be the short name of the timeperod that is to be used as the service check timeperiod. The timeperiod must have been configured in Naemon before it was last (re)started.",
+			"Changes the check timeperiod for a particular service to what is specified by the 'check_timeperiod' option. The 'check_timeperiod' option should be the short name of the timeperiod that is to be used as the service check timeperiod. The timeperiod must have been configured in Naemon before it was last (re)started.",
 			"service=service;timeperiod=check_timeperiod");
 	command_register(core_command, CMD_CHANGE_SVC_CHECK_TIMEPERIOD);
 
@@ -3779,7 +3779,7 @@ void remove_host_acknowledgement(host *hst)
 	/* update the status log with the host info */
 	update_host_status(hst, FALSE);
 
-	/* remove any non-persistant comments associated with the ack */
+	/* remove any non-persistent comments associated with the ack */
 	delete_host_acknowledgement_comments(hst);
 
 	return;
@@ -3796,7 +3796,7 @@ void remove_service_acknowledgement(service *svc)
 	/* update the status log with the service info */
 	update_service_status(svc, FALSE);
 
-	/* remove any non-persistant comments associated with the ack */
+	/* remove any non-persistent comments associated with the ack */
 	delete_service_acknowledgement_comments(svc);
 
 	return;

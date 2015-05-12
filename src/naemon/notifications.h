@@ -47,8 +47,8 @@ int create_notification_list_from_host(nagios_macros *mac, host *,int,int *,int)
 int create_notification_list_from_service(nagios_macros *mac, service *,int,int *,int);    		/* given a service, create list of contacts to be notified (remove duplicates) */
 int add_notification(nagios_macros *mac, contact *);						/* adds a notification instance */
 notification *find_notification(contact *);					/* finds a notification object */
-time_t get_next_host_notification_time(host *, time_t);				/* calculates nex acceptable re-notification time for a host */
-time_t get_next_service_notification_time(service *, time_t);			/* calculates nex acceptable re-notification time for a service */
+time_t get_next_host_notification_time(host *, time_t);				/* calculates next acceptable re-notification time for a host */
+time_t get_next_service_notification_time(service *, time_t);			/* calculates next acceptable re-notification time for a service */
 
 NAGIOS_END_DECL
 

@@ -490,7 +490,7 @@ int initialize_core() {
 
     /* load modules */
     if(verbose == FALSE)
-        daemon_mode = TRUE; // prevents nebmods from loging to console
+        daemon_mode = TRUE; // prevents nebmods from logging to console
     if (neb_load_all_modules() != OK) {
         nm_log(NSLOG_CONFIG_ERROR, "Error: Module loading failed. Aborting.\n");
         exit(EXIT_FAILURE);
@@ -2078,7 +2078,7 @@ int write_list_attribute(FILE *file, char* attr, char* rawlist) {
     return(OK);
 }
 
-/* write out custum variables */
+/* write out custom variables */
 int write_custom_variables(FILE *file, char* rawnames, char* rawvalues) {
     char *names, *name, *namesp, *values, *value, *valuesp;
     if(!strcmp(rawnames, ""))
