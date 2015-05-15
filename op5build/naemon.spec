@@ -164,6 +164,29 @@ fi
 RAMDISKDOC
 fi
 
+# Since we didn't handle the PERLLIB/op5plugins.sh stuff in f15cdc80 already,
+# we must handle this now, separately from the block above, by inserting it
+# into the sysconfig/naemon file, even if the file already exists. Otherwise,
+# users that already upgraded to a package that contains f15cdc80 won't get
+# a "proper" environment for naemon in some cases (such as its boot-time env).
+# Quite nasty, but we supply check plugins that requires this env var.
+if ! egrep -q '^[[:space:]]*export[[:space:]]+PERLLIB=' /etc/sysconfig/naemon; then
+	# As sed(1) puts it:
+	# i \
+	# text   Insert text, which has each embedded newline preceded by a backslash.
+	sed_insert_block='\
+if [ "$PERLLIB" == /opt/plugins ]; then\
+	export PERLLIB\
+elif [ -n "$PERLLIB" ]; then\
+	export PERLLIB="/opt/plugins:$PERLLIB"\
+else\
+	export PERLLIB=/opt/plugins\
+fi\
+'
+	# Insert at BOF/line 1.
+	sed -i "1 i$sed_insert_block" /etc/sysconfig/naemon
+fi
+
 %posttrans
 # this is run after all other transactions, which means we
 # *always* start the service even if it gets stopped by
