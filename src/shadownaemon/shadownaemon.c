@@ -1722,7 +1722,7 @@ int run_refresh_loop() {
             /* use fast interval otherwise */
             sleep_remaining = short_shadow_update_interval - (duration*1000000);
         }
-        if(sigshutdown == TRUE || sigrestart == TRUE)
+        if(sigshutdown == TRUE || sigrestart == TRUE || sleep_remaining > short_shadow_update_interval)
             sleep_remaining = 0;
         if(sleep_remaining > 0)
             usleep(sleep_remaining);
