@@ -2897,7 +2897,15 @@ static int xodtemplate_duplicate_services(void)
 			if(((xodtemplate_service*)prev->data)->is_from_hostgroup && !temp_service->is_from_hostgroup) {
 				rbtree_delete(xobject_tree[OBJTYPE_SERVICE], prev);
 				rbtree_insert(xobject_tree[OBJTYPE_SERVICE], (void *)temp_service);
-			} else if(!((xodtemplate_service*)prev->data)->is_from_hostgroup && !temp_service->is_from_hostgroup) {
+			} else if(((xodtemplate_service*)prev->data)->is_from_hostgroup == temp_service->is_from_hostgroup) {
+				/*
+				 * we end up here if both services are from the same
+				 * type of source. The remaining case (original
+				 * service is from host and new service is from
+				 * hostgroup) is automagically handled by doing
+				 * nothing, as a hostgroup-assigned service shouldn't
+				 * override a host-assigned service.
+				 */
 				nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for service '%s' on host '%s' (config file '%s', starting on line %d)\n", temp_service->service_description, temp_service->host_name, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
 				result = ERROR;
 			}

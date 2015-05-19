@@ -68,8 +68,6 @@ int livestatus_query_socket(result_list **result, char *socket_path, char *query
 void free_livestatus_result(result_list * result, int datasize);
 int update_all_runtime_data(void);
 int update_program_status_data(void);
-int update_host_status_data(void);
-int update_service_status_data(void);
 int update_external_commands(void);
 int update_downtime_data(void);
 int remove_old_downtimes(void);

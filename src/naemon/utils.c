@@ -460,8 +460,7 @@ static int set_working_directory(void)
 
 int daemon_init(void)
 {
-	pid_t pid = -1;
-	int pidno = 0;
+	int pid = 0;
 	int lockfile = 0;
 	int val = 0;
 	char buf[256];
@@ -500,14 +499,14 @@ int daemon_init(void)
 
 	/* we read something - check the PID */
 	if (val > 0) {
-		if ((val = sscanf(buf, "%d", &pidno)) < 1) {
+		if ((val = sscanf(buf, "%d", &pid)) < 1) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Lockfile '%s' does not contain a valid PID (%s)", lock_file, buf);
 			return (ERROR);
 		}
 	}
 
 	/* check for SIGHUP */
-	if (val == 1 && (pid = (pid_t)pidno) == getpid()) {
+	if (val == 1 && pid == (int)getpid()) {
 		close(lockfile);
 		return OK;
 	}
@@ -528,11 +527,11 @@ int daemon_init(void)
 			return (ERROR);
 		}
 	}
-	if ((pid = fork()) < 0)
+	if ((pid = (int)fork()) < 0)
 		return (ERROR);
 
 	/* parent process goes away.. */
-	else if ((int)pid != 0)
+	else if (pid != 0)
 		exit(OK);
 
 	/* child continues... */
