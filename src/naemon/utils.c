@@ -561,7 +561,11 @@ int daemon_init(void)
 		return (ERROR);
 	}
 	sprintf(buf, "%d\n", (int)getpid());
-	nsock_write_all(lockfile, buf, strlen(buf));
+
+	if (nsock_write_all(lockfile, buf, strlen(buf)) != 0) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Cannot write PID to lockfile '%s': %s. Bailing out...", lock_file, strerror(errno));
+		return (ERROR);
+	}
 
 	/* make sure lock file stays open while program is executing... */
 	val = fcntl(lockfile, F_GETFD, 0);
