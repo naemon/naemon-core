@@ -58,6 +58,7 @@ static struct service test_service = {
 	.action_url = "action_url'&%",
 	.plugin_output = "name'&%",
 	.check_command = "check_command!3!\"Some output\"",
+	.current_state = 2,
 };
 
 static struct hostgroup test_hostgroup = {
@@ -87,7 +88,11 @@ void init_environment(void)
 	for (p = illegal_output_chars; *p; p++) {
 		illegal_output_char_map[(int) *p] = 1;
 	}
+	init_objects_host(1);
+	init_objects_service(1);
 	test_service.host_name = test_host.name;
+	register_host(&test_host);
+	register_service(&test_service);
 }
 
 nagios_macros *setup_macro_object(void)
@@ -108,6 +113,9 @@ nagios_macros *setup_macro_object(void)
 			fail( "process_macros_r returns ERROR for " _STR ); \
 		} \
 	} while(0)
+
+#define RUN_MACRO_TEST_EXPECT_SAME(_STR, _OPTS) \
+	do { RUN_MACRO_TEST(_STR, _STR, _OPTS); } while (0)
 
 /*****************************************************************************/
 /*                             Tests                                         */
@@ -183,14 +191,20 @@ void test_escaping(nagios_macros *mac)
 	               URL_ENCODE_MACRO_CHARS);
 
 	/* Testing for invalid macro */
-	RUN_MACRO_TEST("$IDONOTEXIST$ '&%",
-	               "$IDONOTEXIST$ '&%",
-	               URL_ENCODE_MACRO_CHARS);
+	RUN_MACRO_TEST_EXPECT_SAME("$IDONOTEXIST$ '&%", URL_ENCODE_MACRO_CHARS);
 
 	/* Testing for incomplete macro */
-	RUN_MACRO_TEST("we have an $ alone",
-	               "we have an $ alone",
-	               URL_ENCODE_MACRO_CHARS);
+	RUN_MACRO_TEST_EXPECT_SAME("we have an $ alone", URL_ENCODE_MACRO_CHARS);
+}
+
+static void test_ondemand_macros(nagios_macros *mac)
+{
+	char *output;
+
+	/* first is invalid and shouldn't be substituted */
+	RUN_MACRO_TEST_EXPECT_SAME("$SERVICESTATEID:" TEST_HOSTNAME ",service description$", 0);
+	/* this is valid and should return the real value as a string */
+	RUN_MACRO_TEST("$SERVICESTATEID:" TEST_HOSTNAME ":service description$", "2", 0);
 }
 
 /*****************************************************************************/
@@ -201,7 +215,7 @@ int main(void)
 {
 	nagios_macros *mac;
 
-	plan_tests(22);
+	plan_tests(24);
 
 	reset_variables();
 	init_environment();
@@ -210,6 +224,7 @@ int main(void)
 	mac = setup_macro_object();
 
 	test_escaping(mac);
+	test_ondemand_macros(mac);
 
 	free(mac);
 
