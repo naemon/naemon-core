@@ -35,31 +35,43 @@
 #include "naemon/nm_alloc.h"
 #include "tap.h"
 
+#define TEST_HOSTNAME "name'&%"
+
 /*****************************************************************************/
 /*                             Local test environment                        */
 /*****************************************************************************/
 
-host test_host = { .name = "name'&%", .address = "address'&%", .notes_url =
-	"notes_url'&%($HOSTNOTES$)", .notes = "notes'&%\"($HOSTACTIONURL$)",
-	.action_url = "action_url'&%", .plugin_output = "name'&%",
+static struct host test_host = {
+	.name = TEST_HOSTNAME,
+	.address = "address'&%",
+	.notes_url = "notes_url'&%($HOSTNOTES$)",
+	.notes = "notes'&%\"($HOSTACTIONURL$)",
+	.action_url = "action_url'&%",
+	.plugin_output = "name'&%",
 	.check_command = "check_command!3!\"Some output\""
 };
 
-service test_service = { .host_name = "name'&%", .description = "service description",
+static struct service test_service = {
+	.description = "service description",
 	.notes_url = "notes_url'&%($SERVICENOTES$)",
-	.notes = "notes'&%\"($SERVICEACTIONURL$)", .action_url = "action_url'&%",
-	.plugin_output = "name'&%", .check_command = "check_command!3!\"Some output\""
+	.notes = "notes'&%\"($SERVICEACTIONURL$)",
+	.action_url = "action_url'&%",
+	.plugin_output = "name'&%",
+	.check_command = "check_command!3!\"Some output\"",
 };
 
-hostgroup test_hostgroup = { .group_name = "hostgroup name'&%",
-	.notes = "notes'&%\"($HOSTGROUPACTIONURL$)", .action_url = "action_url'&%",
-	.next=NULL
+static struct hostgroup test_hostgroup = {
+	.group_name = "hostgroup name'&%",
+	.notes = "notes'&%\"($HOSTGROUPACTIONURL$)",
+	.action_url = "action_url'&%",
 };
 
-servicegroup test_servicegroup = { .group_name = "servicegroup name'&%",
-	.notes = "notes'&%\"($SERVICEGROUPACTIONURL$)", .action_url = "action_url'&%",
-	.next=NULL
+static struct servicegroup test_servicegroup = {
+	.group_name = "servicegroup name'&%",
+	.notes = "notes'&%\"($SERVICEGROUPACTIONURL$)",
+	.action_url = "action_url'&%",
 };
+
 /*****************************************************************************/
 /*                             Helper functions                              */
 /*****************************************************************************/
@@ -75,6 +87,7 @@ void init_environment(void)
 	for (p = illegal_output_chars; *p; p++) {
 		illegal_output_char_map[(int) *p] = 1;
 	}
+	test_service.host_name = test_host.name;
 }
 
 nagios_macros *setup_macro_object(void)
@@ -105,7 +118,7 @@ void test_escaping(nagios_macros *mac)
 	char *output;
 
 	/* Nothing should be changed... options == 0 */
-	RUN_MACRO_TEST("$HOSTNAME$ '&%", "name'&% '&%", 0);
+	RUN_MACRO_TEST("$HOSTNAME$ '&%", TEST_HOSTNAME " '&%", 0);
 
 	/* Able to escape illegal macro chars in HOSTCHECKCOMMAND */
 	RUN_MACRO_TEST("$HOSTCHECKCOMMAND$ '&%", "check_command!3!Some output '&%", STRIP_ILLEGAL_MACRO_CHARS);
@@ -124,7 +137,7 @@ void test_escaping(nagios_macros *mac)
 	RUN_MACRO_TEST("$SERVICEGROUPNOTES$", "notes'&%\"(action_url'&%)", 0);
 
 	/* Nothing should be changed... HOSTNAME doesn't accept STRIP_ILLEGAL_MACRO_CHARS */
-	RUN_MACRO_TEST("$HOSTNAME$ '&%", "name'&% '&%", STRIP_ILLEGAL_MACRO_CHARS);
+	RUN_MACRO_TEST("$HOSTNAME$ '&%", TEST_HOSTNAME " '&%", STRIP_ILLEGAL_MACRO_CHARS);
 
 	/* ' and & should be stripped from the macro, according to
 	 * init_environment(), but not from the initial string
