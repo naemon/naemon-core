@@ -102,7 +102,7 @@ command *find_bang_command(const char *name)
 
 command *find_command(const char *name)
 {
-	return g_hash_table_lookup(command_hash_table, name);
+	return name ? g_hash_table_lookup(command_hash_table, name) : NULL;
 }
 
 void fcache_command(FILE *fp, command *temp_command)

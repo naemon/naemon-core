@@ -327,6 +327,9 @@ void destroy_service(service *this_service)
 
 service *find_service(const char *host_name, const char *svc_desc)
 {
+	if (!host_name || !svc_desc)
+		return NULL;
+
 	return g_hash_table_lookup(service_hash_table, &((nm_service_key){(char *)host_name, (char *)svc_desc}));
 }
 

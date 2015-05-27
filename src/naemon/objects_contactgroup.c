@@ -150,7 +150,7 @@ contactgroupsmember *add_contactgroup_to_object(contactgroupsmember **cg_list, c
 
 contactgroup *find_contactgroup(const char *name)
 {
-	return g_hash_table_lookup(contactgroup_hash_table, name);
+	return name ? g_hash_table_lookup(contactgroup_hash_table, name) : NULL;
 }
 
 /*
