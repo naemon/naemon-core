@@ -1107,7 +1107,7 @@ static void check_service_result_freshness(struct nm_event_execution_properties 
 				temp_service->is_being_freshened = TRUE;
 
 				/* schedule an immediate forced check of the service */
-				schedule_next_service_check(temp_service, 0, CHECK_OPTION_FORCE_EXECUTION);
+				schedule_next_service_check(temp_service, 0, CHECK_OPTION_FORCE_EXECUTION | CHECK_OPTION_FRESHNESS_CHECK);
 			}
 
 		}

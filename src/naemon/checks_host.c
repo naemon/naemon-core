@@ -1058,7 +1058,7 @@ static void check_host_result_freshness(struct nm_event_execution_properties *ev
 				temp_host->is_being_freshened = TRUE;
 
 				/* schedule an immediate forced check of the host */
-				schedule_next_host_check(temp_host, 0, CHECK_OPTION_FORCE_EXECUTION);
+				schedule_next_host_check(temp_host, 0, CHECK_OPTION_FORCE_EXECUTION | CHECK_OPTION_FRESHNESS_CHECK);
 			}
 		}
 	}
