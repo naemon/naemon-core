@@ -67,6 +67,11 @@ tests_test_checks_LDADD =  $(TESTSLDADD)
 tests_test_checks_LDFLAGS = $(TESTSLDFLAGS)
 tests_test_checks_CPPFLAGS = $(TESTSCPPFLAGS)
 
+tests_test_check_scheduling = tests/test-check-scheduling.c
+tests_test_check_scheduling_LDADD =  $(TESTSLDADD)
+tests_test_check_scheduling_LDFLAGS = $(TESTSLDFLAGS)
+tests_test_check_scheduling_CPPFLAGS = $(TESTSCPPFLAGS)
+
 tests_test_obj_config_parse_SOURCES = tests/test-obj-config-parse.c
 tests_test_obj_config_parse_LDADD =  $(TESTSLDADD)
 tests_test_obj_config_parse_LDFLAGS = $(TESTSLDFLAGS)
@@ -109,6 +114,7 @@ tests_test_kvvec_CPPFLAGS = $(TESTSCPPFLAGS)
 
 check_PROGRAMS += \
 	tests/test-checks \
+	tests/test-check-scheduling \
 	tests/test-obj-config-parse \
 	tests/test-utils \
 	tests/test-log \

@@ -113,6 +113,7 @@ static void handle_host_check_event(struct nm_event_execution_properties *evprop
 	double latency;
 	struct timeval tv;
 	struct timeval event_runtime;
+	int options = hst->check_options;
 
 	int result = OK;
 
@@ -138,15 +139,15 @@ static void handle_host_check_event(struct nm_event_execution_properties *evprop
 			schedule_next_host_check(hst, hst->check_interval * interval_length, CHECK_OPTION_NONE);
 
 		/* Don't run checks if checks are disabled, unless foreced */
-		if (execute_host_checks == FALSE && !(hst->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
+		if (execute_host_checks == FALSE && !(options & CHECK_OPTION_FORCE_EXECUTION)) {
 			return;
 		}
 
 		/* Time to run event */
-		log_debug_info(DEBUGL_CHECKS, 0, "Attempting to run scheduled check of host '%s': check options=%d, latency=%lf\n", hst->name, hst->check_options, latency);
+		log_debug_info(DEBUGL_CHECKS, 0, "Attempting to run scheduled check of host '%s': check options=%d, latency=%lf\n", hst->name, options, latency);
 
 		/* attempt to run the check */
-		result = run_async_host_check(hst, hst->check_options, latency);
+		result = run_async_host_check(hst, options, latency);
 
 		/* an error occurred, so reschedule the check */
 		if (result == ERROR) {

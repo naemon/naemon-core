@@ -114,6 +114,7 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 	double latency;
 	struct timeval tv;
 	struct timeval event_runtime;
+	int options = temp_service->check_options;
 
 	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
 
@@ -132,7 +133,7 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 		}
 
 		/* forced checks override normal check logic */
-		if (!(temp_service->check_options & CHECK_OPTION_FORCE_EXECUTION)) {
+		if (!(options & CHECK_OPTION_FORCE_EXECUTION)) {
 			/* don't run a service check if we're already maxed out on the number of parallel service checks...  */
 			if (max_parallel_service_checks != 0 && (currently_running_service_checks >= max_parallel_service_checks)) {
 				nm_log(NSLOG_RUNTIME_WARNING,
@@ -173,7 +174,7 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 		}
 
 		/* Otherwise, run the event */
-		run_scheduled_service_check(temp_service, temp_service->check_options, latency);
+		run_scheduled_service_check(temp_service, options, latency);
 	}
 }
 
