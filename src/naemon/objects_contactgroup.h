@@ -43,7 +43,7 @@ struct contactsmember *add_contact_to_contactgroup(contactgroup *, char *);
 struct contactgroup *find_contactgroup(const char *);
 int is_contact_member_of_contactgroup(struct contactgroup *, struct contact *);	/* tests whether or not a contact is a member of a specific contact group */
 
-void fcache_contactgrouplist(FILE *fp, const char *prefix, struct contactgroupsmember *list);
-void fcache_contactgroup(FILE *fp, struct contactgroup *temp_contactgroup);
+void fcache_contactgrouplist(FILE *fp, const char *prefix, const struct contactgroupsmember *list);
+void fcache_contactgroup(FILE *fp, const struct contactgroup *temp_contactgroup);
 NAGIOS_END_DECL
 #endif

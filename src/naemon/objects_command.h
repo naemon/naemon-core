@@ -43,7 +43,7 @@ void destroy_command(command *this_command);
 struct command *find_bang_command(const char *);
 struct command *find_command(const char *);
 
-void fcache_command(FILE *fp, struct command *temp_command);
+void fcache_command(FILE *fp, const struct command *temp_command);
 
 NAGIOS_END_DECL
 #endif

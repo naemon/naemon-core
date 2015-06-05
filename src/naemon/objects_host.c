@@ -470,7 +470,7 @@ char * implode_hosttree(struct rbtree *tree, char *delimiter)
 	return result;
 }
 
-void fcache_host(FILE *fp, host *temp_host)
+void fcache_host(FILE *fp, const host *temp_host)
 {
 	fprintf(fp, "define host {\n");
 	fprintf(fp, "\thost_name\t%s\n", temp_host->name);

@@ -107,7 +107,7 @@ command *find_command(const char *name)
 	return name ? g_hash_table_lookup(command_hash_table, name) : NULL;
 }
 
-void fcache_command(FILE *fp, command *temp_command)
+void fcache_command(FILE *fp, const command *temp_command)
 {
 	fprintf(fp, "define command {\n\tcommand_name\t%s\n\tcommand_line\t%s\n\t}\n\n",
 	        temp_command->name, temp_command->command_line);

@@ -34,6 +34,6 @@ struct servicedependency {
 struct servicedependency *add_service_dependency(char *dependent_host_name, char *dependent_service_description, char *host_name, char *service_description, int dependency_type, int inherits_parent, int failure_options, char *dependency_period);
 void destroy_servicedependency(servicedependency *this_servicedependency);
 
-void fcache_servicedependency(FILE *fp, struct servicedependency *temp_servicedependency);
+void fcache_servicedependency(FILE *fp, const struct servicedependency *temp_servicedependency);
 NAGIOS_END_DECL
 #endif

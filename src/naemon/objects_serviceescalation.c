@@ -87,7 +87,7 @@ contactsmember *add_contact_to_serviceescalation(serviceescalation *se, char *co
 	return add_contact_to_object(&se->contacts, contact_name);
 }
 
-void fcache_serviceescalation(FILE *fp, serviceescalation *temp_serviceescalation)
+void fcache_serviceescalation(FILE *fp, const serviceescalation *temp_serviceescalation)
 {
 	fprintf(fp, "define serviceescalation {\n");
 	fprintf(fp, "\thost_name\t%s\n", temp_serviceescalation->host_name);

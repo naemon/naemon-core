@@ -69,7 +69,7 @@ void destroy_hostdependency(hostdependency *this_hostdependency)
 	num_objects.hostdependencies--;
 }
 
-void fcache_hostdependency(FILE *fp, hostdependency *temp_hostdependency)
+void fcache_hostdependency(FILE *fp, const hostdependency *temp_hostdependency)
 {
 	fprintf(fp, "define hostdependency {\n");
 	fprintf(fp, "\thost_name\t%s\n", temp_hostdependency->host_name);

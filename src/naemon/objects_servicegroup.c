@@ -196,7 +196,7 @@ int is_service_member_of_servicegroup(servicegroup *group, service *svc)
 	return FALSE;
 }
 
-void fcache_servicegroup(FILE *fp, servicegroup *temp_servicegroup)
+void fcache_servicegroup(FILE *fp, const servicegroup *temp_servicegroup)
 {
 	fprintf(fp, "define servicegroup {\n");
 	fprintf(fp, "\tservicegroup_name\t%s\n", temp_servicegroup->group_name);
@@ -206,7 +206,7 @@ void fcache_servicegroup(FILE *fp, servicegroup *temp_servicegroup)
 		servicesmember *list;
 		fprintf(fp, "\tmembers\t");
 		for (list = temp_servicegroup->members; list; list = list->next) {
-			service *s = list->service_ptr;
+			service const *s = list->service_ptr;
 			fprintf(fp, "%s,%s%c", s->host_name, s->description, list->next ? ',' : '\n');
 		}
 	}

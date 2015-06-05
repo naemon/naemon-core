@@ -175,17 +175,17 @@ int is_contact_member_of_contactgroup(contactgroup *group, contact *cntct)
 	return FALSE;
 }
 
-void fcache_contactgrouplist(FILE *fp, const char *prefix, contactgroupsmember *list)
+void fcache_contactgrouplist(FILE *fp, const char *prefix, const contactgroupsmember *list)
 {
 	if (list) {
-		contactgroupsmember *l;
+		contactgroupsmember const *l;
 		fprintf(fp, "%s", prefix);
 		for (l = list; l; l = l->next)
 			fprintf(fp, "%s%c", l->group_name, l->next ? ',' : '\n');
 	}
 }
 
-void fcache_contactgroup(FILE *fp, contactgroup *temp_contactgroup)
+void fcache_contactgroup(FILE *fp, const contactgroup *temp_contactgroup)
 {
 	fprintf(fp, "define contactgroup {\n");
 	fprintf(fp, "\tcontactgroup_name\t%s\n", temp_contactgroup->group_name);

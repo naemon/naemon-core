@@ -85,7 +85,7 @@ contactsmember *add_contact_to_hostescalation(hostescalation *he, char *contact_
 	return add_contact_to_object(&he->contacts, contact_name);
 }
 
-void fcache_hostescalation(FILE *fp, hostescalation *temp_hostescalation)
+void fcache_hostescalation(FILE *fp, const hostescalation *temp_hostescalation)
 {
 	fprintf(fp, "define hostescalation {\n");
 	fprintf(fp, "\thost_name\t%s\n", temp_hostescalation->host_name);

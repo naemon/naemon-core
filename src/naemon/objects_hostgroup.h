@@ -42,7 +42,7 @@ int remove_host_from_hostgroup(hostgroup *temp_hostgroup, host *h);
 struct hostgroup *find_hostgroup(const char *);
 int is_host_member_of_hostgroup(struct hostgroup *, struct host *);		       /* tests whether or not a host is a member of a specific hostgroup */
 
-void fcache_hostgroup(FILE *fp, struct hostgroup *temp_hostgroup);
+void fcache_hostgroup(FILE *fp, const struct hostgroup *temp_hostgroup);
 
 NAGIOS_END_DECL
 #endif
