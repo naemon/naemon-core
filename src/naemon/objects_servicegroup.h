@@ -44,7 +44,7 @@ struct servicegroup *find_servicegroup(const char *);
 int is_host_member_of_servicegroup(struct servicegroup *, struct host *);	       /* tests whether or not a service is a member of a specific servicegroup */
 int is_service_member_of_servicegroup(struct servicegroup *, struct service *);	/* tests whether or not a service is a member of a specific servicegroup */
 
-void fcache_servicegroup(FILE *fp, struct servicegroup *temp_servicegroup);
+void fcache_servicegroup(FILE *fp, const struct servicegroup *temp_servicegroup);
 
 NAGIOS_END_DECL
 #endif

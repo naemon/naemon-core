@@ -407,7 +407,7 @@ int is_escalated_contact_for_service(service *svc, contact *cntct)
 	return FALSE;
 }
 
-void fcache_service(FILE *fp, service *temp_service)
+void fcache_service(FILE *fp, const service *temp_service)
 {
 	fprintf(fp, "define service {\n");
 	fprintf(fp, "\thost_name\t%s\n", temp_service->host_name);

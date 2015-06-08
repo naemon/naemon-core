@@ -172,7 +172,7 @@ int get_host_count(void);
 unsigned int host_services_value(struct host *h);
 
 char * implode_hosttree(struct rbtree *tree, char *delimiter);
-void fcache_host(FILE *fp, struct host *temp_host);
+void fcache_host(FILE *fp, const struct host *temp_host);
 
 int log_host_event(host *);
 int log_host_states(int, time_t *);

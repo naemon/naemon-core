@@ -36,7 +36,7 @@ void destroy_serviceescalation(serviceescalation *this_serviceescalation);
 struct contactgroupsmember *add_contactgroup_to_serviceescalation(serviceescalation *, char *);                /* adds a contact group to a service escalation definition */
 struct contactsmember *add_contact_to_serviceescalation(serviceescalation *, char *);                          /* adds a contact to a service escalation definition */
 
-void fcache_serviceescalation(FILE *fp, struct serviceescalation *temp_serviceescalation);
+void fcache_serviceescalation(FILE *fp, const struct serviceescalation *temp_serviceescalation);
 
 NAGIOS_END_DECL
 #endif

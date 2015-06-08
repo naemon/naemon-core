@@ -73,8 +73,8 @@ struct contactsmember *add_contact_to_object(contactsmember **, char *);
 
 struct contact *find_contact(const char *);
 
-void fcache_contactlist(FILE *fp, const char *prefix, struct contactsmember *list);
-void fcache_contact(FILE *fp, struct contact *temp_contact);
+void fcache_contactlist(FILE *fp, const char *prefix, const struct contactsmember *list);
+void fcache_contact(FILE *fp, const struct contact *temp_contact);
 
 NAGIOS_END_DECL
 #endif

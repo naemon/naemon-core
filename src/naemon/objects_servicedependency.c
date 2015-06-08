@@ -79,7 +79,7 @@ void destroy_servicedependency(servicedependency *this_servicedependency)
 	num_objects.servicedependencies--;
 }
 
-void fcache_servicedependency(FILE *fp, servicedependency *temp_servicedependency)
+void fcache_servicedependency(FILE *fp, const servicedependency *temp_servicedependency)
 {
 	fprintf(fp, "define servicedependency {\n");
 	fprintf(fp, "\thost_name\t%s\n", temp_servicedependency->host_name);

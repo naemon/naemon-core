@@ -287,7 +287,7 @@ static const char *timerange2str(const timerange *tr)
 	return str;
 }
 
-void fcache_timeperiod(FILE *fp, timeperiod *temp_timeperiod)
+void fcache_timeperiod(FILE *fp, const timeperiod *temp_timeperiod)
 {
 	const char *days[7] = {"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"};
 	const char *months[12] = {"january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"};

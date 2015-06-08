@@ -32,7 +32,7 @@ struct hostdependency {
 struct hostdependency *add_host_dependency(char *dependent_host_name, char *host_name, int dependency_type, int inherits_parent, int failure_options, char *dependency_period);
 void destroy_hostdependency(hostdependency *this_hostdependency);
 
-void fcache_hostdependency(FILE *fp, struct hostdependency *temp_hostdependency);
+void fcache_hostdependency(FILE *fp, const struct hostdependency *temp_hostdependency);
 
 NAGIOS_END_DECL
 #endif

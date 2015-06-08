@@ -79,10 +79,10 @@ const char *check_type_name(int check_type)
 	return check_type == CHECK_TYPE_PASSIVE ? "PASSIVE" : "ACTIVE";
 }
 
-void fcache_customvars(FILE *fp, customvariablesmember *cvlist)
+void fcache_customvars(FILE *fp, const customvariablesmember *cvlist)
 {
 	if (cvlist) {
-		customvariablesmember *l;
+		const customvariablesmember *l;
 		for (l = cvlist; l; l = l->next)
 			fprintf(fp, "\t_%s\t%s\n", l->variable_name, (l->variable_value == NULL) ? XODTEMPLATE_NULL : l->variable_value);
 	}

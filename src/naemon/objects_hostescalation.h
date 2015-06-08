@@ -35,7 +35,7 @@ void destroy_hostescalation(hostescalation *this_hostescalation);
 struct contactsmember *add_contact_to_hostescalation(hostescalation *, char *);                                /* adds a contact to a host escalation definition */
 struct contactgroupsmember *add_contactgroup_to_hostescalation(hostescalation *, char *);                      /* adds a contact group to a host escalation definition */
 
-void fcache_hostescalation(FILE *fp, struct hostescalation *temp_hostescalation);
+void fcache_hostescalation(FILE *fp, const struct hostescalation *temp_hostescalation);
 
 NAGIOS_END_DECL
 #endif

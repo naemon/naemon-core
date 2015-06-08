@@ -279,17 +279,17 @@ contact *find_contact(const char *name)
 	return name ? g_hash_table_lookup(contact_hash_table, name) : NULL;
 }
 
-void fcache_contactlist(FILE *fp, const char *prefix, contactsmember *list)
+void fcache_contactlist(FILE *fp, const char *prefix, const contactsmember *list)
 {
 	if (list) {
-		contactsmember *l;
+		contactsmember const *l;
 		fprintf(fp, "%s", prefix);
 		for (l = list; l; l = l->next)
 			fprintf(fp, "%s%c", l->contact_name, l->next ? ',' : '\n');
 	}
 }
 
-void fcache_contact(FILE *fp, contact *temp_contact)
+void fcache_contact(FILE *fp, const contact *temp_contact)
 {
 	commandsmember *list;
 	int x;

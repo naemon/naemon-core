@@ -156,7 +156,7 @@ int is_host_member_of_hostgroup(hostgroup *group, host *hst)
 	return FALSE;
 }
 
-void fcache_hostgroup(FILE *fp, hostgroup *temp_hostgroup)
+void fcache_hostgroup(FILE *fp, const hostgroup *temp_hostgroup)
 {
 	fprintf(fp, "define hostgroup {\n");
 	fprintf(fp, "\thostgroup_name\t%s\n", temp_hostgroup->group_name);

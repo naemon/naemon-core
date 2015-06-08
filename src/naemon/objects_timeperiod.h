@@ -85,7 +85,7 @@ struct timerange *add_timerange_to_daterange(daterange *, unsigned long, unsigne
 
 struct timeperiod *find_timeperiod(const char *);
 
-void fcache_timeperiod(FILE *fp, struct timeperiod *temp_timeperiod);
+void fcache_timeperiod(FILE *fp, const struct timeperiod *temp_timeperiod);
 
 int check_time_against_period(time_t, timeperiod *);	/* check to see if a specific time is covered by a time period */
 void get_next_valid_time(time_t, time_t *, timeperiod *);	/* get the next valid time in a time period */

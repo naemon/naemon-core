@@ -60,7 +60,7 @@ typedef struct customvariablesmember {
 
 struct customvariablesmember *add_custom_variable_to_object(customvariablesmember **, char *, char *);         /* adds a custom variable to an object */
 
-void fcache_customvars(FILE *fp, struct customvariablesmember *cvlist);
+void fcache_customvars(FILE *fp, const struct customvariablesmember *cvlist);
 
 const char *opts2str(int opts, const struct flag_map *map, char ok_char);
 
