@@ -62,6 +62,11 @@ if HAVE_CHECK
 TESTSLDADD = $(LDADD) $(CHECK_LIBS) $(GLIB_LIBS)
 TESTSCPPFLAGS = $(AM_CPPFLAGS) -Isrc -DTESTDIR='"$(abs_srcdir)/tests/configs/"'
 
+tests_test_objects_SOURCE = tests/test-objects.c
+tests_test_objects_LDADD =  $(TESTSLDADD)
+tests_test_objects_LDFLAGS = $(TESTSLDFLAGS)
+tests_test_objects_CPPFLAGS = $(TESTSCPPFLAGS)
+
 tests_test_checks_SOURCES = tests/test-checks.c
 tests_test_checks_LDADD =  $(TESTSLDADD)
 tests_test_checks_LDFLAGS = $(TESTSLDFLAGS)
@@ -122,6 +127,7 @@ check_PROGRAMS += \
 	tests/test-event-heap \
 	tests/test-kv-command \
 	tests/test-kvvec \
+	tests/test-objects \
 	tests/test-kvvec-ekvstr
 
 
