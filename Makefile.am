@@ -157,7 +157,7 @@ libnaemon_la_SOURCES = $(pkginclude_HEADERS) $(common_sources) \
 	lib/rbtree.c lib/runcmd.c lib/snprintf.c lib/worker.c lib/objutils.c
 
 check_PROGRAMS = test-bitmap test-iobroker test-bufferqueue \
-	test-nsutils test-runcmd
+	test-nsutils test-runcmd test-worker
 
 LIBTEST_UTILS = lib/t-utils.c lib/t-utils.h
 test_bitmap_SOURCES = lib/test-bitmap.c $(LIBTEST_UTILS)
@@ -165,6 +165,8 @@ test_iobroker_SOURCES = lib/test-iobroker.c $(LIBTEST_UTILS)
 test_bufferqueue_SOURCES = lib/test-bufferqueue.c $(LIBTEST_UTILS)
 test_nsutils_SOURCES = lib/test-nsutils.c $(LIBTEST_UTILS)
 test_runcmd_SOURCES = lib/test-runcmd.c $(LIBTEST_UTILS)
+test_worker_SOURCES = tests/test-worker.c
+test_worker_LDADD = libnaemon.la -lcheck -lpthread -lrt -lm -ldl
 
 COV_CFLAGS = -ggdb3 -O0 -ftest-coverage -fprofile-arcs -pg
 cov-build:
