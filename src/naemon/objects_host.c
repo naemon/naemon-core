@@ -268,14 +268,14 @@ void destroy_host(host *this_host)
 		while (!rbtree_isempty(this_host->child_hosts))
 			remove_parent_from_host(rbtree_first(this_host->child_hosts)->data, this_host);
 		rbtree_destroy(this_host->child_hosts, NULL);
+		this_host->child_hosts = NULL;
 	}
 	if (this_host->parent_hosts) {
 		while (!rbtree_isempty(this_host->parent_hosts))
 			remove_parent_from_host(this_host, rbtree_first(this_host->parent_hosts)->data);
 		rbtree_destroy(this_host->parent_hosts, NULL);
+		this_host->parent_hosts = NULL;
 	}
-	this_host->child_hosts = NULL;
-	this_host->parent_hosts = NULL;
 
 	if (this_host->display_name != this_host->name)
 		nm_free(this_host->display_name);
@@ -341,10 +341,20 @@ int add_parent_to_host(host *hst, host *parent)
 
 int remove_parent_from_host(host *hst, host *parent)
 {
-	if (hst->parent_hosts)
-		rbtree_delete(hst->parent_hosts, rbtree_find_node(hst->parent_hosts, parent));
-	if (parent->child_hosts)
-		rbtree_delete(parent->child_hosts, rbtree_find_node(parent->child_hosts, hst));
+	struct rbnode *tmp;
+	if (hst->parent_hosts) {
+		tmp = rbtree_find_node(hst->parent_hosts, parent);
+		if(tmp != NULL) {
+			rbtree_delete(hst->parent_hosts, tmp);
+		}
+
+	}
+	if (parent->child_hosts) {
+		tmp = rbtree_find_node(parent->child_hosts, hst);
+		if(tmp != NULL) {
+			rbtree_delete(parent->child_hosts, tmp);
+		}
+	}
 	return 0;
 }
 
