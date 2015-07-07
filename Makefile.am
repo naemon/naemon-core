@@ -184,6 +184,7 @@ $(CONFIG_FILES) : % : %.in
 		-e 's,@logdir[@],$(logdir),g' \
 		-e 's,@pkgconfdir[@],$(pkgconfdir),g' \
 		-e 's,@naemon_user[@],$(naemon_user),g' \
+		-e 's,@naemon_grp[@],$(naemon_grp),g' \
 		-e 's,@CHECKRESULTDIR[@],$(CHECKRESULTDIR),g' \
 		-e 's,@TMPDIR[@],$(TMPDIR),g' \
 		-e 's,@VERSION[@],$(VERSION),g' \
