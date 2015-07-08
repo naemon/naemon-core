@@ -41,7 +41,7 @@ config="@pkgconfdir@/naemon.cfg"
 pidfile="@lockfile@"
 pidfolder="`dirname $pidfile`"
 user="@naemon_user@"
-group="@naemon_grp@"
+group="@naemon_group@"
 checkconfig="false"
 
 # Default nice for performance, change in sysconfig file not here!
