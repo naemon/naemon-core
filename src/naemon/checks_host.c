@@ -243,9 +243,6 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 
 	log_debug_info(DEBUGL_CHECKS, 0, "Checking host '%s'...\n", hst->name);
 
-	/* adjust host check attempt */
-	adjust_host_check_attempt(hst, TRUE);
-
 	/* set latency for macros and event broker */
 	hst->latency = latency;
 
@@ -642,6 +639,8 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 	/* we have to adjust current attempt # for passive checks, as it isn't done elsewhere */
 	if (hst->check_type == CHECK_TYPE_PASSIVE && passive_host_checks_are_soft == TRUE)
 		adjust_host_check_attempt(hst, FALSE);
+	else if (hst->check_type == CHECK_TYPE_ACTIVE)
+		adjust_host_check_attempt(hst, TRUE);
 
 	/* log passive checks - we need to do this here, as some my bypass external commands by getting dropped in checkresults dir */
 	if (hst->check_type == CHECK_TYPE_PASSIVE) {
