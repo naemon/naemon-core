@@ -30,7 +30,7 @@ static int run_async_host_check(host *hst, int check_options, double latency);
 
 /* Result handling (After worker job is executed) */
 static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags);
-static int process_host_check_result(host *hst, int new_state, char *old_plugin_output, char *old_long_plugin_output, int check_options, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded);
+static int process_host_check_result(host *hst, host *pre, int *alert_recorded);
 static int adjust_host_check_attempt(host *hst, int is_active);
 static int handle_host_state(host *hst, int *alert_recorded);
 
@@ -320,190 +320,145 @@ static int run_async_host_check(host *hst, int check_options, double latency)
  *****************************  RESULT HANDLING  ******************************
  ******************************************************************************/
 
-/* process results of an asynchronous host check */
-int handle_async_host_check_result(host *temp_host, check_result *queued_check_result)
+/*
+ * Update host state with check result info
+ * This function causes no sideeffect actions, such as state
+ * logging, execution of event handlers or notifications or
+ * rescheduling of the check
+ */
+int update_host_state_post_check(struct host *hst, struct check_result *cr)
 {
-	time_t current_time;
-	int result = STATE_OK;
-	char *old_plugin_output = NULL;
-	char *old_long_plugin_output = NULL;
+	int result;
 	char *temp_ptr = NULL;
-	struct timeval start_time_hires;
-	struct timeval end_time_hires;
-	int alert_recorded = NEBATTR_NONE;
-	int first_recorded_state = NEBATTR_NONE;
 
-	/* make sure we have what we need */
-	if (temp_host == NULL || queued_check_result == NULL)
+	if (!hst || !cr)
 		return ERROR;
 
-	time(&current_time);
-
-	log_debug_info(DEBUGL_CHECKS, 1, "** Handling async check result for host '%s' from '%s'...\n", temp_host->name, check_result_source(queued_check_result));
-
-	log_debug_info(DEBUGL_CHECKS, 2, "\tCheck Type:         %s\n", (queued_check_result->check_type == CHECK_TYPE_ACTIVE) ? "Active" : "Passive");
-	log_debug_info(DEBUGL_CHECKS, 2, "\tCheck Options:      %d\n", queued_check_result->check_options);
-	log_debug_info(DEBUGL_CHECKS, 2, "\tScheduled Check?:   %s\n", (queued_check_result->scheduled_check == TRUE) ? "Yes" : "No");
-	log_debug_info(DEBUGL_CHECKS, 2, "\tExited OK?:         %s\n", (queued_check_result->exited_ok == TRUE) ? "Yes" : "No");
-	log_debug_info(DEBUGL_CHECKS, 2, "\tExec Time:          %.3f\n", temp_host->execution_time);
-	log_debug_info(DEBUGL_CHECKS, 2, "\tLatency:            %.3f\n", temp_host->latency);
-	log_debug_info(DEBUGL_CHECKS, 2, "\tReturn Status:      %d\n", queued_check_result->return_code);
-	log_debug_info(DEBUGL_CHECKS, 2, "\tOutput:             %s\n", (queued_check_result == NULL) ? "NULL" : queued_check_result->output);
-
-	/* decrement the number of host checks still out there... */
-	if (queued_check_result->check_type == CHECK_TYPE_ACTIVE && currently_running_host_checks > 0)
-		currently_running_host_checks--;
-
-	/* skip this host check results if its passive and we aren't accepting passive check results */
-	if (queued_check_result->check_type == CHECK_TYPE_PASSIVE) {
-		if (accept_passive_host_checks == FALSE) {
-			log_debug_info(DEBUGL_CHECKS, 0, "Discarding passive host check result because passive host checks are disabled globally.\n");
-			return ERROR;
-		}
-		if (temp_host->accept_passive_checks == FALSE) {
-			log_debug_info(DEBUGL_CHECKS, 0, "Discarding passive host check result because passive checks are disabled for this host.\n");
-			return ERROR;
-		}
-	}
+	log_debug_info(DEBUGL_CHECKS, 1, "** Handling check result for host '%s' from '%s'...\n", hst->name, check_result_source(cr));
+	log_debug_info(DEBUGL_CHECKS, 2, "\tCheck Type:         %s\n", (cr->check_type == CHECK_TYPE_ACTIVE) ? "Active" : "Passive");
+	log_debug_info(DEBUGL_CHECKS, 2, "\tCheck Options:      %d\n", cr->check_options);
+	log_debug_info(DEBUGL_CHECKS, 2, "\tScheduled Check?:   %s\n", (cr->scheduled_check == TRUE) ? "Yes" : "No");
+	log_debug_info(DEBUGL_CHECKS, 2, "\tExited OK?:         %s\n", (cr->exited_ok == TRUE) ? "Yes" : "No");
+	log_debug_info(DEBUGL_CHECKS, 2, "\tExec Time:          %.3f\n", hst->execution_time);
+	log_debug_info(DEBUGL_CHECKS, 2, "\tLatency:            %.3f\n", hst->latency);
+	log_debug_info(DEBUGL_CHECKS, 2, "\tReturn Status:      %d\n", cr->return_code);
+	log_debug_info(DEBUGL_CHECKS, 2, "\tOutput:             %s\n", (cr == NULL) ? "NULL" : cr->output);
 
 	/* clear the freshening flag (it would have been set if this host was determined to be stale) */
-	if (queued_check_result->check_options & CHECK_OPTION_FRESHNESS_CHECK)
-		temp_host->is_being_freshened = FALSE;
+	if (cr->check_options & CHECK_OPTION_FRESHNESS_CHECK)
+		hst->is_being_freshened = FALSE;
 
-	/* DISCARD INVALID FRESHNESS CHECK RESULTS */
-	/* If a host goes stale, Nagios will initiate a forced check in order to freshen it.  There is a race condition whereby a passive check
-	   could arrive between the 1) initiation of the forced check and 2) the time when the forced check result is processed here.  This would
-	   make the host fresh again, so we do a quick check to make sure the host is still stale before we accept the check result. */
-	if ((queued_check_result->check_options & CHECK_OPTION_FRESHNESS_CHECK) && is_host_result_fresh(temp_host, current_time, FALSE) == TRUE) {
+	/*
+	 * Only accept freshness checks if host is still stale, or
+	 * we might end up overwriting a passive result that came in after
+	 * the freshness check was triggered but before the freshness
+	 * check completed
+	 */
+	if ((cr->check_options & CHECK_OPTION_FRESHNESS_CHECK) && is_host_result_fresh(hst, cr->finish_time.tv_sec, FALSE) == TRUE) {
 		log_debug_info(DEBUGL_CHECKS, 0, "Discarding host freshness check result because the host is currently fresh (race condition avoided).\n");
 		return OK;
 	}
 
-	/* was this check passive or active? */
-	temp_host->check_type = (queued_check_result->check_type == CHECK_TYPE_ACTIVE) ? CHECK_TYPE_ACTIVE : CHECK_TYPE_PASSIVE;
-
-	/* update check statistics for passive results */
-	if (queued_check_result->check_type == CHECK_TYPE_PASSIVE)
-		update_check_stats(PASSIVE_HOST_CHECK_STATS, queued_check_result->start_time.tv_sec);
-
-	/* check latency is passed to us for both active and passive checks */
-	temp_host->latency = queued_check_result->latency;
+	hst->latency = cr->latency;
+	hst->check_type = cr->check_type;
+	hst->has_been_checked = TRUE;
 
 	/* update the execution time for this check (millisecond resolution) */
-	temp_host->execution_time = (double)((double)(queued_check_result->finish_time.tv_sec - queued_check_result->start_time.tv_sec) + (double)((queued_check_result->finish_time.tv_usec - queued_check_result->start_time.tv_usec) / 1000.0) / 1000.0);
-	if (temp_host->execution_time < 0.0)
-		temp_host->execution_time = 0.0;
-
-	/* set the checked flag */
-	temp_host->has_been_checked = TRUE;
-
-	/* clear the execution flag if this was an active check */
-	if (queued_check_result->check_type == CHECK_TYPE_ACTIVE)
-		temp_host->is_executing = FALSE;
+	hst->execution_time = (double)((double)(cr->finish_time.tv_sec - cr->start_time.tv_sec) + (double)((cr->finish_time.tv_usec - cr->start_time.tv_usec) / 1000.0) / 1000.0);
+	if (hst->execution_time < 0.0)
+		hst->execution_time = 0.0;
 
 	/* get the last check time */
-	if (!temp_host->last_check)
-		first_recorded_state = NEBATTR_CHECK_FIRST;
-	temp_host->last_check = queued_check_result->start_time.tv_sec;
-
-	/* was this check passive or active? */
-	temp_host->check_type = (queued_check_result->check_type == CHECK_TYPE_ACTIVE) ? CHECK_TYPE_ACTIVE : CHECK_TYPE_PASSIVE;
+	hst->last_check = cr->start_time.tv_sec;
 
 	/* save the old host state */
-	temp_host->last_state = temp_host->current_state;
-	if (temp_host->state_type == HARD_STATE)
-		temp_host->last_hard_state = temp_host->current_state;
-
-	/* save old plugin output */
-	if (temp_host->plugin_output)
-		old_plugin_output = nm_strdup(temp_host->plugin_output);
-
-	if (temp_host->long_plugin_output)
-		old_long_plugin_output = nm_strdup(temp_host->long_plugin_output);
+	hst->last_state = hst->current_state;
+	if (hst->state_type == HARD_STATE)
+		hst->last_hard_state = hst->current_state;
 
 	/* clear the old plugin output and perf data buffers */
-	nm_free(temp_host->plugin_output);
-	nm_free(temp_host->long_plugin_output);
-	nm_free(temp_host->perf_data);
+	nm_free(hst->plugin_output);
+	nm_free(hst->long_plugin_output);
+	nm_free(hst->perf_data);
 
 	/* parse check output to get: (1) short output, (2) long output, (3) perf data */
-	parse_check_output(queued_check_result->output, &temp_host->plugin_output, &temp_host->long_plugin_output, &temp_host->perf_data, TRUE, FALSE);
+	parse_check_output(cr->output, &hst->plugin_output, &hst->long_plugin_output, &hst->perf_data, TRUE, FALSE);
 
 	/* make sure we have some data */
-	if (temp_host->plugin_output == NULL) {
-		temp_host->plugin_output = nm_strdup("(No output returned from host check)");
+	if (hst->plugin_output == NULL) {
+		hst->plugin_output = nm_strdup("(No output returned from host check)");
 	}
 
 	/* replace semicolons in plugin output (but not performance data) with colons */
-	if ((temp_ptr = temp_host->plugin_output)) {
+	if ((temp_ptr = hst->plugin_output)) {
 		while ((temp_ptr = strchr(temp_ptr, ';')))
-			* temp_ptr = ':';
+			*temp_ptr = ':';
 	}
 
 	log_debug_info(DEBUGL_CHECKS, 2, "Parsing check output...\n");
-	log_debug_info(DEBUGL_CHECKS, 2, "Short Output: %s\n", (temp_host->plugin_output == NULL) ? "NULL" : temp_host->plugin_output);
-	log_debug_info(DEBUGL_CHECKS, 2, "Long Output:  %s\n", (temp_host->long_plugin_output == NULL) ? "NULL" : temp_host->long_plugin_output);
-	log_debug_info(DEBUGL_CHECKS, 2, "Perf Data:    %s\n", (temp_host->perf_data == NULL) ? "NULL" : temp_host->perf_data);
+	log_debug_info(DEBUGL_CHECKS, 2, "Short Output: %s\n", (hst->plugin_output == NULL) ? "NULL" : hst->plugin_output);
+	log_debug_info(DEBUGL_CHECKS, 2, "Long Output:  %s\n", (hst->long_plugin_output == NULL) ? "NULL" : hst->long_plugin_output);
+	log_debug_info(DEBUGL_CHECKS, 2, "Perf Data:    %s\n", (hst->perf_data == NULL) ? "NULL" : hst->perf_data);
 
 	/* get the unprocessed return code */
 	/* NOTE: for passive checks, this is the final/processed state */
-	result = queued_check_result->return_code;
+	result = cr->return_code;
 
 	/* adjust return code (active checks only) */
-	if (queued_check_result->check_type == CHECK_TYPE_ACTIVE) {
-		if (queued_check_result->early_timeout) {
+	if (cr->check_type == CHECK_TYPE_ACTIVE) {
+		if (cr->early_timeout) {
 			nm_log(NSLOG_RUNTIME_WARNING,
-			       "Warning: Check of host '%s' timed out after %.2lf seconds\n", temp_host->name, temp_host->execution_time);
-			nm_free(temp_host->plugin_output);
-			nm_free(temp_host->long_plugin_output);
-			nm_free(temp_host->perf_data);
-			nm_asprintf(&temp_host->plugin_output, "(Host check timed out after %.2lf seconds)", temp_host->execution_time);
+			       "Warning: Check of host '%s' timed out after %.2lf seconds\n", hst->name, hst->execution_time);
+			nm_free(hst->plugin_output);
+			nm_free(hst->long_plugin_output);
+			nm_free(hst->perf_data);
+			nm_asprintf(&hst->plugin_output, "(Host check timed out after %.2lf seconds)", hst->execution_time);
 			result = STATE_UNKNOWN;
 		}
 
-		/* if there was some error running the command, just skip it (this shouldn't be happening) */
-		else if (queued_check_result->exited_ok == FALSE) {
+		/* if there was some error running the command, just skip it */
+		else if (cr->exited_ok == FALSE) {
 
 			nm_log(NSLOG_RUNTIME_WARNING,
-			       "Warning:  Check of host '%s' did not exit properly!\n", temp_host->name);
+			       "Warning:  Check of host '%s' did not exit properly!\n", hst->name);
 
-			nm_free(temp_host->plugin_output);
-			nm_free(temp_host->long_plugin_output);
-			nm_free(temp_host->perf_data);
-
-			temp_host->plugin_output = nm_strdup("(Host check did not exit properly)");
+			nm_free(hst->plugin_output);
+			nm_free(hst->long_plugin_output);
+			nm_free(hst->perf_data);
+			hst->plugin_output = nm_strdup("(Host check did not exit properly)");
 
 			result = STATE_CRITICAL;
 		}
 
 		/* make sure the return code is within bounds */
-		else if (queued_check_result->return_code < 0 || queued_check_result->return_code > 3) {
+		else if (cr->return_code < 0 || cr->return_code > 3) {
 
 			nm_log(NSLOG_RUNTIME_WARNING,
-			       "Warning: Return code of %d for check of host '%s' was out of bounds.%s\n", queued_check_result->return_code, temp_host->name, (queued_check_result->return_code == 126 || queued_check_result->return_code == 127) ? " Make sure the plugin you're trying to run actually exists." : "");
+			       "Warning: Return code of %d for check of host '%s' was out of bounds.%s\n", cr->return_code, hst->name, (cr->return_code == 126 || cr->return_code == 127) ? " Make sure the plugin you're trying to run actually exists." : "");
 
-			nm_free(temp_host->plugin_output);
-			nm_free(temp_host->long_plugin_output);
-			nm_free(temp_host->perf_data);
-
-			nm_asprintf(&temp_host->plugin_output, "(Return code of %d is out of bounds%s)", queued_check_result->return_code, (queued_check_result->return_code == 126 || queued_check_result->return_code == 127) ? " - plugin may be missing" : "");
+			nm_free(hst->plugin_output);
+			nm_free(hst->long_plugin_output);
+			nm_free(hst->perf_data);
+			nm_asprintf(&hst->plugin_output, "(Return code of %d is out of bounds%s)", cr->return_code, (cr->return_code == 126 || cr->return_code == 127) ? " - plugin may be missing" : "");
 
 			result = STATE_CRITICAL;
 		}
 
 		/* a NULL host check command means we should assume the host is UP */
-		if (temp_host->check_command == NULL) {
-			nm_free(temp_host->plugin_output);
-			temp_host->plugin_output = nm_strdup("(Host assumed to be UP)");
+		if (hst->check_command == NULL) {
+			nm_free(hst->plugin_output);
+			hst->plugin_output = nm_strdup("(Host assumed to be UP)");
 			result = STATE_OK;
 		}
 	}
 
 	/* translate return code to basic UP/DOWN state - the DOWN/UNREACHABLE state determination is made later */
 	/* NOTE: only do this for active checks - passive check results already have the final state */
-	if (queued_check_result->check_type == CHECK_TYPE_ACTIVE) {
-
-		/* if we're not doing aggressive host checking, let WARNING states indicate the host is up (fake the result to be STATE_OK) */
+	if (cr->check_type == CHECK_TYPE_ACTIVE) {
+		/*
+		 * if we're not doing aggressive host checking, let WARNING
+		 * states indicate the host is up
+		 */
 		if (use_aggressive_host_checking == FALSE && result == STATE_WARNING)
 			result = STATE_OK;
 
@@ -516,19 +471,88 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 			result = STATE_DOWN;
 	}
 
+	/* we have to adjust current attempt # for passive checks, as it isn't done elsewhere */
+	if (hst->check_type == CHECK_TYPE_PASSIVE) {
+		if (passive_host_checks_are_soft == TRUE)
+			adjust_host_check_attempt(hst, FALSE);
+		else
+			hst->state_type = HARD_STATE;
+	}
+	else if (hst->check_type == CHECK_TYPE_ACTIVE)
+		adjust_host_check_attempt(hst, TRUE);
+
+	if (hst->current_attempt >= hst->max_attempts)
+		hst->state_type = HARD_STATE;
+	hst->current_state = result;
+
+	/* record the time the last state ended */
+	switch (hst->last_state) {
+	case STATE_UP:
+		hst->last_time_up = cr->finish_time.tv_sec;
+		break;
+	case STATE_DOWN:
+		hst->last_time_down = cr->finish_time.tv_sec;
+		break;
+	case STATE_UNREACHABLE:
+		hst->last_time_unreachable = cr->finish_time.tv_sec;
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+/* process results of an asynchronous host check */
+int handle_async_host_check_result(host *temp_host, check_result *cr)
+{
+	int alert_recorded = NEBATTR_NONE;
+	struct timeval end_time_hires;
+	struct host pre;
+	int first_recorded_state = NEBATTR_NONE;
+
+	/* make sure we have what we need */
+	if (temp_host == NULL || cr == NULL)
+		return ERROR;
+
+	/* skip this host check results if its passive and we aren't accepting passive check results */
+	if (cr->check_type == CHECK_TYPE_PASSIVE) {
+		if (accept_passive_host_checks == FALSE) {
+			log_debug_info(DEBUGL_CHECKS, 0, "Discarding passive host check result because passive host checks are disabled globally.\n");
+			return ERROR;
+		}
+		if (temp_host->accept_passive_checks == FALSE) {
+			log_debug_info(DEBUGL_CHECKS, 0, "Discarding passive host check result because passive checks are disabled for this host.\n");
+			return ERROR;
+		}
+	}
+
+	/* update check statistics for passive results */
+	if (cr->check_type == CHECK_TYPE_PASSIVE)
+		update_check_stats(PASSIVE_HOST_CHECK_STATS, cr->start_time.tv_sec);
+
+	if (!temp_host->last_check)
+		first_recorded_state = NEBATTR_CHECK_FIRST;
+
+	memcpy(&pre, temp_host, sizeof(pre));
+	if (temp_host->plugin_output)
+		pre.plugin_output = nm_strdup(temp_host->plugin_output);
+	if (temp_host->long_plugin_output)
+		pre.long_plugin_output = nm_strdup(temp_host->long_plugin_output);
+	if (temp_host->perf_data)
+		pre.perf_data = nm_strdup(temp_host->perf_data);
 
 	/******************* PROCESS THE CHECK RESULTS ******************/
+	update_host_state_post_check(temp_host, cr);
 
 	/* process the host check result */
-	process_host_check_result(temp_host, result, old_plugin_output, old_long_plugin_output, CHECK_OPTION_NONE, TRUE, cached_host_check_horizon, &alert_recorded);
+	process_host_check_result(temp_host, &pre, &alert_recorded);
 
-	nm_free(old_plugin_output);
-	nm_free(old_long_plugin_output);
+	nm_free(pre.plugin_output);
+	nm_free(pre.long_plugin_output);
+	nm_free(pre.perf_data);
 
 	log_debug_info(DEBUGL_CHECKS, 1, "** Async check result for host '%s' handled: new state=%d\n", temp_host->name, temp_host->current_state);
-
-	/* high resolution start time for event broker */
-	start_time_hires = queued_check_result->start_time;
 
 	/* high resolution end time for event broker */
 	gettimeofday(&end_time_hires, NULL);
@@ -541,19 +565,19 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 		temp_host->check_type,
 		temp_host->current_state,
 		temp_host->state_type,
-		start_time_hires,
-		end_time_hires,
+		cr->start_time,
+		cr->finish_time,
 		temp_host->check_command,
 		temp_host->latency,
 		temp_host->execution_time,
 		host_check_timeout,
-		queued_check_result->early_timeout,
-		queued_check_result->return_code,
+		cr->early_timeout,
+		cr->return_code,
 		NULL,
 		temp_host->plugin_output,
 		temp_host->long_plugin_output,
 		temp_host->perf_data,
-		queued_check_result);
+		cr);
 
 	return OK;
 }
@@ -561,7 +585,15 @@ int handle_async_host_check_result(host *temp_host, check_result *queued_check_r
 static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags)
 {
 	check_result *cr = (check_result *)arg;
-	if(wpres) {
+	struct host *hst;
+
+	/* decrement the number of host checks still out there... */
+	if (currently_running_host_checks > 0)
+		currently_running_host_checks--;
+
+	hst = find_host(cr->host_name);
+	if (hst && wpres) {
+		hst->is_executing = FALSE;
 		memcpy(&cr->rusage, &wpres->rusage, sizeof(wpres->rusage));
 		cr->start_time.tv_sec = wpres->start.tv_sec;
 		cr->start_time.tv_usec = wpres->start.tv_usec;
@@ -626,38 +658,32 @@ static int propagate_when_not_unreachable(void *_hst, void *user_data)
 
 
 /* processes the result of a synchronous or asynchronous host check */
-static int process_host_check_result(host *hst, int new_state, char *old_plugin_output, char *old_long_plugin_output, int check_options, int use_cached_result, unsigned long check_timestamp_horizon, int *alert_recorded)
+static int process_host_check_result(host *hst, host *prev, int *alert_recorded)
 {
 	host *master_host = NULL;
 	time_t current_time = 0L;
 
-	log_debug_info(DEBUGL_CHECKS, 1, "HOST: %s, ATTEMPT=%d/%d, CHECK TYPE=%s, STATE TYPE=%s, OLD STATE=%d, NEW STATE=%d\n", hst->name, hst->current_attempt, hst->max_attempts, (hst->check_type == CHECK_TYPE_ACTIVE) ? "ACTIVE" : "PASSIVE", (hst->state_type == HARD_STATE) ? "HARD" : "SOFT", hst->current_state, new_state);
+	log_debug_info(DEBUGL_CHECKS, 1, "HOST: %s, ATTEMPT=%d/%d, CHECK TYPE=%s, STATE TYPE=%s, OLD STATE=%d, NEW STATE=%d\n", hst->name, hst->current_attempt, hst->max_attempts, (hst->check_type == CHECK_TYPE_ACTIVE) ? "ACTIVE" : "PASSIVE", (hst->state_type == HARD_STATE) ? "HARD" : "SOFT", hst->current_state, hst->current_state);
 
 	/* get the current time */
 	time(&current_time);
-
-	/* we have to adjust current attempt # for passive checks, as it isn't done elsewhere */
-	if (hst->check_type == CHECK_TYPE_PASSIVE && passive_host_checks_are_soft == TRUE)
-		adjust_host_check_attempt(hst, FALSE);
-	else if (hst->check_type == CHECK_TYPE_ACTIVE)
-		adjust_host_check_attempt(hst, TRUE);
 
 	/* log passive checks - we need to do this here, as some my bypass external commands by getting dropped in checkresults dir */
 	if (hst->check_type == CHECK_TYPE_PASSIVE) {
 		if (log_passive_checks == TRUE)
 			nm_log(NSLOG_PASSIVE_CHECK,
-			       "PASSIVE HOST CHECK: %s;%d;%s\n", hst->name, new_state, hst->plugin_output);
+			       "PASSIVE HOST CHECK: %s;%d;%s\n", hst->name, hst->current_state, hst->plugin_output);
 	}
 
 
 	/******* HOST WAS DOWN/UNREACHABLE INITIALLY *******/
-	if (hst->current_state != STATE_UP) {
+	if (prev->current_state != STATE_UP) {
 
-		log_debug_info(DEBUGL_CHECKS, 1, "Host was %s.\n", host_state_name(hst->current_state));
+		log_debug_info(DEBUGL_CHECKS, 1, "Host was %s.\n", host_state_name(prev->current_state));
 
 		/***** HOST IS NOW UP *****/
 		/* the host just recovered! */
-		if (new_state == STATE_UP) {
+		if (hst->current_state == STATE_UP) {
 
 			/* set the current state */
 			hst->current_state = STATE_UP;
@@ -715,7 +741,6 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 
 			/* make a determination of the host's state */
 			/* translate host state between DOWN/UNREACHABLE (only for passive checks if enabled) */
-			hst->current_state = new_state;
 			if (hst->check_type == CHECK_TYPE_ACTIVE || translate_passive_host_checks == TRUE)
 				hst->current_state = determine_host_reachability(hst);
 		}
@@ -728,12 +753,11 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 
 		/***** HOST IS STILL UP *****/
 		/* either the host never went down since last check */
-		if (new_state == STATE_UP) {
+		if (hst->current_state == STATE_UP) {
 
 			log_debug_info(DEBUGL_CHECKS, 1, "Host is still UP.\n");
 
 			/* set current state and state type */
-			hst->current_state = STATE_UP;
 			hst->state_type = HARD_STATE;
 		}
 
@@ -761,7 +785,6 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 
 			/* make a (in some cases) preliminary determination of the host's state */
 			/* translate host state between DOWN/UNREACHABLE (for passive checks only if enabled) */
-			hst->current_state = new_state;
 			if (hst->check_type == CHECK_TYPE_ACTIVE || translate_passive_host_checks == TRUE)
 				hst->current_state = determine_host_reachability(hst);
 
@@ -815,7 +838,7 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 	/******************** POST-PROCESSING STUFF *********************/
 
 	/* if the plugin output differs from previous check and no state change, log the current state/output if state stalking is enabled */
-	if (hst->last_state == hst->current_state && should_stalk(hst) && (g_strcmp0(old_plugin_output, hst->plugin_output) || g_strcmp0(old_long_plugin_output, hst->long_plugin_output))) {
+	if (hst->last_state == hst->current_state && should_stalk(hst) && (g_strcmp0(prev->plugin_output, hst->plugin_output) || g_strcmp0(prev->long_plugin_output, hst->long_plugin_output))) {
 		log_host_event(hst);
 		*alert_recorded = NEBATTR_CHECK_ALERT;
 	}
@@ -836,10 +859,9 @@ static int process_host_check_result(host *hst, int new_state, char *old_plugin_
 	return OK;
 }
 
-/* adjusts current host check attempt before a new check is performed */
+/* adjusts current host check attempt when a check is processed */
 static int adjust_host_check_attempt(host *hst, int is_active)
 {
-
 	log_debug_info(DEBUGL_CHECKS, 2, "Adjusting check attempt number for host '%s': current attempt=%d/%d, state=%d, state type=%d\n", hst->name, hst->current_attempt, hst->max_attempts, hst->current_state, hst->state_type);
 
 	/* if host is in a hard state, reset current attempt number */
@@ -874,21 +896,6 @@ static int handle_host_state(host *hst, int *alert_recorded)
 
 	/* update performance data */
 	update_host_performance_data(hst);
-
-	/* record the time the last state ended */
-	switch (hst->last_state) {
-	case STATE_UP:
-		hst->last_time_up = current_time;
-		break;
-	case STATE_DOWN:
-		hst->last_time_down = current_time;
-		break;
-	case STATE_UNREACHABLE:
-		hst->last_time_unreachable = current_time;
-		break;
-	default:
-		break;
-	}
 
 	/* has the host state changed? */
 	if (hst->last_state != hst->current_state || (hst->current_state == STATE_UP && hst->state_type == SOFT_STATE))

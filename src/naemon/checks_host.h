@@ -19,6 +19,9 @@ void schedule_host_check(host *hst, time_t check_time, int options); /* DEPRECAT
 /* Result handling, Update a host given a check result */
 int handle_async_host_check_result(host *temp_host, check_result *queued_check_result);
 
+/* set host variables based on a check result */
+int update_host_state_post_check(host *hst, check_result *cr);
+
 /* Immutable, check if host is reachable */
 int check_host_dependencies(host *hst, int dependency_type);
 
