@@ -249,6 +249,9 @@ int qh_register_handler(const char *name, const char *description, unsigned int 
 {
 	struct query_handler *qh;
 
+	if (!qh_table)
+		return -1;
+
 	if (!name)
 		return -1;
 
