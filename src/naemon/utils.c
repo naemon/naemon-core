@@ -505,8 +505,7 @@ int daemon_init(void)
 		lock.l_start = 0;
 		lock.l_whence = SEEK_SET;
 		lock.l_len = 0;
-		lock.l_pid = -1;
-		if (fcntl(lockfile, F_GETLK, &lock) == 1) {
+		if (fcntl(lockfile, F_GETLK, &lock) == -1) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Failed to access lockfile '%s'. %s. Bailing out...", lock_file, strerror(errno));
 			return (ERROR);
 		}
@@ -533,7 +532,7 @@ int daemon_init(void)
 	lock.l_whence = SEEK_SET;
 	lock.l_len = 0;
 	lock.l_pid = getpid();
-	if (fcntl(lockfile, F_SETLK, &lock) < 0) {
+	if (fcntl(lockfile, F_SETLK, &lock) == -1) {
 		if (errno == EACCES || errno == EAGAIN) {
 			fcntl(lockfile, F_GETLK, &lock);
 			nm_log(NSLOG_RUNTIME_ERROR, "Lockfile '%s' looks like its already held by another instance of Naemon (PID %d).  Bailing out, post-fork...", lock_file, (int)lock.l_pid);
