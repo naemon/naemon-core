@@ -496,7 +496,6 @@ int daemon_init(void)
 
 	/* check for SIGHUP */
 	if (val == 1 && pid == (int)getpid()) {
-		close(lockfile);
 		return OK;
 	}
 	else {
