@@ -104,7 +104,7 @@ struct service {
 	int     is_executing;
 	int     check_options;
 	int     scheduled_downtime_depth;
-	int     pending_flex_downtime;
+	int     pending_flex_downtime; /* UNUSED */
 	int     state_history[MAX_STATE_HISTORY_ENTRIES];    /* flap detection */
 	int     state_history_index;
 	int     is_flapping;

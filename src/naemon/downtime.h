@@ -30,7 +30,7 @@ typedef struct scheduled_downtime {
 	char *comment;
 	unsigned long comment_id;
 	int start_flex_downtime;
-	int incremented_pending_downtime;
+	int incremented_pending_downtime; /* UNUSED */
 	struct scheduled_downtime *next;
 	struct timed_event *start_event, *stop_event;
 	struct scheduled_downtime *prev;

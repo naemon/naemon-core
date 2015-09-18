@@ -27,6 +27,8 @@ static GHashTable *dt_hashtable;
 
 
 static void check_for_expired_downtime(struct nm_event_execution_properties *evprop);
+static int handle_scheduled_downtime_start(scheduled_downtime *dt);
+static int handle_scheduled_downtime_stop(scheduled_downtime *dt);
 
 static const char *dt_strerror(int err)
 {
@@ -217,7 +219,53 @@ static void handle_downtime_start_event(struct nm_event_execution_properties *ev
 	if (evprop->user_data) {
 		if(evprop->execution_type == EVENT_EXEC_NORMAL) {
 			/* process scheduled downtime info */
-			handle_scheduled_downtime_by_id(*(unsigned long *)evprop->user_data);
+			scheduled_downtime *temp_downtime = NULL;
+			unsigned long downtime_id = *(unsigned long *)evprop->user_data;
+			/* find the downtime entry */
+			if ((temp_downtime = find_downtime(ANY_DOWNTIME, downtime_id)) == NULL) {
+				log_debug_info(DEBUGL_DOWNTIME, 1, "Unable to find downtime id: %lu\n",
+						downtime_id);
+				return;
+			}
+
+			/* NULL out this event's start time since the calling function,
+			   handle_timed_event(), will free the event, this will prevent
+			   unschedule_downtime from freeing something that has already been
+			   freed. The start event is not needed within
+			   handle_scheduled_downtime_start(). */
+			temp_downtime->start_event = NULL;
+
+			/* handle the downtime */
+			handle_scheduled_downtime_start(temp_downtime);
+
+		}
+		nm_free(evprop->user_data);
+	}
+}
+static void handle_downtime_stop_event(struct nm_event_execution_properties *evprop)
+{
+	if (evprop->user_data) {
+		if(evprop->execution_type == EVENT_EXEC_NORMAL) {
+			/* process scheduled downtime info */
+			scheduled_downtime *temp_downtime = NULL;
+			unsigned long downtime_id = *(unsigned long *)evprop->user_data;
+
+			/* find the downtime entry */
+			if ((temp_downtime = find_downtime(ANY_DOWNTIME, downtime_id)) == NULL) {
+				log_debug_info(DEBUGL_DOWNTIME, 1, "Unable to find downtime id: %lu\n",
+						downtime_id);
+				return;
+			}
+
+			/* NULL out this event's stop time since the calling function,
+			   handle_timed_event(), will free the event, this will prevent
+			   unschedule_downtime from freeing something that has already been
+			   freed. The stop event is not needed within
+			   handle_scheduled_downtime_stop(). */
+			temp_downtime->stop_event = NULL;
+
+			/* handle the downtime */
+			handle_scheduled_downtime_stop(temp_downtime);
 		}
 		nm_free(evprop->user_data);
 	}
@@ -269,14 +317,6 @@ int unschedule_downtime(int type, unsigned long downtime_id)
 	} else {
 		if ((svc = find_service(temp_downtime->host_name, temp_downtime->service_description)) == NULL)
 			return ERROR;
-	}
-
-	/* decrement pending flex downtime if necessary ... */
-	if (temp_downtime->fixed == FALSE && temp_downtime->incremented_pending_downtime == TRUE) {
-		if (temp_downtime->type == HOST_DOWNTIME)
-			hst->pending_flex_downtime--;
-		else
-			svc->pending_flex_downtime--;
 	}
 
 	log_debug_info(DEBUGL_DOWNTIME, 0, "Cancelling %s downtime (id=%lu)\n",
@@ -332,6 +372,9 @@ int unschedule_downtime(int type, unsigned long downtime_id)
 		temp_downtime->stop_event = NULL;
 	}
 
+	/* just to be consistent, put it out of effect*/
+	temp_downtime->is_in_effect = FALSE;
+
 	/* delete downtime entry */
 	if (temp_downtime->type == HOST_DOWNTIME)
 		delete_host_downtime(downtime_id);
@@ -377,7 +420,6 @@ int register_downtime(int type, unsigned long downtime_id)
 	int minutes = 0;
 	int seconds = 0;
 	unsigned long *new_downtime_id = NULL;
-	int was_in_effect = FALSE;
 
 	/* find the downtime entry in memory */
 	temp_downtime = find_downtime(type, downtime_id);
@@ -448,52 +490,49 @@ int register_downtime(int type, unsigned long downtime_id)
 		add_new_comment(HOST_COMMENT, DOWNTIME_COMMENT, hst->name, NULL, time(NULL), (NULL == temp_downtime->author ? "(Nagios Process)" : temp_downtime->author), temp_buffer, 0, COMMENTSOURCE_INTERNAL, FALSE, (time_t)0, &(temp_downtime->comment_id));
 
 	nm_free(temp_buffer);
-
-	/* only non-triggered downtime is scheduled... */
-	if ((temp_downtime->triggered_by == 0) && ((TRUE == temp_downtime->fixed) ||
-	        ((FALSE == temp_downtime->fixed) &&
-	         (TRUE == temp_downtime->is_in_effect)))) {
-		/* If this is a fixed downtime, schedule the event to start it. If this
-			is a flexible downtime, normally we wait for one of the
-			check_pending_flex_*_downtime() functions to start it, but if the
-			downtime is already in effect, this means that we are restarting
-			Nagios and the downtime was in effect when we last shutdown
-			Nagios, so we should restart the flexible downtime now. This
-			should work even if the downtime has ended because the
-			handle_scheduled_dowtime() function will immediately schedule
-			another downtime event which will end the downtime. */
+	if (temp_downtime->is_in_effect) { /* in effect, so schedule a stop event*/
+		time_t event_time = 0L;
+		/* schedule an event to end the downtime */
+		if (temp_downtime->fixed == FALSE) {
+			event_time = (time_t)((unsigned long)temp_downtime->flex_downtime_start
+					+ temp_downtime->duration);
+		} else {
+			event_time = temp_downtime->end_time;
+		}
 
 		new_downtime_id = nm_malloc(sizeof(unsigned long));
-		*new_downtime_id = downtime_id;
+		*new_downtime_id = temp_downtime->downtime_id;
 
-		temp_downtime->start_event = schedule_event(temp_downtime->start_time - time(NULL), handle_downtime_start_event, (void *)new_downtime_id);
-		/* Turn off is_in_effect flag so handle_scheduled_downtime() will
-			handle it correctly */
-		was_in_effect = temp_downtime->is_in_effect;
-		temp_downtime->is_in_effect = FALSE;
+		schedule_event(event_time - time(NULL), handle_downtime_stop_event, (void *)new_downtime_id);
 	}
+	else { /* not in effect, schedule a start event if necessary (or expiry event for flexible downtime)*/
+		time_t event_time = 0L;
+		if (!temp_downtime->fixed) {
+			/**
+			 * Since a flex downtime may never start, schedule an expiring event in
+			 * case the event is never triggered. The expire event will NOT cancel
+			 * a downtime event that is in effect, since that will be cancelled
+			 *	when its "handle_downtime_stop_event" event is invoked (scheduled above)
+			 */
+			log_debug_info(DEBUGL_DOWNTIME, 1, "Scheduling downtime expire event in case flexible downtime is never triggered\n");
+			temp_downtime->stop_event = schedule_event((temp_downtime->end_time + 1) - time(NULL), check_for_expired_downtime, NULL);
+			if (temp_downtime->flex_downtime_start > 0)
+				event_time = temp_downtime->flex_downtime_start - time(NULL);
+		}
 
-	/* If the downtime is triggered and was in effect, mark it as not in
-		effect so it gets scheduled correctly */
-	if ((temp_downtime->triggered_by != 0) &&
-	    (TRUE == temp_downtime->is_in_effect)) {
-		was_in_effect = temp_downtime->is_in_effect;
-		temp_downtime->is_in_effect = FALSE;
-	}
+		/* No need to schedule triggered downtimes, since they're ... triggered*/
+		else if (temp_downtime->triggered_by == 0) {
+			event_time = temp_downtime->start_time - time(NULL);
+		}
 
-	if ((FALSE == temp_downtime->fixed) && (FALSE == was_in_effect)) {
-		/* increment pending flex downtime counter */
-		if (temp_downtime->type == HOST_DOWNTIME)
-			hst->pending_flex_downtime++;
-		else
-			svc->pending_flex_downtime++;
-		temp_downtime->incremented_pending_downtime = TRUE;
+		if (event_time > 0) {
+			new_downtime_id = nm_malloc(sizeof(unsigned long));
+			*new_downtime_id = downtime_id;
 
-		/* Since a flex downtime may never start, schedule an expiring event in
-			case the event is never triggered. The expire event will NOT cancel
-			a downtime event that is in effect */
-		log_debug_info(DEBUGL_DOWNTIME, 1, "Scheduling downtime expire event in case flexible downtime is never triggered\n");
-		temp_downtime->stop_event = schedule_event((temp_downtime->end_time + 1) - time(NULL), check_for_expired_downtime, NULL);
+			temp_downtime->start_event = schedule_event(event_time, handle_downtime_start_event, (void *)new_downtime_id);
+
+		}
+
 	}
 
 	return OK;
@@ -523,15 +562,11 @@ int handle_scheduled_downtime_by_id(unsigned long downtime_id)
 	return handle_scheduled_downtime(temp_downtime);
 }
 
-
-/* handles scheduled host or service downtime */
-int handle_scheduled_downtime(scheduled_downtime *temp_downtime)
+static int handle_scheduled_downtime_stop(scheduled_downtime *temp_downtime)
 {
 	scheduled_downtime *this_downtime = NULL;
 	host *hst = NULL;
 	service *svc = NULL;
-	time_t event_time = 0L;
-	unsigned long *new_downtime_id = NULL;
 	int attr = 0;
 
 	if (temp_downtime == NULL)
@@ -550,157 +585,180 @@ int handle_scheduled_downtime(scheduled_downtime *temp_downtime)
 		}
 	}
 
-	/* have we come to the end of the scheduled downtime? */
-	if (temp_downtime->is_in_effect == TRUE) {
+	attr = NEBATTR_DOWNTIME_STOP_NORMAL;
+	broker_downtime_data(NEBTYPE_DOWNTIME_STOP, NEBFLAG_NONE, attr, temp_downtime->type, temp_downtime->host_name, temp_downtime->service_description, temp_downtime->entry_time, temp_downtime->author, temp_downtime->comment, temp_downtime->start_time, temp_downtime->end_time, temp_downtime->fixed, temp_downtime->triggered_by, temp_downtime->duration, temp_downtime->downtime_id);
 
-		attr = NEBATTR_DOWNTIME_STOP_NORMAL;
-		broker_downtime_data(NEBTYPE_DOWNTIME_STOP, NEBFLAG_NONE, attr, temp_downtime->type, temp_downtime->host_name, temp_downtime->service_description, temp_downtime->entry_time, temp_downtime->author, temp_downtime->comment, temp_downtime->start_time, temp_downtime->end_time, temp_downtime->fixed, temp_downtime->triggered_by, temp_downtime->duration, temp_downtime->downtime_id);
-
-		/* decrement the downtime depth variable */
-		if(temp_downtime->type == HOST_DOWNTIME) {
-			if (hst->scheduled_downtime_depth > 0)
-				hst->scheduled_downtime_depth--;
-			else
-				log_debug_info(DEBUGL_DOWNTIME, 0, "Host '%s' tried to exit from a period of scheduled downtime (id=%lu), but was already out of downtime.\n", hst->name, temp_downtime->downtime_id);
-		}
-		else {
-			if (svc->scheduled_downtime_depth > 0)
-				svc->scheduled_downtime_depth--;
-			else
-				log_debug_info(DEBUGL_DOWNTIME, 0, "Service '%s' on host '%s' tried to exited from a period of scheduled downtime (id=%lu), but was already out of downtime.\n", svc->description, svc->host_name, temp_downtime->downtime_id);
-		}
-
-		if (temp_downtime->type == HOST_DOWNTIME && hst->scheduled_downtime_depth == 0) {
-
-			log_debug_info(DEBUGL_DOWNTIME, 0, "Host '%s' has exited from a period of scheduled downtime (id=%lu).\n", hst->name, temp_downtime->downtime_id);
-
-			/* log a notice - this one is parsed by the history CGI */
-			nm_log(NSLOG_INFO_MESSAGE, "HOST DOWNTIME ALERT: %s;STOPPED; Host has exited from a period of scheduled downtime", hst->name);
-
-			/* send a notification */
-			host_notification(hst, NOTIFICATION_DOWNTIMEEND, temp_downtime->author, temp_downtime->comment, NOTIFICATION_OPTION_NONE);
-		}
-
-		else if (temp_downtime->type == SERVICE_DOWNTIME && svc->scheduled_downtime_depth == 0) {
-
-			log_debug_info(DEBUGL_DOWNTIME, 0, "Service '%s' on host '%s' has exited from a period of scheduled downtime (id=%lu).\n", svc->description, svc->host_name, temp_downtime->downtime_id);
-
-			/* log a notice - this one is parsed by the history CGI */
-			nm_log(NSLOG_INFO_MESSAGE, "SERVICE DOWNTIME ALERT: %s;%s;STOPPED; Service has exited from a period of scheduled downtime", svc->host_name, svc->description);
-
-			/* send a notification */
-			service_notification(svc, NOTIFICATION_DOWNTIMEEND, temp_downtime->author, temp_downtime->comment, NOTIFICATION_OPTION_NONE);
-		}
-
-
-		/* update the status data */
-		if (temp_downtime->type == HOST_DOWNTIME)
-			update_host_status(hst, FALSE);
+	/* decrement the downtime depth variable */
+	if(temp_downtime->type == HOST_DOWNTIME) {
+		if (hst->scheduled_downtime_depth > 0)
+			hst->scheduled_downtime_depth--;
 		else
-			update_service_status(svc, FALSE);
-
-		/* decrement pending flex downtime if necessary */
-		if (temp_downtime->fixed == FALSE && temp_downtime->incremented_pending_downtime == TRUE) {
-			if (temp_downtime->type == HOST_DOWNTIME) {
-				if (hst->pending_flex_downtime > 0)
-					hst->pending_flex_downtime--;
-			} else {
-				if (svc->pending_flex_downtime > 0)
-					svc->pending_flex_downtime--;
-			}
-		}
-
-		/* handle (stop) downtime that is triggered by this one */
-		while (1) {
-
-			/* list contents might change by recursive calls, so we use this inefficient method to prevent segfaults */
-			for (this_downtime = scheduled_downtime_list; this_downtime != NULL; this_downtime = this_downtime->next) {
-				if (this_downtime->triggered_by == temp_downtime->downtime_id) {
-					handle_scheduled_downtime(this_downtime);
-					break;
-				}
-			}
-
-			if (this_downtime == NULL)
-				break;
-		}
-
-		/* delete downtime entry */
-		if (temp_downtime->type == HOST_DOWNTIME)
-			delete_host_downtime(temp_downtime->downtime_id);
+			log_debug_info(DEBUGL_DOWNTIME, 0, "Host '%s' tried to exit from a period of scheduled downtime (id=%lu), but was already out of downtime.\n", hst->name, temp_downtime->downtime_id);
+	}
+	else {
+		if (svc->scheduled_downtime_depth > 0)
+			svc->scheduled_downtime_depth--;
 		else
-			delete_service_downtime(temp_downtime->downtime_id);
+			log_debug_info(DEBUGL_DOWNTIME, 0, "Service '%s' on host '%s' tried to exited from a period of scheduled downtime (id=%lu), but was already out of downtime.\n", svc->description, svc->host_name, temp_downtime->downtime_id);
 	}
 
-	/* else we are just starting the scheduled downtime */
-	else {
+	if (temp_downtime->type == HOST_DOWNTIME && hst->scheduled_downtime_depth == 0) {
 
-		broker_downtime_data(NEBTYPE_DOWNTIME_START, NEBFLAG_NONE, NEBATTR_NONE, temp_downtime->type, temp_downtime->host_name, temp_downtime->service_description, temp_downtime->entry_time, temp_downtime->author, temp_downtime->comment, temp_downtime->start_time, temp_downtime->end_time, temp_downtime->fixed, temp_downtime->triggered_by, temp_downtime->duration, temp_downtime->downtime_id);
+		log_debug_info(DEBUGL_DOWNTIME, 0, "Host '%s' has exited from a period of scheduled downtime (id=%lu).\n", hst->name, temp_downtime->downtime_id);
 
-		if (temp_downtime->type == HOST_DOWNTIME && hst->scheduled_downtime_depth == 0) {
+		/* log a notice - this one is parsed by the history CGI */
+		nm_log(NSLOG_INFO_MESSAGE, "HOST DOWNTIME ALERT: %s;STOPPED; Host has exited from a period of scheduled downtime", hst->name);
 
-			log_debug_info(DEBUGL_DOWNTIME, 0, "Host '%s' has entered a period of scheduled downtime (id=%lu).\n", hst->name, temp_downtime->downtime_id);
+		/* send a notification */
+		host_notification(hst, NOTIFICATION_DOWNTIMEEND, temp_downtime->author, temp_downtime->comment, NOTIFICATION_OPTION_NONE);
+	}
 
-			/* log a notice - this one is parsed by the history CGI */
-			nm_log(NSLOG_INFO_MESSAGE, "HOST DOWNTIME ALERT: %s;STARTED; Host has entered a period of scheduled downtime", hst->name);
+	else if (temp_downtime->type == SERVICE_DOWNTIME && svc->scheduled_downtime_depth == 0) {
 
-			/* send a notification */
-			if (FALSE == temp_downtime->start_notification_sent) {
-				host_notification(hst, NOTIFICATION_DOWNTIMESTART, temp_downtime->author, temp_downtime->comment, NOTIFICATION_OPTION_NONE);
-				temp_downtime->start_notification_sent = TRUE;
-			}
-		}
+		log_debug_info(DEBUGL_DOWNTIME, 0, "Service '%s' on host '%s' has exited from a period of scheduled downtime (id=%lu).\n", svc->description, svc->host_name, temp_downtime->downtime_id);
 
-		else if (temp_downtime->type == SERVICE_DOWNTIME && svc->scheduled_downtime_depth == 0) {
+		/* log a notice - this one is parsed by the history CGI */
+		nm_log(NSLOG_INFO_MESSAGE, "SERVICE DOWNTIME ALERT: %s;%s;STOPPED; Service has exited from a period of scheduled downtime", svc->host_name, svc->description);
 
-			log_debug_info(DEBUGL_DOWNTIME, 0, "Service '%s' on host '%s' has entered a period of scheduled downtime (id=%lu).\n", svc->description, svc->host_name, temp_downtime->downtime_id);
+		/* send a notification */
+		service_notification(svc, NOTIFICATION_DOWNTIMEEND, temp_downtime->author, temp_downtime->comment, NOTIFICATION_OPTION_NONE);
+	}
 
-			/* log a notice - this one is parsed by the history CGI */
-			nm_log(NSLOG_INFO_MESSAGE, "SERVICE DOWNTIME ALERT: %s;%s;STARTED; Service has entered a period of scheduled downtime", svc->host_name, svc->description);
 
-			/* send a notification */
-			if (FALSE == temp_downtime->start_notification_sent) {
-				service_notification(svc, NOTIFICATION_DOWNTIMESTART, temp_downtime->author, temp_downtime->comment, NOTIFICATION_OPTION_NONE);
-				temp_downtime->start_notification_sent = TRUE;
-			}
-		}
+	/* update the status data */
+	if (temp_downtime->type == HOST_DOWNTIME)
+		update_host_status(hst, FALSE);
+	else
+		update_service_status(svc, FALSE);
 
-		/* increment the downtime depth variable */
-		if (temp_downtime->type == HOST_DOWNTIME)
-			hst->scheduled_downtime_depth++;
-		else
-			svc->scheduled_downtime_depth++;
+	/* handle (stop) downtime that is triggered by this one */
+	while (1) {
 
-		/* set the in effect flag */
-		temp_downtime->is_in_effect = TRUE;
-
-		/* update the status data */
-		if (temp_downtime->type == HOST_DOWNTIME)
-			update_host_status(hst, FALSE);
-		else
-			update_service_status(svc, FALSE);
-
-		/* schedule an event to end the downtime */
-		if (temp_downtime->fixed == FALSE) {
-			event_time = (time_t)((unsigned long)temp_downtime->flex_downtime_start
-			                      + temp_downtime->duration);
-		} else {
-			event_time = temp_downtime->end_time;
-		}
-
-		new_downtime_id = nm_malloc(sizeof(unsigned long));
-		*new_downtime_id = temp_downtime->downtime_id;
-
-		schedule_event(event_time - time(NULL), handle_downtime_start_event, (void *)new_downtime_id);
-
-		/* handle (start) downtime that is triggered by this one */
+		/* list contents might change by recursive calls, so we use this inefficient method to prevent segfaults */
 		for (this_downtime = scheduled_downtime_list; this_downtime != NULL; this_downtime = this_downtime->next) {
-			if (this_downtime->triggered_by == temp_downtime->downtime_id)
+			if (this_downtime->triggered_by == temp_downtime->downtime_id) {
 				handle_scheduled_downtime(this_downtime);
+				break;
+			}
 		}
+
+		if (this_downtime == NULL)
+			break;
+	}
+
+	temp_downtime->is_in_effect = FALSE;
+
+	/* delete downtime entry */
+	if (temp_downtime->type == HOST_DOWNTIME)
+		delete_host_downtime(temp_downtime->downtime_id);
+	else
+		delete_service_downtime(temp_downtime->downtime_id);
+
+	return OK;
+}
+
+static int handle_scheduled_downtime_start(scheduled_downtime *temp_downtime)
+{
+
+	scheduled_downtime *this_downtime = NULL;
+	host *hst = NULL;
+	service *svc = NULL;
+	time_t event_time = 0L;
+	unsigned long *new_downtime_id = NULL;
+
+	if (temp_downtime == NULL)
+		return ERROR;
+
+	/* find the host or service associated with this downtime */
+	if (temp_downtime->type == HOST_DOWNTIME) {
+		if ((hst = find_host(temp_downtime->host_name)) == NULL) {
+			log_debug_info(DEBUGL_DOWNTIME, 1, "Unable to find host (%s) for downtime\n", temp_downtime->host_name);
+			return ERROR;
+		}
+	} else {
+		if ((svc = find_service(temp_downtime->host_name, temp_downtime->service_description)) == NULL) {
+			log_debug_info(DEBUGL_DOWNTIME, 1, "Unable to find service (%s) host (%s) for downtime\n", temp_downtime->service_description, temp_downtime->host_name);
+			return ERROR;
+		}
+	}
+
+
+	broker_downtime_data(NEBTYPE_DOWNTIME_START, NEBFLAG_NONE, NEBATTR_NONE, temp_downtime->type, temp_downtime->host_name, temp_downtime->service_description, temp_downtime->entry_time, temp_downtime->author, temp_downtime->comment, temp_downtime->start_time, temp_downtime->end_time, temp_downtime->fixed, temp_downtime->triggered_by, temp_downtime->duration, temp_downtime->downtime_id);
+
+	if (temp_downtime->type == HOST_DOWNTIME && hst->scheduled_downtime_depth == 0) {
+
+		log_debug_info(DEBUGL_DOWNTIME, 0, "Host '%s' has entered a period of scheduled downtime (id=%lu).\n", hst->name, temp_downtime->downtime_id);
+
+		/* log a notice - this one is parsed by the history CGI */
+		nm_log(NSLOG_INFO_MESSAGE, "HOST DOWNTIME ALERT: %s;STARTED; Host has entered a period of scheduled downtime", hst->name);
+
+		/* send a notification */
+		if (FALSE == temp_downtime->start_notification_sent) {
+			host_notification(hst, NOTIFICATION_DOWNTIMESTART, temp_downtime->author, temp_downtime->comment, NOTIFICATION_OPTION_NONE);
+			temp_downtime->start_notification_sent = TRUE;
+		}
+	}
+
+	else if (temp_downtime->type == SERVICE_DOWNTIME && svc->scheduled_downtime_depth == 0) {
+
+		log_debug_info(DEBUGL_DOWNTIME, 0, "Service '%s' on host '%s' has entered a period of scheduled downtime (id=%lu).\n", svc->description, svc->host_name, temp_downtime->downtime_id);
+
+		/* log a notice - this one is parsed by the history CGI */
+		nm_log(NSLOG_INFO_MESSAGE, "SERVICE DOWNTIME ALERT: %s;%s;STARTED; Service has entered a period of scheduled downtime", svc->host_name, svc->description);
+
+		/* send a notification */
+		if (FALSE == temp_downtime->start_notification_sent) {
+			service_notification(svc, NOTIFICATION_DOWNTIMESTART, temp_downtime->author, temp_downtime->comment, NOTIFICATION_OPTION_NONE);
+			temp_downtime->start_notification_sent = TRUE;
+		}
+	}
+
+	/* increment the downtime depth variable */
+	if (temp_downtime->type == HOST_DOWNTIME)
+		hst->scheduled_downtime_depth++;
+	else
+		svc->scheduled_downtime_depth++;
+
+	/* set the in effect flag */
+	temp_downtime->is_in_effect = TRUE;
+
+	/* update the status data */
+	if (temp_downtime->type == HOST_DOWNTIME)
+		update_host_status(hst, FALSE);
+	else
+		update_service_status(svc, FALSE);
+
+	/* schedule an event to end the downtime */
+	if (temp_downtime->fixed == FALSE) {
+		event_time = (time_t)((unsigned long)temp_downtime->flex_downtime_start
+				+ temp_downtime->duration);
+	} else {
+		event_time = temp_downtime->end_time;
+	}
+
+	new_downtime_id = nm_malloc(sizeof(unsigned long));
+	*new_downtime_id = temp_downtime->downtime_id;
+
+	schedule_event(event_time - time(NULL), handle_downtime_stop_event, (void *)new_downtime_id);
+
+	/* handle (start) downtime that is triggered by this one */
+	for (this_downtime = scheduled_downtime_list; this_downtime != NULL; this_downtime = this_downtime->next) {
+		if (this_downtime->triggered_by == temp_downtime->downtime_id)
+			handle_scheduled_downtime(this_downtime);
 	}
 
 	return OK;
+}
+
+/* handles scheduled host or service downtime */
+int handle_scheduled_downtime(scheduled_downtime *temp_downtime)
+{
+	/* have we come to the end of the scheduled downtime? */
+	if (temp_downtime->is_in_effect == TRUE)
+		return handle_scheduled_downtime_stop(temp_downtime);
+	/* else we are just starting the scheduled downtime */
+	else
+		return handle_scheduled_downtime_start(temp_downtime);
 }
 
 

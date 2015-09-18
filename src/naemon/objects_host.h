@@ -112,7 +112,7 @@ struct host {
 	unsigned long current_notification_id;
 	int     check_flapping_recovery_notification;
 	int     scheduled_downtime_depth;
-	int     pending_flex_downtime;
+	int     pending_flex_downtime; /* UNUSED */
 	int     state_history[MAX_STATE_HISTORY_ENTRIES];    /* flap detection */
 	int     state_history_index;
 	time_t  last_state_history_update;

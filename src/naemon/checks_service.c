@@ -919,7 +919,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 			/* check for start of flexible (non-fixed) scheduled downtime if we just had a hard error */
 			/* we need to check for both, state_change (SOFT) and hard_state_change (HARD) values */
-			if ((hard_state_change == TRUE || state_change == TRUE) && temp_service->pending_flex_downtime > 0)
+			if (hard_state_change == TRUE || state_change == TRUE)
 				check_pending_flex_service_downtime(temp_service);
 
 			/* 10/04/07 check to see if the service and/or associate host is flapping */
