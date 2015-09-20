@@ -9,3 +9,5 @@
 /test-kvvec-ekvstr
 /test-log
 /test-utils
+/test-check-scheduling
+/test-objects
