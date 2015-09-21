@@ -1,3 +1,5 @@
+check_PROGRAMS =
+
 T_TAP_AM_CPPFLAGS = $(AM_CPPFLAGS) $(GLIB_CFLAGS) -I$(abs_srcdir)/tap/src -DTESTDIR='"$(abs_builddir)/t-tap/smallconfig/"'
 BASE_DEPS = libnaemon.la
 TAPLDADD = $(LDADD) tap/src/libtap.la
@@ -122,6 +124,11 @@ tests_test_kvvec_LDADD = $(TESTSLDADD)
 tests_test_kvvec_LDFLAGS = $(TESTSLDFLAGS)
 tests_test_kvvec_CPPFLAGS = $(TESTSCPPFLAGS)
 
+tests_test_worker_SOURCES = tests/test-worker.c
+tests_test_worker_LDADD = $(TESTSLDADD)
+tests_test_worker_LDFLAGS = $(TESTSLDADD)
+tests_test_worker_CPPFLAGS = $(TESTSCPPFLAGS)
+
 check_PROGRAMS += \
 	tests/test-checks \
 	tests/test-check-result-processing \
@@ -134,7 +141,17 @@ check_PROGRAMS += \
 	tests/test-kv-command \
 	tests/test-kvvec \
 	tests/test-objects \
-	tests/test-kvvec-ekvstr
+	tests/test-kvvec-ekvstr \
+	tests/test-worker
+
+LIBTEST_UTILS = lib/t-utils.c lib/t-utils.h
+test_bitmap_SOURCES = lib/test-bitmap.c $(LIBTEST_UTILS)
+test_iobroker_SOURCES = lib/test-iobroker.c $(LIBTEST_UTILS)
+test_bufferqueue_SOURCES = lib/test-bufferqueue.c $(LIBTEST_UTILS)
+test_nsutils_SOURCES = lib/test-nsutils.c $(LIBTEST_UTILS)
+test_runcmd_SOURCES = lib/test-runcmd.c $(LIBTEST_UTILS)
+check_PROGRAMS += test-bitmap test-iobroker test-bufferqueue \
+	test-nsutils test-runcmd
 
 
 endif
