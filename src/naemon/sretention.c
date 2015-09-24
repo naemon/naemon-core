@@ -36,7 +36,7 @@ void save_state_information_eventhandler(struct nm_event_execution_properties *e
 }
 
 /* initializes retention data at program start */
-int initialize_retention_data(const char *cfgfile)
+int initialize_retention_data()
 {
 	premod_hosts = nm_calloc(num_objects.hosts, sizeof(void *));
 	premod_services = nm_calloc(num_objects.services, sizeof(void *));
@@ -46,7 +46,7 @@ int initialize_retention_data(const char *cfgfile)
 	if (retain_state_information == TRUE && retention_update_interval > 0)
 		schedule_event(retention_update_interval * interval_length, save_state_information_eventhandler, NULL);
 
-	return xrddefault_initialize_retention_data(cfgfile);
+	return xrddefault_initialize_retention_data();
 }
 
 

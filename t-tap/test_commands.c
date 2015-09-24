@@ -607,7 +607,7 @@ int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 	assert(OK == read_main_config_file(test_config_file));
 	assert(OK == read_all_object_data(test_config_file));
 	assert(OK == initialize_downtime_data());
-	assert(OK == initialize_retention_data(test_config_file));
+	assert(OK == initialize_retention_data());
 	test_register();
 	test_parsing();
 	test_core_commands();

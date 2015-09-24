@@ -516,7 +516,7 @@ int initialize_core() {
     timing_point("Downtime data initialized\n");
 
     /* read initial service and host state information  */
-    initialize_retention_data(config_file);
+    initialize_retention_data();
     timing_point("Retention data initialized\n");
     read_initial_state_information();
     timing_point("Initial state information read\n");

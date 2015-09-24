@@ -21,7 +21,7 @@
 /******************************************************************/
 
 /* initialize retention data */
-int xrddefault_initialize_retention_data(const char *cfgfile)
+int xrddefault_initialize_retention_data(void)
 {
 	nagios_macros *mac;
 
