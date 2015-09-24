@@ -33,7 +33,6 @@ int xrddefault_initialize_retention_data(void)
 
 	/* save the retention file macro */
 	nm_free(mac->x[MACRO_RETENTIONDATAFILE]);
-	mac->x[MACRO_RETENTIONDATAFILE] = retention_file;
 	mac->x[MACRO_RETENTIONDATAFILE] = nm_strdup(retention_file);
 	strip(mac->x[MACRO_RETENTIONDATAFILE]);
 
