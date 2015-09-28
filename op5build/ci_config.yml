@@ -1,0 +1,4 @@
+post:
+    steps: |
+        service naemon start
+        service naemon stop
