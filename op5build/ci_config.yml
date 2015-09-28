@@ -1,4 +1,12 @@
 post:
     steps: |
         service naemon start
+        service naemon restart
+        service naemon reload
+        service naemon configtest
         service naemon stop
+        service naemon start
+        kill -9 \`cat /var/cache/naemon/naemon.pid\`
+        service naemon start
+        service naemon stop
+        service naemon start
