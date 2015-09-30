@@ -174,7 +174,7 @@ void command_destroy(struct external_command * command);
 
 /**
  * Parses a string in accordance with the specified mode. The mode is a bitwise or of modes to attempt -
- * one or more of CMD_SYNTAX_NOKV and CMD_SYNTAX_KV - in that order. When a command is succesfully parsed,
+ * one or more of CMD_SYNTAX_NOKV and CMD_SYNTAX_KV - in that order. When a command is successfully parsed,
  * a handle to the matching registered command is returned.
  * @param cmdstr A command string
  * @param mode Parse modes to attempt

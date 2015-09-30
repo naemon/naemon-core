@@ -538,14 +538,14 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 			temp_service->problem_has_been_acknowledged = FALSE;
 			temp_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
 
-			/* remove any non-persistant comments associated with the ack */
+			/* remove any non-persistent comments associated with the ack */
 			delete_service_acknowledgement_comments(temp_service);
 		} else if (temp_service->acknowledgement_type == ACKNOWLEDGEMENT_STICKY && temp_service->current_state == STATE_OK) {
 
 			temp_service->problem_has_been_acknowledged = FALSE;
 			temp_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
 
-			/* remove any non-persistant comments associated with the ack */
+			/* remove any non-persistent comments associated with the ack */
 			delete_service_acknowledgement_comments(temp_service);
 		}
 
@@ -697,7 +697,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	/******* SERVICE CHECK PROBLEM LOGIC *******/
 	/*******************************************/
 
-	/* hey, something's not working quite like it should... */
+	/* hey, something is not working quite like it should... */
 	else {
 
 		log_debug_info(DEBUGL_CHECKS, 1, "Service is in a non-OK state!\n");
@@ -1712,7 +1712,7 @@ void check_host_result_freshness(void)
 }
 
 
-/* checks to see if a hosts's check results are fresh */
+/* checks to see if a hosts' check results are fresh */
 int is_host_result_fresh(host *temp_host, time_t current_time, int log_this)
 {
 	time_t expiration_time = 0L;
@@ -2741,14 +2741,14 @@ int handle_host_state(host *hst, int *alert_recorded)
 			hst->problem_has_been_acknowledged = FALSE;
 			hst->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
 
-			/* remove any non-persistant comments associated with the ack */
+			/* remove any non-persistent comments associated with the ack */
 			delete_host_acknowledgement_comments(hst);
 		} else if (hst->acknowledgement_type == ACKNOWLEDGEMENT_STICKY && hst->current_state == STATE_UP) {
 
 			hst->problem_has_been_acknowledged = FALSE;
 			hst->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
 
-			/* remove any non-persistant comments associated with the ack */
+			/* remove any non-persistent comments associated with the ack */
 			delete_host_acknowledgement_comments(hst);
 		}
 
