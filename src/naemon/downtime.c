@@ -506,7 +506,6 @@ int register_downtime(int type, unsigned long downtime_id)
 		schedule_event(event_time - time(NULL), handle_downtime_stop_event, (void *)new_downtime_id);
 	}
 	else { /* not in effect, schedule a start event if necessary (or expiry event for flexible downtime)*/
-		time_t event_time = 0L;
 		if (!temp_downtime->fixed) {
 			/**
 			 * Since a flex downtime may never start, schedule an expiring event in
@@ -516,20 +515,19 @@ int register_downtime(int type, unsigned long downtime_id)
 			 */
 			log_debug_info(DEBUGL_DOWNTIME, 1, "Scheduling downtime expire event in case flexible downtime is never triggered\n");
 			temp_downtime->stop_event = schedule_event((temp_downtime->end_time + 1) - time(NULL), check_for_expired_downtime, NULL);
-			if (temp_downtime->flex_downtime_start > 0)
-				event_time = temp_downtime->flex_downtime_start - time(NULL);
+			if (temp_downtime->flex_downtime_start > 0) {
+				new_downtime_id = nm_malloc(sizeof(unsigned long));
+				*new_downtime_id = downtime_id;
+				temp_downtime->start_event = schedule_event(temp_downtime->flex_downtime_start - time(NULL), handle_downtime_start_event, (void *)new_downtime_id);
+
+			}
 		}
 
 		/* No need to schedule triggered downtimes, since they're ... triggered*/
 		else if (temp_downtime->triggered_by == 0) {
-			event_time = temp_downtime->start_time - time(NULL);
-		}
-
-		if (event_time > 0) {
 			new_downtime_id = nm_malloc(sizeof(unsigned long));
 			*new_downtime_id = downtime_id;
-
-			temp_downtime->start_event = schedule_event(event_time, handle_downtime_start_event, (void *)new_downtime_id);
+			temp_downtime->start_event = schedule_event(temp_downtime->start_time - time(NULL), handle_downtime_start_event, (void *)new_downtime_id);
 
 		}
 
