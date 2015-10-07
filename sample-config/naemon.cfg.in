@@ -301,6 +301,9 @@ max_concurrent_checks=0
 # HOST AND SERVICE CHECK REAPER FREQUENCY
 # This is the frequency (in seconds!) that Naemon will process
 # the results of host and service checks.
+#
+# Note: Processing check results from disk is deprecated and will
+# be removed in a future release.
 
 check_result_reaper_frequency=10
 
@@ -312,6 +315,9 @@ check_result_reaper_frequency=10
 # check result reaper event will be allowed to run before
 # returning control back to Naemon so it can perform other
 # duties.
+#
+# Note: Processing check results from disk is deprecated and will
+# be removed in a future release.
 
 max_check_result_reaper_time=30
 
@@ -324,6 +330,8 @@ max_check_result_reaper_time=30
 #
 # Note: Make sure that only one instance of Naemon has access
 # to this directory!
+# Note: Processing check results from disk is deprecated and will
+# be removed in a future release.
 
 check_result_path=@CHECKRESULTDIR@
 
@@ -334,6 +342,9 @@ check_result_path=@CHECKRESULTDIR@
 # This option determines the maximum age (in seconds) which check
 # result files are considered to be valid.  Files older than this
 # threshold will be mercilessly deleted without further processing.
+#
+# Note: Processing check results from disk is deprecated and will
+# be removed in a future release.
 
 max_check_result_file_age=3600
 

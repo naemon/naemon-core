@@ -217,8 +217,7 @@ int process_check_result_queue(char *dirname)
 
 	/* open the directory for reading */
 	if ((dirp = opendir(dirname)) == NULL) {
-		nm_log(NSLOG_CONFIG_ERROR,
-		       "Error: Could not open check result queue directory '%s' for reading.\n", dirname);
+		log_debug_info(DEBUGL_CHECKS, 1, "Could not open check result queue directory '%s' for reading: %s\n", dirname, strerror(errno));
 		return ERROR;
 	}
 
