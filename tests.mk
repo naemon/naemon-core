@@ -134,6 +134,11 @@ tests_test_worker_LDADD = $(TESTSLDADD)
 tests_test_worker_LDFLAGS = $(TESTSLDADD)
 tests_test_worker_CPPFLAGS = $(TESTSCPPFLAGS)
 
+tests_test_retention_SOURCES = tests/test-retention.c
+tests_test_retention_LDADD = $(TESTSLDADD)
+tests_test_retention_LDFLAGS = $(TESTSLDADD)
+tests_test_retention_CPPFLAGS = $(TESTSCPPFLAGS)
+
 check_PROGRAMS += \
 	tests/test-checks \
 	tests/test-check-result-processing \
@@ -148,7 +153,8 @@ check_PROGRAMS += \
 	tests/test-kvvec \
 	tests/test-objects \
 	tests/test-kvvec-ekvstr \
-	tests/test-worker
+	tests/test-worker \
+	tests/test-retention
 
 LIBTEST_UTILS = lib/t-utils.c lib/t-utils.h
 test_bitmap_SOURCES = lib/test-bitmap.c $(LIBTEST_UTILS)
