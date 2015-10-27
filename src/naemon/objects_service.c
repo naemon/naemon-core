@@ -202,7 +202,9 @@ int setup_service_variables(service *new_service, const char *display_name, cons
 
 int register_service(service *new_service)
 {
+
 	host *h;
+	g_return_val_if_fail(service_hash_table != NULL, ERROR);
 
 	if (!(h = find_host(new_service->host_name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Unable to locate host '%s' for service '%s'\n",

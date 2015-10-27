@@ -98,6 +98,9 @@ int setup_contact_variables(contact *new_contact, const char *alias, const char 
 
 int register_contact(contact *new_contact)
 {
+
+	g_return_val_if_fail(contact_hash_table != NULL, ERROR);
+
 	if ((find_contact(new_contact->name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Contact '%s' has already been defined\n", new_contact->name);
 		return ERROR;

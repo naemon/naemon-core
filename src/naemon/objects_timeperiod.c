@@ -62,6 +62,9 @@ timeperiod *create_timeperiod(const char *name, const char *alias)
 
 int register_timeperiod(timeperiod *new_timeperiod)
 {
+
+	g_return_val_if_fail(timeperiod_hash_table != NULL, ERROR);
+
 	if ((find_timeperiod(new_timeperiod->name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Timeperiod '%s' has already been defined\n", new_timeperiod->name);
 		return ERROR;

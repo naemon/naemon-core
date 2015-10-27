@@ -58,6 +58,9 @@ contactgroup *create_contactgroup(const char *name, const char *alias)
 
 int register_contactgroup(contactgroup *new_contactgroup)
 {
+
+	g_return_val_if_fail(contactgroup_hash_table != NULL, ERROR);
+
 	if ((find_contactgroup(new_contactgroup->group_name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Contactgroup '%s' has already been defined\n", new_contactgroup->group_name);
 		return ERROR;

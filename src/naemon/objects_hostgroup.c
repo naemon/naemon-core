@@ -65,6 +65,9 @@ hostgroup *create_hostgroup(const char *name, const char *alias, const char *not
 
 int register_hostgroup(hostgroup *new_hostgroup)
 {
+
+	g_return_val_if_fail(hostgroup_hash_table != NULL, ERROR);
+
 	if ((find_host(new_hostgroup->group_name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Hostgroup '%s' has already been defined\n", new_hostgroup->group_name);
 		return ERROR;

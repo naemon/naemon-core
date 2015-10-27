@@ -539,6 +539,8 @@ static int register_worker(int sd, char *buf, unsigned int len)
 	struct kvvec *info;
 	struct wproc_worker *worker;
 
+	g_return_val_if_fail(specialized_workers != NULL, ERROR);
+
 	nm_log(NSLOG_INFO_MESSAGE, "wproc: Registry request: %s\n", buf);
 	worker = nm_calloc(1, sizeof(*worker));
 	info = buf2kvvec(buf, len, '=', ';', 0);

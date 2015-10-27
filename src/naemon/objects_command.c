@@ -58,11 +58,15 @@ command *create_command(const char *name, const char *value)
 
 int register_command(command *new_command)
 {
+
+	g_return_val_if_fail(command_hash_table != NULL, ERROR);
+
 	/* add new command to hash table */
 	if ((find_command(new_command->name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Command '%s' has already been defined\n", new_command->name);
 		return ERROR;
 	}
+
 	g_hash_table_insert(command_hash_table, new_command->name, new_command);
 
 	new_command->id = num_objects.commands++;

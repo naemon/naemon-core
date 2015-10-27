@@ -274,7 +274,9 @@ static void handle_downtime_stop_event(struct nm_event_execution_properties *evp
 /* schedules a host or service downtime */
 int schedule_downtime(int type, char *host_name, char *service_description, time_t entry_time, char *author, char *comment_data, time_t start_time, time_t end_time, int fixed, unsigned long triggered_by, unsigned long duration, unsigned long *new_downtime_id)
 {
+
 	unsigned long downtime_id = 0L;
+	g_return_val_if_fail(dt_hashtable != NULL, ERROR);
 
 	/* don't add old or invalid downtimes */
 	if (start_time >= end_time || end_time <= time(NULL)) {

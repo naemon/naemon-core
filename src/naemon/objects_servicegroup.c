@@ -62,6 +62,9 @@ servicegroup *create_servicegroup(const char *name, const char *alias, const cha
 
 int register_servicegroup(servicegroup *new_servicegroup)
 {
+
+	g_return_val_if_fail(servicegroup_hash_table != NULL, ERROR);
+
 	if ((find_servicegroup(new_servicegroup->group_name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Servicegroup '%s' has already been defined\n", new_servicegroup->group_name);
 		return ERROR;

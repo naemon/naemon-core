@@ -247,13 +247,11 @@ int qh_deregister_handler(const char *name)
 
 int qh_register_handler(const char *name, const char *description, unsigned int options, qh_handler handler)
 {
+
 	struct query_handler *qh;
 
-	if (!qh_table)
-		return -1;
-
-	if (!name)
-		return -1;
+	g_return_val_if_fail(qh_table != NULL, -1);
+	g_return_val_if_fail(name != NULL, -1);
 
 	if (!handler) {
 		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to register handler '%s': No handler function specified\n", name);

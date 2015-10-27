@@ -193,6 +193,9 @@ int setup_host_variables(host *new_host, const char *display_name, const char *a
 
 int register_host(host *new_host)
 {
+
+	g_return_val_if_fail(host_hash_table != NULL, ERROR);
+
 	if ((find_host(new_host->name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Host '%s' has already been defined\n", new_host->name);
 		return ERROR;
