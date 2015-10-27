@@ -188,7 +188,11 @@ static void evheap_destroy(struct timed_event_queue *q) {
 
 timed_event *schedule_event(time_t delay, event_callback callback, void *user_data)
 {
-	timed_event *event = nm_calloc(1, sizeof(struct timed_event));
+
+	timed_event *event;
+	g_return_val_if_fail(event_queue != NULL, NULL);
+
+	event = nm_calloc(1, sizeof(struct timed_event));
 
 	clock_gettime(EVENT_CLOCK_ID, &event->event_time);
 	event->event_time.tv_sec += delay;
