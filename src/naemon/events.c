@@ -190,7 +190,9 @@ timed_event *schedule_event(time_t delay, event_callback callback, void *user_da
 {
 
 	timed_event *event;
+
 	g_return_val_if_fail(event_queue != NULL, NULL);
+	g_return_val_if_fail(callback != NULL, NULL);
 
 	event = nm_calloc(1, sizeof(struct timed_event));
 
