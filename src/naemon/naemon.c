@@ -476,21 +476,6 @@ int main(int argc, char **argv)
 			/* error has already been logged */
 			exit(EXIT_FAILURE);
 		}
-		/* enter daemon mode (unless we're restarting...) */
-		if (daemon_mode == TRUE && sigrestart == FALSE) {
-
-			result = daemon_init();
-
-			/* we had an error daemonizing, so bail... */
-			if (result == ERROR) {
-				nm_log(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, "Bailing out due to failure to daemonize. (PID=%d)", (int)getpid());
-				cleanup();
-				exit(EXIT_FAILURE);
-			}
-
-			/* get new PID */
-			nagios_pid = (int)getpid();
-		}
 
 		/* this must be logged after we read config data, as user may have changed location of main log file */
 		nm_log(NSLOG_PROCESS_INFO, "Naemon "VERSION" starting... (PID=%d)\n", (int)getpid());
@@ -648,14 +633,29 @@ int main(int argc, char **argv)
 		launch_command_file_worker();
 		timing_point("Command file worker launched\n");
 
-		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPSTART, NEBFLAG_NONE, NEBATTR_NONE);
-
 		/* get event start time and save as macro */
 		event_start = time(NULL);
 		nm_free(mac->x[MACRO_EVENTSTARTTIME]);
 		nm_asprintf(&mac->x[MACRO_EVENTSTARTTIME], "%lu", (unsigned long)event_start);
 
+		/* enter daemon mode (unless we're restarting...) */
+		if (daemon_mode == TRUE && sigrestart == FALSE) {
+
+			result = daemon_init();
+
+			/* we had an error daemonizing, so bail... */
+			if (result == ERROR) {
+				nm_log(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, "Bailing out due to failure to daemonize. (PID=%d)", (int)getpid());
+				cleanup();
+				exit(EXIT_FAILURE);
+			}
+
+			/* get new PID */
+			nagios_pid = (int)getpid();
+		}
+
 		timing_point("Entering event execution loop\n");
+		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPSTART, NEBFLAG_NONE, NEBATTR_NONE);
 		/***** start monitoring all services *****/
 		/* (doesn't return until a restart or shutdown signal is encountered) */
 		event_execution_loop();
