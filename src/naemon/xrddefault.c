@@ -462,6 +462,7 @@ int xrddefault_save_state_information(void)
 #define RETAIN_BOOL(type, obj, v, attr) \
 	do { \
 		if ((obj->modified_attributes & attr && !have.v) || (have.v && conf.v == obj->v)) { \
+			printf("Retaining boolean " #v " for " #type " (%s) (conf.v = %d; have.v = %d)\n", val, conf.v, have.v); \
 			pre_modify_##type##_attribute(obj, attr); \
 			obj->v = atoi(val) > 0 ? TRUE : FALSE; \
 		} \
