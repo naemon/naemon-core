@@ -23,11 +23,12 @@
 # Source function library.
 if [ -e /etc/rc.d/init.d/functions ]; then
   . /etc/rc.d/init.d/functions
+elif [ -e /lib/lsb/init-functions ]; then
+  . /lib/lsb/init-functions
 fi
 
 is_suse="no"
-if [ -e /lib/lsb/init-functions ]; then
-  . /lib/lsb/init-functions
+if [ -e /etc/SuSE-release ]; then
   is_suse="yes"
 fi
 
