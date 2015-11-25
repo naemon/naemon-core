@@ -44,6 +44,7 @@ static void xpddefault_process_service_perfdata_file(struct nm_event_execution_p
 static int xpddefault_run_service_performance_data_command(nagios_macros *mac, service *);
 static int xpddefault_run_host_performance_data_command(nagios_macros *mac, host *);
 
+static int flush_perfdata(nm_bufferqueue *bq, int fd, const char *filename);
 static int xpddefault_update_service_performance_data_file(nagios_macros *mac, service *);
 static int xpddefault_update_host_performance_data_file(nagios_macros *mac, host *);
 
@@ -196,8 +197,8 @@ int cleanup_performance_data(void)
 	nm_free(host_perfdata_file_processing_command);
 	nm_free(service_perfdata_file_processing_command);
 	// one last attempt to write what remains buffered, just in case:
-	nm_bufferqueue_write(host_perfdata_bq, host_perfdata_fd);
-	nm_bufferqueue_write(service_perfdata_bq, service_perfdata_fd);
+	flush_perfdata(host_perfdata_bq, host_perfdata_fd, host_perfdata_file);
+	flush_perfdata(service_perfdata_bq, service_perfdata_fd, service_perfdata_file);
 	close(host_perfdata_fd);
 	host_perfdata_fd = -1;
 	close(service_perfdata_fd);
@@ -424,6 +425,19 @@ static int xpddefault_open_perfdata_file(char *perfdata_file, int is_pipe, int a
 	return perfdata_fd;
 }
 
+/* flush the perfdata stored in `bq` to the file referred to by `fd`, named by `filename`. Returns -1 on error, 0 on success. */
+static int flush_perfdata(nm_bufferqueue *bq, int fd, const char *filename) {
+	if (fd >= 0) {
+		if (nm_bufferqueue_write(bq, fd) >= 0) {
+			return 0;
+		}
+		nm_log(NSLOG_RUNTIME_WARNING,
+				"Warning: Failed to flush performance data to performance file %s",
+				filename);
+	}
+	return -1;
+
+}
 /* processes delimiter characters in templates */
 static int xpddefault_preprocess_file_templates(char *template)
 {
@@ -487,8 +501,8 @@ static int xpddefault_update_service_performance_data_file(nagios_macros *mac, s
 
 	nm_bufferqueue_push(service_perfdata_bq, processed_output, strlen(processed_output));
 	/* temporary failures are fine - if it's serious, we log before we run the processing event */
-	if (service_perfdata_fd >= 0)
-		nm_bufferqueue_write(service_perfdata_bq, service_perfdata_fd);
+
+	flush_perfdata(service_perfdata_bq, service_perfdata_fd, service_perfdata_file);
 
 	nm_free(raw_output);
 	nm_free(processed_output);
@@ -522,8 +536,7 @@ static int xpddefault_update_host_performance_data_file(nagios_macros *mac, host
 
 	nm_bufferqueue_push(host_perfdata_bq, processed_output, strlen(processed_output));
 	/* temporary failures are fine - if it's serious, we log before we run the processing event */
-	if (host_perfdata_fd >= 0)
-		nm_bufferqueue_write(host_perfdata_bq, host_perfdata_fd);
+	flush_perfdata(host_perfdata_bq, host_perfdata_fd, host_perfdata_file);
 
 	nm_free(raw_output);
 	nm_free(processed_output);
@@ -581,13 +594,10 @@ static void xpddefault_process_host_perfdata_file(struct nm_event_execution_prop
 		log_debug_info(DEBUGL_PERFDATA, 2, "Processed host performance data file processing command line: %s\n", processed_command_line);
 
 		if (host_perfdata_fd >= 0) {
-			if (nm_bufferqueue_write(host_perfdata_bq, host_perfdata_fd) < 0) {
-				nm_log(
-					NSLOG_RUNTIME_WARNING,
-					"Warning: Failed to flush performance data to service performance file %s",
-					host_perfdata_file);
-			} else {
+
+			if (flush_perfdata(host_perfdata_bq, host_perfdata_fd, host_perfdata_file) == 0) {
 				close(host_perfdata_fd);
+				host_perfdata_fd = -1;
 				wproc_run_callback(processed_command_line, perfdata_timeout, xpddefault_process_host_job_handler, NULL, &mac);
 			}
 		}
@@ -648,13 +658,9 @@ static void xpddefault_process_service_perfdata_file(struct nm_event_execution_p
 		log_debug_info(DEBUGL_PERFDATA, 2, "Processed service performance data file processing command line: %s\n", processed_command_line);
 
 		if (service_perfdata_fd >= 0) {
-			if (nm_bufferqueue_write(service_perfdata_bq, service_perfdata_fd) < 0) {
-				nm_log(
-					NSLOG_RUNTIME_WARNING,
-					"Warning: Failed to flush performance data to service performance file %s",
-					service_perfdata_file);
-			} else {
+			if (flush_perfdata(service_perfdata_bq, service_perfdata_fd, service_perfdata_file) == 0) {
 				close(service_perfdata_fd);
+				service_perfdata_fd = -1;
 				wproc_run_callback(processed_command_line, perfdata_timeout, xpddefault_process_service_job_handler, NULL, &mac);
 			}
 		}
