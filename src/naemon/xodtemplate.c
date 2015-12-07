@@ -8992,8 +8992,10 @@ int xodtemplate_read_config_data(const char *main_config_file)
 			result |= xodtemplate_process_config_file(entry->object_ptr);
 		}
 		for (entry = objcfg_dirs; entry; entry = entry->next) {
-			result = xodtemplate_process_config_dir(entry->object_ptr);
+			result |= xodtemplate_process_config_dir(entry->object_ptr);
 		}
+		if (result != OK)
+			return ERROR;
 	}
 
 	timing_point("Done parsing config files\n");
