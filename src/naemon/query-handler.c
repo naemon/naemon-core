@@ -187,7 +187,7 @@ static int qh_registration_input(int sd, int events, void *bq_)
 	nm_bufferqueue *bq = (nm_bufferqueue *)bq_;
 	struct sockaddr sa;
 	socklen_t slen = 0;
-	int nsd;
+	int nsd, result;
 
 	memset(&sa, 0, sizeof(sa)); /* shut valgrind up */
 	nsd = accept(sd, &sa, &slen);
@@ -208,8 +208,10 @@ static int qh_registration_input(int sd, int events, void *bq_)
 	 * @todo: Stash the iocache and the socket in some
 	 * addressable list so we can release them on deinit
 	 */
-	if (iobroker_register(nagios_iobs, nsd, bq, qh_input) < 0) {
-		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to register input socket %d with I/O broker: %s\n", nsd, strerror(errno));
+	result = iobroker_register(nagios_iobs, nsd, bq, qh_input);
+	if (result < 0) {
+		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to register input socket %d with I/O broker: %s; errno=%d (%s)\n",
+		       nsd, iobroker_strerror(result), errno, strerror(errno));
 		nm_bufferqueue_destroy(bq);
 		close(nsd);
 		return 0;
