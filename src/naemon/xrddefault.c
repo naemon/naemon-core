@@ -1181,7 +1181,7 @@ int xrddefault_read_state_information(void)
 
 								for (temp_customvariablesmember = temp_host->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 									if (!strcmp(customvarname, temp_customvariablesmember->variable_name)) {
-										if ((x = atoi(val)) > 0 && strlen(val) > 3) {
+										if ((x = atoi(val)) > 0 && strlen(val) >= 2) {
 											nm_free(temp_customvariablesmember->variable_value);
 											temp_customvariablesmember->variable_value = nm_strdup(val + 2);
 											temp_customvariablesmember->has_been_modified = (x > 0) ? TRUE : FALSE;
@@ -1443,7 +1443,7 @@ int xrddefault_read_state_information(void)
 								customvarname = nm_strdup(var + 1);
 								for (temp_customvariablesmember = temp_service->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 									if (!strcmp(customvarname, temp_customvariablesmember->variable_name)) {
-										if ((x = atoi(val)) > 0 && strlen(val) > 3) {
+										if ((x = atoi(val)) > 0 && strlen(val) >= 2) {
 											nm_free(temp_customvariablesmember->variable_value);
 											temp_customvariablesmember->variable_value = nm_strdup(val + 2);
 											temp_customvariablesmember->has_been_modified = (x > 0) ? TRUE : FALSE;
@@ -1551,7 +1551,7 @@ int xrddefault_read_state_information(void)
 								customvarname = nm_strdup(var + 1);
 								for (temp_customvariablesmember = temp_contact->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 									if (!strcmp(customvarname, temp_customvariablesmember->variable_name)) {
-										if ((x = atoi(val)) > 0 && strlen(val) > 3) {
+										if ((x = atoi(val)) > 0 && strlen(val) >= 2) {
 											nm_free(temp_customvariablesmember->variable_value);
 											temp_customvariablesmember->variable_value = nm_strdup(val + 2);
 											temp_customvariablesmember->has_been_modified = (x > 0) ? TRUE : FALSE;
