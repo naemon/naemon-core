@@ -2923,12 +2923,41 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 /* parse raw plugin output and return: short and long output, perf data */
 int parse_check_output(char *buf, char **short_output, char **long_output, char **perf_data, int escape_newlines_please, int newlines_are_escaped)
 {
+	int x = 0;
+	int y = 0;
 	struct check_output *check_output = nm_malloc(sizeof(struct check_output));
+
+	/* We should never need to worry about unescaping here again. We assume a
+	 * common internal plugin output format that is newline delimited. */
+	if (newlines_are_escaped) {
+		for (x = 0, y = 0; buf[x]; x++) {
+			if (buf[x] == '\\' && buf[x + 1] == '\\') {
+				x++;
+				buf[y++] = buf[x];
+			}
+			else if (buf[x] == '\\' && buf[x + 1] == 'n') {
+				x++;
+				buf[y++] = '\n';
+			}
+			else
+				buf[y++] = buf[x];
+		}
+		buf[y] = '\0';
+	}
+
 	check_output = parse_output(buf, check_output);
 	*short_output = check_output->short_output;
-	*long_output = check_output->long_output;
 	*perf_data = check_output->perf_data;
-	free(check_output);
+
+	if (escape_newlines_please && check_output->long_output && *check_output->long_output) {
+		*long_output = escape_newlines(check_output->long_output);
+		nm_free(check_output->long_output);
+	}
+	else {
+		*long_output = check_output->long_output;
+	}
+
+	nm_free(check_output);
 	strip(*short_output);
 	strip(*perf_data);
 	return OK;
