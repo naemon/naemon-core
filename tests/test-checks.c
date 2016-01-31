@@ -151,6 +151,38 @@ START_TEST(no_plugin_output_on_first_line)
 
 }
 END_TEST
+
+START_TEST(escape_multiple_line_output_and_multiple_line_perfdata)
+{
+	full_output = "TEST OK - a line of output and | some=perfdata;\n"
+		"Here's some additional\n"
+		"LONG output\n"
+		"which suddenly becomes | more=perfdata;\n"
+		"on=several;lines;";
+	output = strdup(full_output);
+	parse_check_output(output, &short_output, &long_output, &perf_data, TRUE, FALSE);
+	ck_assert_str_eq("TEST OK - a line of output and", short_output);
+	ck_assert_str_eq("Here's some additional\\nLONG output\\nwhich suddenly becomes ", long_output );
+	ck_assert_str_eq("some=perfdata; more=perfdata; on=several;lines;", perf_data);
+
+}
+END_TEST
+
+START_TEST(unescape_multiple_line_output_and_multiple_line_perfdata)
+{
+	full_output = "TEST CRITICAL - Plugin short output|perfdata1; perfdata2;\\n"
+		"Some long plugin output line\\n"
+		"Some other line with escaped \\\\ backslash\\n"
+		"last one| perfdata3";
+	output = strdup(full_output);
+	parse_check_output(output, &short_output, &long_output, &perf_data, TRUE, TRUE);
+	ck_assert_str_eq("TEST CRITICAL - Plugin short output", short_output);
+	ck_assert_str_eq("perfdata1; perfdata2; perfdata3", perf_data);
+	ck_assert_str_eq("Some long plugin output line\\nSome other line with escaped \\\\ backslash\\nlast one", long_output);
+
+}
+END_TEST
+
 Suite*
 checks_suite(void)
 {
@@ -168,6 +200,8 @@ checks_suite(void)
 	tcase_add_test(tc_output, no_plugin_output_on_first_line);
 	tcase_add_test(tc_output, no_plugin_output_at_all);
 	tcase_add_test(tc_output, empty_plugin_output);
+	tcase_add_test(tc_output, escape_multiple_line_output_and_multiple_line_perfdata);
+	tcase_add_test(tc_output, unescape_multiple_line_output_and_multiple_line_perfdata);
 	suite_add_tcase(s, tc_output);
 	return s;
 }
