@@ -390,6 +390,10 @@ struct external_command
 	char *raw_arguments;
 };
 
+struct external_command_with_result {
+	const struct external_command *cmd;
+	int result;
+};
 
 static int registered_commands_sz;
 static struct external_command **registered_commands;
@@ -1703,7 +1707,7 @@ static void foreach_host_in_servicegroup(servicegroup *target_servicegroup, void
 	}
 }
 
-static int cb_wrapper(void *object, void *_fn)
+static gboolean cb_wrapper(gpointer name, gpointer object, gpointer _fn)
 {
 	void (*fn)(void *) = (void (*)(void *))_fn;
 	fn(object);
@@ -1712,12 +1716,17 @@ static int cb_wrapper(void *object, void *_fn)
 
 static void foreach_host_in_hostgroup(hostgroup *target_hostgroup, void (*host_fn)(host *))
 {
-	rbtree_traverse(target_hostgroup->members, cb_wrapper, host_fn, rbinorder);
+	g_tree_foreach(target_hostgroup->members, cb_wrapper, host_fn);
+}
+
+static gboolean cb_service_in_hostgroup_each_host(gpointer name, gpointer object, gpointer service_fn) {
+	foreach_service_on_host((struct host *)object, service_fn);
+	return FALSE;
 }
 
 static void foreach_service_in_hostgroup(hostgroup *target_hostgroup, void (*service_fn)(service *))
 {
-	rbtree_traverse(target_hostgroup->members, (int (*)(void *, void *))foreach_service_on_host, service_fn, rbinorder);
+	g_tree_foreach(target_hostgroup->members, cb_service_in_hostgroup_each_host, service_fn);
 }
 
 static void foreach_contact_in_contactgroup(contactgroup *target_contactgroup, void (*contact_fn)(contact *))
@@ -1732,20 +1741,20 @@ struct matches_arg {
 	struct external_command *ext_command;
 	int deleted;
 };
-static int delete_if_matches(void *_hst, void *user_data)
+static gboolean delete_if_matches(gpointer _name, gpointer _hst, gpointer user_data)
 {
 	struct matches_arg *match = (struct matches_arg *)user_data;
 	struct external_command *ext_command = match->ext_command;
 	host *host_ptr = (host *)_hst;
 	if (strcmp(GV_STRING("hostname"), "") && !strcmp(host_ptr->name, GV("hostname")))
-		return 0;
+		return FALSE;
 	match->deleted += delete_downtime_by_hostname_service_description_start_time_comment(
 		!strcmp(GV_STRING("hostname"), "") ? NULL : GV("hostname"),
 		!strcmp(GV_STRING("service_description"), "") ? NULL : GV("service_description"),
 		GV_TIMESTAMP("downtime_start_time"),
 		!strcmp(GV_STRING("comment"), "") ? NULL : GV("comment")
 		);
-	return 0;
+	return FALSE;
 }
 
 static int del_downtime_by_filter_handler(const struct external_command *ext_command, time_t entry_time)
@@ -1764,7 +1773,7 @@ static int del_downtime_by_filter_handler(const struct external_command *ext_com
 			return OK;
 		case CMD_DEL_DOWNTIME_BY_HOSTGROUP_NAME:
 			hostgroup_p = GV("hostgroup_name");
-			rbtree_traverse(hostgroup_p->members, delete_if_matches, &match, rbinorder);
+			g_tree_foreach(hostgroup_p->members, delete_if_matches, &match);
 			if (match.deleted == 0) {
 				return ERROR;
 			}
@@ -2082,11 +2091,12 @@ static int host_command_handler(const struct external_command *ext_command, time
 	}
 }
 
-static int schedule_host_downtime_from_command(void *_hst, void *user_data)
+static gboolean schedule_host_downtime_from_command(gpointer _name, gpointer _hst, gpointer user_data)
 {
+	struct external_command_with_result *cmd = (struct external_command_with_result *)user_data;
+	const struct external_command *ext_command = cmd->cmd; /* Makes GV_* macros work */
 	unsigned long downtime_id = 0L;
 	unsigned long duration = 0L;
-	const struct external_command *ext_command = (const struct external_command *)user_data;
 	host *hst = (host *)_hst;
 	if (GV_BOOL("fixed") > 0) {
 		duration = (GV_TIMESTAMP("end_time")) - (GV_TIMESTAMP("start_time"));
@@ -2095,22 +2105,26 @@ static int schedule_host_downtime_from_command(void *_hst, void *user_data)
 		duration = GV_ULONG("duration");
 	}
 
-	return schedule_downtime(
+	cmd->result = schedule_downtime(
 		HOST_DOWNTIME, hst->name, NULL, ext_command->entry_time, GV("author"), GV("comment"),
 		GV_TIMESTAMP("start_time"), GV_TIMESTAMP("end_time"), GV_BOOL("fixed"),
 		GV_ULONG("trigger_id"), duration,
 		&downtime_id);
+
+	if(cmd->result != OK)
+		return TRUE;
+	return FALSE;
 }
 
-static int schedule_service_downtime_from_command(void *_hst, void *user_data)
+static gboolean schedule_service_downtime_from_command(gpointer _name, gpointer _hst, gpointer user_data)
 {
+	struct external_command_with_result *cmd = (struct external_command_with_result *)user_data;
+	const struct external_command *ext_command = cmd->cmd; /* Makes GV_* macros work */
 	unsigned long downtime_id = 0L;
 	unsigned long duration = 0L;
-	const struct external_command *ext_command = (const struct external_command *)user_data;
 	host *hst = (host *)_hst;
 	servicesmember *servicesmember_p = NULL;
 	service *service_p;
-	int ret;
 
 	if (GV_BOOL("fixed") > 0) {
 		duration = (GV_TIMESTAMP("end_time")) - (GV_TIMESTAMP("start_time"));
@@ -2121,21 +2135,22 @@ static int schedule_service_downtime_from_command(void *_hst, void *user_data)
 	for (servicesmember_p = hst->services; servicesmember_p != NULL; servicesmember_p = servicesmember_p->next) {
 		if ((service_p = servicesmember_p->service_ptr) == NULL)
 			continue;
-		ret = schedule_downtime(
+		cmd->result = schedule_downtime(
 			SERVICE_DOWNTIME, service_p->host_name, service_p->description, ext_command->entry_time, GV("author"),
 			GV("comment"), GV_TIMESTAMP("start_time"), GV_TIMESTAMP("end_time"), GV_BOOL("fixed"),
 			GV_ULONG("trigger_id"), duration,
 			&downtime_id);
 
-		if (ret != 0)
-			return 1;
+		if (cmd->result != OK)
+			return TRUE;
 	}
-	return 0;
+	return FALSE;
 }
 
 static int hostgroup_command_handler(const struct external_command *ext_command, time_t entry_time)
 {
 	hostgroup *target_hostgroup = GV_HOSTGROUP("hostgroup_name");
+	struct external_command_with_result cmd;
 	switch (ext_command->id) {
 
 		case CMD_ENABLE_HOSTGROUP_HOST_NOTIFICATIONS:
@@ -2163,9 +2178,10 @@ static int hostgroup_command_handler(const struct external_command *ext_command,
 			foreach_host_in_hostgroup(target_hostgroup, disable_passive_host_checks);
 			return OK;
 		case CMD_SCHEDULE_HOSTGROUP_HOST_DOWNTIME:
-			if (rbtree_traverse(target_hostgroup->members, schedule_host_downtime_from_command, (void *)ext_command, rbinorder))
-				return ERROR;
-			return OK;
+			cmd.cmd = ext_command;
+			cmd.result = ERROR;
+			g_tree_foreach(target_hostgroup->members, schedule_host_downtime_from_command, &cmd);
+			return cmd.result;
 		case CMD_ENABLE_HOSTGROUP_SVC_CHECKS:
 			foreach_service_in_hostgroup(target_hostgroup, enable_service_checks);
 			return OK;
@@ -2179,9 +2195,10 @@ static int hostgroup_command_handler(const struct external_command *ext_command,
 			foreach_service_in_hostgroup(target_hostgroup, disable_passive_service_checks);
 			return OK;
 		case CMD_SCHEDULE_HOSTGROUP_SVC_DOWNTIME:
-			if (rbtree_traverse(target_hostgroup->members, schedule_service_downtime_from_command, (void *)ext_command, rbinorder))
-				return ERROR;
-			return OK;
+			cmd.cmd = ext_command;
+			cmd.result = ERROR;
+			g_tree_foreach(target_hostgroup->members, schedule_service_downtime_from_command, &cmd);
+			return cmd.result;
 
 		default:
 			nm_log(NSLOG_RUNTIME_ERROR, "Unknown hostgroup command ID %d", ext_command->id);
@@ -3715,7 +3732,7 @@ static void disable_host_notifications(host *hst)
 	return;
 }
 
-static int enable_and_propagate_notifications_cb(void *_hst, void *user_data)
+static gboolean enable_and_propagate_notifications_cb(gpointer _name, gpointer _hst, gpointer user_data)
 {
 	host *hst = (host *)_hst;
 	struct propagation_parameters *params = (struct propagation_parameters *)user_data;
@@ -3738,7 +3755,7 @@ static int enable_and_propagate_notifications_cb(void *_hst, void *user_data)
 			enable_service_notifications(temp_service);
 		}
 	}
-	return 0;
+	return FALSE;
 }
 
 /* enables notifications for all hosts and services "beyond" a given host */
@@ -3748,11 +3765,11 @@ static void enable_and_propagate_notifications(host *hst, struct propagation_par
 	if (params->affect_top_host == TRUE && params->level == 0)
 		enable_host_notifications(hst);
 
-	rbtree_traverse(hst->child_hosts, enable_and_propagate_notifications_cb, params, rbinorder);
+	g_tree_foreach(hst->child_hosts, enable_and_propagate_notifications_cb, params);
 }
 
 
-static int disable_and_propagate_notifications_cb(void *_hst, void *user_data)
+static gboolean disable_and_propagate_notifications_cb(gpointer _name, gpointer _hst, gpointer user_data)
 {
 	host *hst = (host *)_hst;
 	struct propagation_parameters *params = (struct propagation_parameters *)user_data;
@@ -3774,7 +3791,7 @@ static int disable_and_propagate_notifications_cb(void *_hst, void *user_data)
 			disable_service_notifications(temp_service);
 		}
 	}
-	return 0;
+	return FALSE;
 }
 
 /* disables notifications for all hosts and services "beyond" a given host */
@@ -3787,7 +3804,7 @@ static void disable_and_propagate_notifications(host *hst, struct propagation_pa
 	if (params->affect_top_host == TRUE && params->level == 0)
 		disable_host_notifications(hst);
 
-	rbtree_traverse(hst->child_hosts, disable_and_propagate_notifications_cb, params, rbinorder);
+	g_tree_foreach(hst->child_hosts, disable_and_propagate_notifications_cb, params);
 }
 
 
@@ -3894,7 +3911,7 @@ static void disable_contact_service_notifications(contact *cntct)
 	return;
 }
 
-static int schedule_and_propagate_downtime_cb(void *_hst, void *user_data)
+static gboolean schedule_and_propagate_downtime_cb(gpointer _name, gpointer _hst, gpointer user_data)
 {
 	struct downtime_parameters *params = (struct downtime_parameters *)user_data;
 	host *hst = (host *)_hst;
@@ -3905,13 +3922,13 @@ static int schedule_and_propagate_downtime_cb(void *_hst, void *user_data)
 		params->author, params->comment_data, params->start_time,
 		params->end_time, params->fixed, params->triggered_by,
 		params->duration, NULL);
-	return 0;
+	return FALSE;
 }
 
 /* schedules downtime for all hosts "beyond" a given host */
 static void schedule_and_propagate_downtime(host *temp_host, struct downtime_parameters *params)
 {
-	rbtree_traverse(temp_host->child_hosts, schedule_and_propagate_downtime_cb, params, rbinorder);
+	g_tree_foreach(temp_host->child_hosts, schedule_and_propagate_downtime_cb, params);
 }
 
 
