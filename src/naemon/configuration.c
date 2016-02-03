@@ -1585,9 +1585,6 @@ struct dfs_parameters {
 	int *errors;
 };
 
-static gboolean dfs_host_path_cb(gpointer _name, gpointer _hst, gpointer user_data);
-static int dfs_host_path(host *root, struct dfs_parameters *params);
-
 static int dfs_servicedep_path(char *ary, servicedependency *root)
 {
 	objectlist *olist;
@@ -1673,9 +1670,6 @@ static int dfs_hostdep_path(char *ary, hostdependency *root)
 	return ary[root->id] != DFS_OK;
 }
 
-static gboolean dfs_host_path_cb(gpointer _name, gpointer _hst, gpointer user_data) {
-	return 0 != dfs_host_path((host *)_hst, (struct dfs_parameters *)user_data);
-}
 
 static int dfs_host_path(host *root, struct dfs_parameters *params)
 {
@@ -1701,7 +1695,7 @@ static int dfs_host_path(host *root, struct dfs_parameters *params)
 	/* Mark the root temporary checked */
 	ary[root->id] = DFS_TEMP_CHECKED;
 
-	g_tree_foreach(root->child_hosts, dfs_host_path_cb, params);
+	rbtree_traverse(root->child_hosts, (int (*)(void *, void *))dfs_host_path, params, rbinorder);
 
 	if (ary[root->id] == DFS_TEMP_CHECKED)
 		ary[root->id] = DFS_OK;

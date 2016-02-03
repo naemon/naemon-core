@@ -7,8 +7,8 @@
 
 #include <stdio.h>
 #include <time.h>
-#include <glib.h>
 #include "lib/lnae-utils.h"
+#include "lib/rbtree.h"
 #include "defaults.h"
 #include "objects_common.h"
 #include "objects_contact.h"
@@ -28,8 +28,8 @@ struct host {
 	char    *display_name;
 	char	*alias;
 	char    *address;
-	GTree   *parent_hosts; /* char * => struct host * */
-	GTree   *child_hosts; /* char * => struct host * */
+	struct rbtree *parent_hosts;
+	struct rbtree *child_hosts;
 	struct servicesmember *services;
 	char    *check_command;
 	int     initial_state;
@@ -171,7 +171,7 @@ const char *host_state_name(int state);
 int get_host_count(void);
 unsigned int host_services_value(struct host *h);
 
-char * implode_hosttree(GTree *tree, char *delimiter);
+char * implode_hosttree(struct rbtree *tree, char *delimiter);
 void fcache_host(FILE *fp, const struct host *temp_host);
 
 int log_host_event(host *);

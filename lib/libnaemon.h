@@ -19,6 +19,7 @@
 #include "runcmd.h"
 #include "bitmap.h"
 #include "worker.h"
+#include "rbtree.h"
 #include "nsock.h"
 #include "nspath.h"
 #include "snprintf.h"

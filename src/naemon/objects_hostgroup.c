@@ -58,7 +58,7 @@ hostgroup *create_hostgroup(const char *name, const char *alias, const char *not
 	new_hostgroup->notes = notes ? nm_strdup(notes) : NULL;
 	new_hostgroup->notes_url = notes_url ? nm_strdup(notes_url) : NULL;
 	new_hostgroup->action_url = action_url ? nm_strdup(action_url) : NULL;
-	new_hostgroup->members = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
+	new_hostgroup->members = rbtree_create(compare_host);
 
 	return new_hostgroup;
 }
@@ -85,27 +85,15 @@ int register_hostgroup(hostgroup *new_hostgroup)
 	return OK;
 }
 
-static gboolean my_g_tree_visit_pick_one(gpointer key, gpointer value, gpointer data) {
-	gpointer *outptr = (gpointer *)data;
-	*outptr = value;
-	return TRUE; /* Stop traversal */
-}
-
 void destroy_hostgroup(hostgroup *this_hostgroup)
 {
 	if (!this_hostgroup)
 		return;
 
 	if (this_hostgroup->members) {
-		struct host *curhost = NULL;
-		do {
-			curhost = NULL;
-			g_tree_foreach(this_hostgroup->members, my_g_tree_visit_pick_one, &curhost);
-			if(curhost) {
-				remove_host_from_hostgroup(this_hostgroup, curhost);
-			}
-		} while(curhost != NULL);
-		g_tree_unref(this_hostgroup->members);
+		while (!rbtree_isempty(this_hostgroup->members))
+			remove_host_from_hostgroup(this_hostgroup, rbtree_first(this_hostgroup->members)->data);
+		rbtree_destroy(this_hostgroup->members, NULL);
 	}
 	this_hostgroup->members = NULL;
 
@@ -130,7 +118,7 @@ int add_host_to_hostgroup(hostgroup *temp_hostgroup, host *h)
 	/* add (unsorted) link from the host to its group */
 	prepend_object_to_objectlist(&h->hostgroups_ptr, (void *)temp_hostgroup);
 
-	g_tree_insert(temp_hostgroup->members, g_strdup(h->name), h);
+	rbtree_insert(temp_hostgroup->members, h);
 
 	return OK;
 }
@@ -153,7 +141,7 @@ int remove_host_from_hostgroup(hostgroup *temp_hostgroup, host *h)
 		}
 	}
 	if (temp_hostgroup->members)
-		g_tree_remove(temp_hostgroup->members, h->name);
+		rbtree_delete(temp_hostgroup->members, rbtree_find_node(temp_hostgroup->members, h));
 	return 0;
 }
 
@@ -166,7 +154,9 @@ hostgroup *find_hostgroup(const char *name)
 /* NOTE: This function is only used by external modules */
 int is_host_member_of_hostgroup(hostgroup *group, host *hst)
 {
-	return g_tree_lookup_extended(group->members, hst->name, NULL, NULL);
+	if (rbtree_find(group->members, hst))
+		return TRUE;
+	return FALSE;
 }
 
 void fcache_hostgroup(FILE *fp, const hostgroup *temp_hostgroup)
@@ -175,7 +165,7 @@ void fcache_hostgroup(FILE *fp, const hostgroup *temp_hostgroup)
 	fprintf(fp, "\thostgroup_name\t%s\n", temp_hostgroup->group_name);
 	if (temp_hostgroup->alias)
 		fprintf(fp, "\talias\t%s\n", temp_hostgroup->alias);
-	if (g_tree_nnodes(temp_hostgroup->members)) {
+	if (rbtree_num_nodes(temp_hostgroup->members)) {
 		char *members = implode_hosttree(temp_hostgroup->members, ",");
 		fprintf(fp, "\tmembers\t%s\n", members);
 		nm_free(members);

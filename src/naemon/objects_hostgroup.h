@@ -6,7 +6,6 @@
 #endif
 
 #include <time.h>
-#include <glib.h>
 #include "lib/lnae-utils.h"
 #include "defaults.h"
 #include "objects_common.h"
@@ -24,7 +23,7 @@ struct hostgroup {
 	unsigned int id;
 	char	*group_name;
 	char    *alias;
-	GTree   *members;
+	struct rbtree *members;
 	char    *notes;
 	char    *notes_url;
 	char    *action_url;

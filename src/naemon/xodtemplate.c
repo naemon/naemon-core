@@ -97,8 +97,8 @@ static xodtemplate_hostextinfo *xodtemplate_hostextinfo_list_tail = NULL;
 static xodtemplate_serviceextinfo *xodtemplate_serviceextinfo_list_tail = NULL;
 
 
-static GTree *xobject_template_tree[NUM_OBJECT_TYPES];
-static GTree *xobject_tree[NUM_OBJECT_TYPES];
+static struct rbtree *xobject_template_tree[NUM_OBJECT_TYPES];
+static struct rbtree *xobject_tree[NUM_OBJECT_TYPES];
 
 
 static void *xodtemplate_current_object = NULL;
@@ -157,42 +157,6 @@ static const char *xodtemplate_config_file_name(int cfgfile)
 
 
 /******************************************************************/
-/************************ GTree helpers ***************************/
-/******************************************************************/
-
-struct xod_tree_traverse_store {
-	int (*cb)(gpointer, gpointer);
-	gpointer userdata;
-	int result;
-};
-
-/* Add a new value to a tree, return the old value */
-static gpointer xod_tree_insert(GTree *tree, gchar *name, gpointer value) {
-	gpointer oldvalue = g_tree_lookup(tree, name);
-	if(oldvalue) {
-		g_free(name);
-		return oldvalue;
-	}
-	g_tree_insert(tree, name, value);
-	return NULL;
-}
-
-static gboolean xod_tree_traverse_visit(gpointer _key, gpointer _object, gpointer _userdata) {
-	struct xod_tree_traverse_store *stor = (struct xod_tree_traverse_store *)_userdata;
-	stor->result = (*stor->cb)(_object, stor->userdata);
-	return stor->result != OK;
-}
-
-static gboolean xod_tree_traverse(GTree *tree, int (*cb)(gpointer, gpointer), gpointer userdata) {
-	struct xod_tree_traverse_store stor;
-	stor.cb = cb;
-	stor.userdata = userdata;
-	stor.result = OK;
-	g_tree_foreach(tree, xod_tree_traverse_visit, &stor);
-	return stor.result;
-}
-
-/******************************************************************/
 /********************** CLEANUP FUNCTIONS *************************/
 /******************************************************************/
 
@@ -200,11 +164,8 @@ static void xodtemplate_free_xobject_trees(void)
 {
 	int x;
 
-	for (x = 0; x < NUM_OBJECT_TYPES; x++) {
-		if (xobject_tree[x] != NULL) {
-			g_tree_unref(xobject_tree[x]);
-		}
-	}
+	for (x = 0; x < NUM_OBJECT_TYPES; x++)
+		rbtree_destroy(xobject_tree[x], NULL);
 }
 
 
@@ -212,11 +173,8 @@ static void xodtemplate_free_template_trees(void)
 {
 	int x;
 
-	for (x = 0; x < NUM_OBJECT_TYPES; x++) {
-		if (xobject_template_tree[x] != NULL) {
-			g_tree_unref(xobject_template_tree[x]);
-		}
-	}
+	for (x = 0; x < NUM_OBJECT_TYPES; x++)
+		rbtree_destroy(xobject_template_tree[x], NULL);
 }
 
 
@@ -471,188 +429,281 @@ static void xodtemplate_free_memory(void)
 /* finds a specific timeperiod object */
 static xodtemplate_timeperiod *xodtemplate_find_timeperiod(char *name)
 {
+	xodtemplate_timeperiod temp_timeperiod;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_template_tree[OBJTYPE_TIMEPERIOD], name);
+
+	temp_timeperiod.name = name;
+
+	return rbtree_find(xobject_template_tree[OBJTYPE_TIMEPERIOD], &temp_timeperiod);
 }
 
 
 /* finds a specific command object */
 static xodtemplate_command *xodtemplate_find_command(char *name)
 {
+	xodtemplate_command temp_command;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_template_tree[OBJTYPE_COMMAND], name);
+
+	temp_command.name = name;
+
+	return rbtree_find(xobject_template_tree[OBJTYPE_COMMAND], &temp_command);
 }
 
 
 /* finds a specific contactgroup object */
 static xodtemplate_contactgroup *xodtemplate_find_contactgroup(char *name)
 {
+	xodtemplate_contactgroup temp_contactgroup;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_template_tree[OBJTYPE_CONTACTGROUP], name);
+
+	temp_contactgroup.name = name;
+
+	return rbtree_find(xobject_template_tree[OBJTYPE_CONTACTGROUP], &temp_contactgroup);
 }
 
 
 /* finds a specific contactgroup object by its REAL name, not its TEMPLATE name */
 static xodtemplate_contactgroup *xodtemplate_find_real_contactgroup(char *name)
 {
+	xodtemplate_contactgroup temp_contactgroup;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_tree[OBJTYPE_CONTACTGROUP], name);
+
+	temp_contactgroup.contactgroup_name = name;
+
+	return rbtree_find(xobject_tree[OBJTYPE_CONTACTGROUP], &temp_contactgroup);
 }
 
 
 /* finds a specific hostgroup object */
 static xodtemplate_hostgroup *xodtemplate_find_hostgroup(char *name)
 {
+	xodtemplate_hostgroup temp_hostgroup;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_template_tree[OBJTYPE_HOSTGROUP], name);
+
+	temp_hostgroup.name = name;
+
+	return rbtree_find(xobject_template_tree[OBJTYPE_HOSTGROUP], &temp_hostgroup);
 }
 
 
 /* finds a specific hostgroup object by its REAL name, not its TEMPLATE name */
 static xodtemplate_hostgroup *xodtemplate_find_real_hostgroup(char *name)
 {
+	xodtemplate_hostgroup temp_hostgroup;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_tree[OBJTYPE_HOSTGROUP], name);
+
+	temp_hostgroup.hostgroup_name = name;
+
+	return rbtree_find(xobject_tree[OBJTYPE_HOSTGROUP], &temp_hostgroup);
 }
 
 
 /* finds a specific servicegroup object */
 static xodtemplate_servicegroup *xodtemplate_find_servicegroup(char *name)
 {
+	xodtemplate_servicegroup temp_servicegroup;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_template_tree[OBJTYPE_SERVICEGROUP], name);
+
+	temp_servicegroup.name = name;
+
+	return rbtree_find(xobject_template_tree[OBJTYPE_SERVICEGROUP], &temp_servicegroup);
 }
 
 
 /* finds a specific servicegroup object by its REAL name, not its TEMPLATE name */
 static xodtemplate_servicegroup *xodtemplate_find_real_servicegroup(char *name)
 {
+	xodtemplate_servicegroup temp_servicegroup;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_tree[OBJTYPE_SERVICEGROUP], name);
+
+	temp_servicegroup.servicegroup_name = name;
+
+	return rbtree_find(xobject_tree[OBJTYPE_SERVICEGROUP], &temp_servicegroup);
 }
 
 
 /* finds a specific servicedependency object */
 static xodtemplate_servicedependency *xodtemplate_find_servicedependency(char *name)
 {
+	xodtemplate_servicedependency temp_servicedependency;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_template_tree[OBJTYPE_SERVICEDEPENDENCY], name);
+
+	temp_servicedependency.name = name;
+
+	return rbtree_find(xobject_template_tree[OBJTYPE_SERVICEDEPENDENCY], &temp_servicedependency);
 }
 
 
 /* finds a specific serviceescalation object */
 static xodtemplate_serviceescalation *xodtemplate_find_serviceescalation(char *name)
 {
+	xodtemplate_serviceescalation temp_serviceescalation;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_template_tree[OBJTYPE_SERVICEESCALATION], name);
+
+	temp_serviceescalation.name = name;
+
+	return rbtree_find(xobject_template_tree[OBJTYPE_SERVICEESCALATION], &temp_serviceescalation);
 }
 
 
 /* finds a specific contact object */
 static xodtemplate_contact *xodtemplate_find_contact(char *name)
 {
+	xodtemplate_contact temp_contact;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_template_tree[OBJTYPE_CONTACT], name);
+
+	temp_contact.name = name;
+
+	return rbtree_find(xobject_template_tree[OBJTYPE_CONTACT], &temp_contact);
 }
 
 
 /* finds a specific contact object by its REAL name, not its TEMPLATE name */
 static xodtemplate_contact *xodtemplate_find_real_contact(char *name)
 {
+	xodtemplate_contact temp_contact;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_tree[OBJTYPE_CONTACT], name);
+
+	temp_contact.contact_name = name;
+
+	return rbtree_find(xobject_tree[OBJTYPE_CONTACT], &temp_contact);
 }
 
 
 /* finds a specific host object */
 static xodtemplate_host *xodtemplate_find_host(char *name)
 {
+	xodtemplate_host temp_host;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_template_tree[OBJTYPE_HOST], name);
+
+	temp_host.name = name;
+
+	return rbtree_find(xobject_template_tree[OBJTYPE_HOST], &temp_host);
 }
 
 
 /* finds a specific host object by its REAL name, not its TEMPLATE name */
 static xodtemplate_host *xodtemplate_find_real_host(char *name)
 {
+	xodtemplate_host temp_host;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_tree[OBJTYPE_HOST], name);
+
+	temp_host.host_name = name;
+
+	return rbtree_find(xobject_tree[OBJTYPE_HOST], &temp_host);
 }
 
 
 /* finds a specific hostdependency object */
 static xodtemplate_hostdependency *xodtemplate_find_hostdependency(char *name)
 {
+	xodtemplate_hostdependency temp_hostdependency;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_template_tree[OBJTYPE_HOSTDEPENDENCY], name);
+
+	temp_hostdependency.name = name;
+
+	return rbtree_find(xobject_template_tree[OBJTYPE_HOSTDEPENDENCY], &temp_hostdependency);
 }
 
 
 /* finds a specific hostescalation object */
 static xodtemplate_hostescalation *xodtemplate_find_hostescalation(char *name)
 {
+	xodtemplate_hostescalation temp_hostescalation;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_template_tree[OBJTYPE_HOSTESCALATION], name);
+
+	temp_hostescalation.name = name;
+
+	return rbtree_find(xobject_template_tree[OBJTYPE_HOSTESCALATION], &temp_hostescalation);
 }
 
 
 /* finds a specific hostextinfo object */
 static xodtemplate_hostextinfo *xodtemplate_find_hostextinfo(char *name)
 {
+	xodtemplate_hostextinfo temp_hostextinfo;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_template_tree[OBJTYPE_HOSTEXTINFO], name);
+
+	temp_hostextinfo.name = name;
+
+	return rbtree_find(xobject_template_tree[OBJTYPE_HOSTEXTINFO], &temp_hostextinfo);
 }
 
 
 /* finds a specific serviceextinfo object */
 static xodtemplate_serviceextinfo *xodtemplate_find_serviceextinfo(char *name)
 {
+	xodtemplate_serviceextinfo temp_serviceextinfo;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_template_tree[OBJTYPE_SERVICEEXTINFO], name);
+
+	temp_serviceextinfo.name = name;
+
+	return rbtree_find(xobject_template_tree[OBJTYPE_SERVICEEXTINFO], &temp_serviceextinfo);
 }
 
 
 /* finds a specific service object */
 static xodtemplate_service *xodtemplate_find_service(char *name)
 {
+	xodtemplate_service temp_service;
+
 	if (name == NULL)
 		return NULL;
-	return g_tree_lookup(xobject_template_tree[OBJTYPE_SERVICE], name);
+
+	temp_service.name = name;
+
+	return rbtree_find(xobject_template_tree[OBJTYPE_SERVICE], &temp_service);
 }
 
 
 /* finds a specific service object by its REAL name, not its TEMPLATE name */
 static xodtemplate_service *xodtemplate_find_real_service(char *host_name, char *service_description)
 {
-	gchar *tmpname;
-	gpointer ret;
+	xodtemplate_service temp_service;
 
 	if (host_name == NULL || service_description == NULL)
 		return NULL;
 
-	tmpname = g_strdup_printf("%s;%s", host_name, service_description);
-	ret = g_tree_lookup(xobject_tree[OBJTYPE_SERVICE], tmpname);
-	g_free(tmpname);
+	temp_service.host_name = host_name;
+	temp_service.service_description = service_description;
 
-	return ret;
+	return rbtree_find(xobject_tree[OBJTYPE_SERVICE], &temp_service);
 }
 
 
@@ -665,6 +716,371 @@ static inline int safestrcmp(const char *a, const char *b)
 	return !a ? 1 : (!b ? -1 : strcmp(a, b));
 }
 
+static int xod_sort_compare_host_template(const void *a, const void *b)
+{
+	xodtemplate_host *oa = (xodtemplate_host *)a;
+	xodtemplate_host *ob = (xodtemplate_host *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->name, ob->name);
+}
+
+
+static int xod_sort_compare_host(const void *a, const void *b)
+{
+	xodtemplate_host *oa = (xodtemplate_host *)a;
+	xodtemplate_host *ob = (xodtemplate_host *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->host_name, ob->host_name);
+}
+
+
+static int xod_sort_compare_service_template(const void *a, const void *b)
+{
+	xodtemplate_service *oa = (xodtemplate_service *)a;
+	xodtemplate_service *ob = (xodtemplate_service *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->name, ob->name);
+}
+
+
+static int xod_sort_compare_service(const void *a, const void *b)
+{
+	xodtemplate_service *oa = (xodtemplate_service *)a;
+	xodtemplate_service *ob = (xodtemplate_service *)b;
+	int val;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	if ((val = safestrcmp(oa->host_name, ob->host_name)))
+		return val;
+
+	return safestrcmp(oa->service_description, ob->service_description);
+}
+
+
+static int xod_sort_compare_timeperiod_template(const void *a, const void *b)
+{
+	xodtemplate_timeperiod *oa = (xodtemplate_timeperiod *)a;
+	xodtemplate_timeperiod *ob = (xodtemplate_timeperiod *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->name, ob->name);
+}
+
+
+static int xod_sort_compare_timeperiod(const void *a, const void *b)
+{
+	xodtemplate_timeperiod *oa = NULL;
+	xodtemplate_timeperiod *ob = NULL;
+
+	oa = (xodtemplate_timeperiod *)a;
+	ob = (xodtemplate_timeperiod *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->timeperiod_name, ob->timeperiod_name);
+}
+
+
+static int xod_sort_compare_command_template(const void *a, const void *b)
+{
+	xodtemplate_command *oa = (xodtemplate_command *)a;
+	xodtemplate_command *ob = (xodtemplate_command *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->name, ob->name);
+}
+
+
+static int xod_sort_compare_command(const void *a, const void *b)
+{
+	xodtemplate_command *oa = (xodtemplate_command *)a;
+	xodtemplate_command *ob = (xodtemplate_command *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->command_name, ob->command_name);
+}
+
+
+static int xod_sort_compare_contact_template(const void *a, const void *b)
+{
+	xodtemplate_contact *oa = (xodtemplate_contact *)a;
+	xodtemplate_contact *ob = (xodtemplate_contact *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->name, ob->name);
+}
+
+
+static int xod_sort_compare_contact(const void *a, const void *b)
+{
+	xodtemplate_contact *oa = (xodtemplate_contact *)a;
+	xodtemplate_contact *ob = (xodtemplate_contact *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->contact_name, ob->contact_name);
+}
+
+
+static int xod_sort_compare_contactgroup_template(const void *a, const void *b)
+{
+	xodtemplate_contactgroup *oa = (xodtemplate_contactgroup *)a;
+	xodtemplate_contactgroup *ob = (xodtemplate_contactgroup *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->name, ob->name);
+}
+
+static int xod_sort_compare_contactgroup(const void *a, const void *b)
+{
+	xodtemplate_contactgroup *oa = (xodtemplate_contactgroup *)a;
+	xodtemplate_contactgroup *ob = (xodtemplate_contactgroup *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->contactgroup_name, ob->contactgroup_name);
+}
+
+
+static int xod_sort_compare_hostgroup_template(const void *a, const void *b)
+{
+	xodtemplate_hostgroup *oa = NULL;
+	xodtemplate_hostgroup *ob = NULL;
+
+	oa = (xodtemplate_hostgroup *)a;
+	ob = (xodtemplate_hostgroup *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->name, ob->name);
+}
+
+
+static int xod_sort_compare_hostgroup(const void *a, const void *b)
+{
+	xodtemplate_hostgroup *oa = (xodtemplate_hostgroup *)a;
+	xodtemplate_hostgroup *ob = (xodtemplate_hostgroup *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->hostgroup_name, ob->hostgroup_name);
+}
+
+
+static int xod_sort_compare_servicegroup_template(const void *a, const void *b)
+{
+	xodtemplate_servicegroup *oa = (xodtemplate_servicegroup *)a;
+	xodtemplate_servicegroup *ob = (xodtemplate_servicegroup *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->name, ob->name);
+}
+
+
+static int xod_sort_compare_servicegroup(const void *a, const void *b)
+{
+	xodtemplate_servicegroup *oa = (xodtemplate_servicegroup *)a;
+	xodtemplate_servicegroup *ob = (xodtemplate_servicegroup *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->servicegroup_name, ob->servicegroup_name);
+}
+
+
+static int xod_sort_compare_hostdependency_template(const void *a, const void *b)
+{
+	xodtemplate_hostdependency *oa = (xodtemplate_hostdependency *)a;
+	xodtemplate_hostdependency *ob = (xodtemplate_hostdependency *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->name, ob->name);
+}
+
+static int xod_sort_compare_servicedependency_template(const void *a, const void *b)
+{
+	xodtemplate_servicedependency *oa = (xodtemplate_servicedependency *)a;
+	xodtemplate_servicedependency *ob = (xodtemplate_servicedependency *)b;
+	int val;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	if ((val = safestrcmp(oa->host_name, ob->host_name)))
+		return val;
+	return safestrcmp(oa->service_description, ob->service_description);
+}
+
+static int xod_sort_compare_hostescalation_template(const void *a, const void *b)
+{
+	xodtemplate_hostescalation *oa = (xodtemplate_hostescalation *)a;
+	xodtemplate_hostescalation *ob = (xodtemplate_hostescalation *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->name, ob->name);
+}
+
+
+static int xod_sort_compare_serviceescalation_template(const void *a, const void *b)
+{
+	xodtemplate_serviceescalation *oa = NULL;
+	xodtemplate_serviceescalation *ob = NULL;
+
+	oa = (xodtemplate_serviceescalation *)a;
+	ob = (xodtemplate_serviceescalation *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->name, ob->name);
+}
+
+
+static int xod_sort_compare_hostextinfo_template(const void *a, const void *b)
+{
+	xodtemplate_hostextinfo *oa = (xodtemplate_hostextinfo *)a;
+	xodtemplate_hostextinfo *ob = (xodtemplate_hostextinfo *)b;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->name, ob->name);
+}
+
+
+static int xod_sort_compare_serviceextinfo_template(const void *a, const void *b)
+{
+	xodtemplate_serviceextinfo *oa = (xodtemplate_serviceextinfo *)a;
+	xodtemplate_serviceextinfo *ob = (xodtemplate_serviceextinfo *)b;;
+
+	if (oa == NULL && ob == NULL)
+		return 0;
+	if (oa == NULL)
+		return 1;
+	if (ob == NULL)
+		return -1;
+
+	return safestrcmp(oa->name, ob->name);
+}
+
+
 static int xodtemplate_init_trees(void)
 {
 	int x = 0;
@@ -674,29 +1090,29 @@ static int xodtemplate_init_trees(void)
 		xobject_tree[x] = NULL;
 	}
 
-	xobject_template_tree[OBJTYPE_HOST] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_SERVICE] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_COMMAND] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_TIMEPERIOD] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_CONTACT] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_CONTACTGROUP] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_HOSTGROUP] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_SERVICEGROUP] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_HOSTDEPENDENCY] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_SERVICEDEPENDENCY] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_HOSTESCALATION] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_SERVICEESCALATION] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_HOSTEXTINFO] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_SERVICEEXTINFO] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
+	xobject_template_tree[OBJTYPE_HOST] = rbtree_create(xod_sort_compare_host_template);
+	xobject_template_tree[OBJTYPE_SERVICE] = rbtree_create(xod_sort_compare_service_template);
+	xobject_template_tree[OBJTYPE_COMMAND] = rbtree_create(xod_sort_compare_command_template);
+	xobject_template_tree[OBJTYPE_TIMEPERIOD] = rbtree_create(xod_sort_compare_timeperiod_template);
+	xobject_template_tree[OBJTYPE_CONTACT] = rbtree_create(xod_sort_compare_contact_template);
+	xobject_template_tree[OBJTYPE_CONTACTGROUP] = rbtree_create(xod_sort_compare_contactgroup_template);
+	xobject_template_tree[OBJTYPE_HOSTGROUP] = rbtree_create(xod_sort_compare_hostgroup_template);
+	xobject_template_tree[OBJTYPE_SERVICEGROUP] = rbtree_create(xod_sort_compare_servicegroup_template);
+	xobject_template_tree[OBJTYPE_HOSTDEPENDENCY] = rbtree_create(xod_sort_compare_hostdependency_template);
+	xobject_template_tree[OBJTYPE_SERVICEDEPENDENCY] = rbtree_create(xod_sort_compare_servicedependency_template);
+	xobject_template_tree[OBJTYPE_HOSTESCALATION] = rbtree_create(xod_sort_compare_hostescalation_template);
+	xobject_template_tree[OBJTYPE_SERVICEESCALATION] = rbtree_create(xod_sort_compare_serviceescalation_template);
+	xobject_template_tree[OBJTYPE_HOSTEXTINFO] = rbtree_create(xod_sort_compare_hostextinfo_template);
+	xobject_template_tree[OBJTYPE_SERVICEEXTINFO] = rbtree_create(xod_sort_compare_serviceextinfo_template);
 
-	xobject_tree[OBJTYPE_HOST] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_tree[OBJTYPE_SERVICE] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_tree[OBJTYPE_COMMAND] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_tree[OBJTYPE_TIMEPERIOD] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_tree[OBJTYPE_CONTACT] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_tree[OBJTYPE_CONTACTGROUP] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_tree[OBJTYPE_HOSTGROUP] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_tree[OBJTYPE_SERVICEGROUP] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
+	xobject_tree[OBJTYPE_HOST] = rbtree_create(xod_sort_compare_host);
+	xobject_tree[OBJTYPE_SERVICE] = rbtree_create(xod_sort_compare_service);
+	xobject_tree[OBJTYPE_COMMAND] = rbtree_create(xod_sort_compare_command);
+	xobject_tree[OBJTYPE_TIMEPERIOD] = rbtree_create(xod_sort_compare_timeperiod);
+	xobject_tree[OBJTYPE_CONTACT] = rbtree_create(xod_sort_compare_contact);
+	xobject_tree[OBJTYPE_CONTACTGROUP] = rbtree_create(xod_sort_compare_contactgroup);
+	xobject_tree[OBJTYPE_HOSTGROUP] = rbtree_create(xod_sort_compare_hostgroup);
+	xobject_tree[OBJTYPE_SERVICEGROUP] = rbtree_create(xod_sort_compare_servicegroup);
 	/*
 	 * host and service extinfo, dependencies, and escalations don't
 	 * need to be sorted, so we avoid creating trees for them.
@@ -2344,7 +2760,7 @@ static int xodtemplate_duplicate_service(xodtemplate_service *temp_service, char
 /* duplicates service definitions */
 static int xodtemplate_duplicate_services(void)
 {
-	gpointer prev;
+	struct rbnode *prev;
 	int result = OK;
 	xodtemplate_service *temp_service = NULL;
 
@@ -2454,7 +2870,6 @@ static int xodtemplate_duplicate_services(void)
 	/***************************************/
 
 	for (temp_service = xodtemplate_service_list; temp_service != NULL; temp_service = temp_service->next) {
-		gchar *service_ident;
 		/* skip services that shouldn't be registered */
 		if (temp_service->register_object == FALSE)
 			continue;
@@ -2463,8 +2878,7 @@ static int xodtemplate_duplicate_services(void)
 		if (temp_service->host_name == NULL || temp_service->service_description == NULL)
 			continue;
 
-		service_ident = g_strdup_printf("%s;%s", temp_service->host_name, temp_service->service_description);
-		prev = xod_tree_insert(xobject_tree[OBJTYPE_SERVICE], g_strdup(service_ident), temp_service);
+		prev = rbtree_insert(xobject_tree[OBJTYPE_SERVICE], (void *)temp_service);
 		if (prev) {
 			/*
 			 * If we find a node in the tree, it is a duplicate.
@@ -2480,10 +2894,10 @@ static int xodtemplate_duplicate_services(void)
 			 * on the host itself might be a warning, if the second host group
 			 * services is loaded before the host service.
 			 */
-			if(((xodtemplate_service*)prev)->is_from_hostgroup && !temp_service->is_from_hostgroup) {
-				g_tree_remove(xobject_tree[OBJTYPE_SERVICE], service_ident);
-				g_tree_insert(xobject_tree[OBJTYPE_SERVICE], g_strdup(service_ident), temp_service);
-			} else if(((xodtemplate_service*)prev)->is_from_hostgroup == temp_service->is_from_hostgroup) {
+			if(((xodtemplate_service*)prev->data)->is_from_hostgroup && !temp_service->is_from_hostgroup) {
+				rbtree_delete(xobject_tree[OBJTYPE_SERVICE], prev);
+				rbtree_insert(xobject_tree[OBJTYPE_SERVICE], (void *)temp_service);
+			} else if(((xodtemplate_service*)prev->data)->is_from_hostgroup == temp_service->is_from_hostgroup) {
 				/*
 				 * we end up here if both services are from the same
 				 * type of source. The remaining case (original
@@ -2495,8 +2909,6 @@ static int xodtemplate_duplicate_services(void)
 				nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for service '%s' on host '%s' (config file '%s', starting on line %d)\n", temp_service->service_description, temp_service->host_name, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
 				result = ERROR;
 			}
-
-			g_free(service_ident);
 		} else {
 			xodcount.services++;
 		}
@@ -6442,44 +6854,44 @@ static int xodtemplate_register_objects(void)
 	 *independent objects that can be registered without slaves
 	 *(i.e. no services, dependencies, escalations, or extinfo).
 	 */
-	if (xod_tree_traverse(xobject_tree[OBJTYPE_TIMEPERIOD], xodtemplate_register_timeperiod, NULL))
+	if (rbtree_traverse(xobject_tree[OBJTYPE_TIMEPERIOD], xodtemplate_register_timeperiod, NULL, rbinorder))
 		return ERROR;
-	if (xod_tree_traverse(xobject_tree[OBJTYPE_COMMAND], xodtemplate_register_command, NULL))
+	if (rbtree_traverse(xobject_tree[OBJTYPE_COMMAND], xodtemplate_register_command, NULL, rbinorder))
 		return ERROR;
-	if (xod_tree_traverse(xobject_tree[OBJTYPE_CONTACTGROUP], xodtemplate_register_contactgroup, NULL))
+	if (rbtree_traverse(xobject_tree[OBJTYPE_CONTACTGROUP], xodtemplate_register_contactgroup, NULL, rbinorder))
 		return ERROR;
-	if (xod_tree_traverse(xobject_tree[OBJTYPE_HOSTGROUP], xodtemplate_register_hostgroup, NULL))
+	if (rbtree_traverse(xobject_tree[OBJTYPE_HOSTGROUP], xodtemplate_register_hostgroup, NULL, rbinorder))
 		return ERROR;
-	if (xod_tree_traverse(xobject_tree[OBJTYPE_SERVICEGROUP], xodtemplate_register_servicegroup, NULL))
+	if (rbtree_traverse(xobject_tree[OBJTYPE_SERVICEGROUP], xodtemplate_register_servicegroup, NULL, rbinorder))
 		return ERROR;
-	if (xod_tree_traverse(xobject_tree[OBJTYPE_CONTACT], xodtemplate_register_contact, NULL))
+	if (rbtree_traverse(xobject_tree[OBJTYPE_CONTACT], xodtemplate_register_contact, NULL, rbinorder))
 		return ERROR;
-	if (xod_tree_traverse(xobject_tree[OBJTYPE_HOST], xodtemplate_register_host, NULL))
+	if (rbtree_traverse(xobject_tree[OBJTYPE_HOST], xodtemplate_register_host, NULL, rbinorder))
 		return ERROR;
 
 	/* With all objects available, it is now safe to register any relations
 	 * between them. This means any host parent can know for sure that the host
 	 * parent is registered above if it at all exists.
 	 */
-	if (xod_tree_traverse(xobject_tree[OBJTYPE_TIMEPERIOD], xodtemplate_register_timeperiod_relations, NULL))
+	if (rbtree_traverse(xobject_tree[OBJTYPE_TIMEPERIOD], xodtemplate_register_timeperiod_relations, NULL, rbinorder))
 		return ERROR;
-	if (xod_tree_traverse(xobject_tree[OBJTYPE_CONTACT], xodtemplate_register_contact_relations, NULL))
+	if (rbtree_traverse(xobject_tree[OBJTYPE_CONTACT], xodtemplate_register_contact_relations, NULL, rbinorder))
 		return ERROR;
-	if (xod_tree_traverse(xobject_tree[OBJTYPE_HOST], xodtemplate_register_host_relations, NULL))
+	if (rbtree_traverse(xobject_tree[OBJTYPE_HOST], xodtemplate_register_host_relations, NULL, rbinorder))
 		return ERROR;
-	if (xod_tree_traverse(xobject_tree[OBJTYPE_CONTACTGROUP], xodtemplate_register_contactgroup_relations, (void *)&tot_members))
+	if (rbtree_traverse(xobject_tree[OBJTYPE_CONTACTGROUP], xodtemplate_register_contactgroup_relations, (void *)&tot_members, rbinorder))
 		return ERROR;
-	if (xod_tree_traverse(xobject_tree[OBJTYPE_HOSTGROUP], xodtemplate_register_hostgroup_relations, (void *)&tot_members))
+	if (rbtree_traverse(xobject_tree[OBJTYPE_HOSTGROUP], xodtemplate_register_hostgroup_relations, (void *)&tot_members, rbinorder))
 		return ERROR;
 
 	/* And now, go for slave objects, and objects that can depend on
 	 * slaves.
 	 */
-	if (xod_tree_traverse(xobject_tree[OBJTYPE_SERVICE], xodtemplate_register_service, NULL))
+	if (rbtree_traverse(xobject_tree[OBJTYPE_SERVICE], xodtemplate_register_service, NULL, rbinorder))
 		return ERROR;
-	if (xod_tree_traverse(xobject_tree[OBJTYPE_SERVICEGROUP], xodtemplate_register_servicegroup_relations, (void *)&tot_members))
+	if (rbtree_traverse(xobject_tree[OBJTYPE_SERVICEGROUP], xodtemplate_register_servicegroup_relations, (void *)&tot_members, rbinorder))
 		return ERROR;
-	if (xod_tree_traverse(xobject_tree[OBJTYPE_SERVICE], xodtemplate_register_service_relations, NULL))
+	if (rbtree_traverse(xobject_tree[OBJTYPE_SERVICE], xodtemplate_register_service_relations, NULL, rbinorder))
 		return ERROR;
 
 	/*
@@ -6600,7 +7012,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_timeperiod->name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_TIMEPERIOD], g_strdup(temp_timeperiod->name), temp_timeperiod);
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_TIMEPERIOD], (void *)temp_timeperiod);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for timeperiod '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_timeperiod->_config_file), temp_timeperiod->_start_line);
 					result = ERROR;
@@ -6610,7 +7022,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_timeperiod->timeperiod_name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_tree[OBJTYPE_TIMEPERIOD], g_strdup(temp_timeperiod->timeperiod_name), temp_timeperiod);
+				prev = rbtree_insert(xobject_tree[OBJTYPE_TIMEPERIOD], (void *)temp_timeperiod);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for timeperiod '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_timeperiod->_config_file), temp_timeperiod->_start_line);
 					result = ERROR;
@@ -6644,7 +7056,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_command->name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_COMMAND], g_strdup(temp_command->name), temp_command);
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_COMMAND], (void *)temp_command);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for command '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_command->_config_file), temp_command->_start_line);
 					result = ERROR;
@@ -6654,7 +7066,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_command->command_name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_tree[OBJTYPE_COMMAND], g_strdup(temp_command->command_name), temp_command);
+				prev = rbtree_insert(xobject_tree[OBJTYPE_COMMAND], (void *)temp_command);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for command '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_command->_config_file), temp_command->_start_line);
 					result = ERROR;
@@ -6684,7 +7096,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_contactgroup->name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_CONTACTGROUP], g_strdup(temp_contactgroup->name), temp_contactgroup);
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_CONTACTGROUP], (void *)temp_contactgroup);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for contactgroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_contactgroup->_config_file), temp_contactgroup->_start_line);
 					result = ERROR;
@@ -6694,7 +7106,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_contactgroup->contactgroup_name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_tree[OBJTYPE_CONTACTGROUP], g_strdup(temp_contactgroup->contactgroup_name), temp_contactgroup);
+				prev = rbtree_insert(xobject_tree[OBJTYPE_CONTACTGROUP], (void *)temp_contactgroup);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for contactgroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_contactgroup->_config_file), temp_contactgroup->_start_line);
 					result = ERROR;
@@ -6750,7 +7162,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_hostgroup->name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_HOSTGROUP], g_strdup(temp_hostgroup->name), temp_hostgroup);
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_HOSTGROUP], (void *)temp_hostgroup);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for hostgroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostgroup->_config_file), temp_hostgroup->_start_line);
 					result = ERROR;
@@ -6760,7 +7172,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_hostgroup->hostgroup_name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_tree[OBJTYPE_HOSTGROUP], g_strdup(temp_hostgroup->hostgroup_name), temp_hostgroup);
+				prev = rbtree_insert(xobject_tree[OBJTYPE_HOSTGROUP], (void *)temp_hostgroup);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for hostgroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostgroup->_config_file), temp_hostgroup->_start_line);
 					result = ERROR;
@@ -6831,7 +7243,7 @@ static int xodtemplate_add_object_property(char *input)
 
 			temp_servicegroup->name = nm_strdup(value);
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_SERVICEGROUP], g_strdup(temp_servicegroup->name), temp_servicegroup);
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_SERVICEGROUP], (void *)temp_servicegroup);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for servicegroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_servicegroup->_config_file), temp_servicegroup->_start_line);
 					result = ERROR;
@@ -6841,7 +7253,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_servicegroup->servicegroup_name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_tree[OBJTYPE_SERVICEGROUP], g_strdup(temp_servicegroup->servicegroup_name), temp_servicegroup);
+				prev = rbtree_insert(xobject_tree[OBJTYPE_SERVICEGROUP], (void *)temp_servicegroup);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for servicegroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_servicegroup->_config_file), temp_servicegroup->_start_line);
 					result = ERROR;
@@ -6913,7 +7325,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_servicedependency->name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_SERVICEDEPENDENCY], g_strdup(temp_servicedependency->name), temp_servicedependency);
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_SERVICEDEPENDENCY], (void *)temp_servicedependency);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for service dependency '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_servicedependency->_config_file), temp_servicedependency->_start_line);
 					result = ERROR;
@@ -7034,7 +7446,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_serviceescalation->name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_SERVICEESCALATION], g_strdup(temp_serviceescalation->name), temp_serviceescalation);
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_SERVICEESCALATION], (void *)temp_serviceescalation);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for service escalation '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_serviceescalation->_config_file), temp_serviceescalation->_start_line);
 					result = ERROR;
@@ -7126,7 +7538,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_contact->name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_CONTACT], g_strdup(temp_contact->name), temp_contact);
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_CONTACT], (void *)temp_contact);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for contact '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_contact->_config_file), temp_contact->_start_line);
 					result = ERROR;
@@ -7136,7 +7548,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_contact->contact_name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_tree[OBJTYPE_CONTACT], g_strdup(temp_contact->contact_name), temp_contact);
+				prev = rbtree_insert(xobject_tree[OBJTYPE_CONTACT], (void *)temp_contact);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for contact '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_contact->_config_file), temp_contact->_start_line);
 					result = ERROR;
@@ -7302,7 +7714,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_host->name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_HOST], g_strdup(temp_host->name), temp_host);
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_HOST], (void *)temp_host);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for host '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_host->_config_file), temp_host->_start_line);
 					result = ERROR;
@@ -7312,7 +7724,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_host->host_name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_tree[OBJTYPE_HOST], g_strdup(temp_host->host_name), temp_host);
+				prev = rbtree_insert(xobject_tree[OBJTYPE_HOST], (void *)temp_host);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for host '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_host->_config_file), temp_host->_start_line);
 					result = ERROR;
@@ -7615,7 +8027,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_service->name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_SERVICE], g_strdup(temp_service->name), temp_service);
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_SERVICE], (void *)temp_service);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for service '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
 					result = ERROR;
@@ -7629,7 +8041,7 @@ static int xodtemplate_add_object_property(char *input)
 
 			/* NOTE: services are indexed in xodtemplate_duplicate_services(), except if daemon is using precached config */
 			if (result == OK && force_index == TRUE  && temp_service->host_name != NULL && temp_service->service_description != NULL) {
-				prev = xod_tree_insert(xobject_tree[OBJTYPE_SERVICE], g_strdup_printf("%s;%s", temp_service->host_name, temp_service->service_description), temp_service);
+				prev = rbtree_insert(xobject_tree[OBJTYPE_SERVICE], (void *)temp_service);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for service '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
 					result = ERROR;
@@ -7645,7 +8057,7 @@ static int xodtemplate_add_object_property(char *input)
 
 			/* NOTE: services are indexed in xodtemplate_duplicate_services(), except if daemon is using precached config */
 			if (result == OK && force_index == TRUE  && temp_service->host_name != NULL && temp_service->service_description != NULL) {
-				prev = xod_tree_insert(xobject_tree[OBJTYPE_SERVICE], g_strdup_printf("%s;%s", temp_service->host_name, temp_service->service_description), temp_service);
+				prev = rbtree_insert(xobject_tree[OBJTYPE_SERVICE], (void *)temp_service);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for service '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
 					result = ERROR;
@@ -7932,7 +8344,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_hostdependency->name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_HOSTDEPENDENCY], g_strdup(temp_hostdependency->name), temp_hostdependency);
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_HOSTDEPENDENCY], (void *)temp_hostdependency);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for host dependency '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostdependency->_config_file), temp_hostdependency->_start_line);
 					result = ERROR;
@@ -8028,7 +8440,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_hostescalation->name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_HOSTESCALATION], g_strdup(temp_hostescalation->name), temp_hostescalation);
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_HOSTESCALATION], (void *)temp_hostescalation);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for host escalation '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostescalation->_config_file), temp_hostescalation->_start_line);
 					result = ERROR;
@@ -8106,7 +8518,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_hostextinfo->name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_HOSTEXTINFO], g_strdup(temp_hostextinfo->name), temp_hostextinfo);
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_HOSTEXTINFO], (void *)temp_hostextinfo);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for extended host info '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostextinfo->_config_file), temp_hostextinfo->_start_line);
 					result = ERROR;
@@ -8211,7 +8623,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_serviceextinfo->name = nm_strdup(value);
 
 			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_SERVICEEXTINFO], g_strdup(temp_serviceextinfo->name), temp_serviceextinfo);
+				prev = rbtree_insert(xobject_template_tree[OBJTYPE_SERVICEEXTINFO], (void *)temp_serviceextinfo);
 				if (prev) {
 					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for extended service info '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_serviceextinfo->_config_file), temp_serviceextinfo->_start_line);
 					result = ERROR;

@@ -69,8 +69,8 @@ host *create_host(const char *name)
 	new_host = nm_calloc(1, sizeof(*new_host));
 
 	new_host->name = new_host->display_name = new_host->alias = new_host->address = nm_strdup(name);
-	new_host->child_hosts = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	new_host->parent_hosts = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
+	new_host->child_hosts = rbtree_create(compare_host);
+	new_host->parent_hosts = rbtree_create(compare_host);
 	new_host->check_type = CHECK_TYPE_ACTIVE;
 	new_host->state_type = HARD_STATE;
 	new_host->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
@@ -213,12 +213,6 @@ int register_host(host *new_host)
 	return OK;
 }
 
-static gboolean my_g_tree_visit_pick_one(gpointer key, gpointer value, gpointer data) {
-	gpointer *outptr = (gpointer *)data;
-	*outptr = value;
-	return TRUE; /* Stop traversal */
-}
-
 void destroy_host(host *this_host)
 {
 	struct servicesmember *this_servicesmember, *next_servicesmember;
@@ -274,27 +268,15 @@ void destroy_host(host *this_host)
 		remove_host_from_hostgroup(this_host->hostgroups_ptr->object_ptr, this_host);
 
 	if (this_host->child_hosts) {
-		struct host *curhost = NULL;
-		do {
-			curhost = NULL;
-			g_tree_foreach(this_host->child_hosts, my_g_tree_visit_pick_one, &curhost);
-			if(curhost) {
-				remove_parent_from_host(curhost, this_host);
-			}
-		} while(curhost != NULL);
-		g_tree_unref(this_host->child_hosts);
+		while (!rbtree_isempty(this_host->child_hosts))
+			remove_parent_from_host(rbtree_first(this_host->child_hosts)->data, this_host);
+		rbtree_destroy(this_host->child_hosts, NULL);
 		this_host->child_hosts = NULL;
 	}
 	if (this_host->parent_hosts) {
-		struct host *curhost = NULL;
-		do {
-			curhost = NULL;
-			g_tree_foreach(this_host->parent_hosts, my_g_tree_visit_pick_one, &curhost);
-			if(curhost) {
-				remove_parent_from_host(this_host, curhost);
-			}
-		} while(curhost != NULL);
-		g_tree_unref(this_host->parent_hosts);
+		while (!rbtree_isempty(this_host->parent_hosts))
+			remove_parent_from_host(this_host, rbtree_first(this_host->parent_hosts)->data);
+		rbtree_destroy(this_host->parent_hosts, NULL);
 		this_host->parent_hosts = NULL;
 	}
 
@@ -354,19 +336,27 @@ int add_parent_to_host(host *hst, host *parent)
 		return ERROR;
 	}
 
-	g_tree_insert(hst->parent_hosts, g_strdup(parent->name), parent);
-	g_tree_insert(parent->child_hosts, g_strdup(hst->name), hst);
+	rbtree_insert(hst->parent_hosts, parent);
+	rbtree_insert(parent->child_hosts, hst);
 
 	return OK;
 }
 
 int remove_parent_from_host(host *hst, host *parent)
 {
+	struct rbnode *tmp;
 	if (hst->parent_hosts) {
-		g_tree_remove(hst->parent_hosts, parent->name);
+		tmp = rbtree_find_node(hst->parent_hosts, parent);
+		if(tmp != NULL) {
+			rbtree_delete(hst->parent_hosts, tmp);
+		}
+
 	}
 	if (parent->child_hosts) {
-		g_tree_remove(parent->child_hosts, hst->name);
+		tmp = rbtree_find_node(parent->child_hosts, hst);
+		if(tmp != NULL) {
+			rbtree_delete(parent->child_hosts, tmp);
+		}
 	}
 	return 0;
 }
@@ -468,7 +458,7 @@ struct implode_parameters {
 	GString *buf;
 };
 
-static gboolean implode_helper(gpointer _name, gpointer _hst, gpointer user_data)
+static int implode_helper(void *_hst, void *user_data)
 {
 	host *hst = (host *)_hst;
 	struct implode_parameters *params = (struct implode_parameters *)user_data;
@@ -476,16 +466,16 @@ static gboolean implode_helper(gpointer _name, gpointer _hst, gpointer user_data
 		g_string_append(params->buf, params->delimiter);
 	g_string_append(params->buf, hst->name);
 
-	return FALSE;
+	return 0;
 }
 
-char * implode_hosttree(GTree *tree, char *delimiter)
+char * implode_hosttree(struct rbtree *tree, char *delimiter)
 {
 	char *result;
 	struct implode_parameters params;
 	params.delimiter = delimiter;
 	params.buf = g_string_new("");
-	g_tree_foreach(tree, implode_helper, &params);
+	rbtree_traverse(tree, implode_helper, &params, rbinorder);
 	result = malloc(params.buf->len + 1);
 	strncpy(result, params.buf->str, params.buf->len);
 	result[params.buf->len] = 0;
@@ -503,7 +493,7 @@ void fcache_host(FILE *fp, const host *temp_host)
 		fprintf(fp, "\talias\t%s\n", temp_host->alias);
 	if (temp_host->address)
 		fprintf(fp, "\taddress\t%s\n", temp_host->address);
-	if (g_tree_nnodes(temp_host->parent_hosts) > 0) {
+	if (rbtree_num_nodes(temp_host->parent_hosts)) {
 		char *parents;
 		parents = implode_hosttree(temp_host->parent_hosts, ",");
 		fprintf(fp, "\tparents\t%s\n", parents);

@@ -623,7 +623,7 @@ static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags)
 	free(cr);
 }
 
-static gboolean propagate_when_not_up(gpointer _name, gpointer _hst, gpointer user_data)
+static int propagate_when_not_up(void *_hst, void *user_data)
 {
 	host *hst = (host *)_hst;
 	char *direction = (char *)user_data;
@@ -631,10 +631,10 @@ static gboolean propagate_when_not_up(gpointer _name, gpointer _hst, gpointer us
 		schedule_next_host_check(hst, 0, CHECK_OPTION_NONE);
 		log_debug_info(DEBUGL_CHECKS, 1, "Check of %s host '%s' queued.\n", direction, hst->name);
 	}
-	return FALSE;
+	return 0;
 }
 
-static gboolean propagate_when_up(gpointer _name, gpointer _hst, gpointer user_data)
+static int propagate_when_up(void *_hst, void *user_data)
 {
 	host *hst = (host *)_hst;
 	char *direction = (char *)user_data;
@@ -642,10 +642,10 @@ static gboolean propagate_when_up(gpointer _name, gpointer _hst, gpointer user_d
 		schedule_next_host_check(hst, 0, CHECK_OPTION_NONE);
 		log_debug_info(DEBUGL_CHECKS, 1, "Check of %s host '%s' queued.\n", direction, hst->name);
 	}
-	return FALSE;
+	return 0;
 }
 
-static gboolean propagate_when_not_unreachable(gpointer _name, gpointer _hst, gpointer user_data)
+static int propagate_when_not_unreachable(void *_hst, void *user_data)
 {
 	host *hst = (host *)_hst;
 	char *direction = (char *)user_data;
@@ -653,7 +653,7 @@ static gboolean propagate_when_not_unreachable(gpointer _name, gpointer _hst, gp
 		schedule_next_host_check(hst, 0, CHECK_OPTION_NONE);
 		log_debug_info(DEBUGL_CHECKS, 1, "Check of %s host '%s' queued.\n", direction, hst->name);
 	}
-	return FALSE;
+	return 0;
 }
 
 
@@ -700,12 +700,12 @@ static int process_host_check_result(host *hst, host *prev, int *alert_recorded)
 			/* propagate checks to immediate parents if they are not already UP */
 			/* we do this because a parent host (or grandparent) may have recovered somewhere and we should catch the recovery as soon as possible */
 			log_debug_info(DEBUGL_CHECKS, 1, "Propagating checks to parent host(s)...\n");
-			g_tree_foreach(hst->parent_hosts, propagate_when_not_up, "parent");
+			rbtree_traverse(hst->parent_hosts, propagate_when_not_up, "parent", rbinorder);
 
 			/* propagate checks to immediate children if they are not already UP */
 			/* we do this because children may currently be UNREACHABLE, but may (as a result of this recovery) switch to UP or DOWN states */
 			log_debug_info(DEBUGL_CHECKS, 1, "Propagating checks to child host(s)...\n");
-			g_tree_foreach(hst->child_hosts, propagate_when_not_up, "child");
+			rbtree_traverse(hst->child_hosts, propagate_when_not_up, "child", rbinorder);
 		}
 
 		/***** HOST IS STILL DOWN/UNREACHABLE *****/
@@ -792,12 +792,12 @@ static int process_host_check_result(host *hst, host *prev, int *alert_recorded)
 			/* we do this because a parent host (or grandparent) may have gone down and blocked our route */
 			/* checking the parents ASAP will allow us to better determine the final state (DOWN/UNREACHABLE) of this host later */
 			log_debug_info(DEBUGL_CHECKS, 1, "Propagating checks to immediate parent hosts that are UP...\n");
-			g_tree_foreach(hst->parent_hosts, propagate_when_up, "parent");
+			rbtree_traverse(hst->parent_hosts, propagate_when_up, "parent", rbinorder);
 
 			/* propagate checks to immediate children if they are not UNREACHABLE */
 			/* we do this because we may now be blocking the route to child hosts */
 			log_debug_info(DEBUGL_CHECKS, 1, "Propagating checks to immediate non-UNREACHABLE child hosts...\n");
-			g_tree_foreach(hst->child_hosts, propagate_when_not_unreachable, "child");
+			rbtree_traverse(hst->child_hosts, propagate_when_not_unreachable, "child", rbinorder);
 
 			/* check dependencies on second to last host check */
 			if (enable_predictive_host_dependency_checks == TRUE && hst->current_attempt == (hst->max_attempts - 1)) {
@@ -1263,22 +1263,18 @@ static int is_host_result_fresh(host *temp_host, time_t current_time, int log_th
 	return TRUE;
 }
 
-static gboolean is_host_up(gpointer _name, gpointer _hst, gpointer user_data)
+static int is_host_up(void *_hst, void *user_data)
 {
 	host *hst = (host *)_hst;
-	gboolean *retval = (gboolean *)user_data;
-	if (hst->current_state == STATE_UP) {
-		*retval = TRUE;
-		return TRUE;
-	}
-	return FALSE;
+	if (hst->current_state == STATE_UP)
+		return 1;
+	return 0;
 }
 
 /* determination of the host's state based on route availability*/
 /* used only to determine difference between DOWN and UNREACHABLE states */
 static int determine_host_reachability(host *hst)
 {
-	gboolean *is_up_result;
 	log_debug_info(DEBUGL_CHECKS, 2, "Determining state of host '%s': current state=%d (%s)\n", hst->name, hst->current_state, host_state_name(hst->current_state));
 
 	/* host is UP - no translation needed */
@@ -1287,12 +1283,10 @@ static int determine_host_reachability(host *hst)
 		return STATE_UP;
 	}
 
-	if (g_tree_nnodes(hst->parent_hosts) == 0)
+	if (rbtree_num_nodes(hst->parent_hosts) == 0)
 		return STATE_DOWN;
 
-	is_up_result = FALSE;
-	g_tree_foreach(hst->parent_hosts, is_host_up, &is_up_result);
-	if (is_up_result)
+	if (rbtree_traverse(hst->parent_hosts, is_host_up, NULL, rbinorder))
 		return STATE_DOWN;
 
 	log_debug_info(DEBUGL_CHECKS, 2, "No parents were up, so host is UNREACHABLE.\n");
