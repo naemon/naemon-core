@@ -44,7 +44,7 @@ nobase_pkginclude_HEADERS = \
 	lib/libnaemon.h   lib/nspath.h   lib/snprintf.h lib/nsutils.h  \
 	lib/iobroker.h  lib/lnae-utils.h  lib/t-utils.h \
 	lib/bufferqueue.h   lib/lnag-utils.h  lib/runcmd.h   lib/worker.h \
-	lib/rbtree.h lib/objutils.h
+	lib/objutils.h
 
 pkginclude_HEADERS = \
 	src/naemon/broker.h src/naemon/events.h src/naemon/objects.h \
@@ -154,7 +154,7 @@ libnaemon_la_LIBADD = $(GLIB_LIBS)
 libnaemon_la_SOURCES = $(pkginclude_HEADERS) $(common_sources) \
 	lib/bitmap.c lib/iobroker.c lib/bufferqueue.c \
 	lib/kvvec.c lib/kvvec_ekvstr.c lib/nsock.c lib/nspath.c lib/nsutils.c \
-	lib/rbtree.c lib/runcmd.c lib/snprintf.c lib/worker.c lib/objutils.c
+	lib/runcmd.c lib/snprintf.c lib/worker.c lib/objutils.c
 
 COV_CFLAGS = -ggdb3 -O0 -ftest-coverage -fprofile-arcs -pg
 cov-build:

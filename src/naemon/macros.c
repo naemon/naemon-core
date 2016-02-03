@@ -311,7 +311,7 @@ int grab_contact_macros(contact *cntct)
 	return grab_contact_macros_r(&global_macros, cntct);
 }
 
-static int concat_custom_macro_value(void *_hst, void *user_data)
+static gboolean concat_custom_macro_value(gpointer _name, gpointer _hst, gpointer user_data)
 {
 	char *temp_buffer;
 	host *temp_host = (host *)_hst;
@@ -321,12 +321,12 @@ static int concat_custom_macro_value(void *_hst, void *user_data)
 	grab_custom_macro_value_r(params->mac, params->macro_name, temp_host->name, NULL, &temp_buffer);
 
 	if (temp_buffer == NULL)
-		return 0;
+		return FALSE;
 
 	if (params->buffer->len > 0)
 		g_string_append(params->buffer, params->delimiter);
 	g_string_append(params->buffer, temp_buffer);
-	return 0;
+	return FALSE;
 }
 
 /* calculates the value of a custom macro */
@@ -385,7 +385,7 @@ static int grab_custom_macro_value_r(nagios_macros *mac, char *macro_name, char 
 				nm_free(*output);
 			}
 
-			rbtree_traverse(temp_hostgroup->members, concat_custom_macro_value, &params, rbinorder);
+			g_tree_foreach(temp_hostgroup->members, concat_custom_macro_value, &params);
 			*output = nm_malloc(params.buffer->len + 1);
 			strncpy(*output, params.buffer->str, params.buffer->len);
 			*output[params.buffer->len] = 0;
@@ -1448,7 +1448,7 @@ static char *get_url_encoded_string(char *input)
 }
 
 
-static int concat_macrox_value(void *_hst, void *user_data)
+static int concat_macrox_value(gpointer _name, gpointer _hst, gpointer user_data)
 {
 	int free_sub_macro = FALSE;
 	char *temp_buffer = NULL;
@@ -1458,7 +1458,7 @@ static int concat_macrox_value(void *_hst, void *user_data)
 	grab_standard_host_macro_r(params->mac, params->macro_type, temp_host, &temp_buffer, &free_sub_macro);
 
 	if (temp_buffer == NULL)
-		return 0;
+		return FALSE;
 
 	if (params->buffer->len > 0)
 		g_string_append(params->buffer, params->delimiter);
@@ -1467,7 +1467,7 @@ static int concat_macrox_value(void *_hst, void *user_data)
 	if (free_sub_macro == TRUE)
 		nm_free(temp_buffer);
 
-	return 0;
+	return FALSE;
 }
 
 static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, char *arg2, char **output, int *free_macro)
@@ -1598,7 +1598,7 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 				nm_free(*output);
 			}
 
-			rbtree_traverse(temp_hostgroup->members, concat_macrox_value, &params, rbinorder);
+			g_tree_foreach(temp_hostgroup->members, concat_macrox_value, &params);
 			*output = nm_malloc(params.buffer->len + 1);
 			strncpy(*output, params.buffer->str, params.buffer->len);
 			*output[params.buffer->len] = 0;
