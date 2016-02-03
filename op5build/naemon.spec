@@ -82,9 +82,9 @@ autoreconf -i -s
 		--with-checkresultdir=/var/cache/naemon/checkresults
 
 
-%__make V=1
-%__make check V=1
-%__make distcheck V=1
+%__make
+%__make check
+%__make distcheck
 
 
 %install

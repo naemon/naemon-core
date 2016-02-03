@@ -7,8 +7,6 @@ AC_CONFIG_SRCDIR([src/naemon/naemon.c])
 AC_CONFIG_SRCDIR([lib/libnaemon.h])
 AM_INIT_AUTOMAKE([subdir-objects])
 
-m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
-
 AC_CONFIG_HEADERS([config.h lib/snprintf.h])
 
 # Checks for programs.
