@@ -1448,7 +1448,7 @@ static char *get_url_encoded_string(char *input)
 }
 
 
-static int concat_macrox_value(gpointer _name, gpointer _hst, gpointer user_data)
+static gboolean concat_macrox_value(gpointer _name, gpointer _hst, gpointer user_data)
 {
 	int free_sub_macro = FALSE;
 	char *temp_buffer = NULL;

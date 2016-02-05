@@ -2496,10 +2496,10 @@ static int xodtemplate_duplicate_services(void)
 				result = ERROR;
 			}
 
-			g_free(service_ident);
 		} else {
 			xodcount.services++;
 		}
+		g_free(service_ident);
 	}
 
 	return result;
