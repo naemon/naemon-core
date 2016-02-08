@@ -1399,10 +1399,6 @@ int pre_flight_object_check(int *w, int *e)
 	/*****************************************/
 	/* check each service...                 */
 	/*****************************************/
-	if (get_service_count() == 0) {
-		nm_log(NSLOG_VERIFICATION_ERROR, "Error: There are no services defined!");
-		errors++;
-	}
 	total_objects = 0;
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
 
@@ -1447,11 +1443,6 @@ int pre_flight_object_check(int *w, int *e)
 	/*****************************************/
 	/* check all hosts...                    */
 	/*****************************************/
-	if (get_host_count() == 0) {
-		nm_log(NSLOG_VERIFICATION_ERROR, "Error: There are no hosts defined!");
-		errors++;
-	}
-
 	total_objects = 0;
 	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
 
@@ -1482,10 +1473,6 @@ int pre_flight_object_check(int *w, int *e)
 	/*****************************************/
 	/* check all contacts...                 */
 	/*****************************************/
-	if (contact_list == NULL) {
-		nm_log(NSLOG_VERIFICATION_ERROR, "Error: There are no contacts defined!");
-		errors++;
-	}
 	for (temp_contact = contact_list, total_objects = 0; temp_contact != NULL; temp_contact = temp_contact->next, total_objects++) {
 
 		/* check service notification commands */

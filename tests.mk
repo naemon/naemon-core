@@ -32,7 +32,7 @@ t_tap_test_downtime_SOURCES = t-tap/test_downtime.c
 t_tap_test_downtime_CPPFLAGS = $(T_TAP_AM_CPPFLAGS)
 t_tap_test_downtime_LDADD = $(TAPLDADD)
 
-dist_check_SCRIPTS = t/705naemonstats.t t/900-configparsing.t t/910-noservice.t t/920-nocontactgroup.t t/930-emptygroups.t
+dist_check_SCRIPTS = t/705naemonstats.t t/900-configparsing.t
 check_PROGRAMS += t-tap/test_macros t-tap/test_timeperiods t-tap/test_checks \
 	t-tap/test_neb_callbacks t-tap/test_config t-tap/test_commands t-tap/test_downtime
 distclean-local:
