@@ -218,6 +218,7 @@ int process_passive_host_check(time_t, char *, int, char *);
 int launch_command_file_worker(void);
 int shutdown_command_file_worker(void);
 int disconnect_command_file_worker(void);
+int command_worker_get_pid(void);
 
 NAGIOS_END_DECL
 

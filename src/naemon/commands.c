@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <poll.h>
@@ -186,6 +187,10 @@ int close_command_file(void)
 	return OK;
 }
 
+pid_t command_worker_get_pid(void) {
+  return command_worker.pid;
+}
+
 int disconnect_command_file_worker(void) {
 	iobroker_unregister(nagios_iobs, command_worker.sd);
 	return 0;
@@ -194,14 +199,29 @@ int disconnect_command_file_worker(void) {
 /* shutdown command file worker thread */
 int shutdown_command_file_worker(void)
 {
-	if (!command_worker.pid)
+	int ret = 0;
+	if (!command_worker_get_pid())
 		return 0;
+
 
 	nm_bufferqueue_destroy(command_worker.bq);
 	command_worker.bq = NULL;
 	iobroker_close(nagios_iobs, command_worker.sd);
 	command_worker.sd = -1;
-	kill(command_worker.pid, SIGKILL);
+	if (kill(command_worker_get_pid(), SIGTERM) < 0) {
+	  nm_log(NSLOG_RUNTIME_ERROR, "Failed to kill command worker (PID = %d): %s", command_worker_get_pid(), strerror(errno));
+	}
+	while ((ret = waitpid(command_worker_get_pid(), NULL, 0)) == -1 && errno == EINTR)
+	  ;
+
+
+	if (ret == -1) {
+	  nm_log(NSLOG_RUNTIME_ERROR, "Failed to waitpid() for command worker (PID = %d): %s", command_worker_get_pid(), strerror(errno));
+	}
+	else {
+	  g_warn_if_fail(ret == command_worker_get_pid());
+	  nm_log(NSLOG_INFO_MESSAGE, "Successfully reaped command worker (PID = %d)", command_worker_get_pid());
+	}
 	command_worker.pid = 0;
 	return 0;
 }
@@ -304,7 +324,7 @@ int launch_command_file_worker(void)
 	 * if we're restarting, we may well already have a command
 	 * file worker process running, but disconnected. Reconnect if so.
 	 */
-	if (command_worker.pid && kill(command_worker.pid, 0) == 0) {
+	if (command_worker_get_pid() && kill(command_worker_get_pid(), 0) == 0) {
 		if (!iobroker_is_registered(nagios_iobs, command_worker.sd)) {
 			iobroker_register(nagios_iobs, command_worker.sd, NULL, command_input_handler);
 		}
@@ -338,11 +358,15 @@ int launch_command_file_worker(void)
 			goto err_close;
 		}
 		nm_log(NSLOG_INFO_MESSAGE, "Successfully launched command file worker with pid %d\n",
-		       command_worker.pid);
+		       command_worker_get_pid());
 		return OK;
 	}
 
 	/* child goes here */
+	if (SIG_ERR == signal(SIGTERM, SIG_DFL)) {
+	  nm_log(NSLOG_RUNTIME_ERROR, "Failed to reset signal handler for SIGTERM: %s", strerror(errno));
+	}
+
 	close(sv[0]);
 
 	/* make our own process-group so we can be traced into and stuff */
