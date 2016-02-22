@@ -2,6 +2,7 @@
 #include "naemon/query-handler.h"
 #include "naemon/globals.h"
 #include "naemon/workers.h"
+#include "naemon/commands.h"
 #include "worker/worker.h"
 #include "lib/libnaemon.h"
 #include <check.h>
@@ -153,6 +154,25 @@ START_TEST(worker_test)
 END_TEST
 
 /*
+ * Make sure that the lifecycle of the command worker is deterministic w.r.t
+ * its controlling functions:
+ * E.g the command worker should be terminated on return of shutdown_command_file_worker()
+ * and a PID should be available on return of launch_command_file_worker()
+ */
+START_TEST(command_worker_launch_shutdown_test)
+{
+	pid_t worker_pid;
+	ck_assert_int_eq(0, command_worker_get_pid());
+	ck_assert_int_eq(0, launch_command_file_worker());
+	worker_pid = command_worker_get_pid();
+	ck_assert_int_ne(0, worker_pid);
+	ck_assert_int_eq(0, shutdown_command_file_worker());
+	ck_assert_int_eq(-1, kill(worker_pid, 0));
+	ck_assert_int_eq(0, command_worker_get_pid());
+}
+END_TEST
+
+/*
  * This is a really stupid "plugin" with scriptable behaviour.
  * It accepts commands and executes them in-order, like so:
  * usleep=<int> : usleep()'s the given number of microseconds
@@ -223,6 +243,13 @@ static int wrk_test_plugin(int argc, char **argv)
 
 	return 0;
 }
+void init_iobroker(void) {
+	ck_assert(NULL != (nagios_iobs = iobroker_create()));
+}
+
+void deinit_iobroker(void) {
+	iobroker_destroy(nagios_iobs, IOBROKER_CLOSE_SOCKETS);
+}
 
 void wrk_test_init(void)
 {
@@ -230,10 +257,8 @@ void wrk_test_init(void)
 	printf("wrk_test_init\n");
 	log_file = "/dev/stdout";
 	timing_point("Initializing iobroker\n");
+	init_iobroker();
 	enable_timing_point = 1;
-	if (!(nagios_iobs = iobroker_create())) {
-		return;
-	}
 
 	timing_point("Initializing query handler socket\n");
 	qh_socket_path = "/tmp/qh-socket";
@@ -256,22 +281,27 @@ void wrk_test_init(void)
 void wrk_test_deinit(void)
 {
 	free_worker_memory(WPROC_FORCE);
-	iobroker_destroy(nagios_iobs, IOBROKER_CLOSE_SOCKETS);
+	deinit_iobroker();
+}
+
+Suite *worker_suite(void)
+{
+	Suite *s = suite_create("worker tests");
+	TCase *tc_worker_output = tcase_create("worker output reaping tests");
+	TCase *tc_command_worker = tcase_create("command worker tests");
+	tcase_add_checked_fixture(tc_worker_output, wrk_test_init, wrk_test_deinit);
+	tcase_add_checked_fixture(tc_command_worker, init_iobroker, deinit_iobroker);
+	tcase_add_test(tc_worker_output, worker_test);
+	tcase_add_test(tc_command_worker, command_worker_launch_shutdown_test);
+	suite_add_tcase(s, tc_command_worker);
+	suite_add_tcase(s, tc_worker_output);
+	return s;
 }
 
 int main(int argc, char **argv)
 {
-	/* boilerplate, because libcheck doesn't believe in ELF sections */
-	SRunner *sr;
-	TCase *tc;
-	Suite *s;
 	int failed;
-	s = suite_create("worker tests");
-	tc = tcase_create("worker output reaping tests");
-	sr = srunner_create(s);
-	tcase_add_checked_fixture(tc, wrk_test_init, wrk_test_deinit);
-	tcase_add_test(tc, worker_test);
-	suite_add_tcase(s, tc);
+	SRunner *sr = srunner_create(worker_suite());
 	srunner_set_fork_status(sr, CK_NOFORK);
 
 	naemon_binary_path = argv[0];
