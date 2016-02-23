@@ -264,17 +264,25 @@ void setup_sighandler(void)
 /* reset signal handling... */
 void reset_sighandler(void)
 {
-
+	size_t i;
 	/* set signal handling to default actions */
-	signal(SIGQUIT, SIG_DFL);
-	signal(SIGTERM, SIG_DFL);
-	signal(SIGHUP, SIG_DFL);
-	signal(SIGPIPE, SIG_DFL);
-	signal(SIGXFSZ, SIG_DFL);
-	signal(SIGUSR1, SIG_DFL);
-	signal(SIGINT, SIG_DFL);
+	int signals[] = {
+		SIGQUIT,
+		SIGTERM,
+		SIGHUP,
+		SIGPIPE,
+		SIGXFSZ,
+		SIGUSR1,
+		SIGINT
+	};
 
-	return;
+	for (i = 0; i < sizeof(signals) / sizeof(signals[0]); ++i) {
+		if (signal(signals[i], SIG_DFL) == SIG_ERR) {
+			nm_log(NSLOG_RUNTIME_ERROR,
+					"Failed to reset signal handler for %s: %s",
+					strsignal(signals[i]), strerror(errno));
+		}
+	}
 }
 
 
