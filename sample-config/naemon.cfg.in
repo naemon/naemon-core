@@ -93,25 +93,9 @@ status_file=@localstatedir@/status.dat
 # STATUS FILE UPDATE INTERVAL
 # This option determines the frequency (in seconds) that
 # naemon will periodically dump program, host, and
-# service status data.
+# service status data. Set it to 0 to disable updates.
 
 status_update_interval=10
-
-
-
-# NAEMON USER
-# This determines the effective user that Naemon should run as.
-# You can either supply a username or a UID.
-
-naemon_user=@naemon_user@
-
-
-
-# NAEMON GROUP
-# This determines the effective group that Naemon should run as.
-# You can either supply a group name or a GID.
-
-naemon_group=@naemon_grp@
 
 
 
@@ -311,48 +295,6 @@ log_passive_checks=1
 # being executed.
 
 max_concurrent_checks=0
-
-
-
-# HOST AND SERVICE CHECK REAPER FREQUENCY
-# This is the frequency (in seconds!) that Naemon will process
-# the results of host and service checks.
-
-check_result_reaper_frequency=10
-
-
-
-
-# MAX CHECK RESULT REAPER TIME
-# This is the max amount of time (in seconds) that  a single
-# check result reaper event will be allowed to run before
-# returning control back to Naemon so it can perform other
-# duties.
-
-max_check_result_reaper_time=30
-
-
-
-
-# CHECK RESULT PATH
-# This is directory where Naemon stores the results of host and
-# service checks that have not yet been processed.
-#
-# Note: Make sure that only one instance of Naemon has access
-# to this directory!
-
-check_result_path=@CHECKRESULTDIR@
-
-
-
-
-# MAX CHECK RESULT FILE AGE
-# This option determines the maximum age (in seconds) which check
-# result files are considered to be valid.  Files older than this
-# threshold will be mercilessly deleted without further processing.
-
-max_check_result_file_age=3600
-
 
 
 
@@ -997,33 +939,6 @@ use_true_regexp_matching=0
 admin_email=@naemon_user@@localhost
 admin_pager=page@naemon_user@@localhost
 
-
-
-# DAEMON CORE DUMP OPTION
-# This option determines whether or not Naemon is allowed to create
-# a core dump when it runs as a daemon.  Note that it is generally
-# considered bad form to allow this, but it may be useful for
-# debugging purposes.  Enabling this option doesn't guarantee that
-# a core file will be produced, but that's just life...
-# Values: 1 - Allow core dumps
-#         0 - Do not allow core dumps (default)
-
-daemon_dumps_core=0
-
-
-
-# LARGE INSTALLATION TWEAKS OPTION
-# This option determines whether or not Naemon will take some shortcuts
-# which can save on memory and CPU usage in large Naemon installations.
-# Read the documentation for more information on the benefits/tradeoffs
-# of enabling this option.
-# Values: 1 - Enabled tweaks
-#         0 - Disable tweaks (default)
-
-use_large_installation_tweaks=0
-
-
-
 # ENABLE ENVIRONMENT MACROS
 # This option determines whether or not Naemon will make all standard
 # macros available as environment variables when host/service checks
@@ -1038,33 +953,6 @@ use_large_installation_tweaks=0
 #         0 - Disable environment variable macros (default)
 
 enable_environment_macros=0
-
-
-
-# CHILD PROCESS MEMORY OPTION
-# This option determines whether or not Naemon will free memory in
-# child processes (processed used to execute system commands and host/
-# service checks).  If you specify a value here, it will override
-# program defaults.
-# Value: 1 - Free memory in child processes
-#        0 - Do not free memory in child processes
-
-#free_child_process_memory=1
-
-
-
-# CHILD PROCESS FORKING BEHAVIOR
-# This option determines how Naemon will fork child processes
-# (used to execute system commands and host/service checks).  Normally
-# child processes are fork()ed twice, which provides a very high level
-# of isolation from problems.  Fork()ing once is probably enough and will
-# save a great deal on CPU usage (in large installs), so you might
-# want to consider using this.  If you specify a value here, it will
-# program defaults.
-# Value: 1 - Child processes fork() twice
-#        0 - Child processes fork() just once
-
-#child_processes_fork_twice=1
 
 
 
@@ -1131,26 +1019,3 @@ allow_empty_hostgroup_assignment=0
 # with a minimum of 4 workers.  This value will override the defaults
 
 #check_workers=3
-
-
-
-# EXPERIMENTAL load controlling options
-# To get current defaults based on your system issue a command to
-# the query handler. Please note that this is an experimental feature
-# and not meant for production use. Used incorrectly it can induce
-# enormous latency.
-# #core loadctl
-#   jobs_max - The maximum amount of jobs to run at one time
-#   jobs_min - The minimum amount of jobs to run at one time
-#   jobs_limit - The maximum amount of jobs the current load lets us run
-#   backoff_limit - The minimum backoff_change
-#   backoff_change - # of jobs to remove from jobs_limit when backing off
-#   rampup_limit - Minimum rampup_change
-#   rampup_change - # of jobs to add to jobs_limit when ramping up
-# NOTE: The backoff_limit and rampup_limit are NOT used by anything currently,
-#       so if your system is under load nothing will actively modify the jobs
-#       even if you have these options enabled, they are for external
-#       connector information only.  However, if you change the jobs_max or
-#       jobs_min manually here or through the query handler interface that
-#       WILL affect your system
-#loadctl_options=jobs_max=100;backoff_limit=10;rampup_change=5

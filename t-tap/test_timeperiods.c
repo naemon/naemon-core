@@ -27,9 +27,11 @@
  *****************************************************************************/
 #include <string.h>
 
-#include "naemon/utils.c"
+#include "naemon/objects_timeperiod.c"
+#include "naemon/utils.h"
 #include "naemon/configuration.h"
 #include "naemon/defaults.h"
+#include "naemon/globals.h"
 #include "tap.h"
 
 #define RUN_24x7_TESTS 1
@@ -137,7 +139,7 @@ int main(int argc, char **argv)
 
 	printf("Reading configuration data...\n");
 
-	config_file = strdup(get_default_config_file());
+	config_file = strdup(TESTDIR "naemon.cfg");
 	config_file_dir = nspath_absolute_dirname(config_file, NULL);
 	/* read in the configuration files (main config file, resource and object config files) */
 	result = read_main_config_file(config_file);

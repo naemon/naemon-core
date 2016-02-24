@@ -5,6 +5,8 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
+#include "objectlist.h"
+
 NAGIOS_BEGIN_DECL
 
 /** Nerd subscription type */

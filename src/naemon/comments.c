@@ -1,4 +1,6 @@
 #include <string.h>
+#include "utils.h"
+#include "logging.h"
 #include "config.h"
 #include "common.h"
 #include "comments.h"
@@ -45,16 +47,26 @@ int initialize_comment_data(void)
 /* adds a new host or service comment */
 int add_new_comment(int type, int entry_type, char *host_name, char *svc_description, time_t entry_time, char *author_name, char *comment_data, int persistent, int source, int expires, time_t expire_time, unsigned long *comment_id)
 {
+	/*
+	 * Regarding the "expires" field.
+	 *
+	 * If expires==TRUE, a event to remove the comment was created earlier. This
+	 * didn't happen, since expires was never set to anything else than FALSE.
+	 *
+	 * If expires was set to TRUE in the retention data, the comment still
+	 * didn't pass through this method, making the expires-functionality borken
+	 * anyway.
+	 *
+	 * Therefore: Treat expires functionality just as a API-compatiblity parameter
+	 * for now, but the expires-feature is removed.
+	 */
+
 	int result;
 
 	if (type == HOST_COMMENT)
 		result = add_new_host_comment(entry_type, host_name, entry_time, author_name, comment_data, persistent, source, expires, expire_time, comment_id);
 	else
 		result = add_new_service_comment(entry_type, host_name, svc_description, entry_time, author_name, comment_data, persistent, source, expires, expire_time, comment_id);
-
-	/* add an event to expire comment data if necessary... */
-	if (expires == TRUE)
-		schedule_new_event(EVENT_EXPIRE_COMMENT, FALSE, expire_time, FALSE, 0, NULL, TRUE, (void *)comment_id, NULL, 0);
 
 	return result;
 }
@@ -63,6 +75,12 @@ int add_new_comment(int type, int entry_type, char *host_name, char *svc_descrip
 int add_new_host_comment(int entry_type, char *host_name, time_t entry_time, char *author_name, char *comment_data, int persistent, int source, int expires, time_t expire_time, unsigned long *comment_id)
 {
 	int result = OK;
+
+	if (!find_host(host_name)) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Ignoring request to add comment to non-existing host '%s'.\n",
+		       host_name);
+		return ERROR;
+	}
 
 	/* find the next valid comment id */
 	while (find_comment(next_comment_id, HOST_COMMENT | SERVICE_COMMENT) != NULL)
@@ -74,10 +92,7 @@ int add_new_host_comment(int entry_type, char *host_name, time_t entry_time, cha
 	if (comment_id != NULL)
 		*comment_id = next_comment_id;
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
-	broker_comment_data(NEBTYPE_COMMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, HOST_COMMENT, entry_type, host_name, NULL, entry_time, author_name, comment_data, persistent, source, expires, expire_time, next_comment_id, NULL);
-#endif
+	broker_comment_data(NEBTYPE_COMMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, HOST_COMMENT, entry_type, host_name, NULL, entry_time, author_name, comment_data, persistent, source, expires, expire_time, next_comment_id);
 
 	/* increment the comment id, AFTER, broker_comment_data(),
 	 * as we use it in that call
@@ -91,6 +106,12 @@ int add_new_host_comment(int entry_type, char *host_name, time_t entry_time, cha
 /* adds a new service comment */
 int add_new_service_comment(int entry_type, char *host_name, char *svc_description, time_t entry_time, char *author_name, char *comment_data, int persistent, int source, int expires, time_t expire_time, unsigned long *comment_id)
 {
+	if (!find_service(host_name, svc_description)) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Ignoring request to add comment to non-existing service '%s' on host '%s'\n",
+		       svc_description, host_name);
+		return ERROR;
+	}
+
 	/* find the next valid comment id */
 	while (find_comment(next_comment_id, HOST_COMMENT | SERVICE_COMMENT) != NULL)
 		next_comment_id++;
@@ -101,10 +122,7 @@ int add_new_service_comment(int entry_type, char *host_name, char *svc_descripti
 	if (comment_id != NULL)
 		*comment_id = next_comment_id;
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
-	broker_comment_data(NEBTYPE_COMMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_COMMENT, entry_type, host_name, svc_description, entry_time, author_name, comment_data, persistent, source, expires, expire_time, next_comment_id, NULL);
-#endif
+	broker_comment_data(NEBTYPE_COMMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_COMMENT, entry_type, host_name, svc_description, entry_time, author_name, comment_data, persistent, source, expires, expire_time, next_comment_id);
 
 	/*
 	 * increment the comment id, AFTER broker_comment_data,
@@ -144,12 +162,9 @@ int delete_comment(int type, unsigned long comment_id)
 	if (this_comment == NULL)
 		return ERROR;
 
-	/* remove the comment from the list in memory */
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
-	broker_comment_data(NEBTYPE_COMMENT_DELETE, NEBFLAG_NONE, NEBATTR_NONE, type, this_comment->entry_type, this_comment->host_name, this_comment->service_description, this_comment->entry_time, this_comment->author, this_comment->comment_data, this_comment->persistent, this_comment->source, this_comment->expires, this_comment->expire_time, comment_id, NULL);
-#endif
+	broker_comment_data(NEBTYPE_COMMENT_DELETE, NEBFLAG_NONE, NEBATTR_NONE, type, this_comment->entry_type, this_comment->host_name, this_comment->service_description, this_comment->entry_time, this_comment->author, this_comment->comment_data, this_comment->persistent, this_comment->source, this_comment->expires, this_comment->expire_time, comment_id);
 
+	/* remove the comment from the list in memory */
 	/* first remove from chained hash list */
 	hashslot = hashfunc(this_comment->host_name, NULL, COMMENT_HASHSLOTS);
 	last_hash = NULL;
@@ -280,7 +295,7 @@ int delete_all_service_comments(char *host_name, char *svc_description)
 	/* delete service comments from memory */
 	for (temp_comment = comment_list; temp_comment != NULL; temp_comment = next_comment) {
 		next_comment = temp_comment->next;
-		if (temp_comment->comment_type == SERVICE_COMMENT && !strcmp(temp_comment->host_name, host_name) && !strcmp(temp_comment->service_description, svc_description))
+		if (temp_comment->comment_type == SERVICE_COMMENT && !g_strcmp0(temp_comment->host_name, host_name) && !g_strcmp0(temp_comment->service_description, svc_description))
 			delete_comment(SERVICE_COMMENT, temp_comment->comment_id);
 	}
 
@@ -301,30 +316,11 @@ int delete_service_acknowledgement_comments(service *svc)
 	/* delete comments from memory */
 	for (temp_comment = comment_list; temp_comment != NULL; temp_comment = next_comment) {
 		next_comment = temp_comment->next;
-		if (temp_comment->comment_type == SERVICE_COMMENT && !strcmp(temp_comment->host_name, svc->host_name) && !strcmp(temp_comment->service_description, svc->description)  && temp_comment->entry_type == ACKNOWLEDGEMENT_COMMENT && temp_comment->persistent == FALSE)
+		if (temp_comment->comment_type == SERVICE_COMMENT && !g_strcmp0(temp_comment->host_name, svc->host_name) && !g_strcmp0(temp_comment->service_description, svc->description)  && temp_comment->entry_type == ACKNOWLEDGEMENT_COMMENT && temp_comment->persistent == FALSE)
 			delete_comment(SERVICE_COMMENT, temp_comment->comment_id);
 	}
 
 	return result;
-}
-
-
-/* checks for an expired comment (and removes it) */
-int check_for_expired_comment(unsigned long comment_id)
-{
-	comment *temp_comment = NULL;
-
-	/* check all comments */
-	for (temp_comment = comment_list; temp_comment != NULL; temp_comment = temp_comment->next) {
-
-		/* delete the now expired comment */
-		if (temp_comment->comment_id == comment_id && temp_comment->expires == TRUE && temp_comment->expire_time < time(NULL)) {
-			delete_comment(temp_comment->comment_type, comment_id);
-			break;
-		}
-	}
-
-	return OK;
 }
 
 
@@ -354,8 +350,8 @@ int add_comment_to_hashlist(comment *new_comment)
 
 	hashslot = hashfunc(new_comment->host_name, NULL, COMMENT_HASHSLOTS);
 	lastpointer = NULL;
-	for (temp_comment = comment_hashlist[hashslot]; temp_comment && compare_hashdata(temp_comment->host_name, NULL, new_comment->host_name, NULL) < 0; temp_comment = temp_comment->nexthash) {
-		if (compare_hashdata(temp_comment->host_name, NULL, new_comment->host_name, NULL) >= 0)
+	for (temp_comment = comment_hashlist[hashslot]; temp_comment && g_strcmp0(temp_comment->host_name, new_comment->host_name) < 0; temp_comment = temp_comment->nexthash) {
+		if (g_strcmp0(temp_comment->host_name, new_comment->host_name) >= 0)
 			break;
 		lastpointer = temp_comment;
 	}
@@ -471,10 +467,7 @@ int add_comment(int comment_type, int entry_type, char *host_name, char *svc_des
 		}
 	}
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
-	broker_comment_data(NEBTYPE_COMMENT_LOAD, NEBFLAG_NONE, NEBATTR_NONE, comment_type, entry_type, host_name, svc_description, entry_time, author, comment_data, persistent, source, expires, expire_time, comment_id, NULL);
-#endif
+	broker_comment_data(NEBTYPE_COMMENT_LOAD, NEBFLAG_NONE, NEBATTR_NONE, comment_type, entry_type, host_name, svc_description, entry_time, author, comment_data, persistent, source, expires, expire_time, comment_id);
 
 	return OK;
 }
@@ -585,7 +578,7 @@ int number_of_service_comments(char *host_name, char *svc_description)
 		return 0;
 
 	for (temp_comment = get_first_comment_by_host(host_name); temp_comment != NULL; temp_comment = get_next_comment_by_host(host_name, temp_comment)) {
-		if (temp_comment->comment_type == SERVICE_COMMENT && !strcmp(temp_comment->service_description, svc_description))
+		if (temp_comment->comment_type == SERVICE_COMMENT && !g_strcmp0(temp_comment->service_description, svc_description))
 			total_comments++;
 	}
 
@@ -616,9 +609,9 @@ comment *get_next_comment_by_host(char *host_name, comment *start)
 	else
 		temp_comment = start->nexthash;
 
-	for (; temp_comment && compare_hashdata(temp_comment->host_name, NULL, host_name, NULL) < 0; temp_comment = temp_comment->nexthash);
+	for (; temp_comment && g_strcmp0(temp_comment->host_name, host_name) < 0; temp_comment = temp_comment->nexthash);
 
-	if (temp_comment && compare_hashdata(temp_comment->host_name, NULL, host_name, NULL) == 0)
+	if (temp_comment && g_strcmp0(temp_comment->host_name, host_name) == 0)
 		return temp_comment;
 
 	return NULL;

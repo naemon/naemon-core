@@ -5,22 +5,31 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
-NAGIOS_BEGIN_DECL
 #include <time.h>
+#include <glib.h>
+#include "objects_contact.h"
+#include "objects_host.h"
+#include "objects_service.h"
+
+NAGIOS_BEGIN_DECL
 
 /**************************** COMMAND ERRORS *****************************/
-#define CMD_ERROR_OK 0 /* No errors encountered */
-#define CMD_ERROR_UNKNOWN_COMMAND 1 /* Unknown/unsupported command */
-#define CMD_ERROR_MALFORMED_COMMAND 2 /* Command malformed/missing timestamp? */
-#define CMD_ERROR_INTERNAL_ERROR 3 /* Internal error */
-#define CMD_ERROR_FAILURE 4 /* Command routine failed */
-#define CMD_ERROR_PARSE_MISSING_ARG 5 /*Missing required argument for command*/
-#define CMD_ERROR_PARSE_EXCESS_ARG 6 /*Too many arguments for command*/
-#define CMD_ERROR_PARSE_TYPE_MISMATCH 7 /*Wrong type for argument, the argument could not be parsed*/
-#define CMD_ERROR_UNSUPPORTED_ARG_TYPE 8 /*Unsupported argument type - indicative of implementation bug*/
-#define CMD_ERROR_VALIDATION_FAILURE 9 /*Invalid value for argument (validator failed)*/
-#define CMD_ERROR_UNSUPPORTED_PARSE_MODE 10 /*Unsupported parse mode*/
-#define CMD_ERROR_CUSTOM_COMMAND 11 /*Backwards compat. custom command*/
+enum NmCommandError {
+	CMD_ERROR_OK  = 0, /* No errors encountered */
+	CMD_ERROR_UNKNOWN_COMMAND, /* Unknown/unsupported command */
+	CMD_ERROR_MALFORMED_COMMAND, /* Command malformed/missing timestamp? */
+	CMD_ERROR_INTERNAL_ERROR, /* Internal error */
+	CMD_ERROR_FAILURE, /* Command routine failed */
+	CMD_ERROR_PARSE_MISSING_ARG, /*Missing required argument for command*/
+	CMD_ERROR_PARSE_EXCESS_ARG, /*Too many arguments for command*/
+	CMD_ERROR_PARSE_TYPE_MISMATCH, /*Wrong type for argument, the argument could not be parsed*/
+	CMD_ERROR_UNSUPPORTED_ARG_TYPE, /*Unsupported argument type - indicative of implementation bug*/
+	CMD_ERROR_VALIDATION_FAILURE, /*Invalid value for argument (validator failed)*/
+	CMD_ERROR_UNSUPPORTED_PARSE_MODE, /*Unsupported parse mode*/
+	CMD_ERROR_CUSTOM_COMMAND, /*Backwards compat. custom command*/
+};
+#define NM_COMMAND_ERROR nm_command_error_quark ()
+GQuark nm_command_error_quark (void);
 
 #define GV(NAME) command_argument_get_value(ext_command, NAME)
 #define GV_INT(NAME) (*(int *) GV(NAME))
@@ -53,13 +62,6 @@ typedef enum {
 	TIMESTAMP,
 	DOUBLE
 } arg_t;
-
-/**
- * Convert a numeric command error code to a text string. The error message
- * is in English.
- * @param error_code The error code to convert
- */
-const char *cmd_error_strerror(int error_code);
 
 /*** PARSE MODES ***/
 
@@ -181,7 +183,7 @@ void command_destroy(struct external_command * command);
  * @param error Pointer to an integer in which to store error codes on failure. This code can be passed to cmd_error_strerror() for conversion to a human readable message.
  * @return The parsed command, or NULL on failure.
  */
-struct external_command /*@null@*/ * command_parse(const char * cmdstr, int mode, int * error);
+struct external_command /*@null@*/ * command_parse(const char * cmdstr, int mode, GError ** error);
 
 /**
  * Executes the handler associated with a command.
@@ -205,70 +207,13 @@ const char *command_name(const struct external_command * command);
 int open_command_file(void);					/* creates the external command file as a named pipe (FIFO) and opens it for reading */
 int close_command_file(void);					/* closes and deletes the external command file (FIFO) */
 
-int process_external_command1(char *);                  /* top-level external command processor */
+int process_external_command(char *cmd, int mode, GError **error); /* processes an external command given mode flags */
+int process_external_command1(char *cmd); /* DEPRECATED: top-level external old style command processor */
 int process_external_command2(int cmd, time_t entry_time, char *args);  /* DEPRECATED: for backwards NEB compatibility only */
-int process_external_commands_from_file(char *, int);   /* process external commands in a file */
+int process_external_commands_from_file(char *, int); /* process external commands in a file */
 
 int process_passive_service_check(time_t, char *, char *, int, char *);
 int process_passive_host_check(time_t, char *, int, char *);
-
-/* Internal Command Implementations */
-
-void disable_service_checks(service *);			/* disables a service check */
-void enable_service_checks(service *);			/* enables a service check */
-void enable_all_notifications(void);                    /* enables notifications on a program-wide basis */
-void disable_all_notifications(void);                   /* disables notifications on a program-wide basis */
-void enable_service_notifications(service *);		/* enables service notifications */
-void disable_service_notifications(service *);		/* disables service notifications */
-void enable_host_notifications(host *);			/* enables host notifications */
-void disable_host_notifications(host *);		/* disables host notifications */
-void enable_and_propagate_notifications(host *, int, int, int, int);	/* enables notifications for all hosts and services beyond a given host */
-void disable_and_propagate_notifications(host *, int, int, int, int);	/* disables notifications for all hosts and services beyond a given host */
-void schedule_and_propagate_downtime(host *, time_t, char *, char *, time_t, time_t, int, unsigned long, unsigned long); /* schedules downtime for all hosts beyond a given host */
-void acknowledge_host_problem(host *, char *, char *, int, int, int);	/* acknowledges a host problem */
-void acknowledge_service_problem(service *, char *, char *, int, int, int);	/* acknowledges a service problem */
-void remove_host_acknowledgement(host *);		/* removes a host acknowledgement */
-void remove_service_acknowledgement(service *);		/* removes a service acknowledgement */
-void start_executing_service_checks(void);		/* starts executing service checks */
-void stop_executing_service_checks(void);		/* stops executing service checks */
-void start_accepting_passive_service_checks(void);	/* starts accepting passive service check results */
-void stop_accepting_passive_service_checks(void);	/* stops accepting passive service check results */
-void enable_passive_service_checks(service *);	        /* enables passive service checks for a particular service */
-void disable_passive_service_checks(service *);         /* disables passive service checks for a particular service */
-void start_using_event_handlers(void);			/* enables event handlers on a program-wide basis */
-void stop_using_event_handlers(void);			/* disables event handlers on a program-wide basis */
-void enable_service_event_handler(service *);		/* enables the event handler for a particular service */
-void disable_service_event_handler(service *);		/* disables the event handler for a particular service */
-void enable_host_event_handler(host *);			/* enables the event handler for a particular host */
-void disable_host_event_handler(host *);		/* disables the event handler for a particular host */
-void enable_host_checks(host *);			/* enables checks of a particular host */
-void disable_host_checks(host *);			/* disables checks of a particular host */
-void start_obsessing_over_service_checks(void);		/* start obsessing about service check results */
-void stop_obsessing_over_service_checks(void);		/* stop obsessing about service check results */
-void start_obsessing_over_host_checks(void);		/* start obsessing about host check results */
-void stop_obsessing_over_host_checks(void);		/* stop obsessing about host check results */
-void enable_service_freshness_checks(void);		/* enable service freshness checks */
-void disable_service_freshness_checks(void);		/* disable service freshness checks */
-void enable_host_freshness_checks(void);		/* enable host freshness checks */
-void disable_host_freshness_checks(void);		/* disable host freshness checks */
-void enable_performance_data(void);                     /* enables processing of performance data on a program-wide basis */
-void disable_performance_data(void);                    /* disables processing of performance data on a program-wide basis */
-void start_executing_host_checks(void);			/* starts executing host checks */
-void stop_executing_host_checks(void);			/* stops executing host checks */
-void start_accepting_passive_host_checks(void);		/* starts accepting passive host check results */
-void stop_accepting_passive_host_checks(void);		/* stops accepting passive host check results */
-void enable_passive_host_checks(host *);	        /* enables passive host checks for a particular host */
-void disable_passive_host_checks(host *);         	/* disables passive host checks for a particular host */
-void start_obsessing_over_service(service *);		/* start obsessing about specific service check results */
-void stop_obsessing_over_service(service *);		/* stop obsessing about specific service check results */
-void start_obsessing_over_host(host *);			/* start obsessing about specific host check results */
-void stop_obsessing_over_host(host *);			/* stop obsessing about specific host check results */
-void set_host_notification_number(host *, int);		/* sets current notification number for a specific host */
-void set_service_notification_number(service *, int);	/* sets current notification number for a specific service */
-void enable_contact_host_notifications(contact *);      /* enables host notifications for a specific contact */
-void disable_contact_host_notifications(contact *);     /* disables host notifications for a specific contact */
-void enable_contact_service_notifications(contact *);   /* enables service notifications for a specific contact */
-void disable_contact_service_notifications(contact *);  /* disables service notifications for a specific contact */
 
 int launch_command_file_worker(void);
 int shutdown_command_file_worker(void);

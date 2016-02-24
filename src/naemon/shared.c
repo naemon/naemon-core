@@ -4,8 +4,10 @@
 #include "nm_alloc.h"
 #include <string.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #ifdef HAVE_SYS_MMAN_H
 # include <sys/mman.h>
@@ -430,40 +432,6 @@ int hashfunc(const char *name1, const char *name2, int hashslots)
 			result += name2[i];
 
 	result = result % hashslots;
-
-	return result;
-}
-
-
-/* dual hash data comparison */
-int compare_hashdata(const char *val1a, const char *val1b, const char *val2a,
-                     const char *val2b)
-{
-	int result = 0;
-
-	/* NOTE: If hash calculation changes, update the compare_strings() function! */
-
-	/* check first name */
-	if (val1a == NULL && val2a == NULL)
-		result = 0;
-	else if (val1a == NULL)
-		result = 1;
-	else if (val2a == NULL)
-		result = -1;
-	else
-		result = strcmp(val1a, val2a);
-
-	/* check second name if necessary */
-	if (result == 0) {
-		if (val1b == NULL && val2b == NULL)
-			result = 0;
-		else if (val1b == NULL)
-			result = 1;
-		else if (val2b == NULL)
-			result = -1;
-		else
-			result = strcmp(val1b, val2b);
-	}
 
 	return result;
 }

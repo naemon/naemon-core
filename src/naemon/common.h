@@ -71,10 +71,6 @@ NAGIOS_END_DECL
 #define STATE_UP                0
 #define STATE_DOWN              1
 #define STATE_UNREACHABLE       2
-/* for legacy reasons. Do not use, and remove for v1.0 */
-#define HOST_UP              STATE_UP
-#define HOST_DOWN            STATE_DOWN
-#define HOST_UNREACHABLE     STATE_UNREACHABLE
 
 /***************************** COMMANDS *********************************/
 
@@ -389,7 +385,7 @@ NAGIOS_END_DECL
 #define CHECK_OPTION_NONE		0	/* no check options */
 #define CHECK_OPTION_FORCE_EXECUTION	1	/* force execution of a check (ignores disabled services/hosts, invalid timeperiods) */
 #define CHECK_OPTION_FRESHNESS_CHECK    2       /* this is a freshness check */
-#define CHECK_OPTION_ORPHAN_CHECK       4       /* this is an orphan check */
+                                     /* 4          used to be CHECK_OPTION_ORPHAN_CHECK, but is no longer used */
 #define CHECK_OPTION_DEPENDENCY_CHECK   8       /* dependency check. different scheduling rules apply */
 
 

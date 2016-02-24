@@ -1,14 +1,17 @@
 # the standard variables don't make sense for an uninstalled copy
 prefix=
 exec_prefix=
-libdir=@abs_top_builddir@/naemon/lib
-includedir=@abs_top_builddir@
+libdir=@abs_top_builddir@
+includedir=@abs_top_builddir@/src
 sysconfdir=@sysconfdir@
 
 mainconf=@pkgconfdir@/naemon.cfg
+naemon_user=@naemon_user@
+naemon_group=@naemon_group@
+
 
 Name: Naemon Uninstalled
 Description: Naemon network monitoring, Not Installed
 Version: @VERSION@
-Libs: -L${libdir} -lnaemon
-Cflags: -I${includedir} -I${libdir}
+Libs: -L${libdir} -lnaemon @GLIB_LIBS@
+Cflags: -I${includedir} -I${libdir} -ldl -lm @GLIB_CFLAGS@

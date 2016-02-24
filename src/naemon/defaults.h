@@ -14,7 +14,7 @@
 #define DEFAULT_SYSLOG_LEVEL					2	/* log only severe events to syslog */
 
 #define DEFAULT_NOTIFICATION_LOGGING				1	/* log notification events? 1=yes, 0=no */
-
+#define DEFAULT_NSR_LOGGING					1	/* log notification suppression reasons? 1=yes, 0=no */
 #define DEFAULT_INTER_CHECK_DELAY				5.0	/* seconds between initial service check scheduling */
 #define DEFAULT_INTERLEAVE_FACTOR      				1       /* default interleave to use when scheduling checks */
 #define DEFAULT_RETRY_INTERVAL  				30	/* services are retried in 30 seconds if they're not OK */

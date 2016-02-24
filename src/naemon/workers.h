@@ -5,8 +5,10 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
-#include "lib/libnagios.h"
+#include "lib/libnaemon.h"
 #include "macros.h"
+
+#include <sys/resource.h>
 
 #define WPROC_FORCE  (1 << 0)
 
@@ -37,8 +39,6 @@ extern unsigned int wproc_num_workers_desired;
 
 struct load_control; /* TODO: load_control is ugly */
 
-void wproc_reap(int jobs, int msecs);
-int wproc_can_spawn(struct load_control *lc);
 void free_worker_memory(int flags);
 int workers_alive(void);
 int init_workers(int desired_workers);

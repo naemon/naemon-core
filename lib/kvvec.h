@@ -121,6 +121,62 @@ extern unsigned int kvvec_capacity(struct kvvec *kvv);
 extern int kvvec_sort(struct kvvec *kvv);
 
 /**
+ * Fetch a string from a kvvec given a string key.
+ * This uses kvvec_fetch.
+ *
+ * @param kvv The key/value vector to search in
+ * @param key The key to search for
+ * @return The value
+ */
+extern char *kvvec_fetch_str_str(struct kvvec *kvv, const char *key);
+
+/**
+ * Fetch an element from a kvvec given key.
+ *
+ * The complexity of this method is O(log N), given that the kvvec is sorted,
+ * O(n) Otherwise.
+ *
+ * @param kvv The key/value vector to search in
+ * @param key The key to search for
+ * @param keylen The length of the key. If 0, keylen is guessed with strlen
+ * @return pointer to an internal key_value struct, stored within kvv (don't free)
+ */
+extern struct key_value *kvvec_fetch(struct kvvec *kvv, const char *key, int keylen);
+
+/**
+ * Add a string key with a long value to an existing key/value vector. This
+ * assumes the key is a valid C string. If it does, you need to use
+ * kvvec_addkv_wlen.
+ * @param kvv The key/value vector to add this key/value pair to
+ * @param key The string key
+ * @param value The long value
+ * @return 0 on success, < 0 on errors
+ */
+int kvvec_addkv_long(struct kvvec *kvv, const char *key, long value);
+
+/**
+ * Add a string key with a timeval value to an existing key/value vector. This
+ * assumes the key is a valid C string. If it isn't, you need to use
+ * kvvec_addkv_wlen.
+ * @param kvv The key/value vector to add this key/value pair to
+ * @param key The string key
+ * @param value The long value
+ * @return 0 on success, < 0 on errors
+ */
+int kvvec_addkv_tv(struct kvvec *kvv, const char *key, const struct timeval *value);
+
+/**
+ * Add a string key with a string value to an existing key/value vector. This
+ * assumes both the key and the value is a valid C string. If either
+ * isn't, you need to use kvvec_addkv_wlen.
+ * @param kvv The key/value vector to add this key/value pair to
+ * @param key The string key
+ * @param value The long value
+ * @return 0 on success, < 0 on errors
+ */
+int kvvec_addkv_str(struct kvvec *kvv, const char *key, const char *value);
+
+/**
  * Add a key/value pair to an existing key/value vector, with
  * lengths of strings already calculated
  * @param kvv The key/value vector to add this key/value pair to
@@ -131,15 +187,6 @@ extern int kvvec_sort(struct kvvec *kvv);
  * @return 0 on success, < 0 on errors
  */
 extern int kvvec_addkv_wlen(struct kvvec *kvv, const char *key, int keylen, const char *value, int valuelen);
-
-/**
- * Shortcut to kvvec_addkv_wlen() when lengths aren't known
- * @param kvv The key/value vector to add this key/value pair to
- * @param key The key
- * @param value The value
- * @return 0 on success, < 0 on errors
- */
-#define kvvec_addkv(kvv, key, value) kvvec_addkv_wlen(kvv, key, 0, value, 0)
 
 /**
  * Walk each key/value pair in a key/value vector, sending them
@@ -167,18 +214,6 @@ extern int kvvec_destroy(struct kvvec *kvv, int flags);
  * @param flags flags or'ed combination of KVVEC_FREE_{KEYS,VALUES}, or KVVEC_FREE_ALL
  */
 void kvvec_free_kvpairs(struct kvvec *kvv, int flags);
-
-/**
- * Locates and returns the value associated with the key *key
- * This is a clumsy function that should only be used when you
- * need to grab one or a few variables before you parse the
- * rest of them.
- *
- * @param kvv The key/value vector to search
- * @param key The key whose value will be returned
- * @return NULL on errors. The value on success
- */
-char *kvvec_get_value(struct kvvec *kvv, const char *key);
 
 /**
  * Create a linear buffer of all the key/value pairs and

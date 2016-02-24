@@ -13,11 +13,14 @@ START_TEST(common_case)
 	size_t len;
 	char active_contents[1024], rotated_contents[1024];
 	time_t rotate_time = 1234, log_ts1 = 5678, log_ts2 = 9012;
-	char workdir[1024], *rotated_file;
+	char *workdir, *rotated_file;
 	logging_options = -1;
-	getcwd(workdir, 1024);
-	asprintf(&rotated_file, "%s/old.log", workdir);
-	asprintf(&log_file, "%s/active.log", workdir);
+
+	/* Don't check return value, just make -Wno-unused-result happy */
+	workdir = getcwd(NULL, 0);
+	ret = asprintf(&rotated_file, "%s/old.log", workdir);
+	ret = asprintf(&log_file, "%s/active.log", workdir);
+	free(workdir);
 
 	// please fail if the files already exist:
 	ck_assert_msg(access(log_file, F_OK) == -1,
@@ -66,7 +69,7 @@ int main(void)
 	int number_failed = 0;
 	Suite *s = checks_suite();
 	SRunner *sr = srunner_create(s);
-	srunner_run_all(sr, CK_NORMAL);
+	srunner_run_all(sr, CK_ENV);
 	number_failed = srunner_ntests_failed(sr);
 	srunner_free(sr);
 	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;

@@ -6,7 +6,6 @@
 #endif
 
 #include "common.h"
-#include "objects.h"
 
 NAGIOS_BEGIN_DECL
 

@@ -18,60 +18,15 @@
 #include "events.h"
 #include "utils.h"
 #include "defaults.h"
-#include "loadctl.h"
 #include "globals.h"
 #include "logging.h"
 #include "nm_alloc.h"
+#include "checks.h"
+
+#include "worker/worker.h"
+
 #include <getopt.h>
 #include <string.h>
-
-static int is_worker;
-
-static void set_loadctl_defaults(void)
-{
-	struct rlimit rlim;
-
-	/* Workers need to up 'em, master needs to know 'em */
-	getrlimit(RLIMIT_NOFILE, &rlim);
-	rlim.rlim_cur = rlim.rlim_max;
-	setrlimit(RLIMIT_NOFILE, &rlim);
-	loadctl.nofile_limit = rlim.rlim_max;
-#ifdef RLIMIT_NPROC
-	getrlimit(RLIMIT_NPROC, &rlim);
-	rlim.rlim_cur = rlim.rlim_max;
-	setrlimit(RLIMIT_NPROC, &rlim);
-	loadctl.nproc_limit = rlim.rlim_max;
-#else
-	loadctl.nproc_limit = loadctl.nofile_limit / 2;
-#endif
-
-	/*
-	 * things may have been configured already. Otherwise we
-	 * set some sort of sane defaults here
-	 */
-	if (!loadctl.jobs_max) {
-		loadctl.jobs_max = loadctl.nproc_limit - 100;
-		if (!is_worker && loadctl.jobs_max > (loadctl.nofile_limit - 50) * wproc_num_workers_online) {
-			loadctl.jobs_max = (loadctl.nofile_limit - 50) * wproc_num_workers_online;
-		}
-	}
-
-	if (!loadctl.jobs_limit)
-		loadctl.jobs_limit = loadctl.jobs_max;
-
-	if (!loadctl.backoff_limit)
-		loadctl.backoff_limit = online_cpus() * 2.5;
-	if (!loadctl.rampup_limit)
-		loadctl.rampup_limit = online_cpus() * 0.8;
-	if (!loadctl.backoff_change)
-		loadctl.backoff_change = loadctl.jobs_limit * 0.3;
-	if (!loadctl.rampup_change)
-		loadctl.rampup_change = loadctl.backoff_change * 0.25;
-	if (!loadctl.check_interval)
-		loadctl.check_interval = 60;
-	if (!loadctl.jobs_min)
-		loadctl.jobs_min = online_cpus() * 20; /* pessimistic */
-}
 
 static int test_path_access(const char *program, int mode)
 {
@@ -118,47 +73,6 @@ static int test_path_access(const char *program, int mode)
 	return ret;
 }
 
-static int nagios_core_worker(const char *path)
-{
-	int sd, ret;
-	char response[128];
-
-	is_worker = 1;
-
-	set_loadctl_defaults();
-
-	sd = nsock_unix(path, NSOCK_TCP | NSOCK_CONNECT);
-	if (sd < 0) {
-		printf("Failed to connect to query socket '%s': %s: %s\n",
-		       path, nsock_strerror(sd), strerror(errno));
-		return 1;
-	}
-
-	ret = nsock_printf_nul(sd, "@wproc register name=Core Worker %d;pid=%d", getpid(), getpid());
-	if (ret < 0) {
-		printf("Failed to register as worker.\n");
-		return 1;
-	}
-
-	ret = read(sd, response, 3);
-	if (ret != 3) {
-		printf("Failed to read response from wproc manager\n");
-		return 1;
-	}
-	if (memcmp(response, "OK", 3)) {
-		if (read(sd, response + 3, sizeof(response) - 4) < 0) {
-			printf("Failed to register with wproc manager: %s\n", strerror(errno));
-		} else {
-			response[sizeof(response) - 2] = 0;
-			printf("Failed to register with wproc manager: %s\n", response);
-		}
-		return 1;
-	}
-
-	enter_worker(sd, start_cmd);
-	return 0;
-}
-
 /*
  * only handles logfile for now, which we stash in macros to
  * make sure we can log *somewhere* in case the new path is
@@ -174,7 +88,7 @@ static int test_configured_paths(void)
 	fp = fopen(log_file, "a+");
 	if (!fp) {
 		/*
-		 * we do some variable trashing here so nm_log() can
+		 * The variable trashing is so the logging code can
 		 * open the old logfile (if any), in case we got a
 		 * restart command or a SIGHUP
 		 */
@@ -189,6 +103,21 @@ static int test_configured_paths(void)
 	/* save the macro */
 	mac->x[MACRO_LOGFILE] = log_file;
 	return OK;
+}
+
+/* this is the main event handler loop */
+static void event_execution_loop(void)
+{
+	while (!sigshutdown && !sigrestart) {
+		if (sigrotate == TRUE) {
+			sigrotate = FALSE;
+			rotate_log_file(time(NULL));
+			update_program_status(FALSE);
+		}
+
+		if (event_poll())
+			break;
+	}
 }
 
 int main(int argc, char **argv)
@@ -213,7 +142,6 @@ int main(int argc, char **argv)
 		{"license", no_argument, 0, 'V'},
 		{"verify-config", no_argument, 0, 'v'},
 		{"daemon", no_argument, 0, 'd'},
-		{"test-scheduling", no_argument, 0, 's'},
 		{"precache-objects", no_argument, 0, 'p'},
 		{"use-precached-objects", no_argument, 0, 'u'},
 		{"enable-timing-point", no_argument, 0, 'T'},
@@ -223,7 +151,16 @@ int main(int argc, char **argv)
 #define getopt(argc, argv, o) getopt_long(argc, argv, o, long_options, &option_index)
 #endif
 
-	memset(&loadctl, 0, sizeof(loadctl));
+	/* Make all GLib domain messages go to the usual places. This also maps
+	 * GLib levels to an approximation of their corresponding Naemon levels
+	 * (including debug).
+	 *
+	 * Note that because of the GLib domain restriction, log messages from
+	 * other domains (such as if we did g_message(...) ourseleves from inside
+	 * Naemon) do not currently go to this handler.
+	 **/
+	g_log_set_handler("GLib", G_LOG_LEVEL_MASK | G_LOG_FLAG_FATAL |
+			G_LOG_FLAG_RECURSION, nm_g_log_handler, NULL);
 	mac = get_global_macros();
 
 	/* make sure we have the correct number of command line arguments */
@@ -253,7 +190,7 @@ int main(int argc, char **argv)
 			break;
 
 		case 's': /* scheduling check */
-			test_scheduling = TRUE;
+			printf("Warning: -s is deprecated and will be removed\n");
 			break;
 
 		case 'd': /* daemon mode */
@@ -286,7 +223,7 @@ int main(int argc, char **argv)
 
 	/* if we're a worker we can skip everything below */
 	if (worker_socket) {
-		exit(nagios_core_worker(worker_socket));
+		exit(nm_core_worker(worker_socket));
 	}
 
 	if (daemon_mode == FALSE) {
@@ -327,8 +264,6 @@ int main(int argc, char **argv)
 		printf("Options:\n");
 		printf("\n");
 		printf("  -v, --verify-config          Verify all configuration data (-v -v for more info)\n");
-		printf("  -s, --test-scheduling        Shows projected/recommended check scheduling and other\n");
-		printf("                               diagnostic info based on the current configuration files.\n");
 		printf("  -T, --enable-timing-point    Enable timed commentary on initialization\n");
 		printf("  -x, --dont-verify-paths      Deprecated (Don't check for circular object paths)\n");
 		printf("  -p, --precache-objects       Precache object configuration\n");
@@ -363,19 +298,18 @@ int main(int argc, char **argv)
 	 */
 	signal(SIGXFSZ, sighandler);
 
+
+	/*
+	 * Setup rand and srand. Don't bother with better resolution than second
+	 */
+	srand(time(NULL));
+
 	/*
 	 * let's go to town. We'll be noisy if we're verifying config
 	 * or running scheduling tests.
 	 */
-	if (verify_config || test_scheduling || precache_objects) {
+	if (verify_config || precache_objects) {
 		reset_variables();
-		/*
-		 * if we don't beef up our resource limits as much as
-		 * we can, it's quite possible we'll run headlong into
-		 * EAGAIN due to too many processes when we try to
-		 * drop privileges later.
-		 */
-		set_loadctl_defaults();
 
 		if (verify_config)
 			printf("Reading configuration data...\n");
@@ -391,7 +325,7 @@ int main(int argc, char **argv)
 			printf("   Read main config file okay...\n");
 
 		/* drop privileges */
-		if ((result = drop_privileges(naemon_user, naemon_group)) == ERROR) {
+		if ((result = drop_privileges(NAEMON_USER, NAEMON_GROUP)) == ERROR) {
 			printf("   Failed to drop privileges.  Aborting.");
 			exit(EXIT_FAILURE);
 		}
@@ -453,26 +387,6 @@ int main(int argc, char **argv)
 			printf("\nThings look okay - No serious problems were detected during the pre-flight check\n");
 		}
 
-		/* scheduling tests need a bit more than config verifications */
-		if (test_scheduling == TRUE) {
-
-			/* we'll need the event queue here so we can time insertions */
-			init_event_queue();
-			timing_point("Done initializing event queue\n");
-
-			/* read initial service and host state information */
-			initialize_retention_data(config_file);
-			read_initial_state_information();
-			timing_point("Retention data and initial state parsed\n");
-
-			/* initialize the event timing loop */
-			init_timing_loop();
-			timing_point("Timing loop initialized\n");
-
-			/* display scheduling information */
-			display_scheduling_info();
-		}
-
 		if (precache_objects) {
 			result = fcache_objects(object_precache_file);
 			timing_point("Done precaching objects\n");
@@ -510,11 +424,6 @@ int main(int argc, char **argv)
 	else
 		naemon_binary_path = nm_strdup(argv[0]);
 
-	if (!naemon_binary_path) {
-		nm_log(NSLOG_RUNTIME_ERROR, "Error: Unable to allocate memory for naemon_binary_path\n");
-		exit(EXIT_FAILURE);
-	}
-
 	if (!(nagios_iobs = iobroker_create())) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Error: Failed to create IO broker set: %s\n",
 		       strerror(errno));
@@ -549,7 +458,7 @@ int main(int argc, char **argv)
 		nm_asprintf(&mac->x[MACRO_PROCESSSTARTTIME], "%lu", (unsigned long)program_start);
 
 		/* drop privileges */
-		if (drop_privileges(naemon_user, naemon_group) == ERROR) {
+		if (drop_privileges(NAEMON_USER, NAEMON_GROUP) == ERROR) {
 
 			nm_log(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_CONFIG_ERROR, "Failed to drop privileges.  Aborting.");
 
@@ -598,11 +507,9 @@ int main(int argc, char **argv)
 		/* open debug log now that we're the right user */
 		open_debug_log();
 
-#ifdef USE_EVENT_BROKER
 		/* initialize modules */
 		neb_init_modules();
 		neb_init_callback_list();
-#endif
 		timing_point("NEB module API initialized\n");
 
 		/* handle signals (interrupts) before we do any socket I/O */
@@ -613,7 +520,7 @@ int main(int argc, char **argv)
 		 * This must be done before modules are initialized, so
 		 * the modules can use our in-core stuff properly
 		 */
-		if (qh_init(qh_socket_path ? qh_socket_path : DEFAULT_QUERY_SOCKET) != OK) {
+		if (qh_init(qh_socket_path) != OK) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Error: Failed to initialize query handler. Aborting\n");
 			exit(EXIT_FAILURE);
 		}
@@ -634,9 +541,6 @@ int main(int argc, char **argv)
 		}
 		timing_point("%u workers connected\n", wproc_num_workers_online);
 
-		/* now that workers have arrived we can set the defaults */
-		set_loadctl_defaults();
-
 		/* read in all object config data */
 		if (result == OK)
 			result = read_all_object_data(config_file);
@@ -650,21 +554,17 @@ int main(int argc, char **argv)
 		init_event_queue();
 		timing_point("Event queue initialized\n");
 
-#ifdef USE_EVENT_BROKER
 		/* load modules */
 		if (neb_load_all_modules() != OK) {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Module loading failed. Aborting.\n");
-			/* if we're dumping core, we must remove all dl-files */
-			if (daemon_dumps_core)
-				neb_unload_all_modules(NEBMODULE_FORCE_UNLOAD, NEBMODULE_NEB_SHUTDOWN);
+			/* give already loaded modules a chance to deinitialize */
+			neb_unload_all_modules(NEBMODULE_FORCE_UNLOAD, NEBMODULE_NEB_SHUTDOWN);
 			exit(EXIT_FAILURE);
 		}
 		timing_point("Modules loaded\n");
 
-		/* send program data to broker */
-		broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+		broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE);
 		timing_point("First callback made\n");
-#endif
 
 		/* there was a problem reading the config files */
 		if (result != OK)
@@ -687,10 +587,8 @@ int main(int argc, char **argv)
 				cleanup_status_data(TRUE);
 			}
 
-#ifdef USE_EVENT_BROKER
-			/* send program data to broker */
-			broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_PROCESS_INITIATED, NEBATTR_SHUTDOWN_ABNORMAL, NULL);
-#endif
+			broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_PROCESS_INITIATED, NEBATTR_SHUTDOWN_ABNORMAL);
+
 			cleanup();
 			exit(ERROR);
 		}
@@ -701,23 +599,17 @@ int main(int argc, char **argv)
 		fcache_objects(object_cache_file);
 		timing_point("Objects cached\n");
 
-#ifdef USE_EVENT_BROKER
-		/* send program data to broker */
-		broker_program_state(NEBTYPE_PROCESS_START, NEBFLAG_NONE, NEBATTR_NONE, NULL);
-#endif
+		broker_program_state(NEBTYPE_PROCESS_START, NEBFLAG_NONE, NEBATTR_NONE);
 
-		/* initialize status data unless we're starting */
-		if (sigrestart == FALSE) {
-			initialize_status_data(config_file);
-			timing_point("Status data initialized\n");
-		}
+		initialize_status_data(config_file);
+		timing_point("Status data initialized\n");
 
 		/* initialize scheduled downtime data */
 		initialize_downtime_data();
 		timing_point("Downtime data initialized\n");
 
 		/* read initial service and host state information  */
-		initialize_retention_data(config_file);
+		initialize_retention_data();
 		timing_point("Retention data initialized\n");
 		read_initial_state_information();
 		timing_point("Initial state information read\n");
@@ -730,9 +622,9 @@ int main(int argc, char **argv)
 		initialize_performance_data(config_file);
 		timing_point("Performance data initialized\n");
 
-		/* initialize the event timing loop */
-		init_timing_loop();
-		timing_point("Event timing loop initialized\n");
+		/* initialize the check execution subsystem */
+		checks_init();
+		timing_point("Check execution scheduling initialized\n");
 
 		/* initialize check statistics */
 		init_check_stats();
@@ -756,10 +648,7 @@ int main(int argc, char **argv)
 		launch_command_file_worker();
 		timing_point("Command file worker launched\n");
 
-#ifdef USE_EVENT_BROKER
-		/* send program data to broker */
-		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPSTART, NEBFLAG_NONE, NEBATTR_NONE, NULL);
-#endif
+		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPSTART, NEBFLAG_NONE, NEBATTR_NONE);
 
 		/* get event start time and save as macro */
 		event_start = time(NULL);
@@ -775,21 +664,18 @@ int main(int argc, char **argv)
 		 * immediately deinitialize the query handler so it
 		 * can remove modules that have stashed data with it
 		 */
-		qh_deinit(qh_socket_path ? qh_socket_path : DEFAULT_QUERY_SOCKET);
+		qh_deinit(qh_socket_path);
 
 		/*
 		 * handle any incoming signals
 		 */
 		signal_react();
 
-#ifdef USE_EVENT_BROKER
-		/* send program data to broker */
-		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPEND, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPEND, NEBFLAG_NONE, NEBATTR_NONE);
 		if (sigshutdown == TRUE)
-			broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_USER_INITIATED, NEBATTR_SHUTDOWN_NORMAL, NULL);
+			broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_USER_INITIATED, NEBATTR_SHUTDOWN_NORMAL);
 		else if (sigrestart == TRUE)
-			broker_program_state(NEBTYPE_PROCESS_RESTART, NEBFLAG_USER_INITIATED, NEBATTR_RESTART_NORMAL, NULL);
-#endif
+			broker_program_state(NEBTYPE_PROCESS_RESTART, NEBFLAG_USER_INITIATED, NEBATTR_RESTART_NORMAL);
 
 		disconnect_command_file_worker();
 
@@ -804,9 +690,7 @@ int main(int argc, char **argv)
 		cleanup_downtime_data();
 
 		/* clean up the status data unless we're restarting */
-		if (sigrestart == FALSE) {
-			cleanup_status_data(TRUE);
-		}
+		cleanup_status_data(!sigrestart);
 
 		registered_commands_deinit();
 		free_worker_memory(WPROC_FORCE);

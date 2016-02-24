@@ -5,7 +5,9 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
-#include "objects.h"
+#include "common.h"
+#include "objectlist.h"
+#include "objects_command.h"
 #include "macros.h" /* For MAX_USER_MACROS */
 
 NAGIOS_BEGIN_DECL
@@ -30,9 +32,6 @@ extern unsigned int nofile_limit, nproc_limit, max_apps;
 extern int num_check_workers;
 extern char *qh_socket_path;
 
-extern char *naemon_user;
-extern char *naemon_group;
-
 extern char *macro_user[MAX_USER_MACROS];
 
 extern char *ocsp_command;
@@ -47,8 +46,6 @@ extern char *global_service_event_handler;
 extern command *global_host_event_handler_ptr;
 extern command *global_service_event_handler_ptr;
 
-extern char *illegal_object_chars;
-
 extern int use_regexp_matches;
 extern int use_true_regexp_matching;
 
@@ -56,6 +53,7 @@ extern int use_syslog;
 extern char *log_file;
 extern char *log_archive_path;
 extern int log_notifications;
+extern int enable_notification_suppression_reason_logging;
 extern int log_service_retries;
 extern int log_host_retries;
 extern int log_event_handlers;
@@ -70,19 +68,11 @@ extern int host_check_timeout;
 extern int event_handler_timeout;
 extern int notification_timeout;
 
-extern int log_initial_states;
-extern int log_current_states;
-
-extern int daemon_dumps_core;
-
 extern volatile sig_atomic_t sig_id;
 
 extern int verify_config;
-extern int test_scheduling;
 extern int precache_objects;
 extern int use_precached_objects;
-
-extern sched_info scheduling_info;
 
 extern int max_parallel_service_checks;
 
@@ -143,11 +133,6 @@ extern double high_service_flap_threshold;
 extern double low_host_flap_threshold;
 extern double high_host_flap_threshold;
 
-extern int use_large_installation_tweaks;
-extern int enable_environment_macros;
-extern int free_child_process_memory;
-extern int child_processes_fork_twice;
-
 extern char *use_timezone;
 
 extern time_t max_check_result_file_age;
@@ -174,33 +159,6 @@ extern unsigned long next_notification_id;
 extern unsigned long modified_process_attributes;
 extern unsigned long modified_host_process_attributes;
 extern unsigned long modified_service_process_attributes;
-
-extern squeue_t *nagios_squeue;
-extern iobroker_set *nagios_iobs;
-
-extern struct check_stats check_statistics[MAX_CHECK_STATS_TYPES];
-
-/*** perfdata variables ***/
-extern int     perfdata_timeout;
-extern char    *host_perfdata_command;
-extern char    *service_perfdata_command;
-extern char    *host_perfdata_file_template;
-extern char    *service_perfdata_file_template;
-extern char    *host_perfdata_file;
-extern char    *service_perfdata_file;
-extern int     host_perfdata_file_append;
-extern int     service_perfdata_file_append;
-extern int     host_perfdata_file_pipe;
-extern int     service_perfdata_file_pipe;
-extern unsigned long host_perfdata_file_processing_interval;
-extern unsigned long service_perfdata_file_processing_interval;
-extern char    *host_perfdata_file_processing_command;
-extern char    *service_perfdata_file_processing_command;
-extern int     host_perfdata_process_empty_results;
-extern int     service_perfdata_process_empty_results;
-/*** end perfdata variables */
-
-extern struct notify_list *notification_list;
 
 extern struct check_engine nagios_check_engine;
 

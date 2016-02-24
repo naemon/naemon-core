@@ -7,6 +7,8 @@ AC_CONFIG_SRCDIR([src/naemon/naemon.c])
 AC_CONFIG_SRCDIR([lib/libnaemon.h])
 AM_INIT_AUTOMAKE([subdir-objects])
 
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+
 AC_CONFIG_HEADERS([config.h lib/snprintf.h])
 
 # Checks for programs.
@@ -38,6 +40,8 @@ AS_IF([test "x$with_tests" != "xno"], [
 ])
 AM_CONDITIONAL([HAVE_CHECK], [test "x$with_tests" = "xyes"])
 
+PKG_CHECK_MODULES([GLIB], [glib-2.0])
+
 AM_MISSING_PROG([PROVE], [prove])
 AM_MISSING_PROG([GPERF], [gperf])
 AM_MISSING_PROG(HELP2MAN, help2man)
@@ -49,6 +53,7 @@ if test x"$GPERF_CHECK" != x"yes" ; then
 fi
 
 AM_CPPFLAGS="-D_GNU_SOURCE"
+AM_CFLAGS=$GLIB_CFLAGS
 AX_CHECK_COMPILE_FLAG([-Wall], AM_CFLAGS+=" -Wall")
 AX_CHECK_COMPILE_FLAG([-Werror], AM_CFLAGS+=" -Werror")
 AX_CHECK_COMPILE_FLAG([-fPIC], AM_CFLAGS+=" -fPIC")
@@ -75,7 +80,6 @@ AC_CHECK_HEADERS([locale.h malloc.h memory.h netdb.h netinet/in.h pwd.h regex.h 
 AC_CHECK_HEADERS([stdbool.h stdint.h stdlib.h string.h strings.h syslog.h])
 AC_CHECK_HEADERS([sys/mman.h sys/resource.h sys/socket.h sys/stat.h sys/time.h])
 AC_CHECK_HEADERS([sys/timeb.h sys/types.h sys/wait.h unistd.h vfork.h wchar.h])
-AC_CHECK_HEADERS([sys/prctl.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T
@@ -108,13 +112,14 @@ else
 fi
 
 AC_DEFINE(NAEMON_PROCESS_NAME, "Naemon Process", [Process name for naemon])
-AC_DEFINE(USE_EVENT_BROKER, 1, [Use event brokers])
 
 # Checks for library functions.
 AC_FUNC_CHOWN
 AC_FUNC_FORK
 AC_FUNC_MMAP
 AC_FUNC_WAIT3
+
+AC_SEARCH_LIBS([clock_gettime],[rt_posix4])
 
 # We expect full C89 and almost-full POSIX.1-2001 compliance where
 # we're compiled. That covers all linuxes, bsd's and solaris boxen
@@ -173,9 +178,9 @@ AC_ARG_WITH([naemon-group],
 [AS_HELP_STRING([--with-naemon-group],
 [specify the naemon group @<:@default="naemon"@:>@])],
 [], [with_naemon_group="naemon"])
-naemon_grp="$with_naemon_group"
-AC_SUBST(naemon_grp)
-AC_DEFINE_UNQUOTED(DEFAULT_NAEMON_GROUP, "$naemon_grp", [Default group name to run naemon as])
+naemon_group="$with_naemon_group"
+AC_SUBST(naemon_group)
+AC_DEFINE_UNQUOTED(DEFAULT_NAEMON_GROUP, "$naemon_group", [Default group name to run naemon as])
 
 # Determine the lockfile
 AC_ARG_WITH([lockfile],
@@ -226,5 +231,4 @@ AC_CONFIG_FILES([Makefile
                  naemon.pc
                  naemon-uninstalled.pc
                 ])
-AC_CONFIG_SUBDIRS([tap])
 AC_OUTPUT
