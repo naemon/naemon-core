@@ -37,7 +37,7 @@ timeperiod *registered_timeperiod = NULL;
 int b_val;
 int i_val;
 time_t t_val;
-int error = 0;
+GError *error = NULL;
 char * s_val;
 
 
@@ -82,12 +82,12 @@ void test_register(void)
 {
 	struct external_command *ext_command = NULL;
 	int author = 42, persistent = 0;
-	char command_name[21];
+	char cmd_name[21];
 	int expected_command_index = 0;
 	registered_commands_init(20);
 	while ( expected_command_index  < 60 ) { /*Verify that auto-growing the register works*/
-		(void)snprintf(command_name, 21, "ADD_HOST_COMMENT_%d", expected_command_index+1);
-		ext_command = command_create(command_name, test__add_host_comment_handler, "This is a description for a command named ADD_HOST_COMMENT", NULL);
+		(void)snprintf(cmd_name, 21, "ADD_HOST_COMMENT_%d", expected_command_index+1);
+		ext_command = command_create(cmd_name, test__add_host_comment_handler, "This is a description for a command named ADD_HOST_COMMENT", NULL);
 		command_argument_add(ext_command, "host", STRING, NULL, NULL);
 		b_val = 0;
 		command_argument_add(ext_command, "persistent", BOOL, &b_val, NULL);
@@ -114,8 +114,9 @@ void test_parsing(void)
 	const char *cmdstr = "[1234567890] ADD_HOST_COMMENT;my_host;0;15;this is my comment, there are many like it but this one is mine";
 	registered_commands_init(20);
 	{
+		g_clear_error(&error);
 		ok(NULL == command_parse(cmdstr, COMMAND_SYNTAX_NOKV, &error), "We can't parse commands when none are registered");
-		ok(CMD_ERROR_UNKNOWN_COMMAND == error, "The error code looks like expected");
+		ok(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_UNKNOWN_COMMAND), "The error code looks like expected");
 
 		ext_command = command_create("ADD_HOST_COMMENT", test__add_host_comment_handler, "This is a description for a command named ADD_HOST_COMMENT", NULL);
 		command_argument_add(ext_command, "host", STRING, NULL, NULL);
@@ -127,29 +128,37 @@ void test_parsing(void)
 		command_argument_add(ext_command, "comment", STRING, s_val, NULL);
 		command_register(ext_command, -1);
 
+		g_clear_error(&error);
 		ext_command = command_parse("[] UNKNOWN_COMMAND", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_MALFORMED_COMMAND == error, "Malformed command error is raised for malformed commands");
+		ok(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_MALFORMED_COMMAND), "Malformed command error is raised for malformed commands");
 		ok(NULL == ext_command, "No command returned for malformed command");
 
+		g_clear_error(&error);
 		ext_command = command_parse("[UNKNOWN_COMMAND", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_MALFORMED_COMMAND == error, "Malformed command error is raised for malformed commands");
+		ok(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_MALFORMED_COMMAND), "Malformed command error is raised for malformed commands");
 		ok(NULL == ext_command, "No command returned for malformed command");
 
+		g_clear_error(&error);
 		ext_command = command_parse("[139414354] UNKNOWN_COMMAND", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_UNKNOWN_COMMAND == error, "Unknown command error is raised for unknown commands");
+		ok(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_UNKNOWN_COMMAND), "Unknown command error is raised for unknown commands");
 		ok(NULL == ext_command, "No command returned for unknown command");
 
+		g_clear_error(&error);
 		ext_command = command_parse(cmdstr, COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_OK == error, "The command parses without error");
+		ok(error == NULL, "The command parses without error");
 		ok(!strcmp("my_host", command_argument_get_value(ext_command, "host")), "Host value parsed successfully");
 		ok(0 == *(int *)command_argument_get_value(ext_command, "persistent"), "Persistent value parsed successfully");
 		ok(15 == *(int *)command_argument_get_value(ext_command, "author"), "Author value parsed successfully");
 		ok(!strcmp("this is my comment, there are many like it but this one is mine", command_argument_get_value(ext_command, "comment")), "Comment value parsed successfully");
+		command_destroy(ext_command);
 
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] ADD_HOST_COMMENT;my_host;0;15;this is my newline\n, there are many like it but this one is\n m\ni\nn\ne", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_OK == error, "Command containing newlines parses without error");
+		ok(error == NULL, "Command containing newlines parses without error");
 		ok(!strcmp("this is my newline\n, there are many like it but this one is\n m\ni\nn\ne", command_argument_get_value(ext_command, "comment")), "Comment containing newlines parsed successfully");
+		command_destroy(ext_command);
 
+		g_clear_error(&error);
 		ext_command = command_parse(cmdstr, COMMAND_SYNTAX_NOKV, &error);
 		ok(0 == command_execute_handler(ext_command), "Callback exit value properly passed on");
 		ok(!strcmp("my_host", received_host), "Host value passed to callback");
@@ -159,26 +168,33 @@ void test_parsing(void)
 		free(received_host);
 		free(received_persistent);
 
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] ADD_HOST_COMMENT;;1", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_PARSE_MISSING_ARG == error, "Missing arguments are complained about");
+		ok(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_PARSE_MISSING_ARG), "Missing arguments are complained about");
 		ok(ext_command == NULL, "No command returned for command with missing arguments");
 
+		g_clear_error(&error);
 		ext_command = command_parse("[15341345] ADD_HOST_COMMENT", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_PARSE_MISSING_ARG == error, "Missing arguments are complained about (no arguments supplied)");
+		ok(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_PARSE_MISSING_ARG), "Missing arguments are complained about (no arguments supplied)");
 		ok(ext_command == NULL, "No command returned for command with missing arguments");
 
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] ADD_HOST_COMMENT;my_host;0;441;this is my comment, there are many like it but this one is mine;Post-semi-colon stuff", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_OK == error, "Last string argument may contain semi-colons");
+		ok(error == NULL, "Last string argument may contain semi-colons");
 		ok(ext_command != NULL, "A command should be returned when last string-argument has semi-colons");
+		command_destroy(ext_command);
 
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] ADD_HOST_COMMENT;my_host;0;Dora the Explora';this is my comment, there are many like it but this one is mine", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_PARSE_TYPE_MISMATCH == error, "Type errors are complained about");
+		ok(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_PARSE_TYPE_MISMATCH), "Type errors are complained about");
 		ok(ext_command == NULL, "No command returned for command with argument type errors");
 
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] ADD_HOST_COMMENT;my_host;1;4lyfe;this is my comment, there are many like it but this one is mine", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_PARSE_TYPE_MISMATCH == error, "Junk characters after integer arguments are complained about");
+		ok(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_PARSE_TYPE_MISMATCH), "Junk characters after integer arguments are complained about");
 		ok(ext_command == NULL, "No command returned for command with argument type mismatch errors");
 
+		g_clear_error(&error);
 		ext_command = command_create("ADD_HOST_COMMENT_WITH_TIMESTAMP", test__add_host_comment_handler, "This is a description for a command named ADD_HOST_COMMENT", NULL);
 		command_argument_add(ext_command, "host", STRING, NULL, NULL);
 		command_argument_add(ext_command, "persistent", BOOL, NULL, NULL);
@@ -190,31 +206,37 @@ void test_parsing(void)
 		command_argument_add(ext_command, "timestamp", TIMESTAMP, &t_val, NULL);
 		command_register(ext_command, -1);
 
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] ADD_HOST_COMMENT_WITH_TIMESTAMP;my_host;1;441;this is my comment, there are many like it but this one is mine;1234987650", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_OK == error, "No error when parsing proper commands");
+		ok(error == NULL, "No error when parsing proper commands");
 		ok(1234987650 == *(time_t *)command_argument_get_value(ext_command, "timestamp"), "Timestamp value parsed successfully");
 		command_destroy(ext_command);
 
 
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] ADD_HOST_COMMENT_WITH_TIMESTAMP;my_host;4;441;this is my comment, there are many like it but this one is mine;1234987650", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_VALIDATION_FAILURE == error, "Invalid BOOL value (4) is complained about");
+		ok(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_VALIDATION_FAILURE), "Invalid BOOL value (4) is complained about");
 		ok(NULL == ext_command, "No command returned for command with invalid argument values");
 
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] ADD_HOST_COMMENT_WITH_TIMESTAMP;my_host;1;441;this is my comment, there are many like it but this one is mine;14:49", COMMAND_SYNTAX_NOKV, &error);
 
-		ok(CMD_ERROR_PARSE_TYPE_MISMATCH == error, "Malformed timestamp value is complained about");
+		ok(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_PARSE_TYPE_MISMATCH), "Malformed timestamp value is complained about");
 		ok(NULL == ext_command, "No command returned for command with argument type mismatch");
 
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] ADD_HOST_COMMENT_WITH_TIMESTAMP;my_host;1;441;;", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_OK == error, "Missing arguments which have default values are not complained about");
+		ok(error == NULL, "Missing arguments which have default values are not complained about");
 		ok(!strcmp("No comment", command_argument_get_value(ext_command, "comment")), "Default value is used for missing argument");
 		ok(t_val == *(time_t *)command_argument_get_value(ext_command, "timestamp"), "Default value is used for missing argument at end of arg string");
 		command_destroy(ext_command);
 
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] ADD_HOST_COMMENT_WITH_TIMESTAMP;some_host;;441;;13485799", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_PARSE_MISSING_ARG == error, "Missing arguments which don't have default values are complained about");
+		ok(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_PARSE_MISSING_ARG), "Missing arguments which don't have default values are complained about");
 		ok(NULL == ext_command, "No command returned for command with missing argument and no default");
 
+		g_clear_error(&error);
 		ext_command = command_create("ADD_SVC_COMMENT", test__add_service_comment_handler, "This is a description for a command named CMD_ADD_SVC_COMMENT", NULL);
 		command_argument_add(ext_command, "service", SERVICE, NULL, NULL);
 		command_argument_add(ext_command, "persistent", BOOL, &b_val, NULL);
@@ -222,10 +244,12 @@ void test_parsing(void)
 		command_argument_add(ext_command, "comment", STRING, s_val, NULL);
 		command_register(ext_command, -1);
 
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] ADD_SVC_COMMENT;my_host;NO_SUCH_SERVICE;1;441;this is my service comment, there are many like it but this one is mine", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_VALIDATION_FAILURE == error, "Invalid service is complained about");
+		ok(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_VALIDATION_FAILURE), "Invalid service is complained about");
 		ok(NULL == ext_command, "No command returned for command with invalid service");
 
+		g_clear_error(&error);
 		ext_command = command_create("ADD_SVC_COMMENT_2", test__add_service_comment_handler, "This is a description for a command with a custom service validator", NULL);
 		command_argument_add(ext_command, "service", SERVICE, NULL, custom_service_validator);
 		command_argument_add(ext_command, "persistent", BOOL, &b_val, NULL);
@@ -233,36 +257,42 @@ void test_parsing(void)
 		command_argument_add(ext_command, "comment", STRING, s_val, NULL);
 		command_register(ext_command, -1);
 
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] ADD_SVC_COMMENT_2;my_host;LETS_PRETEND_THIS_EXISTS;1;441;this is my service comment, there are many like it but this one is mine", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_OK == error, "Custom validator does not decline our invalid service");
+		ok(error == NULL, "Custom validator does not decline our invalid service");
 		command_destroy(ext_command);
 
-
+		g_clear_error(&error);
 		ext_command = command_create("DEL_HOST_COMMENT", test__del_host_comment_handler, "This command is used to delete a specific host comment.", NULL);
 		command_argument_add(ext_command, "comment_id", ULONG, NULL, NULL);
 		command_register(ext_command, -1);
 
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] DEL_HOST_COMMENT;10;Excess argument;snurre", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_PARSE_EXCESS_ARG == error, "Excess arguments are complained about");
+		ok(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_PARSE_EXCESS_ARG), "Excess arguments are complained about");
 		ok(ext_command == NULL, "No command returned for commands with excess arguments");
 
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] DEL_HOST_COMMENT;10", COMMAND_SYNTAX_NOKV, &error);
 		ok((unsigned long) 10 ==  *(unsigned long *)command_argument_get_value(ext_command, "comment_id"), "ULONG argument parsed correctly");
 		command_destroy(ext_command);
 
 		ext_command = command_create("DEL_HOST_COMMENT_2", test__del_host_comment_handler, "This command is used to delete a specific host comment.", "int=comment_id;str=string_arg");
 		command_register(ext_command, -1);
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] DEL_HOST_COMMENT_2;10;foobar", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_OK == error, "No error when parsing command created with argspec");
+		ok(error == NULL, "No error when parsing command created with argspec");
 		ok(!strcmp("foobar", command_argument_get_value(ext_command, "string_arg")), "Can parse command created with argspec (string arg)");
 		ok(10 == *(int *)command_argument_get_value(ext_command, "comment_id"), "Can parse command created with argspec (int arg)");
 		command_destroy(ext_command);
 
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] DEL_HOST_COMMENT_2;1;", COMMAND_SYNTAX_NOKV, &error);
 		ok (ext_command == NULL, "Missing argument at end of arg string is complained about");
-		ok(CMD_ERROR_PARSE_MISSING_ARG == error, "Missing argument at end of arg string raises the correct error");
+		ok(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_PARSE_MISSING_ARG), "Missing argument at end of arg string raises the correct error");
 
 
+		g_clear_error(&error);
 		ext_command = command_create("DISABLE_NOTIFICATIONS", test__disable_notifications_handler,
 			"Disables host and service notifications on a program-wide basis.", NULL);
 		command_register(ext_command, -1);
@@ -270,24 +300,28 @@ void test_parsing(void)
 		ok(ext_command != NULL, "No problem parsing commands with no arguments (when none required)");
 		command_destroy(ext_command);
 
+		g_clear_error(&error);
 		ext_command = command_create("DO_THING_WITH_TIMEPERIOD", test__do_thing_with_timeperiod_handler,
 				"Does a thing with a timeperiod", NULL);
 		command_argument_add(ext_command, "timeperiod", TIMEPERIOD, NULL, NULL);
 		command_register(ext_command, -1);
 
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] DO_THING_WITH_TIMEPERIOD;24x8", COMMAND_SYNTAX_NOKV, &error);
 		ok(ext_command == NULL, "No command returned when timeperiod arg is invalid");
-		ok(CMD_ERROR_VALIDATION_FAILURE == error, "Validation error raised for invalid timeperiod");
+		ok(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_VALIDATION_FAILURE), "Validation error raised for invalid timeperiod");
 
 		registered_timeperiod = find_timeperiod("24x7");
 		assert(NULL != registered_timeperiod);
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] DO_THING_WITH_TIMEPERIOD;24x7", COMMAND_SYNTAX_NOKV, &error);
 		ok(ext_command != NULL, "Command returned when timeperiod arg is not invalid");
-		ok(CMD_ERROR_OK == error, "Validation error not raised for valid timeperiod");
+		ok(error == NULL, "Validation error not raised for valid timeperiod");
 		ok(registered_timeperiod == command_argument_get_value(ext_command, "timeperiod"), "The correct timeperiod is returned");
 		command_destroy(ext_command);
 
 		/** CONTACT SETUP*/
+		g_clear_error(&error);
 		ext_command = command_create("FIND_CONTACT", test__do_thing_with_contact_handler, "Does a thing with contact", NULL);
 		command_argument_add(ext_command, "contact", CONTACT, NULL, NULL);
 		command_register(ext_command, -1);
@@ -295,27 +329,31 @@ void test_parsing(void)
 		assert(NULL != created_contact);
 
 		/** CONTACT TEST*/
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] FIND_CONTACT;bango", COMMAND_SYNTAX_NOKV, &error);
 		ok(ext_command == NULL, "No command returned when contact arg is invalid");
-		ok(CMD_ERROR_VALIDATION_FAILURE == error, "Validation error raised for invalid contact");
+		ok(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_VALIDATION_FAILURE), "Validation error raised for invalid contact");
 
 		/** CONTACT TEST*/
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] FIND_CONTACT;nagiosadmin", COMMAND_SYNTAX_NOKV, &error);
 		ok(ext_command != NULL, "Command returned when contact arg is not invalid");
-		ok(CMD_ERROR_OK == error, "Validation error not raised for valid contact");
+		ok(error == NULL, "Validation error not raised for valid contact");
 		fetched_contact = command_argument_get_value(ext_command, "contact");
 		ok(created_contact->name == fetched_contact->name, "The correct contact is returned");
 
 		/** CONTACT TEARDOWN*/
 		command_destroy(ext_command);
 
+		g_clear_error(&error);
 		ext_command = command_parse("[1234567890] _MY_CUSTOMARILY_CUSTOM_CUSTARD_COMMAND;foo;bar;baz;33", COMMAND_SYNTAX_NOKV, &error);
-		ok(CMD_ERROR_CUSTOM_COMMAND == error, "Custom command reported as such");
+		ok(g_error_matches(error, NM_COMMAND_ERROR, CMD_ERROR_CUSTOM_COMMAND), "Custom command reported as such");
 		ok(ext_command != NULL, "Raw command returned when parsing custom command");
 		ok(!strcmp("foo;bar;baz;33", command_raw_arguments(ext_command)), "Raw arguments properly set for custom command");
 		ok(command_entry_time(ext_command) == (time_t)1234567890, "Entry time set for custom command");
 		command_destroy(ext_command);
 
+		g_clear_error(&error);
 	}
 	registered_commands_deinit();
 
@@ -416,7 +454,7 @@ void test_host_commands(void) {
 	++pre;
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] ADD_HOST_COMMENT;host1;0;myself;my comment"), "core command: ADD_HOST_COMMENT");
 	ok(pre+1 == number_of_host_comments(host_name), "ADD_HOST_COMMENT adds a host comment");
-	asprintf(&cmdstr, "[1234567890] DEL_HOST_COMMENT;%i", prev_comment_id);
+	nm_asprintf(&cmdstr, "[1234567890] DEL_HOST_COMMENT;%i", prev_comment_id);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: DEL_HOST_COMMENT");
 	free(cmdstr);
 	ok(pre == number_of_host_comments(host_name), "DEL_HOST_COMMENT deletes a host comment");
@@ -431,7 +469,7 @@ void test_host_commands(void) {
 	ok(target_host->services->service_ptr->checks_enabled, "ENABLE_HOST_SVC_CHECKS enables active checks for services on a host");
 
 	check_time = target_host->services->service_ptr->next_check - 20;
-	asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_SVC_CHECKS;host1;%llu", (long long unsigned int)check_time);
+	nm_asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_SVC_CHECKS;host1;%llu", (long long unsigned int)check_time);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_HOST_SVC_CHECKS");
 	ok(check_time == target_host->services->service_ptr->next_check, "SCHEDULE_HOST_SVC_CHECKS schedules host service checks");
 	free(cmdstr);
@@ -481,19 +519,19 @@ void test_host_commands(void) {
 	ok(target_host->checks_enabled, "ENABLE_HOST_CHECK enables active host checks");
 
 	check_time = target_host->services->service_ptr->next_check + 2000;
-	asprintf(&cmdstr, "[1234567890] SCHEDULE_FORCED_HOST_SVC_CHECKS;host1;%llu", (unsigned long long int)check_time);
+	nm_asprintf(&cmdstr, "[1234567890] SCHEDULE_FORCED_HOST_SVC_CHECKS;host1;%llu", (unsigned long long int)check_time);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_FORCED_HOST_SVC_CHECKS");
 	ok(check_time == target_host->services->service_ptr->next_check, "SCHEDULE_FORCED_HOST_SVC_CHECKS schedules forced checks for services on a host");
 	free(cmdstr);
 
 	prev_downtime_id = next_downtime_id;
-	asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_DOWNTIME;host1;%llu;%llu;1;0;0;myself;my downtime comment", (unsigned long long int)time(NULL), (unsigned long long int)time(NULL) + 1500);
+	nm_asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_DOWNTIME;host1;%llu;%llu;1;0;0;myself;my downtime comment", (unsigned long long int)time(NULL), (unsigned long long int)time(NULL) + 1500);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_HOST_DOWNTIME");
 	ok(prev_downtime_id != next_downtime_id, "SCHEDULE_HOST_DOWNTIME schedules one new downtime");
 	ok(NULL != find_host_downtime(prev_downtime_id), "SCHEDULE_HOST_DOWNTIME schedules downtime for a host");
 	free(cmdstr);
 
-	asprintf(&cmdstr, "[1234567890] DEL_HOST_DOWNTIME;%i", prev_downtime_id);
+	nm_asprintf(&cmdstr, "[1234567890] DEL_HOST_DOWNTIME;%i", prev_downtime_id);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: DEL_HOST_DOWNTIME");
 	ok(!find_host_downtime(prev_downtime_id), "DEL_HOST_DOWNTIME deletes a scheduled host downtime");
 	free(cmdstr);
@@ -505,7 +543,7 @@ void test_host_commands(void) {
 	ok(target_host->flap_detection_enabled, "ENABLE_HOST_FLAP_DETECTION enables host flap detection");
 
 	assert(NULL == find_service_downtime(0));
-	asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_SVC_DOWNTIME;host1;%llu;%llu;1;0;0;myself;my downtime comment", (unsigned long long int)time(NULL), (unsigned long long int)time(NULL) + 1500);
+	nm_asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_SVC_DOWNTIME;host1;%llu;%llu;1;0;0;myself;my downtime comment", (unsigned long long int)time(NULL), (unsigned long long int)time(NULL) + 1500);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_HOST_SVC_DOWNTIME");
 	strcmp(host_name, find_service_downtime(0)->host_name);
 	ok(0 == 0, "SCHEDULE_HOST_SVC_DOWNTIME schedules downtime for services on a host");
@@ -515,12 +553,12 @@ void test_host_commands(void) {
 	ok(target_host->current_state == STATE_DOWN, "PROCESS_HOST_CHECK_RESULT processes host check results");
 
 	check_time = target_host->next_check - 20;
-	asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_CHECK;host1;%llu", (unsigned long long int)check_time);
+	nm_asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_CHECK;host1;%llu", (unsigned long long int)check_time);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_HOST_CHECK");
 	ok(check_time == target_host->next_check, "SCHEDULE_HOST_CHECK schedules a host check");
 	free(cmdstr);
 
-	asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_CHECK;host1;%llu", (unsigned long long int)check_time);
+	nm_asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_CHECK;host1;%llu", (unsigned long long int)check_time);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_FORCED_HOST_CHECK");
 	ok(check_time == target_host->next_check, "SCHEDULE_FORCED_HOST_CHECK schedules a host check");
 	free(cmdstr);
@@ -561,7 +599,7 @@ void test_core_commands(void) {
 
 int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 {
-	const char *test_config_file = get_default_config_file();
+	const char *test_config_file = TESTDIR "naemon.cfg";
 	plan_tests(489);
 	init_event_queue();
 
@@ -569,7 +607,7 @@ int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 	assert(OK == read_main_config_file(test_config_file));
 	assert(OK == read_all_object_data(test_config_file));
 	assert(OK == initialize_downtime_data());
-	assert(OK == initialize_retention_data(get_default_config_file()));
+	assert(OK == initialize_retention_data());
 	test_register();
 	test_parsing();
 	test_core_commands();

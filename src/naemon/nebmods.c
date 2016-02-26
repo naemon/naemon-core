@@ -7,8 +7,6 @@
 #include "nm_alloc.h"
 #include <string.h>
 
-#ifdef USE_EVENT_BROKER
-
 static nebmodule *neb_module_list;
 static nebcallback **neb_callback_list;
 
@@ -263,12 +261,6 @@ int neb_unload_module(nebmodule *mod, int flags, int reason)
 		return ERROR;
 
 	log_debug_info(DEBUGL_EVENTBROKER, 0, "Attempting to unload module '%s': flags=%d, reason=%d\n", mod->filename, flags, reason);
-
-	/* remove the module's demand-loaded file */
-	if (daemon_dumps_core == TRUE && mod->dl_file) {
-		(void)unlink(mod->dl_file);
-		nm_free(mod->dl_file);
-	}
 
 	/* call the de-initialization function if available (and the module was initialized) */
 	if (mod->deinit_func && reason != NEBMODULE_ERROR_BAD_INIT) {
@@ -570,4 +562,3 @@ int neb_free_callback_list(void)
 
 	return OK;
 }
-#endif

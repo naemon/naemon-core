@@ -18,7 +18,6 @@ check_result *check_result_new(int status, const char *output) {
 	cr->check_type = SERVICE_CHECK_ACTIVE;
 	cr->check_options = 0;
 	cr->scheduled_check = TRUE;
-	cr->reschedule_check = TRUE;
 	cr->exited_ok = TRUE;
 	cr->return_code = status;
 	cr->output = strdup(output);

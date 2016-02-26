@@ -40,7 +40,6 @@ int main(int argc, char **argv)
 	int c = 0;
 	struct host *host1, *host2;
 	hostgroup *temp_hostgroup = NULL;
-	hostsmember *temp_member = NULL;
 
 	plan_tests(19);
 
@@ -55,7 +54,7 @@ int main(int argc, char **argv)
 
 	printf("Reading configuration data...\n");
 
-	config_file = strdup(get_default_config_file());
+	config_file = strdup(TESTDIR "naemon.cfg");
 	config_file_dir = nspath_absolute_dirname(config_file, NULL);
 	/* read in the configuration files (main config file, resource and object config files) */
 	result = read_main_config_file(config_file);
@@ -74,15 +73,7 @@ int main(int argc, char **argv)
 	ok(c == 2, "Found all hostgroups");
 
 	temp_hostgroup = find_hostgroup("hostgroup1");
-	for (temp_member = temp_hostgroup->members; temp_member != NULL; temp_member = temp_member->next) {
-		//printf("host pointer=%d\n", temp_member->host_ptr);
-	}
-
 	temp_hostgroup = find_hostgroup("hostgroup2");
-	for (temp_member = temp_hostgroup->members; temp_member != NULL; temp_member = temp_member->next) {
-		//printf("host pointer=%d\n", temp_member->host_ptr);
-	}
-
 	host1 = find_host("host1");
 	host2 = find_host("host2");
 	ok(host1 != NULL && host2 != NULL, "find_host() should work");
@@ -90,9 +81,11 @@ int main(int argc, char **argv)
 	ok(host1->notifications_enabled == 1, "host1 notifications_enabled set from config");
 	ok(host2->notifications_enabled == 1, "host2 notifications_enabled set from config");
 
-	initialize_retention_data(NULL);
-	initialize_downtime_data();
 	init_event_queue();
+
+	initialize_retention_data();
+	initialize_downtime_data();
+
 	ok(xrddefault_read_state_information() == OK, "Reading retention data");
 
 	ok(host1->current_state == 1, "State changed due to retention file settings");
@@ -108,6 +101,8 @@ int main(int argc, char **argv)
 	ok(find_service_downtime(1110) != NULL, "Found service downtime 1110");
 	ok(find_host_downtime(1234567888) == NULL, "No such host downtime");
 
+	cleanup_downtime_data();
+	cleanup_retention_data();
 	cleanup();
 
 	nm_free(config_file);

@@ -12,22 +12,6 @@
 #include "nm_alloc.h"
 #include <string.h>
 
-time_t program_start;
-int daemon_mode;
-time_t last_log_rotation;
-int enable_notifications;
-int execute_service_checks;
-int accept_passive_service_checks;
-int execute_host_checks;
-int accept_passive_host_checks;
-int enable_event_handlers;
-int obsess_over_services;
-int obsess_over_hosts;
-int check_service_freshness;
-int check_host_freshness;
-int enable_flap_detection;
-int process_performance_data;
-int nagios_pid;
 int buffer_stats[1][3];
 int program_stats[MAX_CHECK_STATS_TYPES][3];
 
@@ -97,8 +81,6 @@ int xsddefault_save_status_data(void)
 	int fd = 0;
 	FILE *fp = NULL;
 	int result = OK;
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "save_status_data()\n");
 
 	/* users may not want us to write status data */
 	if (!status_file || !strcmp(status_file, "/dev/null"))
@@ -209,7 +191,6 @@ int xsddefault_save_status_data(void)
 		fprintf(fp, "\tevent_handler=%s\n", (temp_host->event_handler == NULL) ? "" : temp_host->event_handler);
 
 		fprintf(fp, "\thas_been_checked=%d\n", temp_host->has_been_checked);
-		fprintf(fp, "\tshould_be_scheduled=%d\n", temp_host->should_be_scheduled);
 		fprintf(fp, "\tcheck_execution_time=%.3f\n", temp_host->execution_time);
 		fprintf(fp, "\tcheck_latency=%.3f\n", temp_host->latency);
 		fprintf(fp, "\tcheck_type=%d\n", temp_host->check_type);
@@ -275,7 +256,6 @@ int xsddefault_save_status_data(void)
 		fprintf(fp, "\tevent_handler=%s\n", (temp_service->event_handler == NULL) ? "" : temp_service->event_handler);
 
 		fprintf(fp, "\thas_been_checked=%d\n", temp_service->has_been_checked);
-		fprintf(fp, "\tshould_be_scheduled=%d\n", temp_service->should_be_scheduled);
 		fprintf(fp, "\tcheck_execution_time=%.3f\n", temp_service->execution_time);
 		fprintf(fp, "\tcheck_latency=%.3f\n", temp_service->latency);
 		fprintf(fp, "\tcheck_type=%d\n", temp_service->check_type);

@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "kvvec.h"
+#include "nsutils.h"
 
 struct kvvec *kvvec_init(struct kvvec *kvv, int hint)
 {
@@ -67,6 +68,23 @@ int kvvec_grow(struct kvvec *kvv, int hint)
 	return kvvec_resize(kvv, kvv->kv_alloc + hint);
 }
 
+int kvvec_addkv_long(struct kvvec *kvv, const char *key, long value)
+{
+	const char *buf = mkstr("%ld", value);
+	return kvvec_addkv_wlen(kvv, key, strlen(key), buf, strlen(buf));
+}
+
+int kvvec_addkv_tv(struct kvvec *kvv, const char *key, const struct timeval *value)
+{
+	const char *buf = mkstr("%ld.%06ld", (long)value->tv_sec, (long)value->tv_usec);
+	return kvvec_addkv_wlen(kvv, key, strlen(key), buf, strlen(buf));
+}
+
+int kvvec_addkv_str(struct kvvec *kvv, const char *key, const char *value)
+{
+	return kvvec_addkv_wlen(kvv, key, strlen(key), value, strlen(value));
+}
+
 int kvvec_addkv_wlen(struct kvvec *kvv, const char *key, int keylen, const char *value, int valuelen)
 {
 	struct key_value *kv;
@@ -85,20 +103,32 @@ int kvvec_addkv_wlen(struct kvvec *kvv, const char *key, int keylen, const char 
 	kv->value = (char *)value;
 	kv->value_len = valuelen;
 
-	if (!keylen) {
-		kv->key_len = strlen(key);
-	}
-	if (value) {
-		if (!valuelen) {
-			kv->value_len = strlen(value);
-		}
-	} else {
-		kv->value_len = 0;
-		kv->value = NULL;
-	}
 	kvv->kvv_sorted = 0;
 
 	return 0;
+}
+
+static int val_compare(const void *a, int a_len, const void *b, int b_len)
+{
+	size_t prefix;
+	int diff;
+
+	if (a == NULL && b == NULL)
+		return 0;
+	if (a == NULL)
+		return -1;
+	if (b == NULL)
+		return 1;
+
+	if (a_len > b_len)
+		prefix = b_len;
+	else
+		prefix = a_len;
+
+	diff = memcmp(a, b, prefix);
+	if (diff != 0)
+		return diff;
+	return a_len - b_len;
 }
 
 static int kv_compare(const void *a_, const void *b_)
@@ -107,19 +137,12 @@ static int kv_compare(const void *a_, const void *b_)
 	const struct key_value *b = (const struct key_value *)b_;
 	int ret = 0;
 
-	ret = strcmp(a->key, b->key);
-	if (ret)
+	ret = val_compare(a->key, a->key_len, b->key, b->key_len);
+
+	if (ret != 0)
 		return ret;
 
-	if (!a->value && !b->value) {
-		return 0;
-	}
-	if (a->value && !b->value)
-		return -1;
-	if (!a->value && b->value)
-		return 1;
-
-	return strcmp(a->value, b->value);
+	return val_compare(a->value, a->value_len, b->value, b->value_len);
 }
 
 int kvvec_sort(struct kvvec *kvv)
@@ -127,6 +150,53 @@ int kvvec_sort(struct kvvec *kvv)
 	qsort(kvv->kv, kvv->kv_pairs, sizeof(struct key_value), kv_compare);
 	kvv->kvv_sorted = 1;
 	return 0;
+}
+
+char *kvvec_fetch_str_str(struct kvvec *kvv, const char *key)
+{
+	struct key_value *val = kvvec_fetch(kvv, key, strlen(key));
+	if (val)
+		return val->value;
+	return NULL;
+}
+
+struct key_value *kvvec_fetch(struct kvvec *kvv, const char *key, int keylen)
+{
+	int i;
+
+	/* If sorted, do a binary search */
+	if (kvv->kvv_sorted) {
+		int low = 0;
+		int high = kvv->kv_pairs;
+		while(low < high) {
+			int mid = (low + high)/2;
+			struct key_value *midkv = &(kvv->kv[mid]);
+
+			int diff = val_compare(midkv->key, midkv->key_len, key, keylen);
+
+			if (diff > 0) {
+				high = mid;
+			} else if (diff < 0) {
+				low = mid+1;
+			} else {
+				return midkv;
+			}
+
+		}
+		return NULL;
+	}
+
+	/* If unsorted, lookup until found. O(n) */
+	for (i=0;i<kvv->kv_pairs;i++) {
+		if (keylen != kvv->kv[i].key_len)
+			continue;
+		if (memcmp(kvv->kv[i].key, key, keylen) != 0)
+			continue;
+		return &(kvv->kv[i]);
+	}
+
+	/* Nothing is found, return NULL */
+	return NULL;
 }
 
 int kvvec_foreach(struct kvvec *kvv, void *arg, int (*callback)(struct key_value *, void *))
@@ -164,23 +234,11 @@ void kvvec_free_kvpairs(struct kvvec *kvv, int flags)
 	kvv->kv_pairs = 0;
 }
 
-char *kvvec_get_value(struct kvvec *kvv, const char *key)
-{
-	int i;
-
-	if (!key || !kvv || !kvv->kv_pairs)
-		return NULL;
-
-	for (i = 0; i < kvv->kv_pairs; i++) {
-		if (!strcmp(key, kvv->kv[i].key))
-			return kvv->kv[i].value;
-	}
-
-	return NULL;
-}
 
 int kvvec_destroy(struct kvvec *kvv, int flags)
 {
+	if(kvv == NULL)
+		return 0;
 	kvvec_free_kvpairs(kvv, flags);
 	free(kvv->kv);
 	free(kvv);

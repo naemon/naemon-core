@@ -455,37 +455,3 @@ int runcmd_close(int fd)
 	/* return child's termination status */
 	return (WIFEXITED(status)) ? WEXITSTATUS(status) : -1;
 }
-
-
-int runcmd_try_close(int fd, int *status, int sig)
-{
-	pid_t pid;
-	int result;
-
-	/* make sure this fd was opened by popen() */
-	if (fd < 0 || fd > maxfd || !pids || !pids[fd])
-		return RUNCMD_EINVAL;
-
-	pid = pids[fd];
-	while ((result = waitpid(pid, status, WNOHANG)) != pid) {
-		if (!result) return 0;
-		if (result == -1) {
-			switch (errno) {
-			case EINTR:
-				continue;
-			case EINVAL:
-				return -1;
-			case ECHILD:
-				if (sig) {
-					result = kill(pid, sig);
-					sig = 0;
-					continue;
-				} else return -1;
-			} /* switch */
-		}
-	}
-
-	pids[fd] = 0;
-	close(fd);
-	return result;
-}

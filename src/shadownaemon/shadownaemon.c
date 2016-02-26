@@ -8,6 +8,7 @@
 #include "shadownaemon.h"
 #include <naemon/nm_alloc.h>
 #include <libgen.h>
+#include <sys/time.h>
 
 static int verbose                         = FALSE;
 static int daemonmode                      = FALSE;
@@ -198,7 +199,6 @@ int main(int argc, char **argv) {
 #endif
         setenv("HOME", cwd, 1);
         free(cwd);
-        daemon_dumps_core = TRUE;
         if (daemon_init() == ERROR) {
 #ifndef HAVE_GET_CURRENT_DIR_NAME
 error_out:
@@ -507,8 +507,7 @@ int initialize_core() {
     }
     timing_point("Modules loaded\n");
 
-    /* send program data to broker */
-    broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+    broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE);
     timing_point("First callback made\n");
 
     /* run the pre-flight check to make sure everything looks okay*/
@@ -520,15 +519,14 @@ int initialize_core() {
         timing_point("Object configuration parsed and understood\n");
     }
 
-    /* send program data to broker */
-    broker_program_state(NEBTYPE_PROCESS_START, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+    broker_program_state(NEBTYPE_PROCESS_START, NEBFLAG_NONE, NEBATTR_NONE);
 
     /* initialize scheduled downtime data */
     initialize_downtime_data();
     timing_point("Downtime data initialized\n");
 
     /* read initial service and host state information  */
-    initialize_retention_data(config_file);
+    initialize_retention_data();
     timing_point("Retention data initialized\n");
     read_initial_state_information();
     timing_point("Initial state information read\n");
@@ -540,10 +538,6 @@ int initialize_core() {
     /* initialize performance data */
     initialize_performance_data(config_file);
     timing_point("Performance data initialized\n");
-
-    /* initialize the event timing loop */
-    init_timing_loop();
-    timing_point("Event timing loop initialized\n");
 
     /* initialize check statistics */
     init_check_stats();
@@ -572,12 +566,11 @@ int deinitialize_core() {
     /* remove core commands */
     registered_commands_deinit();
 
-    /* send program data to broker */
-    broker_program_state(NEBTYPE_PROCESS_EVENTLOOPEND, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+    broker_program_state(NEBTYPE_PROCESS_EVENTLOOPEND, NEBFLAG_NONE, NEBATTR_NONE);
     if(sigrestart) {
-        broker_program_state(NEBTYPE_PROCESS_RESTART, NEBFLAG_USER_INITIATED, NEBATTR_RESTART_NORMAL, NULL);
+        broker_program_state(NEBTYPE_PROCESS_RESTART, NEBFLAG_USER_INITIATED, NEBATTR_RESTART_NORMAL);
     } else {
-        broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_USER_INITIATED, NEBATTR_SHUTDOWN_NORMAL, NULL);
+        broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_USER_INITIATED, NEBATTR_SHUTDOWN_NORMAL);
     }
 
     cleanup_retention_data();
@@ -592,7 +585,6 @@ int deinitialize_core() {
     cleanup_status_data(TRUE);
 
     /* clean up after ourselves */
-    test_scheduling = FALSE;
     verify_config   = FALSE;
     cleanup();
 
@@ -967,7 +959,7 @@ int update_program_status_data() {
             *last_command_check      = (uint64_t)atoll(answer->set[33]);
 
             /* send broker event to make wait headers work */
-            broker_adaptive_program_data(NEBTYPE_ADAPTIVEPROGRAM_UPDATE, NEBFLAG_NONE, NEBATTR_NONE, CMD_NONE, MODATTR_NONE, MODATTR_NONE, MODATTR_NONE, MODATTR_NONE, NULL);
+            broker_adaptive_program_data(NEBTYPE_ADAPTIVEPROGRAM_UPDATE, NEBFLAG_NONE, NEBATTR_NONE, CMD_NONE, MODATTR_NONE, MODATTR_NONE, MODATTR_NONE, MODATTR_NONE);
         }
     } else {
         nm_log(NSLOG_INFO_MESSAGE, "updating program status failed\n");
@@ -1684,7 +1676,7 @@ int run_refresh_loop() {
     }
 
     /* send program data to broker, which also starts livestatus */
-    broker_program_state(NEBTYPE_PROCESS_EVENTLOOPSTART, NEBFLAG_NONE, NEBATTR_NONE, NULL);
+    broker_program_state(NEBTYPE_PROCESS_EVENTLOOPSTART, NEBFLAG_NONE, NEBATTR_NONE);
 
     /* main action, run broker... */
     daemon_mode = FALSE;

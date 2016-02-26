@@ -1,6 +1,11 @@
 #include "config.h"
 #include "common.h"
 #include "objects.h"
+#include "objectlist.h"
+#include "objects_command.h"
+#include "objects_hostdependency.h"
+#include "objects_servicedependency.h"
+#include "xodtemplate.h"
 #include "macros.h"
 #include "broker.h"
 #include "nebmods.h"
@@ -10,6 +15,7 @@
 #include "events.h"
 #include "logging.h"
 #include "globals.h"
+#include "perfdata.h"
 #include "nm_alloc.h"
 #include <sys/types.h>
 #include <dirent.h>
@@ -25,17 +31,8 @@ static objectlist *maincfg_dirs = NULL;
 /* read all configuration data */
 int read_all_object_data(const char *main_config_file)
 {
-	int result = OK;
-	int options = 0;
-
-	options = READ_ALL_OBJECT_DATA;
-
-	/* read in all host configuration data from external sources */
-	result = read_object_config_data(main_config_file, options);
-	if (result != OK)
-		return ERROR;
-
-	return OK;
+	memset(&num_objects, 0, sizeof(num_objects));
+	return xodtemplate_read_config_data(main_config_file);
 }
 
 
@@ -120,8 +117,6 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			}
 		}
 
-		else if (!strcmp(variable, "loadctl_options"))
-			error = set_loadctl_options(value, strlen(value)) != OK;
 		else if (!strcmp(variable, "check_workers"))
 			num_check_workers = atoi(value);
 		else if (!strcmp(variable, "query_socket")) {
@@ -186,6 +181,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		}
 
 		else if (!strcmp(variable, "check_result_path")) {
+			obsoleted_warning(variable, "Support for processing check results from disk will be removed");
 
 			if (strlen(value) > MAX_FILENAME_LENGTH - 1) {
 				nm_asprintf(&error_message, "Check result path is too long");
@@ -200,7 +196,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 				check_result_path[strlen(check_result_path) - 1] = '\x0';
 
 			if ((tmpdir = opendir(check_result_path)) == NULL) {
-				nm_asprintf(&error_message, "Check result path '%s' is not a valid directory", check_result_path);
+				nm_asprintf(&error_message, "Warning: Failed to open check_result_path '%s': %s", check_result_path, strerror(errno));
 				error = TRUE;
 				break;
 			}
@@ -208,8 +204,10 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 
 		}
 
-		else if (!strcmp(variable, "max_check_result_file_age"))
+		else if (!strcmp(variable, "max_check_result_file_age")) {
+			obsoleted_warning(variable, "Support for processing check results from disk will be removed");
 			max_check_result_file_age = strtoul(value, NULL, 0);
+		}
 
 		else if (!strcmp(variable, "lock_file")) {
 
@@ -243,14 +241,11 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			ochp_command = nm_strdup(value);
 		}
 
-		else if (!strcmp(variable, "nagios_user") || !strcmp(variable, "naemon_user")) {
-			nm_free(naemon_user);
-			naemon_user = nm_strdup(value);
-		}
-
-		else if (!strcmp(variable, "nagios_group") || !strcmp(variable, "naemon_group")) {
-			nm_free(naemon_group);
-			naemon_group = nm_strdup(value);
+		else if (!strcmp(variable, "nagios_user") ||
+				!strcmp(variable, "naemon_user") ||
+				!strcmp(variable, "nagios_group") ||
+				!strcmp(variable, "naemon_group")) {
+			obsoleted_warning(variable, "Naemon is compiled to be run as " NAEMON_USER ":" NAEMON_GROUP);
 		}
 
 		else if (!strcmp(variable, "admin_email")) {
@@ -288,7 +283,16 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 
 			log_notifications = (atoi(value) > 0) ? TRUE : FALSE;
 		}
+		else if (!strcmp(variable, "enable_notification_suppression_reason_logging")) {
+			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
+				nm_asprintf(&error_message, "Illegal value for enable_notification_suppression_reason_logging");
+				error = TRUE;
+				break;
+			}
 
+			enable_notification_suppression_reason_logging = (atoi(value) > 0) ? TRUE : FALSE;
+
+		}
 		else if (!strcmp(variable, "log_service_retries")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
@@ -662,6 +666,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		}
 
 		else if (!strcmp(variable, "check_result_reaper_frequency") || !strcmp(variable, "service_reaper_frequency")) {
+			obsoleted_warning(variable, "Support for processing check results from disk will be removed");
 
 			check_reaper_interval = atoi(value);
 			if (check_reaper_interval < 1) {
@@ -672,6 +677,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		}
 
 		else if (!strcmp(variable, "max_check_result_reaper_time")) {
+			obsoleted_warning(variable, "Support for processing check results from disk will be removed");
 
 			max_check_reaper_time = atoi(value);
 			if (max_check_reaper_time < 1) {
@@ -786,13 +792,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		}
 
 		else if (!strcmp(variable, "status_update_interval")) {
-
 			status_update_interval = atoi(value);
-			if (status_update_interval <= 1) {
-				nm_asprintf(&error_message, "Illegal value for status_update_interval");
-				error = TRUE;
-				break;
-			}
 		}
 
 		else if (!strcmp(variable, "time_change_threshold")) {
@@ -890,7 +890,6 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		else if (!strcmp(variable, "broker_module")) {
 			modptr = strtok(value, " \n");
 			argptr = strtok(NULL, "\n");
-#ifdef USE_EVENT_BROKER
 			modptr = nspath_absolute(modptr, config_file_dir);
 			if (modptr) {
 				neb_add_module(modptr, argptr, TRUE);
@@ -898,7 +897,6 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			} else {
 				nm_log(NSLOG_RUNTIME_ERROR, "Error: Failed to allocate module path memory for '%s'\n", value);
 			}
-#endif
 		}
 
 		else if (!strcmp(variable, "use_regexp_matching"))
@@ -908,35 +906,18 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			use_true_regexp_matching = (atoi(value) > 0) ? TRUE : FALSE;
 
 		else if (!strcmp(variable, "daemon_dumps_core")) {
-
-			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				nm_asprintf(&error_message, "Illegal value for daemon_dumps_core");
-				error = TRUE;
-				break;
-			}
-
-			daemon_dumps_core = (atoi(value) > 0) ? TRUE : FALSE;
+			obsoleted_warning(variable, "Use system facilities to control coredump behaviour instead");
 		}
 
-		else if (!strcmp(variable, "use_large_installation_tweaks")) {
-
-			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
-				nm_asprintf(&error_message, "Illegal value for use_large_installation_tweaks ");
-				error = TRUE;
-				break;
-			}
-
-			use_large_installation_tweaks = (atoi(value) > 0) ? TRUE : FALSE;
-		}
-
+		/*** workers removed the need for these ***/
+		else if (!strcmp(variable, "use_large_installation_tweaks"))
+			obsoleted_warning(variable, "Naemon should always be fast");
 		else if (!strcmp(variable, "enable_environment_macros"))
-			enable_environment_macros = (atoi(value) > 0) ? TRUE : FALSE;
-
+			obsoleted_warning(variable, NULL);
 		else if (!strcmp(variable, "free_child_process_memory"))
-			free_child_process_memory = (atoi(value) > 0) ? TRUE : FALSE;
-
+			obsoleted_warning(variable, NULL);
 		else if (!strcmp(variable, "child_processes_fork_twice"))
-			child_processes_fork_twice = (atoi(value) > 0) ? TRUE : FALSE;
+			obsoleted_warning(variable, NULL);
 
 		/*** embedded perl variables are deprecated now ***/
 		else if (!strcmp(variable, "enable_embedded_perl"))
@@ -1118,7 +1099,9 @@ int read_main_config_file(const char *main_config_file)
 	if ((mac->x[MACRO_MAINCONFIGFILE] = nm_strdup(main_config_file)))
 		strip(mac->x[MACRO_MAINCONFIGFILE]);
 
-	read_config_file(main_config_file, mac);
+	if (read_config_file(main_config_file, mac) != OK)
+		return ERROR;
+
 	free_objectlist(&maincfg_files);
 	free_objectlist(&maincfg_dirs);
 
@@ -1177,12 +1160,6 @@ int read_main_config_file(const char *main_config_file)
 	if (use_timezone != NULL)
 		set_environment_var("TZ", use_timezone, 1);
 	tzset();
-
-	/* adjust tweaks */
-	if (free_child_process_memory == -1)
-		free_child_process_memory = (use_large_installation_tweaks == TRUE) ? FALSE : TRUE;
-	if (child_processes_fork_twice == -1)
-		child_processes_fork_twice = (use_large_installation_tweaks == TRUE) ? FALSE : TRUE;
 
 	/* make sure a log file has been specified */
 	strip(log_file);
@@ -1287,29 +1264,18 @@ int pre_flight_check(void)
 	char *buf = NULL;
 	int warnings = 0;
 	int errors = 0;
-	struct timeval tv[4];
-	double runtime[4];
 	int temp_path_fd = -1;
 
-
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[0], NULL);
 
 	/********************************************/
 	/* check object relationships               */
 	/********************************************/
 	pre_flight_object_check(&warnings, &errors);
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[1], NULL);
-
 
 	/********************************************/
 	/* check for circular paths between hosts   */
 	/********************************************/
 	pre_flight_circular_check(&warnings, &errors);
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[2], NULL);
-
 
 	/********************************************/
 	/* check global event handler commands...   */
@@ -1373,8 +1339,8 @@ int pre_flight_check(void)
 	/* check if we can write to check_result_path */
 	nm_asprintf(&buf, "%s/nagiosXXXXXX", check_result_path);
 	if ((temp_path_fd = mkstemp(buf)) == -1) {
-		nm_log(NSLOG_VERIFICATION_WARNING, "\tError: Unable to write to check_result_path ('%s') - %s\n", check_result_path, strerror(errno));
-		errors++;
+		nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Unable to write to check_result_path ('%s') - %s\n", check_result_path, strerror(errno));
+		warnings++;
 	} else {
 		close(temp_path_fd);
 		remove(buf);
@@ -1398,28 +1364,6 @@ int pre_flight_check(void)
 		printf("Total Errors:   %d\n", errors);
 	}
 
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[3], NULL);
-
-	if (test_scheduling == TRUE) {
-
-		runtime[0] = tv_delta_f(&tv[0], &tv[1]);
-		runtime[1] = tv_delta_f(&tv[1], &tv[2]);
-		runtime[2] = (double)((double)(tv[3].tv_sec - tv[2].tv_sec) + (double)((tv[3].tv_usec - tv[2].tv_usec) / 1000.0) / 1000.0);
-		runtime[3] = runtime[0] + runtime[1] + runtime[2];
-
-		printf("Timing information on configuration verification is listed below.\n\n");
-
-		printf("CONFIG VERIFICATION TIMES\n");
-		printf("----------------------------------\n");
-		printf("Object Relationships: %.6lf sec\n", runtime[0]);
-		printf("Circular Paths:       %.6lf sec\n", runtime[1]);
-		printf("Misc:                 %.6lf sec\n", runtime[2]);
-		printf("                      ============\n");
-		printf("TOTAL:                %.6lf sec\n", runtime[3]);
-		printf("\n\n");
-	}
-
 	return (errors > 0) ? ERROR : OK;
 }
 
@@ -1428,19 +1372,8 @@ int pre_flight_check(void)
 int pre_flight_object_check(int *w, int *e)
 {
 	contact *temp_contact = NULL;
-	commandsmember *temp_commandsmember = NULL;
-	contactgroup *temp_contactgroup = NULL;
 	host *temp_host = NULL;
-	host *temp_host2 = NULL;
-	hostsmember *temp_hostsmember = NULL;
-	servicesmember *sm = NULL;
-	hostgroup *temp_hostgroup = NULL;
-	servicegroup *temp_servicegroup = NULL;
 	service *temp_service = NULL;
-	command *temp_command = NULL;
-	timeperiod *temp_timeperiod = NULL;
-	timeperiod *temp_timeperiod2 = NULL;
-	timeperiodexclusion *temp_timeperiodexclusion = NULL;
 	int total_objects = 0;
 	int warnings = 0;
 	int errors = 0;
@@ -1466,30 +1399,10 @@ int pre_flight_object_check(int *w, int *e)
 	/*****************************************/
 	/* check each service...                 */
 	/*****************************************/
-	if (get_service_count() == 0) {
-		nm_log(NSLOG_VERIFICATION_ERROR, "Error: There are no services defined!");
-		errors++;
-	}
 	total_objects = 0;
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
 
 		total_objects++;
-
-		/* check the event handler command */
-		if (temp_service->event_handler != NULL) {
-			temp_service->event_handler_ptr = find_bang_command(temp_service->event_handler);
-			if (temp_service->event_handler_ptr == NULL) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: Event handler command '%s' specified in service '%s' for host '%s' not defined anywhere", temp_service->event_handler, temp_service->description, temp_service->host_name);
-				errors++;
-			}
-		}
-
-		/* check the service check_command */
-		temp_service->check_command_ptr = find_bang_command(temp_service->check_command);
-		if (temp_service->check_command_ptr == NULL) {
-			nm_log(NSLOG_VERIFICATION_ERROR, "Error: Service check command '%s' specified in service '%s' for host '%s' not defined anywhere!", temp_service->check_command, temp_service->description, temp_service->host_name);
-			errors++;
-		}
 
 		/* check for sane recovery options */
 		if (temp_service->notification_options == OPT_RECOVERY) {
@@ -1515,29 +1428,10 @@ int pre_flight_object_check(int *w, int *e)
 			warnings++;
 		}
 
-		/* check parent services */
-		for (sm = temp_service->parents; sm; sm = sm->next) {
-			sm->service_ptr = find_service(sm->host_name, sm->service_description);
-			if (sm->service_ptr == NULL) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: Service '%s' on host '%s' is not a valid parent for service '%s' on host '%s'\n",
-				       sm->host_name, sm->service_description,
-				       temp_service->host_name, temp_service->description);
-				errors++;
-			}
-		}
-
 		/* see if the notification interval is less than the check interval */
 		if (temp_service->notification_interval < temp_service->check_interval && temp_service->notification_interval != 0) {
 			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Service '%s' on host '%s'  has a notification interval less than its check interval!  Notifications are only re-sent after checks are made, so the effective notification interval will be that of the check interval.", temp_service->description, temp_service->host_name);
 			warnings++;
-		}
-
-		/* check for illegal characters in service description */
-		if (use_precached_objects == FALSE) {
-			if (contains_illegal_object_chars(temp_service->description) == TRUE) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: The description string for service '%s' on host '%s' contains one or more illegal characters.", temp_service->description, temp_service->host_name);
-				errors++;
-			}
 		}
 	}
 
@@ -1549,50 +1443,15 @@ int pre_flight_object_check(int *w, int *e)
 	/*****************************************/
 	/* check all hosts...                    */
 	/*****************************************/
-	if (get_host_count() == 0) {
-		nm_log(NSLOG_VERIFICATION_ERROR, "Error: There are no hosts defined!");
-		errors++;
-	}
-
 	total_objects = 0;
 	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
 
 		total_objects++;
 
 		/* make sure each host has at least one service associated with it */
-		if (temp_host->total_services == 0 && verify_config >= 2) {
+		if (temp_host->services == NULL && verify_config >= 2) {
 			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Host '%s' has no services associated with it!", temp_host->name);
 			warnings++;
-		}
-
-		/* check the event handler command */
-		if (temp_host->event_handler != NULL) {
-			temp_host->event_handler_ptr = find_bang_command(temp_host->event_handler);
-			if (temp_host->event_handler_ptr == NULL) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: Event handler command '%s' specified for host '%s' not defined anywhere", temp_host->event_handler, temp_host->name);
-				errors++;
-			}
-		}
-
-		/* hosts that don't have check commands defined shouldn't ever be checked... */
-		if (temp_host->check_command != NULL) {
-			temp_host->check_command_ptr = find_bang_command(temp_host->check_command);
-			if (temp_host->check_command_ptr == NULL) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: Host check command '%s' specified for host '%s' is not defined anywhere!", temp_host->check_command, temp_host->name);
-				errors++;
-			}
-		}
-
-		/* check host check timeperiod */
-		if (temp_host->check_period != NULL) {
-			temp_timeperiod = find_timeperiod(temp_host->check_period);
-			if (temp_timeperiod == NULL) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: Check period '%s' specified for host '%s' is not defined anywhere!", temp_host->check_period, temp_host->name);
-				errors++;
-			}
-
-			/* save the pointer to the check timeperiod for later */
-			temp_host->check_period_ptr = temp_timeperiod;
 		}
 
 		/* check to see if there is at least one contact/group */
@@ -1600,121 +1459,33 @@ int pre_flight_object_check(int *w, int *e)
 			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Host '%s' has no default contacts or contactgroups defined!", temp_host->name);
 			warnings++;
 		}
-
-		/* check notification timeperiod */
-		if (temp_host->notification_period != NULL) {
-			temp_timeperiod = find_timeperiod(temp_host->notification_period);
-			if (temp_timeperiod == NULL) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: Notification period '%s' specified for host '%s' is not defined anywhere!", temp_host->notification_period, temp_host->name);
-				errors++;
-			}
-
-			/* save the pointer to the notification timeperiod for later */
-			temp_host->notification_period_ptr = temp_timeperiod;
-		}
-
-		/* check all parent parent host */
-		for (temp_hostsmember = temp_host->parent_hosts; temp_hostsmember != NULL; temp_hostsmember = temp_hostsmember->next) {
-
-			if ((temp_host2 = find_host(temp_hostsmember->host_name)) == NULL) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: '%s' is not a valid parent for host '%s'!", temp_hostsmember->host_name, temp_host->name);
-				errors++;
-			}
-
-			/* save the parent host pointer for later */
-			temp_hostsmember->host_ptr = temp_host2;
-
-			/* add a reverse (child) link to make searches faster later on */
-			add_child_link_to_host(temp_host2, temp_host);
-		}
-
 		/* check for sane recovery options */
 		if (temp_host->notification_options == OPT_RECOVERY) {
 			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Recovery notification option in host '%s' definition doesn't make any sense - specify down and/or unreachable options as well", temp_host->name);
 			warnings++;
 		}
-
-		/* check for illegal characters in host name */
-		if (use_precached_objects == FALSE) {
-			if (contains_illegal_object_chars(temp_host->name) == TRUE) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: The name of host '%s' contains one or more illegal characters.", temp_host->name);
-				errors++;
-			}
-		}
 	}
-
 
 	if (verify_config)
 		printf("\tChecked %d hosts.\n", total_objects);
 
 
 	/*****************************************/
-	/* check each host group...              */
-	/*****************************************/
-	for (temp_hostgroup = hostgroup_list, total_objects = 0; temp_hostgroup != NULL; temp_hostgroup = temp_hostgroup->next, total_objects++) {
-		/* check for illegal characters in hostgroup name */
-		if (use_precached_objects == FALSE) {
-			if (contains_illegal_object_chars(temp_hostgroup->group_name) == TRUE) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: The name of hostgroup '%s' contains one or more illegal characters.", temp_hostgroup->group_name);
-				errors++;
-			}
-		}
-	}
-
-	if (verify_config)
-		printf("\tChecked %d host groups.\n", total_objects);
-
-
-	/*****************************************/
-	/* check each service group...           */
-	/*****************************************/
-	for (temp_servicegroup = servicegroup_list, total_objects = 0; temp_servicegroup != NULL; temp_servicegroup = temp_servicegroup->next, total_objects++) {
-		/* check for illegal characters in servicegroup name */
-		if (use_precached_objects == FALSE) {
-			if (contains_illegal_object_chars(temp_servicegroup->group_name) == TRUE) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: The name of servicegroup '%s' contains one or more illegal characters.", temp_servicegroup->group_name);
-				errors++;
-			}
-		}
-	}
-
-	if (verify_config)
-		printf("\tChecked %d service groups.\n", total_objects);
-
-
-
-	/*****************************************/
 	/* check all contacts...                 */
 	/*****************************************/
-	if (contact_list == NULL) {
-		nm_log(NSLOG_VERIFICATION_ERROR, "Error: There are no contacts defined!");
-		errors++;
-	}
 	for (temp_contact = contact_list, total_objects = 0; temp_contact != NULL; temp_contact = temp_contact->next, total_objects++) {
 
 		/* check service notification commands */
 		if (temp_contact->service_notification_commands == NULL) {
 			nm_log(NSLOG_VERIFICATION_ERROR, "Error: Contact '%s' has no service notification commands defined!", temp_contact->name);
 			errors++;
-		} else for (temp_commandsmember = temp_contact->service_notification_commands; temp_commandsmember != NULL; temp_commandsmember = temp_commandsmember->next) {
-				temp_commandsmember->command_ptr = find_bang_command(temp_commandsmember->command);
-				if (temp_commandsmember->command_ptr == NULL) {
-					nm_log(NSLOG_VERIFICATION_ERROR, "Error: Service notification command '%s' specified for contact '%s' is not defined anywhere!", temp_commandsmember->command, temp_contact->name);
-					errors++;
-				}
-			}
+		}
 
 		/* check host notification commands */
 		if (temp_contact->host_notification_commands == NULL) {
 			nm_log(NSLOG_VERIFICATION_ERROR, "Error: Contact '%s' has no host notification commands defined!", temp_contact->name);
 			errors++;
-		} else for (temp_commandsmember = temp_contact->host_notification_commands; temp_commandsmember != NULL; temp_commandsmember = temp_commandsmember->next) {
-				temp_commandsmember->command_ptr = find_bang_command(temp_commandsmember->command);
-				if (temp_commandsmember->command_ptr == NULL) {
-					nm_log(NSLOG_VERIFICATION_ERROR, "Error: Host notification command '%s' specified for contact '%s' is not defined anywhere!", temp_commandsmember->command, temp_contact->name);
-					errors++;
-				}
-			}
+		}
 
 		/* check service notification timeperiod */
 		if (temp_contact->service_notification_period == NULL) {
@@ -1722,32 +1493,10 @@ int pre_flight_object_check(int *w, int *e)
 			warnings++;
 		}
 
-		else {
-			temp_timeperiod = find_timeperiod(temp_contact->service_notification_period);
-			if (temp_timeperiod == NULL) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: Service notification period '%s' specified for contact '%s' is not defined anywhere!", temp_contact->service_notification_period, temp_contact->name);
-				errors++;
-			}
-
-			/* save the pointer to the service notification timeperiod for later */
-			temp_contact->service_notification_period_ptr = temp_timeperiod;
-		}
-
 		/* check host notification timeperiod */
 		if (temp_contact->host_notification_period == NULL) {
 			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Contact '%s' has no host notification time period defined!", temp_contact->name);
 			warnings++;
-		}
-
-		else {
-			temp_timeperiod = find_timeperiod(temp_contact->host_notification_period);
-			if (temp_timeperiod == NULL) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: Host notification period '%s' specified for contact '%s' is not defined anywhere!", temp_contact->host_notification_period, temp_contact->name);
-				errors++;
-			}
-
-			/* save the pointer to the host notification timeperiod for later */
-			temp_contact->host_notification_period_ptr = temp_timeperiod;
 		}
 
 		/* check for sane host recovery options */
@@ -1761,90 +1510,18 @@ int pre_flight_object_check(int *w, int *e)
 			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Service recovery notification option for contact '%s' doesn't make any sense - specify critical and/or warning options as well", temp_contact->name);
 			warnings++;
 		}
-
-		/* check for illegal characters in contact name */
-		if (use_precached_objects == FALSE) {
-			if (contains_illegal_object_chars(temp_contact->name) == TRUE) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: The name of contact '%s' contains one or more illegal characters.", temp_contact->name);
-				errors++;
-			}
-		}
 	}
 
 	if (verify_config)
 		printf("\tChecked %d contacts.\n", total_objects);
 
-
-
-	/*****************************************/
-	/* check each contact group...           */
-	/*****************************************/
-	for (temp_contactgroup = contactgroup_list, total_objects = 0; temp_contactgroup != NULL; temp_contactgroup = temp_contactgroup->next, total_objects++) {
-		/* check for illegal characters in contactgroup name */
-		if (use_precached_objects == FALSE) {
-			if (contains_illegal_object_chars(temp_contactgroup->group_name) == TRUE) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: The name of contact group '%s' contains one or more illegal characters.", temp_contactgroup->group_name);
-				errors++;
-			}
-		}
-	}
-
-	if (verify_config)
-		printf("\tChecked %d contact groups.\n", total_objects);
-
-
-	/*****************************************/
-	/* check all commands...                 */
-	/*****************************************/
-	for (temp_command = command_list, total_objects = 0; temp_command != NULL; temp_command = temp_command->next, total_objects++) {
-
-		/* check for illegal characters in command name */
-		if (use_precached_objects == FALSE) {
-			if (contains_illegal_object_chars(temp_command->name) == TRUE) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: The name of command '%s' contains one or more illegal characters.", temp_command->name);
-				errors++;
-			}
-		}
-	}
-
-	if (verify_config)
-		printf("\tChecked %d commands.\n", total_objects);
-
-
-
-	/*****************************************/
-	/* check all timeperiods...              */
-	/*****************************************/
-	for (temp_timeperiod = timeperiod_list, total_objects = 0; temp_timeperiod != NULL; temp_timeperiod = temp_timeperiod->next, total_objects++) {
-
-		/* check for illegal characters in timeperiod name */
-		if (use_precached_objects == FALSE) {
-			if (contains_illegal_object_chars(temp_timeperiod->name) == TRUE) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: The name of time period '%s' contains one or more illegal characters.", temp_timeperiod->name);
-				errors++;
-			}
-		}
-
-		/* check for valid timeperiod names in exclusion list */
-		for (temp_timeperiodexclusion = temp_timeperiod->exclusions; temp_timeperiodexclusion != NULL; temp_timeperiodexclusion = temp_timeperiodexclusion->next) {
-
-			temp_timeperiod2 = find_timeperiod(temp_timeperiodexclusion->timeperiod_name);
-			if (temp_timeperiod2 == NULL) {
-				nm_log(NSLOG_VERIFICATION_ERROR, "Error: Excluded time period '%s' specified in timeperiod '%s' is not defined anywhere!", temp_timeperiodexclusion->timeperiod_name, temp_timeperiod->name);
-				errors++;
-			}
-
-			/* save the timeperiod pointer for later */
-			temp_timeperiodexclusion->timeperiod_ptr = temp_timeperiod2;
-		}
-	}
-
-	if (verify_config)
-		printf("\tChecked %d time periods.\n", total_objects);
-
-
 	/* help people use scripts to verify that objects are loaded */
 	if (verify_config) {
+		printf("\tChecked %u host groups.\n", num_objects.hostgroups);
+		printf("\tChecked %d service groups.\n", num_objects.servicegroups);
+		printf("\tChecked %d contact groups.\n", num_objects.contactgroups);
+		printf("\tChecked %d commands.\n", num_objects.commands);
+		printf("\tChecked %d time periods.\n", num_objects.timeperiods);
 		printf("\tChecked %u host escalations.\n", num_objects.hostescalations);
 		printf("\tChecked %u service escalations.\n", num_objects.serviceescalations);
 	}
@@ -1861,11 +1538,6 @@ int pre_flight_object_check(int *w, int *e)
 #define DFS_UNCHECKED                    0  /* default value */
 #define DFS_TEMP_CHECKED                 1  /* check just one time */
 #define DFS_OK                           2  /* no problem */
-#define DFS_NEAR_LOOP                    3  /* has trouble sons */
-#define DFS_LOOPY                        4  /* is a part of a loop */
-
-#define dfs_get_status(obj) (obj ? ary[obj->id] : DFS_OK)
-#define dfs_set_status(obj, value) ary[obj->id] = (value)
 
 /**
  * Modified version of Depth-first Search
@@ -1894,48 +1566,45 @@ int pre_flight_object_check(int *w, int *e)
  * backwards, since core Nagios doesn't need the child pointer at
  * later stages.
  */
-static int dfs_servicedep_path(char *ary, service *root, int dep_type, int *errors)
+
+struct dfs_parameters {
+	char *ary;
+	int *errors;
+};
+
+static gboolean dfs_host_path_cb(gpointer _name, gpointer _hst, gpointer user_data);
+static int dfs_host_path(host *root, struct dfs_parameters *params);
+
+static int dfs_servicedep_path(char *ary, servicedependency *root)
 {
 	objectlist *olist;
-	int status;
 
-	status = dfs_get_status(root);
-	if (status != DFS_UNCHECKED)
-		return status;
+	if (!root)
+		return 0;
+	if (ary[root->id] == DFS_TEMP_CHECKED) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Circular %s dependency detected between service '%s;%s' and '%s;%s'\n",
+		       root->dependency_type == NOTIFICATION_DEPENDENCY ? "notification" : "execution",
+		       root->dependent_host_name, root->dependent_service_description,
+		       root->master_service_ptr->host_name, root->master_service_ptr->description);
+		return 1;
+	}
+	else if (ary[root->id] != DFS_UNCHECKED)
+		return ary[root->id] != DFS_OK;
 
-	dfs_set_status(root, DFS_TEMP_CHECKED);
 
-	if (dep_type == NOTIFICATION_DEPENDENCY) {
-		olist = root->notify_deps;
+	ary[root->id] = DFS_TEMP_CHECKED;
+
+	if (root->dependency_type == NOTIFICATION_DEPENDENCY) {
+		for (olist = root->master_service_ptr->notify_deps; olist; olist = olist->next) {
+			int ret = dfs_servicedep_path(ary, olist->object_ptr);
+			if (ret)
+				return ret;
+		}
 	} else {
-		olist = root->exec_deps;
-	}
-
-	if (!olist) { /* no children, so we can't be loopy */
-		dfs_set_status(root, DFS_OK);
-		return DFS_OK;
-	}
-	for (; olist; olist = olist->next) {
-		int child_status;
-		service *child;
-		servicedependency *child_dep = (servicedependency *)olist->object_ptr;
-
-		/* tree is upside down, so look to master */
-		child = child_dep->master_service_ptr;
-		child_status = dfs_servicedep_path(ary, child, dep_type, errors);
-
-		if (child_status == DFS_OK)
-			continue;
-
-		if (child_status == DFS_TEMP_CHECKED) {
-			nm_log(NSLOG_VERIFICATION_ERROR, "Error: Circular %s dependency detected for services '%s;%s' and '%s;%s'\n",
-			       dep_type == NOTIFICATION_DEPENDENCY ? "notification" : "execution",
-			       root->host_name, root->description,
-			       child->host_name, child->description);
-			(*errors)++;
-			dfs_set_status(child, DFS_LOOPY);
-			dfs_set_status(root, DFS_LOOPY);
-			continue;
+		for (olist = root->master_service_ptr->exec_deps; olist; olist = olist->next) {
+			int ret = dfs_servicedep_path(ary, olist->object_ptr);
+			if (ret)
+				return ret;
 		}
 	}
 
@@ -1943,48 +1612,42 @@ static int dfs_servicedep_path(char *ary, service *root, int dep_type, int *erro
 	 * if we've hit ourself, we'll have marked us as loopy
 	 * above, so if we're TEMP_CHECKED still we're ok
 	 */
-	if (dfs_get_status(root) == DFS_TEMP_CHECKED)
-		dfs_set_status(root, DFS_OK);
-	return dfs_get_status(root);
+	if (ary[root->id] == DFS_TEMP_CHECKED)
+		ary[root->id] = DFS_OK;
+	return ary[root->id] != DFS_OK;
 }
 
 
-static int dfs_hostdep_path(char *ary, host *root, int dep_type, int *errors)
+static int dfs_hostdep_path(char *ary, hostdependency *root)
 {
 	objectlist *olist;
-	int status;
 
-	status = dfs_get_status(root);
-	if (status != DFS_UNCHECKED)
-		return status;
+	if (!root)
+		return 0;
 
-	dfs_set_status(root, DFS_TEMP_CHECKED);
-
-	if (dep_type == NOTIFICATION_DEPENDENCY) {
-		olist = root->notify_deps;
-	} else {
-		olist = root->exec_deps;
+	if (ary[root->id] == DFS_TEMP_CHECKED) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Circular %s dependency detected between host '%s' and '%s'\n",
+		       root->dependency_type == NOTIFICATION_DEPENDENCY ? "notification" : "execution",
+		       root->dependent_host_name,
+		       root->master_host_ptr->name);
+		return 1;
 	}
+	else if (ary[root->id] != DFS_UNCHECKED)
+		return ary[root->id] != DFS_OK;
 
-	for (; olist; olist = olist->next) {
-		int child_status;
-		host *child;
-		hostdependency *child_dep = (hostdependency *)olist->object_ptr;
+	ary[root->id] = DFS_TEMP_CHECKED;
 
-		child = child_dep->master_host_ptr;
-		child_status = dfs_hostdep_path(ary, child, dep_type, errors);
-
-		if (child_status == DFS_OK)
-			continue;
-
-		if (child_status == DFS_TEMP_CHECKED) {
-			nm_log(NSLOG_VERIFICATION_ERROR, "Error: Circular %s dependency detected for hosts '%s' and '%s'\n",
-			       dep_type == NOTIFICATION_DEPENDENCY ? "notification" : "execution",
-			       root->name, child->name);
-			dfs_set_status(child, DFS_LOOPY);
-			dfs_set_status(root, DFS_LOOPY);
-			(*errors)++;
-			continue;
+	if (root->dependency_type == NOTIFICATION_DEPENDENCY) {
+		for (olist = root->master_host_ptr->notify_deps; olist; olist = olist->next) {
+			int ret = dfs_hostdep_path(ary, olist->object_ptr);
+			if (ret)
+				return ret;
+		}
+	} else {
+		for (olist = root->master_host_ptr->exec_deps; olist; olist = olist->next) {
+			int ret = dfs_hostdep_path(ary, olist->object_ptr);
+			if (ret)
+				return ret;
 		}
 	}
 
@@ -1992,80 +1655,77 @@ static int dfs_hostdep_path(char *ary, host *root, int dep_type, int *errors)
 	 * if we've hit ourself, we'll have marked us as loopy
 	 * above, so if we're still TEMP_CHECKED we're ok
 	 */
-	if (dfs_get_status(root) == DFS_TEMP_CHECKED)
-		dfs_set_status(root, DFS_OK);
-	return dfs_get_status(root);
+	if (ary[root->id] == DFS_TEMP_CHECKED)
+		ary[root->id] = DFS_OK;
+	return ary[root->id] != DFS_OK;
 }
 
+static gboolean dfs_host_path_cb(gpointer _name, gpointer _hst, gpointer user_data) {
+	return 0 != dfs_host_path((host *)_hst, (struct dfs_parameters *)user_data);
+}
 
-static int dfs_host_path(char *ary, host *root, int *errors)
+static int dfs_host_path(host *root, struct dfs_parameters *params)
 {
-	hostsmember *child = NULL;
+	char *ary = params->ary;
+	int *errors = params->errors;
+	if (!root)
+		return 0;
 
-	if (dfs_get_status(root) != DFS_UNCHECKED)
-		return dfs_get_status(root);
-
-	/* Mark the root temporary checked */
-	dfs_set_status(root, DFS_TEMP_CHECKED);
-
-	/* We are scanning the children */
-	for (child = root->child_hosts; child != NULL; child = child->next) {
-		int child_status = dfs_host_path(ary, child->host_ptr, errors);
-
-		/* we can move on quickly if child is ok */
-		if (child_status == DFS_OK)
-			continue;
-
-		/* If a child already temporary checked, its a problem,
-		 * loop inside, and its a acked status */
-		if (child_status == DFS_TEMP_CHECKED) {
-			nm_log(NSLOG_VERIFICATION_ERROR, "Error: The hosts '%s' and '%s' form or lead into a circular parent/child chain!",
-			       root->name, child->host_ptr->name);
+	if (ary[root->id] == DFS_TEMP_CHECKED) {
+		nm_log(
+			NSLOG_VERIFICATION_ERROR,
+			"Error: The host '%s' is part of a circular parent/child chain!",
+			root->name);
+		(*errors)++;
+		return 0;
+	}
+	else if (ary[root->id] != DFS_UNCHECKED) {
+		if (ary[root->id] != DFS_OK)
 			(*errors)++;
-			dfs_set_status(child->host_ptr, DFS_LOOPY);
-			dfs_set_status(root, DFS_LOOPY);
-			continue;
-		}
+		return 0;
 	}
 
-	/*
-	 * If root have been modified, do not set it OK
-	 * A node is OK if and only if all of his children are OK
-	 * If it does not have child, goes ok
-	 */
-	if (dfs_get_status(root) == DFS_TEMP_CHECKED)
-		dfs_set_status(root, DFS_OK);
-	return dfs_get_status(root);
+	/* Mark the root temporary checked */
+	ary[root->id] = DFS_TEMP_CHECKED;
+
+	g_tree_foreach(root->child_hosts, dfs_host_path_cb, params);
+
+	if (ary[root->id] == DFS_TEMP_CHECKED)
+		ary[root->id] = DFS_OK;
+
+	if (ary[root->id] != DFS_OK)
+		(*errors)++;
+	return 0;
 }
 
 
-static int dfs_timeperiod_path(char *ary, timeperiod *root, int *errors)
+static int dfs_timeperiod_path(char *ary, timeperiod *root)
 {
 	timeperiodexclusion *exc;
 
-	if (dfs_get_status(root) != DFS_UNCHECKED)
-		return dfs_get_status(root);
+	if (!root)
+		return 0;
+
+	if (ary[root->id] == DFS_TEMP_CHECKED) {
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: The timeperiod '%s' is part of a circular exclusion chain!",
+		       root->name);
+		return 1;
+	}
+	else if (ary[root->id] != DFS_UNCHECKED)
+		return ary[root->id] != DFS_OK;
 
 	/* Mark the root temporary checked */
-	dfs_set_status(root, DFS_TEMP_CHECKED);
+	ary[root->id] = DFS_TEMP_CHECKED;
 
 	for (exc = root->exclusions; exc; exc = exc->next) {
-		int child_status = dfs_timeperiod_path(ary, exc->timeperiod_ptr, errors);
-
-		if (child_status == DFS_TEMP_CHECKED) {
-			nm_log(NSLOG_VERIFICATION_ERROR, "Error: The timeperiods '%s' and '%s' form or lead into a circular exclusion chain!",
-			       root->name, exc->timeperiod_ptr->name);
-			(*errors)++;
-			dfs_set_status(exc->timeperiod_ptr, DFS_LOOPY);
-			dfs_set_status(root, DFS_LOOPY);
-			continue;
-		}
+		int ret = dfs_timeperiod_path(ary, exc->timeperiod_ptr);
+		if (ret)
+			return ret;
 	}
 
-	if (dfs_get_status(root) == DFS_TEMP_CHECKED)
-		dfs_set_status(root, DFS_OK);
-
-	return dfs_get_status(root);
+	if (ary[root->id] == DFS_TEMP_CHECKED)
+		ary[root->id] = DFS_OK;
+	return ary[root->id] != DFS_OK;
 }
 
 
@@ -2078,8 +1738,9 @@ int pre_flight_circular_check(int *w, int *e)
 	timeperiod *tp;
 	unsigned int i;
 	int errors = 0;
-	unsigned int alloc, dep_type;
-	char *ary[2];
+	unsigned int alloc;
+	char *ary;
+	struct dfs_parameters params;
 
 	if (num_objects.hosts > num_objects.services)
 		alloc = num_objects.hosts;
@@ -2087,10 +1748,12 @@ int pre_flight_circular_check(int *w, int *e)
 		alloc = num_objects.services;
 	if (num_objects.timeperiods > alloc)
 		alloc = num_objects.timeperiods;
+	if (num_objects.hostdependencies > alloc)
+		alloc = num_objects.hostdependencies;
+	if (num_objects.servicedependencies > alloc)
+		alloc = num_objects.servicedependencies;
 
-	for (i = 0; i < ARRAY_SIZE(ary); i++) {
-		ary[i] = nm_calloc(1, alloc);
-	}
+	ary = nm_calloc(1, alloc);
 
 
 	/********************************************/
@@ -2099,8 +1762,10 @@ int pre_flight_circular_check(int *w, int *e)
 	if (verify_config)
 		printf("Checking for circular paths...\n");
 
+	params.ary = ary;
+	params.errors = &errors;
 	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
-		dfs_host_path(ary[0], temp_host, &errors);
+		dfs_host_path(temp_host, &params);
 	}
 	if (verify_config)
 		printf("\tChecked %u hosts\n", num_objects.hosts);
@@ -2110,42 +1775,42 @@ int pre_flight_circular_check(int *w, int *e)
 	/********************************************/
 	/* check service dependencies */
 	/* We must clean the dfs status from previous check */
-	for (i = 0; i < ARRAY_SIZE(ary); i++)
-		memset(ary[i], 0, alloc);
-	for (i = 0; i < num_objects.servicedependencies; i++) {
-		temp_sd = servicedependency_ary[i];
-		dep_type = temp_sd->dependency_type;
-		/*
-		 * this shouldn't happen, but it can in case dependencies are
-		 * added to services on hosts in empty hostgroups (ie, nonexistent)
-		 */
-		if (dep_type < 1 || dep_type > ARRAY_SIZE(ary))
-			continue;
-		dfs_servicedep_path(ary[dep_type - 1], temp_sd->dependent_service_ptr, dep_type, &errors);
+	memset(ary, 0, alloc);
+	for (i = 0; i < num_objects.services; i++) {
+		struct objectlist *deplist;
+		for (deplist = service_ary[i]->notify_deps; deplist; deplist = deplist->next) {
+			temp_sd = deplist->object_ptr;
+			errors += dfs_servicedep_path(ary, temp_sd);
+		}
+		for (deplist = service_ary[i]->exec_deps; deplist; deplist = deplist->next) {
+			temp_sd = deplist->object_ptr;
+			errors += dfs_servicedep_path(ary, temp_sd);
+		}
 	}
 	if (verify_config)
 		printf("\tChecked %u service dependencies\n", num_objects.servicedependencies);
 
 	/* check host dependencies */
-	for (i = 0; i < ARRAY_SIZE(ary); i++)
-		memset(ary[i], 0, alloc);
-	for (i = 0; i < num_objects.hostdependencies; i++) {
-		temp_hd = hostdependency_ary[i];
-		dep_type = temp_hd->dependency_type;
-		/* see above */
-		if (dep_type < 1 || dep_type > ARRAY_SIZE(ary))
-			continue;
-		dfs_hostdep_path(ary[dep_type - 1], temp_hd->dependent_host_ptr, dep_type, &errors);
+	memset(ary, 0, alloc);
+	for (i = 0; i < num_objects.hosts; i++) {
+		struct objectlist *deplist;
+		for (deplist = host_ary[i]->notify_deps; deplist; deplist = deplist->next) {
+			temp_hd = deplist->object_ptr;
+			errors += dfs_hostdep_path(ary, temp_hd);
+		}
+		for (deplist = host_ary[i]->exec_deps; deplist; deplist = deplist->next) {
+			temp_hd = deplist->object_ptr;
+			errors += dfs_hostdep_path(ary, temp_hd);
+		}
 	}
 
 	if (verify_config)
 		printf("\tChecked %u host dependencies\n", num_objects.hostdependencies);
 
 	/* check timeperiod exclusion chains */
-	for (i = 0; i < ARRAY_SIZE(ary); i++)
-		memset(ary[i], 0, alloc);
+	memset(ary, 0, alloc);
 	for (tp = timeperiod_list; tp; tp = tp->next) {
-		dfs_timeperiod_path(ary[0], tp, &errors);
+		errors += dfs_timeperiod_path(ary, tp);
 	}
 	if (verify_config)
 		printf("\tChecked %u timeperiods\n", num_objects.timeperiods);
@@ -2153,8 +1818,7 @@ int pre_flight_circular_check(int *w, int *e)
 	/* update warning and error count */
 	*e += errors;
 
-	for (i = 0; i < ARRAY_SIZE(ary); i++)
-		free(ary[i]);
+	free(ary);
 
 	return (errors > 0) ? ERROR : OK;
 }

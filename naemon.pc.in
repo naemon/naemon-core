@@ -5,9 +5,11 @@ includedir=@includedir@
 sysconfdir=@sysconfdir@
 
 mainconf=@pkgconfdir@/naemon.cfg
+naemon_user=@naemon_user@
+naemon_group=@naemon_group@
 
 Name: Naemon
 Description: Naemon network monitoring
 Version: @VERSION@
-Libs: -L${libdir} -lnaemon
-Cflags: -I${includedir}
+Libs: -L${libdir} -lnaemon -ldl -lm @GLIB_LIBS@
+Cflags: -I${includedir} @GLIB_CFLAGS@

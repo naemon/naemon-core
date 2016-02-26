@@ -18,10 +18,10 @@ START_TEST(services)
 	objcfg_dirs = NULL;
 	res = reset_variables();
 	ck_assert_int_eq(OK, res);
-	config_file_dir = nspath_absolute_dirname(SYSCONFDIR "services/naemon.cfg", NULL);
-	res = read_main_config_file(SYSCONFDIR "services/naemon.cfg");
+	config_file_dir = nspath_absolute_dirname(TESTDIR "services/naemon.cfg", NULL);
+	res = read_main_config_file(TESTDIR "services/naemon.cfg");
 	ck_assert_int_eq(OK, res);
-	res = read_all_object_data(SYSCONFDIR "services/naemon.cfg");
+	res = read_all_object_data(TESTDIR "services/naemon.cfg");
 	ck_assert_int_eq(OK, res);
 	for (s = service_list, hits=0; s; s = s->next, hits++) {
 		if (!strcmp(s->description, "service3")) {
@@ -34,6 +34,8 @@ START_TEST(services)
 	}
 	ck_assert_int_eq(2, s5_hits);
 	ck_assert_int_eq(5, hits);
+	nm_free(config_file_dir);
+	cleanup();
 }
 END_TEST
 
@@ -49,10 +51,10 @@ START_TEST(recursive)
 	objcfg_dirs = NULL;
 	res = reset_variables();
 	ck_assert_int_eq(OK, res);
-	config_file_dir = nspath_absolute_dirname(SYSCONFDIR "recursive/naemon.cfg", NULL);
-	res = read_main_config_file(SYSCONFDIR "recursive/naemon.cfg");
+	config_file_dir = nspath_absolute_dirname(TESTDIR "recursive/naemon.cfg", NULL);
+	res = read_main_config_file(TESTDIR "recursive/naemon.cfg");
 	ck_assert_int_eq(OK, res);
-	res = read_all_object_data(SYSCONFDIR "recursive/naemon.cfg");
+	res = read_all_object_data(TESTDIR "recursive/naemon.cfg");
 	ck_assert_int_eq(OK, res);
 	for (h = host_list, hits=0; h; h = h->next, hits++) {
 		if (!strcmp(h->name, "host1")) {
@@ -65,18 +67,20 @@ START_TEST(recursive)
 		}
 	}
 	ck_assert_msg(hits == 2, "Expected 2 hosts, found %i", hits);
+	nm_free(config_file_dir);
+	cleanup();
 }
 END_TEST
 
 START_TEST(main_include)
 {
 	int res;
-	char *file_cfg = nspath_normalize(SYSCONFDIR "includes/a_file.cfg");
-	char *dir_cfg = nspath_normalize(SYSCONFDIR "includes/a_dir");
+	char *file_cfg = nspath_normalize(TESTDIR "includes/a_file.cfg");
+	char *dir_cfg = nspath_normalize(TESTDIR "includes/a_dir");
 	objcfg_files = NULL;
 	objcfg_dirs = NULL;
-	config_file_dir = nspath_absolute_dirname(SYSCONFDIR "includes/naemon.cfg", NULL);
-	res = read_main_config_file(SYSCONFDIR "includes/naemon.cfg");
+	config_file_dir = nspath_absolute_dirname(TESTDIR "includes/naemon.cfg", NULL);
+	res = read_main_config_file(TESTDIR "includes/naemon.cfg");
 	ck_assert_int_eq(OK, res);
 	ck_assert_int_eq(1448, event_handler_timeout);
 	// leave files without .cfg suffix alone:
@@ -88,6 +92,7 @@ START_TEST(main_include)
 	ck_assert_str_eq(dir_cfg, objcfg_dirs->object_ptr);
 	nm_free(file_cfg);
 	nm_free(dir_cfg);
+	nm_free(config_file_dir);
 }
 END_TEST
 
@@ -108,7 +113,7 @@ int main(void)
 	int number_failed = 0;
 	Suite *s = config_suite();
 	SRunner *sr = srunner_create(s);
-	srunner_run_all(sr, CK_NORMAL);
+	srunner_run_all(sr, CK_ENV);
 	number_failed = srunner_ntests_failed(sr);
 	srunner_free(sr);
 	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;

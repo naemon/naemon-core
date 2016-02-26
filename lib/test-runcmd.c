@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include "runcmd.c"
 #include "t-utils.h"
 #include <stdio.h>

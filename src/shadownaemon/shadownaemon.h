@@ -74,7 +74,6 @@ int remove_old_downtimes(void);
 int update_comment_data(void);
 int remove_old_comments(void);
 char *get_default_livestatus_module(void);
-int count_characters(char*, char);
 int clean_output_folder(void);
 int write_config_files(void);
 int write_commands_configuration(FILE *file);
