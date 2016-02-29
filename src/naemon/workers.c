@@ -409,7 +409,7 @@ static int wproc_run_job(struct wproc_job *job, nagios_macros *mac);
 static int handle_worker_result(int sd, int events, void *arg)
 {
 	char *buf, *error_reason = NULL;
-	unsigned long size;
+	size_t size;
 	int ret;
 	struct wproc_worker *wp = (struct wproc_worker *)arg;
 
@@ -464,7 +464,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 		/* for everything else we need to actually parse */
 		if (buf2kvvec_prealloc(&kvv, buf, size, '=', '\0', KVVEC_ASSIGN) <= 0) {
 			nm_log(NSLOG_RUNTIME_ERROR,
-			       "wproc: Failed to parse key/value vector from worker response with len %lu. First kv=%s",
+			       "wproc: Failed to parse key/value vector from worker response with len %zd. First kv=%s",
 			       size, buf ? buf : "(NULL)");
 			nm_free(buf);
 			continue;

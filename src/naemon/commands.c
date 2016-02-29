@@ -212,7 +212,7 @@ static int command_input_handler(int sd, int events, void *discard)
 {
 	int ret, cmd_ret;
 	char *buf;
-	unsigned long size;
+	size_t size;
 
 	ret = nm_bufferqueue_read(command_worker.bq, sd);
 	log_debug_info(DEBUGL_COMMANDS, 2, "Read %d bytes from command worker\n", ret);

@@ -508,7 +508,7 @@ static int receive_command(int sd, int events, void *arg)
 {
 	int ioc_ret;
 	char *buf;
-	unsigned long size;
+	size_t size;
 
 	if (!bq) {
 		bq = nm_bufferqueue_create();
