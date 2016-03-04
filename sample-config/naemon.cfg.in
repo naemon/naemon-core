@@ -202,14 +202,18 @@ log_archive_path=@logdir@/archives
 
 use_syslog=0
 
-
-
 # NOTIFICATION LOGGING OPTION
 # If you don't want notifications to be logged, set this value to 0.
 # If notifications should be logged, set the value to 1.
 
 log_notifications=1
 
+# Notification suppression reason (NSR) logging causes the reason for a
+# notification suppression to be logged, when it occurs. This can potentially
+# add some noise to your log file, but is highly useful when troubleshooting
+# missing notifications.
+
+enable_notification_suppression_reason_logging=1
 
 
 # SERVICE RETRY LOGGING OPTION
