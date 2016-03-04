@@ -244,37 +244,57 @@ int set_environment_var(char *name, char *value, int set)
 /* trap signals so we can exit gracefully */
 void setup_sighandler(void)
 {
+	size_t i;
+	struct sigaction sigact;
+	int handled_signals[] = {
+		SIGQUIT,
+		SIGTERM,
+		SIGHUP,
+		SIGUSR1,
+		SIGINT
+	};
+
 	/* remove buffering from stderr, stdin, and stdout */
 	setbuf(stdin, (char *)NULL);
 	setbuf(stdout, (char *)NULL);
 	setbuf(stderr, (char *)NULL);
 
+	sigact.sa_handler = &sighandler;
+	g_warn_if_fail(sigemptyset(&(sigact.sa_mask)) == 0);
+
 	/* initialize signal handling */
 	signal(SIGPIPE, SIG_IGN);
-	signal(SIGQUIT, sighandler);
-	signal(SIGTERM, sighandler);
-	signal(SIGHUP, sighandler);
-	signal(SIGUSR1, sighandler);
-	signal(SIGINT, sighandler);
 
-	return;
+	for (i = 0; i < (sizeof(handled_signals) / sizeof(handled_signals[0])); ++i) {
+		if (sigaction(handled_signals[i], &sigact, NULL) < 0) {
+			nm_log(NSLOG_RUNTIME_ERROR, "Failed to set signal handler for '%s': %s", strsignal(handled_signals[i]), strerror(errno));
+		}
+	}
 }
 
 
 /* reset signal handling... */
 void reset_sighandler(void)
 {
-
+	size_t i;
 	/* set signal handling to default actions */
-	signal(SIGQUIT, SIG_DFL);
-	signal(SIGTERM, SIG_DFL);
-	signal(SIGHUP, SIG_DFL);
-	signal(SIGPIPE, SIG_DFL);
-	signal(SIGXFSZ, SIG_DFL);
-	signal(SIGUSR1, SIG_DFL);
-	signal(SIGINT, SIG_DFL);
+	int signals[] = {
+		SIGQUIT,
+		SIGTERM,
+		SIGHUP,
+		SIGPIPE,
+		SIGXFSZ,
+		SIGUSR1,
+		SIGINT
+	};
 
-	return;
+	for (i = 0; i < sizeof(signals) / sizeof(signals[0]); ++i) {
+		if (signal(signals[i], SIG_DFL) == SIG_ERR) {
+			nm_log(NSLOG_RUNTIME_ERROR,
+					"Failed to reset signal handler for %s: %s",
+					strsignal(signals[i]), strerror(errno));
+		}
+	}
 }
 
 

@@ -711,6 +711,8 @@ int main(int argc, char **argv)
 
 	} while (sigrestart == TRUE && sigshutdown == FALSE);
 
+	shutdown_command_file_worker();
+
 	if (daemon_mode == TRUE)
 		unlink(lock_file);
 
