@@ -16,10 +16,6 @@ t_tap_test_checks_SOURCES = t-tap/test_checks.c
 t_tap_test_checks_CPPFLAGS = $(T_TAP_AM_CPPFLAGS)
 t_tap_test_checks_LDADD = $(TAPLDADD)
 
-t_tap_test_neb_callbacks_SOURCES = t-tap/test_neb_callbacks.c t-tap/fixtures.c t-tap/fixtures.h
-t_tap_test_neb_callbacks_CPPFLAGS = $(T_TAP_AM_CPPFLAGS)
-t_tap_test_neb_callbacks_LDADD = $(TAPLDADD)
-
 t_tap_test_config_SOURCES = t-tap/test_config.c
 t_tap_test_config_CPPFLAGS = $(T_TAP_AM_CPPFLAGS)
 t_tap_test_config_LDADD = $(TAPLDADD)
@@ -34,7 +30,7 @@ t_tap_test_downtime_LDADD = $(TAPLDADD)
 
 dist_check_SCRIPTS = t/705naemonstats.t t/900-configparsing.t
 check_PROGRAMS += t-tap/test_macros t-tap/test_timeperiods t-tap/test_checks \
-	t-tap/test_neb_callbacks t-tap/test_config t-tap/test_commands t-tap/test_downtime
+				  t-tap/test_config t-tap/test_commands t-tap/test_downtime
 distclean-local:
 	if test "${abs_srcdir}" != "${abs_builddir}"; then \
 		rm -r t; \
@@ -139,7 +135,13 @@ tests_test_retention_LDADD = $(TESTSLDADD)
 tests_test_retention_LDFLAGS = $(TESTSLDADD)
 tests_test_retention_CPPFLAGS = $(TESTSCPPFLAGS)
 
+tests_test_neb_callbacks_SOURCES = tests/test-neb-callbacks.c
+tests_test_neb_callbacks_LDADD = $(TESTSLDADD)
+tests_test_neb_callbacks_LDFLAGS = $(TESTSLDADD)
+tests_test_neb_callbacks_CPPFLAGS = $(TESTSCPPFLAGS)
+
 check_PROGRAMS += \
+	tests/test-neb-callbacks \
 	tests/test-checks \
 	tests/test-check-result-processing \
 	tests/test-scheduled-downtimes \
