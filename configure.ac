@@ -42,6 +42,14 @@ AM_CONDITIONAL([HAVE_CHECK], [test "x$with_tests" = "xyes"])
 
 PKG_CHECK_MODULES([GLIB], [glib-2.0])
 
+GLIB_REALTIME_LIBADD=""
+AC_CHECK_LIB([glib-2.0],
+             [clock_gettime],
+             [],
+             [GLIB_REALTIME_LIBADD=" -lrt"],
+            )
+AC_SUBST([GLIB_REALTIME_LIBADD])
+
 AM_MISSING_PROG([PROVE], [prove])
 AM_MISSING_PROG([GPERF], [gperf])
 AM_MISSING_PROG(HELP2MAN, help2man)

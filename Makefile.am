@@ -150,7 +150,7 @@ lib_LTLIBRARIES = libnaemon.la
 
 # details on library version numbers https://www.sourceware.org/autobook/autobook/autobook_91.html
 libnaemon_la_LDFLAGS = -version-info 0:0:0
-libnaemon_la_LIBADD = $(GLIB_LIBS)
+libnaemon_la_LIBADD = $(GLIB_LIBS) $(GLIB_REALTIME_LIBADD)
 libnaemon_la_SOURCES = $(pkginclude_HEADERS) $(common_sources) \
 	lib/bitmap.c lib/iobroker.c lib/bufferqueue.c \
 	lib/kvvec.c lib/kvvec_ekvstr.c lib/nsock.c lib/nspath.c lib/nsutils.c \
