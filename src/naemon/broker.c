@@ -511,15 +511,14 @@ void broker_contact_status(int type, int flags, int attr, contact *cntct)
 
 
 /* send notification data to broker */
-int broker_notification_data(int type, int flags, int attr, int notification_type, int reason_type, struct timeval start_time, struct timeval end_time, void *data, char *ack_author, char *ack_data, int escalated, int contacts_notified)
+neb_cb_resultset * broker_notification_data(int type, int flags, int attr, int notification_type, int reason_type, struct timeval start_time, struct timeval end_time, void *data, char *ack_author, char *ack_data, int escalated, int contacts_notified)
 {
 	nebstruct_notification_data ds;
 	host *temp_host = NULL;
 	service *temp_service = NULL;
-	int return_code = OK;
 
 	if (!(event_broker_options & BROKER_NOTIFICATIONS))
-		return return_code;
+		return NULL;
 
 	/* fill struct with relevant data */
 	ds.type = type;
@@ -550,10 +549,7 @@ int broker_notification_data(int type, int flags, int attr, int notification_typ
 	ds.escalated = escalated;
 	ds.contacts_notified = contacts_notified;
 
-	/* make callbacks */
-	return_code = neb_make_callbacks(NEBCALLBACK_NOTIFICATION_DATA, (void *)&ds);
-
-	return return_code;
+	return neb_make_callbacks_full(NEBCALLBACK_NOTIFICATION_DATA, (void *)&ds);
 }
 
 

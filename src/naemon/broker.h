@@ -9,6 +9,7 @@
 #include "objects_host.h"
 #include "objects_contact.h"
 #include "objects_service.h"
+#include "nebmods.h"
 
 /*************** EVENT BROKER OPTIONS *****************/
 
@@ -178,7 +179,7 @@ void broker_program_status(int, int, int);
 void broker_host_status(int, int, int, host *);
 void broker_service_status(int, int, int, service *);
 void broker_contact_status(int, int, int, contact *);
-int broker_notification_data(int, int, int, int, int, struct timeval, struct timeval, void *, char *, char *, int, int);
+neb_cb_resultset * broker_notification_data(int, int, int, int, int, struct timeval, struct timeval, void *, char *, char *, int, int);
 int broker_contact_notification_data(int, int, int, int, int, struct timeval, struct timeval, void *, contact *, char *, char *, int);
 int broker_contact_notification_method_data(int, int, int, int, int, struct timeval, struct timeval, void *, contact *, char *, char *, char *, int);
 void broker_adaptive_program_data(int, int, int, int, unsigned long, unsigned long, unsigned long, unsigned long);

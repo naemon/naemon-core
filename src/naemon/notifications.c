@@ -5,6 +5,7 @@
 #include "macros.h"
 #include "broker.h"
 #include "neberrors.h"
+#include "nebmods.h"
 #include "workers.h"
 #include "utils.h"
 #include "checks.h"
@@ -133,17 +134,14 @@ static int update_notification_suppression_reason(enum NotificationSuppressionTy
 		nm_log(log_level, "%s NOTIFICATION SUPPRESSED: %s;%s", type_name, objname, S); \
 	} else { log_debug_info(DEBUGL_NOTIFICATIONS, DEBUGV_BASIC, "%s NOTIFICATION SUPPRESSED: %s;%s", type_name, objname, S);}}
 void log_notification_suppression_reason(enum NotificationSuppressionReason reason,
-		enum NotificationSuppressionType type, void *primary_obj, void *secondary_obj)
+		enum NotificationSuppressionType type, void *primary_obj, void *secondary_obj, const char *extra_info)
 {
 	char *objname = NULL;
 	char *type_name = NULL;
 	unsigned int objid = 0u;
 	unsigned int log_level = NSLOG_RUNTIME_ERROR;
 	unsigned int modattr = 0u;
-	/* We use a switches here rather than lookup arrays
-	 *  or plain old if-else chains because this way we can get compiler
-	 *  warnings on unhandled cases
-	 */
+
 	switch (type) {
 	case NS_TYPE__COUNT: break;
 	case NS_TYPE_HOST:
@@ -254,7 +252,12 @@ void log_notification_suppression_reason(enum NotificationSuppressionReason reas
 		_log_nsr("Re-notification blocked for this problem because not enough time has passed since last notification.");
 		break;
 	case NSR_NEB_BLOCKED:
-		_log_nsr("Notification was blocked by a NEB module.");
+		{
+			char *s = NULL;
+			nm_asprintf(&s, "Notification was blocked by a NEB module. %s", extra_info);
+			_log_nsr(s);
+			nm_free(s);
+		}
 		break;
 	case NSR_BAD_PARENTS:
 		_log_nsr("Notification blocked because this object is unreachable - its parents are down.");
@@ -274,10 +277,12 @@ void log_notification_suppression_reason(enum NotificationSuppressionReason reas
 }
 #undef _log_nsr
 
-#define LOG_SERVICE_NSR(NSR) log_notification_suppression_reason(NSR, NS_TYPE_SERVICE, svc, NULL);
-#define LOG_HOST_NSR(NSR) log_notification_suppression_reason(NSR, NS_TYPE_HOST, hst, NULL);
-#define LOG_SERVICE_CONTACT_NSR(NSR) log_notification_suppression_reason(NSR, NS_TYPE_SERVICE_CONTACT, cntct, svc);
-#define LOG_HOST_CONTACT_NSR(NSR) log_notification_suppression_reason(NSR, NS_TYPE_HOST_CONTACT, cntct, hst);
+#define LOG_SERVICE_NSR(NSR) log_notification_suppression_reason(NSR, NS_TYPE_SERVICE, svc, NULL, NULL);
+#define LOG_HOST_NSR(NSR) log_notification_suppression_reason(NSR, NS_TYPE_HOST, hst, NULL, NULL);
+#define LOG_SERVICE_CONTACT_NSR(NSR) log_notification_suppression_reason(NSR, NS_TYPE_SERVICE_CONTACT, cntct, svc, NULL);
+#define LOG_HOST_CONTACT_NSR(NSR) log_notification_suppression_reason(NSR, NS_TYPE_HOST_CONTACT, cntct, hst, NULL);
+#define LOG_SERVICE_NSR_NEB_BLOCKED(NSR, NEB_CB_DESCRIPTION) log_notification_suppression_reason(NSR, NS_TYPE_SERVICE, svc, NULL, NEB_CB_DESCRIPTION);
+#define LOG_HOST_NSR_NEB_BLOCKED(NSR, NEB_CB_DESCRIPTION) log_notification_suppression_reason(NSR, NS_TYPE_SERVICE, hst, NULL, NEB_CB_DESCRIPTION);
 
 static void notification_handle_job_result(struct wproc_result *wpres, void *data, int flags) {
 	struct notification_job *nj = (struct notification_job*)data;
@@ -346,7 +351,9 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	int contacts_notified = 0;
 	int increment_notification_number = FALSE;
 	nagios_macros mac;
-	int neb_result;
+	neb_cb_resultset *neb_resultset = NULL;
+	neb_cb_resultset_iter neb_resultset_iter;
+	neb_cb_result *neb_result = NULL;
 
 	/* get the current time */
 	time(&current_time);
@@ -366,11 +373,24 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
-	neb_result = broker_notification_data(NEBTYPE_NOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, start_time, end_time, (void *)svc, not_author, not_data, escalated, 0);
-	if (neb_result == NEBERROR_CALLBACKCANCEL || neb_result == NEBERROR_CALLBACKOVERRIDE) {
-		LOG_SERVICE_NSR(NSR_NEB_BLOCKED);
-		return neb_result == NEBERROR_CALLBACKOVERRIDE ? OK : ERROR;
+	neb_resultset = broker_notification_data(NEBTYPE_NOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, start_time, end_time, (void *)svc, not_author, not_data, escalated, 0);
+	neb_cb_resultset_iter_init(&neb_resultset_iter, neb_resultset);
+	while (neb_cb_resultset_iter_next(&neb_resultset_iter, &neb_result)) {
+		int rc = neb_cb_result_returncode(neb_result);
+
+		if (rc == NEBERROR_CALLBACKCANCEL || rc == NEBERROR_CALLBACKOVERRIDE) {
+			char *description = NULL;
+			nm_asprintf(&description, "Module '%s' %s: '%s'",
+					neb_cb_result_module_name(neb_result),
+					rc == NEBERROR_CALLBACKCANCEL ? "cancelled notification" : "overrode notification",
+					neb_cb_result_description(neb_result));
+			LOG_SERVICE_NSR_NEB_BLOCKED(NSR_NEB_BLOCKED, description);
+			nm_free(description);
+			neb_cb_resultset_destroy(neb_resultset);
+			return rc == NEBERROR_CALLBACKCANCEL ? ERROR : OK;
+		}
 	}
+	neb_cb_resultset_destroy(neb_resultset);
 
 	/* should the notification number be increased? */
 	if (type == NOTIFICATION_NORMAL || (options & NOTIFICATION_OPTION_INCREMENT)) {
@@ -378,7 +398,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 		increment_notification_number = TRUE;
 	}
 
-	log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Current notification number: %d (%s)\n", svc->current_notification_number, (increment_notification_number == TRUE) ? "incremented" : "unchanged");
+	log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Current notification number: %d (%s)\n", svc->current_notification_number, (increment_notification_number == TRUE) ? "incremented" : "changed");
 
 	/* save and increase the current notification id */
 	svc->current_notification_id = next_notification_id;
@@ -1214,7 +1234,9 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 	int contacts_notified = 0;
 	int increment_notification_number = FALSE;
 	nagios_macros mac;
-	int neb_result;
+	neb_cb_resultset *neb_resultset = NULL;
+	neb_cb_resultset_iter neb_resultset_iter;
+	neb_cb_result *neb_result = NULL;
 
 	/* get the current time */
 	time(&current_time);
@@ -1232,11 +1254,24 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
-	neb_result = broker_notification_data(NEBTYPE_NOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, start_time, end_time, (void *)hst, not_author, not_data, escalated, 0);
-	if (neb_result == NEBERROR_CALLBACKCANCEL || neb_result == NEBERROR_CALLBACKOVERRIDE) {
-		LOG_HOST_NSR(NSR_NEB_BLOCKED);
-		return neb_result == NEBERROR_CALLBACKOVERRIDE ? OK : ERROR;
+	neb_resultset = broker_notification_data(NEBTYPE_NOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, start_time, end_time, (void *)hst, not_author, not_data, escalated, 0);
+	neb_cb_resultset_iter_init(&neb_resultset_iter, neb_resultset);
+	while (neb_cb_resultset_iter_next(&neb_resultset_iter, &neb_result)) {
+		int rc = neb_cb_result_returncode(neb_result);
+
+		if (rc == NEBERROR_CALLBACKCANCEL || rc == NEBERROR_CALLBACKOVERRIDE) {
+			char *description = NULL;
+			nm_asprintf(&description, "Module '%s' %s: '%s'",
+					neb_cb_result_module_name(neb_result),
+					rc == NEBERROR_CALLBACKCANCEL ? "cancelled notification" : "overrode notification",
+					neb_cb_result_description(neb_result));
+			LOG_HOST_NSR_NEB_BLOCKED(NSR_NEB_BLOCKED, description);
+			nm_free(description);
+			neb_cb_resultset_destroy(neb_resultset);
+			return rc == NEBERROR_CALLBACKCANCEL ? ERROR : OK;
+		}
 	}
+	neb_cb_resultset_destroy(neb_resultset);
 
 	/* should the notification number be increased? */
 	if (type == NOTIFICATION_NORMAL || (options & NOTIFICATION_OPTION_INCREMENT)) {
