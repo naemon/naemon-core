@@ -31,7 +31,6 @@ static int run_async_host_check(host *hst, int check_options, double latency);
 /* Result handling (After worker job is executed) */
 static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags);
 static int process_host_check_result(host *hst, host *pre, int *alert_recorded);
-static int adjust_host_check_attempt(host *hst, int is_active);
 static int handle_host_state(host *hst, int *alert_recorded);
 
 /* Extra features */
@@ -860,7 +859,7 @@ static int process_host_check_result(host *hst, host *prev, int *alert_recorded)
 }
 
 /* adjusts current host check attempt when a check is processed */
-static int adjust_host_check_attempt(host *hst, int is_active)
+int adjust_host_check_attempt(host *hst, int is_active)
 {
 	log_debug_info(DEBUGL_CHECKS, 2, "Adjusting check attempt number for host '%s': current attempt=%d/%d, state=%d, state type=%d\n", hst->name, hst->current_attempt, hst->max_attempts, hst->current_state, hst->state_type);
 
