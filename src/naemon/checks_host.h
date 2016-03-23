@@ -25,6 +25,9 @@ int update_host_state_post_check(host *hst, check_result *cr);
 /* Immutable, check if host is reachable */
 int check_host_dependencies(host *hst, int dependency_type);
 
+/* adjusts current host check attempt when a check is processed */
+int adjust_host_check_attempt(host *hst, int is_active);
+
 NAGIOS_END_DECL
 
 #endif
