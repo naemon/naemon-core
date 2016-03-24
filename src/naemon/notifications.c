@@ -282,7 +282,7 @@ void log_notification_suppression_reason(enum NotificationSuppressionReason reas
 #define LOG_SERVICE_CONTACT_NSR(NSR) log_notification_suppression_reason(NSR, NS_TYPE_SERVICE_CONTACT, cntct, svc, NULL);
 #define LOG_HOST_CONTACT_NSR(NSR) log_notification_suppression_reason(NSR, NS_TYPE_HOST_CONTACT, cntct, hst, NULL);
 #define LOG_SERVICE_NSR_NEB_BLOCKED(NSR, NEB_CB_DESCRIPTION) log_notification_suppression_reason(NSR, NS_TYPE_SERVICE, svc, NULL, NEB_CB_DESCRIPTION);
-#define LOG_HOST_NSR_NEB_BLOCKED(NSR, NEB_CB_DESCRIPTION) log_notification_suppression_reason(NSR, NS_TYPE_SERVICE, hst, NULL, NEB_CB_DESCRIPTION);
+#define LOG_HOST_NSR_NEB_BLOCKED(NSR, NEB_CB_DESCRIPTION) log_notification_suppression_reason(NSR, NS_TYPE_HOST, hst, NULL, NEB_CB_DESCRIPTION);
 
 static void notification_handle_job_result(struct wproc_result *wpres, void *data, int flags) {
 	struct notification_job *nj = (struct notification_job*)data;
