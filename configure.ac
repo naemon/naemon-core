@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.59])
-AC_INIT([naemon], m4_esyscmd([op5build/generate_version_number.sh]), [dev@op5.org])
+AC_INIT([naemon], m4_esyscmd([./version.sh]), [naemon-dev@monitoring-lists.org])
 AC_CONFIG_SRCDIR([src/naemon/naemon.c])
 AC_CONFIG_SRCDIR([lib/libnaemon.h])
 AM_INIT_AUTOMAKE([subdir-objects])
@@ -171,6 +171,7 @@ AC_ARG_WITH([naemon-user],
 [], [with_naemon_user="naemon"])
 naemon_user="$with_naemon_user"
 AC_SUBST(naemon_user)
+AC_DEFINE_UNQUOTED(DEFAULT_NAEMON_USER, "$naemon_user", [Default user name to run naemon as])
 
 # Determine the naemon group
 AC_ARG_WITH([naemon-group],
@@ -179,6 +180,7 @@ AC_ARG_WITH([naemon-group],
 [], [with_naemon_group="naemon"])
 naemon_group="$with_naemon_group"
 AC_SUBST(naemon_group)
+AC_DEFINE_UNQUOTED(DEFAULT_NAEMON_GROUP, "$naemon_group", [Default group name to run naemon as])
 
 # Determine the lockfile
 AC_ARG_WITH([lockfile],

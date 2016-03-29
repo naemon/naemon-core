@@ -58,7 +58,7 @@
 #undef _NAEMON_H_INSIDE
 
 /*
- * Defines below is kept pruely of backward compatibility purposes. They aren't
+ * Defines below is kept purely of backward compatibility purposes. They aren't
  * used within the naemon project itself.
  *
  * If they should be used within the naemon project, move them to the correct

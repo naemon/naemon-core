@@ -94,7 +94,7 @@ static int qh_input(int sd, int events, void *bq_)
 {
 	nm_bufferqueue *bq = (nm_bufferqueue *)bq_;
 	int result;
-	unsigned long len;
+	size_t len;
 	unsigned int query_len = 0;
 	char *buf, *space;
 	struct query_handler *qh;

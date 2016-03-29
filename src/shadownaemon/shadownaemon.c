@@ -108,7 +108,7 @@ int main(int argc, char **argv) {
         switch (c) {
             case 'V':
                 printf("%s version " VERSION, self_name);
-                break;
+                exit(EXIT_SUCCESS);
             case 'h': case '?':
                 usage(NULL);
                 break;
@@ -303,6 +303,16 @@ char *get_default_livestatus_module() {
     }
     nm_free(livestatus_path);
     return(NULL);
+}
+
+/* count number of characters */
+int count_characters(char* haystack, char ch) {
+    char * p;
+    int cnt = 0;
+    for(p = haystack; *p; p++) {
+        if (*p == ch) cnt++;
+    }
+    return(cnt);
 }
 
 /* remove all files from output folder */
@@ -711,9 +721,16 @@ int livestatus_query_socket(result_list **result, char *socket_path, char *query
     }
     result_string[total_read] = '\0';
 
-    // split result in arrays of arrays
+    /* split result in arrays of arrays */
     while((ptr = strsep( &result_string, "\x1")) != NULL) {
         if(!strcmp(ptr, "")) break;
+
+        /* validate result row, otherwise we would error if there is a csv separator in the plugin output */
+        if(count_characters(ptr, '\x2') != columnssize-1) {
+            nm_log(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, "skipping corrupted result row: %s\n", ptr);
+            continue;
+        }
+
         if(row_size > 0) {
             curr->next = nm_malloc(sizeof(result_list));
             curr = curr->next;
@@ -920,7 +937,7 @@ int update_program_status_data() {
             (*s_counters)[COUNTER_CONNECTIONS]    = (uint64_t)atoll(answer->set[18]);
             (*s_counters)[COUNTER_FORKS]          = (uint64_t)atoll(answer->set[20]);
             (*s_counters)[COUNTER_LOG_MESSAGES]   = (uint64_t)atoll(answer->set[30]);
-            last_request_count = (uint64_t)atoll(answer->set[28]);
+            last_request_count = (uint64_t)atoll(answer->set[26]);
 
             (*s_last_counter)[COUNTER_SERVICE_CHECKS] = (uint64_t)atoll(answer->set[28]);
             (*s_last_counter)[COUNTER_HOST_CHECKS]    = (uint64_t)atoll(answer->set[22]);
@@ -1714,7 +1731,7 @@ int run_refresh_loop() {
             /* use fast interval otherwise */
             sleep_remaining = short_shadow_update_interval - (duration*1000000);
         }
-        if(sigshutdown == TRUE || sigrestart == TRUE)
+        if(sigshutdown == TRUE || sigrestart == TRUE || sleep_remaining > short_shadow_update_interval)
             sleep_remaining = 0;
         if(sleep_remaining > 0)
             usleep(sleep_remaining);

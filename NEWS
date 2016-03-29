@@ -1,4 +1,22 @@
-Unreleased
+next - unreleased
+=================
+ * shadownaemon: fix segfault if plugin output contains csv separator
+
+1.0.3 - Mar 29 2015
+=================
+ * shadownaemon: fix request counter
+
+1.0.2 - Mar 28 2015
+=================
+ * shadownaemon: remove external commands from shadownaemon (#104)
+ * shadownaemon: propagate last_hard_* values (Michael Kraus)
+
+1.0 - Feb 13 2015
+=================
+ * Fix shadownaemon comment and downtime syncronization
+ * Fix spelling errors
+
+0.9 - Jan 08 2015
 =================
  * livestatus module name change to livestatus.so, path changed to libdir/naemon/naemon-livestatus/livestatus.so
  * External commands are now validated

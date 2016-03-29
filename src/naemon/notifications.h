@@ -96,8 +96,8 @@ int should_host_notification_be_escalated(host *);				/* checks if a host notifi
 int host_notification(host *, int, char *, char *, int);                           	/* notify all contacts about a host (problem or recovery) */
 int check_contact_host_notification_viability(contact *, host *, int, int);	/* checks viability of notifying a contact about a host */
 int notify_contact_of_host(nagios_macros *mac, contact *, host *, int, char *, char *, int, int);        	/* notify a single contact about a host */
-time_t get_next_host_notification_time(host *, time_t);				/* calculates nex acceptable re-notification time for a host */
-time_t get_next_service_notification_time(service *, time_t);			/* calculates nex acceptable re-notification time for a service */
+time_t get_next_host_notification_time(host *, time_t);				/* calculates next acceptable re-notification time for a host */
+time_t get_next_service_notification_time(service *, time_t);			/* calculates next acceptable re-notification time for a service */
 
 NAGIOS_END_DECL
 

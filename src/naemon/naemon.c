@@ -546,7 +546,7 @@ int main(int argc, char **argv)
 			result = read_all_object_data(config_file);
 
 		/*
-		 * the queue has to be initialized befor loading the neb modules
+		 * the queue has to be initialized before loading the neb modules
 		 * to give them the chance to register user events.
 		 * (initializing event queue requires number of objects, so do
 		 * this after parsing the objects)

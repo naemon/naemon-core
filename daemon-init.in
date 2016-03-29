@@ -175,9 +175,9 @@ case "$1" in
         ;;
     configtest|check|checkconfig)
         if type runuser >/dev/null 2>&1; then
-          runuser -s /bin/bash - $user -c "$corelimit >/dev/null 2>&1 ; $exec -v $config"
+          runuser -s /bin/bash - $user -c "$corelimit >/dev/null 2>&1 ; $exec -vp $config"
         else
-          /bin/su - -s /bin/sh $user -c "$corelimit >/dev/null 2>&1 ; $exec -v $config"
+          /bin/su - -s /bin/sh $user -c "$corelimit >/dev/null 2>&1 ; $exec -vp $config"
         fi
         retval=$?
         ;;
