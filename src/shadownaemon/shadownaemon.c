@@ -244,6 +244,9 @@ error_out:
         }
     }
 
+    iobroker_destroy(nagios_iobs, IOBROKER_CLOSE_SOCKETS);
+    nagios_iobs = NULL;
+
     /* clean up */
     clean_output_folder();
 
@@ -455,6 +458,12 @@ int write_config_files() {
 int initialize_core() {
     int result, warnings = 0, errors = 0;
     void (*open_logfile)(void);
+
+	if (!(nagios_iobs = iobroker_create())) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Failed to create IO broker set: %s\n",
+		       strerror(errno));
+		exit(EXIT_FAILURE);
+	}
 
     read_main_config_file(config_file);
 
@@ -1661,11 +1670,7 @@ int update_all_runtime_data() {
 
 /* main refresh loop */
 int run_refresh_loop() {
-    int errors = 0;
-    int delta_requests = 0;
     int result = OK;
-    double duration, sleep_remaining;
-    struct timeval refresh_start, refresh_end;
 
     initialize_core();
 
@@ -1687,55 +1692,12 @@ int run_refresh_loop() {
     /* sleep normal interval because we just have fetched all data */
     usleep(short_shadow_update_interval);
 
-    while(sigshutdown == FALSE && sigrestart == FALSE) {
-        gettimeofday(&refresh_start, NULL);
-        if(update_all_runtime_data() != OK) {
-            program_start = 0;
-            result        = ERROR;
-            // give remote site a chance to recover
-            if(errors > 100)
-                break;
-            errors++;
-        } else {
-            errors       = 0;
-            result       = OK;
-            last_refresh = refresh_start.tv_sec;
-        }
-        if(sigrestart == TRUE || sigshutdown == TRUE) {
-            if(sigrestart == TRUE)
-                write_config_files();
-            should_write_config = FALSE;
-            close(input_socket);
-            input_socket = -1;
+    /* start event loop, which blocks till there is a sigshutdown or sigrestart */
+    schedule_event(1, fetch_status_data, NULL);
+
+    while (!sigshutdown && !sigrestart) {
+        if (event_poll())
             break;
-        }
-
-        gettimeofday(&refresh_end, NULL);
-        duration = tv_delta_f(&refresh_start, &refresh_end);
-
-        /* decide wheter to use long or short sleep interval, start slow interval after 10min runtime and if there are no requests in 10minutes */
-        if(errors == 0 && shadow_program_restart < refresh_end.tv_sec - 600 && last_request < refresh_end.tv_sec - 600) {
-            /* no requests in last 10minutes, use slow interval */
-            sleep_remaining   = long_shadow_update_interval - (duration*1000000);
-            delta_requests = get_delta_request_count();
-            while(sleep_remaining > 0 && delta_requests == 0 && sigshutdown == FALSE && sigrestart == FALSE) {
-                gettimeofday(&refresh_end, NULL);
-                duration = tv_delta_f(&refresh_start, &refresh_end);
-                usleep(short_shadow_update_interval);
-                sleep_remaining = long_shadow_update_interval - (duration*1000000);
-                delta_requests = get_delta_request_count();
-                if(verbose && delta_requests > 0)
-                    timing_point("had %d requests since last refresh\n", delta_requests);
-            }
-        } else {
-            /* use fast interval otherwise */
-            sleep_remaining = short_shadow_update_interval - (duration*1000000);
-        }
-        if(sigshutdown == TRUE || sigrestart == TRUE || sleep_remaining > short_shadow_update_interval)
-            sleep_remaining = 0;
-        if(sleep_remaining > 0)
-            usleep(sleep_remaining);
-        timing_point("refresh loop waiting...\n");
     }
 
     nm_free(dummy_command);
@@ -1746,6 +1708,62 @@ int run_refresh_loop() {
     timing_point("Done cleaning up.\n");
 
     return(result);
+}
+
+static void fetch_status_data(struct nm_event_execution_properties *evprop) {
+    int errors = 0;
+    int delta_requests = 0;
+    struct timeval refresh_start, refresh_end;
+    double duration, sleep_remaining;
+
+    gettimeofday(&refresh_start, NULL);
+    if(update_all_runtime_data() != OK) {
+        program_start = 0;
+        // give remote site a chance to recover
+        if(errors > 100) {
+            sigrestart = TRUE;
+            return;
+        }
+        errors++;
+    } else {
+        errors       = 0;
+        last_refresh = refresh_start.tv_sec;
+    }
+    if(sigrestart == TRUE || sigshutdown == TRUE) {
+        if(sigrestart == TRUE)
+            write_config_files();
+        should_write_config = FALSE;
+        close(input_socket);
+        input_socket = -1;
+        return;
+    }
+
+    gettimeofday(&refresh_end, NULL);
+    duration = tv_delta_f(&refresh_start, &refresh_end);
+
+    /* decide wheter to use long or short sleep interval, start slow interval after 10min runtime and if there are no requests in 10minutes */
+    if(errors == 0 && shadow_program_restart < refresh_end.tv_sec - 600 && last_request < refresh_end.tv_sec - 600) {
+        /* no requests in last 10minutes, use slow interval */
+        sleep_remaining   = long_shadow_update_interval - (duration*1000000);
+        delta_requests = get_delta_request_count();
+        while(sleep_remaining > 0 && delta_requests == 0 && sigshutdown == FALSE && sigrestart == FALSE) {
+            gettimeofday(&refresh_end, NULL);
+            duration = tv_delta_f(&refresh_start, &refresh_end);
+            usleep(short_shadow_update_interval);
+            sleep_remaining = long_shadow_update_interval - (duration*1000000);
+            delta_requests = get_delta_request_count();
+            if(verbose && delta_requests > 0)
+                timing_point("had %d requests since last refresh\n", delta_requests);
+        }
+    } else {
+        /* use fast interval otherwise */
+        sleep_remaining = short_shadow_update_interval - (duration*1000000);
+    }
+    if(sigshutdown == TRUE || sigrestart == TRUE || sleep_remaining > short_shadow_update_interval)
+        sleep_remaining = 0;
+    if(sleep_remaining > 0)
+        schedule_event(sleep_remaining/1000000, fetch_status_data, NULL);
+    timing_point("refresh loop waiting...\n");
 }
 
 /* write commands configuration */
