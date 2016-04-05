@@ -1778,10 +1778,20 @@ int write_commands_configuration(FILE *file) {
     int columns_size = sizeof(columns)/sizeof(columns[0]);
     num = livestatus_query(&answer, (char*)input_source, query, columns, columns_size);
     if(num > 0) {
+        /* create dummy command which will later be used as notification command
+         * because the notification commands cannot be retrieved by livestatus
+         * but are required for a valid configuration
+         */
+        if(dummy_command != NULL)
+            nm_free(dummy_command);
+        dummy_command = nm_strdup("dummy_shadownaemon_notification_command");
+        fprintf(file,"define command {\n");
+        fprintf(file,"    command_name          %s\n", dummy_command);
+        fprintf(file,"    command_line          /bin/true\n");
+        fprintf(file,"}\n");
+
         row = answer;
         while(row != NULL) {
-            if(dummy_command == NULL)
-                dummy_command = nm_strdup(row->set[0]);
             fprintf(file,"define command {\n");
             fprintf(file,"    command_name          %s\n",   row->set[0]);
             fprintf(file,"    command_line          %s\n\n", row->set[1]); /* extra new line ensures trailing backslashes don't break anything */
