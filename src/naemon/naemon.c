@@ -156,7 +156,7 @@ int main(int argc, char **argv)
 	 * (including debug).
 	 *
 	 * Note that because of the GLib domain restriction, log messages from
-	 * other domains (such as if we did g_message(...) ourseleves from inside
+	 * other domains (such as if we did g_message(...) ourselves from inside
 	 * Naemon) do not currently go to this handler.
 	 **/
 	g_log_set_handler("GLib", G_LOG_LEVEL_MASK | G_LOG_FLAG_FATAL |

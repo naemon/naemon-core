@@ -263,19 +263,23 @@ static int command_file_worker(int sd)
 {
 	nm_bufferqueue *bq;
 
-	if (open_command_file() == ERROR)
-		return (EXIT_FAILURE);
+	if (open_command_file() == ERROR) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Command file worker: failed to open command file (%m)");
+		return EXIT_FAILURE;
+	}
 
 	bq = nm_bufferqueue_create();
-	if (!bq)
-		exit(EXIT_FAILURE);
-
+	if (!bq) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Command file worker: failed to create bufferqueue (%m)");
+		return EXIT_FAILURE;
+	}
 	while (1) {
 		struct pollfd pfd;
 		int pollval, ret;
 
 		/* if our master has gone away, we need to die */
 		if (kill(nagios_pid, 0) < 0 && errno == ESRCH) {
+			nm_log(NSLOG_RUNTIME_ERROR, "Command file worker: Naemon main process is dead (%m)");
 			return EXIT_SUCCESS;
 		}
 
@@ -297,6 +301,8 @@ static int command_file_worker(int sd)
 			/* @todo printf("Failed to poll() command file pipe: %m\n"); */
 			if (errno == EINTR)
 				continue;
+
+			nm_log(NSLOG_RUNTIME_ERROR, "Command file worker: Failed to poll (%m)");
 			return EXIT_FAILURE;
 		}
 
@@ -305,12 +311,15 @@ static int command_file_worker(int sd)
 		if (ret < 1) {
 			if (errno == EINTR)
 				continue;
+			nm_log(NSLOG_RUNTIME_ERROR, "Command file worker: Failed to read from bufferqueue (%m)");
 			return EXIT_FAILURE;
 		}
 
 		ret = nm_bufferqueue_write(bq, sd);
-		if (ret < 0 && ret != EAGAIN && ret != EWOULDBLOCK)
+		if (ret < 0 && ret != EAGAIN && ret != EWOULDBLOCK) {
+			nm_log(NSLOG_RUNTIME_ERROR, "Command file worker: Failed to write to bufferqueue (%m)");
 			return EXIT_FAILURE;
+		}
 	} /* while(1) */
 }
 
