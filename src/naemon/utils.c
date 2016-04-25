@@ -261,6 +261,7 @@ void setup_sighandler(void)
 
 	sigact.sa_handler = &sighandler;
 	g_warn_if_fail(sigemptyset(&(sigact.sa_mask)) == 0);
+	sigact.sa_flags = 0;
 
 	/* initialize signal handling */
 	signal(SIGPIPE, SIG_IGN);
