@@ -160,6 +160,16 @@ struct service *find_service(const char *, const char *);
 int is_contact_for_service(struct service *, struct contact *);		       /* tests whether or not a contact is a contact member for a specific service */
 int is_escalated_contact_for_service(struct service *, struct contact *);             /* checks whether or not a contact is an escalated contact for a specific service */
 int get_service_count(void);
+
+/**
+ * Get the check interval for this service, in seconds
+ */
+time_t get_service_check_interval_s(const service *svc);
+/**
+ * Get the retry interval for this service, in seconds
+ */
+time_t get_service_retry_interval_s(const service *svc);
+
 const char *service_state_name(int state);
 
 int log_service_event(service *);

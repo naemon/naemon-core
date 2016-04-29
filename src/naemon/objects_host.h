@@ -169,6 +169,8 @@ int number_of_immediate_parent_hosts(struct host *);
 
 const char *host_state_name(int state);
 int get_host_count(void);
+time_t get_host_check_interval_s(const host *hst);
+time_t get_host_retry_interval_s(const host *hst);
 unsigned int host_services_value(struct host *h);
 
 char * implode_hosttree(GTree *tree, char *delimiter);

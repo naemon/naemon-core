@@ -342,6 +342,16 @@ int get_service_count(void)
 	return num_objects.services;
 }
 
+time_t get_service_check_interval_s(const service *svc)
+{
+	return svc->check_interval * interval_length;
+}
+
+time_t get_service_retry_interval_s(const service *svc)
+{
+	return svc->retry_interval * interval_length;
+}
+
 const char *service_state_name(int state)
 {
 	switch (state) {

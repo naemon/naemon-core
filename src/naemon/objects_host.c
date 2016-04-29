@@ -396,6 +396,17 @@ int get_host_count(void)
 	return num_objects.hosts;
 }
 
+time_t get_host_check_interval_s(const host *hst)
+{
+	return hst->check_interval * interval_length;
+}
+
+time_t get_host_retry_interval_s(const host *hst)
+{
+	return hst->retry_interval * interval_length;
+}
+
+
 int is_contact_for_host(host *hst, contact *cntct)
 {
 	contactsmember *temp_contactsmember = NULL;

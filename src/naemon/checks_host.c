@@ -60,7 +60,7 @@ void checks_init_hosts(void)
 		update_host_status(temp_host, FALSE);
 
 		/* schedule a new host check event */
-		schedule_next_host_check(temp_host, ranged_urand(0, temp_host->check_interval * interval_length), CHECK_OPTION_NONE);
+		schedule_next_host_check(temp_host, ranged_urand(0, get_host_check_interval_s(temp_host)), CHECK_OPTION_NONE);
 	}
 
 	/* add a host result "freshness" check event */
@@ -82,8 +82,10 @@ void schedule_next_host_check(host *hst, time_t delay, int options)
 	time_t current_time = time(NULL);
 
 	/* A closer check is already scheduled, skip this scheduling */
-	if(!(options & CHECK_OPTION_FORCE_EXECUTION) && hst->next_check_event != NULL && hst->next_check < delay + current_time) {
-		return;
+	if(hst->next_check_event != NULL && hst->next_check < delay + current_time) {
+		/*... unless this is a forced check or postponement is allowed*/
+		if (!(options & (CHECK_OPTION_FORCE_EXECUTION | CHECK_OPTION_ALLOW_POSTPONE)))
+			return;
 	}
 
 	/* We have a scheduled check, drop that event to make space for the new event */
@@ -135,7 +137,7 @@ static void handle_host_check_event(struct nm_event_execution_properties *evprop
 		 * check_interval
 		 */
 		if (hst->check_interval != 0.0)
-			schedule_next_host_check(hst, hst->check_interval * interval_length, CHECK_OPTION_NONE);
+			schedule_next_host_check(hst, get_host_check_interval_s(hst), CHECK_OPTION_NONE);
 
 		/* Don't run checks if checks are disabled, unless foreced */
 		if (execute_host_checks == FALSE && !(options & CHECK_OPTION_FORCE_EXECUTION)) {
@@ -152,7 +154,7 @@ static void handle_host_check_event(struct nm_event_execution_properties *evprop
 		if (result == ERROR) {
 			/* Somethings wrong, reschedule for retry interval instead, if retry_interval is specified. */
 			if (hst->retry_interval != 0.0) {
-				schedule_next_host_check(hst, hst->retry_interval * interval_length, CHECK_OPTION_NONE);
+				schedule_next_host_check(hst, get_host_retry_interval_s(hst), CHECK_OPTION_NONE);
 				log_debug_info(DEBUGL_CHECKS, 1, "Rescheduled next host check for %s", ctime(&hst->next_check));
 			}
 
@@ -848,7 +850,10 @@ static int process_host_check_result(host *hst, host *prev, int *alert_recorded)
 	/* If there is a problem, and the state still is soft, use retry interval  */
 	if (hst->current_state != STATE_UP && hst->state_type == SOFT_STATE) {
 		if (hst->retry_interval != 0.0) {
-			schedule_next_host_check(hst, hst->retry_interval * interval_length, CHECK_OPTION_NONE);
+			/* respect retry interval even if an earlier check is scheduled */
+			schedule_next_host_check(hst,
+					get_host_retry_interval_s(hst),
+					CHECK_OPTION_ALLOW_POSTPONE);
 		}
 	}
 
@@ -1192,11 +1197,11 @@ static int is_host_result_fresh(host *temp_host, time_t current_time, int log_th
 	/* use user-supplied freshness threshold or auto-calculate a freshness threshold to use? */
 	if (temp_host->freshness_threshold == 0) {
 		if (temp_host->state_type == HARD_STATE || temp_host->current_state == STATE_OK) {
-			interval = temp_host->check_interval;
+			interval = get_host_check_interval_s(temp_host);
 		} else {
-			interval = temp_host->retry_interval;
+			interval = get_host_retry_interval_s(temp_host);
 		}
-		freshness_threshold = (interval * interval_length) + temp_host->latency + additional_freshness_latency;
+		freshness_threshold = interval + temp_host->latency + additional_freshness_latency;
 	} else
 		freshness_threshold = temp_host->freshness_threshold;
 

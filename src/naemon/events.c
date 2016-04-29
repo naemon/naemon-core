@@ -207,6 +207,13 @@ timed_event *schedule_event(time_t delay, event_callback callback, void *user_da
 	return event;
 }
 
+long get_timed_event_time_left_ms(timed_event *ev)
+{
+	struct timespec current_time;
+	clock_gettime(EVENT_CLOCK_ID, &current_time);
+	return timespec_msdiff(&ev->event_time, &current_time);
+}
+
 /* Unschedule, execute and destroy event, given parameters of evprop */
 static void execute_and_destroy_event(struct nm_event_execution_properties *evprop)
 {

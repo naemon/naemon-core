@@ -59,7 +59,7 @@ void checks_init_services(void)
 
 		/* create a new service check event */
 		if (temp_service->check_interval != 0.0)
-			schedule_next_service_check(temp_service, ranged_urand(0, temp_service->check_interval * interval_length), 0);
+			schedule_next_service_check(temp_service, ranged_urand(0, get_service_check_interval_s(temp_service)), 0);
 	}
 
 	/* add a service result "freshness" check event */
@@ -83,8 +83,11 @@ void schedule_next_service_check(service *svc, time_t delay, int options)
 	time_t current_time = time(NULL);
 
 	/* A closer check is already scheduled, skip this scheduling */
-	if(!(options & CHECK_OPTION_FORCE_EXECUTION) && svc->next_check_event != NULL && svc->next_check < delay + current_time) {
-		return;
+	if (svc->next_check_event != NULL && svc->next_check < delay + current_time) {
+		/*... unless this is a forced check or postponement is allowed*/
+		if(!(options & (CHECK_OPTION_FORCE_EXECUTION | CHECK_OPTION_ALLOW_POSTPONE))) {
+			return;
+		}
 	}
 
 	/* We have a scheduled check, drop that event to make space for the new event */
@@ -129,7 +132,7 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 
 		/* Reschedule next check directly, might be replaced later */
 		if (temp_service->check_interval != 0.0) {
-			schedule_next_service_check(temp_service, temp_service->check_interval * interval_length, 0);
+			schedule_next_service_check(temp_service, get_service_check_interval_s(temp_service), 0);
 		}
 
 		/* forced checks override normal check logic */
@@ -140,7 +143,7 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 				       "\tMax concurrent service checks (%d) has been reached.  Nudging %s:%s by %d seconds...\n", max_parallel_service_checks, temp_service->host_name, temp_service->description, nudge_seconds);
 				/* Simply reschedule at retry_interval instead, if defined (otherwise keep scheduling at normal interval) */
 				if (temp_service->retry_interval != 0.0) {
-					schedule_next_service_check(temp_service, temp_service->retry_interval * interval_length, 0);
+					schedule_next_service_check(temp_service, get_service_retry_interval_s(temp_service), 0);
 				}
 				return;
 			}
@@ -860,9 +863,13 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 				/* run the service event handler to handle the soft state */
 				handle_service_event(temp_service);
 
-				if ((temp_service->current_state!=STATE_OK && temp_service->state_type == SOFT_STATE)) {
+				if ((temp_service->current_state != STATE_OK && temp_service->state_type == SOFT_STATE)) {
 					if (temp_service->retry_interval != 0.0) {
-						schedule_next_service_check(temp_service, temp_service->retry_interval * interval_length, 0);
+						/* respect retry interval even if an earlier check is scheduled */
+						schedule_next_service_check(temp_service,
+								get_service_retry_interval_s(temp_service),
+								CHECK_OPTION_ALLOW_POSTPONE
+								);
 					}
 				}
 			}
@@ -1186,9 +1193,9 @@ static int is_service_result_fresh(service *temp_service, time_t current_time, i
 	/* use user-supplied freshness threshold or auto-calculate a freshness threshold to use? */
 	if (temp_service->freshness_threshold == 0) {
 		if (temp_service->state_type == HARD_STATE || temp_service->current_state == STATE_OK)
-			freshness_threshold = (temp_service->check_interval * interval_length) + temp_service->latency + additional_freshness_latency;
+			freshness_threshold = get_service_check_interval_s(temp_service) + temp_service->latency + additional_freshness_latency;
 		else
-			freshness_threshold = (temp_service->retry_interval * interval_length) + temp_service->latency + additional_freshness_latency;
+			freshness_threshold =  get_service_retry_interval_s(temp_service) + temp_service->latency + additional_freshness_latency;
 	} else
 		freshness_threshold = temp_service->freshness_threshold;
 

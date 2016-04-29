@@ -387,6 +387,7 @@ NAGIOS_END_DECL
 #define CHECK_OPTION_FRESHNESS_CHECK    2       /* this is a freshness check */
                                      /* 4          used to be CHECK_OPTION_ORPHAN_CHECK, but is no longer used */
 #define CHECK_OPTION_DEPENDENCY_CHECK   8       /* dependency check. different scheduling rules apply */
+#define CHECK_OPTION_ALLOW_POSTPONE     16      /* allow the check to take precedence over an earlier (sooner) scheduled check */
 
 
 /**************************** PROGRAM MODES ******************************/

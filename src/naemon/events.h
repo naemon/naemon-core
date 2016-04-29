@@ -47,6 +47,14 @@ typedef void (*event_callback)(struct nm_event_execution_properties *);
 timed_event *schedule_event(time_t delay, event_callback callback, void *user_data);
 void destroy_event(timed_event *event);
 
+/**
+ * Gets the number of milliseconds until the supplied event's scheduled
+ * execution time
+ * @param ev the \p timed_event
+ * @return The number of milliseconds
+ */
+long get_timed_event_time_left_ms(timed_event *ev);
+
 /* Main function */
 void init_event_queue(void); /* creates the queue nagios_squeue */
 int event_poll(void); /* main monitoring/event handler loop */
