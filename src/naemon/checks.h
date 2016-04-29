@@ -21,8 +21,15 @@
 /* useful for hosts and services to determine time 'til next check */
 #define normal_check_window(o) ((time_t)(o->check_interval * interval_length))
 #define retry_check_window(o) ((time_t)(o->retry_interval * interval_length))
+/*
+ * NOTE: This macro exists for convenience reasons, to avoid having one
+ * function for hosts and services each. As such, it's makes a bunch of assumptions, namely;
+ * - the passed object has a state_type, current_state, retry_interval and a
+ *   check_interval field
+ * - the value of STATE_OK (for services) is equal to that of STATE_UP (for hosts)
+ **/
 #define check_window(o) \
-	((!o->current_state && o->state_type == SOFT_STATE) ? \
+	((o->current_state != STATE_OK && o->state_type == SOFT_STATE) ? \
 		retry_check_window(o) : \
 		normal_check_window(o))
 

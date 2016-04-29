@@ -347,6 +347,38 @@ START_TEST(host_check_interval_OK_states)
 }
 END_TEST
 
+START_TEST(test_check_window)
+{
+	time_t expected_window, actual_window;
+	hst->retry_interval = 30.0;
+	hst->check_interval = 1.0;
+	hst->current_state = STATE_UP;
+	hst->state_type = HARD_STATE;
+	expected_window = get_host_check_interval_s(hst);
+	actual_window = check_window(hst);
+	ck_assert_int_eq(expected_window, actual_window);
+
+	hst->current_state = STATE_DOWN;
+	hst->state_type = SOFT_STATE;
+	expected_window = get_host_retry_interval_s(hst);
+	actual_window = check_window(hst);
+	ck_assert_int_eq(expected_window, actual_window);
+
+	svc->retry_interval = 1.0;
+	svc->check_interval = 30.0;
+	svc->current_state = STATE_WARNING;
+	svc->state_type = HARD_STATE;
+	expected_window = get_service_check_interval_s(svc);
+	actual_window = check_window(svc);
+	ck_assert_int_eq(expected_window, actual_window);
+
+	svc->current_state = STATE_WARNING;
+	svc->state_type = SOFT_STATE;
+	expected_window = get_service_retry_interval_s(svc);
+	actual_window = check_window(svc);
+	ck_assert_int_eq(expected_window, actual_window);
+}
+END_TEST
 
 Suite*
 check_scheduling_suite(void)
@@ -354,6 +386,7 @@ check_scheduling_suite(void)
 	Suite *s = suite_create("Check scheduling");
 	TCase *tc_intervals = tcase_create("Check & retry intervals");
 	TCase *tc_freshness_checking = tcase_create("Freshness checking");
+	TCase *tc_miscellaneous = tcase_create("Miscellaneous tests");
 	tcase_add_checked_fixture(tc_freshness_checking, setup, teardown);
 	tcase_add_test(tc_freshness_checking, service_freshness_checking);
 	tcase_add_test(tc_freshness_checking, host_freshness_checking);
@@ -368,6 +401,11 @@ check_scheduling_suite(void)
 	tcase_add_test(tc_intervals, host_retry_interval_soft_non_OK_states);
 	tcase_add_test(tc_intervals, host_check_interval_hard_non_OK_states);
 	suite_add_tcase(s, tc_intervals);
+
+	tcase_add_checked_fixture(tc_miscellaneous, setup, teardown);
+	tcase_add_test(tc_miscellaneous, test_check_window);
+	suite_add_tcase(s, tc_miscellaneous);
+
 	return s;
 }
 
