@@ -90,3 +90,4 @@ int open_tcp_socket(char *connection_string);
 int write_list_attribute(FILE *file, char* attr, char* rawlist);
 int write_custom_variables(FILE *file, char* rawnames, char* rawvalues);
 int get_delta_request_count(void);
+static void fetch_status_data(struct nm_event_execution_properties *evprop);
