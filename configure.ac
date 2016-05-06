@@ -44,9 +44,15 @@ PKG_CHECK_MODULES([GLIB], [glib-2.0])
 
 AM_MISSING_PROG([PROVE], [prove])
 AM_MISSING_PROG([GPERF], [gperf])
-AM_MISSING_PROG(HELP2MAN, help2man)
+AM_MISSING_PROG([HELP2MAN], [help2man])
 # am_missing_prog doesn't seem to fail,
 # so I'm putting this redundant check in place to whine more loudly:
+
+AC_CHECK_PROG(HELP2MAN_CHECK,help2man,yes)
+if test x"$HELP2MAN_CHECK" != x"yes" ; then
+	AC_MSG_WARN([In order to generate man pages, you need to install help2man <https://www.gnu.org/software/help2man/>. If you are not creating a distribution, you can probably ignore this.])
+fi
+
 AC_CHECK_PROG(GPERF_CHECK,gperf,yes)
 if test x"$GPERF_CHECK" != x"yes" ; then
 	AC_MSG_ERROR([You need to install gperf <https://www.gnu.org/software/gperf/> before building.])
