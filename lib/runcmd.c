@@ -323,7 +323,7 @@ int runcmd_open(const char *cmd, int *pfd, int *pfderr, char **env)
 		runcmd_init();
 
 	/* if no command was passed, return with no error */
-	if (!cmd || !*cmd)
+	if (!*cmd)
 		return RUNCMD_EINVAL;
 
 	cmdlen = strlen(cmd);
