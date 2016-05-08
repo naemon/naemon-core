@@ -236,10 +236,11 @@ int grab_hostgroup_macros(hostgroup *hg)
 }
 
 
-/* grab macros that are specific to a particular service */
+/* grab macros that are specific to a particular service and its associated host */
 int grab_service_macros_r(nagios_macros *mac, service *svc)
 {
-
+	/* first grab the macros for this service's associated host */
+	grab_host_macros_r(mac, svc->host_ptr);
 	/* clear service-related macros */
 	clear_service_macros_r(mac);
 	clear_servicegroup_macros_r(mac);

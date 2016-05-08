@@ -91,6 +91,7 @@ void init_environment(void)
 	init_objects_host(1);
 	init_objects_service(1);
 	test_service.host_name = test_host.name;
+	test_service.host_ptr = &test_host;
 	register_host(&test_host);
 	register_service(&test_service);
 }
@@ -98,7 +99,6 @@ void init_environment(void)
 nagios_macros *setup_macro_object(void)
 {
 	nagios_macros *mac = (nagios_macros *) calloc(1, sizeof(nagios_macros));
-	grab_host_macros_r(mac, &test_host);
 	grab_service_macros_r(mac, &test_service);
 	grab_hostgroup_macros_r(mac, &test_hostgroup);
 	grab_servicegroup_macros_r(mac, &test_servicegroup);

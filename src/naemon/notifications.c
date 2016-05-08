@@ -340,7 +340,6 @@ static void notification_handle_job_result(struct wproc_result *wpres, void *dat
 int service_notification(service *svc, int type, char *not_author, char *not_data, int options)
 {
 	notification *notification_list = NULL;
-	host *temp_host = NULL;
 	notification *temp_notification = NULL;
 	contact *temp_contact = NULL;
 	time_t current_time;
@@ -361,7 +360,6 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 0, "** Service Notification Attempt ** Host: '%s', Service: '%s', Type: %s, Options: %d, Current State: %d, Last Notification: %s", svc->host_name, svc->description, notification_reason_name(type), options, svc->current_state, ctime(&svc->last_notification));
 
-	temp_host = svc->host_ptr;
 
 	/* check the viability of sending out a service notification */
 	if (check_service_notification_viability(svc, type, options) == ERROR) {
@@ -430,7 +428,6 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	if (notification_list != NULL) {
 
 		/* grab the macro variables */
-		grab_host_macros_r(&mac, temp_host);
 		grab_service_macros_r(&mac, svc);
 
 		/* if this notification has an author, attempt to lookup the associated contact */

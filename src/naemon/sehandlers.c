@@ -52,7 +52,6 @@ int obsessive_compulsive_service_check_processor(service *svc)
 {
 	char *raw_command = NULL;
 	char *processed_command = NULL;
-	host *temp_host = NULL;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	nagios_macros mac;
 	struct obsessive_compulsive_job *ocj;
@@ -68,13 +67,8 @@ int obsessive_compulsive_service_check_processor(service *svc)
 	if (ocsp_command == NULL)
 		return ERROR;
 
-	/* find the associated host */
-	if ((temp_host = (host *)svc->host_ptr) == NULL)
-		return ERROR;
-
 	/* update service macros */
 	memset(&mac, 0, sizeof(mac));
-	grab_host_macros_r(&mac, temp_host);
 	grab_service_macros_r(&mac, svc);
 
 	get_raw_command_line_r(&mac, ocsp_command_ptr, ocsp_command, &raw_command, macro_options);
@@ -187,7 +181,6 @@ void event_handler_job_handler(struct wproc_result *wpres, void *data, int flags
 /* handles changes in the state of a service */
 int handle_service_event(service *svc)
 {
-	host *temp_host = NULL;
 	nagios_macros mac;
 
 	if (svc == NULL)
@@ -201,13 +194,8 @@ int handle_service_event(service *svc)
 	if (svc->event_handler_enabled == FALSE)
 		return OK;
 
-	/* find the host */
-	if ((temp_host = (host *)svc->host_ptr) == NULL)
-		return ERROR;
-
 	/* update service macros */
 	memset(&mac, 0, sizeof(mac));
-	grab_host_macros_r(&mac, temp_host);
 	grab_service_macros_r(&mac, svc);
 
 	/* run the global service event handler */

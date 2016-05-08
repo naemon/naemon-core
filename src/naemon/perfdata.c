@@ -220,7 +220,6 @@ int cleanup_performance_data(void)
 int update_service_performance_data(service *svc)
 {
 	nagios_macros mac;
-	host *hst;
 
 	/* should we be processing performance data for anything? */
 	if (process_performance_data == FALSE)
@@ -250,8 +249,6 @@ int update_service_performance_data(service *svc)
 	 * macros and get busy
 	 */
 	memset(&mac, 0, sizeof(mac));
-	hst = find_host(svc->host_name);
-	grab_host_macros_r(&mac, hst);
 	grab_service_macros_r(&mac, svc);
 
 	/* run the performance data command */
