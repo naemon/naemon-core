@@ -655,16 +655,6 @@ static xodtemplate_service *xodtemplate_find_real_service(char *host_name, char 
 	return ret;
 }
 
-
-static inline int safestrcmp(const char *a, const char *b)
-{
-	if (a == b)
-		return 0;
-
-	/* double ternary, so please leave the parens there */
-	return !a ? 1 : (!b ? -1 : strcmp(a, b));
-}
-
 static int xodtemplate_init_trees(void)
 {
 	int x = 0;
