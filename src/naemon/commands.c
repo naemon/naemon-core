@@ -1199,7 +1199,7 @@ struct external_command /*@null@*/ * command_parse(const char * cmdstr, int mode
 	GError *parse_error = NULL;
 	struct external_command * ext_command;
 	ext_command = NULL;
-	*error = CMD_ERROR_OK;
+	*error = NULL;
 	while ((!ext_command) && mode > 0) {
 		if (COMMAND_SYNTAX_NOKV & mode) {
 			ext_command = parse_nokv_command(cmdstr, &parse_error);
