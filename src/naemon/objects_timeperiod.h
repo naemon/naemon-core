@@ -87,7 +87,7 @@ struct timeperiod *find_timeperiod(const char *);
 
 void fcache_timeperiod(FILE *fp, const struct timeperiod *temp_timeperiod);
 
-int check_time_against_period(time_t, timeperiod *);	/* check to see if a specific time is covered by a time period */
+int check_time_against_period(time_t, const timeperiod *);	/* check to see if a specific time is covered by a time period */
 void get_next_valid_time(time_t, time_t *, timeperiod *);	/* get the next valid time in a time period */
 
 NAGIOS_END_DECL

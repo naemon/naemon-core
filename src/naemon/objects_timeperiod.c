@@ -411,7 +411,7 @@ static int get_dst_shift(time_t *start, time_t *end)
 
 
 /*#define TEST_TIMEPERIODS_A 1*/
-static timerange *_get_matching_timerange(time_t test_time, timeperiod *tperiod)
+static timerange *_get_matching_timerange(time_t test_time, const timeperiod *tperiod)
 {
 	daterange *temp_daterange = NULL;
 	time_t start_time = (time_t)0L;
@@ -627,7 +627,7 @@ static timerange *_get_matching_timerange(time_t test_time, timeperiod *tperiod)
 	return tperiod->days[test_time_wday];
 }
 
-static int is_time_excluded(time_t when, struct timeperiod *tp)
+static int is_time_excluded(time_t when, const struct timeperiod *tp)
 {
 	struct timeperiodexclusion *exc;
 
@@ -656,7 +656,7 @@ static inline int timerange_includes_time(struct timerange *range, time_t when)
 }
 
 /* see if the specified time falls into a valid time range in the given time period */
-int check_time_against_period(time_t test_time, timeperiod *tperiod)
+int check_time_against_period(time_t test_time, const timeperiod *tperiod)
 {
 	timerange *temp_timerange = NULL;
 	time_t midnight = (time_t)0L;
