@@ -80,7 +80,7 @@ static inline int evheap_compare(struct timed_event *eva, struct timed_event *ev
 static void evheap_set_size(struct timed_event_queue *q, size_t new_size)
 {
 	size_t size = q->size;
-
+	g_return_if_fail(q != NULL);
 	if(new_size < 1)
 		new_size = 1;
 
@@ -101,6 +101,7 @@ static void evheap_set_size(struct timed_event_queue *q, size_t new_size)
 static int evheap_cond_swap(struct timed_event_queue *q, size_t idx_low, size_t idx_high)
 {
 	struct timed_event *ev_low, *ev_high;
+	g_return_val_if_fail(q != NULL, 0);
 
 	if(idx_low == idx_high)
 		return 0;
@@ -127,6 +128,7 @@ static int evheap_cond_swap(struct timed_event_queue *q, size_t idx_low, size_t 
 static void evheap_bubble_up(struct timed_event_queue *q, size_t idx)
 {
 	size_t parent;
+	g_return_if_fail(q != NULL);
 	while(idx>0) {
 		parent = (idx-1)>>1;
 		if(!evheap_cond_swap(q, parent, idx))
@@ -138,6 +140,7 @@ static void evheap_bubble_up(struct timed_event_queue *q, size_t idx)
 static void evheap_bubble_down(struct timed_event_queue *q, size_t idx)
 {
 	size_t child;
+	g_return_if_fail(q != NULL);
 	while ((child = (idx<<1)+1) < q->count) {
 		if (child+1 < q->count)
 			if(evheap_compare(q->queue[child], q->queue[child+1]) > 0)
@@ -157,6 +160,8 @@ static struct timed_event *evheap_head(struct timed_event_queue *q)
 
 static void evheap_remove(struct timed_event_queue *q, struct timed_event *ev)
 {
+	g_return_if_fail(q != NULL);
+	g_return_if_fail(ev != NULL);
 	q->queue[ev->pos] = q->queue[q->count-1];
 	q->queue[ev->pos]->pos = ev->pos;
 
@@ -172,6 +177,8 @@ static void evheap_remove(struct timed_event_queue *q, struct timed_event *ev)
 
 static void evheap_add(struct timed_event_queue *q, struct timed_event *ev)
 {
+	g_return_if_fail(q != NULL);
+	g_return_if_fail(ev != NULL);
 	evheap_set_size(q, q->count+1);
 	ev->pos = q->count;
 	q->queue[ev->pos] = ev;
@@ -195,7 +202,7 @@ static struct timed_event_queue *evheap_create(void)
 
 static void evheap_destroy(struct timed_event_queue *q) {
 	/* It must be empty... TODO: verify it is empty */
-	if(q==NULL)
+	if(q == NULL)
 		return;
 	nm_free(q->queue);
 	nm_free(q);
@@ -274,6 +281,7 @@ void destroy_event_queue(void)
 		destroy_event(ev);
 	}
 	evheap_destroy(event_queue);
+	event_queue = NULL;
 }
 
 /**
