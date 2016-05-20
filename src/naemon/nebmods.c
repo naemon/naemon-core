@@ -388,7 +388,8 @@ neb_cb_resultset_iter *neb_cb_resultset_iter_next(neb_cb_resultset_iter *iter, n
 		return NULL;
 
 	++it->idx;
-	if (it->idx >= it->iter_target->cb_results->len) {
+	g_warn_if_fail(it->idx < 0);
+	if ((gsize) it->idx >= it->iter_target->cb_results->len) {
 		it->idx = -1;
 		*result = NULL;
 		return NULL;
