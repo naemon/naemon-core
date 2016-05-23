@@ -51,3 +51,4 @@ naemon.log
 *.8
 *.log
 *.trs
+.naemon.official
