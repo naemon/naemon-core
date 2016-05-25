@@ -1,14 +1,15 @@
 #include <time.h>
 #include <string.h>
 #include <errno.h>
-
+#include <stdio.h>
 #include "events.h"
 #include "logging.h"
 #include "nm_alloc.h"
+#include "nm_arith.h"
 
 /* Which clock should be used for events? */
 #define EVENT_CLOCK_ID CLOCK_MONOTONIC
-
+#define EVENT_MAX_POLL_TIME_MS 1500
 struct timed_event {
 	size_t pos;
 	struct timespec event_time;
@@ -26,17 +27,37 @@ struct timed_event_queue *event_queue = NULL; /* our scheduling queue */
 iobroker_set *nagios_iobs = NULL;
 
 /******************************************************************/
-/************************** TIME HELEPERS *************************/
+/************************** TIME HELPERS *************************/
 /******************************************************************/
 
+/**
+ * Returns the difference in milliseconds between
+ * timespecs a and b. This function handles potential overflow by truncating
+ * the difference to LONG_MIN/LONG_MAX when it occurs.
+ *
+ * In other words, this function guarantees that the order relation of a and b
+ * is preserved, but only guarantees precision in the returned difference up to
+ * about 1 1/2 years.
+ */
 static inline long timespec_msdiff(struct timespec *a, struct timespec *b)
 {
-	long diff = 0;
-	diff += a->tv_sec * 1000;
-	diff -= b->tv_sec * 1000;
-	diff += a->tv_nsec / 1000000;
-	diff -= b->tv_nsec / 1000000;
+	long diff = 0, tmp = 0;
+	if (!nm_arith_ssubl_overflow(a->tv_sec, b->tv_sec, &diff))
+		goto overflow;
+
+	if (!nm_arith_smull_overflow(diff, 1000, &diff))
+		goto overflow;
+
+	if (!nm_arith_ssubl_overflow(a->tv_nsec, b->tv_nsec, &tmp))
+		goto overflow;
+
+	tmp /= 1000000;
+	if (!nm_arith_saddl_overflow(diff, tmp, &diff))
+		goto overflow;
+
 	return diff;
+overflow:
+	return (a->tv_sec < b->tv_sec) ? LONG_MIN : LONG_MAX;
 }
 
 /******************************************************************/
@@ -259,11 +280,11 @@ void destroy_event_queue(void)
  * Poll for events once.
  * @returns < 0 on errors, 0 on success.
  */
-int event_poll(void)
+static int event_poll_full(iobroker_set *iobs, long int timeout_ms)
 {
 	timed_event *evt;
 	struct timespec current_time;
-	long time_diff;
+	int64_t time_diff;
 	struct nm_event_execution_properties evprop;
 	int inputs;
 	clock_gettime(EVENT_CLOCK_ID, &current_time);
@@ -275,40 +296,39 @@ int event_poll(void)
 		time_diff = timespec_msdiff(&evt->event_time, &current_time);
 		if (time_diff < 0)
 			time_diff = 0;
-		else if (time_diff >= 1500)
-			time_diff = 1500;
+		else if (time_diff >= timeout_ms)
+			time_diff = timeout_ms;
 	} else {
 		/* no scheduled events at all? then we can afford quite a bit of sleeping */
-		time_diff = 1500;
+		time_diff = timeout_ms;
 	}
 
-	if (!iobroker_push(nagios_iobs)) {
+	if (!iobroker_push(iobs)) {
 		/* There is a backlog for data sending? Catch up at "idle
-		 * priority", i.e. prevent sleeping while awaiting
-		 * results, but continue to run events as usual.
-		 */
+		* priority", i.e. prevent sleeping while awaiting
+		* results, but continue to run events as usual.
+		*/
 		time_diff = 0;
 	}
-	inputs = iobroker_poll(nagios_iobs, time_diff);
-	if (inputs < 0 && errno != EINTR) {
-		nm_log(NSLOG_RUNTIME_ERROR, "Error: Polling for input on %p failed: %s", nagios_iobs, iobroker_strerror(inputs));
-		return -1;
+	inputs = iobroker_poll(iobs, time_diff);
+	if (inputs < 0) {
+		if (errno == EAGAIN) {
+			/*
+			* errno is EINTR, which means it isn't a timed event, thus don't
+			* continue below
+			*/
+			return 0;
+		} else {
+			nm_log(NSLOG_RUNTIME_ERROR, "Error: Polling for input on %p failed: %s", iobs, iobroker_strerror(inputs));
+			return -1;
+		}
 	}
-	if (inputs < 0 ) {
+	else if (inputs > 0) {
+		log_debug_info(DEBUGL_IPC, 2, "## %d descriptors had input\n", inputs);
 		/*
-		 * errno is EINTR, which means it isn't a timed event, thus don't
-		 * continue below
-		 */
-		return 0;
-	}
-
-	log_debug_info(DEBUGL_IPC, 2, "## %d descriptors had input\n", inputs);
-
-	/*
-	 * Since we got input on one of the file descriptors, this wakeup wans't
-	 * about a timed event, so start the main loop over.
-	 */
-	if (inputs > 0) {
+		* Since we got input on one of the file descriptors, this wakeup wasn't
+		* about a timed event, so start the main loop over.
+		*/
 		log_debug_info(DEBUGL_EVENTS, 0, "Event was cancelled by iobroker input\n");
 		return 0;
 	}
@@ -339,4 +359,10 @@ int event_poll(void)
 	execute_and_destroy_event(&evprop);
 
 	return 0;
+}
+
+
+int event_poll(void)
+{
+	return event_poll_full(nagios_iobs, EVENT_MAX_POLL_TIME_MS);
 }

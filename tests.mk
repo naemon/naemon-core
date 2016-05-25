@@ -85,6 +85,18 @@ tests_test_check_scheduling_LDADD =  $(TESTSLDADD)
 tests_test_check_scheduling_LDFLAGS = $(TESTSLDFLAGS)
 tests_test_check_scheduling_CPPFLAGS = $(TESTSCPPFLAGS)
 
+tests_test_arith_SOURCES = tests/test-arith.c
+tests_test_arith_LDADD =  $(TESTSLDADD)
+tests_test_arith_CFLAGS =  $(CFLAGS) -DNM_SKIP_BUILTIN_OVERFLOW_CHECKS=1
+tests_test_arith_LDFLAGS = $(TESTSLDFLAGS)
+tests_test_arith_CPPFLAGS = $(TESTSCPPFLAGS)
+
+tests_test_arith_builtins_SOURCES = tests/test-arith.c
+tests_test_arith_builtins_LDADD =  $(TESTSLDADD)
+tests_test_arith_builtins_CFLAGS =  $(CFLAGS)
+tests_test_arith_builtins_LDFLAGS = $(TESTSLDFLAGS)
+tests_test_arith_builtins_CPPFLAGS = $(TESTSCPPFLAGS)
+
 tests_test_obj_config_parse_SOURCES = tests/test-obj-config-parse.c
 tests_test_obj_config_parse_LDADD =  $(TESTSLDADD)
 tests_test_obj_config_parse_LDFLAGS = $(TESTSLDFLAGS)
@@ -156,7 +168,9 @@ check_PROGRAMS += \
 	tests/test-objects \
 	tests/test-kvvec-ekvstr \
 	tests/test-worker \
-	tests/test-retention
+	tests/test-retention \
+	tests/test-arith \
+	tests/test-arith-builtins
 
 LIBTEST_UTILS = lib/t-utils.c lib/t-utils.h
 test_bitmap_SOURCES = lib/test-bitmap.c $(LIBTEST_UTILS)

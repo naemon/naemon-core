@@ -65,7 +65,7 @@ pkginclude_HEADERS = \
 	src/naemon/shared.h			src/naemon/configuration.h  src/naemon/macros.h			src/naemon/nebstructs.h \
 	src/naemon/sretention.h		src/naemon/defaults.h       src/naemon/naemon.h			src/naemon/nerd.h \
 	src/naemon/statusdata.h		src/naemon/downtime.h       src/naemonstats/naemonstats.h	src/naemon/notifications.h \
-	src/naemon/utils.h			src/naemon/buildopts.h      src/naemon/nm_alloc.h \
+	src/naemon/utils.h			src/naemon/buildopts.h      src/naemon/nm_alloc.h		src/naemon/nm_arith.h \
 	src/worker/worker.h
 
 common_sources = \
