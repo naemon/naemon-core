@@ -1579,7 +1579,7 @@ static void shutdown_event_handler(struct nm_event_execution_properties *evprop)
 
 static int shutdown_handler(const struct external_command *ext_command, time_t entry_time)
 {
-	if (!schedule_event(GV_TIMESTAMP("shutdown_time") - time(NULL), shutdown_event_handler, NULL))
+	if (!schedule_event(0, shutdown_event_handler, NULL))
 		return ERROR;
 	return OK;
 }
@@ -1592,7 +1592,7 @@ static void restart_event_handler(struct nm_event_execution_properties *evprop) 
 
 static int restart_handler(const struct external_command *ext_command, time_t entry_time)
 {
-	if (!schedule_event(GV_TIMESTAMP("restart_time") - time(NULL), restart_event_handler, NULL))
+	if (!schedule_event(0, restart_event_handler, NULL))
 		return ERROR;
 	return OK;
 }
@@ -2665,22 +2665,18 @@ void register_core_commands(void)
 
 	core_command = command_create("RESTART_PROCESS", restart_handler,
 			"Restarts the Naemon process.", NULL);
-	command_argument_add(core_command, "restart_time", TIMESTAMP, &default_timestamp, NULL);
 	command_register(core_command, CMD_RESTART_PROCESS);
 
 	core_command = command_create("RESTART_PROGRAM", restart_handler,
 			"Restarts the Naemon process.", NULL);
-	command_argument_add(core_command, "restart_time", TIMESTAMP, &default_timestamp, NULL);
 	command_register(core_command, -1);
 
 	core_command = command_create("SHUTDOWN_PROCESS", shutdown_handler,
 			"Shuts down the Naemon process.", NULL);
-	command_argument_add(core_command, "shutdown_time", TIMESTAMP, &default_timestamp, NULL);
 	command_register(core_command, CMD_SHUTDOWN_PROCESS);
 
 	core_command = command_create("SHUTDOWN_PROGRAM", shutdown_handler,
 			"Shuts down the Naemon process.", NULL);
-	command_argument_add(core_command, "shutdown_time", TIMESTAMP, &default_timestamp, NULL);
 	command_register(core_command, -1);
 
 	core_command = command_create("ENABLE_HOST_SVC_CHECKS", host_command_handler,
