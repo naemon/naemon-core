@@ -798,7 +798,7 @@ int open_local_socket(char *socket_path) {
     setsockopt(input_socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
     setsockopt(input_socket, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 
-    if(!connect(input_socket, (struct sockaddr *) &address, sizeof (address)) == 0) {
+    if(connect(input_socket, (struct sockaddr *) &address, sizeof (address)) != 0) {
         nm_log(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, "connecting socket failed: %s\n", strerror(errno));
         close(input_socket);
         return(-1);
@@ -843,7 +843,7 @@ int open_tcp_socket(char *connection_string) {
     setsockopt(input_socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
     setsockopt(input_socket, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 
-    if(!connect(input_socket, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) == 0) {
+    if(connect(input_socket, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) != 0) {
         nm_log(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, "connecting to %s:%d failed: %s\n", hostname, port, strerror(errno));
         close(input_socket);
         nm_free(server_c);
