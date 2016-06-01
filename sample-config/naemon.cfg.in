@@ -949,21 +949,6 @@ use_true_regexp_matching=0
 admin_email=@naemon_user@@localhost
 admin_pager=page@naemon_user@@localhost
 
-# ENABLE ENVIRONMENT MACROS
-# This option determines whether or not Naemon will make all standard
-# macros available as environment variables when host/service checks
-# and system commands (event handlers, notifications, etc.) are
-# executed.
-# Enabling this is a very bad idea for anything but very small setups,
-# as it means plugins, notification scripts and eventhandlers may run
-# out of environment space. It will also cause a significant increase
-# in CPU- and memory usage and drastically reduce the number of checks
-# you can run.
-# Values: 1 - Enable environment variable macros
-#         0 - Disable environment variable macros (default)
-
-enable_environment_macros=0
-
 
 
 # DEBUG LEVEL
