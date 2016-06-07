@@ -312,7 +312,7 @@ static int event_poll_full(iobroker_set *iobs, long int timeout_ms)
 	}
 	inputs = iobroker_poll(iobs, time_diff);
 	if (inputs < 0) {
-		if (errno == EAGAIN) {
+		if (errno == EINTR) {
 			/*
 			* errno is EINTR, which means it isn't a timed event, thus don't
 			* continue below
