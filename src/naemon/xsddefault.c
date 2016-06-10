@@ -86,7 +86,7 @@ int xsddefault_save_status_data(void)
 	if (!status_file || !strcmp(status_file, "/dev/null"))
 		return OK;
 
-	nm_asprintf(&tmp_log, "%sXXXXXX", temp_file);
+	nm_asprintf(&tmp_log, "%sXXXXXX", status_file);
 	if (tmp_log == NULL)
 		return ERROR;
 
