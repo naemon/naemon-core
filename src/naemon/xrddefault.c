@@ -77,13 +77,13 @@ int xrddefault_save_state_information(void)
 	unsigned long process_service_attribute_mask = 0L;
 
 	/* make sure we have everything */
-	if (retention_file == NULL || temp_file == NULL) {
+	if (retention_file == NULL) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Error: We don't have the required file names to store retention data!\n");
 		return ERROR;
 	}
 
 	/* open a safe temp file for output */
-	nm_asprintf(&tmp_file, "%sXXXXXX", temp_file);
+	nm_asprintf(&tmp_file, "%sXXXXXX", retention_file);
 	if (tmp_file == NULL)
 		return ERROR;
 	if ((fd = mkstemp(tmp_file)) == -1)
