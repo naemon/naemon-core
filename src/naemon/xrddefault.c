@@ -425,7 +425,7 @@ int xrddefault_save_state_information(void)
 
 	fflush(fp);
 	fsync(fd);
-	result = fclose(fp);
+	result = ferror(fp) | fclose(fp);
 
 	/* save/close was successful */
 	if (result == 0) {
