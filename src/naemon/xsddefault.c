@@ -389,7 +389,7 @@ int xsddefault_save_status_data(void)
 	fsync(fd);
 
 	/* close the temp file */
-	result = fclose(fp);
+	result = ferror(fp) | fclose(fp);
 
 	/* save/close was successful */
 	if (result == 0) {
