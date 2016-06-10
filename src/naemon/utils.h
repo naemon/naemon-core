@@ -44,9 +44,7 @@ void free_memory(nagios_macros *mac);                              	/* free memo
 int reset_variables(void);                           	/* reset all global variables */
 
 void sighandler(int);                                	/* handles signals */
-int my_rename(char *, char *);                          /* renames a file - works across filesystems */
-int my_fcopy(char *, char *);                           /* copies a file - works across filesystems */
-int my_fdcopy(char *, char *, int);                     /* copies a named source to an already opened destination file */
+int my_rename(char *, char *);                          /* renames a file */
 
 time_t get_next_log_rotation_time(void);	     	/* determine the next time to schedule a log rotation */
 int set_environment_var(char *, char *, int);           /* sets/clears and environment variable */
