@@ -216,7 +216,7 @@ commandsmember *add_service_notification_command_to_contact(contact *cntct, char
 
 	cmd = find_bang_command(command_name);
 	if (cmd == NULL) {
-		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Service notification command '%s' specified for contact '%s' is not defined anywhere!", new_commandsmember->command, cntct->name);
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Service notification command '%s' specified for contact '%s' is not defined anywhere!", command_name, cntct->name);
 		return NULL;
 	}
 
