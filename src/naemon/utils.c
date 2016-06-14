@@ -686,7 +686,7 @@ int drop_privileges(char *user, char *group)
 /************************* FILE FUNCTIONS *************************/
 /******************************************************************/
 
-/* renames a file - works across filesystems (Mike Wiacek) */
+/* renames a file */
 int my_rename(char *source, char *dest)
 {
 	int rename_result = 0;
