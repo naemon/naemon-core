@@ -36,58 +36,51 @@ static struct wrk_test {
 	char *expected_stdout;
 	char *expected_stderr;
 
-	char *full_command;
 	int expected_wait_status;
 	int expected_error_code;
 	int timeout;
 } test_jobs[] = {
 	{
-		"print=\"hello world\n\" exit=0",
+		"stdbuf -oL echo 'hello world'",
 		"hello world\n",
 		"",
-		NULL, 0, 0, 3
+		0, 0, 3
 	},
 	{
-		"eprint='this goes to stderr\n' exit=0",
+		"stdbuf -e0 /bin/sh -c 'echo \"this goes to stderr\" >&2'",
 		"",
 		"this goes to stderr\n",
-		NULL, 0, 0, 3
+		0, 0, 3
 	},
 	{
-		"print='natt' sleep=3 print='hatt' sleep=3 print='kattegatt' exit=2",
+		"/bin/sh -c 'echo -n natt; sleep 3; echo -n hatt; sleep 3; echo -n kattegatt; exit 2'",
 		"natthattkattegatt",
 		"",
-		NULL, EXITCODE(2), 0, 7
+		EXITCODE(2), 0, 7
 	},
 	{
-		"print='hoopla\n' fflush=1 _exit=0",
+		"/bin/sh -c 'echo hoopla'",
 		"hoopla\n",
 		"",
-		NULL, 0, 0, 3
+		0, 0, 3
 	},
 	{
-		"print=nocrlf close=1 fflush=1 _exit=0",
-		"",
-		"",
-		NULL, 0, 0, 3
-	},
-	{
-		"print=nocrlf eprint=lalala fflush=1 close=1 fflush=2 close=2 _exit=0",
+		"stdbuf -o0 -e0 /bin/sh -c 'echo -n nocrlf && echo -n lalala >&2 &&  exec 1>&- && exec 2>&- && exit 0'",
 		"nocrlf",
 		"lalala",
-		NULL, 0, 0, 3
+		0, 0, 3
 	},
 	{
-		"sleep=50",
+		"/bin/sh -c 'sleep 50'",
 		"",
 		"",
-		NULL, 0, ETIME, 3,
+		0, ETIME, 3,
 	},
 	{
-		"print='lalala' fflush=1 sleep=50",
+		"stdbuf -o0 /bin/sh -c 'echo -n lalala && sleep 50'",
 		"lalala",
 		"",
-		NULL, 0, ETIME, 3,
+		0, ETIME, 3,
 	},
 };
 static int wrk_test_reaped;
@@ -105,19 +98,16 @@ void wrk_test_cb(struct wproc_result *wpres, void *data, int flags)
 	wrk_test_reaped++;
 	ck_assert_msg(wpres != NULL, "worker results should be non-NULL\n");
 	ck_assert_msg(wpres->wait_status == t->expected_wait_status,
-	   "wait_status: got %d, expected %d",
-	   wpres->wait_status, t->expected_wait_status);
-	ck_assert_msg(wpres->error_code == t->expected_error_code,
-	   "error_code: got %d, expected %d",
-	   wpres->error_code, t->expected_error_code);
+	   "wait_status: got %d, expected %d for command '%s'",
+	   wpres->wait_status, t->expected_wait_status, t->command);
+	ck_assert_int_eq(t->expected_error_code, wpres->error_code);
 	ck_assert_msg(0 == strcmp(wpres->outstd, t->expected_stdout),
-	   "STDOUT:\n###GOT\n%s\n##EXPECTED\n%s###STDOUT_END",
-	   wpres->outstd, t->expected_stdout);
+	   "STDOUT:\n###GOT\n%s\n##EXPECTED\n%s###STDOUT_END\ncommand: '%s'",
+	   wpres->outstd, t->expected_stdout, t->command);
 	ck_assert_msg(0 == strcmp(wpres->outerr, t->expected_stderr),
-		"STDERR:\n###GOT\n%s###EXPECTED\n%s###STDERR_END",
-		wpres->outerr, t->expected_stderr);
+		"STDERR:\n###GOT\n%s###EXPECTED\n%s###STDERR_END\ncommand: '%s'",
+		wpres->outerr, t->expected_stderr, t->command);
 
-	free(t->full_command);
 }
 
 START_TEST(worker_test)
@@ -131,16 +121,11 @@ START_TEST(worker_test)
 	signal(SIGCHLD, wrk_test_sighandler);
 	for (i = 0; i < sizeof(test_jobs) / sizeof(test_jobs[0]); i++) {
 		struct wrk_test *j = &test_jobs[i];
-		result = asprintf(&j->full_command, "%s %s", naemon_binary_path, j->command);
-		if (result < 0) {
-			printf("Failed to create command line for job. Aborting\n");
-			exit(1);
-		}
 		if (j->timeout > max_timeout)
 			max_timeout = j->timeout;
-		result = wproc_run_callback(j->full_command, j->timeout, wrk_test_cb, j, NULL);
+		result = wproc_run_callback(j->command, j->timeout, wrk_test_cb, j, NULL);
 		if (result) {
-			fail("Failed to spawn job %d (%s). Aborting\n", i, j->full_command);
+			fail("Failed to spawn job %d (%s). Aborting\n", i, j->command);
 			exit(1);
 		}
 	}
@@ -172,77 +157,6 @@ START_TEST(command_worker_launch_shutdown_test)
 }
 END_TEST
 
-/*
- * This is a really stupid "plugin" with scriptable behaviour.
- * It accepts commands and executes them in-order, like so:
- * usleep=<int> : usleep()'s the given number of microseconds
- * sleep=<int>  : sleep()'s the given number of seconds
- * print=<str>  : prints the given string to stdout
- * eprint=<str> : prints the given string to stderr
- * fflush=<1|2> : fflush()'es <stdout|stderr>
- * close=<int>  : closes the given filedescriptor
- * exit=<int>   : exit()'s with the given code
- * _exit=<int>  : _exit()'s with the given code
- * signal=<int> : sends the given signal to itself
- * Commands that aren't understood are simply printed as-is.
- */
-static int wrk_test_plugin(int argc, char **argv)
-{
-	int i;
-
-	/*
-	 * i = 0 is not a typo here. We only get called with leftover args
-	 * from the main program invocation
-	 */
-	for (i = 0; i < argc; i++) {
-		char *eq, *cmd;
-		int value;
-
-		cmd = argv[i];
-
-		if (!(eq = strchr(cmd, '='))) {
-			printf("%s", argv[i]);
-			continue;
-		}
-
-		*eq = 0;
-		value = atoi(eq + 1);
-		if (!strcmp(cmd, "usleep")) {
-			usleep(value);
-		}
-		else if (!strcmp(cmd, "sleep")) {
-			sleep(value);
-		}
-		else if (!strcmp(cmd, "print")) {
-			printf("%s", eq + 1);
-		}
-		else if (!strcmp(cmd, "eprint")) {
-			fprintf(stderr, "%s", eq + 1);
-		}
-		else if (!strcmp(cmd, "close")) {
-			close(value);
-		}
-		else if (!strcmp(cmd, "exit")) {
-			exit(value);
-		}
-		else if (!strcmp(cmd, "_exit")) {
-			_exit(value);
-		}
-		else if (!strcmp(cmd, "signal")) {
-			kill(getpid(), value);
-		}
-		else if (!strcmp(cmd, "fflush")) {
-			if (value == 1)
-				fflush(stdout);
-			else if (value == 2)
-				fflush(stderr);
-			else
-				fflush(NULL);
-		}
-	}
-
-	return 0;
-}
 void init_iobroker(void) {
 	ck_assert(NULL != (nagios_iobs = iobroker_create()));
 }
@@ -254,28 +168,19 @@ void deinit_iobroker(void) {
 void wrk_test_init(void)
 {
 	time_t start;
-	printf("wrk_test_init\n");
 	log_file = "/dev/stdout";
-	timing_point("Initializing iobroker\n");
 	init_iobroker();
 	enable_timing_point = 1;
-
-	timing_point("Initializing query handler socket\n");
 	qh_socket_path = "/tmp/qh-socket";
 	qh_init(qh_socket_path);
 
-	timing_point("Launching workers\n");
 	init_workers(3);
 	start = time(NULL);
-	while (wproc_num_workers_online < wproc_num_workers_spawned && time(NULL) < start + 45) {
+	while (wproc_num_workers_online < wproc_num_workers_spawned && time(NULL) < start + 10) {
 		iobroker_poll(nagios_iobs, 1000);
 	}
 	timing_point("%d/%d workers online\n", wproc_num_workers_online, wproc_num_workers_spawned);
-
-	if (wproc_num_workers_online != wproc_num_workers_spawned) {
-		fail("%d/%d workers online",
-		     wproc_num_workers_online, wproc_num_workers_spawned);
-	}
+	ck_assert_int_eq(wproc_num_workers_spawned, wproc_num_workers_online);
 }
 
 void wrk_test_deinit(void)
@@ -304,15 +209,18 @@ int main(int argc, char **argv)
 	SRunner *sr = srunner_create(worker_suite());
 	srunner_set_fork_status(sr, CK_NOFORK);
 
+	/* warning: here there be globals
+	 * this hack makes the spawn_core_worker() function
+	 * believe that this test suite is the naemon binary,
+	 * and run it with the --worker option, which we've "implemented"
+	 * here... Yuck.
+	 * */
 	naemon_binary_path = argv[0];
-
 	if (argc > 1) {
 		if (!strcmp(argv[1], "--worker")) {
 			return nm_core_worker(argv[2]);
 		}
-		return wrk_test_plugin(argc - 1, &argv[1]);
 	}
-
 	srunner_run_all(sr, CK_ENV);
 	failed = srunner_ntests_failed(sr);
 	srunner_free(sr);
