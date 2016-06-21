@@ -2,6 +2,12 @@ next - unreleased
 =================
  * ...
 
+1.0.5 - Jun 21 2016
+===================
+Bugfixes:
+  * Fix segfault when trying to log to null pointer (#140)
+  * Fix naemon exiting on USR1 signal (#138, #139)
+
 1.0.4 - Jun 03 2016
 ===================
 Features:
