@@ -386,10 +386,16 @@ static void reap_jobs(void)
 			cp->ret = status;
 			memcpy(&cp->ei->rusage, &ru, sizeof(ru));
 			reaped++;
-			if (cp->ei->state != ESTALE)
+			if (cp->ei->state != ESTALE) {
+				/* We leave any grandchild processes alive, until
+				 * the timeout for this job has expired (at which point they
+				 * will be reaped by the scheduled kill_job() event) in order
+				 * to preserve compatibility with older configurations.
+				 * See https://github.com/naemon/naemon-core/issues/137 for more
+				 * information.
+				 */
 				finish_job(cp, cp->ei->state);
-			destroy_event(cp->ei->timed_event);
-			destroy_job(cp);
+			}
 		} else if (!pid || (pid < 0 && errno == ECHILD)) {
 			reapable = 0;
 		}

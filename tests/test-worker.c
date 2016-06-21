@@ -31,112 +31,150 @@
  * think of when I wrote them though.
  */
 #define EXITCODE(x) (x << 8) /* WEXITSTATUS(EXITCODE(x)) == x */
-static struct wrk_test {
+struct wrk_test {
 	char *command;
 	char *expected_stdout;
 	char *expected_stderr;
-
 	int expected_wait_status;
 	int expected_error_code;
 	int timeout;
-} test_jobs[] = {
-	{
-		"stdbuf -oL echo 'hello world'",
-		"hello world\n",
-		"",
-		0, 0, 3
-	},
-	{
-		"stdbuf -e0 /bin/sh -c 'echo \"this goes to stderr\" >&2'",
-		"",
-		"this goes to stderr\n",
-		0, 0, 3
-	},
-	{
-		"/bin/sh -c 'echo -n natt; sleep 3; echo -n hatt; sleep 3; echo -n kattegatt; exit 2'",
-		"natthattkattegatt",
-		"",
-		EXITCODE(2), 0, 7
-	},
-	{
-		"/bin/sh -c 'echo hoopla'",
-		"hoopla\n",
-		"",
-		0, 0, 3
-	},
-	{
-		"stdbuf -o0 -e0 /bin/sh -c 'echo -n nocrlf && echo -n lalala >&2 &&  exec 1>&- && exec 2>&- && exit 0'",
-		"nocrlf",
-		"lalala",
-		0, 0, 3
-	},
-	{
-		"/bin/sh -c 'sleep 50'",
-		"",
-		"",
-		0, ETIME, 3,
-	},
-	{
-		"stdbuf -o0 /bin/sh -c 'echo -n lalala && sleep 50'",
-		"lalala",
-		"",
-		0, ETIME, 3,
-	},
 };
-static int wrk_test_reaped;
 
-void wrk_test_sighandler(int signo)
-{
-	printf("Caught signal %d. Aborting\n", signo);
-	_exit(1);
-}
 
+static unsigned int completed_jobs;
 void wrk_test_cb(struct wproc_result *wpres, void *data, int flags)
 {
 	struct wrk_test *t = (struct wrk_test *)data;
+	completed_jobs++;
 
-	wrk_test_reaped++;
-	ck_assert_msg(wpres != NULL, "worker results should be non-NULL\n");
+	ck_assert(wpres != NULL);
 	ck_assert_msg(wpres->wait_status == t->expected_wait_status,
 	   "wait_status: got %d, expected %d for command '%s'",
 	   wpres->wait_status, t->expected_wait_status, t->command);
-	ck_assert_int_eq(t->expected_error_code, wpres->error_code);
 	ck_assert_msg(0 == strcmp(wpres->outstd, t->expected_stdout),
 	   "STDOUT:\n###GOT\n%s\n##EXPECTED\n%s###STDOUT_END\ncommand: '%s'",
 	   wpres->outstd, t->expected_stdout, t->command);
-	ck_assert_msg(0 == strcmp(wpres->outerr, t->expected_stderr),
+
+	ck_assert_int_eq(t->expected_error_code, wpres->error_code);
+		ck_assert_msg(0 == strcmp(wpres->outerr, t->expected_stderr),
 		"STDERR:\n###GOT\n%s###EXPECTED\n%s###STDERR_END\ncommand: '%s'",
 		wpres->outerr, t->expected_stderr, t->command);
 
 }
 
-START_TEST(worker_test)
-{
-	int result;
-	unsigned int i;
-	time_t max_timeout = 0;
-	int num_tests = sizeof(test_jobs) / sizeof(test_jobs[0]);
 
-	timing_point("Starting worker tests\n");
-	signal(SIGCHLD, wrk_test_sighandler);
-	for (i = 0; i < sizeof(test_jobs) / sizeof(test_jobs[0]); i++) {
-		struct wrk_test *j = &test_jobs[i];
-		if (j->timeout > max_timeout)
-			max_timeout = j->timeout;
-		result = wproc_run_callback(j->command, j->timeout, wrk_test_cb, j, NULL);
-		if (result) {
-			fail("Failed to spawn job %d (%s). Aborting\n", i, j->command);
-			exit(1);
-		}
+void run_worker_test(struct wrk_test *j) {
+	time_t s, n;
+
+	int ret = wproc_run_callback(j->command, j->timeout, wrk_test_cb, j, NULL);
+	ck_assert_int_eq(0, ret);
+	n = s = time(NULL);
+
+	while (((j->timeout + 10 - (n - s)) > 0) && completed_jobs == 0) {
+		iobroker_poll(nagios_iobs, 250);
+		n = time(NULL);
 	}
 
-	do {
-		iobroker_poll(nagios_iobs, max_timeout * 1000);
-	} while (wrk_test_reaped < num_tests);
+	ck_assert_int_eq(1, completed_jobs);
+}
 
-	timing_point("Exiting normally\n");
+START_TEST(worker_test_output_stdout)
+{
+	struct wrk_test j = {
+		"stdbuf -oL echo 'hello world'",
+		"hello world\n",
+		"",
+		0, 0, 3
+	};
+	run_worker_test(&j);
 }
 END_TEST
+
+START_TEST(worker_test_output_stderr)
+{
+	struct wrk_test j = {
+		"stdbuf -e0 /bin/sh -c 'echo \"this goes to stderr\" >&2'",
+		"",
+		"this goes to stderr\n",
+		0, 0, 3
+	};
+	run_worker_test(&j);
+}
+END_TEST
+
+START_TEST(worker_test_output_staggered_output_and_exitcode_2)
+{
+	struct wrk_test j = {
+		"/bin/sh -c 'echo -n natt; sleep 3; echo -n hatt; sleep 3; echo -n kattegatt; exit 2'",
+		"natthattkattegatt",
+		"",
+		EXITCODE(2), 0, 7
+	};
+	run_worker_test(&j);
+}
+END_TEST
+
+START_TEST(worker_test_output_mixed_stdout_and_stderr)
+{
+	struct wrk_test j = {
+		"stdbuf -o0 -e0 /bin/sh -c 'echo -n nocrlf && echo -n lalala >&2'",
+		"nocrlf",
+		"lalala",
+		0, 0, 3
+	};
+	run_worker_test(&j);
+}
+END_TEST
+
+START_TEST(worker_test_timeout)
+{
+	struct wrk_test j = {
+		"/bin/sh -c 'sleep 5'",
+		"",
+		"",
+		0, ETIME, 3,
+	};
+	run_worker_test(&j);
+}
+END_TEST
+
+START_TEST(worker_test_output_stdout_and_timeout)
+{
+	struct wrk_test j = {
+		"stdbuf -o0 /bin/sh -c 'echo -n lalala && sleep 5'",
+		"lalala",
+		"",
+		0, ETIME, 3,
+	};
+	run_worker_test(&j);
+}
+END_TEST
+
+START_TEST(worker_test_child_remains_to_cause_sideeffects)
+{
+	char filepath[] = "/tmp/XXXXX-naemon-worker-test";
+	int fd = mkstemp(filepath);
+	int slept = 0;
+	struct wrk_test j =	{
+		NULL,
+		"one\n",
+		"",
+		0, 0, 5,
+	};
+	close(fd);
+	nm_asprintf(&j.command, "stdbuf -o0 /bin/sh -c '(echo one && (sleep 1 && echo two > %s&))'", filepath);
+	run_worker_test(&j);
+	nm_free(j.command);
+	while (!g_file_test(filepath, G_FILE_TEST_EXISTS) && slept <= 3) {
+		sleep(1);
+		++slept;
+	}
+	ck_assert(g_file_test(filepath, G_FILE_TEST_EXISTS));
+	unlink(filepath);
+}
+END_TEST
+
+
 
 /*
  * Make sure that the lifecycle of the command worker is deterministic w.r.t
@@ -163,40 +201,53 @@ void init_iobroker(void) {
 
 void deinit_iobroker(void) {
 	iobroker_destroy(nagios_iobs, IOBROKER_CLOSE_SOCKETS);
+	nagios_iobs = NULL;
 }
 
-void wrk_test_init(void)
+void worker_test_setup(void)
 {
 	time_t start;
+	int ret;
+	completed_jobs = 0;
 	log_file = "/dev/stdout";
 	init_iobroker();
 	enable_timing_point = 1;
 	qh_socket_path = "/tmp/qh-socket";
 	qh_init(qh_socket_path);
-
-	init_workers(3);
+	ck_assert_int_eq(0, wproc_num_workers_spawned);
+	ret = init_workers(1);
+	ck_assert_int_eq(0, ret);
 	start = time(NULL);
 	while (wproc_num_workers_online < wproc_num_workers_spawned && time(NULL) < start + 10) {
-		iobroker_poll(nagios_iobs, 1000);
+		iobroker_poll(nagios_iobs, 10);
 	}
-	timing_point("%d/%d workers online\n", wproc_num_workers_online, wproc_num_workers_spawned);
 	ck_assert_int_eq(wproc_num_workers_spawned, wproc_num_workers_online);
 }
 
-void wrk_test_deinit(void)
+void worker_test_teardown(void)
 {
 	free_worker_memory(WPROC_FORCE);
 	deinit_iobroker();
+	qh_deinit(qh_socket_path);
+	wproc_num_workers_online = 0;
+	wproc_num_workers_spawned = 0;
+	wproc_num_workers_desired = 0;
 }
 
 Suite *worker_suite(void)
 {
 	Suite *s = suite_create("worker tests");
-	TCase *tc_worker_output = tcase_create("worker output reaping tests");
+	TCase *tc_worker_output = tcase_create("worker reaping tests");
 	TCase *tc_command_worker = tcase_create("command worker tests");
-	tcase_add_checked_fixture(tc_worker_output, wrk_test_init, wrk_test_deinit);
+	tcase_add_checked_fixture(tc_worker_output, worker_test_setup, worker_test_teardown);
 	tcase_add_checked_fixture(tc_command_worker, init_iobroker, deinit_iobroker);
-	tcase_add_test(tc_worker_output, worker_test);
+	tcase_add_test(tc_worker_output, worker_test_output_stdout);
+	tcase_add_test(tc_worker_output, worker_test_output_stderr);
+	tcase_add_test(tc_worker_output, worker_test_output_staggered_output_and_exitcode_2);
+	tcase_add_test(tc_worker_output, worker_test_output_mixed_stdout_and_stderr);
+	tcase_add_test(tc_worker_output, worker_test_timeout);
+	tcase_add_test(tc_worker_output, worker_test_output_stdout_and_timeout);
+	tcase_add_test(tc_worker_output, worker_test_child_remains_to_cause_sideeffects);
 	tcase_add_test(tc_command_worker, command_worker_launch_shutdown_test);
 	suite_add_tcase(s, tc_command_worker);
 	suite_add_tcase(s, tc_worker_output);
