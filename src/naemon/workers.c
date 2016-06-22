@@ -672,10 +672,12 @@ int init_workers(int desired_workers)
 	specialized_workers = g_hash_table_new_full(g_str_hash, g_str_equal,
 			free, NULL
 			);
-	if (!qh_register_handler("wproc", "Worker process management and info", 0, wproc_query_handler))
+	if (!qh_register_handler("wproc", "Worker process management and info", 0, wproc_query_handler)) {
 		nm_log(NSLOG_INFO_MESSAGE, "wproc: Successfully registered manager as @wproc with query handler\n");
-	else
+	} else {
 		nm_log(NSLOG_RUNTIME_ERROR, "wproc: Failed to register manager with query handler\n");
+		return -1;
+	}
 
 	if (desired_workers <= 0) {
 		int cpus = online_cpus();
