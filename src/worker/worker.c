@@ -475,7 +475,7 @@ static child_process *parse_command_kvvec(struct kvvec *kvv)
 	return cp;
 }
 
-static void spawn_job(struct kvvec *kvv, int(*cb)(child_process *))
+static void spawn_job(struct kvvec *kvv)
 {
 	int result;
 	child_process *cp;
@@ -502,7 +502,7 @@ static void spawn_job(struct kvvec *kvv, int(*cb)(child_process *))
 	cp->outerr.buf = nm_bufferqueue_create();
 	started++;
 	running_jobs++;
-	result = cb(cp);
+	result = start_cmd(cp);
 	if (result < 0) {
 		job_error(cp, kvv, "Failed to start child: %s: %s", runcmd_strerror(result), strerror(errno));
 		destroy_event(cp->ei->timed_event);
@@ -540,13 +540,13 @@ static int receive_command(int sd, int events, void *arg)
 		/* we must copy vars here, as we preserve them for the response */
 		kvv = buf2kvvec(buf, (unsigned int)size - MSG_DELIM_LEN, KV_SEP, PAIR_SEP, KVVEC_COPY);
 		if (kvv)
-			spawn_job(kvv, arg);
+			spawn_job(kvv);
 		free(buf);
 	}
 	return 0;
 }
 
-static void enter_worker(int sd, int (*cb)(child_process *))
+static void enter_worker(int sd)
 {
 	/* created with socketpair(), usually */
 	master_sd = sd;
@@ -572,7 +572,7 @@ static void enter_worker(int sd, int (*cb)(child_process *))
 
 	worker_set_sockopts(master_sd, 256 * 1024);
 
-	iobroker_register(nagios_iobs, master_sd, cb, receive_command);
+	iobroker_register(nagios_iobs, master_sd, NULL, receive_command);
 	for (;;) {
 		event_poll();
 		reap_jobs();
@@ -612,6 +612,6 @@ int nm_core_worker(const char *path)
 		return 1;
 	}
 
-	enter_worker(sd, start_cmd);
+	enter_worker(sd);
 	return 0;
 }
