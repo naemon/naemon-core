@@ -156,6 +156,13 @@ static int finish_job(child_process *cp, int reason)
 	int i, ret;
 	size_t buflen;
 
+	/*
+	 * When a job is fininshed, the state is sent to the master, and the job
+	 * should be marked with ESTALE (why just ESTALE, I don't really know, but
+	 * that, and 0 is the only values that is possible)
+	 */
+	cp->ei->state = ESTALE;
+
 	/* get rid of still open filedescriptors */
 	if (cp->outstd.fd != -1) {
 		gather_output(cp, &cp->outstd, 1);
@@ -300,15 +307,17 @@ static void kill_job(struct nm_event_execution_properties *event)
 			wlog("Failed to reap child with pid %d. Next attempt later", cp->ei->pid);
 		} else {
 			delay = 1;
-			cp->ei->state = ESTALE;
 			finish_job(cp, ETIME);
 		}
 		cp->ei->timed_event = schedule_event(delay,  kill_job, cp);
 	} else {
 		if (cp->ei->state != ESTALE)
 			finish_job(cp, ETIME);
-		else
-			wlog("job %d (pid=%d): Dormant child reaped", cp->id, cp->ei->pid);
+		/*
+		 * Don't log if stale, since that's the normal behaviour, since we need
+		 * to delay destroy_job if we finish with any dangling processes that
+		 * needs to finish up. Like sendmail in a forked notification script
+		 */
 		destroy_job(cp);
 	}
 }

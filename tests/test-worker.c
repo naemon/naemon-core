@@ -3,9 +3,11 @@
 #include "naemon/globals.h"
 #include "naemon/workers.h"
 #include "naemon/commands.h"
+#include "naemon/logging.h"
 #include "worker/worker.h"
 #include "lib/libnaemon.h"
 #include <check.h>
+#include <string.h>
 
 /*
  * A note about worker tests:
@@ -40,7 +42,6 @@ struct wrk_test {
 	int timeout;
 };
 
-
 static unsigned int completed_jobs;
 void wrk_test_cb(struct wproc_result *wpres, void *data, int flags)
 {
@@ -62,20 +63,43 @@ void wrk_test_cb(struct wproc_result *wpres, void *data, int flags)
 
 }
 
-
-void run_worker_test(struct wrk_test *j) {
+static void run_main_loop(time_t runtime) {
 	time_t s, n;
-
-	int ret = wproc_run_callback(j->command, j->timeout, wrk_test_cb, j, NULL);
-	ck_assert_int_eq(0, ret);
 	n = s = time(NULL);
 
-	while (((j->timeout + 10 - (n - s)) > 0) && completed_jobs == 0) {
+	while (((runtime - (n - s)) > 0) && completed_jobs == 0) {
 		iobroker_poll(nagios_iobs, 250);
 		n = time(NULL);
 	}
+}
+
+static void run_worker_test(struct wrk_test *j) {
+	int ret = wproc_run_callback(j->command, j->timeout, wrk_test_cb, j, NULL);
+	ck_assert_int_eq(0, ret);
+
+	run_main_loop(j->timeout + 10);
 
 	ck_assert_int_eq(1, completed_jobs);
+}
+
+static void test_log_content(int should_exist, const char *expect) {
+	char log_buffer[256*1024];
+	size_t len;
+	FILE *fp;
+	int found;
+
+	fp = fopen(log_file, "r");
+	len = fread(log_buffer, 1, sizeof(log_buffer)-1, fp);
+	fclose(fp);
+	log_buffer[len] = '\0';
+
+	found = strstr(log_buffer, expect) == NULL ? FALSE : TRUE;
+
+	if(should_exist) {
+		ck_assert_msg(found, "Expected '%s' to be present in log", expect);
+	} else {
+		ck_assert_msg(!found, "Expected '%s' to not be present in log", expect);
+	}
 }
 
 START_TEST(worker_test_output_stdout)
@@ -135,6 +159,34 @@ START_TEST(worker_test_timeout)
 		0, ETIME, 3,
 	};
 	run_worker_test(&j);
+
+	/*
+	 * Verify that the log is correct.
+	 * This is mostly to test the test environment for worker_test_no_timeout_log
+	 */
+	test_log_content(TRUE, "due to timeout");
+}
+END_TEST
+
+/*
+ * There was a bug where an extra timeout job response were sent from the worker.
+ * Verify that it doesn't happen.
+ */
+START_TEST(worker_test_no_timeout_log)
+{
+	struct wrk_test j = {
+		"stdbuf -oL echo 'hello world'",
+		"hello world\n",
+		"",
+		0, 0, 3
+	};
+	run_worker_test(&j);
+
+	/* Wait a while longer, so timeout should trigger, even though worker test is executed above */
+	completed_jobs = 0; /* To let mainloop run */
+	run_main_loop(5);
+
+	test_log_content(FALSE, "due to timeout");
 }
 END_TEST
 
@@ -209,7 +261,12 @@ void worker_test_setup(void)
 	time_t start;
 	int ret;
 	completed_jobs = 0;
-	log_file = "/dev/stdout";
+
+	/* Set temporary log file */
+	log_file = strdup("/tmp/naemon-worker-test-log-XXXXXX");
+	close(mkstemp(log_file));
+	logging_options = -1;
+
 	init_iobroker();
 	enable_timing_point = 1;
 	qh_socket_path = "/tmp/qh-socket";
@@ -229,6 +286,14 @@ void worker_test_teardown(void)
 	free_worker_memory(WPROC_FORCE);
 	deinit_iobroker();
 	qh_deinit(qh_socket_path);
+
+	/* We allocated a log file path earlier */
+	close_log_file();
+	unlink(log_file);
+	free(log_file);
+	log_file = NULL;
+	logging_options = 0;
+
 	wproc_num_workers_online = 0;
 	wproc_num_workers_spawned = 0;
 	wproc_num_workers_desired = 0;
@@ -236,21 +301,29 @@ void worker_test_teardown(void)
 
 Suite *worker_suite(void)
 {
-	Suite *s = suite_create("worker tests");
-	TCase *tc_worker_output = tcase_create("worker reaping tests");
-	TCase *tc_command_worker = tcase_create("command worker tests");
+	Suite *s;
+	TCase *tc_worker_output;
+	TCase *tc_command_worker;
+
+	s = suite_create("worker tests");
+
+	tc_worker_output = tcase_create("worker reaping tests");
 	tcase_add_checked_fixture(tc_worker_output, worker_test_setup, worker_test_teardown);
-	tcase_add_checked_fixture(tc_command_worker, init_iobroker, deinit_iobroker);
 	tcase_add_test(tc_worker_output, worker_test_output_stdout);
 	tcase_add_test(tc_worker_output, worker_test_output_stderr);
 	tcase_add_test(tc_worker_output, worker_test_output_staggered_output_and_exitcode_2);
 	tcase_add_test(tc_worker_output, worker_test_output_mixed_stdout_and_stderr);
 	tcase_add_test(tc_worker_output, worker_test_timeout);
+	tcase_add_test(tc_worker_output, worker_test_no_timeout_log);
 	tcase_add_test(tc_worker_output, worker_test_output_stdout_and_timeout);
 	tcase_add_test(tc_worker_output, worker_test_child_remains_to_cause_sideeffects);
+	suite_add_tcase(s, tc_worker_output);
+
+	tc_command_worker = tcase_create("command worker tests");
+	tcase_add_checked_fixture(tc_command_worker, init_iobroker, deinit_iobroker);
 	tcase_add_test(tc_command_worker, command_worker_launch_shutdown_test);
 	suite_add_tcase(s, tc_command_worker);
-	suite_add_tcase(s, tc_worker_output);
+
 	return s;
 }
 
