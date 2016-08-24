@@ -100,6 +100,9 @@ static struct wproc_list *get_wproc_list(const char *cmd)
 	struct wproc_list *wp_list;
 	char *cmd_name = NULL, *slash = NULL, *space;
 
+	if (G_UNLIKELY(specialized_workers == NULL))
+		return &workers;
+
 	if (!g_hash_table_size(specialized_workers))
 		return &workers;
 
