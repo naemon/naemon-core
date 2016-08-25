@@ -6,11 +6,16 @@ use warnings;
 use strict;
 use Test::More;
 
-my $naemon = "$ENV{builddir}/src/naemon/naemon";
-my $etc = "$ENV{builddir}/t/etc";
-my $precache = "$ENV{builddir}/t/var/objects.precache";
+my $buildroot=".";
+if (defined $ENV{builddir}) {
+	$buildroot = $ENV{builddir};
+}
 
-plan tests => 8;
+my $naemon = "$buildroot/src/naemon/naemon";
+my $etc = "$buildroot/t/etc";
+my $precache = "$buildroot/t/var/objects.precache";
+
+plan tests => 10;
 
 my $output = `$naemon -v "$etc/naemon.cfg"`;
 if ($? == 0) {
@@ -44,5 +49,10 @@ $rc = ($?>> 8) & 0xff;
 is($rc, 1);
 like($out, "/Duplicate definition found for host/", "output contains error");
 
-my $output = `$naemon -v "$etc/no-objects.cfg"`;
+$out = `$naemon -v '$etc/naemon-missing-service-description-error.cfg' 2>&1`;
+$rc  = $?>>8 & 0xff;
+is($rc, 1);
+like($out, "/Service has no hosts and/or service_description/", "output contains error");
+
+$out = `$naemon -v "$etc/no-objects.cfg"`;
 is($?, 0, "Naemon does not need any objects to start");
