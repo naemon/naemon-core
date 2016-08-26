@@ -2335,7 +2335,6 @@ static int xodtemplate_duplicate_service(xodtemplate_service *temp_service, char
 static int xodtemplate_duplicate_services(void)
 {
 	gpointer prev;
-	int result = OK;
 	xodtemplate_service *temp_service = NULL;
 
 	xodcount.services = 0;
@@ -2432,7 +2431,7 @@ static int xodtemplate_duplicate_services(void)
 					temp_service->is_from_hostgroup = (hg != &fake_hg);
 				} else {
 					/* duplicate service definition */
-					result = xodtemplate_duplicate_service(temp_service, h->host_name, hg != &fake_hg);
+					xodtemplate_duplicate_service(temp_service, h->host_name, hg != &fake_hg);
 				}
 			}
 			free_objectlist(&fake_hg.member_list);
@@ -2483,7 +2482,6 @@ static int xodtemplate_duplicate_services(void)
 				 * override a host-assigned service.
 				 */
 				nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for service '%s' on host '%s' (config file '%s', starting on line %d)\n", temp_service->service_description, temp_service->host_name, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
-				result = ERROR;
 			}
 
 		} else {
@@ -2492,7 +2490,7 @@ static int xodtemplate_duplicate_services(void)
 		g_free(service_ident);
 	}
 
-	return result;
+	return OK;
 }
 
 
@@ -2553,7 +2551,6 @@ static int xodtemplate_duplicate_serviceescalation(xodtemplate_serviceescalation
 /* duplicates object definitions */
 static int xodtemplate_duplicate_objects(void)
 {
-	int result = OK;
 	xodtemplate_hostescalation *temp_hostescalation = NULL;
 	xodtemplate_serviceescalation *temp_serviceescalation = NULL;
 	xodtemplate_hostextinfo *next_he = NULL, *temp_hostextinfo = NULL;
@@ -2600,10 +2597,9 @@ static int xodtemplate_duplicate_objects(void)
 			}
 
 			/* duplicate hostescalation definition */
-			result = xodtemplate_duplicate_hostescalation(temp_hostescalation, h->host_name);
 
 			/* exit on error */
-			if (result == ERROR) {
+			if (xodtemplate_duplicate_hostescalation(temp_hostescalation, h->host_name) == ERROR) {
 				free_objectlist(&next);
 				return ERROR;
 			}
@@ -2654,10 +2650,8 @@ static int xodtemplate_duplicate_objects(void)
 			}
 
 			/* duplicate service escalation definition */
-			result = xodtemplate_duplicate_serviceescalation(temp_serviceescalation, s->host_name, s->service_description);
-
 			/* exit on error */
-			if (result == ERROR) {
+			if (xodtemplate_duplicate_serviceescalation(temp_serviceescalation, s->host_name, s->service_description) == ERROR) {
 				free_objectlist(&next);
 				return ERROR;
 			}
@@ -8613,7 +8607,7 @@ int xodtemplate_read_config_data(const char *main_config_file)
 
 	if (use_precached_objects == FALSE) {
 		if (result == OK)
-			xodtemplate_duplicate_services();
+			result = xodtemplate_duplicate_services();
 
 		timing_point("Created %u services (dupes possible)\n", xodcount.services);
 	}
