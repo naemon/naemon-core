@@ -6,6 +6,7 @@
 #include "perfdata.h"
 #include "sretention.h"
 #include "broker.h"
+#include "neberrors.h"
 #include "workers.h"
 #include "commands.h"
 #include "events.h"
@@ -3347,6 +3348,24 @@ int process_external_command1(char *cmd)
 	return process_external_command(cmd, COMMAND_SYNTAX_NOKV, NULL);
 }
 
+/* wrapper for id/timestamp/args-based commands */
+int process_external_command2(int cmd, time_t entry_time, char *args)
+{
+	char *strcmd = NULL;
+	int return_code;
+	const char *cmdname = registered_commands[cmd]->name;
+
+	if(args != NULL && args[0] != '\0') {
+		nm_asprintf(&strcmd, "[%ld] %s;%s", entry_time, cmdname, args);
+	} else {
+		nm_asprintf(&strcmd, "[%ld] %s", entry_time, cmdname);
+	}
+	return_code = process_external_command(strcmd, COMMAND_SYNTAX_NOKV, NULL);
+	nm_free(strcmd);
+
+	return return_code;
+}
+
 /* top-level external command processor */
 int process_external_command(char *cmd, int mode, GError **error)
 {
@@ -3356,6 +3375,8 @@ int process_external_command(char *cmd, int mode, GError **error)
 	int id = CMD_NONE;
 	GError *external_command_ret = NULL;
 	struct external_command *parsed_command;
+
+	int broker_result;
 
 	if (cmd == NULL) {
 		g_set_error(
@@ -3405,7 +3426,15 @@ int process_external_command(char *cmd, int mode, GError **error)
 	}
 	nm_free(temp_buffer);
 
-	broker_external_command(NEBTYPE_EXTERNALCOMMAND_START, NEBFLAG_NONE, NEBATTR_NONE, id, command_entry_time(parsed_command), name, args);
+	broker_result = broker_external_command(NEBTYPE_EXTERNALCOMMAND_START, NEBFLAG_NONE, NEBATTR_NONE, id, command_entry_time(parsed_command), name, args);
+
+	if(broker_result == NEBERROR_CALLBACKOVERRIDE || broker_result == NEBERROR_CALLBACKCANCEL) {
+		free(name);
+		free(args);
+		command_destroy(parsed_command);
+		nm_log(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING, "Error: External command blocked by broker module -> %s;%s\n", name, args);
+		return OK;
+	}
 
 	/* custom commands aren't handled internally by Naemon, but may be by NEB modules */
 	if (id != CMD_CUSTOM_COMMAND) {
@@ -3422,27 +3451,6 @@ int process_external_command(char *cmd, int mode, GError **error)
 	free(args);
 	command_destroy(parsed_command);
 	return OK;
-}
-
-int process_external_command2(int cmd, time_t entry_time, char *args)
-{
-	struct external_command *ext_command = NULL;
-	GError *error;
-	int ret;
-	log_debug_info(DEBUGL_EXTERNALCOMMANDS, 1, "External Command Type: %d\n", cmd);
-	log_debug_info(DEBUGL_EXTERNALCOMMANDS, 1, "Command Entry Time: %lu\n", (unsigned long)entry_time);
-	log_debug_info(DEBUGL_EXTERNALCOMMANDS, 1, "Command Arguments: %s\n", (args == NULL) ? "" : args);
-
-	ext_command = external_command_copy(registered_commands[cmd]);
-	ext_command->entry_time = entry_time;
-	ret = parse_arguments((const char *)args, ext_command->arguments, ext_command->argc, &error);
-	if (ret == OK) {
-		ret = command_execute_handler(ext_command);
-	} else {
-		nm_log(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING, "Warning: External command parse error %s (%s)\n", ext_command->name, error->message);
-	}
-	command_destroy(ext_command);
-	return ret;
 }
 
 /******************************************************************/
