@@ -186,7 +186,7 @@ void broker_adaptive_program_data(int, int, int, int, unsigned long, unsigned lo
 void broker_adaptive_host_data(int, int, int, host *, int, unsigned long, unsigned long);
 void broker_adaptive_service_data(int, int, int, service *, int, unsigned long, unsigned long);
 void broker_adaptive_contact_data(int, int, int, contact *, int, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long, unsigned long);
-void broker_external_command(int, int, int, int, time_t, char *, char *);
+int broker_external_command(int, int, int, int, time_t, char *, char *);
 void broker_aggregated_status_data(int, int, int);
 void broker_retention_data(int, int, int);
 void broker_acknowledgement_data(int, int, int, int, void *, char *, char *, int, int, int);
