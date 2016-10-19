@@ -3,6 +3,7 @@
 /test-checks
 /test-obj-config-parse
 /test-event-heap
+/test-external-command-nebcallback
 /test-kv-command
 /test-config
 /test-kvvec
