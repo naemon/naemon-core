@@ -122,6 +122,11 @@ tests_test_event_heap_LDADD = $(TESTSLDADD)
 tests_test_event_heap_LDFLAGS = $(TESTSLDFLAGS)
 tests_test_event_heap_CPPFLAGS = $(TESTSCPPFLAGS)
 
+tests_test_external_command_nebcallback_SOURCES = tests/test-external-command-nebcallback.c
+tests_test_external_command_nebcallback_LDADD = $(TESTSLDADD)
+tests_test_external_command_nebcallback_LDFLAGS = $(TESTSLDFLAGS)
+tests_test_external_command_nebcallback_CPPFLAGS = $(TESTSCPPFLAGS)
+
 tests_test_kv_command_SOURCES = tests/test-kv-command.c
 tests_test_kv_command_LDADD = $(TESTSLDADD)
 tests_test_kv_command_LDFLAGS = $(TESTSLDFLAGS)
@@ -163,6 +168,7 @@ check_PROGRAMS += \
 	tests/test-log \
 	tests/test-config \
 	tests/test-event-heap \
+	tests/test-external-command-nebcallback \
 	tests/test-kv-command \
 	tests/test-kvvec \
 	tests/test-objects \

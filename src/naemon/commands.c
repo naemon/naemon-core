@@ -3429,10 +3429,10 @@ int process_external_command(char *cmd, int mode, GError **error)
 	broker_result = broker_external_command(NEBTYPE_EXTERNALCOMMAND_START, NEBFLAG_NONE, NEBATTR_NONE, id, command_entry_time(parsed_command), name, args);
 
 	if(broker_result == NEBERROR_CALLBACKOVERRIDE || broker_result == NEBERROR_CALLBACKCANCEL) {
+		nm_log(NSLOG_EXTERNAL_COMMAND | NSLOG_INFO_MESSAGE, "Info: External command blocked by broker module -> %s;%s\n", name, args);
 		free(name);
 		free(args);
 		command_destroy(parsed_command);
-		nm_log(NSLOG_EXTERNAL_COMMAND | NSLOG_RUNTIME_WARNING, "Error: External command blocked by broker module -> %s;%s\n", name, args);
 		return OK;
 	}
 
