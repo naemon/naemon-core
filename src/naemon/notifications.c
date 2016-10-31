@@ -570,7 +570,8 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	/* get the time we finished */
 	gettimeofday(&end_time, NULL);
 
-	broker_notification_data(NEBTYPE_NOTIFICATION_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, start_time, end_time, (void *)svc, not_author, not_data, escalated, contacts_notified);
+	neb_resultset = broker_notification_data(NEBTYPE_NOTIFICATION_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, start_time, end_time, (void *)svc, not_author, not_data, escalated, contacts_notified);
+	neb_cb_resultset_destroy(neb_resultset);
 
 	/* update the status log with the service information */
 	update_service_status(svc, FALSE);
@@ -1449,7 +1450,8 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 	/* get the time we finished */
 	gettimeofday(&end_time, NULL);
 
-	broker_notification_data(NEBTYPE_NOTIFICATION_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, start_time, end_time, (void *)hst, not_author, not_data, escalated, contacts_notified);
+	neb_resultset = broker_notification_data(NEBTYPE_NOTIFICATION_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, start_time, end_time, (void *)hst, not_author, not_data, escalated, contacts_notified);
+	neb_cb_resultset_destroy(neb_resultset);
 
 	/* update the status log with the host info */
 	update_host_status(hst, FALSE);
