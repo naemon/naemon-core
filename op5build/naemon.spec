@@ -1,3 +1,9 @@
+%if 0%{?rhel} >= 7
+%define initdir --with-initdir=
+%else
+%define initdir %{nil}
+%endif
+
 %if 0%{?suse_version}
 %define daemon_group www
 %else
@@ -41,7 +47,9 @@ BuildRequires: pwdutils
 %else
 BuildRequires: shadow-utils
 %endif
-
+%if 0%{?rhel} >= 7
+BuildRequires: systemd
+%endif
 
 %description
 op5 Monitor is a system for monitoring network hosts and its various
@@ -70,6 +78,12 @@ develop eventbroker modules and Nagios addons.
 
 %build
 echo %{version} > .version_number
+%if 0%{?rhel} >= 7
+# modify the existing configure.ac file so that it can generate
+# naemon.service file.
+sed --follow-symlinks --in-place '/AC_CONFIG_FILES/ a op5build/naemon.service' configure.ac
+%endif
+
 autoreconf -i -s
 %configure \
 		--with-naemon-user=%daemon_user \
@@ -79,7 +93,8 @@ autoreconf -i -s
 		--with-logdir=/opt/monitor/var \
 		--with-lockfile=/var/cache/naemon/naemon.pid \
 		--with-tempdir=/var/cache/naemon \
-		--with-checkresultdir=/var/cache/naemon/checkresults
+		--with-checkresultdir=/var/cache/naemon/checkresults \
+		%initdir
 
 
 %__make V=1
@@ -92,9 +107,15 @@ rm -rf %buildroot
 
 make install DESTDIR=%buildroot
 
+%if 0%{?rhel} >= 7
+mkdir --parents %{buildroot}%{_unitdir}
+cp op5build/naemon.service %{buildroot}%{_unitdir}/naemon.service
+%else
 # op5kad config file
 mkdir -p %buildroot%_sysconfdir/op5kad/conf.d
 cp op5build/kad.conf %buildroot%_sysconfdir/op5kad/conf.d/naemon.kad
+ln --symbolic naemon %buildroot/etc/init.d/monitor
+%endif
 
 # limits.conf
 mkdir -p %buildroot%_sysconfdir/security/limits.d
@@ -102,12 +123,17 @@ install -m 644 op5build/limits.conf %buildroot%_sysconfdir/security/limits.d/98-
 
 mkdir -p %buildroot/opt/monitor/bin
 ln -s ../../../%_bindir/naemon %buildroot/opt/monitor/bin/monitor
-ln -s naemon %buildroot/etc/init.d/monitor
 
 %preun
+%if 0%{?rhel} >= 7
+if [ $1 -eq 0 ]; then
+	systemctl stop naemon || :
+fi
+%else
 if [ $1 -eq 0 ]; then
 	service naemon stop || :
 fi
+%endif
 
 %pre
 # we do this unconditionally. The pidfile has moved, so
@@ -115,15 +141,27 @@ fi
 # otherwise be shut down without issuing "killall" or by
 # looking up its pid. Since we start unconditionally too,
 # it also provides a nice symmetry
+%if 0%{?rhel} >= 7
+systemctl stop naemon >/dev/null 2>&1 || :
+%else
 service monitor stop >/dev/null 2>&1 || :
+%endif
 
 %if 0%{?suse_version}
 if chkconfig --check monitor; then
-%else
-if chkconfig --list monitor &>/dev/null; then
-%endif
 	chkconfig --del monitor
 fi
+%else
+%if 0%{?rhel} >= 7
+if systemctl is-enabled naemon &>/dev/null; then
+	systemctl disable naemon
+fi
+%else
+if chkconfig --list monitor &>/dev/null; then
+	chkconfig --del monitor
+fi
+%endif
+%endif
 
 %post
 if grep -q 'broker_module.*command\.so' /opt/monitor/etc/naemon.cfg; then
@@ -132,7 +170,12 @@ if grep -q 'broker_module.*command\.so' /opt/monitor/etc/naemon.cfg; then
 		/opt/monitor/etc/naemon.cfg
 fi
 
+%if 0%{?rhel} >= 7
+systemctl daemon-reload
+systemctl enable naemon.service
+%else
 chkconfig --add naemon
+%endif
 
 #Do nagios/monitor legacy init migrations (MON-7972 & MON-7975)
 if [ ! -f /etc/sysconfig/naemon ]; then
@@ -195,16 +238,24 @@ fi
 # this is run after all other transactions, which means we
 # *always* start the service even if it gets stopped by
 # the "postun" scriptlet of an earlier package
+%if 0%{?rhel} >= 7
+systemctl start naemon || :
+%else
 service naemon start || :
+%endif
 
 
 %files
 %defattr(-,root,root)
+%if 0%{?rhel} >= 7
+%attr(664, root, root) %{_unitdir}/naemon.service
+%else
 %_sysconfdir/init.d/naemon
 %_sysconfdir/init.d/monitor
+%_sysconfdir/op5kad/conf.d/naemon.kad
+%endif
 %_sysconfdir/logrotate.d/naemon
 %doc README LEGAL UPGRADING
-%_sysconfdir/op5kad/conf.d/naemon.kad
 %_sysconfdir/security/limits.d/*.conf
 %_libdir/libnaemon.so.*
 %_bindir/naemon
