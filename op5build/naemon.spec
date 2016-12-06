@@ -4,12 +4,8 @@
 %define initdir %{nil}
 %endif
 
-%if 0%{?suse_version}
-%define daemon_group www
-%else
-%define daemon_group apache
-%endif
 %define daemon_user monitor
+%define daemon_group apache
 
 Summary: Core scheduling and checking engine for op5 Monitor
 Name: op5-naemon
@@ -37,16 +33,7 @@ BuildRequires: perl(Test::Harness)
 BuildRequires: glib2-devel
 BuildRequires: check
 BuildRequires: check-devel
-%if 0%{?suse_version}
-#The suse distribution of glibc <= 2.11.3-17.43
-#contains a dlclose/dlopen bug which caused globals
-#in neb modules to never become unmapped - leading
-#to weird behaviour on reload (HUP).
-Requires: glibc >= 2.11.3-17.43.1
-BuildRequires: pwdutils
-%else
 BuildRequires: shadow-utils
-%endif
 %if 0%{?rhel} >= 7
 BuildRequires: systemd
 %endif
@@ -147,11 +134,6 @@ systemctl stop naemon >/dev/null 2>&1 || :
 service monitor stop >/dev/null 2>&1 || :
 %endif
 
-%if 0%{?suse_version}
-if chkconfig --check monitor; then
-	chkconfig --del monitor
-fi
-%else
 %if 0%{?rhel} >= 7
 if systemctl is-enabled naemon &>/dev/null; then
 	systemctl disable naemon
@@ -160,7 +142,6 @@ fi
 if chkconfig --list monitor &>/dev/null; then
 	chkconfig --del monitor
 fi
-%endif
 %endif
 
 %post
