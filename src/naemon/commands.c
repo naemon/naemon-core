@@ -3059,7 +3059,7 @@ void register_core_commands(void)
 	command_register(core_command, CMD_DISABLE_HOSTGROUP_HOST_CHECKS);
 
 	core_command = command_create("ENABLE_HOSTGROUP_PASSIVE_SVC_CHECKS", hostgroup_command_handler,
-			"Enables passive checks for all services associated with hosts in a particular hostgroup.", "hostgroup=hosgroup_name");
+			"Enables passive checks for all services associated with hosts in a particular hostgroup.", "hostgroup=hostgroup_name");
 	command_register(core_command, CMD_ENABLE_HOSTGROUP_PASSIVE_SVC_CHECKS);
 
 	core_command = command_create("DISABLE_HOSTGROUP_PASSIVE_SVC_CHECKS", hostgroup_command_handler,
