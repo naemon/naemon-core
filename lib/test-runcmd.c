@@ -61,6 +61,7 @@ struct {
 	{ RUNCMD_HAS_WILDCARD, "ls -l /dev/tty?" },
 	{ 0, "ls -l /dev/tty\\?" },
 	{ RUNCMD_HAS_SHVAR, "echo $foo" },
+	{ RUNCMD_HAS_SHVAR, "VAR='foo' echo bar" },
 	{ 0, "echo \\$foo" },
 	{ RUNCMD_HAS_PAREN, "\\$(hoopla booyaka" },
 	{ 0, "\\$\\(hoopla booyaka" },
