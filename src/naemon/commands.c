@@ -280,7 +280,11 @@ static int command_file_worker(int sd)
 
 		/* if our master has gone away, we need to die */
 		if (kill(nagios_pid, 0) < 0 && errno == ESRCH) {
-			nm_log(NSLOG_RUNTIME_ERROR, "Command file worker: Naemon main process is dead (%m)");
+			/* leads to abandoned worker writing into a already rotated logfile, which
+			 * a bad thing because rotated logfiles then have overlapping timestamps
+			 * which breaks livestatus. So make this a debug log entry only.
+			 */
+			log_debug_info(DEBUGL_IPC, 1, "Command file worker: Naemon main process is dead (%m)");
 			return EXIT_SUCCESS;
 		}
 
