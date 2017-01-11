@@ -252,6 +252,7 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv)
 			if (!in_quotes) {
 				add_ret(RUNCMD_HAS_WILDCARD);
 			}
+			break;
 
 		case '=':
 			if (!in_quotes) {
@@ -260,8 +261,7 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv)
 					add_ret(RUNCMD_HAS_SHVAR);
 				}
 			}
-
-			/* fallthrough */
+			break;
 
 		default:
 			break;
