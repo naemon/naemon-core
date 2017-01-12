@@ -34,7 +34,6 @@ void reset_sighandler(void);                         		/* reset signals to defau
 void signal_react(void);				/* General signal reaction routines */
 void handle_sigxfsz(void);				/* handle SIGXFSZ */
 int daemon_init(void);				     		/* switches to daemon mode */
-int drop_privileges(char *, char *);				/* drops privileges before startup */
 
 int init_check_stats(void);
 int update_check_stats(int, time_t);

@@ -151,6 +151,11 @@ int main(int argc, char **argv)
 #define getopt(argc, argv, o) getopt_long(argc, argv, o, long_options, &option_index)
 #endif
 
+	if (getuid() == 0) {
+		printf("ERROR: do not start naemon as root user.\n");
+		exit(EXIT_FAILURE);
+	}
+
 	/* Make all GLib domain messages go to the usual places. This also maps
 	 * GLib levels to an approximation of their corresponding Naemon levels
 	 * (including debug).
@@ -324,12 +329,6 @@ int main(int argc, char **argv)
 		if (verify_config)
 			printf("   Read main config file okay...\n");
 
-		/* drop privileges */
-		if ((result = drop_privileges(NAEMON_USER, NAEMON_GROUP)) == ERROR) {
-			printf("   Failed to drop privileges.  Aborting.");
-			exit(EXIT_FAILURE);
-		}
-
 		/*
 		 * this must come after dropping privileges, so we make
 		 * sure to test access permissions as the right user.
@@ -456,15 +455,6 @@ int main(int argc, char **argv)
 		program_start = time(NULL);
 		nm_free(mac->x[MACRO_PROCESSSTARTTIME]);
 		nm_asprintf(&mac->x[MACRO_PROCESSSTARTTIME], "%lu", (unsigned long)program_start);
-
-		/* drop privileges */
-		if (drop_privileges(NAEMON_USER, NAEMON_GROUP) == ERROR) {
-
-			nm_log(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_CONFIG_ERROR, "Failed to drop privileges.  Aborting.");
-
-			cleanup();
-			exit(ERROR);
-		}
 
 		if (test_path_access(naemon_binary_path, X_OK)) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Error: failed to access() %s: %s\n", naemon_binary_path, strerror(errno));
