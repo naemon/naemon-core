@@ -214,16 +214,6 @@ int main(int argc, char **argv)
 
 	}
 
-
-	if (getuid() == 0) {
-		if (allow_root == FALSE) {
-			printf("ERROR: do not start naemon as root user.\n");
-			exit(EXIT_FAILURE);
-		} else {
-			printf("WARNINIG: you are running as root which is not recommended.\n");
-		}
-	}
-
 	/* Make all GLib domain messages go to the usual places. This also maps
 	 * GLib levels to an approximation of their corresponding Naemon levels
 	 * (including debug).
@@ -293,6 +283,16 @@ int main(int argc, char **argv)
 
 		exit(ERROR);
 	}
+
+	if (getuid() == 0) {
+		if (allow_root == FALSE) {
+			printf("ERROR: do not start naemon as root user.\n");
+			exit(EXIT_FAILURE);
+		} else {
+			printf("WARNINIG: you are running as root which is not recommended.\n");
+		}
+	}
+
 
 
 	/*
