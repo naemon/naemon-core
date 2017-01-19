@@ -127,6 +127,7 @@ int main(int argc, char **argv)
 	int display_license = FALSE;
 	int display_help = FALSE;
 	int c = 0;
+	int allow_root = FALSE;
 	struct tm *tm, tm_s;
 	time_t now;
 	char datestring[256];
@@ -146,31 +147,11 @@ int main(int argc, char **argv)
 		{"use-precached-objects", no_argument, 0, 'u'},
 		{"enable-timing-point", no_argument, 0, 'T'},
 		{"worker", required_argument, 0, 'W'},
+		{"allow-root", no_argument, 0, 'R'},
 		{0, 0, 0, 0}
 	};
 #define getopt(argc, argv, o) getopt_long(argc, argv, o, long_options, &option_index)
 #endif
-
-	if (getuid() == 0) {
-		printf("ERROR: do not start naemon as root user.\n");
-		exit(EXIT_FAILURE);
-	}
-
-	/* Make all GLib domain messages go to the usual places. This also maps
-	 * GLib levels to an approximation of their corresponding Naemon levels
-	 * (including debug).
-	 *
-	 * Note that because of the GLib domain restriction, log messages from
-	 * other domains (such as if we did g_message(...) ourselves from inside
-	 * Naemon) do not currently go to this handler.
-	 **/
-	g_log_set_handler("GLib", G_LOG_LEVEL_MASK | G_LOG_FLAG_FATAL |
-			G_LOG_FLAG_RECURSION, nm_g_log_handler, NULL);
-	mac = get_global_macros();
-
-	/* make sure we have the correct number of command line arguments */
-	if (argc < 2)
-		error = TRUE;
 
 	/* get all command line arguments */
 	while (1) {
@@ -215,6 +196,9 @@ int main(int argc, char **argv)
 		case 'W':
 			worker_socket = optarg;
 			break;
+		case 'R':
+			allow_root = TRUE;
+			break;
 
 		case 'x':
 			printf("Warning: -x is deprecated and will be removed\n");
@@ -225,6 +209,32 @@ int main(int argc, char **argv)
 		}
 
 	}
+
+
+	if (getuid() == 0) {
+		if (allow_root == FALSE) {
+			printf("ERROR: do not start naemon as root user.\n");
+			exit(EXIT_FAILURE);
+		} else {
+			printf("WARNINIG: you are running as root which is not recommended.\n");
+		}
+	}
+
+	/* Make all GLib domain messages go to the usual places. This also maps
+	 * GLib levels to an approximation of their corresponding Naemon levels
+	 * (including debug).
+	 *
+	 * Note that because of the GLib domain restriction, log messages from
+	 * other domains (such as if we did g_message(...) ourselves from inside
+	 * Naemon) do not currently go to this handler.
+	 **/
+	g_log_set_handler("GLib", G_LOG_LEVEL_MASK | G_LOG_FLAG_FATAL |
+			G_LOG_FLAG_RECURSION, nm_g_log_handler, NULL);
+	mac = get_global_macros();
+
+	/* make sure we have the correct number of command line arguments */
+	if (argc < 2)
+		error = TRUE;
 
 	/* if we're a worker we can skip everything below */
 	if (worker_socket) {
