@@ -285,6 +285,7 @@ int main(int argc, char **argv)
 		printf("  -u, --use-precached-objects  Use precached object config file\n");
 		printf("  -d, --daemon                 Starts Naemon in daemon mode, instead of as a foreground process\n");
 		printf("  -W, --worker /path/to/socket Act as a worker for an already running daemon\n");
+		printf("  --allow-root                 Let naemon run as root. THIS IS NOT RECOMMENDED AT ALL.\n");
 		printf("\n");
 		printf("Visit the Naemon website at http://www.naemon.org/ for bug fixes, new\n");
 		printf("releases, online documentation, FAQs and more...\n");
