@@ -135,9 +135,6 @@ service monitor stop >/dev/null 2>&1 || :
 %endif
 
 %if 0%{?rhel} >= 7
-if systemctl is-enabled naemon &>/dev/null; then
-	systemctl disable naemon
-fi
 %else
 if chkconfig --list monitor &>/dev/null; then
 	chkconfig --del monitor
