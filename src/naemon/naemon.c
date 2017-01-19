@@ -153,6 +153,10 @@ int main(int argc, char **argv)
 #define getopt(argc, argv, o) getopt_long(argc, argv, o, long_options, &option_index)
 #endif
 
+	/* make sure we have the correct number of command line arguments */
+	if (argc < 2)
+		error = TRUE;
+
 	/* get all command line arguments */
 	while (1) {
 		c = getopt(argc, argv, "+hVvdspuxTW");
@@ -231,10 +235,6 @@ int main(int argc, char **argv)
 	g_log_set_handler("GLib", G_LOG_LEVEL_MASK | G_LOG_FLAG_FATAL |
 			G_LOG_FLAG_RECURSION, nm_g_log_handler, NULL);
 	mac = get_global_macros();
-
-	/* make sure we have the correct number of command line arguments */
-	if (argc < 2)
-		error = TRUE;
 
 	/* if we're a worker we can skip everything below */
 	if (worker_socket) {
