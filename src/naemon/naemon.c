@@ -289,7 +289,7 @@ int main(int argc, char **argv)
 			printf("ERROR: do not start naemon as root user.\n");
 			exit(EXIT_FAILURE);
 		} else {
-			printf("WARNINIG: you are running as root which is not recommended.\n");
+			printf("WARNING: you are running as root which is not recommended.\n");
 		}
 	}
 
