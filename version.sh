@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=1.0.5
+VERSION=1.0.6
 if test -e .git; then
     if hash git 2>/dev/null; then
         VERSION=$(git describe --always --tags --dirty | \
