@@ -396,7 +396,7 @@ int qh_init(const char *path)
 	if (result < 0) {
 		g_hash_table_destroy(qh_table);
 		close(qh_listen_sock);
-		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to register socket with io broker: %s; errno=%d: %s\n", iobroker_strerror(result), errno, strerror(errno));
+		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to register socket with io broker: %s\n", iobroker_strerror(result));
 		return ERROR;
 	}
 
