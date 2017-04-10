@@ -62,15 +62,6 @@ status() {
 start() {
     test -x $exec || exit 5
     test -f $config || exit 6
-    if [ "$checkconfig" = "false" ]; then
-        $0 configtest > /dev/null
-        retval=$?
-        if [ "$retval" != "0" ]; then
-            echo "Cowardly refusing to start, failed to verify config"
-            echo "Run '$0 configtest' for more info"
-            exit $retval
-        fi
-    fi
     echo -n "Starting $prog: "
     # Create PID folder if it does not exist
     if [ ! -d $pidfolder ]; then
@@ -115,14 +106,6 @@ stop() {
 
 
 restart() {
-    $0 configtest > /dev/null
-    retval=$?
-    if [ "$retval" != "0" ]; then
-        echo "Cowardly refusing to restart, failed to verify config"
-        echo "Run '$0 configtest' for more info"
-        exit $retval
-    fi
-    checkconfig="true"
     stop
     start
     return $?
