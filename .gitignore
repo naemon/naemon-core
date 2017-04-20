@@ -26,7 +26,6 @@ Makefile
 *.gcov
 *.a
 *.so
-*.pyc
 gmon.out
 core.[1-9]*
 /Documentation

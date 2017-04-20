@@ -656,15 +656,6 @@ int main(int argc, char **argv)
 		nm_free(mac->x[MACRO_EVENTSTARTTIME]);
 		nm_asprintf(&mac->x[MACRO_EVENTSTARTTIME], "%lu", (unsigned long)event_start);
 
-		/* let the parent know we're good to go and that it can let go */
-		if (daemon_mode == TRUE && sigrestart == FALSE) {
-			if ((result = signal_parent(OK)) != OK) {
-				broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_PROCESS_INITIATED, NEBATTR_SHUTDOWN_ABNORMAL);
-				cleanup();
-				exit(ERROR);
-			}
-		}
-
 		timing_point("Entering event execution loop\n");
 		/***** start monitoring all services *****/
 		/* (doesn't return until a restart or shutdown signal is encountered) */
