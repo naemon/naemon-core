@@ -314,8 +314,7 @@ void sighandler(int sig)
 	case SIGQUIT: /* fallthrough */
 	case SIGTERM: /* fallthrough */
 	case SIGINT: /* fallthrough */
-	case SIGPIPE: sigshutdown = TRUE; break;
-	case SIGCHLD: exit(EXIT_FAILURE); /* Daemon child died */
+	case SIGPIPE: sigshutdown = TRUE;
 	}
 }
 
@@ -556,23 +555,13 @@ int daemon_init(void)
 		return (ERROR);
 	}
 
-	/*
-	 * as a parent and if the child dies during initialization, we need to exit
-	 * so we don't get stuck in an endless wait for input.
-	 */
-	if (signal(SIGCHLD, sighandler) == SIG_ERR) {
-		nm_log(NSLOG_RUNTIME_ERROR, "Failed to set up daemonization signal: %s",
-			strerror(errno));
-		return (ERROR);
-	}
-
 	if ((pid = (int)fork()) < 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Unable to fork out the daemon process: %s",
 			strerror(errno));
 		return (ERROR);
 	} else if (pid != 0) {
 		/* parent stops - when child is done, we exit here */
-		int return_code = OK;
+		int return_code = EXIT_FAILURE;
 		if (close(upipe_fd[PIPE_WRITE]) < 0) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Unable to close parent write end: %s",
 				strerror(errno));
