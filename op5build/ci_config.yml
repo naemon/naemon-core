@@ -1,11 +1,20 @@
 post:
-    steps: |
-        service naemon start
-        service naemon restart
-        service naemon reload
-        service naemon stop
-        service naemon start
-        kill -9 \`cat /var/cache/naemon/naemon.pid\`
-        service naemon start
-        service naemon stop
-        service naemon start
+  install:
+    - python-pip
+  steps: |
+    service naemon start
+    service naemon restart
+    service naemon reload
+    service naemon stop
+    service naemon start
+    kill -9 \`cat /var/cache/naemon/naemon.pid\`
+    service naemon start
+    service naemon stop
+    service naemon start
+
+    # Run behave tests
+    if [ -f /usr/bin/systemctl ]; then
+      pip install behave flake8
+      flake8
+      behave -o behave.log
+    fi

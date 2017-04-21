@@ -15,6 +15,8 @@
 NAGIOS_BEGIN_DECL
 
 #define CHECK_STATS_BUCKETS                  15
+#define PIPE_READ                             0
+#define PIPE_WRITE                            1
 
 /* used for tracking host and service check statistics */
 typedef struct check_stats {
@@ -33,6 +35,7 @@ void setup_sighandler(void);                         		/* trap signals */
 void reset_sighandler(void);                         		/* reset signals to default action */
 void signal_react(void);				/* General signal reaction routines */
 void handle_sigxfsz(void);				/* handle SIGXFSZ */
+int signal_parent(int);					/* signal parent when daemonizing */
 int daemon_init(void);				     		/* switches to daemon mode */
 
 int init_check_stats(void);
