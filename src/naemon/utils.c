@@ -44,6 +44,7 @@ char *check_result_path = NULL;
 char *lock_file = NULL;
 objectlist *objcfg_files = NULL;
 objectlist *objcfg_dirs = NULL;
+int upipe_fd[2];
 
 int num_check_workers = 0; /* auto-decide */
 char *qh_socket_path = NULL; /* disabled */
@@ -313,10 +314,8 @@ void sighandler(int sig)
 	case SIGQUIT: /* fallthrough */
 	case SIGTERM: /* fallthrough */
 	case SIGINT: /* fallthrough */
-	case SIGPIPE: sigshutdown = TRUE; break;
+	case SIGPIPE: sigshutdown = TRUE;
 	}
-
-
 }
 
 void signal_react() {
@@ -479,6 +478,16 @@ static int set_working_directory(void)
 	return (OK);
 }
 
+int signal_parent(int sig)
+{
+	if (write(upipe_fd[PIPE_WRITE], &sig, sizeof(int)) < 0) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Failed to signal parent: %s",
+			strerror(errno));
+		return ERROR;
+	}
+	return OK;
+}
+
 int daemon_init(void)
 {
 	int pid = 0;
@@ -535,14 +544,56 @@ int daemon_init(void)
 			return (ERROR);
 		}
 	}
-	if ((pid = (int)fork()) < 0)
+
+	/*
+	 * set up a pipe used for sending a message from the child to the parent
+	 * when initialization is complete.
+	 */
+	if (pipe(upipe_fd) < 0) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Failed to set up unnamned pipe: %s",
+			strerror(errno));
 		return (ERROR);
+	}
 
-	/* parent process goes away.. */
-	else if (pid != 0)
-		exit(OK);
-
-	/* child continues... */
+	if ((pid = (int)fork()) < 0) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Unable to fork out the daemon process: %s",
+			strerror(errno));
+		return (ERROR);
+	} else if (pid != 0) {
+		/* parent stops - when child is done, we exit here */
+		int return_code = EXIT_FAILURE;
+		if (close(upipe_fd[PIPE_WRITE]) < 0) {
+			nm_log(NSLOG_RUNTIME_ERROR, "Unable to close parent write end: %s",
+				strerror(errno));
+			return_code = EXIT_FAILURE;
+		}
+		/*
+		 * wait for child to send the OK return code, if the child dies
+		 * we stop blocking and the return code remains EXIT_FAILURE.
+		 */
+		if (read(upipe_fd[PIPE_READ], &return_code, sizeof(int)) < 0) {
+			nm_log(NSLOG_RUNTIME_ERROR, "Unable to read from pipe: %s",
+				strerror(errno));
+			return_code = EXIT_FAILURE;
+		}
+		if (close(upipe_fd[PIPE_READ]) < 0) {
+			nm_log(NSLOG_RUNTIME_ERROR, "Unable to close parent read end: %s",
+				strerror(errno));
+			return_code = EXIT_FAILURE;
+		}
+		if (return_code != OK) {
+			/* signal the child to die in case an error occurs in parent */
+			kill(pid, SIGTERM);
+		}
+		exit(return_code);
+	} else {
+		/* close read end of the pipe in the child */
+		if (close(upipe_fd[PIPE_READ]) < 0) {
+			nm_log(NSLOG_RUNTIME_ERROR, "Unable to close child read end: %s",
+				strerror(errno));
+			return ERROR;
+		}
+	}
 
 	/* child becomes session leader... */
 	setsid();
