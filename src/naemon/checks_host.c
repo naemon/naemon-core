@@ -408,8 +408,6 @@ int update_host_state_post_check(struct host *hst, struct check_result *cr)
 	/* adjust return code (active checks only) */
 	if (cr->check_type == CHECK_TYPE_ACTIVE) {
 		if (cr->early_timeout) {
-			nm_log(NSLOG_RUNTIME_WARNING,
-			       "Warning: Check of host '%s' timed out after %.2lf seconds\n", hst->name, hst->execution_time);
 			nm_free(hst->plugin_output);
 			nm_free(hst->long_plugin_output);
 			nm_free(hst->perf_data);

@@ -459,7 +459,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 
 		/* log messages are handled first */
 		if (size > 5 && !memcmp(buf, "log=", 4)) {
-			nm_log(NSLOG_INFO_MESSAGE, "wproc: %s: %s\n", wp->name, buf + 4);
+			log_debug_info(DEBUGL_IPC, DEBUGV_BASIC, "wproc: %s: %s\n", wp->name, buf + 4);
 			nm_free(buf);
 			continue;
 		}
@@ -544,7 +544,7 @@ static int register_worker(int sd, char *buf, unsigned int len)
 
 	g_return_val_if_fail(specialized_workers != NULL, ERROR);
 
-	nm_log(NSLOG_INFO_MESSAGE, "wproc: Registry request: %s\n", buf);
+	log_debug_info(DEBUGL_IPC, DEBUGV_BASIC, "wproc: Registry request: %s\n", buf);
 	worker = nm_calloc(1, sizeof(*worker));
 	info = buf2kvvec(buf, len, '=', ';', 0);
 	if (info == NULL) {
@@ -676,7 +676,7 @@ int init_workers(int desired_workers)
 			free, NULL
 			);
 	if (!qh_register_handler("wproc", "Worker process management and info", 0, wproc_query_handler)) {
-		nm_log(NSLOG_INFO_MESSAGE, "wproc: Successfully registered manager as @wproc with query handler\n");
+		log_debug_info(DEBUGL_IPC, DEBUGV_BASIC, "wproc: Successfully registered manager as @wproc with query handler\n");
 	} else {
 		nm_log(NSLOG_RUNTIME_ERROR, "wproc: Failed to register manager with query handler\n");
 		return -1;

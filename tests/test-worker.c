@@ -82,13 +82,13 @@ static void run_worker_test(struct wrk_test *j) {
 	ck_assert_int_eq(1, completed_jobs);
 }
 
-static void test_log_content(int should_exist, const char *expect) {
+static void test_debug_log_content(int should_exist, const char *expect) {
 	char log_buffer[256*1024];
 	size_t len;
 	FILE *fp;
 	int found;
 
-	fp = fopen(log_file, "r");
+	fp = fopen(debug_file, "r");
 	len = fread(log_buffer, 1, sizeof(log_buffer)-1, fp);
 	fclose(fp);
 	log_buffer[len] = '\0';
@@ -164,7 +164,7 @@ START_TEST(worker_test_timeout)
 	 * Verify that the log is correct.
 	 * This is mostly to test the test environment for worker_test_no_timeout_log
 	 */
-	test_log_content(TRUE, "due to timeout");
+	test_debug_log_content(TRUE, "due to timeout");
 }
 END_TEST
 
@@ -186,7 +186,7 @@ START_TEST(worker_test_no_timeout_log)
 	completed_jobs = 0; /* To let mainloop run */
 	run_main_loop(5);
 
-	test_log_content(FALSE, "due to timeout");
+	test_debug_log_content(FALSE, "due to timeout");
 }
 END_TEST
 
@@ -264,8 +264,13 @@ void worker_test_setup(void)
 
 	/* Set temporary log file */
 	log_file = strdup("/tmp/naemon-worker-test-log-XXXXXX");
+	debug_file = strdup("/tmp/naemon-worker-test-log-XXXXXX");
 	close(mkstemp(log_file));
+	close(mkstemp(debug_file));
 	logging_options = -1;
+	debug_level = DEBUGL_ALL;
+	debug_verbosity = DEBUGV_MORE;
+	open_debug_log();
 
 	init_iobroker();
 	enable_timing_point = 1;
@@ -288,6 +293,10 @@ void worker_test_teardown(void)
 	qh_deinit(qh_socket_path);
 
 	/* We allocated a log file path earlier */
+	close_debug_log();
+	unlink(debug_file);
+	free(debug_file);
+	debug_file = NULL;
 	close_log_file();
 	unlink(log_file);
 	free(log_file);
