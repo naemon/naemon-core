@@ -567,6 +567,10 @@ int daemon_init(void)
 				strerror(errno));
 			return_code = EXIT_FAILURE;
 		}
+		/*
+		 * wait for child to send the OK return code, if the child dies
+		 * we stop blocking and the return code remains EXIT_FAILURE.
+		 */
 		if (read(upipe_fd[PIPE_READ], &return_code, sizeof(int)) < 0) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Unable to read from pipe: %s",
 				strerror(errno));
