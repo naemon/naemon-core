@@ -7,9 +7,16 @@ import shutil
 
 
 def before_all(context):
-    os.environ['LD_LIBRARY_PATH'] = (
-        os.getcwd() + '/' + context.config.userdata['shared_libs_path']
-    )
+    # check if we have set relative paths in behave.ini
+    if 'shared_libs_path' in context.config.userdata:
+        os.environ['LD_LIBRARY_PATH'] = \
+            os.path.abspath(context.config.userdata['shared_libs_path'])
+
+    # use naemon executable defined in PATH if nothing else is given
+    context.naemon_exec_path = 'naemon'
+    if 'naemon_exec_path' in context.config.userdata:
+        context.naemon_exec_path = \
+            os.path.abspath(context.config.userdata['naemon_exec_path'])
 
 
 def before_scenario(context, scenario):

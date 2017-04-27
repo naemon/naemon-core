@@ -40,10 +40,8 @@ def configuration_to_file(context):
 @given('I verify the naemon configuration')
 def config_verification(context):
     context.execute_steps(u'Given I write config to file')
-    executable = (
-        context.wrkdir + '/' + context.config.userdata['naemon_exec_path']
-    )
-    args = [executable, '--allow-root', '-v', context.naemonsysconfig.filename]
+    args = [context.naemon_exec_path, '--allow-root', '--verify-config',
+            context.naemonsysconfig.filename]
     context.return_code = subprocess.call(args)
 
 
@@ -66,10 +64,8 @@ def config_verification_pass(context):
 @when('I start naemon')
 def naemon_start(context):
     context.execute_steps(u'Given I write config to file')
-    executable = (
-        context.wrkdir + '/' + context.config.userdata['naemon_exec_path']
-    )
-    args = [executable, '--allow-root', '-d', context.naemonsysconfig.filename]
+    args = [context.naemon_exec_path, '--allow-root', '--daemon',
+            context.naemonsysconfig.filename]
     context.return_code = subprocess.call(args)
 
 
