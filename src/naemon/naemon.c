@@ -529,6 +529,15 @@ int main(int argc, char **argv)
 		nerd_init();
 		timing_point("NERD initialized\n");
 
+		/* let the parent know we're good to go and that it can let go */
+		if (daemon_mode == TRUE && sigrestart == FALSE) {
+			if ((result = signal_parent(OK)) != OK) {
+				broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_PROCESS_INITIATED, NEBATTR_SHUTDOWN_ABNORMAL);
+				cleanup();
+				exit(ERROR);
+			}
+		}
+
 		/* initialize check workers */
 		if (init_workers(num_check_workers) < 0) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Failed to spawn workers. Aborting\n");
@@ -555,17 +564,6 @@ int main(int argc, char **argv)
 		init_event_queue();
 		timing_point("Event queue initialized\n");
 
-		/* load modules */
-		if (neb_load_all_modules() != OK) {
-			nm_log(NSLOG_CONFIG_ERROR, "Error: Module loading failed. Aborting.\n");
-			/* give already loaded modules a chance to deinitialize */
-			neb_unload_all_modules(NEBMODULE_FORCE_UNLOAD, NEBMODULE_NEB_SHUTDOWN);
-			exit(EXIT_FAILURE);
-		}
-		timing_point("Modules loaded\n");
-
-		broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE);
-		timing_point("First callback made\n");
 
 		/* there was a problem reading the config files */
 		if (result != OK)
@@ -593,6 +591,20 @@ int main(int argc, char **argv)
 			cleanup();
 			exit(ERROR);
 		}
+
+
+		/* load modules */
+		timing_point("Modules loading\n");
+		if (neb_load_all_modules() != OK) {
+			nm_log(NSLOG_CONFIG_ERROR, "Error: Module loading failed. Aborting.\n");
+			/* give already loaded modules a chance to deinitialize */
+			neb_unload_all_modules(NEBMODULE_FORCE_UNLOAD, NEBMODULE_NEB_SHUTDOWN);
+			exit(EXIT_FAILURE);
+		}
+		timing_point("Modules loaded\n");
+
+		broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE);
+		timing_point("First callback made\n");
 
 		timing_point("Object configuration parsed and understood\n");
 
@@ -656,14 +668,6 @@ int main(int argc, char **argv)
 		nm_free(mac->x[MACRO_EVENTSTARTTIME]);
 		nm_asprintf(&mac->x[MACRO_EVENTSTARTTIME], "%lu", (unsigned long)event_start);
 
-		/* let the parent know we're good to go and that it can let go */
-		if (daemon_mode == TRUE && sigrestart == FALSE) {
-			if ((result = signal_parent(OK)) != OK) {
-				broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_PROCESS_INITIATED, NEBATTR_SHUTDOWN_ABNORMAL);
-				cleanup();
-				exit(ERROR);
-			}
-		}
 
 		timing_point("Entering event execution loop\n");
 		/***** start monitoring all services *****/
