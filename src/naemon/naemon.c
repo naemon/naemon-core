@@ -447,19 +447,21 @@ int main(int argc, char **argv)
 		sigshutdown = sigrestart = FALSE;
 
 		/* reset program variables */
+		timing_point("Reseting variables\n");
 		reset_variables();
-		timing_point("Variables reset\n");
+		timing_point("Reset variables\n");
 
 		/* get PID */
 		nagios_pid = (int)getpid();
 
 		/* read in the configuration files (main and resource config files) */
+		timing_point("Reading main config file\n");
 		result = read_main_config_file(config_file);
 		if (result != OK) {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Failed to process config file '%s'. Aborting\n", config_file);
 			exit(EXIT_FAILURE);
 		}
-		timing_point("Main config file read\n");
+		timing_point("Read main config file\n");
 
 		/* NOTE 11/06/07 EG moved to after we read config files, as user may have overridden timezone offset */
 		/* get program (re)start time and save as macro */
@@ -509,9 +511,10 @@ int main(int argc, char **argv)
 		open_debug_log();
 
 		/* initialize modules */
+		timing_point("Initializing NEB module API\n");
 		neb_init_modules();
 		neb_init_callback_list();
-		timing_point("NEB module API initialized\n");
+		timing_point("Initialized NEB module API\n");
 
 		/* handle signals (interrupts) before we do any socket I/O */
 		setup_sighandler();
@@ -521,30 +524,39 @@ int main(int argc, char **argv)
 		 * This must be done before modules are initialized, so
 		 * the modules can use our in-core stuff properly
 		 */
+		timing_point("Initializing Query handler\n");
 		if (qh_init(qh_socket_path) != OK) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Error: Failed to initialize query handler. Aborting\n");
 			exit(EXIT_FAILURE);
 		}
-		timing_point("Query handler initialized\n");
+		timing_point("Initialized Query handler\n");
+
+		timing_point("Initializing NERD\n");
 		nerd_init();
-		timing_point("NERD initialized\n");
+		timing_point("Initialized NERD\n");
 
 		/* initialize check workers */
+		timing_point("Spawning %u workers\n", wproc_num_workers_spawned);
 		if (init_workers(num_check_workers) < 0) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Failed to spawn workers. Aborting\n");
 			exit(EXIT_FAILURE);
 		}
-		timing_point("%u workers spawned\n", wproc_num_workers_spawned);
+		timing_point("Spawned %u workers\n", wproc_num_workers_spawned);
+
+		timing_point("Connecting %u workers\n", wproc_num_workers_online);
 		i = 0;
 		while (i < 50 && wproc_num_workers_online < wproc_num_workers_spawned) {
 			iobroker_poll(nagios_iobs, 50);
 			i++;
 		}
-		timing_point("%u workers connected\n", wproc_num_workers_online);
+		timing_point("Connected %u workers\n", wproc_num_workers_online);
 
 		/* read in all object config data */
-		if (result == OK)
+		if (result == OK) {
+			timing_point("Reading all object data\n");
 			result = read_all_object_data(config_file);
+			timing_point("Read all object data\n");
+		}
 
 		/*
 		 * the queue has to be initialized before loading the neb modules
@@ -552,30 +564,34 @@ int main(int argc, char **argv)
 		 * (initializing event queue requires number of objects, so do
 		 * this after parsing the objects)
 		 */
+		timing_point("Initializing Event queue\n");
 		init_event_queue();
-		timing_point("Event queue initialized\n");
+		timing_point("Initialized Event queue\n");
 
 		/* load modules */
+		timing_point("Loading modules\n");
 		if (neb_load_all_modules() != OK) {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Module loading failed. Aborting.\n");
 			/* give already loaded modules a chance to deinitialize */
 			neb_unload_all_modules(NEBMODULE_FORCE_UNLOAD, NEBMODULE_NEB_SHUTDOWN);
 			exit(EXIT_FAILURE);
 		}
-		timing_point("Modules loaded\n");
+		timing_point("Loaded modules\n");
 
+		timing_point("Making first callback\n");
 		broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE);
-		timing_point("First callback made\n");
+		timing_point("Made first callback\n");
 
 		/* there was a problem reading the config files */
-		if (result != OK)
+		if (result != OK) {
 			nm_log(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_CONFIG_ERROR, "Bailing out due to one or more errors encountered in the configuration files. Run Naemon from the command line with the -v option to verify your config before restarting. (PID=%d)", (int)getpid());
-
-		else {
-
+		} else {
 			/* run the pre-flight check to make sure everything looks okay*/
-			if ((result = pre_flight_check()) != OK)
+			timing_point("Running pre flight check\n");
+			if ((result = pre_flight_check()) != OK) {
 				nm_log(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR | NSLOG_VERIFICATION_ERROR, "Bailing out due to errors encountered while running the pre-flight check.  Run Naemon from the command line with the -v option to verify your config before restarting. (PID=%d)\n", (int)getpid());
+			}
+			timing_point("Ran pre flight check\n");
 		}
 
 		/* an error occurred that prevented us from (re)starting */
@@ -594,51 +610,61 @@ int main(int argc, char **argv)
 			exit(ERROR);
 		}
 
-		timing_point("Object configuration parsed and understood\n");
-
 		/* write the objects.cache file */
+		timing_point("Caching objects\n");
 		fcache_objects(object_cache_file);
-		timing_point("Objects cached\n");
+		timing_point("Cached objects\n");
 
 		broker_program_state(NEBTYPE_PROCESS_START, NEBFLAG_NONE, NEBATTR_NONE);
 
+		timing_point("Initializing status data\n");
 		initialize_status_data(config_file);
-		timing_point("Status data initialized\n");
+		timing_point("Initialized status data\n");
 
 		/* initialize scheduled downtime data */
+		timing_point("Initializing downtime data\n");
 		initialize_downtime_data();
-		timing_point("Downtime data initialized\n");
+		timing_point("Initialized downtime data\n");
 
 		/* read initial service and host state information  */
+		timing_point("Initializing retention data\n");
 		initialize_retention_data();
-		timing_point("Retention data initialized\n");
+		timing_point("Initialized retention data\n");
+
+		timing_point("Reading initial state information\n");
 		read_initial_state_information();
-		timing_point("Initial state information read\n");
+		timing_point("Read initial state information\n");
 
 		/* initialize comment data */
+		timing_point("Initializing comment data\n");
 		initialize_comment_data();
-		timing_point("Comment data initialized\n");
+		timing_point("Initialized comment data\n");
 
 		/* initialize performance data */
+		timing_point("Initializing performance data\n");
 		initialize_performance_data(config_file);
-		timing_point("Performance data initialized\n");
+		timing_point("Initialized performance data\n");
 
 		/* initialize the check execution subsystem */
+		timing_point("Initializing check execution scheduling\n");
 		checks_init();
-		timing_point("Check execution scheduling initialized\n");
+		timing_point("Initialized check execution scheduling\n");
 
 		/* initialize check statistics */
+		timing_point("Initializing check stats\n");
 		init_check_stats();
-		timing_point("check stats initialized\n");
+		timing_point("Initialized check stats\n");
 
 		/* update all status data (with retained information) */
+		timing_point("Updating status data\n");
 		update_all_status_data();
-		timing_point("Status data updated\n");
+		timing_point("Updated status data\n");
 
 		/* log initial host and service state */
+		timing_point("Logging initial states\n");
 		log_host_states(INITIAL_STATES, NULL);
 		log_service_states(INITIAL_STATES, NULL);
-		timing_point("Initial states logged\n");
+		timing_point("Logged initial states\n");
 
 		/* reset the restart flag */
 		sigrestart = FALSE;
@@ -646,8 +672,9 @@ int main(int argc, char **argv)
 		registered_commands_init(200);
 		register_core_commands();
 		/* fire up command file worker */
+		timing_point("Launching command file worker\n");
 		launch_command_file_worker();
-		timing_point("Command file worker launched\n");
+		timing_point("Launched command file worker\n");
 
 		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPSTART, NEBFLAG_NONE, NEBATTR_NONE);
 
