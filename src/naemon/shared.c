@@ -2,9 +2,12 @@
 #include "common.h"
 #include "defaults.h"
 #include "nm_alloc.h"
+#include "logging.h"
+#include <assert.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -60,24 +63,31 @@ void timing_point(const char *fmt, ...)
 	static struct timeval last = {0, 0}, first = {0, 0};
 	struct timeval now;
 	va_list ap;
+	char *applied_format;
 
 	if (!enable_timing_point)
 		return;
+
+	va_start(ap, fmt);
+	if (vasprintf(&applied_format, fmt, ap) == -1) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Couldn't allocate memory in timing_poing");
+		abort();
+	}
+	va_end(ap);
 
 	if (first.tv_sec == 0) {
 		gettimeofday(&first, NULL);
 		last.tv_sec = first.tv_sec;
 		last.tv_usec = first.tv_usec;
-		printf("[0.0000 (+0.0000)] ");
+		nm_log(NSLOG_INFO_MESSAGE, "Timing point: [0.0000 (+0.0000)] %s", applied_format);
 	} else {
 		gettimeofday(&now, NULL);
-		printf("[%.4f (+%.4f)] ", tv_delta_f(&first, &now), tv_delta_f(&last, &now));
+		nm_log(NSLOG_INFO_MESSAGE, "Timing point: [%.4f (+%.4f)] %s", tv_delta_f(&first, &now), tv_delta_f(&last, &now), applied_format);
 		last.tv_sec = now.tv_sec;
 		last.tv_usec = now.tv_usec;
 	}
-	va_start(ap, fmt);
-	vprintf(fmt, ap);
-	va_end(ap);
+
+	free(applied_format);
 }
 
 
