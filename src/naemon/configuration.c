@@ -181,8 +181,6 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		}
 
 		else if (!strcmp(variable, "check_result_path")) {
-			obsoleted_warning(variable, "Support for processing check results from disk will be removed");
-
 			if (strlen(value) > MAX_FILENAME_LENGTH - 1) {
 				nm_asprintf(&error_message, "Check result path is too long");
 				error = TRUE;
@@ -205,7 +203,6 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		}
 
 		else if (!strcmp(variable, "max_check_result_file_age")) {
-			obsoleted_warning(variable, "Support for processing check results from disk will be removed");
 			max_check_result_file_age = strtoul(value, NULL, 0);
 		}
 
@@ -666,8 +663,6 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		}
 
 		else if (!strcmp(variable, "check_result_reaper_frequency") || !strcmp(variable, "service_reaper_frequency")) {
-			obsoleted_warning(variable, "Support for processing check results from disk will be removed");
-
 			check_reaper_interval = atoi(value);
 			if (check_reaper_interval < 1) {
 				nm_asprintf(&error_message, "Illegal value for check_result_reaper_frequency");
@@ -677,8 +672,6 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		}
 
 		else if (!strcmp(variable, "max_check_result_reaper_time")) {
-			obsoleted_warning(variable, "Support for processing check results from disk will be removed");
-
 			max_check_reaper_time = atoi(value);
 			if (max_check_reaper_time < 1) {
 				nm_asprintf(&error_message, "Illegal value for max_check_result_reaper_time");
