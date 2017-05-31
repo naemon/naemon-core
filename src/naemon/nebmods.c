@@ -369,6 +369,8 @@ static neb_cb_resultset *neb_cb_resultset_create(void)
 
 void neb_cb_resultset_destroy(neb_cb_resultset *cbrs)
 {
+	if(cbrs == NULL)
+		return;
 	g_ptr_array_free(cbrs->cb_results, TRUE);
 	nm_free(cbrs);
 }

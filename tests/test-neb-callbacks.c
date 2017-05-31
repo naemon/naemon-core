@@ -149,6 +149,13 @@ START_TEST(test_cb_service_check_processed)
 }
 END_TEST
 
+START_TEST(test_cb_resultset_destroy_null)
+{
+	/* Just call this with NULL to make sure that nothing segfaults */
+	neb_cb_resultset_destroy(NULL);
+}
+END_TEST
+
 START_TEST(test_cb_service_stalking)
 {
 	/* test stalking */
@@ -308,6 +315,7 @@ neb_cb_suite(void)
 
 	tcase_add_checked_fixture(tc_api_version_2, setup_v2, teardown_v2);
 	tcase_add_test(tc_api_version_2, test_cb_api_v2);
+	tcase_add_test(tc_api_version_2, test_cb_resultset_destroy_null);
 	suite_add_tcase(s, tc_api_version_2);
 	return s;
 }
