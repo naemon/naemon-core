@@ -2811,7 +2811,7 @@ void register_core_commands(void)
 	command_register(core_command, CMD_CHANGE_HOST_MODATTR);
 
 	core_command = command_create("CHANGE_SVC_MODATTR", service_command_handler,
-			"This command changes the modified attributes value for the specified service. Modified attributes values are used by Naemon to determine which object properties should be retained across program restarts. Thus, modifying the value of the attributes can affect data retention. This is an advanced option and should only be used by people who are intimately familiar with the data retention logic in Naemon.", "host=host_name;service=service;ulong=value");
+			"This command changes the modified attributes value for the specified service. Modified attributes values are used by Naemon to determine which object properties should be retained across program restarts. Thus, modifying the value of the attributes can affect data retention. This is an advanced option and should only be used by people who are intimately familiar with the data retention logic in Naemon.", "service=service;ulong=value");
 	command_register(core_command, CMD_CHANGE_SVC_MODATTR);
 
 	core_command = command_create("CHANGE_CONTACT_MODATTR", contact_command_handler,
