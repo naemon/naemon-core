@@ -185,7 +185,7 @@ install-exec-hook:
 	$(mkinstalldirs) $(DESTDIR)$(logdir)
 	$(mkinstalldirs) $(DESTDIR)$(logdir)/archives
 	$(mkinstalldirs) $(DESTDIR)$(libdir)
-	[ -z $(logrotatedir) ] || $(install_sh_DATA) naemon.logrotate $(DESTDIR)$(logrotatedir)/naemon
+	[ -z $(logrotatedir) ] || $(install_sh_DATA) naemon.logrotate.el7 $(DESTDIR)$(logrotatedir)/naemon
 	[ -z $(initrddir) ]    || $(install_sh_SCRIPT) daemon-init      $(DESTDIR)$(initrddir)/naemon
 	if [ ! -d $(DESTDIR)$(pkgconfdir) ]; then \
 		$(install_sh_PROGRAM) -d $(DESTDIR)$(pkgconfdir)/conf.d ; \
