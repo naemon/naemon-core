@@ -233,7 +233,8 @@ AC_REQUIRE_AUX_FILE([tap-driver.sh])
 AC_CONFIG_FILES([Makefile
                  daemon-init
                  daemon-systemd
-                 naemon.logrotate
+                 naemon.logrotate.el6
+                 naemon.logrotate.el7
                  naemon.pc
                  naemon-uninstalled.pc
                 ])
