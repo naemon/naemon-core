@@ -102,6 +102,9 @@ cp op5build/naemon.service %{buildroot}%{_unitdir}/naemon.service
 mkdir -p %buildroot%_sysconfdir/op5kad/conf.d
 cp op5build/kad.conf %buildroot%_sysconfdir/op5kad/conf.d/naemon.kad
 ln --symbolic naemon %buildroot/etc/init.d/monitor
+
+# Replace installed (el7 compat) logrotate file with el6 version
+cp naemon.logrotate.el6 %buildroot/%_sysconfdir/logrotate.d/naemon
 %endif
 
 # limits.conf
