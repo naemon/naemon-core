@@ -2397,7 +2397,7 @@ static int service_command_handler(const struct external_command *ext_command, t
 
 		case CMD_CHANGE_SVC_MODATTR:
 			target_service->modified_attributes = GV_ULONG("value");
-			broker_adaptive_service_data(NEBTYPE_ADAPTIVEHOST_UPDATE, NEBFLAG_NONE, NEBATTR_NONE, target_service, ext_command->id, target_service->modified_attributes, target_service->modified_attributes);
+			broker_adaptive_service_data(NEBTYPE_ADAPTIVESERVICE_UPDATE, NEBFLAG_NONE, NEBATTR_NONE, target_service, ext_command->id, target_service->modified_attributes, target_service->modified_attributes);
 			/* update the status log with the host info */
 			return update_service_status(target_service, FALSE);
 		default:
