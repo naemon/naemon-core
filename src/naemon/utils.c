@@ -163,6 +163,7 @@ double high_host_flap_threshold = DEFAULT_HIGH_HOST_FLAP_THRESHOLD;
 char *use_timezone = NULL;
 
 int allow_empty_hostgroup_assignment = DEFAULT_ALLOW_EMPTY_HOSTGROUP_ASSIGNMENT;
+int allow_circular_dependencies = DEFAULT_ALLOW_CIRCULAR_DEPENDENCIES;
 
 static long long check_file_size(char *, unsigned long, struct rlimit);
 
