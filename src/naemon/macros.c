@@ -588,7 +588,6 @@ int grab_datetime_macro_r(nagios_macros *mac, int macro_type, char *arg1, char *
 		break;
 
 	case MACRO_ISVALIDTIME:
-		//*output = (char *)mkstr("%d", (check_time_against_period(test_time, temp_timeperiod) == OK) ? 1 : 0);
 		asprintf(&*output, "%d", (check_time_against_period(test_time, temp_timeperiod) == OK) ? 1 : 0);
 		break;
 
