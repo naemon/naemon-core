@@ -584,18 +584,18 @@ int grab_datetime_macro_r(nagios_macros *mac, int macro_type, char *arg1, char *
 		break;
 
 	case MACRO_TIMET:
-		asprintf(&*output, "%lu", (unsigned long)current_time);
+		nm_asprintf(output, "%lu", (unsigned long)current_time);
 		break;
 
 	case MACRO_ISVALIDTIME:
-		asprintf(&*output, "%d", (check_time_against_period(test_time, temp_timeperiod) == OK) ? 1 : 0);
+		nm_asprintf(output, "%d", (check_time_against_period(test_time, temp_timeperiod) == OK) ? 1 : 0);
 		break;
 
 	case MACRO_NEXTVALIDTIME:
 		get_next_valid_time(test_time, &next_valid_time, temp_timeperiod);
 		if (next_valid_time == test_time && check_time_against_period(test_time, temp_timeperiod) == ERROR)
 			next_valid_time = (time_t)0L;
-		asprintf(&*output, "%lu", (unsigned long)next_valid_time);
+		nm_asprintf(output, "%lu", (unsigned long)next_valid_time);
 		break;
 
 	default:
