@@ -1,9 +1,7 @@
 *.o
 naemon
 naemonstats
-shadownaemon
 wpres-phash.h
 buildopts.h
 naemon.8
 naemonstats.8
-shadownaemon.8
