@@ -157,7 +157,6 @@ int xrddefault_save_state_information(void)
 	/* save host state information */
 	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
 		struct host *conf_host;
-		gchar *tmp_escaped_long_output = (temp_host->long_plugin_output == NULL) ? g_strdup("") : g_strescape(temp_host->long_plugin_output, "");
 		conf_host = get_premod_host(temp_host->id);
 		fprintf(fp, "host {\n");
 		fprintf(fp, "host_name=%s\n", temp_host->name);
@@ -178,7 +177,7 @@ int xrddefault_save_state_information(void)
 		fprintf(fp, "current_problem_id=%lu\n", temp_host->current_problem_id);
 		fprintf(fp, "last_problem_id=%lu\n", temp_host->last_problem_id);
 		fprintf(fp, "plugin_output=%s\n", (temp_host->plugin_output == NULL) ? "" : temp_host->plugin_output);
-		fprintf(fp, "long_plugin_output=%s\n", tmp_escaped_long_output);
+		fprintf(fp, "long_plugin_output=%s\n", (temp_host->long_plugin_output == NULL) ? "" : temp_host->long_plugin_output);
 		fprintf(fp, "performance_data=%s\n", (temp_host->perf_data == NULL) ? "" : temp_host->perf_data);
 		fprintf(fp, "last_check=%lu\n", temp_host->last_check);
 		fprintf(fp, "next_check=%lu\n", temp_host->next_check);
@@ -244,14 +243,12 @@ int xrddefault_save_state_information(void)
 		}
 
 		fprintf(fp, "}\n");
-		g_free(tmp_escaped_long_output);
 
 	}
 
 	/* save service state information */
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
 		struct service *conf_svc;
-		gchar *tmp_escaped_long_output = (temp_service->long_plugin_output == NULL) ? g_strdup("") : g_strescape(temp_service->long_plugin_output, "");
 		conf_svc = get_premod_service(temp_service->id);
 		fprintf(fp, "service {\n");
 		fprintf(fp, "host_name=%s\n", temp_service->host_name);
@@ -284,7 +281,7 @@ int xrddefault_save_state_information(void)
 		fprintf(fp, "last_time_unknown=%lu\n", temp_service->last_time_unknown);
 		fprintf(fp, "last_time_critical=%lu\n", temp_service->last_time_critical);
 		fprintf(fp, "plugin_output=%s\n", (temp_service->plugin_output == NULL) ? "" : temp_service->plugin_output);
-		fprintf(fp, "long_plugin_output=%s\n", tmp_escaped_long_output);
+		fprintf(fp, "long_plugin_output=%s\n", (temp_service->long_plugin_output == NULL) ? "" : temp_service->long_plugin_output);
 		fprintf(fp, "performance_data=%s\n", (temp_service->perf_data == NULL) ? "" : temp_service->perf_data);
 		fprintf(fp, "last_check=%lu\n", temp_service->last_check);
 		fprintf(fp, "next_check=%lu\n", temp_service->next_check);
@@ -340,7 +337,6 @@ int xrddefault_save_state_information(void)
 		}
 
 		fprintf(fp, "}\n");
-		g_free(tmp_escaped_long_output);
 	}
 
 	/* save contact state information */
@@ -1002,7 +998,7 @@ int xrddefault_read_state_information(void)
 							temp_host->plugin_output = nm_strdup(val);
 						} else if (!strcmp(var, "long_plugin_output")) {
 							nm_free(temp_host->long_plugin_output);
-							temp_host->long_plugin_output = g_strcompress(val);
+							temp_host->long_plugin_output = nm_strdup(val);
 						} else if (!strcmp(var, "performance_data")) {
 							nm_free(temp_host->perf_data);
 							temp_host->perf_data = nm_strdup(val);
@@ -1283,7 +1279,7 @@ int xrddefault_read_state_information(void)
 							temp_service->plugin_output = nm_strdup(val);
 						} else if (!strcmp(var, "long_plugin_output")) {
 							nm_free(temp_service->long_plugin_output);
-							temp_service->long_plugin_output = g_strcompress(val);
+							temp_service->long_plugin_output = nm_strdup(val);
 						} else if (!strcmp(var, "performance_data")) {
 							nm_free(temp_service->perf_data);
 							temp_service->perf_data = nm_strdup(val);
