@@ -124,15 +124,14 @@ common_sources = \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = naemon.pc
 
-bin_PROGRAMS = src/naemon/naemon src/naemonstats/naemonstats src/shadownaemon/shadownaemon
+bin_PROGRAMS = src/naemon/naemon src/naemonstats/naemonstats
 manpages: $(bin_PROGRAMS)
 	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "monitoring core"                          ./src/naemon/naemon       > naemon.8
 	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "gather statistics from naemon core"       ./src/naemonstats/naemonstats  > naemonstats.8
-	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "shadow remote cores via livestatus"       ./src/shadownaemon/shadownaemon > shadownaemon.8
 
 all-local: manpages
 
-CLEANFILES = naemon-uninstalled.pc naemon.pc naemon.8 naemonstats.8 shadownaemon.8
+CLEANFILES = naemon-uninstalled.pc naemon.pc naemon.8 naemonstats.8
 CLEANFILES += src/naemon/wpres-phash.h src/naemon/buildopts.h
 CLEANFILES += $(CONFIG_FILES)
 
@@ -141,9 +140,6 @@ src_naemon_naemon_CPPFLAGS = $(AM_CPPFLAGS) -DPREFIX='"$(prefix)"'
 src_naemon_naemon_LDFLAGS = -rdynamic
 
 src_naemonstats_naemonstats_SOURCES = src/naemonstats/naemonstats.c src/naemon/buildopts.h src/naemon/common.h
-
-src_shadownaemon_shadownaemon_SOURCES = src/shadownaemon/shadownaemon.c src/shadownaemon/shadownaemon.h
-src_shadownaemon_shadownaemon_LDFLAGS = -rdynamic
 
 LDADD = libnaemon.la $(GLIB_LIBS) -lm -ldl
 lib_LTLIBRARIES = libnaemon.la
@@ -209,14 +205,12 @@ install-data-local:
 	mkdir -p $(DESTDIR)$(mandir)/man8/
 	install -m 644 naemon.8       $(DESTDIR)$(mandir)/man8/
 	install -m 644 naemonstats.8  $(DESTDIR)$(mandir)/man8/
-	install -m 644 shadownaemon.8 $(DESTDIR)$(mandir)/man8/
 
 uninstall-hook:
 	[ -z $(logrotatedir) ] || rm $(DESTDIR)$(logrotatedir)/naemon
 	[ -z $(initrddir) ]    || rm $(DESTDIR)$(initrddir)/naemon
 	rm $(DESTDIR)$(mandir)/man8/naemon.8
 	rm $(DESTDIR)$(mandir)/man8/naemonstats.8
-	rm $(DESTDIR)$(mandir)/man8/shadownaemon.8
 	rm $(DESTDIR)$(pkgconfdir)/naemon.cfg
 	rm $(DESTDIR)$(pkgconfdir)/resource.cfg
 	rm -r $(DESTDIR)$(pkgconfdir)/conf.d
