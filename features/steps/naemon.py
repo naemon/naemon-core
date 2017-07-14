@@ -1,5 +1,8 @@
 from behave import given, when, then, use_step_matcher
 import subprocess
+import os.path
+import signal
+import time
 
 use_step_matcher('re')
 
@@ -61,12 +64,27 @@ def config_verification_pass(context):
     )
 
 
+@given('I start naemon')
 @when('I start naemon')
 def naemon_start(context):
     context.execute_steps(u'Given I write config to file')
     args = [context.naemon_exec_path, '--allow-root', '--daemon',
             context.naemonsysconfig.filename]
     context.return_code = subprocess.call(args)
+
+
+@when('I restart naemon')
+def naemon_restart(context):
+    assert os.path.exists('./naemon.pid'), (
+        'Naemon pid file was not found'
+    )
+    pid = int(open('./naemon.pid').read())
+    try:
+        os.kill(pid, signal.SIGHUP)
+        print ('Sent SIGHUP to naemon process (%i)' % pid)
+    except OSError as e:
+        print (os.strerror(e.errno))
+        pass
 
 
 @then('naemon should fail to start')
@@ -83,3 +101,25 @@ def naemon_start_success(context):
     assert context.return_code == 0, (
         'Return code was not 0 (got %s)' % context.return_code
     )
+
+
+@then('naemon should be running')
+def naemon_is_running(context):
+    assert os.path.exists('./naemon.pid'), (
+        'Naemon pid file was not found'
+    )
+    pid = int(open('./naemon.pid').read())
+    is_running = True
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        is_running = False
+    assert is_running is True, (
+        'Naemon is not running!'
+    )
+
+
+@when('I wait for (?P<seconds>[0-9]+) seconds?')
+def asdf(context, seconds):
+    print ('Waiting for %s seconds' % seconds)
+    time.sleep(int(seconds))

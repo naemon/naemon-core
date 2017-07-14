@@ -441,10 +441,10 @@ int main(int argc, char **argv)
 	}
 
 	/* keep monitoring things until we get a shutdown command */
+	sigshutdown = sigrestart = FALSE;
 	do {
 		/* reset internal book-keeping (in case we're restarting) */
 		wproc_num_workers_spawned = wproc_num_workers_online = 0;
-		sigshutdown = sigrestart = FALSE;
 
 		/* reset program variables */
 		timing_point("Reseting variables\n");
@@ -666,9 +666,6 @@ int main(int argc, char **argv)
 		log_service_states(INITIAL_STATES, NULL);
 		timing_point("Logged initial states\n");
 
-		/* reset the restart flag */
-		sigrestart = FALSE;
-
 		registered_commands_init(200);
 		register_core_commands();
 		/* fire up command file worker */
@@ -695,6 +692,7 @@ int main(int argc, char **argv)
 		timing_point("Entering event execution loop\n");
 		/***** start monitoring all services *****/
 		/* (doesn't return until a restart or shutdown signal is encountered) */
+		sigshutdown = sigrestart = FALSE;
 		event_execution_loop();
 
 		/*
