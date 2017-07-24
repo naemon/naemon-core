@@ -63,6 +63,10 @@ int cleanup_retention_data(void)
 		nm_free(premod_services[i]);
 	}
 	nm_free(premod_services);
+	for (i = 0; i < num_objects.contacts; i++) {
+		nm_free(premod_contacts[i]);
+	}
+	nm_free(premod_contacts);
 
 	return xrddefault_cleanup_retention_data();
 }

@@ -87,6 +87,9 @@ static int write_to_log(char *buffer, unsigned long data_type, time_t *timestamp
 	if (!(data_type & logging_options))
 		return OK;
 
+	if (log_file == NULL)
+		return ERROR;
+
 	fp = open_log_file();
 	if (fp == NULL)
 		return ERROR;
