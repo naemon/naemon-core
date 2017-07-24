@@ -810,7 +810,7 @@ int xrddefault_read_state_information(void)
 					/* add the downtime */
 					if (data_type == XRDDEFAULT_HOSTDOWNTIME_DATA) {
 						host *hst = NULL;
-						add_host_downtime(host_name, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent);
+						add_host_downtime(host_name, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent, &comment_id);
 
 						if (is_in_effect && (hst = find_host(host_name)) != NULL ) {
 							hst->scheduled_downtime_depth++;
@@ -818,7 +818,7 @@ int xrddefault_read_state_information(void)
 					}
 					else {
 						service *svc = NULL;
-						add_service_downtime(host_name, service_description, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent);
+						add_service_downtime(host_name, service_description, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent, &comment_id);
 						if (is_in_effect && (svc = find_service(host_name, service_description)) != NULL ) {
 							svc->scheduled_downtime_depth++;
 						}
