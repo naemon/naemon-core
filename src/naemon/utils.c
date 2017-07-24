@@ -1033,6 +1033,13 @@ void free_memory(nagios_macros *mac)
 	nm_free(mac->x[MACRO_RESOURCEFILE]);
 	nm_free(mac->x[MACRO_OBJECTCACHEFILE]);
 	nm_free(mac->x[MACRO_MAINCONFIGFILE]);
+	nm_free(mac->x[MACRO_STATUSDATAFILE]);
+	nm_free(mac->x[MACRO_RETENTIONDATAFILE]);
+	nm_free(mac->x[MACRO_PROCESSSTARTTIME]);
+	nm_free(mac->x[MACRO_EVENTSTARTTIME]);
+
+	if (nm_g_log_handler_id > 0)
+		g_log_remove_handler("GLib", nm_g_log_handler_id);
 
 	return;
 }
