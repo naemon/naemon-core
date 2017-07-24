@@ -203,6 +203,7 @@ static void xodtemplate_free_xobject_trees(void)
 	for (x = 0; x < NUM_OBJECT_TYPES; x++) {
 		if (xobject_tree[x] != NULL) {
 			g_tree_unref(xobject_tree[x]);
+			xobject_tree[x] = NULL;
 		}
 	}
 }
@@ -215,6 +216,7 @@ static void xodtemplate_free_template_trees(void)
 	for (x = 0; x < NUM_OBJECT_TYPES; x++) {
 		if (xobject_template_tree[x] != NULL) {
 			g_tree_unref(xobject_template_tree[x]);
+			xobject_template_tree[x] = NULL;
 		}
 	}
 }
@@ -461,6 +463,7 @@ static void xodtemplate_free_memory(void)
 
 	/* free trees */
 	xodtemplate_free_xobject_trees();
+	xodtemplate_free_template_trees();
 }
 
 
