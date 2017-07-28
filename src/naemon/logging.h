@@ -94,7 +94,7 @@ int close_log_file(void);
 /* GLib log handler (GLogFunc*) that maps GLib log messages to their
  * corresponding Naemon levels. Only intended for use as a regular handler,
  * don't invoke directly through application code*/
-guint nm_g_log_handler_id;
+extern guint nm_g_log_handler_id;
 void nm_g_log_handler(const gchar *domain, GLogLevelFlags log_level,
 		const gchar *message, gpointer udata);
 

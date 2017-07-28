@@ -14,6 +14,7 @@ static FILE *log_fp;
 
 int log_initial_states = DEFAULT_LOG_INITIAL_STATES;
 int log_current_states = DEFAULT_LOG_CURRENT_STATES;
+guint nm_g_log_handler_id = 0;
 
 /******************************************************************/
 /************************ LOGGING FUNCTIONS ***********************/
