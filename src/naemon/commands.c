@@ -3810,10 +3810,6 @@ static void enable_and_propagate_notifications(host *hst, struct propagation_par
 	if (params->affect_top_host == TRUE && params->level == 0)
 		enable_host_notifications(hst);
 
-	/* if we allow circular dependencies, this function doesn't work */
-	if (allow_circular_dependencies)
-		return;
-
 	g_tree_foreach(hst->child_hosts, enable_and_propagate_notifications_cb, params);
 }
 
