@@ -1014,3 +1014,9 @@ allow_empty_hostgroup_assignment=0
 # with a minimum of 4 workers.  This value will override the defaults
 
 #check_workers=3
+
+# CIRCULAR DEPENDENCIES (EXPERIMENTAL)
+# Allow for circular dependencies in naemon's host graph.
+# This feature is experimental and bugs might occur.
+
+allow_circular_dependencies=0
