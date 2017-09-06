@@ -486,10 +486,12 @@ int register_downtime(int type, unsigned long downtime_id)
 
 
 	/* add a non-persistent comment to the host or service regarding the scheduled outage */
-	if (temp_downtime->type == SERVICE_DOWNTIME)
-		add_new_comment(SERVICE_COMMENT, DOWNTIME_COMMENT, svc->host_name, svc->description, time(NULL), (NULL == temp_downtime->author ? "(Nagios Process)" : temp_downtime->author), temp_buffer, 0, COMMENTSOURCE_INTERNAL, FALSE, (time_t)0, &(temp_downtime->comment_id));
-	else
-		add_new_comment(HOST_COMMENT, DOWNTIME_COMMENT, hst->name, NULL, time(NULL), (NULL == temp_downtime->author ? "(Nagios Process)" : temp_downtime->author), temp_buffer, 0, COMMENTSOURCE_INTERNAL, FALSE, (time_t)0, &(temp_downtime->comment_id));
+	if (find_comment(temp_downtime->comment_id, HOST_COMMENT | SERVICE_COMMENT) == NULL) {
+		if (temp_downtime->type == SERVICE_DOWNTIME)
+			add_new_comment(SERVICE_COMMENT, DOWNTIME_COMMENT, svc->host_name, svc->description, time(NULL), (NULL == temp_downtime->author ? "(Nagios Process)" : temp_downtime->author), temp_buffer, 0, COMMENTSOURCE_INTERNAL, FALSE, (time_t)0, &(temp_downtime->comment_id));
+		else
+			add_new_comment(HOST_COMMENT, DOWNTIME_COMMENT, hst->name, NULL, time(NULL), (NULL == temp_downtime->author ? "(Nagios Process)" : temp_downtime->author), temp_buffer, 0, COMMENTSOURCE_INTERNAL, FALSE, (time_t)0, &(temp_downtime->comment_id));
+	}
 
 	nm_free(temp_buffer);
 	if (temp_downtime->is_in_effect) { /* in effect, so schedule a stop event*/
@@ -978,7 +980,7 @@ int add_new_host_downtime(char *host_name, time_t entry_time, char *author, char
 	}
 
 	new_downtime_id = get_next_downtime_id();
-	result = add_host_downtime(host_name, entry_time, author, comment_data, start_time, 0, end_time, fixed, triggered_by, duration, new_downtime_id, is_in_effect, start_notification_sent);
+	result = add_host_downtime(host_name, entry_time, author, comment_data, start_time, 0, end_time, fixed, triggered_by, duration, new_downtime_id, is_in_effect, start_notification_sent, NULL);
 
 	/* save downtime id */
 	if (downtime_id != NULL)
@@ -1011,7 +1013,7 @@ int add_new_service_downtime(char *host_name, char *service_description, time_t 
 	}
 
 	new_downtime_id = get_next_downtime_id();
-	result = add_service_downtime(host_name, service_description, entry_time, author, comment_data, start_time, 0, end_time, fixed, triggered_by, duration, new_downtime_id, is_in_effect, start_notification_sent);
+	result = add_service_downtime(host_name, service_description, entry_time, author, comment_data, start_time, 0, end_time, fixed, triggered_by, duration, new_downtime_id, is_in_effect, start_notification_sent, NULL);
 
 	/* save downtime id */
 	if (downtime_id != NULL)
@@ -1129,21 +1131,21 @@ int delete_downtime_by_hostname_service_description_start_time_comment(char *hos
 /******************************************************************/
 
 /* adds a host downtime entry to the list in memory */
-int add_host_downtime(char *host_name, time_t entry_time, char *author, char *comment_data, time_t start_time, time_t flex_downtime_start, time_t end_time, int fixed, unsigned long triggered_by, unsigned long duration, unsigned long downtime_id, int is_in_effect, int start_notification_sent)
+int add_host_downtime(char *host_name, time_t entry_time, char *author, char *comment_data, time_t start_time, time_t flex_downtime_start, time_t end_time, int fixed, unsigned long triggered_by, unsigned long duration, unsigned long downtime_id, int is_in_effect, int start_notification_sent, unsigned long * comment_id)
 {
-	return add_downtime(HOST_DOWNTIME, host_name, NULL, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent);
+	return add_downtime(HOST_DOWNTIME, host_name, NULL, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent, comment_id);
 }
 
 
 /* adds a service downtime entry to the list in memory */
-int add_service_downtime(char *host_name, char *svc_description, time_t entry_time, char *author, char *comment_data, time_t start_time, time_t flex_downtime_start, time_t end_time, int fixed, unsigned long triggered_by, unsigned long duration, unsigned long downtime_id, int is_in_effect, int start_notification_sent)
+int add_service_downtime(char *host_name, char *svc_description, time_t entry_time, char *author, char *comment_data, time_t start_time, time_t flex_downtime_start, time_t end_time, int fixed, unsigned long triggered_by, unsigned long duration, unsigned long downtime_id, int is_in_effect, int start_notification_sent, unsigned long * comment_id)
 {
-	return add_downtime(SERVICE_DOWNTIME, host_name, svc_description, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent);
+	return add_downtime(SERVICE_DOWNTIME, host_name, svc_description, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent, comment_id);
 }
 
 
 /* adds a host or service downtime entry to the list in memory */
-int add_downtime(int downtime_type, char *host_name, char *svc_description, time_t entry_time, char *author, char *comment_data, time_t start_time, time_t flex_downtime_start, time_t end_time, int fixed, unsigned long triggered_by, unsigned long duration, unsigned long downtime_id, int is_in_effect, int start_notification_sent)
+int add_downtime(int downtime_type, char *host_name, char *svc_description, time_t entry_time, char *author, char *comment_data, time_t start_time, time_t flex_downtime_start, time_t end_time, int fixed, unsigned long triggered_by, unsigned long duration, unsigned long downtime_id, int is_in_effect, int start_notification_sent, unsigned long * comment_id)
 {
 	scheduled_downtime *new_downtime = NULL;
 	int result = OK;
@@ -1186,6 +1188,8 @@ int add_downtime(int downtime_type, char *host_name, char *svc_description, time
 	new_downtime->start_notification_sent = start_notification_sent;
 	new_downtime->start_event = (timed_event *)0;
 	new_downtime->stop_event = (timed_event *)0;
+	if (comment_id != NULL)
+		new_downtime->comment_id = *comment_id;
 	if (result != ERROR) {
 		result = downtime_add(new_downtime);
 		if (result) {

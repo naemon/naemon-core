@@ -262,6 +262,34 @@ START_TEST(host_fixed_scheduled_downtime_depth_retained_across_reload)
 }
 END_TEST
 
+START_TEST(host_downtime_id_retained_across_reload)
+{
+	time_t now = time(NULL);
+	int fixed = 0;
+	unsigned long downtime_id;
+	unsigned long duration = 60;
+	unsigned long triggered_by = 0;
+	scheduled_downtime *dt = NULL;
+	unsigned long comment_id;
+
+	schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author",
+			"Some downtime comment", now, now+duration,
+			fixed, triggered_by, duration, &downtime_id);
+
+	dt = find_downtime(ANY_DOWNTIME, downtime_id);
+	ck_assert(dt != NULL);
+	ck_assert(0 == dt->comment_id);
+
+	ck_assert(OK == handle_scheduled_downtime(dt));
+	comment_id = dt->comment_id;
+
+	simulate_naemon_reload();
+	dt = find_downtime(ANY_DOWNTIME, downtime_id);
+
+	ck_assert_int_eq(comment_id, dt->comment_id);
+}
+END_TEST
+
 START_TEST(host_flexible_scheduled_downtime)
 {
 	time_t now = time(NULL);
@@ -558,6 +586,7 @@ scheduled_downtimes_suite(void)
 	tcase_add_test(tc_fixed_scheduled_downtimes, host_fixed_scheduled_downtime_cancelled);
 	tcase_add_test(tc_fixed_scheduled_downtimes, host_fixed_scheduled_downtime_stopped);
 	tcase_add_test(tc_fixed_scheduled_downtimes, host_fixed_scheduled_downtime_depth_retained_across_reload);
+	tcase_add_test(tc_fixed_scheduled_downtimes, host_downtime_id_retained_across_reload);
 	tcase_add_test(tc_fixed_scheduled_downtimes, host_multiple_fixed_scheduled_downtimes);
 	tcase_add_test(tc_fixed_scheduled_downtimes, host_multiple_fixed_scheduled_downtimes_one_cancelled_one_stopped);
 
