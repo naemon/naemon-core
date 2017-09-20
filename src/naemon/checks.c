@@ -524,6 +524,7 @@ int free_check_result(check_result *info)
 	nm_free(info->host_name);
 	nm_free(info->service_description);
 	nm_free(info->output);
+	nm_free(info->source);
 
 	return OK;
 }
