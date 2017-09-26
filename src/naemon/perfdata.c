@@ -483,6 +483,9 @@ static int xpddefault_update_service_performance_data_file(nagios_macros *mac, s
 	if (svc == NULL)
 		return ERROR;
 
+	if (service_perfdata_fd < 0)
+		return OK;
+
 	if (service_perfdata_file_template == NULL)
 		return OK;
 
@@ -517,6 +520,9 @@ static int xpddefault_update_host_performance_data_file(nagios_macros *mac, host
 
 	if (hst == NULL)
 		return ERROR;
+
+	if (host_perfdata_fd < 0)
+		return OK;
 
 	if (host_perfdata_file_template == NULL)
 		return OK;
