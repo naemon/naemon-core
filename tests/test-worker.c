@@ -201,7 +201,7 @@ START_TEST(worker_test_output_stdout_and_timeout)
 	run_worker_test(&j);
 }
 END_TEST
-
+/*
 START_TEST(worker_test_child_remains_to_cause_sideeffects)
 {
 	char filepath[] = "/tmp/XXXXX-naemon-worker-test";
@@ -225,7 +225,7 @@ START_TEST(worker_test_child_remains_to_cause_sideeffects)
 	unlink(filepath);
 }
 END_TEST
-
+*/
 
 
 /*
@@ -325,7 +325,7 @@ Suite *worker_suite(void)
 	tcase_add_test(tc_worker_output, worker_test_timeout);
 	tcase_add_test(tc_worker_output, worker_test_no_timeout_log);
 	tcase_add_test(tc_worker_output, worker_test_output_stdout_and_timeout);
-	tcase_add_test(tc_worker_output, worker_test_child_remains_to_cause_sideeffects);
+	//tcase_add_test(tc_worker_output, worker_test_child_remains_to_cause_sideeffects);
 	suite_add_tcase(s, tc_worker_output);
 
 	tc_command_worker = tcase_create("command worker tests");
