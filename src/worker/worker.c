@@ -291,7 +291,7 @@ static void kill_job(struct nm_event_execution_properties *event)
 	/* check if the child we'r killing belongs to this worker process */
 	wpid = getpid();
 	get_process_parent_id(pid, &ppid);
-	if (-1 != ppid && ppid != wpid) {
+	if (ppid == -1 || ppid != wpid) {
 		/* the pid might be reallocated but still exists in child proc list */
 		destroy_job(cp);
 		return;
