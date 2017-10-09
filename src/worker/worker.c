@@ -242,22 +242,33 @@ static int finish_job(child_process *cp, int reason)
 /*
  * Get the parent PID from a PID
  */
-static void get_process_parent_id(const pid_t pid, pid_t * ppid) {
-	char buffer[BUFSIZ], *s_ppid;
-	FILE *fp;
-	sprintf(buffer, "/proc/%d/stat", pid);
-	fp = fopen(buffer, "r");
-	if (fp) {
-		size_t size = fread(buffer, sizeof (char), sizeof (buffer), fp);
-		if (size > 0) {
-			strtok(buffer, " "); // (1) pid  %d
-			strtok(NULL, " "); // (2) comm  %s
-			strtok(NULL, " "); // (3) state  %c
-			s_ppid = strtok(NULL, " "); // (4) ppid  %d
-			*ppid = atoi(s_ppid);
-		}
-		fclose(fp);
-	}
+static int get_process_parent_id(const pid_t pid, pid_t * ppid) {
+        char buffer[BUFSIZ], *s_ppid;
+        int errreading;
+        FILE *fp;
+
+        sprintf(buffer, "/proc/%d/stat", pid);
+        fp = fopen(buffer, "r");
+        if (!fp)
+                return errno;
+
+        fread(buffer, sizeof (char), sizeof (buffer), fp);
+        errreading = ferror(fp);
+        if (fclose(fp) != 0)
+                return errno;
+
+        if (errreading != 0)
+                return errreading;
+
+        strtok(buffer, " "); // (1) pid  %d
+        strtok(NULL, " "); // (2) comm  %s
+        strtok(NULL, " "); // (3) state  %c
+
+        if ( (s_ppid = strtok(NULL, " ")) == NULL) // (4) ppid  %d
+                return EBADF;
+
+        *ppid = atoi(s_ppid);
+        return 0;
 }
 
 /*
@@ -277,7 +288,7 @@ static void kill_job(struct nm_event_execution_properties *event)
 {
 	child_process *cp = event->user_data;
 	int pid, id, ret, status, reaped = 0;
-	pid_t ppid = -1, wpid;
+	pid_t ppid, wpid;
 
 	g_return_if_fail(cp != NULL);
 	g_return_if_fail(cp->ei != NULL);
@@ -290,8 +301,8 @@ static void kill_job(struct nm_event_execution_properties *event)
 	}
 	/* check if the child we'r killing belongs to this worker process */
 	wpid = getpid();
-	get_process_parent_id(pid, &ppid);
-	if (ppid == -1 || ppid != wpid) {
+	status = get_process_parent_id(pid, &ppid);
+	if (status != 0 || ppid != wpid) {
 		/* the pid might be reallocated but still exists in child proc list */
 		destroy_job(cp);
 		return;
