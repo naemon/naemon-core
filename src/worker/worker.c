@@ -249,23 +249,27 @@ static int get_process_parent_id(const pid_t pid, pid_t * ppid) {
 
         sprintf(buffer, "/proc/%d/stat", pid);
         fp = fopen(buffer, "r");
-        if (!fp)
+        if (!fp) {
                 return errno;
+        }
 
         fread(buffer, sizeof (char), sizeof (buffer), fp);
         errreading = ferror(fp);
-        if (fclose(fp) != 0)
+        if (fclose(fp) != 0) {
                 return errno;
+        }
 
-        if (errreading != 0)
+        if (errreading != 0) {
                 return errreading;
+        }
 
         strtok(buffer, " "); // (1) pid  %d
         strtok(NULL, " "); // (2) comm  %s
         strtok(NULL, " "); // (3) state  %c
 
-        if ( (s_ppid = strtok(NULL, " ")) == NULL) // (4) ppid  %d
+        if ( (s_ppid = strtok(NULL, " ")) == NULL) {// (4) ppid  %d
                 return EBADF;
+        }
 
         *ppid = atoi(s_ppid);
         return 0;
