@@ -253,7 +253,10 @@ static int get_process_parent_id(const pid_t pid, pid_t * ppid) {
                 return errno;
         }
 
-        size = fread(buffer, sizeof (char), sizeof (buffer), fp);
+        size = fread(buffer, sizeof (char), sizeof (buffer) - 1, fp);
+        if (size > 0) {
+                buffer[size] = '\0';
+        }
         errreading = ferror(fp);
         if (fclose(fp) != 0) {
                 return errno;
