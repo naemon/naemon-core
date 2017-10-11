@@ -244,7 +244,7 @@ static int finish_job(child_process *cp, int reason)
  */
 static int get_process_parent_id(const pid_t pid, pid_t * ppid) {
         char buffer[BUFSIZ], *s_ppid;
-        int errreading;
+        int errreading, size;
         FILE *fp;
 
         sprintf(buffer, "/proc/%d/stat", pid);
@@ -253,7 +253,7 @@ static int get_process_parent_id(const pid_t pid, pid_t * ppid) {
                 return errno;
         }
 
-        fread(buffer, sizeof (char), sizeof (buffer), fp);
+        size = fread(buffer, sizeof (char), sizeof (buffer), fp);
         errreading = ferror(fp);
         if (fclose(fp) != 0) {
                 return errno;
