@@ -1017,10 +1017,9 @@ allow_empty_hostgroup_assignment=0
 
 # CIRCULAR DEPENDENCIES (EXPERIMENTAL)
 # Allow for circular dependencies in naemon's host graph.
-# Enabaling this will cause propagation the following to stop working:
-# * scheduling downtime
-# * enabling notification
-# * disabling notification
+# Enabling this will cause following to stop working:
+# * scheduling and propagating downtime
+# * enabling/disabling and propagation notifications
 # This feature is experimental and bugs might occur.
 
 allow_circular_dependencies=0
