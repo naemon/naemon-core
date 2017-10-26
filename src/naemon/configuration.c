@@ -1041,6 +1041,8 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			object_precache_file = nspath_absolute(value, config_file_dir);
 		} else if (!strcmp(variable, "allow_empty_hostgroup_assignment")) {
 			allow_empty_hostgroup_assignment = (atoi(value) > 0) ? TRUE : FALSE;
+		} else if (!strcmp(variable, "allow_circular_dependencies")) {
+			allow_circular_dependencies=atoi(value);
 		}
 		/* skip external data directives */
 		else if (strstr(input, "x") == input)
@@ -1268,7 +1270,9 @@ int pre_flight_check(void)
 	/********************************************/
 	/* check for circular paths between hosts   */
 	/********************************************/
-	pre_flight_circular_check(&warnings, &errors);
+	if(!allow_circular_dependencies) {
+		pre_flight_circular_check(&warnings, &errors);
+	}
 
 	/********************************************/
 	/* check global event handler commands...   */

@@ -3802,6 +3802,10 @@ static gboolean enable_and_propagate_notifications_cb(gpointer _name, gpointer _
 /* enables notifications for all hosts and services "beyond" a given host */
 static void enable_and_propagate_notifications(host *hst, struct propagation_parameters *params)
 {
+	/* if we allow circular dependencies, this function doesn't work */
+	if (allow_circular_dependencies)
+		return;
+
 	/* enable notification for top level host */
 	if (params->affect_top_host == TRUE && params->level == 0)
 		enable_host_notifications(hst);
@@ -3839,6 +3843,10 @@ static gboolean disable_and_propagate_notifications_cb(gpointer _name, gpointer 
 static void disable_and_propagate_notifications(host *hst, struct propagation_parameters *params)
 {
 	if (hst == NULL)
+		return;
+
+	/* if we allow circular dependencies, this function doesn't work */
+	if (allow_circular_dependencies)
 		return;
 
 	/* disable notifications for top host */
@@ -3969,6 +3977,10 @@ static gboolean schedule_and_propagate_downtime_cb(gpointer _name, gpointer _hst
 /* schedules downtime for all hosts "beyond" a given host */
 static void schedule_and_propagate_downtime(host *temp_host, struct downtime_parameters *params)
 {
+	/* if we allow circular dependencies, this function doesn't work */
+	if (allow_circular_dependencies)
+		return;
+
 	g_tree_foreach(temp_host->child_hosts, schedule_and_propagate_downtime_cb, params);
 }
 
