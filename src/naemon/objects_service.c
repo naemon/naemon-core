@@ -13,6 +13,7 @@
 #include "lib/libnaemon.h"
 
 static GHashTable *service_hash_table;
+int nudging_in_progress = 0;
 service *service_list = NULL;
 service **service_ary = NULL;
 

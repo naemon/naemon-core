@@ -19,6 +19,7 @@ typedef struct service service;
 struct servicemember;
 typedef struct servicesmember servicesmember;
 
+extern int nudging_in_progress;
 extern struct service *service_list;
 extern struct service **service_ary;
 

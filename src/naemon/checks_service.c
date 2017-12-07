@@ -113,7 +113,7 @@ void schedule_service_check(service *svc, time_t check_time, int options)
 static void handle_service_check_event(struct nm_event_execution_properties *evprop)
 {
 	service *temp_service = (service *)evprop->user_data;
-	int nudge_seconds = 0;
+	int nudge_seconds = 1;
 	double latency;
 	struct timeval tv;
 	struct timeval event_runtime;
@@ -139,13 +139,24 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 		if (!(options & CHECK_OPTION_FORCE_EXECUTION)) {
 			/* don't run a service check if we're already maxed out on the number of parallel service checks...  */
 			if (max_parallel_service_checks != 0 && (currently_running_service_checks >= max_parallel_service_checks)) {
-				nm_log(NSLOG_RUNTIME_WARNING,
-				       "\tMax concurrent service checks (%d) has been reached.  Nudging %s:%s by %d seconds...\n", max_parallel_service_checks, temp_service->host_name, temp_service->description, nudge_seconds);
-				/* Simply reschedule at retry_interval instead, if defined (otherwise keep scheduling at normal interval) */
+				if (nudging_in_progress == 0) { /* Prevent the log to get repeatedly printed out */
+					nudging_in_progress = 1; 
+					nm_log(NSLOG_RUNTIME_WARNING,
+					       "\tMax concurrent service checks (%d) has been reached.  Nudging %s:%s by %d seconds...\n", max_parallel_service_checks, temp_service->host_name, temp_service->description, nudge_seconds);
+				} 
+				/* Simply reschedule at retry_interval instead, if defined (otherwise keep scheduling at next 1 second) */
 				if (temp_service->retry_interval != 0.0) {
 					schedule_next_service_check(temp_service, get_service_retry_interval_s(temp_service), 0);
+				} else {
+					schedule_next_service_check(temp_service, nudge_seconds, 0);
 				}
 				return;
+			} else {
+				if (nudging_in_progress == 1) { /* Print the last log when it has been recovered */
+					nudging_in_progress = 0; 
+					nm_log(NSLOG_RUNTIME_WARNING,
+					       "\tMax concurrent service checks (%d) has been cleared.  Nudging %s:%s completed...\n", max_parallel_service_checks, temp_service->host_name, temp_service->description);
+				} 
 			}
 
 			/* don't run a service check if active checks are disabled */
@@ -174,6 +185,8 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 				return;
 			}
 
+		} else {
+			nudging_in_progress = 0;
 		}
 
 		/* Otherwise, run the event */
