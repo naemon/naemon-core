@@ -144,12 +144,8 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 					nm_log(NSLOG_RUNTIME_WARNING,
 					       "\tMax concurrent service checks (%d) has been reached.  Nudging %s:%s by %d seconds...\n", max_parallel_service_checks, temp_service->host_name, temp_service->description, nudge_seconds);
 				} 
-				/* Simply reschedule at retry_interval instead, if defined (otherwise keep scheduling at next 1 second) */
-				if (temp_service->retry_interval != 0.0) {
-					schedule_next_service_check(temp_service, get_service_retry_interval_s(temp_service), 0);
-				} else {
-					schedule_next_service_check(temp_service, nudge_seconds, 0);
-				}
+				/* Simply reschedule at next 1 second */
+				schedule_next_service_check(temp_service, nudge_seconds, 0);
 				return;
 			} else {
 				if (nudging_in_progress == 1) { /* Print the last log when it has been recovered */
