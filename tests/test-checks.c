@@ -168,11 +168,11 @@ START_TEST(multiple_line_output_newline_escaping)
 {
 	full_output = "TEST OK - ...\n"
 				  "Here's a second line of output and\n"
-				  "one more\n";
+				  "one \"more\"\n";
 	output = strdup(full_output);
 	parse_check_output(output, &short_output, &long_output, &perf_data, TRUE, FALSE);
 	ck_assert_str_eq("TEST OK - ...", short_output);
-	ck_assert_str_eq("Here's a second line of output and\\none more\\n", long_output);
+	ck_assert_str_eq("Here's a second line of output and\\none \"more\"\\n", long_output);
 }
 END_TEST
 
