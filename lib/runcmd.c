@@ -199,6 +199,7 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv)
 				set_state(STATE_INSQ | STATE_INARG);
 				continue;
 			}
+			/* FALLTHROUGH */
 		case '"':
 			if (have_state(STATE_INSQ))
 				break;
