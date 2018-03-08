@@ -24,3 +24,8 @@ Feature: Daemonization
         Given config verification pass
         Then naemon should successfully start
 
+    Scenario: Naemon fails to daemonize when an invalid
+        host_notification_commands argument is provided in a contact config
+        Given I have an invalid naemon contact configuration
+        And config verification fail
+        Then naemon should output a sensible error message

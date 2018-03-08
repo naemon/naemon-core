@@ -183,7 +183,7 @@ commandsmember *add_host_notification_command_to_contact(contact *cntct, char *c
 
 	cmd = find_bang_command(command_name);
 	if (cmd == NULL) {
-		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Host notification command '%s' specified for contact '%s' is not defined anywhere!", new_commandsmember->command, cntct->name);
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Host notification command '%s' specified for contact '%s' is not defined anywhere!", command_name, cntct->name);
 		return NULL;
 	}
 

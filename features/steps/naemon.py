@@ -33,6 +33,15 @@ def invalid_objconfig(context):
     ''')
 
 
+@given('I have an invalid naemon contact configuration')
+def invalid_objconfig(context):
+    context.execute_steps(u'''
+        Given I have naemon contact objects
+            | contact_name  | host_notifications_enabled | service_notifications_enabled | host_notification_period | service_notification_period | host_notification_options | service_notification_options | host_notification_commands | service_notification_commands |
+            | invalid       | 1                          | 1                             |  24x7                    | 24x7                        | a                         | a                             | invalid_cmd                | dummy_command                 |
+    ''')
+
+
 @given('I write config to file')
 def configuration_to_file(context):
     context.naemonobjconfig.to_file(context.naemonobjconfig.filename)
@@ -118,6 +127,15 @@ def naemon_is_running(context):
         'Naemon is not running!'
     )
 
+@then('naemon should output a sensible error message')
+def naemon_error_msg(context):
+    context.execute_steps(u'When I start naemon')
+    expected_msg = 'Error: Host notification command'
+
+    if expected_msg in open('naemon.log').read():
+        assert True
+    else:
+        assert False
 
 @when('I wait for (?P<seconds>[0-9]+) seconds?')
 def asdf(context, seconds):
