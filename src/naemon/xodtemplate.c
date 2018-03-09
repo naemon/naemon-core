@@ -8456,14 +8456,29 @@ static int xodtemplate_process_config_dir(char *dir_name)
 
 	/* process all files in the directory... */
 	while ((dirfile = readdir(dirp)) != NULL) {
+		int written_size;
 
 		/* skip hidden files and directories, and current and parent dir */
 		if (dirfile->d_name[0] == '.')
 			continue;
 
 		/* create /path/to/file */
-		snprintf(file, sizeof(file), "%s/%s", dir_name, dirfile->d_name);
+		written_size = snprintf(file, sizeof(file), "%s/%s", dir_name, dirfile->d_name);
 		file[sizeof(file) - 1] = '\x0';
+
+		/* Check for encoding errors */
+		if (written_size < 0) {
+			nm_log(NSLOG_RUNTIME_WARNING,
+				"Warning: xodtemplate encoding error on config file path '`%s'.\n", file);
+			continue;
+		}
+
+		/* Check if the filename was truncated. */
+		if (written_size > 0 && (size_t)written_size >= sizeof(file)) {
+			nm_log(NSLOG_RUNTIME_WARNING,
+				"Warning: xodtemplate truncated path to config file '`%s'.\n", file);
+			continue;
+		}
 
 		/* process this if it's a non-hidden config file... */
 		if (stat(file, &stat_buf) == -1) {

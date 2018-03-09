@@ -1013,6 +1013,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 				break;
 			} else {
 				while ((dirfile = readdir(dirp)) != NULL) {
+					int written_size;
 					char file[MAX_FILENAME_LENGTH];
 
 					/* skip hidden files and directories, current and parent dir, and non-config files */
@@ -1022,8 +1023,22 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 						continue;
 
 					/* create /path/to/file */
-					snprintf(file, sizeof(file), "%s/%s", include_dir, dirfile->d_name);
+					written_size = snprintf(file, sizeof(file), "%s/%s", include_dir, dirfile->d_name);
 					file[sizeof(file) - 1] = '\x0';
+
+					/* Check for encoding errors */
+					if (written_size < 0) {
+						nm_log(NSLOG_RUNTIME_WARNING,
+							"Warning: encoding error on config file path '`%s'.\n", file);
+						continue;
+					}
+
+					/* Check if the filename was truncated. */
+					if (written_size > 0 && (size_t)written_size >= sizeof(file)) {
+						nm_log(NSLOG_RUNTIME_WARNING,
+							"Warning: truncated path to config file '%s'.\n", file);
+						continue;
+					}
 
 					error |= read_config_file(file, mac);
 				}
