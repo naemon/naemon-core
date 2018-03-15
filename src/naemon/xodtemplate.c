@@ -8443,7 +8443,10 @@ static int xodtemplate_process_config_dir(char *dir_name)
 	int result = OK;
 	register int x = 0;
 	struct stat stat_buf;
-
+#if __GNUC__ >= 7
+	unsigned int writesize;
+#endif
+        
 	if (verify_config >= 2)
 		printf("Processing object config directory '%s'...\n", dir_name);
 
@@ -8462,7 +8465,13 @@ static int xodtemplate_process_config_dir(char *dir_name)
 			continue;
 
 		/* create /path/to/file */
+#if __GNUC__ >= 7
+		writesize = snprintf(file, sizeof(file), "%s/%s", dir_name, dirfile->d_name);
+		if (writesize < (strlen(dir_name) + strlen(dirfile->d_name) + 2)) 
+			nm_log(NSLOG_RUNTIME_WARNING, "Warning: truncated path to file '%s' in config directory '%s'", dirfile->d_name, dir_name);
+#else
 		snprintf(file, sizeof(file), "%s/%s", dir_name, dirfile->d_name);
+#endif
 		file[sizeof(file) - 1] = '\x0';
 
 		/* process this if it's a non-hidden config file... */

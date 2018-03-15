@@ -199,6 +199,9 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv)
 				set_state(STATE_INSQ | STATE_INARG);
 				continue;
 			}
+#if __GNUC__ >= 7
+			__attribute__((fallthrough));
+#endif
 		case '"':
 			if (have_state(STATE_INSQ))
 				break;

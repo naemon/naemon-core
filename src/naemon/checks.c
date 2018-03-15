@@ -207,6 +207,9 @@ int process_check_result_queue(char *dirname)
 	char *temp_buffer = NULL;
 	int result = OK, check_result_files = 0;
 	time_t start;
+#if __GNUC__ >= 7
+	unsigned int writesize;
+#endif
 
 	/* make sure we have what we need */
 	if (dirname == NULL) {
@@ -240,9 +243,16 @@ int process_check_result_queue(char *dirname)
 		}
 
 		/* create /path/to/file */
+                
+#if __GNUC__ >= 7
+		writesize = snprintf(file, sizeof(file), "%s/%s", dirname, dirfile->d_name);
+		if (writesize < (strlen(dirname) + strlen(dirfile->d_name) + 2)) 
+			nm_log(NSLOG_RUNTIME_WARNING, "Warning: truncated path to file in check result queue directory '%s'", dirfile->d_name);
+#else
 		snprintf(file, sizeof(file), "%s/%s", dirname, dirfile->d_name);
+#endif
 		file[sizeof(file) - 1] = '\x0';
-
+		
 		/* process this if it's a check result file... */
 		x = strlen(dirfile->d_name);
 		if (x == 7 && dirfile->d_name[0] == 'c') {

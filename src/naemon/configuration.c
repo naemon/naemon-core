@@ -59,6 +59,9 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 	char *argptr = NULL;
 	mmapfile *thefile = NULL;
 	DIR *tmpdir = NULL;
+#if __GNUC__ >= 7
+	unsigned int writesize;
+#endif
 
 	/* open the config file for reading */
 	if ((thefile = mmap_fopen(main_config_file)) == NULL) {
@@ -1021,10 +1024,16 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 					if (strcmp(dirfile->d_name + strlen(dirfile->d_name) - 4, ".cfg"))
 						continue;
 
-					/* create /path/to/file */
+					/* create /path/to/file */              
+#if __GNUC__ >= 7
+					writesize = snprintf(file, sizeof(file), "%s/%s", include_dir, dirfile->d_name);
+					if (writesize < (strlen(include_dir) + strlen(dirfile->d_name) + 2)) 
+						nm_log(NSLOG_RUNTIME_WARNING, "Warning: truncated path to sub-configuration file '%s'", dirfile->d_name);
+#else
 					snprintf(file, sizeof(file), "%s/%s", include_dir, dirfile->d_name);
+#endif
 					file[sizeof(file) - 1] = '\x0';
-
+					
 					error |= read_config_file(file, mac);
 				}
 				closedir(dirp);
