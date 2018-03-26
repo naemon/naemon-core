@@ -764,12 +764,15 @@ int handle_scheduled_downtime(scheduled_downtime *temp_downtime)
 }
 
 
-/* checks for flexible (non-fixed) host downtime that should start now */
+/* checks for flexible (non-fixed) host downtime that should start now
+ *  * return: < 0 : error
+ *         number of the host downtime will be started soon*/
 int check_pending_flex_host_downtime(host *hst)
 {
 	scheduled_downtime *temp_downtime = NULL;
 	time_t current_time = 0L;
 	unsigned long *new_downtime_id = NULL;
+	int num_downtimes_start = 0;
 
 	if (hst == NULL)
 		return ERROR;
@@ -809,20 +812,24 @@ int check_pending_flex_host_downtime(host *hst)
 				*new_downtime_id = temp_downtime->downtime_id;
 
 				temp_downtime->start_event = schedule_event(temp_downtime->flex_downtime_start - time(NULL), handle_downtime_start_event, (void *)new_downtime_id);
+				num_downtimes_start++;
 			}
 		}
 	}
 
-	return OK;
+	return num_downtimes_start;
 }
 
 
-/* checks for flexible (non-fixed) service downtime that should start now */
+/* checks for flexible (non-fixed) service downtime that should start now
+ * return: < 0 : error
+ *         number of the service downtime will be started soon*/
 int check_pending_flex_service_downtime(service *svc)
 {
 	scheduled_downtime *temp_downtime = NULL;
 	time_t current_time = 0L;
 	unsigned long *new_downtime_id = NULL;
+	int num_downtimes_start = 0;
 
 	if (svc == NULL)
 		return ERROR;
@@ -863,11 +870,12 @@ int check_pending_flex_service_downtime(service *svc)
 				*new_downtime_id = temp_downtime->downtime_id;
 
 				temp_downtime->start_event = schedule_event(temp_downtime->flex_downtime_start - time(NULL), handle_downtime_start_event, (void *)new_downtime_id);
+				num_downtimes_start++;
 			}
 		}
 	}
 
-	return OK;
+	return num_downtimes_start;
 }
 
 
