@@ -11,6 +11,7 @@
 #include <fcntl.h>
 
 #define TARGET_SERVICE_NAME "my_service"
+#define TARGET_SERVICE_NAME1 "my_service1"
 #define TARGET_HOST_NAME "my_host"
 
 #define STR_STRING_SERVICE_NOTIFICATION_ATTEMPT "** Service Notification Attempt **"
@@ -25,7 +26,7 @@ const char *mocked_get_default_retention_file(void) {
 #undef get_default_retention_file
 
 static host *hst;
-static service *svc;
+static service *svc, *svc1;
 static command *cmd;
 void setup (void) {
 
@@ -33,7 +34,7 @@ void setup (void) {
 	char* workdir = NULL;
 	init_event_queue();
 	init_objects_host(1);
-	init_objects_service(1);
+	init_objects_service(2);
 	init_objects_command(1);
 	initialize_downtime_data();
 	initialize_retention_data();
@@ -60,6 +61,11 @@ void setup (void) {
 	ck_assert(svc != NULL);
 	svc->check_command_ptr = cmd;
 	register_service(svc);
+
+	svc1 = create_service(hst, TARGET_SERVICE_NAME1);
+	ck_assert(svc1 != NULL);
+	svc1->check_command_ptr = cmd;
+	register_service(svc1);
 
 }
 
@@ -437,6 +443,7 @@ START_TEST(host_flexible_scheduled_downtime_triggered_when_host_down)
 }
 END_TEST
 
+
 START_TEST(host_triggered_scheduled_downtime)
 {
 	time_t now = time(NULL);
@@ -606,6 +613,7 @@ START_TEST(service_flexible_scheduled_downtimes_service_down_notification)
 	struct check_result cr ;
 	char active_contents[1024];
 	size_t len;
+
 
 	/* fill the check_result struct for the service check failure */
 	cr.object_check_type = SERVICE_CHECK;
