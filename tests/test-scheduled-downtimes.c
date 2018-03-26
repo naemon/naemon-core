@@ -597,6 +597,51 @@ START_TEST(host_triggered_and_fixed_scheduled_downtime)
 }
 END_TEST
 
+START_TEST(service_triggered_scheduled_downtime)
+{
+	time_t now = time(NULL);
+	int fixed = 1;
+	unsigned long downtime_id;
+	unsigned long triggered_downtime_id;
+	unsigned long duration = 60;
+	unsigned long triggered_by = 0;
+	scheduled_downtime *dt = NULL;
+	scheduled_downtime *triggered_dt = NULL;
+
+	ck_assert(OK == schedule_downtime(SERVICE_DOWNTIME, TARGET_HOST_NAME, TARGET_SERVICE_NAME, now, "Some downtime author",
+				"Some downtime comment", now, now + duration,
+				fixed, triggered_by, duration, &downtime_id));
+
+	dt = find_downtime(SERVICE_DOWNTIME, downtime_id);
+	ck_assert(dt != NULL);
+
+	/* now schedule a downtime that's triggered by the one we just scheduled */
+	triggered_by = downtime_id;
+	ck_assert(OK == schedule_downtime(SERVICE_DOWNTIME, TARGET_HOST_NAME, TARGET_SERVICE_NAME1, now, "Some downtime author",
+				"Some downtime comment", now, now + duration,
+				fixed, triggered_by, duration, &triggered_downtime_id));
+
+	triggered_dt = find_downtime(ANY_DOWNTIME, downtime_id);
+	ck_assert(triggered_dt != NULL);
+
+	/* the triggered downtime should be triggered by the first downtime ...*/
+	ck_assert(OK == handle_scheduled_downtime(dt));
+	ck_assert(dt->is_in_effect == TRUE);
+	ck_assert(triggered_dt->is_in_effect == TRUE);
+	ck_assert_int_eq(1, svc->scheduled_downtime_depth);
+	ck_assert_int_eq(1, svc1->scheduled_downtime_depth);
+
+
+	/* ... and the triggered downtime should expire when the first downtime does */
+	ck_assert(OK == handle_scheduled_downtime(dt));
+	ck_assert(dt->is_in_effect == FALSE);
+	ck_assert(triggered_dt->is_in_effect == FALSE);
+	ck_assert_int_eq(0, svc->scheduled_downtime_depth);
+	ck_assert_int_eq(0, svc1->scheduled_downtime_depth);
+}
+END_TEST
+
+
 /* The test case is added for the notification of the service flexible downtime.
  * The test will pass a failure service check_result to the process_check_result.
  * In our case, the notification should not be sent as the service is entering downtime due to this check failure
@@ -771,6 +816,7 @@ scheduled_downtimes_suite(void)
 	tcase_add_test(tc_flexible_scheduled_downtimes, service_flexible_scheduled_downtimes_service_down_notification);
 	tcase_add_test(tc_flexible_scheduled_downtimes, host_flexible_scheduled_downtimes_service_down_notification);
 
+	tcase_add_test(tc_triggered_scheduled_downtimes, service_triggered_scheduled_downtime);
 	tcase_add_test(tc_triggered_scheduled_downtimes, host_triggered_scheduled_downtime);
 	tcase_add_test(tc_triggered_scheduled_downtimes, host_triggered_scheduled_downtime_across_reload);
 	tcase_add_test(tc_triggered_scheduled_downtimes, host_triggered_and_fixed_scheduled_downtime);
