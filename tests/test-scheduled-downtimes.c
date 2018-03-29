@@ -10,6 +10,13 @@
 #include <sys/time.h>
 #include <fcntl.h>
 
+struct timed_event {
+	size_t pos;
+	struct timespec event_time;
+	event_callback callback;
+	void *user_data;
+};
+
 #define TARGET_SERVICE_NAME "my_service"
 #define TARGET_SERVICE_NAME1 "my_service1"
 #define TARGET_HOST_NAME "my_host"
@@ -28,6 +35,7 @@ const char *mocked_get_default_retention_file(void) {
 static host *hst;
 static service *svc, *svc1;
 static command *cmd;
+
 void setup (void) {
 
 	int ret;
@@ -38,6 +46,17 @@ void setup (void) {
 	init_objects_command(1);
 	initialize_downtime_data();
 	initialize_retention_data();
+	workdir = getcwd(NULL, 0);
+
+	ret = asprintf(&log_file, "%s/active.log", workdir);
+	ck_assert(ret >= 0);
+
+	debug_level = -1;
+	debug_verbosity = 10;
+	debug_file = log_file;
+
+
+	/* Don't check return value, just make -Wno-unused-result happy */
 	workdir = getcwd(NULL, 0);
 
 	ret = asprintf(&log_file, "%s/active.log", workdir);
@@ -600,13 +619,31 @@ END_TEST
 START_TEST(service_triggered_scheduled_downtime)
 {
 	time_t now = time(NULL);
-	int fixed = 1;
+	int fixed = 0;
 	unsigned long downtime_id;
 	unsigned long triggered_downtime_id;
 	unsigned long duration = 60;
 	unsigned long triggered_by = 0;
 	scheduled_downtime *dt = NULL;
 	scheduled_downtime *triggered_dt = NULL;
+	struct timespec event_time_stop_triggered;
+	struct check_result cr ;
+
+	cr.object_check_type = SERVICE_CHECK;
+	cr.host_name = TARGET_HOST_NAME;
+	cr.service_description = TARGET_SERVICE_NAME;
+	cr.check_type = CHECK_TYPE_ACTIVE;
+	cr.check_options = 0;
+	cr.scheduled_check = TRUE;
+	cr.latency = 10;
+	cr.early_timeout = FALSE;
+	cr.exited_ok = TRUE;
+	cr.return_code = STATE_DOWN;
+	cr.output = "CHECK_NRPE: Socket timeout after 10 seconds.";
+	cr.source = NULL;
+	cr.engine = NULL;
+
+	clock_gettime(CLOCK_MONOTONIC, &event_time_stop_triggered);
 
 	ck_assert(OK == schedule_downtime(SERVICE_DOWNTIME, TARGET_HOST_NAME, TARGET_SERVICE_NAME, now, "Some downtime author",
 				"Some downtime comment", now, now + duration,
@@ -621,13 +658,21 @@ START_TEST(service_triggered_scheduled_downtime)
 				"Some downtime comment", now, now + duration,
 				fixed, triggered_by, duration, &triggered_downtime_id));
 
-	triggered_dt = find_downtime(ANY_DOWNTIME, downtime_id);
+	triggered_dt = find_downtime(ANY_DOWNTIME, triggered_downtime_id);
 	ck_assert(triggered_dt != NULL);
 
 	/* the triggered downtime should be triggered by the first downtime ...*/
+	process_check_result(&cr);
+	//Would be nice to just use the function call like destroy_event(dt->start_event) but the event handler is not set up in this test environment
+
+	dt->flex_downtime_start = now;
 	ck_assert(OK == handle_scheduled_downtime(dt));
 	ck_assert(dt->is_in_effect == TRUE);
 	ck_assert(triggered_dt->is_in_effect == TRUE);
+	/* just to make sure that the triggered flex_downtime_start is the same as the triggering downtime's flex_downtime_start	 */
+	ck_assert(triggered_dt->flex_downtime_start == dt->flex_downtime_start );
+	/* make sure the the stop event is scheduled after the current time */
+	ck_assert(event_time_stop_triggered.tv_sec < triggered_dt->stop_event->event_time.tv_sec);
 	ck_assert_int_eq(1, svc->scheduled_downtime_depth);
 	ck_assert_int_eq(1, svc1->scheduled_downtime_depth);
 
@@ -658,7 +703,6 @@ START_TEST(service_flexible_scheduled_downtimes_service_down_notification)
 	struct check_result cr ;
 	char active_contents[1024];
 	size_t len;
-
 
 	/* fill the check_result struct for the service check failure */
 	cr.object_check_type = SERVICE_CHECK;
