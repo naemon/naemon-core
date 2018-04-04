@@ -1518,6 +1518,7 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		/***************/
 	case MACRO_HOSTGROUPNAMES:
 		*free_macro = TRUE;
+		/* FALLTHROUGH */
 	case MACRO_HOSTNAME:
 	case MACRO_HOSTALIAS:
 	case MACRO_HOSTADDRESS:
@@ -1612,6 +1613,7 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		/********************/
 	case MACRO_HOSTGROUPMEMBERS:
 		*free_macro = TRUE;
+		/* FALLTHROUGH */
 	case MACRO_HOSTGROUPNAME:
 	case MACRO_HOSTGROUPALIAS:
 	case MACRO_HOSTGROUPNOTES:
@@ -1640,6 +1642,7 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		/******************/
 	case MACRO_SERVICEGROUPNAMES:
 		*free_macro = TRUE;
+		/* FALLTHROUGH */
 	case MACRO_SERVICEDESC:
 	case MACRO_SERVICESTATE:
 	case MACRO_SERVICESTATEID:
@@ -1757,6 +1760,7 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 	case MACRO_SERVICEGROUPNOTESURL:
 	case MACRO_SERVICEGROUPACTIONURL:
 		*free_macro = TRUE;
+		/* FALLTHROUGH */
 	case MACRO_SERVICEGROUPNAME:
 	case MACRO_SERVICEGROUPALIAS:
 		/* a standard servicegroup macro */
@@ -1781,6 +1785,7 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		/******************/
 	case MACRO_CONTACTGROUPNAMES:
 		*free_macro = TRUE;
+		/* FALLTHROUGH */
 	case MACRO_CONTACTNAME:
 	case MACRO_CONTACTALIAS:
 	case MACRO_CONTACTEMAIL:
@@ -1841,6 +1846,7 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		/***********************/
 	case MACRO_CONTACTGROUPMEMBERS:
 		*free_macro = TRUE;
+		/* FALLTHROUGH */
 	case MACRO_CONTACTGROUPNAME:
 	case MACRO_CONTACTGROUPALIAS:
 		/* a standard contactgroup macro */

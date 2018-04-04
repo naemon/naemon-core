@@ -239,13 +239,27 @@ int process_check_result_queue(char *dirname)
 			break;
 		}
 
-		/* create /path/to/file */
-		snprintf(file, sizeof(file), "%s/%s", dirname, dirfile->d_name);
-		file[sizeof(file) - 1] = '\x0';
-
 		/* process this if it's a check result file... */
 		x = strlen(dirfile->d_name);
 		if (x == 7 && dirfile->d_name[0] == 'c') {
+
+			/* create /path/to/file */
+			int written_size = snprintf(file, sizeof(file), "%s/%s", dirname, dirfile->d_name);
+			file[sizeof(file) - 1] = '\x0';
+
+			/* Check for encoding errors */
+			if (written_size < 0) {
+				nm_log(NSLOG_RUNTIME_WARNING,
+					"Warning: encoding error on check result file path '`%s'.\n", file);
+				continue;
+			}
+
+			/* Check if the filename was truncated */
+			if (written_size > 0 && (size_t)written_size >= sizeof(file)) {
+				nm_log(NSLOG_RUNTIME_WARNING,
+				"Warning: truncated path to check result file '%s'.\n", file);
+				continue;
+			}
 
 			if (stat(file, &stat_buf) == -1) {
 				nm_log(NSLOG_RUNTIME_WARNING,

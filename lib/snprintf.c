@@ -493,6 +493,7 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 				break;
 			case 'X':
 				cnk->flags |= DP_F_UP;
+				/* FALLTHROUGH */
 			case 'x':
 				cnk->type = CNK_HEX;
 				cnk->flags |= DP_F_UNSIGNED;
@@ -503,6 +504,7 @@ static size_t dopr(char *buffer, size_t maxlen, const char *format, va_list args
 			case 'G':
 			case 'F':
 				cnk->flags |= DP_F_UP;
+				/* FALLTHROUGH */
 			case 'a':
 				/* hex float not supported yet */
 			case 'e':
