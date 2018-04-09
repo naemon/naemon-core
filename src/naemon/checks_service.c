@@ -903,6 +903,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		/* we've reached the maximum number of service rechecks, so handle the error */
 		else {
 
+			int num_downtimes_start = 0;
 			log_debug_info(DEBUGL_CHECKS, 1, "Service has reached max number of rechecks, so we'll handle the error...\n");
 
 			/* this is a hard state */
@@ -925,7 +926,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 			/* check for start of flexible (non-fixed) scheduled downtime if we just had a hard error */
 			/* we need to check for both, state_change (SOFT) and hard_state_change (HARD) values */
 			if (hard_state_change == TRUE || state_change == TRUE)
-				check_pending_flex_service_downtime(temp_service);
+				num_downtimes_start = check_pending_flex_service_downtime(temp_service);
 
 			/* 10/04/07 check to see if the service and/or associate host is flapping */
 			/* this should be done before a notification is sent out to ensure the host didn't just start flapping */
@@ -933,8 +934,10 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 			check_for_host_flapping(temp_host, TRUE, FALSE);
 			flapping_check_done = TRUE;
 
-			/* (re)send notifications out about this service problem if the host is up (and was at last check also) and the dependencies were okay... */
-			service_notification(temp_service, NOTIFICATION_NORMAL, NULL, NULL, NOTIFICATION_OPTION_NONE);
+			/* (re)send notifications out about this service problem if the host is up (and was at last check also) and the dependencies were okay...
+			 * no need to send the notifications if any downtime will be started on this service*/
+			if (num_downtimes_start == 0 )
+				service_notification(temp_service, NOTIFICATION_NORMAL, NULL, NULL, NOTIFICATION_OPTION_NONE);
 
 			/* run the service event handler if we changed state from the last hard state or if this service is flagged as being volatile */
 			if (hard_state_change == TRUE || temp_service->is_volatile == TRUE)

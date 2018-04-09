@@ -940,6 +940,7 @@ static int handle_host_state(host *hst, int *alert_recorded)
 		hard_state_change = TRUE;
 
 	if (state_change == TRUE || hard_state_change == TRUE) {
+		int num_downtimes_start = 0;
 
 		/* update last state change times */
 		hst->last_state_change = current_time;
@@ -972,10 +973,11 @@ static int handle_host_state(host *hst, int *alert_recorded)
 
 		/* check for start of flexible (non-fixed) scheduled downtime */
 		/* It can start on soft states */
-		check_pending_flex_host_downtime(hst);
+		num_downtimes_start = check_pending_flex_host_downtime(hst);
 
 		/* notify contacts about the recovery or problem if its a "hard" state */
-		if (hst->state_type == HARD_STATE)
+		/* And only if no downtime is being started */
+		if (hst->state_type == HARD_STATE && num_downtimes_start == 0 )
 			host_notification(hst, NOTIFICATION_NORMAL, NULL, NULL, NOTIFICATION_OPTION_NONE);
 
 		/* handle the host state change */
