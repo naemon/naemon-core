@@ -741,12 +741,15 @@ static int handle_scheduled_downtime_start(scheduled_downtime *temp_downtime)
 	new_downtime_id = nm_malloc(sizeof(unsigned long));
 	*new_downtime_id = temp_downtime->downtime_id;
 
-	schedule_event(event_time - time(NULL), handle_downtime_stop_event, (void *)new_downtime_id);
+	temp_downtime->stop_event = schedule_event(event_time - time(NULL), handle_downtime_stop_event, (void *)new_downtime_id);
 
 	/* handle (start) downtime that is triggered by this one */
 	for (this_downtime = scheduled_downtime_list; this_downtime != NULL; this_downtime = this_downtime->next) {
-		if (this_downtime->triggered_by == temp_downtime->downtime_id)
+		if (this_downtime->triggered_by == temp_downtime->downtime_id) {
+			/* Initialize the flex_downtime_start as it has not been initialized as a flexible downtime */
+			this_downtime->flex_downtime_start = temp_downtime->flex_downtime_start;
 			handle_scheduled_downtime(this_downtime);
+		}
 	}
 
 	return OK;
