@@ -794,8 +794,10 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 			log_debug_info(DEBUGL_CHECKS, 2, "Host is not UP, so we mark state changes if appropriate\n");
 
 			/* "fake" a hard state change for the service - well, its not really fake, but it didn't get caught earlier... */
-			if (temp_service->last_hard_state != temp_service->current_state)
+			if (temp_service->last_hard_state != temp_service->current_state) {
 				hard_state_change = TRUE;
+				nm_log(NSLOG_INFO_MESSAGE, "SERVICE INFO: %s;%s; Service switch to hard down state due to host down.\n", temp_service->host_name, temp_service->description);
+			}
 
 			/* update last state change times */
 			if (state_change == TRUE || hard_state_change == TRUE)
