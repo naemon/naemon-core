@@ -5,6 +5,8 @@
 #include "naemon/objects_host.h"
 #include "naemon/downtime.h"
 #include "naemon/events.h"
+#include "naemon/checks.h"
+#include "naemon/checks_service.h"
 #include <sys/time.h>
 #include <fcntl.h>
 
@@ -19,6 +21,9 @@ struct timed_event {
 #define TARGET_SERVICE_NAME1 "my_service1"
 #define TARGET_HOST_NAME "my_host"
 
+#define STR_STRING_SERVICE_NOTIFICATION_ATTEMPT "** Service Notification Attempt **"
+#define STR_STRING_HOST_NOTIFICATION_ATTEMPT "** Host Notification Attempt **"
+
 const char *mocked_get_default_retention_file(void) {
 	return "/tmp/naemon-test-scheduled-downtimes.retentiondata";
 }
@@ -30,14 +35,36 @@ const char *mocked_get_default_retention_file(void) {
 static host *hst;
 static service *svc, *svc1;
 static command *cmd;
+
 void setup (void) {
 
+	int ret;
+	char* workdir = NULL;
 	init_event_queue();
 	init_objects_host(1);
-	init_objects_service(1);
+	init_objects_service(2);
 	init_objects_command(1);
 	initialize_downtime_data();
 	initialize_retention_data();
+	workdir = getcwd(NULL, 0);
+
+	ret = asprintf(&log_file, "%s/active.log", workdir);
+	ck_assert(ret >= 0);
+
+	debug_level = -1;
+	debug_verbosity = 10;
+	debug_file = log_file;
+
+
+	/* Don't check return value, just make -Wno-unused-result happy */
+	workdir = getcwd(NULL, 0);
+
+	ret = asprintf(&log_file, "%s/active.log", workdir);
+	ck_assert(ret >= 0);
+
+	debug_level = -1;
+	debug_verbosity = 10;
+	debug_file = log_file;
 
 	cmd = create_command("my_command", "/bin/true");
 	ck_assert(cmd != NULL);
@@ -46,6 +73,7 @@ void setup (void) {
 	hst = create_host(TARGET_HOST_NAME);
 	ck_assert(hst != NULL);
 	hst->check_command_ptr = cmd;
+	hst->check_command = nm_strdup("something or other");;
 	register_host(hst);
 
 	svc = create_service(hst, TARGET_SERVICE_NAME);
@@ -68,6 +96,7 @@ void teardown (void) {
 	cleanup_retention_data();
 	cleanup_downtime_data();
 	destroy_event_queue();
+	free(log_file);
 }
 
 void simulate_naemon_reload(void) {
@@ -425,7 +454,7 @@ START_TEST(host_flexible_scheduled_downtime_triggered_when_host_down)
 	hst->current_state = STATE_DOWN;
 	ck_assert_int_eq(0, hst->scheduled_downtime_depth);
 	ck_assert(dt->start_event == NULL);
-	ck_assert(OK == check_pending_flex_host_downtime(hst));
+	ck_assert(OK <= check_pending_flex_host_downtime(hst));
 	ck_assert(dt->start_event != NULL);
 	ck_assert(OK == handle_scheduled_downtime(dt));
 	ck_assert(dt->is_in_effect == TRUE);
@@ -657,6 +686,154 @@ START_TEST(service_triggered_scheduled_downtime)
 }
 END_TEST
 
+
+/* The test case is added for the notification of the service flexible downtime.
+ * The test will pass a failure service check_result to the process_check_result.
+ * In our case, the notification should not be sent as the service is entering downtime due to this check failure
+ */
+START_TEST(service_flexible_scheduled_downtimes_service_down_notification)
+{
+	time_t now = time(NULL);
+	int fixed = 0;
+	unsigned long downtime_id;
+	unsigned long duration = 60;
+	unsigned long triggered_by = 0;
+	int fd;
+	scheduled_downtime *dt = NULL;
+	struct check_result cr ;
+	char active_contents[1024];
+	size_t len;
+
+	/* fill the check_result struct for the service check failure */
+	cr.object_check_type = SERVICE_CHECK;
+	cr.host_name = TARGET_HOST_NAME;
+	cr.service_description = TARGET_SERVICE_NAME;
+	cr.check_type = CHECK_TYPE_ACTIVE;
+	cr.check_options = 0;
+	cr.scheduled_check = TRUE;
+	cr.latency = 10;
+	cr.early_timeout = FALSE;
+	cr.exited_ok = TRUE;
+	cr.return_code = STATE_DOWN;
+	cr.output = "CHECK_NRPE: Socket timeout after 10 seconds.";
+	cr.source = NULL;
+	cr.engine = NULL;
+
+	/* Make sure failure check will set the service to down state */
+	svc->max_attempts = 0;
+
+	ck_assert(OK == schedule_downtime(SERVICE_DOWNTIME, TARGET_HOST_NAME, TARGET_SERVICE_NAME, now, "Some downtime author",
+			"Some downtime comment", now, now + duration,
+			fixed, triggered_by, duration, &downtime_id));
+
+	dt = find_downtime(ANY_DOWNTIME, downtime_id);
+
+	ck_assert(dt != NULL);
+
+	ck_assert_int_eq(0,gettimeofday(&(cr.start_time) , NULL));
+	ck_assert_int_eq(0,gettimeofday(&(cr.finish_time) , NULL));
+
+	 /*Use a temporary file to catch if notification happens, simply because there is not other way (any global variables)
+	 * to check whether it is trying to call the notification function
+	 */
+	open_debug_log();
+
+	// This will create a handle_downtime_start_event on the event queue
+	process_check_result(&cr);
+
+	close_debug_log();
+
+	fd = open(log_file, O_RDONLY);
+	len = read(fd, active_contents, 1024);
+	active_contents[len] = '\0';
+	close(fd);
+	unlink(log_file);
+
+	// Make sure the event is created for this downtime start on the event queue
+	ck_assert(dt->start_event != NULL);
+	ck_assert(strstr(active_contents, STR_STRING_SERVICE_NOTIFICATION_ATTEMPT) == NULL);
+
+	// Clean up the downtime start event created on the event queue
+	destroy_event(dt->start_event);
+	ck_assert(OK == delete_service_downtime(downtime_id));
+}
+END_TEST
+
+/* The test case is added for the notification of the host flexible downtime.
+ * The test will pass a failure host check_result to the process_check_result.
+ * In our case, the notification should not be sent as the host is entering downtime due to this check failure
+ */
+START_TEST(host_flexible_scheduled_downtimes_service_down_notification)
+{
+	/* The host flexible scheduled downtime apparently works a little different than the service flexible scheduled downtime
+	 * The first event down will trigger the downtime start on the host while maximum retried has been reached then the downtime will be started.
+	 */
+	time_t now = time(NULL);
+	int fixed = 0;
+	unsigned long downtime_id;
+	unsigned long duration = 60;
+	unsigned long triggered_by = 0;
+	int fd;
+	scheduled_downtime *dt = NULL;
+	struct check_result cr ;
+	char active_contents[1024];
+	size_t len;
+
+	cr.object_check_type = HOST_CHECK;
+	cr.host_name = TARGET_HOST_NAME;
+	cr.service_description = NULL;
+	cr.check_type = CHECK_TYPE_ACTIVE;
+	cr.check_options = 0;
+	cr.scheduled_check = TRUE;
+	cr.latency = 10;
+	cr.early_timeout = FALSE;
+	cr.exited_ok = TRUE;
+	cr.return_code = STATE_CRITICAL;
+	cr.output = "is DOWN - rta: nan, lost 100%|pkt=5;5;5;5;5 rta=0.0;2000.000;2000.000;; pl=100%;95;100;;";
+	cr.source = NULL;
+	cr.engine = NULL;
+
+	hst->current_state = STATE_UP;
+
+	hst->max_attempts = 1;
+
+	ck_assert(OK == schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author",
+			"Some downtime comment", now, now + duration,
+			fixed, triggered_by, duration, &downtime_id));
+
+	dt = find_downtime(ANY_DOWNTIME, downtime_id);
+
+	ck_assert(dt != NULL);
+
+	ck_assert_int_eq(0,gettimeofday(&(cr.start_time) , NULL));
+	ck_assert_int_eq(0,gettimeofday(&(cr.finish_time) , NULL));
+
+	/* Use a temporary file to catch if notification happens, simply because there is not other way (any global variables)
+	 * to check whether it is trying to call the notification function
+	 */
+	open_debug_log();
+
+	// This will create a handle_downtime_start_event on the event queue
+	ck_assert(OK == process_check_result(&cr));
+
+	close_debug_log();
+
+	fd = open(log_file, O_RDONLY);
+	len = read(fd, active_contents, 1024);
+	active_contents[len] = '\0';
+	close(fd);
+	unlink(log_file);
+
+	// Make sure the event is created for this downtime start on the event queue
+	ck_assert(dt->start_event != NULL);
+	ck_assert(strstr(active_contents, STR_STRING_HOST_NOTIFICATION_ATTEMPT) == NULL);
+
+	// Clean up the downtime start event created on the event queue
+	destroy_event(dt->start_event);
+	ck_assert(OK == delete_host_downtime(downtime_id));
+}
+END_TEST
+
 Suite*
 scheduled_downtimes_suite(void)
 {
@@ -680,6 +857,8 @@ scheduled_downtimes_suite(void)
 	tcase_add_test(tc_flexible_scheduled_downtimes, host_flexible_scheduled_downtime_across_reload);
 	tcase_add_test(tc_flexible_scheduled_downtimes, host_flexible_scheduled_downtime_in_the_past);
 	tcase_add_test(tc_flexible_scheduled_downtimes, host_flexible_scheduled_downtime_triggered_when_host_down);
+	tcase_add_test(tc_flexible_scheduled_downtimes, service_flexible_scheduled_downtimes_service_down_notification);
+	tcase_add_test(tc_flexible_scheduled_downtimes, host_flexible_scheduled_downtimes_service_down_notification);
 
 	tcase_add_test(tc_triggered_scheduled_downtimes, service_triggered_scheduled_downtime);
 	tcase_add_test(tc_triggered_scheduled_downtimes, host_triggered_scheduled_downtime);
