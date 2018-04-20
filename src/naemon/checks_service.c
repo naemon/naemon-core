@@ -793,10 +793,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 			log_debug_info(DEBUGL_CHECKS, 2, "Host is not UP, so we mark state changes if appropriate\n");
 
-			/* "fake" a hard state change for the service - well, its not really fake, but it didn't get caught earlier... */
-			if (temp_service->last_hard_state != temp_service->current_state)
-				hard_state_change = TRUE;
-
 			/* update last state change times */
 			if (state_change == TRUE || hard_state_change == TRUE)
 				temp_service->last_state_change = temp_service->last_check;
@@ -831,6 +827,10 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		/* if we should retry the service check, do so (except if the host is down or unreachable!) */
 		if (temp_service->current_attempt < temp_service->max_attempts) {
 
+			/* this is a soft state */
+			temp_service->state_type = SOFT_STATE;
+			/* log this failed service check */
+			log_service_event(temp_service);
 			/* the host is down or unreachable, so don't attempt to retry the service check */
 			if (route_result != STATE_UP) {
 
@@ -838,7 +838,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 				/* log the problem as a hard state if the host just went down */
 				if (hard_state_change == TRUE) {
-					log_service_event(temp_service);
 					alert_recorded = NEBATTR_CHECK_ALERT;
 
 					/* run the service event handler to handle the hard state */
@@ -851,11 +850,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 				log_debug_info(DEBUGL_CHECKS, 1, "Host is UP, so we'll retry the service check...\n");
 
-				/* this is a soft state */
-				temp_service->state_type = SOFT_STATE;
-
-				/* log the service check retry */
-				log_service_event(temp_service);
 				alert_recorded = NEBATTR_CHECK_ALERT;
 
 				/* run the service event handler to handle the soft state */

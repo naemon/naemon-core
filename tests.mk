@@ -75,6 +75,11 @@ tests_test_check_result_processing_LDADD = $(TESTSLDADD)
 tests_test_check_result_processing_LDFLAGS = $(TESTSLDFLAGS)
 tests_test_check_result_processing_CPPFLAGS = $(TESTSCPPFLAGS)
 
+tests_test_service_states_SOURCES = tests/test-service-states.c
+tests_test_service_states_LDADD = $(TESTSLDADD)
+tests_test_service_states_LDFLAGS = $(TESTSLDFLAGS)
+tests_test_service_states_CPPFLAGS = $(TESTSCPPFLAGS)
+
 tests_test_scheduled_downtimes_SOURCES = tests/test-scheduled-downtimes.c
 tests_test_scheduled_downtimes_LDADD = $(TESTSLDADD)
 tests_test_scheduled_downtimes_LDFLAGS = $(TESTSLDFLAGS)
@@ -163,6 +168,7 @@ check_PROGRAMS += \
 	tests/test-check-result-processing \
 	tests/test-scheduled-downtimes \
 	tests/test-check-scheduling \
+	tests/test-service-states \
 	tests/test-obj-config-parse \
 	tests/test-utils \
 	tests/test-log \
