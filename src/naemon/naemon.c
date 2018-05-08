@@ -748,9 +748,6 @@ int main(int argc, char **argv)
 
 	shutdown_command_file_worker();
 
-	if (daemon_mode == TRUE)
-		unlink(lock_file);
-
 	/* free misc memory */
 	nm_free(lock_file);
 	nm_free(config_file);
