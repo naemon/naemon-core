@@ -96,7 +96,9 @@ stop() {
     elif type start-stop-daemon >/dev/null 2>&1; then
         start-stop-daemon --stop --name ${prog} --pidfile ${pidfile} --exec ${exec}
     else
-        killproc -p ${pidfile} ${exec}
+        # keeping the pidfile as we are not sure if some other process owns this pidfile and the killproc will remove the copy of pidfile
+        cp ${pidfile} ${pidfile}.cp
+        killproc -p ${pidfile}.cp ${exec}
     fi
     retval=$?
     echo
