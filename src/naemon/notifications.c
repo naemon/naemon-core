@@ -778,9 +778,13 @@ int check_service_notification_viability(service *svc, int type, int options)
 	/* see if enough time has elapsed for first notification (Mathias Sundman) */
 	/* 10/02/07 don't place restrictions on recoveries or non-normal notifications, must use last time ok (or program start) in calculation */
 	/* it is reasonable to assume that if the service was never up, the program start time should be used in this calculation */
-	if (type == NOTIFICATION_NORMAL && svc->current_notification_number == 0 && svc->current_state != STATE_OK) {
+	if (type == NOTIFICATION_NORMAL
+		&& svc->current_notification_number == 0
+		&& svc->first_notification_delay > 0
+		&& svc->current_state != STATE_OK)
+	{
 
-		first_problem_time = svc->last_time_ok > 0 ? svc->last_time_ok : program_start;
+		first_problem_time = svc->last_hard_state_change > 0 ? svc->last_hard_state_change : program_start;
 
 		if (current_time < first_problem_time + (time_t)(svc->first_notification_delay * interval_length)) {
 			LOG_SERVICE_NSR(NSR_DELAY);
@@ -1636,9 +1640,13 @@ int check_host_notification_viability(host *hst, int type, int options)
 	/* see if enough time has elapsed for first notification (Mathias Sundman) */
 	/* 10/02/07 don't place restrictions on recoveries or non-normal notifications, must use last time up (or program start) in calculation */
 	/* it is reasonable to assume that if the host was never up, the program start time should be used in this calculation */
-	if (type == NOTIFICATION_NORMAL && hst->current_notification_number == 0 && hst->current_state != STATE_UP) {
+	if (type == NOTIFICATION_NORMAL
+	    && hst->current_notification_number == 0
+	    && hst->first_notification_delay > 0
+		&& hst->current_state != STATE_UP)
+	{
 
-		first_problem_time = hst->last_time_up > 0 ? hst->last_time_up : program_start;
+		first_problem_time = hst->last_hard_state_change > 0 ? hst->last_hard_state_change : program_start;
 
 		if (current_time < first_problem_time + (time_t)(hst->first_notification_delay * interval_length)) {
 			LOG_HOST_NSR(NSR_DELAY);
