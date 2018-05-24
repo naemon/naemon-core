@@ -1,0 +1,206 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides:          naemon
+# Required-Start:    $local_fs $remote_fs $syslog $network
+# Required-Stop:     $local_fs $remote_fs $syslog $network
+# Should-Start:
+# Should-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: start and stop Naemon monitoring server
+# Description:       Naemon is is a service monitoring system
+### END INIT INFO
+
+# Source function library.
+
+. /lib/lsb/init-functions
+
+status() {
+  [ ! -e $pidfile ] && return 1;
+  PID=`cat $pidfile`;
+  kill -0 $PID 2>/dev/null
+  return $?
+}
+
+pidof_naemon() {
+  if [ -e "$pidfile" ]; then
+    if pidof $prog | tr ' ' '\n' | grep -w $(cat $pidfile); then
+      return 0
+    fi
+  fi
+  return 1
+}
+
+prefix="/usr"
+exec_prefix="${prefix}"
+exec="/usr/bin/naemon"
+prog="naemon"
+config="/etc/naemon/naemon.cfg"
+pidfile="/var/run/naemon/naemon.pid"
+pidfolder="`dirname $pidfile`"
+user="naemon"
+group="naemon"
+checkconfig="false"
+
+# Default nice for performance, change in sysconfig file not here!
+NICELEVEL=0
+
+lockfile=/var/lock/subsys/$prog
+
+check_config() {
+    TMPFILE=$(mktemp /tmp/.configtest.XXXXXXXX)
+    $0 configtest > "$TMPFILE"
+    WARN=`grep ^"Total Warnings:" "$TMPFILE" |awk -F: '{print \$2}' |sed s/' '//g`
+    ERR=`grep ^"Total Errors:" "$TMPFILE" |awk -F: '{print \$2}' |sed s/' '//g`
+
+    if test "$WARN" = "0" && test "${ERR}" = "0"; then
+        echo "OK - Configuration check verified" > /var/cache/naemon/naemon.configtest
+        retval=0
+        chmod 0644 /var/cache/naemon/naemon.configtest
+        /bin/rm "$TMPFILE"
+        return 0
+    else
+        # We'll write out the errors to a file we can have a
+        # script watching for
+        echo "WARNING: Errors in config files - see log for details: $TMPFILE" > /var/cache/naemon/naemon.configtest
+        egrep -i "(^warning|^error)" "$TMPFILE" >> /var/cache/naemon/naemon.configtest
+        chmod 0644 /var/cache/naemon/naemon.configtest
+        cat "$TMPFILE"
+        log_failure_msg "Error parsing configuration"
+        log_end_msg 8
+        exit 8
+    fi
+}
+
+naemon_wait_stop() {
+    # wait until really stopped
+    pid=$(pidof_naemon)
+    stop
+    if [ -n "${pid:-}" ]; then
+        i=0
+        while kill -0 "${pid:-}" 2> /dev/null;  do
+        if [ $i = '60' ]; then
+            break;
+        else
+            if [ $i = '0' ]; then
+                echo -n " ... waiting "
+            else
+                echo -n "."
+            fi
+            i=$(($i+1))
+            sleep 1
+        fi
+        done
+    fi
+}
+
+start() {
+    retval=0
+    log_daemon_msg "Starting $prog: "
+    if [ ! -x $exec ]; then
+        log_failure_msg "Executable $exec does not exists or execute (or search) permission is denied"
+        log_end_msg 5
+        exit 5
+    fi
+    if [ ! -f $config ]; then
+        log_failure_msg "Config file $config does not exist"
+        log_end_msg 6
+        exit 6
+    fi
+    if [ "$checkconfig" = "false" ]; then
+        check_config
+    fi
+    # Create PID folder if it does not exist
+    if [ ! -d $pidfolder ]; then
+        mkdir $pidfolder
+        chown $user:$group $pidfolder
+    fi
+    # We need to _make sure_ the precache is there and verified
+    # Raise priority to make it run better
+    if type start-stop-daemon >/dev/null 2>&1; then
+        NICE_OPT=""
+        if [ $NICELEVEL != "0" ]; then NICE_OPT="--nicelevel $NICELEVEL"; fi
+        start-stop-daemon $NICE_OPT --start --user $user --chuid $user:$group --name $prog --pidfile $pidfile --exec $exec -- -d $config
+    else
+        daemon --user=$user $exec -d $config
+    fi
+    retval=$?
+    log_end_msg $retval
+    return $retval
+    if [ -d /var/lock/subsys ]; then
+      test $retval -eq 0 && touch $lockfile
+    fi
+}
+
+stop() {
+    log_daemon_msg "Stopping $prog: "
+    retval=0
+    start-stop-daemon --oknodo --stop --quiet --exec $exec --retry=TERM/5/INT/3/KILL/3
+    retval=$?
+    test $retval -eq 0 && rm -f $lockfile
+    log_end_msg $retval
+    return $retval
+}
+
+
+restart() {
+    check_config
+    checkconfig="true"
+    pid=$(pidof_naemon) || true
+    naemon_wait_stop
+    echo
+    start
+}
+
+reload() {
+    log_daemon_msg "Reloading $prog: "
+    retval=0
+    pkill -HUP -u ${user} -f ${exec}
+    retval=$?
+    log_end_msg $retval
+}
+
+force_reload() {
+    restart
+}
+
+case "$1" in
+    start)
+        status $prog && exit 0
+        $1
+        ;;
+    stop)
+        status $prog || exit 0
+        naemon_wait_stop
+        ;;
+    restart)
+        $1
+        ;;
+    reload)
+        status $prog || exit 7
+        $1
+        ;;
+    force-reload)
+        force_reload
+        ;;
+    status)
+        status_of_proc "$exec" "$prog" && exit 0 || exit $?
+        ;;
+    condrestart|try-restart)
+        status $prog|| exit 0
+        restart
+        ;;
+    configtest|check|checkconfig)
+        if type runuser >/dev/null 2>&1; then
+          runuser -s /bin/bash - $user -c "$corelimit >/dev/null 2>&1 ; $exec -v $config"
+        else
+          /bin/su - -s /bin/sh $user -c "$corelimit >/dev/null 2>&1 ; $exec -v $config"
+        fi
+        retval=$?
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|status|restart|condrestart|try-restart|reload|force-reload|configtest}"
+        exit 3
+esac
+exit $?
