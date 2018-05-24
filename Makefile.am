@@ -1,6 +1,8 @@
 AM_CPPFLAGS += -I$(abs_srcdir)/src -DNAEMON_COMPILATION
 BUILT_SOURCES = src/naemon/wpres-phash.h src/naemon/buildopts.h
 
+.PHONY: ${BUILT_SOURCES}
+
 CONFIG_FILES = \
 	sample-config/naemon.cfg \
 	sample-config/resource.cfg \
