@@ -114,6 +114,7 @@ CFLAGS="%{mycflags}" LDFLAGS="$CFLAGS" %configure \
     --enable-event-broker \
     --with-pluginsdir="%{_libdir}/naemon/plugins" \
     --with-tempdir="%{_localstatedir}/cache/naemon" \
+    --with-checkresultdir="%{_localstatedir}/cache/naemon/checkresults" \
     --with-logdir="%{_localstatedir}/log/naemon" \
     --with-initdir="%{_initrddir}" \
     --with-logrotatedir="%{_sysconfdir}/logrotate.d" \
@@ -142,7 +143,7 @@ CFLAGS="%{mycflags}" LDFLAGS="$CFLAGS" %configure \
 %{__mkdir_p} -m 0755 %{buildroot}%{_sysconfdir}/naemon/conf.d
 %{__mkdir_p} -m 0755 %{buildroot}%{_sysconfdir}/naemon/module-conf.d
 %{__mkdir_p} -m 0755 %{buildroot}%{_localstatedir}/lib/naemon
-%{__mkdir_p} -m 2775 %{buildroot}%{_localstatedir}/lib/naemon/spool/checkresults
+%{__mkdir_p} -m 2775 %{buildroot}%{_localstatedir}/cache/naemon/checkresults
 %{__mkdir_p} -m 0755 %{buildroot}%{_localstatedir}/cache/naemon
 
 # Put the new RC sysconfig in place
@@ -299,9 +300,8 @@ exit 0
 %attr(0644,naemon,naemon) %config(noreplace) %{_sysconfdir}/naemon/naemon.cfg
 %attr(0640,naemon,naemon) %config(noreplace) %{_sysconfdir}/naemon/resource.cfg
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/sysconfig/naemon
-%attr(0755,naemon,naemon) %dir %{_localstatedir}/lib/naemon/spool
-%attr(2775,naemon,naemon) %dir %{_localstatedir}/lib/naemon/spool/checkresults
 %attr(2775,naemon,naemon) %dir %{_localstatedir}/cache/naemon
+%attr(2775,naemon,naemon) %dir %{_localstatedir}/cache/naemon/checkresults
 %attr(0755,naemon,naemon) %dir %{_localstatedir}/lib/naemon
 %attr(0755,naemon,naemon) %dir %{_localstatedir}/log/naemon
 %attr(0755,naemon,naemon) %dir %{_localstatedir}/log/naemon/archives

@@ -2,7 +2,7 @@
 
 # Create required folders and set correct permission before we start daemons
 touch /var/log/naemon/naemon.log
-mkdir -p /var/cache/naemon /var/lib/naemon/spool/checkresults /var/run/naemon /var/log/naemon/archives
+mkdir -p /var/cache/naemon /var/cache/naemon/checkresults /var/run/naemon /var/log/naemon/archives
 chown naemon:naemon \
         /etc/naemon/naemon.cfg \
         /etc/naemon/resource.cfg \
@@ -11,9 +11,9 @@ chown naemon:naemon \
         /var/log/naemon \
         /var/log/naemon/naemon.log \
         /var/log/naemon/archives \
-        /var/lib/naemon/spool/checkresults
+        /var/cache/naemon/checkresults
 chmod 0755 /var/cache/naemon
-chmod 2775 /var/lib/naemon/spool/checkresults
+chmod 2775 /var/cache/naemon/checkresults
 chmod 0664 /var/log/naemon/naemon.log
 chmod 0640 /etc/naemon/resource.cfg
 

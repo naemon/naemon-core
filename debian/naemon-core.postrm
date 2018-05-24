@@ -28,7 +28,7 @@ case "$1" in
                /var/lib/naemon/objects.precache \
                /var/lib/naemon/retention.dat \
                /var/lib/naemon/.local \
-               /var/lib/naemon/spool/checkresults \
+               /var/cache/naemon/checkresults \
                /var/lib/naemon/naemon.cmd
     ;;
     upgrade)
@@ -41,12 +41,11 @@ case "$1" in
                /var/lib/naemon/objects.precache \
                /var/lib/naemon/retention.dat \
                /var/lib/naemon/.local \
-               /var/lib/naemon/spool/checkresults \
+               /var/cache/naemon/checkresults \
                /var/lib/naemon/naemon.cmd
         rm -rf /etc/naemon/conf.d
         rm -rf /etc/naemon/module-conf.d
         rmdir /var/cache/naemon 2>/dev/null || :
-        rmdir /var/lib/naemon/spool 2>/dev/null || :
         rmdir /var/lib/naemon 2>/dev/null || :
     ;;
 
