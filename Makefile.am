@@ -31,14 +31,14 @@ EXTRA_DIST += naemon.rpmlintrc
 EXTRA_DIST += $(CONFIG_FILES:.cfg=.cfg.in)
 noinst_DATA = $(CONFIG_FILES)
 
-src/naemon/wpres-phash.h: src/naemon/wpres.gperf
+src/naemon/wpres-phash.h: src/naemon/wpres.gperf Makefile
 	$(AM_V_GEN) $(GPERF) --switch=1 --struct-type \
 		--hash-function-name=wpres_key_phash \
 		--lookup-function-name=wpres_get_key \
 		--language=ANSI-C \
 	$< > $@
 
-src/naemon/buildopts.h: src/naemon/buildopts.h.in
+src/naemon/buildopts.h: src/naemon/buildopts.h.in Makefile
 	sed -e 's,@@NAEMON_SYSCONFDIR@@,$(pkgconfdir),' \
 	 -e 's,@@NAEMON_LOCALSTATEDIR@@,$(localstatedir),' \
 	 -e 's,@@NAEMON_LOGDIR@@,$(logdir),' \
