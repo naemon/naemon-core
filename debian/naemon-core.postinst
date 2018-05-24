@@ -1,0 +1,50 @@
+#!/bin/sh -e
+
+# Create required folders and set correct permission before we start daemons
+touch /var/log/naemon/naemon.log
+mkdir -p /var/cache/naemon /var/lib/naemon/spool/checkresults /var/run/naemon /var/log/naemon/archives
+chown naemon:naemon \
+        /etc/naemon/naemon.cfg \
+        /etc/naemon/resource.cfg \
+        /var/cache/naemon \
+        /var/run/naemon \
+        /var/log/naemon \
+        /var/log/naemon/naemon.log \
+        /var/log/naemon/archives \
+        /var/lib/naemon/spool/checkresults
+chmod 0755 /var/cache/naemon
+chmod 2775 /var/lib/naemon/spool/checkresults
+chmod 0664 /var/log/naemon/naemon.log
+chmod 0640 /etc/naemon/resource.cfg
+
+# install example conf.d only on first installation
+if [ ! -d /etc/naemon/conf.d/templates ]; then
+    mkdir -p /etc/naemon/conf.d
+    cp -rp /usr/share/naemon/examples/conf.d/* /etc/naemon/conf.d/
+    chown naemon:naemon \
+        /etc/naemon/conf.d \
+        /etc/naemon/conf.d/*.cfg \
+        /etc/naemon/conf.d/templates \
+        /etc/naemon/conf.d/templates/*.cfg
+    chmod 0664 /etc/naemon/conf.d/*.cfg /etc/naemon/conf.d/templates/*.cfg
+    chmod 2775 /etc/naemon/conf.d /etc/naemon/conf.d/templates
+fi
+
+if [ ! -d /etc/naemon/module-conf.d ]; then
+    mkdir -p /etc/naemon/module-conf.d
+    chown naemon:naemon /etc/naemon/module-conf.d
+fi
+
+#if we stop naemon in prerm we should also start it here..
+if [ -x "/etc/init.d/naemon" ]; then
+    if ! /etc/init.d/naemon status >/dev/null; then
+
+        if [ -x "`which invoke-rc.d 2>/dev/null`" ]; then
+            invoke-rc.d naemon start || true
+        else
+            /etc/init.d/naemon start || true
+        fi
+    fi
+fi
+
+#DEBHELPER#
