@@ -75,12 +75,12 @@ END_TEST
 START_TEST(main_include)
 {
 	int res;
-	char *file_cfg = nspath_normalize(TESTDIR "includes/a_file.cfg");
-	char *dir_cfg = nspath_normalize(TESTDIR "includes/a_dir");
+	char *file_cfg = nspath_normalize(TESTDIR "inc/a_file.cfg");
+	char *dir_cfg = nspath_normalize(TESTDIR "inc/a_dir");
 	objcfg_files = NULL;
 	objcfg_dirs = NULL;
-	config_file_dir = nspath_absolute_dirname(TESTDIR "includes/naemon.cfg", NULL);
-	res = read_main_config_file(TESTDIR "includes/naemon.cfg");
+	config_file_dir = nspath_absolute_dirname(TESTDIR "inc/naemon.cfg", NULL);
+	res = read_main_config_file(TESTDIR "inc/naemon.cfg");
 	ck_assert_int_eq(OK, res);
 	ck_assert_int_eq(1448, event_handler_timeout);
 	// leave files without .cfg suffix alone:

@@ -40,7 +40,7 @@ distclean-local:
 CLEANFILES += t-tap/smallconfig/naemon.log
 EXTRA_DIST += t-tap/smallconfig/minimal.cfg t-tap/smallconfig/naemon.cfg \
 	t-tap/smallconfig/resource.cfg t-tap/smallconfig/retention.dat
-EXTRA_DIST += tests/configs/recursive tests/configs/services tests/configs/includes
+EXTRA_DIST += tests/configs/recursive tests/configs/services tests/configs/inc
 EXTRA_DIST += $(dist_check_SCRIPTS)
 EXTRA_DIST += t/etc/* t/var/*
 TESTS_ENVIRONMENT = \
