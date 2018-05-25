@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <fcntl.h>
+#include <glib.h>
 #ifdef HAVE_SYS_MMAN_H
 # include <sys/mman.h>
 #endif
@@ -562,4 +563,8 @@ void get_time_breakdown(unsigned long raw_time, int *days, int *hours,
 	*hours = temp_hours;
 	*minutes = temp_minutes;
 	*seconds = temp_seconds;
+}
+
+gint my_strsorter(gconstpointer a, gconstpointer b, gpointer data) {
+ return(g_strcmp0(a, b));
 }

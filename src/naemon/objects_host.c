@@ -69,8 +69,8 @@ host *create_host(const char *name)
 	new_host = nm_calloc(1, sizeof(*new_host));
 
 	new_host->name = new_host->display_name = new_host->alias = new_host->address = nm_strdup(name);
-	new_host->child_hosts = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	new_host->parent_hosts = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
+	new_host->child_hosts = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	new_host->parent_hosts = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
 	new_host->check_type = CHECK_TYPE_ACTIVE;
 	new_host->state_type = HARD_STATE;
 	new_host->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
