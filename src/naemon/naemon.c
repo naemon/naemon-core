@@ -222,7 +222,7 @@ int main(int argc, char **argv)
 	 * other domains (such as if we did g_message(...) ourselves from inside
 	 * Naemon) do not currently go to this handler.
 	 **/
-	g_log_set_handler("GLib", G_LOG_LEVEL_MASK | G_LOG_FLAG_FATAL |
+	nm_g_log_handler_id = g_log_set_handler("GLib", G_LOG_LEVEL_MASK | G_LOG_FLAG_FATAL |
 			G_LOG_FLAG_RECURSION, nm_g_log_handler, NULL);
 	mac = get_global_macros();
 

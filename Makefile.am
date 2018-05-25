@@ -1,6 +1,8 @@
 AM_CPPFLAGS += -I$(abs_srcdir)/src -DNAEMON_COMPILATION
 BUILT_SOURCES = src/naemon/wpres-phash.h src/naemon/buildopts.h
 
+.PHONY: ${BUILT_SOURCES}
+
 CONFIG_FILES = \
 	sample-config/naemon.cfg \
 	sample-config/resource.cfg \
@@ -19,6 +21,15 @@ CONFIG_FILES = \
 EXTRA_DIST = src/naemon/buildopts.h.in
 EXTRA_DIST += contrib naemon-uninstalled.pc.in naemon.pc.in
 EXTRA_DIST += src/naemon/wpres-phash.h
+EXTRA_DIST += debian
+EXTRA_DIST += naemon-core.spec
+EXTRA_DIST += sample-config/naemon.sysconfig
+EXTRA_DIST += naemon.tmpfiles.conf
+EXTRA_DIST += README.md
+EXTRA_DIST += LEGAL
+EXTRA_DIST += THANKS
+EXTRA_DIST += UPGRADING
+EXTRA_DIST += naemon.rpmlintrc
 EXTRA_DIST += $(CONFIG_FILES:.cfg=.cfg.in)
 noinst_DATA = $(CONFIG_FILES)
 
@@ -181,6 +192,7 @@ install-exec-hook:
 	$(mkinstalldirs) $(DESTDIR)$(logdir)
 	$(mkinstalldirs) $(DESTDIR)$(logdir)/archives
 	$(mkinstalldirs) $(DESTDIR)$(libdir)
+	$(mkinstalldirs) $(DESTDIR)$(pkgincludedir)
 	[ -z $(logrotatedir) ] || $(install_sh_DATA) naemon.logrotate.el7 $(DESTDIR)$(logrotatedir)/naemon
 	[ -z $(initrddir) ]    || $(install_sh_SCRIPT) daemon-init      $(DESTDIR)$(initrddir)/naemon
 	if [ ! -d $(DESTDIR)$(pkgconfdir) ]; then \
@@ -230,3 +242,9 @@ cov-report:
 noinst_LTLIBRARIES = tap/src/libtap.la
 tap_src_libtap_la_SOURCES = tap/src/tap.c tap/src/tap.h
 tap_src_libtap_la_CFLAGS = $(CFLAGS) -Wno-error
+
+rpm: dist
+	rpmbuild -tb naemon-core-${VERSION}.tar.gz
+
+deb:
+	debuild -i -us -uc -b

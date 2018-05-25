@@ -71,7 +71,7 @@ void teardown (void) {
 START_TEST(retention_data_for_hosts_long_output)
 {
 
-	const char * long_output = "This is a long \n plugin output \n of some sort \n and such \n";
+	const char * long_output = g_strescape("This is a long \n plugin output \n of some sort \n and such \n", "");
 
 	hst->long_plugin_output = strdup(long_output);
 
@@ -89,7 +89,7 @@ END_TEST
 START_TEST(retention_data_for_services_long_output)
 {
 
-	const char * long_output = "This is a long \n plugin output \n of some sort \n and such \n";
+	const char * long_output = g_strescape("This is a long \n plugin output \n of some sort \n and such \n", "");
 
 	svc->long_plugin_output = strdup(long_output);
 
