@@ -307,6 +307,15 @@ log_passive_checks=1
 max_concurrent_checks=0
 
 
+# CHECK RESULT PATH
+# This is directory where Naemon reads check results of host and
+# service checks to further process them.
+#
+# Note: Naemon does not require this folder internally but it still
+# can be used to pass check results to Naemon.
+
+check_result_path=@CHECKRESULTDIR@
+
 
 # CACHED HOST CHECK HORIZON
 # This option determines the maximum amount of time (in seconds)
