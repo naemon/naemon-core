@@ -14,6 +14,7 @@ static FILE *log_fp;
 
 int log_initial_states = DEFAULT_LOG_INITIAL_STATES;
 int log_current_states = DEFAULT_LOG_CURRENT_STATES;
+guint nm_g_log_handler_id = 0;
 
 /******************************************************************/
 /************************ LOGGING FUNCTIONS ***********************/
@@ -86,6 +87,9 @@ static int write_to_log(char *buffer, unsigned long data_type, time_t *timestamp
 	/* make sure we can log this type of entry */
 	if (!(data_type & logging_options))
 		return OK;
+
+	if (log_file == NULL)
+		return ERROR;
 
 	fp = open_log_file();
 	if (fp == NULL)

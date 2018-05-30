@@ -1,0 +1,53 @@
+naemon-core (1.0.6) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Naemon Development Team <naemon-dev@monitoring-lists.org>  Mon, 23 Jan 2017 16:50:07 +0100
+
+naemon (1.0.5) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Naemon Development Team <naemon-dev@monitoring-lists.org>  Tue, 21 Jun 2016 13:41:35 +0200
+
+naemon (1.0.4) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Naemon Development Team <naemon-dev@monitoring-lists.org>  Fri, 20 May 2016 14:43:40 +0200
+
+naemon (1.0.3) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Naemon Development Team <naemon-dev@monitoring-lists.org>  Sun, 29 Mar 2015 23:37:07 +0200
+
+naemon (1.0.2) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Naemon Development Team <naemon-dev@monitoring-lists.org>  Sat, 28 Mar 2015 18:25:02 +0100
+
+naemon (1.0.0) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Naemon Development Team <naemon-dev@monitoring-lists.org>  Thu, 12 Feb 2015 21:53:00 +0100
+
+naemon (0.9.1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Naemon Development Team <naemon-dev@monitoring-lists.org>  Thu, 08 Jan 2015 14:17:12 +0100
+
+naemon (0.8.0) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Naemon Development Team <naemon-dev@monitoring-lists.org>  Thu, 13 Feb 2014 00:07:32 +0100
+
+naemon (0.0.1) UNRELEASED; urgency=low
+
+  * Initial release.
+
+ -- Sven Nierlein <sven@consol.de>  Fri, 22 Nov 2013 19:57:52 +0100

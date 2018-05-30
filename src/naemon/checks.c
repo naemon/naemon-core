@@ -186,8 +186,13 @@ int parse_check_output(char *buf, char **short_output, char **long_output, char 
 	struct check_output *check_output = nm_malloc(sizeof(struct check_output));
 	check_output = parse_output(buf, check_output);
 	*short_output = check_output->short_output;
-	*long_output = check_output->long_output;
 	*perf_data = check_output->perf_data;
+	if(escape_newlines_please == TRUE && check_output->long_output != NULL) {
+		*long_output = g_strescape(check_output->long_output, "\"");
+		free(check_output->long_output);
+	} else {
+		*long_output = check_output->long_output;
+	}
 	free(check_output);
 	strip(*short_output);
 	strip(*perf_data);

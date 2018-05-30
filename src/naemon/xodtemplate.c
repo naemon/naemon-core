@@ -203,6 +203,7 @@ static void xodtemplate_free_xobject_trees(void)
 	for (x = 0; x < NUM_OBJECT_TYPES; x++) {
 		if (xobject_tree[x] != NULL) {
 			g_tree_unref(xobject_tree[x]);
+			xobject_tree[x] = NULL;
 		}
 	}
 }
@@ -215,6 +216,7 @@ static void xodtemplate_free_template_trees(void)
 	for (x = 0; x < NUM_OBJECT_TYPES; x++) {
 		if (xobject_template_tree[x] != NULL) {
 			g_tree_unref(xobject_template_tree[x]);
+			xobject_template_tree[x] = NULL;
 		}
 	}
 }
@@ -461,6 +463,7 @@ static void xodtemplate_free_memory(void)
 
 	/* free trees */
 	xodtemplate_free_xobject_trees();
+	xodtemplate_free_template_trees();
 }
 
 
@@ -664,29 +667,29 @@ static int xodtemplate_init_trees(void)
 		xobject_tree[x] = NULL;
 	}
 
-	xobject_template_tree[OBJTYPE_HOST] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_SERVICE] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_COMMAND] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_TIMEPERIOD] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_CONTACT] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_CONTACTGROUP] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_HOSTGROUP] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_SERVICEGROUP] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_HOSTDEPENDENCY] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_SERVICEDEPENDENCY] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_HOSTESCALATION] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_SERVICEESCALATION] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_HOSTEXTINFO] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_template_tree[OBJTYPE_SERVICEEXTINFO] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
+	xobject_template_tree[OBJTYPE_HOST] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_template_tree[OBJTYPE_SERVICE] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_template_tree[OBJTYPE_COMMAND] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_template_tree[OBJTYPE_TIMEPERIOD] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_template_tree[OBJTYPE_CONTACT] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_template_tree[OBJTYPE_CONTACTGROUP] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_template_tree[OBJTYPE_HOSTGROUP] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_template_tree[OBJTYPE_SERVICEGROUP] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_template_tree[OBJTYPE_HOSTDEPENDENCY] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_template_tree[OBJTYPE_SERVICEDEPENDENCY] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_template_tree[OBJTYPE_HOSTESCALATION] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_template_tree[OBJTYPE_SERVICEESCALATION] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_template_tree[OBJTYPE_HOSTEXTINFO] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_template_tree[OBJTYPE_SERVICEEXTINFO] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
 
-	xobject_tree[OBJTYPE_HOST] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_tree[OBJTYPE_SERVICE] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_tree[OBJTYPE_COMMAND] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_tree[OBJTYPE_TIMEPERIOD] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_tree[OBJTYPE_CONTACT] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_tree[OBJTYPE_CONTACTGROUP] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_tree[OBJTYPE_HOSTGROUP] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	xobject_tree[OBJTYPE_SERVICEGROUP] = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
+	xobject_tree[OBJTYPE_HOST] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_tree[OBJTYPE_SERVICE] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_tree[OBJTYPE_COMMAND] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_tree[OBJTYPE_TIMEPERIOD] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_tree[OBJTYPE_CONTACT] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_tree[OBJTYPE_CONTACTGROUP] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_tree[OBJTYPE_HOSTGROUP] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	xobject_tree[OBJTYPE_SERVICEGROUP] = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
 	/*
 	 * host and service extinfo, dependencies, and escalations don't
 	 * need to be sorted, so we avoid creating trees for them.

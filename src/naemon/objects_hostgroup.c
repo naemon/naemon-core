@@ -58,7 +58,7 @@ hostgroup *create_hostgroup(const char *name, const char *alias, const char *not
 	new_hostgroup->notes = notes ? nm_strdup(notes) : NULL;
 	new_hostgroup->notes_url = notes_url ? nm_strdup(notes_url) : NULL;
 	new_hostgroup->action_url = action_url ? nm_strdup(action_url) : NULL;
-	new_hostgroup->members = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
+	new_hostgroup->members = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
 
 	return new_hostgroup;
 }

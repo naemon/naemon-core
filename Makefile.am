@@ -19,17 +19,26 @@ CONFIG_FILES = \
 EXTRA_DIST = src/naemon/buildopts.h.in
 EXTRA_DIST += contrib naemon-uninstalled.pc.in naemon.pc.in
 EXTRA_DIST += src/naemon/wpres-phash.h
+EXTRA_DIST += debian
+EXTRA_DIST += naemon-core.spec
+EXTRA_DIST += sample-config/naemon.sysconfig
+EXTRA_DIST += naemon.tmpfiles.conf
+EXTRA_DIST += README.md
+EXTRA_DIST += LEGAL
+EXTRA_DIST += THANKS
+EXTRA_DIST += UPGRADING
+EXTRA_DIST += naemon.rpmlintrc
 EXTRA_DIST += $(CONFIG_FILES:.cfg=.cfg.in)
 noinst_DATA = $(CONFIG_FILES)
 
-src/naemon/wpres-phash.h: src/naemon/wpres.gperf
+src/naemon/wpres-phash.h: src/naemon/wpres.gperf Makefile
 	$(AM_V_GEN) $(GPERF) --switch=1 --struct-type \
 		--hash-function-name=wpres_key_phash \
 		--lookup-function-name=wpres_get_key \
 		--language=ANSI-C \
 	$< > $@
 
-src/naemon/buildopts.h: src/naemon/buildopts.h.in
+src/naemon/buildopts.h: src/naemon/buildopts.h.in Makefile
 	sed -e 's,@@NAEMON_SYSCONFDIR@@,$(pkgconfdir),' \
 	 -e 's,@@NAEMON_LOCALSTATEDIR@@,$(localstatedir),' \
 	 -e 's,@@NAEMON_LOGDIR@@,$(logdir),' \
@@ -181,6 +190,7 @@ install-exec-hook:
 	$(mkinstalldirs) $(DESTDIR)$(logdir)
 	$(mkinstalldirs) $(DESTDIR)$(logdir)/archives
 	$(mkinstalldirs) $(DESTDIR)$(libdir)
+	$(mkinstalldirs) $(DESTDIR)$(pkgincludedir)
 	[ -z $(logrotatedir) ] || $(install_sh_DATA) naemon.logrotate.el7 $(DESTDIR)$(logrotatedir)/naemon
 	[ -z $(initrddir) ]    || $(install_sh_SCRIPT) daemon-init      $(DESTDIR)$(initrddir)/naemon
 	if [ ! -d $(DESTDIR)$(pkgconfdir) ]; then \
@@ -230,3 +240,9 @@ cov-report:
 noinst_LTLIBRARIES = tap/src/libtap.la
 tap_src_libtap_la_SOURCES = tap/src/tap.c tap/src/tap.h
 tap_src_libtap_la_CFLAGS = $(CFLAGS) -Wno-error
+
+rpm: dist
+	rpmbuild -tb naemon-core-${VERSION}.tar.gz
+
+deb:
+	debuild -i -us -uc -b
