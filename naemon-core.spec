@@ -314,7 +314,6 @@ exit 0
 %files -n libnaemon
 %attr(0755,root,root) %dir %{_libdir}/naemon
 %attr(-,root,root) %{_libdir}/naemon/libnaemon.so*
-%{_mandir}/man8/naemonstats.8*
 
 %files dbg
 %attr(0755,root,root) %{_bindir}/naemon-dbg
