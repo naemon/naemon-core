@@ -39,7 +39,7 @@ static struct check_engine nagios_spool_check_engine = {
 
 static const char *spool_file_source_name(void *source)
 {
-	return "check result spool dir";
+	return source ? (const char *)source : "check result spool dir";
 }
 
 
