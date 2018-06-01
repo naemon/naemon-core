@@ -147,8 +147,10 @@ CFLAGS="%{mycflags}" LDFLAGS="$CFLAGS" %configure \
 %{__mkdir_p} -m 0755 %{buildroot}%{_localstatedir}/cache/naemon
 
 # Put the new RC sysconfig in place
+%if 0%{?suse_version} < 1315
 %{__install} -d -m 0755 %{buildroot}/%{_sysconfdir}/sysconfig/
 %{__install} -m 0644 sample-config/naemon.sysconfig %{buildroot}/%{_sysconfdir}/sysconfig/naemon
+%endif
 
 # Make sure the default run directory exists
 mkdir -p -m 0755 %{buildroot}%{_localstatedir}/run/naemon
@@ -299,7 +301,9 @@ exit 0
 %attr(0755,naemon,naemon) %dir %{_sysconfdir}/naemon/module-conf.d
 %attr(0644,naemon,naemon) %config(noreplace) %{_sysconfdir}/naemon/naemon.cfg
 %attr(0640,naemon,naemon) %config(noreplace) %{_sysconfdir}/naemon/resource.cfg
+%if 0%{?suse_version} < 1315
 %attr(0644,root,root) %config(noreplace) %{_sysconfdir}/sysconfig/naemon
+%endif
 %attr(2775,naemon,naemon) %dir %{_localstatedir}/cache/naemon
 %attr(2775,naemon,naemon) %dir %{_localstatedir}/cache/naemon/checkresults
 %attr(0755,naemon,naemon) %dir %{_localstatedir}/lib/naemon

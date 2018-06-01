@@ -9,6 +9,7 @@ DESTDIR=$(CURDIR)/debian/tmp/
 WITH_SYSTEMD=$(shell if [ -x "/bin/systemctl" ]; then echo "--with systemd"; else echo ""; fi )
 
 override_dh_auto_configure:
+	test -f configure || ./autogen.sh
 	dh_auto_configure -- --prefix=/usr \
 				--bindir="/usr/bin" \
 				--datadir="/usr/share/naemon" \
