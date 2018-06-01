@@ -1,3 +1,49 @@
+1.0.7 - Jun 01 2018
+===================
+Features:
+  * Allow circular dependencies in Naemons host graph (experimental)
+
+Changed:
+  * Do not verify config when starting daemon
+  * first_notification_delay starts on last hard change instead of last ok
+
+Bugfixes:
+  * Fix various memory leaks (#200, #189)
+  * Fix newline escaping for check results (#153)
+  * Fix segfault when there is no eventbroker
+  * Fix segfault on invalid host_notification_commands (#213)
+  * Fix external command CHANGE_SVC_MODATTR (#174)
+  * Fix compilation with GCC 7 & 8 (#184, #228, #229)
+  * Fix notification is sent even if a service is in a schedule flexible downtime
+  * Fix triggered scheduled downtime is removed
+  * Fix downtime comment ids increment on reload
+  * Output an error exit code if daemonization fails instead OK
+  * Restart Naemon on SIGHUP instead of killing (#192)
+  * Fix Naemon killing wrong processes if PID wrap-around is too short (#211)
+  * Reload: fix defunct processes after reload (#150)
+  * Fix quoting in systemd startpre command (#204)
+  * Make systemd startup cleaner
+  * Fix logrotate on EL7
+  * Do not use errno set by function calls in a library
+  * Documentation fix for Sticky Acknowledgments
+  * Make nm_g_log_handler_id extern. Fixes issue when including logging.h in external modules
+
+Removed:
+  * shadownaemon
+  * distributed-monitoring from the contrib/eventhandlers folder
+
+Other:
+  * Decouple core, livestatus and thruk
+  * Add more timing points
+  * Undeprecate check_result_path
+  * Remove NICE from systemd
+  * Format service timeout print to use the same format as host timeouts (#168)
+  * Lower wproc log level to debug_info
+  * Do not log timeouts 3 times for every timeout
+  * Add log message that explains why a service changes directly hard down state when the host is down
+  * make buildopts.h depend on Makefile
+  * version: append date to daily git builds
+
 1.0.6 - Jan 23 2017
 ===================
 Bugfixes:
