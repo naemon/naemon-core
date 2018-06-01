@@ -9,7 +9,7 @@
 
 Summary: Open Source Host, Service And Network Monitoring Program
 Name: naemon-core
-Version: 1.0.6
+Version: 1.0.7
 Release: 0
 License: GPLv2
 Group: Applications/System
@@ -147,7 +147,9 @@ CFLAGS="%{mycflags}" LDFLAGS="$CFLAGS" %configure \
 %{__mkdir_p} -m 0755 %{buildroot}%{_localstatedir}/cache/naemon
 
 # Put the new RC sysconfig in place
-%if 0%{?suse_version} < 1315
+%if 0%{?suse_version} >= 1315
+sed -i daemon-systemd -e '/EnvironmentFile/d'
+%else
 %{__install} -d -m 0755 %{buildroot}/%{_sysconfdir}/sysconfig/
 %{__install} -m 0644 sample-config/naemon.sysconfig %{buildroot}/%{_sysconfdir}/sysconfig/naemon
 %endif
