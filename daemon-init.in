@@ -32,6 +32,10 @@ if [ -e /etc/SuSE-release ]; then
   is_suse="yes"
 fi
 
+if [ -e /etc/default/naemon ]; then
+  . /etc/default/naemon
+fi
+
 prefix="@prefix@"
 exec_prefix="@exec_prefix@"
 localstatedir="@localstatedir@"
