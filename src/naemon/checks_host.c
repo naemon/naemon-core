@@ -383,7 +383,7 @@ int update_host_state_post_check(struct host *hst, struct check_result *cr)
 	nm_free(hst->perf_data);
 
 	/* parse check output to get: (1) short output, (2) long output, (3) perf data */
-	parse_check_output(cr->output, &hst->plugin_output, &hst->long_plugin_output, &hst->perf_data, TRUE, FALSE);
+	parse_check_output(cr->output, &hst->plugin_output, &hst->long_plugin_output, &hst->perf_data, TRUE);
 
 	/* make sure we have some data */
 	if (hst->plugin_output == NULL) {

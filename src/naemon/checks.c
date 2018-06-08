@@ -39,7 +39,7 @@ static struct check_engine nagios_spool_check_engine = {
 
 static const char *spool_file_source_name(void *source)
 {
-	return "check result spool dir";
+	return source ? (const char *)source : "check result spool dir";
 }
 
 
@@ -181,7 +181,7 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 }
 
 /* parse raw plugin output and return: short and long output, perf data */
-int parse_check_output(char *buf, char **short_output, char **long_output, char **perf_data, int escape_newlines_please, int newlines_are_escaped)
+int parse_check_output(char *buf, char **short_output, char **long_output, char **perf_data, int escape_newlines_please)
 {
 	struct check_output *check_output = nm_malloc(sizeof(struct check_output));
 	check_output = parse_output(buf, check_output);

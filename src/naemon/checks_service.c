@@ -466,7 +466,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	else {
 
 		/* parse check output to get: (1) short output, (2) long output, (3) perf data */
-		parse_check_output(queued_check_result->output, &temp_service->plugin_output, &temp_service->long_plugin_output, &temp_service->perf_data, TRUE, FALSE);
+		parse_check_output(queued_check_result->output, &temp_service->plugin_output, &temp_service->long_plugin_output, &temp_service->perf_data, TRUE);
 
 		/* make sure the plugin output isn't null */
 		if (temp_service->plugin_output == NULL)

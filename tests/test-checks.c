@@ -25,7 +25,7 @@ START_TEST(one_line_no_perfdata)
 {
 	full_output = "TEST OK - just one line of output, no perfdata";
 	output = strdup(full_output);
-	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
+	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE);
 	ck_assert_str_eq(short_output, full_output);
 	ck_assert(NULL == long_output);
 	ck_assert(NULL == perf_data);
@@ -37,7 +37,7 @@ START_TEST(one_line_with_perfdata)
 {
 	full_output = "TEST WARNING - a line of output and | some=perfdata;";
 	output = strdup(full_output);
-	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
+	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE);
 	ck_assert_str_eq("TEST WARNING - a line of output and", short_output);
 	ck_assert_str_eq("some=perfdata;", perf_data);
 	ck_assert(NULL == long_output);
@@ -49,7 +49,7 @@ START_TEST(multiple_line_output_no_perfdata)
 	full_output = "TEST WARNING - first a line of output\n"
 				  "and then some more output on another line";
 	output = strdup(full_output);
-	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
+	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE);
 	ck_assert_str_eq("TEST WARNING - first a line of output", short_output);
 	ck_assert_str_eq("and then some more output on another line", long_output);
 	ck_assert(NULL == perf_data);
@@ -64,7 +64,7 @@ START_TEST(multiple_line_output_and_multiple_line_perfdata)
 		"which suddenly becomes | more=perfdata;\n"
 		"on=several;lines;";
 	output = strdup(full_output);
-	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
+	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE);
 	ck_assert_str_eq("TEST OK - a line of output and", short_output);
 	ck_assert_str_eq("Here's some additional\nLONG output\nwhich suddenly becomes ", long_output );
 	ck_assert_str_eq("some=perfdata; more=perfdata; on=several;lines;", perf_data);
@@ -77,7 +77,7 @@ START_TEST(multiple_line_output_and_perfdata_but_not_on_first_line)
 	full_output = "TEST CRITICAL - Oh my\n"
 				  "Here's a second line of output and | some=perfdata;";
 	output = strdup(full_output);
-	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
+	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE);
 	ck_assert_str_eq("TEST CRITICAL - Oh my", short_output);
 	ck_assert_str_eq("some=perfdata;", perf_data);
 	ck_assert_str_eq("Here's a second line of output and ", long_output);
@@ -88,7 +88,7 @@ START_TEST(one_line_output_and_perfdata_but_not_on_first_line)
 {
 	full_output = "TEST CRITICAL - Oh my\n| some=perfdata;";
 	output = strdup(full_output);
-	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
+	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE);
 	ck_assert_str_eq("TEST CRITICAL - Oh my", short_output);
 	ck_assert(NULL == long_output);
 	ck_assert_str_eq("some=perfdata;", perf_data);
@@ -99,7 +99,7 @@ START_TEST(perfdata_only)
 {
 	full_output = "| some=perfdata;";
 	output = strdup(full_output);
-	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
+	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE);
 	ck_assert_str_eq("", short_output);
 	ck_assert(NULL == long_output);
 	ck_assert_str_eq("some=perfdata;", perf_data);
@@ -112,7 +112,7 @@ START_TEST(multiline_perfdata_only)
 	full_output = "| some=perfdata;\n"
 				  "|and=more;perfdata;";
 	output = strdup(full_output);
-	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
+	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE);
 	ck_assert_str_eq("", short_output);
 	ck_assert(NULL == long_output);
 	ck_assert_str_eq("some=perfdata; and=more;perfdata;", perf_data);
@@ -122,7 +122,7 @@ END_TEST
 START_TEST(no_plugin_output_at_all)
 {
 	output = NULL;
-	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
+	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE);
 	ck_assert(NULL == short_output);
 	ck_assert(NULL == long_output);
 	ck_assert(NULL == perf_data);
@@ -133,7 +133,7 @@ END_TEST
 START_TEST(empty_plugin_output)
 {
 	output = strdup("");
-	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
+	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE);
 	ck_assert(NULL == short_output);
 	ck_assert(NULL == long_output);
 	ck_assert(NULL == perf_data);
@@ -144,7 +144,7 @@ START_TEST(no_plugin_output_on_first_line)
 {
 	full_output = "\n|some=perfdata;";
 	output = strdup(full_output);
-	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
+	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE);
 	ck_assert_str_eq("", short_output);
 	ck_assert(NULL == long_output);
 	ck_assert_str_eq("some=perfdata;", perf_data);
@@ -156,7 +156,7 @@ START_TEST(newline_only)
 {
 	full_output = "\n";
 	output = strdup(full_output);
-	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
+	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE);
 	ck_assert_str_eq("", short_output);
 	ck_assert(NULL == long_output);
 	ck_assert(NULL == perf_data);
@@ -170,7 +170,7 @@ START_TEST(multiple_line_output_newline_escaping)
 				  "Here's a second line of output and\n"
 				  "one \"more\"\n";
 	output = strdup(full_output);
-	parse_check_output(output, &short_output, &long_output, &perf_data, TRUE, FALSE);
+	parse_check_output(output, &short_output, &long_output, &perf_data, TRUE);
 	ck_assert_str_eq("TEST OK - ...", short_output);
 	ck_assert_str_eq("Here's a second line of output and\\none \"more\"\\n", long_output);
 }
