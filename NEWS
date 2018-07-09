@@ -1,3 +1,15 @@
+1.0.8 - Jul 16 2018
+===================
+Features:
+  * source defaults file if exists (#241)
+
+Changed:
+  * _nothing_
+
+Bugfixes:
+  * Fix naemon-tools conflict (#242)
+  * Fix reload command on el6 (#239)
+
 1.0.7 - Jun 01 2018
 ===================
 Features:
