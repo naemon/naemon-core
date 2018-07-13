@@ -49,7 +49,7 @@ void checks_init_services(void)
 {
 	service *temp_service = NULL;
 
-	log_debug_info(DEBUGL_EVENTS, 2, "Scheduling service checks...");
+	log_debug_info(DEBUGL_EVENTS, 2, "Scheduling service checks...\n");
 
 	/* add scheduled service checks to event queue */
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {

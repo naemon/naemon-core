@@ -490,14 +490,14 @@ static int xpddefault_update_service_performance_data_file(nagios_macros *mac, s
 		return OK;
 
 	nm_asprintf(&raw_output, "%s\n", service_perfdata_file_template);
-	log_debug_info(DEBUGL_PERFDATA, 2, "Raw service performance data file output: %s", raw_output);
+	log_debug_info(DEBUGL_PERFDATA, 2, "Raw service performance data file output: %s\n", raw_output);
 
 	/* process any macros in the raw output */
 	process_macros_r(mac, raw_output, &processed_output, 0);
 	if (processed_output == NULL)
 		return ERROR;
 
-	log_debug_info(DEBUGL_PERFDATA, 2, "Processed service performance data file output: %s", processed_output);
+	log_debug_info(DEBUGL_PERFDATA, 2, "Processed service performance data file output: %s\n", processed_output);
 
 	nm_bufferqueue_push(service_perfdata_bq, processed_output, strlen(processed_output));
 	/* temporary failures are fine - if it's serious, we log before we run the processing event */
@@ -528,14 +528,14 @@ static int xpddefault_update_host_performance_data_file(nagios_macros *mac, host
 		return OK;
 
 	nm_asprintf(&raw_output, "%s\n", host_perfdata_file_template);
-	log_debug_info(DEBUGL_PERFDATA, 2, "Raw host performance file output: %s", raw_output);
+	log_debug_info(DEBUGL_PERFDATA, 2, "Raw host performance file output: %s\n", raw_output);
 
 	/* process any macros in the raw output */
 	process_macros_r(mac, raw_output, &processed_output, 0);
 	if (processed_output == NULL)
 		return ERROR;
 
-	log_debug_info(DEBUGL_PERFDATA, 2, "Processed host performance data file output: %s", processed_output);
+	log_debug_info(DEBUGL_PERFDATA, 2, "Processed host performance data file output: %s\n", processed_output);
 
 	nm_bufferqueue_push(host_perfdata_bq, processed_output, strlen(processed_output));
 	/* temporary failures are fine - if it's serious, we log before we run the processing event */
