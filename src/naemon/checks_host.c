@@ -51,7 +51,7 @@ void checks_init_hosts(void)
 
 	/******** SCHEDULE HOST CHECKS  ********/
 
-	log_debug_info(DEBUGL_EVENTS, 2, "Scheduling host checks...");
+	log_debug_info(DEBUGL_EVENTS, 2, "Scheduling host checks...\n");
 
 	/* add scheduled host checks to event queue */
 	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
@@ -155,7 +155,7 @@ static void handle_host_check_event(struct nm_event_execution_properties *evprop
 			/* Somethings wrong, reschedule for retry interval instead, if retry_interval is specified. */
 			if (hst->retry_interval != 0.0) {
 				schedule_next_host_check(hst, get_host_retry_interval_s(hst), CHECK_OPTION_NONE);
-				log_debug_info(DEBUGL_CHECKS, 1, "Rescheduled next host check for %s", ctime(&hst->next_check));
+				log_debug_info(DEBUGL_CHECKS, 1, "Rescheduled next host check for %s\n", ctime(&hst->next_check));
 			}
 
 			/* update the status log */

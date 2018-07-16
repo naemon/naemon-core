@@ -119,7 +119,7 @@ static struct wproc_list *get_wproc_list(const char *cmd)
 		wp_list = g_hash_table_lookup(specialized_workers, ++slash);
 	}
 	if (wp_list != NULL) {
-		log_debug_info(DEBUGL_CHECKS, 1, "Found specialized worker(s) for '%s'", (slash && *slash != '/') ? slash : cmd_name);
+		log_debug_info(DEBUGL_CHECKS, 1, "Found specialized worker(s) for '%s'\n", (slash && *slash != '/') ? slash : cmd_name);
 	}
 	if (cmd_name)
 		free(cmd_name);
@@ -504,7 +504,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 			         tv_delta_f(&wpres.start, &wpres.stop));
 		}
 		if (error_reason) {
-			log_debug_info(DEBUGL_IPC, DEBUGV_BASIC, "wproc: job %d from worker %s %s",
+			log_debug_info(DEBUGL_IPC, DEBUGV_BASIC, "wproc: job %d from worker %s %s\n",
 					job->id, wp->name, error_reason);
 			log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   command: %s\n", job->command);
 			log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   early_timeout=%d; exited_ok=%d; wait_status=%d; error_code=%d;\n",

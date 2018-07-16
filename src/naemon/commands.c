@@ -284,7 +284,7 @@ static int command_file_worker(int sd)
 			 * a bad thing because rotated logfiles then have overlapping timestamps
 			 * which breaks livestatus. So make this a debug log entry only.
 			 */
-			log_debug_info(DEBUGL_IPC, 1, "Command file worker: Naemon main process is dead (%m)");
+			log_debug_info(DEBUGL_IPC, 1, "Command file worker: Naemon main process is dead (%m)\n");
 			return EXIT_SUCCESS;
 		}
 

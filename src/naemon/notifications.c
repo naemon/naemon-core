@@ -132,7 +132,7 @@ static int update_notification_suppression_reason(enum NotificationSuppressionTy
 #define _log_nsr(S) if (enable_notification_suppression_reason_logging) { \
 	if (update_notification_suppression_reason(type, objid, reason)) { \
 		nm_log(log_level, "%s NOTIFICATION SUPPRESSED: %s;%s", type_name, objname, S); \
-	} else { log_debug_info(DEBUGL_NOTIFICATIONS, DEBUGV_BASIC, "%s NOTIFICATION SUPPRESSED: %s;%s", type_name, objname, S);}}
+	} else { log_debug_info(DEBUGL_NOTIFICATIONS, DEBUGV_BASIC, "%s NOTIFICATION SUPPRESSED: %s;%s\n", type_name, objname, S);}}
 void log_notification_suppression_reason(enum NotificationSuppressionReason reason,
 		enum NotificationSuppressionType type, void *primary_obj, void *secondary_obj, const char *extra_info)
 {
@@ -358,7 +358,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	time(&current_time);
 	gettimeofday(&start_time, NULL);
 
-	log_debug_info(DEBUGL_NOTIFICATIONS, 0, "** Service Notification Attempt ** Host: '%s', Service: '%s', Type: %s, Options: %d, Current State: %d, Last Notification: %s", svc->host_name, svc->description, notification_reason_name(type), options, svc->current_state, ctime(&svc->last_notification));
+	log_debug_info(DEBUGL_NOTIFICATIONS, 0, "** Service Notification Attempt ** Host: '%s', Service: '%s', Type: %s, Options: %d, Current State: %d, Last Notification: %s\n", svc->host_name, svc->description, notification_reason_name(type), options, svc->current_state, ctime(&svc->last_notification));
 
 
 	/* check the viability of sending out a service notification */
@@ -532,7 +532,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 				/* calculate the next acceptable re-notification time */
 				svc->next_notification = get_next_service_notification_time(svc, current_time);
 
-				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "%d contacts were notified.  Next possible notification time: %s", contacts_notified, ctime(&svc->next_notification));
+				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "%d contacts were notified.  Next possible notification time: %s\n", contacts_notified, ctime(&svc->next_notification));
 
 				/* update the last notification time for this service (this is needed for rescheduling later notifications) */
 				svc->last_notification = current_time;
@@ -547,7 +547,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 				/* adjust current notification number */
 				svc->current_notification_number--;
 
-				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "No contacts were notified.  Next possible notification time: %s", ctime(&svc->next_notification));
+				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "No contacts were notified.  Next possible notification time: %s\n", ctime(&svc->next_notification));
 			}
 		}
 
@@ -817,7 +817,7 @@ int check_service_notification_viability(service *svc, int type, int options)
 	/* don't notify if we haven't waited long enough since the last time (and the service is not marked as being volatile) */
 	if ((current_time < svc->next_notification) && svc->is_volatile == FALSE) {
 		LOG_SERVICE_NSR(NSR_RE_NOT_YET);
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Next valid notification time: %s", ctime(&svc->next_notification));
+		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Next valid notification time: %s\n", ctime(&svc->next_notification));
 		return ERROR;
 	}
 
@@ -1244,7 +1244,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 	time(&current_time);
 	gettimeofday(&start_time, NULL);
 
-	log_debug_info(DEBUGL_NOTIFICATIONS, 0, "** Host Notification Attempt ** Host: '%s', Type: %s, Options: %d, Current State: %d, Last Notification: %s", hst->name, notification_reason_name(type), options, hst->current_state, ctime(&hst->last_notification));
+	log_debug_info(DEBUGL_NOTIFICATIONS, 0, "** Host Notification Attempt ** Host: '%s', Type: %s, Options: %d, Current State: %d, Last Notification: %s\n", hst->name, notification_reason_name(type), options, hst->current_state, ctime(&hst->last_notification));
 
 	/* check viability of sending out a host notification */
 	if (check_host_notification_viability(hst, type, options) == ERROR) {
@@ -1423,7 +1423,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 				/* update notifications flags */
 				add_notified_on(hst, hst->current_state);
 
-				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "%d contacts were notified.  Next possible notification time: %s", contacts_notified, ctime(&hst->next_notification));
+				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "%d contacts were notified.  Next possible notification time: %s\n", contacts_notified, ctime(&hst->next_notification));
 			}
 
 			/* we didn't end up notifying anyone */
@@ -1432,7 +1432,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 				/* adjust current notification number */
 				hst->current_notification_number--;
 
-				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "No contacts were notified.  Next possible notification time: %s", ctime(&hst->next_notification));
+				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "No contacts were notified.  Next possible notification time: %s\n", ctime(&hst->next_notification));
 			}
 		}
 
@@ -1679,7 +1679,7 @@ int check_host_notification_viability(host *hst, int type, int options)
 	/* check if its time to re-notify the contacts about the host... */
 	if (current_time < hst->next_notification) {
 		LOG_HOST_NSR(NSR_RE_NOT_YET);
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Next acceptable notification time: %s", ctime(&hst->next_notification));
+		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Next acceptable notification time: %s\n", ctime(&hst->next_notification));
 		return ERROR;
 	}
 
