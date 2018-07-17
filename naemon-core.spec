@@ -49,6 +49,7 @@ Requires(pre): shadow-utils
 %endif
 %endif
 Requires:  logrotate
+Requires:  libnaemon >= %{version}
 
 %description
 Naemon is an application, system and network monitoring application.
