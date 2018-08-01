@@ -16,6 +16,8 @@ Depends: adduser,
          lsb-base (>= 3.0-6),
          bsd-mailx | mailx | sendemail,
          ${misc:Depends}, ${perl:Depends}, ${shlibs:Depends}
+Replaces: naemon-tools
+Conflicts: naemon-tools
 Recommends: nagios-plugins
 Description: host/service/network monitoring and management system
  Naemon is a monitoring and management system for hosts, services and
