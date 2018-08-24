@@ -380,6 +380,272 @@ START_TEST(test_check_window)
 }
 END_TEST
 
+
+/*
+ * When a service is in HARD CRIT it should not schedule an on-demand host check
+ */
+START_TEST(ondemand_host_check_on_service_hard_crit)
+{
+	struct nm_event_execution_properties ep = {
+		.execution_type = EVENT_EXEC_NORMAL,
+		.event_type = EVENT_TYPE_TIMED,
+		.user_data = hst
+	};
+	struct nm_event_execution_properties ep2 = {
+		.execution_type = EVENT_EXEC_NORMAL,
+		.event_type = EVENT_TYPE_TIMED,
+		.user_data = svc
+	};
+	long actual_time_left;
+	time_t expected_time_left;
+	check_result cr, cr2;
+
+	hst->check_options = 0;
+	hst->checks_enabled = TRUE;
+	hst->check_freshness = TRUE;
+	hst->max_attempts = 3;
+	hst->check_interval = 5.0;
+	hst->retry_interval = 30.0;
+	hst->current_attempt = 3;
+
+	init_check_result(&cr);
+	cr.object_check_type = HOST_CHECK;
+	cr.check_type = CHECK_TYPE_ACTIVE;
+	cr.return_code = STATE_CRITICAL;
+	handle_host_check_event(&ep);
+	handle_async_host_check_result(hst, &cr);
+
+	svc->check_options = 0;
+	svc->checks_enabled = TRUE;
+	svc->check_freshness = TRUE;
+	svc->max_attempts = 3;
+	svc->check_interval = 5.0;
+	svc->retry_interval = 5.0;
+	svc->current_state = STATE_CRITICAL;
+	svc->last_hard_state = STATE_CRITICAL;
+	svc->state_type = HARD_STATE;
+	svc->current_attempt = 3;
+	svc->host_ptr = hst;
+
+	init_check_result(&cr2);
+	cr2.object_check_type = SERVICE_CHECK;
+	cr2.check_type = CHECK_TYPE_ACTIVE;
+	cr2.return_code = STATE_CRITICAL;
+	handle_service_check_event(&ep2);
+	handle_async_service_check_result(svc, &cr);
+
+	actual_time_left = get_timed_event_time_left_ms(hst->next_check_event);
+	expected_time_left = get_host_retry_interval_s(hst) * 1000;
+	assert_approximately_equal(expected_time_left, actual_time_left, APPROXIMATION_TOLERANCE_MS);
+}
+END_TEST
+
+/*
+ * When a service goes from OK to soft critical, a immediate on-demand host
+ * check should be scheduled.
+ */
+START_TEST(ondemand_host_check_on_service_first_soft_crit)
+{
+	struct nm_event_execution_properties ep = {
+		.execution_type = EVENT_EXEC_NORMAL,
+		.event_type = EVENT_TYPE_TIMED,
+		.user_data = svc
+	};
+	long actual_time_left;
+	time_t expected_time_left;
+	check_result cr;
+
+	hst->check_options = 0;
+	hst->checks_enabled = TRUE;
+	hst->check_freshness = TRUE;
+	hst->max_attempts = 3;
+	hst->check_interval = 5.0;
+	hst->retry_interval = 30.0;
+	hst->current_attempt = 1;
+	hst->current_state = STATE_OK;
+	hst->last_hard_state = STATE_OK;
+	hst->state_type = HARD_STATE;
+
+	svc->check_options = 0;
+	svc->checks_enabled = TRUE;
+	svc->check_freshness = TRUE;
+	svc->max_attempts = 3;
+	svc->check_interval = 5.0;
+	svc->retry_interval = 5.0;
+	svc->current_state = STATE_OK;
+	svc->last_hard_state = STATE_OK;
+	svc->state_type = HARD_STATE;
+	svc->current_attempt = 1;
+	svc->host_ptr = hst;
+
+	init_check_result(&cr);
+	cr.object_check_type = SERVICE_CHECK;
+	cr.check_type = CHECK_TYPE_ACTIVE;
+	cr.return_code = STATE_CRITICAL;
+	handle_service_check_event(&ep);
+	handle_async_service_check_result(svc, &cr);
+
+	actual_time_left = get_timed_event_time_left_ms(hst->next_check_event);
+	expected_time_left = 0;
+	assert_approximately_equal(expected_time_left, actual_time_left, APPROXIMATION_TOLERANCE_MS);
+}
+END_TEST
+
+/*
+ * When a service is in soft critical it should schedule an immediate on-demand
+ * hostcheck on service checks
+ */
+START_TEST(ondemand_host_check_on_service_second_soft_crit)
+{
+	struct nm_event_execution_properties ep = {
+		.execution_type = EVENT_EXEC_NORMAL,
+		.event_type = EVENT_TYPE_TIMED,
+		.user_data = svc
+	};
+	long actual_time_left;
+	time_t expected_time_left;
+	check_result cr;
+
+	hst->check_options = 0;
+	hst->checks_enabled = TRUE;
+	hst->check_freshness = TRUE;
+	hst->max_attempts = 3;
+	hst->check_interval = 5.0;
+	hst->retry_interval = 30.0;
+	hst->current_attempt = 1;
+	hst->current_state = STATE_CRITICAL;
+	hst->last_hard_state = STATE_OK;
+	hst->state_type = SOFT_STATE;
+
+	svc->check_options = 0;
+	svc->checks_enabled = TRUE;
+	svc->check_freshness = TRUE;
+	svc->max_attempts = 3;
+	svc->check_interval = 5.0;
+	svc->retry_interval = 5.0;
+	svc->current_state = STATE_CRITICAL;
+	svc->last_hard_state = STATE_OK;
+	svc->state_type = SOFT_STATE;
+	svc->current_attempt = 1;
+	svc->host_ptr = hst;
+
+	init_check_result(&cr);
+	cr.object_check_type = SERVICE_CHECK;
+	cr.check_type = CHECK_TYPE_ACTIVE;
+	cr.return_code = STATE_CRITICAL;
+	handle_service_check_event(&ep);
+	handle_async_service_check_result(svc, &cr);
+
+	actual_time_left = get_timed_event_time_left_ms(hst->next_check_event);
+	expected_time_left = 0;
+	assert_approximately_equal(expected_time_left, actual_time_left, APPROXIMATION_TOLERANCE_MS);
+}
+END_TEST
+
+/*
+ * When a service moves from soft critical to hard critical it should schedule
+ * an immediate on-demand hostcheck on service checks
+ */
+START_TEST(ondemand_host_check_on_service_soft_to_hard_crit)
+{
+	struct nm_event_execution_properties ep = {
+		.execution_type = EVENT_EXEC_NORMAL,
+		.event_type = EVENT_TYPE_TIMED,
+		.user_data = svc
+	};
+	long actual_time_left;
+	time_t expected_time_left;
+	check_result cr;
+
+	hst->check_options = 0;
+	hst->checks_enabled = TRUE;
+	hst->check_freshness = TRUE;
+	hst->max_attempts = 3;
+	hst->check_interval = 5.0;
+	hst->retry_interval = 30.0;
+	hst->current_attempt = 1;
+	hst->current_state = STATE_CRITICAL;
+	hst->last_hard_state = STATE_OK;
+	hst->state_type = SOFT_STATE;
+
+	svc->check_options = 0;
+	svc->checks_enabled = TRUE;
+	svc->check_freshness = TRUE;
+	svc->max_attempts = 3;
+	svc->check_interval = 5.0;
+	svc->retry_interval = 5.0;
+	svc->current_state = STATE_CRITICAL;
+	svc->last_hard_state = STATE_OK;
+	svc->state_type = SOFT_STATE;
+	svc->current_attempt = 2;
+	svc->host_ptr = hst;
+
+	init_check_result(&cr);
+	cr.object_check_type = SERVICE_CHECK;
+	cr.check_type = CHECK_TYPE_ACTIVE;
+	cr.return_code = STATE_CRITICAL;
+	handle_service_check_event(&ep);
+	handle_async_service_check_result(svc, &cr);
+
+	actual_time_left = get_timed_event_time_left_ms(hst->next_check_event);
+	expected_time_left = 0;
+	assert_approximately_equal(expected_time_left, actual_time_left, APPROXIMATION_TOLERANCE_MS);
+	ck_assert_int_eq(HARD_STATE, svc->state_type);
+}
+END_TEST
+
+/*
+ * When a service moves from soft OK to HARD OK it should schedule
+ * an immediate on-demand hostcheck on service checks
+ */
+START_TEST(ondemand_host_check_on_service_soft_ok_to_hard_ok)
+{
+	struct nm_event_execution_properties ep = {
+		.execution_type = EVENT_EXEC_NORMAL,
+		.event_type = EVENT_TYPE_TIMED,
+		.user_data = svc
+	};
+	long actual_time_left;
+	time_t expected_time_left;
+	check_result cr;
+
+	hst->check_options = 0;
+	hst->checks_enabled = TRUE;
+	hst->check_freshness = TRUE;
+	hst->max_attempts = 3;
+	hst->check_interval = 5.0;
+	hst->retry_interval = 30.0;
+	hst->current_attempt = 1;
+	hst->current_state = STATE_CRITICAL;
+	hst->last_hard_state = STATE_OK;
+	hst->state_type = SOFT_STATE;
+
+	svc->check_options = 0;
+	svc->checks_enabled = TRUE;
+	svc->check_freshness = TRUE;
+	svc->max_attempts = 3;
+	svc->check_interval = 5.0;
+	svc->retry_interval = 5.0;
+	svc->current_state = STATE_OK;
+	svc->last_hard_state = STATE_CRITICAL;
+	svc->state_type = SOFT_STATE;
+	svc->current_attempt = 2;
+	svc->host_ptr = hst;
+
+	init_check_result(&cr);
+	cr.object_check_type = SERVICE_CHECK;
+	cr.check_type = CHECK_TYPE_ACTIVE;
+	cr.return_code = STATE_OK;
+	handle_service_check_event(&ep);
+	handle_async_service_check_result(svc, &cr);
+
+	actual_time_left = get_timed_event_time_left_ms(hst->next_check_event);
+	expected_time_left = 0;
+	assert_approximately_equal(expected_time_left, actual_time_left, APPROXIMATION_TOLERANCE_MS);
+	ck_assert_int_eq(HARD_STATE, svc->state_type);
+}
+END_TEST
+
 Suite*
 check_scheduling_suite(void)
 {
@@ -387,6 +653,7 @@ check_scheduling_suite(void)
 	TCase *tc_intervals = tcase_create("Check & retry intervals");
 	TCase *tc_freshness_checking = tcase_create("Freshness checking");
 	TCase *tc_miscellaneous = tcase_create("Miscellaneous tests");
+	TCase *tc_ondemand = tcase_create("On demand host checks");
 	tcase_add_checked_fixture(tc_freshness_checking, setup, teardown);
 	tcase_add_test(tc_freshness_checking, service_freshness_checking);
 	tcase_add_test(tc_freshness_checking, host_freshness_checking);
@@ -401,6 +668,13 @@ check_scheduling_suite(void)
 	tcase_add_test(tc_intervals, host_retry_interval_soft_non_OK_states);
 	tcase_add_test(tc_intervals, host_check_interval_hard_non_OK_states);
 	suite_add_tcase(s, tc_intervals);
+
+	tcase_add_test(tc_intervals, ondemand_host_check_on_service_hard_crit);
+	tcase_add_test(tc_intervals, ondemand_host_check_on_service_first_soft_crit);
+	tcase_add_test(tc_intervals, ondemand_host_check_on_service_second_soft_crit);
+	tcase_add_test(tc_intervals, ondemand_host_check_on_service_soft_to_hard_crit);
+	tcase_add_test(tc_intervals, ondemand_host_check_on_service_soft_ok_to_hard_ok);
+	suite_add_tcase(s, tc_ondemand);
 
 	tcase_add_checked_fixture(tc_miscellaneous, setup, teardown);
 	tcase_add_test(tc_miscellaneous, test_check_window);
