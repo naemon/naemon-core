@@ -157,7 +157,7 @@ reload() {
     log_daemon_msg "Reloading $prog: "
     retval=0
     if [ -e $pidfile ]; then
-        PID=cat $pidfile;
+        PID=`cat $pidfile`;
         kill -HUP $PID >/dev/null 2>/dev/null
     else
         pkill -HUP -u ${user} -f ${exec}
