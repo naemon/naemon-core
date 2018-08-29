@@ -188,7 +188,7 @@ int parse_check_output(char *buf, char **short_output, char **long_output, char 
 	*short_output = check_output->short_output;
 	*perf_data = check_output->perf_data;
 	if(escape_newlines_please == TRUE && check_output->long_output != NULL) {
-		*long_output = g_strescape(check_output->long_output, "\"");
+		*long_output = g_strescape(check_output->long_output, "\",\\n");
 		free(check_output->long_output);
 	} else {
 		*long_output = check_output->long_output;
