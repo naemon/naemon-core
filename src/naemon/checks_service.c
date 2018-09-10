@@ -48,6 +48,8 @@ static int is_service_result_fresh(service *, time_t, int);
 void checks_init_services(void)
 {
 	service *temp_service = NULL;
+	time_t delay;
+	time_t current_time = time(NULL);
 
 	log_debug_info(DEBUGL_EVENTS, 2, "Scheduling service checks...\n");
 
@@ -57,9 +59,26 @@ void checks_init_services(void)
 		/* update status of all services (scheduled or not) */
 		update_service_status(temp_service, FALSE);
 
+ 		/* Determine the delay used for the first check event.
+ 		 * If use_retained_scheduling_info is enabled, we use the previously set
+ 		 * next_check. If the check was missed, schedule it within the next
+ 		 * interval length. If more than one check was missed, we schedule the check
+ 		 * randomly instead.
+ 		 */
+		if (use_retained_scheduling_info == TRUE &&
+		    temp_service->next_check > current_time-get_service_check_interval_s(temp_service)) {
+			if (temp_service->next_check < current_time) {
+				delay = ranged_urand(0, interval_length);
+			} else {
+				delay = temp_service->next_check-current_time;
+			}
+		} else {
+			delay = ranged_urand(0, get_service_check_interval_s(temp_service));
+		}
+
 		/* create a new service check event */
 		if (temp_service->check_interval != 0.0)
-			schedule_next_service_check(temp_service, ranged_urand(0, get_service_check_interval_s(temp_service)), 0);
+			schedule_next_service_check(temp_service, delay, 0);
 	}
 
 	/* add a service result "freshness" check event */
