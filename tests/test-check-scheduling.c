@@ -646,6 +646,204 @@ START_TEST(ondemand_host_check_on_service_soft_ok_to_hard_ok)
 }
 END_TEST
 
+
+/* If use_retained_scheduling_info is enabled the next_check time should be
+ * retained over restarts
+ */
+START_TEST(host_retain_next_check)
+{
+	time_t current_time = time(NULL);
+	time_t next_check = current_time+60;
+	use_retained_scheduling_info=TRUE;
+
+	hst->retry_interval = 1.0;
+	hst->check_interval = 5.0;
+	hst->current_state = STATE_UP;
+	hst->state_type = HARD_STATE;
+	hst->next_check = next_check;
+
+	/* Simulates a restart */
+	checks_init_hosts();
+	ck_assert_int_eq(hst->next_check, next_check);
+}
+END_TEST
+
+
+/* If use_retained_scheduling_info is enabled, but we missed one check, due to a
+ * restart then the next check should be scheduled within the next
+ * interval_length period
+ */
+START_TEST(host_retain_missed_check)
+{
+	time_t current_time = time(NULL);
+	time_t next_check = current_time-60;
+	time_t expected_max_next_check = current_time+interval_length;
+	use_retained_scheduling_info=TRUE;
+
+	hst->retry_interval = 1.0;
+	hst->check_interval = 5.0;
+	hst->current_state = STATE_UP;
+	hst->state_type = HARD_STATE;
+	hst->next_check = next_check;
+
+	/* Simulates a restart */
+	checks_init_hosts();
+	ck_assert(hst->next_check >= current_time);
+	ck_assert(hst->next_check <= expected_max_next_check);
+}
+END_TEST
+
+
+/* If use_retained_scheduling_info is enabled, and we missed more than one check
+ * the next check should be scheduled randomly after a restart
+ */
+START_TEST(host_retain_missed_multiple_checks)
+{
+	time_t current_time = time(NULL);
+	time_t next_check;
+	time_t expected_max_next_check;
+	use_retained_scheduling_info=TRUE;
+
+	hst->retry_interval = 1.0;
+	hst->check_interval = 5.0;
+	hst->current_state = STATE_UP;
+	hst->state_type = HARD_STATE;
+	next_check = current_time-(2*get_host_check_interval_s(hst));
+	hst->next_check = next_check;
+	expected_max_next_check = current_time+get_host_check_interval_s(hst);
+
+	/* Simulates a restart */
+	checks_init_hosts();
+	ck_assert(hst->next_check >= current_time);
+	ck_assert(hst->next_check <= expected_max_next_check);
+}
+END_TEST
+
+
+/* If use_retained_scheduling info is disabled, the next_check should be
+ * scheduled randomly within the next check_interval after a restart
+ */
+START_TEST(host_retain_disabled_next_check)
+{
+	time_t current_time = time(NULL);
+	time_t next_check = current_time+60;
+	time_t expected_max_next_check;
+	use_retained_scheduling_info=FALSE;
+
+	hst->retry_interval = 1.0;
+	hst->check_interval = 5.0;
+	hst->current_state = STATE_UP;
+	hst->state_type = HARD_STATE;
+	hst->next_check = next_check;
+	expected_max_next_check = current_time+get_host_check_interval_s(hst);
+
+	/* Simulates a restart */
+	checks_init_hosts();
+	ck_assert(hst->next_check >= current_time);
+	ck_assert(hst->next_check <= expected_max_next_check);
+}
+END_TEST
+
+
+/* If use_retained_scheduling_info is enabled the next_check time should be
+ * retained over restarts
+ */
+START_TEST(service_retain_next_check)
+{
+	time_t current_time = time(NULL);
+	time_t next_check = current_time+60;
+	use_retained_scheduling_info=TRUE;
+
+	svc->retry_interval = 1.0;
+	svc->check_interval = 1.0;
+	svc->current_state = STATE_UP;
+	svc->state_type = HARD_STATE;
+	svc->next_check = next_check;
+	svc->host_ptr = hst;
+
+	/* Simulates a restart */
+	checks_init_services();
+	ck_assert_int_eq(svc->next_check, next_check);
+}
+END_TEST
+
+
+/* If use_retained_scheduling_info is enabled, but we missed one check, due to a
+ * restart then the next check should be scheduled within the next
+ * interval_length period
+ */
+START_TEST(service_retain_missed_check)
+{
+	time_t current_time = time(NULL);
+	time_t next_check = current_time-60;
+	time_t expected_max_next_check = current_time+interval_length;
+	use_retained_scheduling_info=TRUE;
+
+	svc->retry_interval = 1.0;
+	svc->check_interval = 5.0;
+	svc->current_state = STATE_UP;
+	svc->state_type = HARD_STATE;
+	svc->next_check = next_check;
+
+	/* Simulates a restart */
+	checks_init_services();
+	ck_assert(svc->next_check >= current_time);
+	ck_assert(svc->next_check <= expected_max_next_check);
+}
+END_TEST
+
+
+/* If use_retained_scheduling_info is enabled, and we missed more than one check
+ * the next check should be scheduled randomly after a restart
+ */
+START_TEST(service_retain_missed_multiple_checks)
+{
+	time_t current_time = time(NULL);
+	time_t next_check;
+	time_t expected_max_next_check;
+	use_retained_scheduling_info=TRUE;
+
+	svc->retry_interval = 1.0;
+	svc->check_interval = 5.0;
+	svc->current_state = STATE_UP;
+	svc->state_type = HARD_STATE;
+	next_check = current_time-(2*get_service_check_interval_s(svc));
+	svc->next_check = next_check;
+	expected_max_next_check = current_time+get_service_check_interval_s(svc);
+
+	/* Simulates a restart */
+	checks_init_services();
+	ck_assert(svc->next_check >= current_time);
+	ck_assert(svc->next_check <= expected_max_next_check);
+}
+END_TEST
+
+
+/* If use_retained_scheduling info is disabled, the next_check should be
+ * scheduled randomly within the next check_interval after a restart
+ */
+START_TEST(service_retain_disabled_next_check)
+{
+	time_t current_time = time(NULL);
+	time_t next_check = current_time+60;
+	time_t expected_max_next_check;
+	use_retained_scheduling_info=FALSE;
+
+	svc->retry_interval = 1.0;
+	svc->check_interval = 5.0;
+	svc->current_state = STATE_UP;
+	svc->state_type = HARD_STATE;
+	svc->next_check = next_check;
+	expected_max_next_check = current_time+get_service_check_interval_s(svc);
+
+	/* Simulates a restart */
+	checks_init_services();
+	ck_assert(svc->next_check >= current_time);
+	ck_assert(svc->next_check <= expected_max_next_check);
+}
+END_TEST
+
+
 Suite*
 check_scheduling_suite(void)
 {
@@ -654,6 +852,7 @@ check_scheduling_suite(void)
 	TCase *tc_freshness_checking = tcase_create("Freshness checking");
 	TCase *tc_miscellaneous = tcase_create("Miscellaneous tests");
 	TCase *tc_ondemand = tcase_create("On demand host checks");
+	TCase *tc_retain = tcase_create("Retain next_check schedule");
 	tcase_add_checked_fixture(tc_freshness_checking, setup, teardown);
 	tcase_add_test(tc_freshness_checking, service_freshness_checking);
 	tcase_add_test(tc_freshness_checking, host_freshness_checking);
@@ -675,6 +874,17 @@ check_scheduling_suite(void)
 	tcase_add_test(tc_intervals, ondemand_host_check_on_service_soft_to_hard_crit);
 	tcase_add_test(tc_intervals, ondemand_host_check_on_service_soft_ok_to_hard_ok);
 	suite_add_tcase(s, tc_ondemand);
+
+	tcase_add_checked_fixture(tc_retain, setup, teardown);
+	tcase_add_test(tc_retain, host_retain_next_check);
+	tcase_add_test(tc_retain, host_retain_missed_check);
+	tcase_add_test(tc_retain, host_retain_missed_multiple_checks);
+	tcase_add_test(tc_retain, host_retain_disabled_next_check);
+	tcase_add_test(tc_retain, service_retain_next_check);
+	tcase_add_test(tc_retain, service_retain_missed_check);
+	tcase_add_test(tc_retain, service_retain_missed_multiple_checks);
+	tcase_add_test(tc_retain, service_retain_disabled_next_check);
+	suite_add_tcase(s, tc_retain);
 
 	tcase_add_checked_fixture(tc_miscellaneous, setup, teardown);
 	tcase_add_test(tc_miscellaneous, test_check_window);
