@@ -48,6 +48,8 @@ static int determine_host_reachability(host *hst);
 void checks_init_hosts(void)
 {
 	host *temp_host = NULL;
+	time_t delay;
+	time_t current_time = time(NULL);
 
 	/******** SCHEDULE HOST CHECKS  ********/
 
@@ -59,8 +61,25 @@ void checks_init_hosts(void)
 		/* update status of all hosts (scheduled or not) */
 		update_host_status(temp_host, FALSE);
 
+ 		/* Determine the delay used for the first check event.
+ 		 * If use_retained_scheduling_info is enabled, we use the previously set
+ 		 * next_check. If the check was missed, schedule it within the next
+ 		 * interval length. If more than one check was missed, we schedule the check
+ 		 * randomly instead.
+ 		 */
+		if (use_retained_scheduling_info == TRUE &&
+		    temp_host->next_check > current_time-get_host_check_interval_s(temp_host)) {
+			if (temp_host->next_check < current_time) {
+				delay = ranged_urand(0, interval_length);
+			} else {
+				delay = temp_host->next_check-current_time;
+			}
+		} else {
+			delay = ranged_urand(0, get_host_check_interval_s(temp_host));
+		}
+
 		/* schedule a new host check event */
-		schedule_next_host_check(temp_host, ranged_urand(0, get_host_check_interval_s(temp_host)), CHECK_OPTION_NONE);
+		schedule_next_host_check(temp_host, delay, CHECK_OPTION_NONE);
 	}
 
 	/* add a host result "freshness" check event */
