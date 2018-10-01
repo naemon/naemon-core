@@ -171,6 +171,11 @@ mkdir -p -m 0755 %{buildroot}%{_localstatedir}/run/naemon
 %{__mv} -f %{buildroot}%{_initrddir}/naemon %{buildroot}/%{_bindir}/naemon-ctl
 %endif
 
+%if 0%{?el6}
+%{__rm} %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
+%{__install} -m 0644 naemon.logrotate.el6 %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
+%endif
+
 %clean
 %{__rm} -rf %{buildroot}
 
