@@ -140,6 +140,7 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 	struct timeval tv;
 	struct timeval event_runtime;
 	int options = temp_service->check_options;
+	host *temp_host = NULL;
 
     log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' handle_service_check_event()...\n", temp_service->description, temp_service->host_name);
 
@@ -200,6 +201,18 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 				return;
 			}
 
+			/* check if host is up - if not, do not perform check */
+			if(host_down_disable_service_checks) {
+				if((temp_host = temp_service->host_ptr) == NULL) {
+					log_debug_info(DEBUGL_CHECKS, 2, "Host pointer NULL in handle_service_check_event().\n");
+					return;
+				} else {
+					if(temp_host->current_state != STATE_UP) {
+						log_debug_info(DEBUGL_CHECKS, 2, "Host state not UP, so service check will not be performed - will be rescheduled as normal.\n");
+						return;
+					}
+				}
+			}
 		}
 
 		/* Otherwise, run the event */

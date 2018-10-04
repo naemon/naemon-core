@@ -1024,6 +1024,16 @@ allow_empty_hostgroup_assignment=0
 
 #check_workers=3
 
+
+# DISABLE SERVICE CHECKS WHEN HOST DOWN
+# This option will disable all service checks if the host is not in an UP state
+#
+# While desirable in some environments, enabling this value can distort report
+# values as the expected quantity of checks will not have been performed
+
+#host_down_disable_service_checks=0
+
+
 # CIRCULAR DEPENDENCIES (EXPERIMENTAL)
 # Allow for circular dependencies in naemon's host graph.
 # Enabaling this will cause propagation the following to stop working:

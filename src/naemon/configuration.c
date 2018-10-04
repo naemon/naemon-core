@@ -1058,6 +1058,8 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			allow_empty_hostgroup_assignment = (atoi(value) > 0) ? TRUE : FALSE;
 		} else if (!strcmp(variable, "allow_circular_dependencies")) {
 			allow_circular_dependencies=atoi(value);
+		} else if(!strcmp(variable,"host_down_disable_service_checks")) {
+			host_down_disable_service_checks = strtoul(value, NULL, 0);
 		}
 		/* skip external data directives */
 		else if (strstr(input, "x") == input)
