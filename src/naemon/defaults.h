@@ -86,6 +86,7 @@
 
 #define DEFAULT_ALLOW_EMPTY_HOSTGROUP_ASSIGNMENT        2        /* Allow assigning to empty hostgroups by default, but warn about it */
 #define DEFAULT_ALLOW_CIRCULAR_DEPENDENCIES             0        /* Allow circular depdendencies */
+#define DEFAULT_HOST_DOWN_DISABLE_SERVICE_CHECKS        0        /* run service checks if the host is down */
 
 #define DEFAULT_HOST_PERFDATA_FILE_TEMPLATE "[HOSTPERFDATA]\t$TIMET$\t$HOSTNAME$\t$HOSTEXECUTIONTIME$\t$HOSTOUTPUT$\t$HOSTPERFDATA$"
 #define DEFAULT_SERVICE_PERFDATA_FILE_TEMPLATE "[SERVICEPERFDATA]\t$TIMET$\t$HOSTNAME$\t$SERVICEDESC$\t$SERVICEEXECUTIONTIME$\t$SERVICELATENCY$\t$SERVICEOUTPUT$\t$SERVICEPERFDATA$"
