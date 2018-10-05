@@ -80,10 +80,15 @@ tests_test_scheduled_downtimes_LDADD = $(TESTSLDADD)
 tests_test_scheduled_downtimes_LDFLAGS = $(TESTSLDFLAGS)
 tests_test_scheduled_downtimes_CPPFLAGS = $(TESTSCPPFLAGS)
 
-tests_test_check_scheduling = tests/test-check-scheduling.c
+tests_test_check_scheduling_SOURCES = tests/test-check-scheduling.c
 tests_test_check_scheduling_LDADD =  $(TESTSLDADD)
 tests_test_check_scheduling_LDFLAGS = $(TESTSLDFLAGS)
 tests_test_check_scheduling_CPPFLAGS = $(TESTSCPPFLAGS)
+
+tests_test_check_dependencies_SOURCES = tests/test-check-dependencies.c
+tests_test_check_dependencies_LDADD =  $(TESTSLDADD)
+tests_test_check_dependencies_LDFLAGS = $(TESTSLDFLAGS)
+tests_test_check_dependencies_CPPFLAGS = $(TESTSCPPFLAGS)
 
 tests_test_arith_SOURCES = tests/test-arith.c
 tests_test_arith_LDADD =  $(TESTSLDADD)
@@ -163,6 +168,7 @@ check_PROGRAMS += \
 	tests/test-check-result-processing \
 	tests/test-scheduled-downtimes \
 	tests/test-check-scheduling \
+	tests/test-check-dependencies \
 	tests/test-obj-config-parse \
 	tests/test-utils \
 	tests/test-log \
