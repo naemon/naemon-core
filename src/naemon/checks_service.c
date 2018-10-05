@@ -138,6 +138,8 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 	struct timeval event_runtime;
 	int options = temp_service->check_options;
 
+    log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' handle_service_check_event()...\n", temp_service->description, temp_service->host_name);
+
 	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
 
 		/* get event latency */
@@ -189,7 +191,9 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 			}
 
 			/* check service dependencies for execution */
+			log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' checking dependencies...\n", temp_service->description, temp_service->host_name);
 			if (check_service_dependencies(temp_service, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
+				log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' failed dependency check. Aborting check\n", temp_service->description, temp_service->host_name);
 				return;
 			}
 
@@ -1156,6 +1160,8 @@ int check_service_dependencies(service *svc, int dependency_type)
 	int state = STATE_OK;
 	time_t current_time = 0L;
 
+	log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' check_service_dependencies()\n", svc->description, svc->host_name);
+
 	/* only check dependencies of the desired type */
 	if (dependency_type == NOTIFICATION_DEPENDENCY)
 		list = svc->notify_deps;
@@ -1182,8 +1188,14 @@ int check_service_dependencies(service *svc, int dependency_type)
 		else
 			state = temp_service->current_state;
 
+		log_debug_info(DEBUGL_CHECKS, 1, "  depending on service '%s' on host '%s' with state: %d / has_been_checked: %d\n", temp_service->description, temp_service->host_name, state, temp_service->has_been_checked);
+
 		/* is the service we depend on in state that fails the dependency tests? */
 		if (flag_isset(temp_dependency->failure_options, 1 << state))
+			return DEPENDENCIES_FAILED;
+
+		/* check for pending flag */
+		if(temp_service->has_been_checked == FALSE && flag_isset(temp_dependency->failure_options, OPT_PENDING))
 			return DEPENDENCIES_FAILED;
 
 		/* immediate dependencies ok at this point - check parent dependencies if necessary */

@@ -232,7 +232,9 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 		}
 
 		/* check host dependencies for execution */
+		log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' checking dependencies...\n", hst->name);
 		if (check_host_dependencies(hst, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
+			log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' failed dependency check. Aborting check\n", hst->name);
 			return ERROR;
 		}
 	}
@@ -1157,6 +1159,8 @@ int check_host_dependencies(host *hst, int dependency_type)
 	int state = STATE_UP;
 	time_t current_time = 0L;
 
+	log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' check_host_dependencies()\n", hst->name);
+
 	if (dependency_type == NOTIFICATION_DEPENDENCY) {
 		list = hst->notify_deps;
 	} else {
@@ -1182,8 +1186,14 @@ int check_host_dependencies(host *hst, int dependency_type)
 		else
 			state = temp_host->current_state;
 
+		log_debug_info(DEBUGL_CHECKS, 1, "  depending on host '%s' with state: %d / has_been_checked: %d\n", temp_host->name, state, temp_host->has_been_checked);
+
 		/* is the host we depend on in state that fails the dependency tests? */
 		if (flag_isset(temp_dependency->failure_options, 1 << state))
+			return DEPENDENCIES_FAILED;
+
+		/* check for pending flag */
+		if(temp_host->has_been_checked == FALSE && flag_isset(temp_dependency->failure_options, OPT_PENDING))
 			return DEPENDENCIES_FAILED;
 
 		/* immediate dependencies ok at this point - check parent dependencies if necessary */
