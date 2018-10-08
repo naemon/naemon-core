@@ -96,6 +96,20 @@ def naemon_restart(context):
         pass
 
 
+@when('I stop naemon')
+def naemon_stop(context):
+    assert os.path.exists('./naemon.pid'), (
+        'Naemon pid file was not found'
+    )
+    pid = int(open('./naemon.pid').read())
+    try:
+        os.kill(pid, signal.SIGTERM)
+        print ('Sent SIGTERM to naemon process (%i)' % pid)
+    except OSError as e:
+        print (os.strerror(e.errno))
+        pass
+
+
 @then('naemon should fail to start')
 def naemon_start_fail(context):
     context.execute_steps(u'When I start naemon')
@@ -128,10 +142,22 @@ def naemon_is_running(context):
     )
 
 
+@then('naemon should not be running')
+def naemon_is_not_running(context):
+    assert not os.path.exists('./naemon.pid'), (
+        'Naemon is running'
+    )
+
+
 @then('naemon should output a sensible error message')
 def naemon_error_msg(context):
     context.execute_steps(u'When I start naemon')
     assert 'Error: Host notification command' in open('naemon.log').read()
+
+
+@then('naemon should output a retention data saved log message')
+def naemon_retention_msg(context):
+    assert 'Retention data successfully saved.' in open('naemon.log').read()
 
 
 @when('I wait for (?P<seconds>[0-9]+) seconds?')

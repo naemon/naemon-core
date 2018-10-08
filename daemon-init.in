@@ -96,9 +96,11 @@ start() {
 stop() {
     echo -n "Stopping $prog: "
     if [ "x${is_suse}" == "xyes" ]; then
-        killproc -p ${pidfile} -t 10 $exec
+        killproc -p ${pidfile} -t 90 $exec
     elif type start-stop-daemon >/dev/null 2>&1; then
         start-stop-daemon --stop --name ${prog} --pidfile ${pidfile} --exec ${exec}
+    elif [ -e /etc/redhat-release ]; then
+        killproc -p ${pidfile} -d 90 ${exec}
     else
         killproc -p ${pidfile} ${exec}
     fi
