@@ -745,6 +745,32 @@ START_TEST(host_retain_disabled_next_check)
 END_TEST
 
 
+/* If use_retained_scheduling info is enabled but the next_check in the
+ * retention data is more than one check_interval away, then we should
+ * schedule the check randomly within one check_interval.
+ */
+START_TEST(host_retain_always_within_check_interval)
+{
+	time_t current_time = time(NULL);
+	time_t expected_max_next_check;
+	use_retained_scheduling_info=TRUE;
+
+	hst->retry_interval = 1.0;
+	hst->check_interval = 15.0;
+	hst->current_state = STATE_UP;
+	hst->state_type = HARD_STATE;
+	hst->next_check = current_time+get_host_check_interval_s(hst);
+	hst->check_interval = 5.0;
+	expected_max_next_check = current_time+get_host_check_interval_s(hst);
+
+	/* Simulates a restart */
+	checks_init_hosts();
+	ck_assert(hst->next_check >= current_time);
+	ck_assert(hst->next_check <= expected_max_next_check);
+}
+END_TEST
+
+
 /* If use_retained_scheduling_info is enabled the next_check time should be
  * retained over restarts
  */
@@ -844,6 +870,32 @@ START_TEST(service_retain_disabled_next_check)
 END_TEST
 
 
+/* If use_retained_scheduling info is enabled but the next_check in the
+ * retention data is more than one check_interval away, then we should
+ * schedule the check randomly within one check_interval.
+ */
+START_TEST(service_retain_always_within_check_interval)
+{
+	time_t current_time = time(NULL);
+	time_t expected_max_next_check;
+	use_retained_scheduling_info=TRUE;
+
+	svc->retry_interval = 1.0;
+	svc->check_interval = 15.0;
+	svc->current_state = STATE_UP;
+	svc->state_type = HARD_STATE;
+	svc->next_check = current_time+get_service_check_interval_s(svc);
+	svc->check_interval = 5;
+	expected_max_next_check = current_time+get_service_check_interval_s(svc);
+
+	/* Simulates a restart */
+	checks_init_services();
+	ck_assert(svc->next_check >= current_time);
+	ck_assert(svc->next_check <= expected_max_next_check);
+}
+END_TEST
+
+
 Suite*
 check_scheduling_suite(void)
 {
@@ -880,10 +932,12 @@ check_scheduling_suite(void)
 	tcase_add_test(tc_retain, host_retain_missed_check);
 	tcase_add_test(tc_retain, host_retain_missed_multiple_checks);
 	tcase_add_test(tc_retain, host_retain_disabled_next_check);
+	tcase_add_test(tc_retain, host_retain_always_within_check_interval);
 	tcase_add_test(tc_retain, service_retain_next_check);
 	tcase_add_test(tc_retain, service_retain_missed_check);
 	tcase_add_test(tc_retain, service_retain_missed_multiple_checks);
 	tcase_add_test(tc_retain, service_retain_disabled_next_check);
+	tcase_add_test(tc_retain, service_retain_always_within_check_interval);
 	suite_add_tcase(s, tc_retain);
 
 	tcase_add_checked_fixture(tc_miscellaneous, setup, teardown);
