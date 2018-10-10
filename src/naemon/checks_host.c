@@ -65,10 +65,13 @@ void checks_init_hosts(void)
  		 * If use_retained_scheduling_info is enabled, we use the previously set
  		 * next_check. If the check was missed, schedule it within the next
  		 * interval length. If more than one check was missed, we schedule the check
- 		 * randomly instead.
+ 		 * randomly instead. If the next_check is more than one check_interval in
+ 		 * the future, we also schedule the next check randomly. This indicates
+ 		 * that the check_interval has been lowered over restarts.
  		 */
 		if (use_retained_scheduling_info == TRUE &&
-		    temp_host->next_check > current_time-get_host_check_interval_s(temp_host)) {
+		    temp_host->next_check > current_time-get_host_check_interval_s(temp_host) &&
+		    temp_host->next_check <= current_time+get_host_check_interval_s(temp_host)) {
 			if (temp_host->next_check < current_time) {
 				delay = ranged_urand(0, interval_length);
 			} else {
