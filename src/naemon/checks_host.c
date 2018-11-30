@@ -431,6 +431,8 @@ int update_host_state_post_check(struct host *hst, struct check_result *cr)
 
 	/* adjust return code (active checks only) */
 	if (cr->check_type == CHECK_TYPE_ACTIVE) {
+		hst->is_executing = FALSE;
+
 		if (cr->early_timeout) {
 			nm_free(hst->plugin_output);
 			nm_free(hst->long_plugin_output);
