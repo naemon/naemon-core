@@ -620,6 +620,7 @@ neb_cb_resultset * neb_make_callbacks_full(enum NEBCallbackType callback_type, v
 	neb_cb_resultset *resultset = neb_cb_resultset_create();
 	neb_cb_result *cbresult = NULL;
 	int total_callbacks = 0;
+	char *temp_module_name = "";
 
 	/* make sure callback list is initialized */
 	if (neb_callback_list == NULL) {
@@ -633,17 +634,19 @@ neb_cb_resultset * neb_make_callbacks_full(enum NEBCallbackType callback_type, v
 	/* make the callbacks... */
 	for (temp_callback = neb_callback_list[callback_type]; temp_callback; temp_callback = next_callback) {
 		next_callback = temp_callback->next;
-		cbresult = neb_invoke_callback(temp_callback->callback_func, temp_callback->api_version, callback_type, data);
+		/* get name of module reponsible for the callback */
 		for (temp_module = neb_module_list; temp_module != NULL; temp_module = temp_module->next) {
 			if (temp_module->module_handle == temp_callback->module_handle) {
 				if (temp_module->core_module) {
-					cbresult->module_name = nm_strdup("Unnamed core module");
+					temp_module_name = "Unnamed core module";
 				} else {
-					cbresult->module_name = nm_strdup(temp_module->filename);
+					temp_module_name = temp_module->filename;
 				}
 				break;
 			}
 		}
+		cbresult = neb_invoke_callback(temp_callback->callback_func, temp_callback->api_version, callback_type, data);
+		cbresult->module_name = nm_strdup(temp_module_name);
 		g_ptr_array_add(resultset->cb_results, cbresult);
 		temp_callback = next_callback;
 
