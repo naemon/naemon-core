@@ -155,7 +155,7 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 		temp_service->next_check_event = NULL;
 
 		/* Reschedule next check directly, might be replaced later */
-		if (temp_service->check_interval != 0.0) {
+		if (temp_service->check_interval != 0.0 && temp_service->is_executing == FALSE) {
 			schedule_next_service_check(temp_service, get_service_check_interval_s(temp_service), 0);
 		}
 
@@ -166,7 +166,7 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 				nm_log(NSLOG_RUNTIME_WARNING,
 				       "\tMax concurrent service checks (%d) has been reached.  Nudging %s:%s by %d seconds...\n", max_parallel_service_checks, temp_service->host_name, temp_service->description, nudge_seconds);
 				/* Simply reschedule at retry_interval instead, if defined (otherwise keep scheduling at normal interval) */
-				if (temp_service->retry_interval != 0.0) {
+				if (temp_service->retry_interval != 0.0 && temp_service->is_executing == FALSE) {
 					schedule_next_service_check(temp_service, get_service_retry_interval_s(temp_service), 0);
 				}
 				return;
@@ -1009,6 +1009,11 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 	/* set the checked flag */
 	temp_service->has_been_checked = TRUE;
+
+	/* make sure there is a next check event scheduled */
+	if(temp_service->next_check_event == NULL && temp_service->check_interval != 0.0) {
+		schedule_next_service_check(temp_service, get_service_check_interval_s(temp_service), CHECK_OPTION_NONE);
+	}
 
 	/* update the current service status log */
 	update_service_status(temp_service, FALSE);

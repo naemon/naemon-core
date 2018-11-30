@@ -158,7 +158,7 @@ static void handle_host_check_event(struct nm_event_execution_properties *evprop
 		 * But this is only done if checks are recurring, that is non-zero
 		 * check_interval
 		 */
-		if (hst->check_interval != 0.0)
+		if (hst->check_interval != 0.0 && hst->is_executing == FALSE)
 			schedule_next_host_check(hst, get_host_check_interval_s(hst), CHECK_OPTION_NONE);
 
 		/* Don't run checks if checks are disabled, unless foreced */
@@ -175,7 +175,7 @@ static void handle_host_check_event(struct nm_event_execution_properties *evprop
 		/* an error occurred, so reschedule the check */
 		if (result == ERROR) {
 			/* Somethings wrong, reschedule for retry interval instead, if retry_interval is specified. */
-			if (hst->retry_interval != 0.0) {
+			if (hst->retry_interval != 0.0 && hst->is_executing == FALSE) {
 				schedule_next_host_check(hst, get_host_retry_interval_s(hst), CHECK_OPTION_NONE);
 				log_debug_info(DEBUGL_CHECKS, 1, "Rescheduled next host check for %s\n", ctime(&hst->next_check));
 			}
@@ -877,6 +877,11 @@ static int process_host_check_result(host *hst, host *prev, int *alert_recorded)
 					get_host_retry_interval_s(hst),
 					CHECK_OPTION_ALLOW_POSTPONE);
 		}
+	}
+
+	/* make sure there is a next check event scheduled */
+	if (hst->check_interval != 0.0 && hst->next_check_event == NULL) {
+		schedule_next_host_check(hst, get_host_check_interval_s(hst), CHECK_OPTION_NONE);
 	}
 
 	/* update host status - for both active (scheduled) and passive (non-scheduled) hosts */
