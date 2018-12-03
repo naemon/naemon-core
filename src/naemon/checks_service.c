@@ -1084,7 +1084,7 @@ static void check_for_orphaned_services_eventhandler(struct nm_event_execution_p
 				temp_service->is_executing = FALSE;
 
 				/* schedule an immediate check of the service */
-				schedule_next_service_check(temp_service, 0, 0);
+				schedule_next_service_check(temp_service, 0, CHECK_OPTION_ORPHAN_CHECK);
 			}
 
 		}

@@ -385,7 +385,7 @@ NAGIOS_END_DECL
 #define CHECK_OPTION_NONE		0	/* no check options */
 #define CHECK_OPTION_FORCE_EXECUTION	1	/* force execution of a check (ignores disabled services/hosts, invalid timeperiods) */
 #define CHECK_OPTION_FRESHNESS_CHECK    2       /* this is a freshness check */
-                                     /* 4          used to be CHECK_OPTION_ORPHAN_CHECK, but is no longer used */
+#define CHECK_OPTION_ORPHAN_CHECK       4       /* flag for scheduled checks from orphan event handler */
 #define CHECK_OPTION_DEPENDENCY_CHECK   8       /* dependency check. different scheduling rules apply */
 #define CHECK_OPTION_ALLOW_POSTPONE     16      /* allow the check to take precedence over an earlier (sooner) scheduled check */
 
