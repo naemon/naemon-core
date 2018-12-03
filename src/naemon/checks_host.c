@@ -1142,7 +1142,7 @@ static void check_for_orphaned_hosts_eventhandler(struct nm_event_execution_prop
 				temp_host->is_executing = FALSE;
 
 				/* schedule an immediate check of the host */
-				schedule_next_host_check(temp_host, 0, CHECK_OPTION_NONE);
+				schedule_next_host_check(temp_host, 0, CHECK_OPTION_ORPHAN_CHECK);
 			}
 
 		}
