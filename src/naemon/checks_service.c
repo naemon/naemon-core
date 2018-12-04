@@ -307,6 +307,7 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
 		clear_volatile_macros_r(&mac);
 		free_check_result(cr);
+		nm_free(cr);
 		nm_free(processed_command);
 		return OK;
 	}
@@ -365,7 +366,7 @@ static void handle_worker_service_check(wproc_result *wpres, void *arg, int flag
 		process_check_result(cr);
 	}
 	free_check_result(cr);
-	free(cr);
+	nm_free(cr);
 }
 
 

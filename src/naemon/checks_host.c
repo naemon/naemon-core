@@ -318,6 +318,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
 		clear_volatile_macros_r(&mac);
 		free_check_result(cr);
+		nm_free(cr);
 		nm_free(processed_command);
 		return OK;
 	}
@@ -645,7 +646,7 @@ static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags)
 		process_check_result(cr);
 	}
 	free_check_result(cr);
-	free(cr);
+	nm_free(cr);
 }
 
 static gboolean propagate_when_not_up(gpointer _name, gpointer _hst, gpointer user_data)
