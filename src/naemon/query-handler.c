@@ -353,7 +353,7 @@ static int qh_command(int sd, char *buf, unsigned int len)
 			if (res == OK) {
 				return 200;
 			} else {
-				nsock_printf_nul(sd, "400: %s", error->message);
+				nsock_printf_nul(sd, "400: %s\n", error->message);
 				g_clear_error(&error);
 				return 0;
 			}

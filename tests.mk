@@ -90,6 +90,11 @@ tests_test_check_dependencies_LDADD =  $(TESTSLDADD)
 tests_test_check_dependencies_LDFLAGS = $(TESTSLDFLAGS)
 tests_test_check_dependencies_CPPFLAGS = $(TESTSCPPFLAGS)
 
+tests_test_query_handler_SOURCES = tests/test-query-handler.c
+tests_test_query_handler_LDADD =  $(TESTSLDADD)
+tests_test_query_handler_LDFLAGS = $(TESTSLDFLAGS)
+tests_test_query_handler_CPPFLAGS = $(TESTSCPPFLAGS)
+
 tests_test_arith_SOURCES = tests/test-arith.c
 tests_test_arith_LDADD =  $(TESTSLDADD)
 tests_test_arith_CFLAGS =  $(CFLAGS) -DNM_SKIP_BUILTIN_OVERFLOW_CHECKS=1
@@ -169,6 +174,7 @@ check_PROGRAMS += \
 	tests/test-scheduled-downtimes \
 	tests/test-check-scheduling \
 	tests/test-check-dependencies \
+	tests/test-query-handler \
 	tests/test-obj-config-parse \
 	tests/test-utils \
 	tests/test-log \
