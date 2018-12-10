@@ -895,6 +895,47 @@ START_TEST(service_retain_always_within_check_interval)
 }
 END_TEST
 
+/* If host_down_disable_service_checks is true, and the the services host is
+ * down, then we should not perform service checks
+ */
+START_TEST(disable_service_check_host_down)
+{
+	struct nm_event_execution_properties ep = {
+		.execution_type = EVENT_EXEC_NORMAL,
+		.event_type = EVENT_TYPE_TIMED,
+		.user_data = svc
+	};
+	check_result cr;
+	host_down_disable_service_checks = TRUE;
+
+	hst->check_options = 0;
+	hst->checks_enabled = TRUE;
+	hst->check_freshness = TRUE;
+	hst->max_attempts = 3;
+	hst->current_attempt = 3;
+	hst->current_state = STATE_CRITICAL;
+	hst->last_hard_state = STATE_CRITICAL;
+	hst->state_type = HARD_STATE;
+
+	svc->checks_enabled = TRUE;
+	svc->check_freshness = TRUE;
+	svc->max_attempts = 3;
+	svc->current_state = STATE_CRITICAL;
+	svc->last_hard_state = STATE_CRITICAL;
+	svc->state_type = HARD_STATE;
+	svc->current_attempt = 3;
+	svc->host_ptr = hst;
+
+	init_check_result(&cr);
+	cr.object_check_type = SERVICE_CHECK;
+	cr.check_type = CHECK_TYPE_ACTIVE;
+	cr.return_code = STATE_CRITICAL;
+	handle_service_check_event(&ep);
+	handle_async_service_check_result(svc, &cr);
+
+	ck_assert(!g_service_was_checked);
+}
+END_TEST
 
 Suite*
 check_scheduling_suite(void)
@@ -942,6 +983,7 @@ check_scheduling_suite(void)
 
 	tcase_add_checked_fixture(tc_miscellaneous, setup, teardown);
 	tcase_add_test(tc_miscellaneous, test_check_window);
+	tcase_add_test(tc_miscellaneous, disable_service_check_host_down);
 	suite_add_tcase(s, tc_miscellaneous);
 
 	return s;
