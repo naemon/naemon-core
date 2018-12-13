@@ -410,6 +410,16 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			use_retained_scheduling_info = (atoi(value) > 0) ? TRUE : FALSE;
 		}
 
+		else if (!strcmp(variable, "retained_scheduling_randomize_window")) {
+
+			retained_scheduling_randomize_window = atoi(value);
+			if (retained_scheduling_randomize_window < 0) {
+				nm_asprintf(&error_message, "Illegal value for retained_scheduling_randomize_window");
+				error = TRUE;
+				break;
+			}
+		}
+
 		else if (!strcmp(variable, "retention_scheduling_horizon")) {
 
 			retention_scheduling_horizon = atoi(value);

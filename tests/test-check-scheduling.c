@@ -671,13 +671,13 @@ END_TEST
 
 /* If use_retained_scheduling_info is enabled, but we missed one check, due to a
  * restart then the next check should be scheduled within the next
- * interval_length period
+ * check_interval period
  */
 START_TEST(host_retain_missed_check)
 {
 	time_t current_time = time(NULL);
 	time_t next_check = current_time-60;
-	time_t expected_max_next_check = current_time+interval_length;
+	time_t expected_max_next_check;
 	use_retained_scheduling_info=TRUE;
 
 	hst->retry_interval = 1.0;
@@ -685,6 +685,7 @@ START_TEST(host_retain_missed_check)
 	hst->current_state = STATE_UP;
 	hst->state_type = HARD_STATE;
 	hst->next_check = next_check;
+	expected_max_next_check = current_time+retained_scheduling_randomize_window;
 
 	/* Simulates a restart */
 	checks_init_hosts();
@@ -802,7 +803,7 @@ START_TEST(service_retain_missed_check)
 {
 	time_t current_time = time(NULL);
 	time_t next_check = current_time-60;
-	time_t expected_max_next_check = current_time+interval_length;
+	time_t expected_max_next_check;
 	use_retained_scheduling_info=TRUE;
 
 	svc->retry_interval = 1.0;
@@ -810,6 +811,7 @@ START_TEST(service_retain_missed_check)
 	svc->current_state = STATE_UP;
 	svc->state_type = HARD_STATE;
 	svc->next_check = next_check;
+	expected_max_next_check = current_time+retained_scheduling_randomize_window;
 
 	/* Simulates a restart */
 	checks_init_services();

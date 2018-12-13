@@ -112,6 +112,7 @@ int retain_state_information = FALSE;
 int retention_update_interval = DEFAULT_RETENTION_UPDATE_INTERVAL;
 int use_retained_program_state = TRUE;
 int use_retained_scheduling_info = FALSE;
+int retained_scheduling_randomize_window = DEFAULT_RETAINED_SCHEDULING_RANDOMIZE_WINDOW;
 int retention_scheduling_horizon = DEFAULT_RETENTION_SCHEDULING_HORIZON;
 char *retention_file = NULL;
 

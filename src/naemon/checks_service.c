@@ -62,7 +62,7 @@ void checks_init_services(void)
  		/* Determine the delay used for the first check event.
  		 * If use_retained_scheduling_info is enabled, we use the previously set
  		 * next_check. If the check was missed, schedule it within the next
- 		 * interval length. If more than one check was missed, we schedule the check
+ 		 * retained_scheduling_randomize_window. If more than one check was missed, we schedule the check
  		 * randomly instead. If the next_check is more than one check_interval in
  		 * the future, we also schedule the next check randomly. This indicates
  		 * that the check_interval has been lowered over restarts.
@@ -71,7 +71,7 @@ void checks_init_services(void)
 		    temp_service->next_check > current_time-get_service_check_interval_s(temp_service) &&
 		    temp_service->next_check <= current_time+get_service_check_interval_s(temp_service)) {
 			if (temp_service->next_check < current_time) {
-				delay = ranged_urand(0, interval_length);
+				delay = ranged_urand(0, retained_scheduling_randomize_window);
 			} else {
 				delay = temp_service->next_check-current_time;
 			}

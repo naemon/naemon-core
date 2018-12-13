@@ -23,6 +23,7 @@
 #define DEFAULT_MAX_CHECK_RESULT_AGE				3600    /* maximum number of seconds that a check result file is considered to be valid */
 #define DEFAULT_MAX_PARALLEL_SERVICE_CHECKS 			0	/* maximum number of service checks we can have running at any given time (0=unlimited) */
 #define DEFAULT_RETENTION_UPDATE_INTERVAL			60	/* minutes between auto-save of retention data */
+#define DEFAULT_RETAINED_SCHEDULING_RANDOMIZE_WINDOW	60	/* number of seconds used for randomizing the re-scheduling of checks missed over a restart */
 #define DEFAULT_RETENTION_SCHEDULING_HORIZON    		900     /* max seconds between program restarts that we will preserve scheduling information */
 #define DEFAULT_STATUS_UPDATE_INTERVAL				60	/* seconds between aggregated status data updates */
 #define DEFAULT_FRESHNESS_CHECK_INTERVAL        		60      /* seconds between service result freshness checks */
