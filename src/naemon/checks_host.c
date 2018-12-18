@@ -73,7 +73,11 @@ void checks_init_hosts(void)
 		    temp_host->next_check > current_time-get_host_check_interval_s(temp_host) &&
 		    temp_host->next_check <= current_time+get_host_check_interval_s(temp_host)) {
 			if (temp_host->next_check < current_time) {
-				delay = ranged_urand(0, retained_scheduling_randomize_window);
+				int scheduling_window = retained_scheduling_randomize_window;
+				if (retained_scheduling_randomize_window > get_host_check_interval_s(temp_host) ) {
+					scheduling_window = get_host_check_interval_s(temp_host);
+				}
+				delay = ranged_urand(0, scheduling_window);
 			} else {
 				delay = temp_host->next_check-current_time;
 			}

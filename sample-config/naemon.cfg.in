@@ -475,6 +475,9 @@ use_retained_scheduling_info=1
 # That is, if set to 60 seconds, then all checks that were
 # missed due to a restart will be scheduled randomly to be
 # executed in the first 60 seconds after a restart.
+# If the retained_scheduling_randomize_window is larger than
+# the objects check_interval, the check_interval is used
+# instead.
 
 retained_scheduling_randomize_windows=60
 

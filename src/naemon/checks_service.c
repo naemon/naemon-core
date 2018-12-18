@@ -71,7 +71,11 @@ void checks_init_services(void)
 		    temp_service->next_check > current_time-get_service_check_interval_s(temp_service) &&
 		    temp_service->next_check <= current_time+get_service_check_interval_s(temp_service)) {
 			if (temp_service->next_check < current_time) {
-				delay = ranged_urand(0, retained_scheduling_randomize_window);
+				int scheduling_window = retained_scheduling_randomize_window;
+				if (retained_scheduling_randomize_window > get_service_check_interval_s(temp_service)) {
+					scheduling_window = get_service_check_interval_s(temp_service);
+				}
+				delay = ranged_urand(0, scheduling_window);
 			} else {
 				delay = temp_service->next_check-current_time;
 			}

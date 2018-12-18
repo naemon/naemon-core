@@ -671,7 +671,7 @@ END_TEST
 
 /* If use_retained_scheduling_info is enabled, but we missed one check, due to a
  * restart then the next check should be scheduled within the next
- * check_interval period
+ * retained_scheduling_randomize_window
  */
 START_TEST(host_retain_missed_check)
 {
@@ -694,6 +694,32 @@ START_TEST(host_retain_missed_check)
 }
 END_TEST
 
+
+/* If use_retained_scheduling_info is enabled, but we missed one check, and
+ * retained_scheduling_randomize_window is bigger than the hosts check_interval
+ * then we should use the check interval instead of the radomize window.
+ */
+START_TEST(host_retain_missed_check_larger_randomize_window)
+{
+	time_t current_time = time(NULL);
+	time_t next_check = current_time-60;
+	time_t expected_max_next_check;
+	use_retained_scheduling_info=TRUE;
+	retained_scheduling_randomize_window = 5*60;
+
+	hst->retry_interval = 1.0;
+	hst->check_interval = 1.0;
+	hst->current_state = STATE_UP;
+	hst->state_type = HARD_STATE;
+	hst->next_check = next_check;
+	expected_max_next_check = current_time+get_host_check_interval_s(hst);
+
+	/* Simulates a restart */
+	checks_init_hosts();
+	ck_assert(hst->next_check >= current_time);
+	ck_assert(hst->next_check <= expected_max_next_check);
+}
+END_TEST
 
 /* If use_retained_scheduling_info is enabled, and we missed more than one check
  * the next check should be scheduled randomly after a restart
@@ -797,7 +823,7 @@ END_TEST
 
 /* If use_retained_scheduling_info is enabled, but we missed one check, due to a
  * restart then the next check should be scheduled within the next
- * interval_length period
+ * retained_scheduling_randomize_window
  */
 START_TEST(service_retain_missed_check)
 {
@@ -812,6 +838,33 @@ START_TEST(service_retain_missed_check)
 	svc->state_type = HARD_STATE;
 	svc->next_check = next_check;
 	expected_max_next_check = current_time+retained_scheduling_randomize_window;
+
+	/* Simulates a restart */
+	checks_init_services();
+	ck_assert(svc->next_check >= current_time);
+	ck_assert(svc->next_check <= expected_max_next_check);
+}
+END_TEST
+
+
+/* If use_retained_scheduling_info is enabled, but we missed one check, and
+ * retained_scheduling_randomize_window is bigger than the hosts check_interval
+ * then we should use the check interval instead of the radomize window.
+ */
+START_TEST(service_retain_missed_check_larger_randomize_window)
+{
+	time_t current_time = time(NULL);
+	time_t next_check = current_time-60;
+	time_t expected_max_next_check;
+	use_retained_scheduling_info=TRUE;
+	retained_scheduling_randomize_window = 5*60;
+
+	svc->retry_interval = 1.0;
+	svc->check_interval = 1.0;
+	svc->current_state = STATE_UP;
+	svc->state_type = HARD_STATE;
+	svc->next_check = next_check;
+	expected_max_next_check = current_time+get_service_check_interval_s(svc);
 
 	/* Simulates a restart */
 	checks_init_services();
@@ -973,11 +1026,13 @@ check_scheduling_suite(void)
 	tcase_add_checked_fixture(tc_retain, setup, teardown);
 	tcase_add_test(tc_retain, host_retain_next_check);
 	tcase_add_test(tc_retain, host_retain_missed_check);
+	tcase_add_test(tc_retain, host_retain_missed_check_larger_randomize_window);
 	tcase_add_test(tc_retain, host_retain_missed_multiple_checks);
 	tcase_add_test(tc_retain, host_retain_disabled_next_check);
 	tcase_add_test(tc_retain, host_retain_always_within_check_interval);
 	tcase_add_test(tc_retain, service_retain_next_check);
 	tcase_add_test(tc_retain, service_retain_missed_check);
+	tcase_add_test(tc_retain, service_retain_missed_check_larger_randomize_window);
 	tcase_add_test(tc_retain, service_retain_missed_multiple_checks);
 	tcase_add_test(tc_retain, service_retain_disabled_next_check);
 	tcase_add_test(tc_retain, service_retain_always_within_check_interval);
