@@ -9,7 +9,7 @@
 
 Summary: Open Source Host, Service And Network Monitoring Program
 Name: naemon-core
-Version: 1.0.8
+Version: 1.0.9
 Release: 0
 License: GPLv2
 Group: Applications/System
