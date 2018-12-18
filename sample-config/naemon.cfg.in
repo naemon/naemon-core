@@ -479,7 +479,7 @@ use_retained_scheduling_info=1
 # the objects check_interval, the check_interval is used
 # instead.
 
-retained_scheduling_randomize_windows=60
+retained_scheduling_randomize_window=60
 
 
 # RETAINED ATTRIBUTE MASKS (ADVANCED FEATURE)
