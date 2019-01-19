@@ -1191,3 +1191,75 @@ int reset_variables(void)
 
 	return OK;
 }
+
+/******************************************************************/
+/************************* ESCAPE FUNCTIONS *************************/
+/******************************************************************/
+
+/* escapes newlines in a string. */
+char *escape_plugin_output(const char *rawbuf) {
+	char *newbuf = NULL;
+	int x;
+	int y;
+
+	if (rawbuf == NULL)
+		return NULL;
+
+	/* count the escapes we need to make. */
+	for (x = 0, y = 0; rawbuf[x]; x++) {
+		if (rawbuf[x] == '\n')
+			y++;
+	}
+
+	if (y == 0)
+		return strdup(rawbuf);
+
+	if ((newbuf = malloc(x + y + 1)) == NULL)
+		return NULL;
+
+	for (x = 0, y = 0; rawbuf[x]; x++) {
+		if (rawbuf[x] == '\n') {
+			newbuf[y++] = '\\';
+			newbuf[y++] = 'n';
+		}
+		else
+			newbuf[y++] = rawbuf[x];
+	}
+	newbuf[y] = '\0';
+
+	return newbuf;
+}
+
+/* unescapes newlines in a string. */
+char *unescape_plugin_output(const char *rawbuf) {
+	char *newbuf = NULL;
+	int x;
+	int y;
+
+	if (rawbuf == NULL)
+		return NULL;
+
+	/* count the replacements we need to make. */
+	for (x = 0, y = 0; rawbuf[x]; x++) {
+		if (rawbuf[x] == '\\' && rawbuf[x + 1] == 'n')
+			x++, y++;
+	}
+
+	if (y == 0)
+		return nm_strdup(rawbuf);
+
+	if ((newbuf = nm_malloc(x - y + 1)) == NULL)
+		return NULL;
+
+	for (x = 0, y = 0; rawbuf[x]; x++) {
+		if (rawbuf[x] == '\\' && rawbuf[x + 1] == 'n') {
+			x++;
+			newbuf[y++] = '\n';
+		}
+		else
+			newbuf[y++] = rawbuf[x];
+	}
+	newbuf[y] = '\0';
+
+	return newbuf;
+}

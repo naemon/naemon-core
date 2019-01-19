@@ -189,6 +189,17 @@ START_TEST(multiple_line_output_double_newline_escaping)
 }
 END_TEST
 
+START_TEST(multiline_unicode)
+{
+	full_output = "TEST CRITICAL - testoutput with unicode \342\202\254 on firstline and literal \\backslash\nwith multiline\nand literal \\backslash and some unicode \342\202\254 in the long output.|'unicodeperf\342\202\254'=0.001s\n";
+	output = strdup(full_output);
+	parse_check_output(output, &short_output, &long_output, &perf_data, TRUE, FALSE);
+	ck_assert_str_eq("TEST CRITICAL - testoutput with unicode \342\202\254 on firstline and literal \\backslash", short_output);
+	ck_assert_str_eq("with multiline\\nand literal \\backslash and some unicode \342\202\254 in the long output.", long_output);
+	ck_assert_str_eq("'unicodeperf\342\202\254'=0.001s", perf_data);
+}
+END_TEST
+
 Suite*
 checks_suite(void)
 {
@@ -209,6 +220,7 @@ checks_suite(void)
 	tcase_add_test(tc_output, empty_plugin_output);
 	tcase_add_test(tc_output, multiple_line_output_newline_escaping);
 	tcase_add_test(tc_output, multiple_line_output_double_newline_escaping);
+	tcase_add_test(tc_output, multiline_unicode);
 	suite_add_tcase(s, tc_output);
 	return s;
 }

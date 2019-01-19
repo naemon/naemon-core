@@ -188,7 +188,7 @@ int parse_check_output(char *buf, char **short_output, char **long_output, char 
 	*short_output = check_output->short_output;
 	*perf_data = check_output->perf_data;
 	if(escape_newlines_please == TRUE && check_output->long_output != NULL) {
-		*long_output = g_strescape(check_output->long_output, "\",\\n");
+		*long_output = escape_plugin_output(check_output->long_output);
 		free(check_output->long_output);
 	} else {
 		*long_output = check_output->long_output;
@@ -462,7 +462,7 @@ int process_check_result_file(char *fname)
 			else if (!strcmp(var, "return_code"))
 				cr.return_code = atoi(val);
 			else if (!strcmp(var, "output"))
-				cr.output = nm_strdup(val);
+				cr.output = unescape_plugin_output(val);
 		}
 	}
 

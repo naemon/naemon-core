@@ -55,6 +55,9 @@ const char *get_program_version(void);
 
 void cleanup(void);                                  	/* cleanup after ourselves (before quitting or restarting) */
 
+char *escape_plugin_output(const char *);
+char *unescape_plugin_output(const char *);
+
 NAGIOS_END_DECL
 
 #endif
