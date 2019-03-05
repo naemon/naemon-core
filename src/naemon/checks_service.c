@@ -321,12 +321,12 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	neb_result = broker_service_check(NEBTYPE_SERVICECHECK_INITIATE, NEBFLAG_NONE, NEBATTR_NONE, svc, CHECK_TYPE_ACTIVE, start_time, end_time, svc->check_command, svc->latency, 0.0, service_check_timeout, FALSE, 0, processed_command, cr);
 
 	/* neb module wants to override the service check - perhaps it will check the service itself */
-	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
+	if (neb_result == NEBERROR_CALLBACKOVERRIDE || neb_result == NEBERROR_CALLBACKCANCEL) {
 		clear_volatile_macros_r(&mac);
 		free_check_result(cr);
 		nm_free(cr);
 		nm_free(processed_command);
-		return OK;
+		return neb_result == NEBERROR_CALLBACKOVERRIDE ? OK : ERROR;
 	}
 
 	/* paw off the check to a worker to run */

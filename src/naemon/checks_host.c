@@ -319,12 +319,12 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	neb_result = broker_host_check(NEBTYPE_HOSTCHECK_INITIATE, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, host_check_timeout, FALSE, 0, processed_command, NULL, NULL, NULL, cr);
 
 	/* neb module wants to override the service check - perhaps it will check the service itself */
-	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
+	if (neb_result == NEBERROR_CALLBACKOVERRIDE || neb_result == NEBERROR_CALLBACKCANCEL) {
 		clear_volatile_macros_r(&mac);
 		free_check_result(cr);
 		nm_free(cr);
 		nm_free(processed_command);
-		return OK;
+		return neb_result == NEBERROR_CALLBACKOVERRIDE ? OK : ERROR;
 	}
 
 	runchk_result = wproc_run_callback(processed_command, host_check_timeout, handle_worker_host_check, (void*)cr, &mac);
