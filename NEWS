@@ -1,3 +1,15 @@
+1.0.10 - Mar 12 2018
+===================
+Features:
+* allow NEBERROR_CALLBACKCANCEL from NEBTYPE_*CHECK_INITIATE neb callbacks
+
+Changed:
+* nothing
+
+Bugfixes:
+* fix newline handling in spoolfile results
+
+
 1.0.9 - Dec 18 2018
 ===================
 Features:
