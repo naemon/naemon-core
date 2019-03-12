@@ -1,3 +1,9 @@
+naemon-core (1.0.10) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Naemon Development Team <naemon-dev@monitoring-lists.org>  Tue, 12 Mar 2019 16:06:24 +0100
+
 naemon-core (1.0.9) UNRELEASED; urgency=low
 
   * new upstream release
