@@ -2844,7 +2844,7 @@ void register_core_commands(void)
 	command_register(core_command, CMD_DEL_DOWNTIME_BY_HOSTGROUP_NAME);
 
 	core_command = command_create("DEL_DOWNTIME_BY_START_TIME_COMMENT", del_downtime_by_filter_handler,
-			"", NULL);
+			"This command deletes all downtimes matching the specified filters.", NULL);
 	command_argument_add(core_command, "downtime_start_time", TIMESTAMP, &default_timestamp, NULL);
 	command_argument_add(core_command, "comment", STRING, "", NULL);
 	command_register(core_command, CMD_DEL_DOWNTIME_BY_START_TIME_COMMENT);
