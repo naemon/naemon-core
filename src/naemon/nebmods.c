@@ -180,7 +180,7 @@ int neb_load_module(nebmodule *mod)
 		return ERROR;
 
 	/* load the module */
-	mod->module_handle = dlopen(mod->filename, RTLD_NOW | RTLD_GLOBAL);
+	mod->module_handle = dlopen(mod->filename, RTLD_NOW);
 	if (mod->module_handle == NULL) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Error: Could not load module '%s' -> %s\n", mod->filename, dlerror());
 
