@@ -1,6 +1,5 @@
 #include "config.h"
 #include "common.h"
-#include "objects.h"
 #include "statusdata.h"
 #include "sretention.h"
 #include "broker.h"
@@ -8,6 +7,7 @@
 #include "globals.h"
 #include "logging.h"
 #include "nm_alloc.h"
+#include "events.h"
 #include <string.h>
 
 /* hosts and services before attribute modifications */
@@ -19,14 +19,34 @@ static struct contact **premod_contacts;
 /************* TOP-LEVEL STATE INFORMATION FUNCTIONS **************/
 /******************************************************************/
 
+void save_state_information_eventhandler(struct nm_event_execution_properties *evprop)
+{
+	int status;
+
+	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
+		schedule_event(retention_update_interval * interval_length, save_state_information_eventhandler, evprop->user_data);
+
+		status = save_state_information(TRUE);
+
+		if(status == OK) {
+			nm_log(NSLOG_PROCESS_INFO,
+			       "Auto-save of retention data completed successfully.\n");
+		}
+	}
+}
+
 /* initializes retention data at program start */
-int initialize_retention_data(const char *cfgfile)
+int initialize_retention_data()
 {
 	premod_hosts = nm_calloc(num_objects.hosts, sizeof(void *));
 	premod_services = nm_calloc(num_objects.services, sizeof(void *));
 	premod_contacts = nm_calloc(num_objects.contacts, sizeof(void *));
 
-	return xrddefault_initialize_retention_data(cfgfile);
+	/* add a retention data save event if needed */
+	if (retain_state_information == TRUE && retention_update_interval > 0)
+		schedule_event(retention_update_interval * interval_length, save_state_information_eventhandler, NULL);
+
+	return xrddefault_initialize_retention_data();
 }
 
 
@@ -38,11 +58,15 @@ int cleanup_retention_data(void)
 	for (i = 0; i < num_objects.hosts; i++) {
 		nm_free(premod_hosts[i]);
 	}
+	nm_free(premod_hosts);
 	for (i = 0; i < num_objects.services; i++) {
 		nm_free(premod_services[i]);
 	}
-	premod_hosts = NULL;
-	premod_services = NULL;
+	nm_free(premod_services);
+	for (i = 0; i < num_objects.contacts; i++) {
+		nm_free(premod_contacts[i]);
+	}
+	nm_free(premod_contacts);
 
 	return xrddefault_cleanup_retention_data();
 }
@@ -56,23 +80,18 @@ int save_state_information(int autosave)
 	if (retain_state_information == FALSE)
 		return OK;
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
-	broker_retention_data(NEBTYPE_RETENTIONDATA_STARTSAVE, NEBFLAG_NONE, NEBATTR_NONE, NULL);
-#endif
+	broker_retention_data(NEBTYPE_RETENTIONDATA_STARTSAVE, NEBFLAG_NONE, NEBATTR_NONE);
 
 	result = xrddefault_save_state_information();
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
-	broker_retention_data(NEBTYPE_RETENTIONDATA_ENDSAVE, NEBFLAG_NONE, NEBATTR_NONE, NULL);
-#endif
+	broker_retention_data(NEBTYPE_RETENTIONDATA_ENDSAVE, NEBFLAG_NONE, NEBATTR_NONE);
 
 	if (result == ERROR)
 		return ERROR;
 
-	if (autosave == TRUE)
-		nm_log(NSLOG_PROCESS_INFO, "Auto-save of retention data completed successfully.\n");
+	if (!autosave) {
+		nm_log(NSLOG_INFO_MESSAGE, "Retention data successfully saved.");
+	}
 
 	return OK;
 }
@@ -86,17 +105,11 @@ int read_initial_state_information(void)
 	if (retain_state_information == FALSE)
 		return OK;
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
-	broker_retention_data(NEBTYPE_RETENTIONDATA_STARTLOAD, NEBFLAG_NONE, NEBATTR_NONE, NULL);
-#endif
+	broker_retention_data(NEBTYPE_RETENTIONDATA_STARTLOAD, NEBFLAG_NONE, NEBATTR_NONE);
 
 	result = xrddefault_read_state_information();
 
-#ifdef USE_EVENT_BROKER
-	/* send data to event broker */
-	broker_retention_data(NEBTYPE_RETENTIONDATA_ENDLOAD, NEBFLAG_NONE, NEBATTR_NONE, NULL);
-#endif
+	broker_retention_data(NEBTYPE_RETENTIONDATA_ENDLOAD, NEBFLAG_NONE, NEBATTR_NONE);
 
 	return result;
 }

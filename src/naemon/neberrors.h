@@ -21,7 +21,7 @@
 /***** CALLBACK ERRORS *****/
 #define NEBERROR_NOCALLBACKFUNC     200     /* no callback function was specified */
 #define NEBERROR_NOCALLBACKLIST     201     /* callback list not initialized */
-#define NEBERROR_CALLBACKBOUNDS     202     /* callback type was out of bounds */
+#define NEBERROR_CALLBACKBOUNDS     202     /* No longer used! callback type was out of bounds */
 #define NEBERROR_CALLBACKNOTFOUND   203     /* the callback could not be found */
 #define NEBERROR_NOMODULEHANDLE     204     /* no module handle specified */
 #define NEBERROR_BADMODULEHANDLE    205     /* bad module handle */

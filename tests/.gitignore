@@ -1,6 +1,14 @@
 /test*.log
 /test*.trs
 /test-checks
+/test-obj-config-parse
+/test-event-heap
+/test-external-command-nebcallback
+/test-kv-command
 /test-config
+/test-kvvec
+/test-kvvec-ekvstr
 /test-log
 /test-utils
+/test-check-scheduling
+/test-objects

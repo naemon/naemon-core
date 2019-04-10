@@ -93,25 +93,9 @@ status_file=@localstatedir@/status.dat
 # STATUS FILE UPDATE INTERVAL
 # This option determines the frequency (in seconds) that
 # naemon will periodically dump program, host, and
-# service status data.
+# service status data. Set it to 0 to disable updates.
 
 status_update_interval=10
-
-
-
-# NAEMON USER
-# This determines the effective user that Naemon should run as.
-# You can either supply a username or a UID.
-
-naemon_user=@naemon_user@
-
-
-
-# NAEMON GROUP
-# This determines the effective group that Naemon should run as.
-# You can either supply a group name or a GID.
-
-naemon_group=@naemon_grp@
 
 
 
@@ -184,7 +168,7 @@ event_broker_options=-1
 
 # EVENT BROKER MODULE(S)
 # This directive is used to specify an event broker module that should
-# by loaded by Naemon at startup.  Use multiple directives if you want
+# be loaded by Naemon at startup.  Use multiple directives if you want
 # to load more than one module.  Arguments that should be passed to
 # the module at startup are seperated from the module path by a space.
 #
@@ -196,7 +180,13 @@ event_broker_options=-1
 #broker_module=/somewhere/module1.o
 #broker_module=/somewhere/module2.o arg1 arg2=3 debug=0
 
-
+# In order to provide drop-in support for new modules, you can also make use of
+# the include_dir directive. The include_dir directive causes Naemon to parse
+# any configuration (not just object configuration, as with cfg_dir) as if the
+# contents of the files in the pointed-to directory was included on this line.
+# The path to the directory is relative to the path of the main naemon.cfg
+# file.
+include_dir=module-conf.d
 
 # LOG ARCHIVE PATH
 # This is the directory where archived (rotated) log files are placed by the
@@ -212,14 +202,18 @@ log_archive_path=@logdir@/archives
 
 use_syslog=0
 
-
-
 # NOTIFICATION LOGGING OPTION
 # If you don't want notifications to be logged, set this value to 0.
 # If notifications should be logged, set the value to 1.
 
 log_notifications=1
 
+# Notification suppression reason (NSR) logging causes the reason for a
+# notification suppression to be logged, when it occurs. This can potentially
+# add some noise to your log file, but is highly useful when troubleshooting
+# missing notifications.
+
+enable_notification_suppression_reason_logging=1
 
 
 # SERVICE RETRY LOGGING OPTION
@@ -313,47 +307,14 @@ log_passive_checks=1
 max_concurrent_checks=0
 
 
-
-# HOST AND SERVICE CHECK REAPER FREQUENCY
-# This is the frequency (in seconds!) that Naemon will process
-# the results of host and service checks.
-
-check_result_reaper_frequency=10
-
-
-
-
-# MAX CHECK RESULT REAPER TIME
-# This is the max amount of time (in seconds) that  a single
-# check result reaper event will be allowed to run before
-# returning control back to Naemon so it can perform other
-# duties.
-
-max_check_result_reaper_time=30
-
-
-
-
 # CHECK RESULT PATH
-# This is directory where Naemon stores the results of host and
-# service checks that have not yet been processed.
+# This is directory where Naemon reads check results of host and
+# service checks to further process them.
 #
-# Note: Make sure that only one instance of Naemon has access
-# to this directory!
+# Note: Naemon does not require this folder internally but it still
+# can be used to pass check results to Naemon.
 
 check_result_path=@CHECKRESULTDIR@
-
-
-
-
-# MAX CHECK RESULT FILE AGE
-# This option determines the maximum age (in seconds) which check
-# result files are considered to be valid.  Files older than this
-# threshold will be mercilessly deleted without further processing.
-
-max_check_result_file_age=3600
-
-
 
 
 # CACHED HOST CHECK HORIZON
@@ -506,6 +467,19 @@ use_retained_program_state=1
 
 use_retained_scheduling_info=1
 
+
+# RETAINED_SCHEDULING_RANDOMIZE_WINDOW
+# If use_retained_scheduling info is enabled, this setting
+# sets the window (in seconds), in which checks that were
+# supposed to executed during a restart, is rescheduled.
+# That is, if set to 60 seconds, then all checks that were
+# missed due to a restart will be scheduled randomly to be
+# executed in the first 60 seconds after a restart.
+# If the retained_scheduling_randomize_window is larger than
+# the objects check_interval, the check_interval is used
+# instead.
+
+retained_scheduling_randomize_window=60
 
 
 # RETAINED ATTRIBUTE MASKS (ADVANCED FEATURE)
@@ -999,75 +973,6 @@ admin_pager=page@naemon_user@@localhost
 
 
 
-# DAEMON CORE DUMP OPTION
-# This option determines whether or not Naemon is allowed to create
-# a core dump when it runs as a daemon.  Note that it is generally
-# considered bad form to allow this, but it may be useful for
-# debugging purposes.  Enabling this option doesn't guarantee that
-# a core file will be produced, but that's just life...
-# Values: 1 - Allow core dumps
-#         0 - Do not allow core dumps (default)
-
-daemon_dumps_core=0
-
-
-
-# LARGE INSTALLATION TWEAKS OPTION
-# This option determines whether or not Naemon will take some shortcuts
-# which can save on memory and CPU usage in large Naemon installations.
-# Read the documentation for more information on the benefits/tradeoffs
-# of enabling this option.
-# Values: 1 - Enabled tweaks
-#         0 - Disable tweaks (default)
-
-use_large_installation_tweaks=0
-
-
-
-# ENABLE ENVIRONMENT MACROS
-# This option determines whether or not Naemon will make all standard
-# macros available as environment variables when host/service checks
-# and system commands (event handlers, notifications, etc.) are
-# executed.
-# Enabling this is a very bad idea for anything but very small setups,
-# as it means plugins, notification scripts and eventhandlers may run
-# out of environment space. It will also cause a significant increase
-# in CPU- and memory usage and drastically reduce the number of checks
-# you can run.
-# Values: 1 - Enable environment variable macros
-#         0 - Disable environment variable macros (default)
-
-enable_environment_macros=0
-
-
-
-# CHILD PROCESS MEMORY OPTION
-# This option determines whether or not Naemon will free memory in
-# child processes (processed used to execute system commands and host/
-# service checks).  If you specify a value here, it will override
-# program defaults.
-# Value: 1 - Free memory in child processes
-#        0 - Do not free memory in child processes
-
-#free_child_process_memory=1
-
-
-
-# CHILD PROCESS FORKING BEHAVIOR
-# This option determines how Naemon will fork child processes
-# (used to execute system commands and host/service checks).  Normally
-# child processes are fork()ed twice, which provides a very high level
-# of isolation from problems.  Fork()ing once is probably enough and will
-# save a great deal on CPU usage (in large installs), so you might
-# want to consider using this.  If you specify a value here, it will
-# program defaults.
-# Value: 1 - Child processes fork() twice
-#        0 - Child processes fork() just once
-
-#child_processes_fork_twice=1
-
-
-
 # DEBUG LEVEL
 # This option determines how much (if any) debugging information will
 # be written to the debug file.  OR values together to log multiple
@@ -1133,24 +1038,21 @@ allow_empty_hostgroup_assignment=0
 #check_workers=3
 
 
+# DISABLE SERVICE CHECKS WHEN HOST DOWN
+# This option will disable all service checks if the host is not in an UP state
+#
+# While desirable in some environments, enabling this value can distort report
+# values as the expected quantity of checks will not have been performed
 
-# EXPERIMENTAL load controlling options
-# To get current defaults based on your system issue a command to
-# the query handler. Please note that this is an experimental feature
-# and not meant for production use. Used incorrectly it can induce
-# enormous latency.
-# #core loadctl
-#   jobs_max - The maximum amount of jobs to run at one time
-#   jobs_min - The minimum amount of jobs to run at one time
-#   jobs_limit - The maximum amount of jobs the current load lets us run
-#   backoff_limit - The minimum backoff_change
-#   backoff_change - # of jobs to remove from jobs_limit when backing off
-#   rampup_limit - Minimum rampup_change
-#   rampup_change - # of jobs to add to jobs_limit when ramping up
-# NOTE: The backoff_limit and rampup_limit are NOT used by anything currently,
-#       so if your system is under load nothing will actively modify the jobs
-#       even if you have these options enabled, they are for external
-#       connector information only.  However, if you change the jobs_max or
-#       jobs_min manually here or through the query handler interface that
-#       WILL affect your system
-#loadctl_options=jobs_max=100;backoff_limit=10;rampup_change=5
+#host_down_disable_service_checks=0
+
+
+# CIRCULAR DEPENDENCIES (EXPERIMENTAL)
+# Allow for circular dependencies in naemon's host graph.
+# Enabaling this will cause propagation the following to stop working:
+# * scheduling downtime
+# * enabling notification
+# * disabling notification
+# This feature is experimental and bugs might occur.
+
+allow_circular_dependencies=0

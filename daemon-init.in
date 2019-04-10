@@ -23,6 +23,17 @@
 # Source function library.
 if [ -e /etc/rc.d/init.d/functions ]; then
   . /etc/rc.d/init.d/functions
+elif [ -e /lib/lsb/init-functions ]; then
+  . /lib/lsb/init-functions
+fi
+
+is_suse="no"
+if [ -e /etc/SuSE-release ]; then
+  is_suse="yes"
+fi
+
+if [ -e /etc/default/naemon ]; then
+  . /etc/default/naemon
 fi
 
 prefix="@prefix@"
@@ -35,7 +46,7 @@ config="@pkgconfdir@/naemon.cfg"
 pidfile="@lockfile@"
 pidfolder="`dirname $pidfile`"
 user="@naemon_user@"
-group="@naemon_grp@"
+group="@naemon_group@"
 checkconfig="false"
 
 # Default nice for performance, change in sysconfig file not here!
@@ -52,74 +63,9 @@ status() {
     return $?
 }
 
-pidof_naemon() {
-    if [ -e "$pidfile" ]; then
-        if pidof $prog | tr ' ' '\n' | grep -w $(cat $pidfile); then
-            return 0
-        fi
-    fi
-    return 1
-}
-
-check_config() {
-    TMPFILE=$(mktemp /tmp/.configtest.XXXXXXXX)
-    $0 configtest > "$TMPFILE"
-    WARN=`grep ^"Total Warnings:" "$TMPFILE" |awk -F: '{print \$2}' |sed s/' '//g`
-    ERR=`grep ^"Total Errors:" "$TMPFILE" |awk -F: '{print \$2}' |sed s/' '//g`
-
-    if test "${ERR}" != "0"; then
-        # We'll write out the errors to a file we can have a
-        # script watching for
-        echo "WARNING: Errors in config files - see log for details: $TMPFILE" > @TMPDIR@/naemon.configtest
-        grep -i ^error "$TMPFILE" >> @TMPDIR@/naemon.configtest
-        chmod 0644 @TMPDIR@/naemon.configtest
-        cat "$TMPFILE"
-        exit 8
-    elif test "${WARN}" != "0"; then
-        # Warnings don't need to be saved, so just print them and
-        # be done with it.
-        echo "WARNING: Warnings in config files - see log for details: $TMPFILE" > @TMPDIR@/naemon.configtest
-        cat "$TMPFILE"
-    else
-        echo "OK - Configuration check verified" > @TMPDIR@/naemon.configtest
-        chmod 0644 @TMPDIR@/naemon.configtest
-        /bin/rm "$TMPFILE"
-    fi
-    return 0
-}
-
-naemon_wait_stop() {
-    pidtmp=$(pidof_naemon) || true
-    if kill -0 "${pidtmp:-}" 2> /dev/null; then
-        pid=$pidtmp
-    fi
-    stop
-
-    # wait until really stopped
-    if [ -n "${pid:-}" ]; then
-        i=0
-        while kill -0 "${pid:-}" 2> /dev/null;  do
-        if [ $i = '60' ]; then
-            break;
-        else
-            if [ $i = '0' ]; then
-                echo -n " ... waiting "
-            else
-                echo -n "."
-            fi
-            i=$(($i+1))
-            sleep 1
-        fi
-        done
-    fi
-}
-
 start() {
     test -x $exec || exit 5
     test -f $config || exit 6
-    if [ "$checkconfig" = "false" ]; then
-        check_config
-    fi
     echo -n "Starting $prog: "
     # Create PID folder if it does not exist
     if [ ! -d $pidfolder ]; then
@@ -128,10 +74,14 @@ start() {
     fi
     # We need to _make sure_ the precache is there and verified
     # Raise priority to make it run better
-    if type start-stop-daemon >/dev/null 2>&1; then
-        NICE_OPT=""
+
+    NICE_OPT=""
+    if [ "x${is_suse}" == "xyes" ]; then
+        if [ $NICELEVEL != "0" ]; then NICE_OPT="-n $NICELEVEL"; fi
+        start_daemon ${NICE_OPT} -p ${pidfile} -u ${user} $exec -d $config
+    elif type start-stop-daemon >/dev/null 2>&1; then
         if [ $NICELEVEL != "0" ]; then NICE_OPT="--nicelevel $NICELEVEL"; fi
-        start-stop-daemon $NICE_OPT --start --user $user --name $prog --pidfile $pidfile --exec $exec -- -d $config
+        start-stop-daemon $NICE_OPT --start --user $user --chuid $user:$group --name $prog --pidfile $pidfile --exec $exec -- -d $config
     else
         daemon --user=$user $exec -d $config
     fi
@@ -145,11 +95,14 @@ start() {
 
 stop() {
     echo -n "Stopping $prog: "
-    pid=$(pidof_naemon) || true
-    if [ "${pid}" ]; then
-        kill $pid
+    if [ "x${is_suse}" == "xyes" ]; then
+        killproc -p ${pidfile} -t 90 $exec
+    elif type start-stop-daemon >/dev/null 2>&1; then
+        start-stop-daemon --stop --name ${prog} --pidfile ${pidfile} --exec ${exec}
+    elif [ -e /etc/redhat-release ]; then
+        killproc -p ${pidfile} -d 90 ${exec}
     else
-        return 1
+        killproc -p ${pidfile} ${exec}
     fi
     retval=$?
     echo
@@ -159,19 +112,19 @@ stop() {
 
 
 restart() {
-    check_config
-    checkconfig="true"
-    pid=$(pidof_naemon) || true
-    naemon_wait_stop
-    echo
+    stop
     start
+    return $?
 }
 
 reload() {
-    check_config
-    checkconfig="true"
     echo -n "Reloading $prog: "
-    pkill -HUP -u ${user} -f ${exec}
+    if [ -e $pidfile ]; then
+        PID=`cat $pidfile`;
+        kill -HUP $PID >/dev/null 2>/dev/null
+    else
+        pkill -HUP -u ${user} -f ${exec}
+    fi
     retval=$?
     echo
 }
@@ -182,15 +135,16 @@ force_reload() {
 
 case "$1" in
     start)
-        status $prog && exit 0
         $1
+        retval=$?
         ;;
     stop)
-        status $prog|| exit 0
         $1
+        retval=$?
         ;;
     restart)
         $1
+        retval=$?
         ;;
     reload)
         status $prog || exit 7
@@ -219,10 +173,10 @@ case "$1" in
         else
           /bin/su - -s /bin/sh $user -c "$corelimit >/dev/null 2>&1 ; $exec -vp $config"
         fi
-        RETVAL=$?
+        retval=$?
         ;;
     *)
         echo "Usage: $0 {start|stop|status|restart|condrestart|try-restart|reload|force-reload|configtest}"
         exit 2
 esac
-exit $?
+exit $retval

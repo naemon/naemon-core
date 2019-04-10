@@ -6,7 +6,8 @@
 #endif
 
 #include "common.h"
-#include "objects.h"
+#include "objects_host.h"
+#include "objects_service.h"
 
 
 /**************************** COMMENT SOURCES ******************************/
@@ -66,8 +67,6 @@ int delete_all_host_comments(char *);                               /* deletes a
 int delete_host_acknowledgement_comments(struct host *);                   /* deletes all non-persistent ack comments for a specific host */
 int delete_all_service_comments(char *, char *);                    /* deletes all comments for a specific service */
 int delete_service_acknowledgement_comments(struct service *);             /* deletes all non-persistent ack comments for a specific service */
-
-int check_for_expired_comment(unsigned long);                       /* expires a comment */
 
 struct comment *find_comment(unsigned long, int);                            /* finds a specific comment */
 struct comment *find_service_comment(unsigned long);                         /* finds a specific service comment */

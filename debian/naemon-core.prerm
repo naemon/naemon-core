@@ -1,0 +1,20 @@
+#!/bin/sh -e
+
+case "$1" in
+  remove|deconfigure)
+    invoke-rc.d naemon stop || true
+    rm -f /var/lib/naemon/status.dat
+    rm -f /var/lib/naemon/naemon.qh
+    rm -f /var/lib/naemon/naemon.tmp*
+  ;;
+
+  upgrade|failed-upgrade)
+  ;;
+
+  *)
+    echo "prerm called with unknown argument \`$1'" >&2
+    exit 0
+  ;;
+esac
+
+#DEBHELPER#

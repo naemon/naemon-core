@@ -1,5 +1,5 @@
-#ifndef LIBNAEMON_lnag_utils_h__
-#define LIBNAEMON_lnag_utils_h__
+#ifndef LIBNAEMON_lnae_utils_h__
+#define LIBNAEMON_lnae_utils_h__
 
 #if !defined (_NAEMON_H_INSIDE) && !defined (NAEMON_COMPILATION)
 #error "Only <naemon/naemon.h> can be included directly."
@@ -10,7 +10,7 @@
 
 /**
  * @file lnae-utils.h
- * @brief libnagios helper and compatibility macros that lack a "real" home.
+ * @brief helper and compatibility macros that lack a "real" home.
  *
  * This is the home of random macros that must be present for compilation
  * to succeed but are missing on some platforms.
@@ -18,7 +18,7 @@
  * @{
  */
 
-#define NAGIOS_MKVERSION(a, b, c) \
+#define NAEMON_MKVERSION(a, b, c) \
 	(((a) * 10000) + ((b) * 100) + (c))
 
 #ifdef __cplusplus
@@ -47,19 +47,19 @@
 #  define __attribute__(x) /* nothing */
 # else
 #  ifdef __GNUC_PATCHLEVEL__
-#   define GCC_VERSION NAGIOS_MKVERSION(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__)
+#   define GCC_VERSION NAEMON_MKVERSION(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__)
 #  else
-#   define GCC_VERSION NAGIOS_MKVERSION(__GNUC__, __GNUC_MINOR__, 0)
+#   define GCC_VERSION NAEMON_MKVERSION(__GNUC__, __GNUC_MINOR__, 0)
 #  endif /* __GNUC_PATCHLEVEL__ */
 # endif /* __GNUC__ */
 #endif /* NODOXY */
 
-#if GCC_VERSION >= NAGIOS_MKVERSION(4, 5, 0)
-# define NAGIOS_DEPRECATED(version, hint) \
-	__attribute__((deprecated("This function will be removed in Nagios v" #version ". Please use " #hint " instead")))
+#if GCC_VERSION >= NAEMON_MKVERSION(4, 5, 0)
+# define NAEMON_DEPRECATED(version, hint) \
+	__attribute__((deprecated("This function will be removed in version " #version ". Please use " #hint " instead")))
 #else
 /** Macro for alerting module authors to function deprecation */
-# define NAGIOS_DEPRECATED(version, hint) \
+# define NAEMON_DEPRECATED(version, hint) \
 	__attribute__((deprecated))
 #endif
 
@@ -78,9 +78,6 @@
 #undef TRUE
 #endif
 #define TRUE (!FALSE) /**< Not false */
-
-/** Useful macro to safely avoid double-free memory corruption */
-#define my_free(ptr) do { if(ptr) { free(ptr); ptr = NULL; } } while(0)
 
 #ifndef ARRAY_SIZE
 /** Useful for iterating over all elements in a static array */

@@ -127,6 +127,7 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv)
 	int arg = 0, a = 0;
 	unsigned int i;
 	int state, ret = 0;
+	int seen_space = 0;
 	size_t len;
 	char *argz;
 
@@ -147,6 +148,7 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv)
 				argz[a++] = 0;
 				continue;
 			}
+			seen_space = 1;
 			if (!in_quotes)
 				continue;
 
@@ -197,6 +199,7 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv)
 				set_state(STATE_INSQ | STATE_INARG);
 				continue;
 			}
+			/* FALLTHROUGH */
 		case '"':
 			if (have_state(STATE_INSQ))
 				break;
@@ -250,8 +253,16 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv)
 			if (!in_quotes) {
 				add_ret(RUNCMD_HAS_WILDCARD);
 			}
+			break;
 
-			/* fallthrough */
+		case '=':
+			if (!in_quotes) {
+				/* if we haven't seen any whitespace yet, this command is probably of form "VAR='value' /bin/command" so need to force use of /bin/sh */
+				if (!seen_space) {
+					add_ret(RUNCMD_HAS_SHVAR);
+				}
+			}
+			break;
 
 		default:
 			break;
@@ -323,7 +334,7 @@ int runcmd_open(const char *cmd, int *pfd, int *pfderr, char **env)
 		runcmd_init();
 
 	/* if no command was passed, return with no error */
-	if (!cmd || !*cmd)
+	if (!*cmd)
 		return RUNCMD_EINVAL;
 
 	cmdlen = strlen(cmd);
@@ -454,38 +465,4 @@ int runcmd_close(int fd)
 
 	/* return child's termination status */
 	return (WIFEXITED(status)) ? WEXITSTATUS(status) : -1;
-}
-
-
-int runcmd_try_close(int fd, int *status, int sig)
-{
-	pid_t pid;
-	int result;
-
-	/* make sure this fd was opened by popen() */
-	if (fd < 0 || fd > maxfd || !pids || !pids[fd])
-		return RUNCMD_EINVAL;
-
-	pid = pids[fd];
-	while ((result = waitpid(pid, status, WNOHANG)) != pid) {
-		if (!result) return 0;
-		if (result == -1) {
-			switch (errno) {
-			case EINTR:
-				continue;
-			case EINVAL:
-				return -1;
-			case ECHILD:
-				if (sig) {
-					result = kill(pid, sig);
-					sig = 0;
-					continue;
-				} else return -1;
-			} /* switch */
-		}
-	}
-
-	pids[fd] = 0;
-	close(fd);
-	return result;
 }

@@ -27,13 +27,12 @@
  *****************************************************************************/
 #include <string.h>
 
-#include "naemon/utils.c"
+#include "naemon/objects_timeperiod.c"
+#include "naemon/utils.h"
 #include "naemon/configuration.h"
 #include "naemon/defaults.h"
+#include "naemon/globals.h"
 #include "tap.h"
-
-#define RUN_24x7_TESTS 1
-
 
 static void noeol_ctime(const time_t *when, char *buf)
 {
@@ -125,19 +124,20 @@ int main(int argc, char **argv)
 	time_t chosen_valid_time = 0L;
 	timeperiod *temp_timeperiod = NULL;
 	int is_valid_time = 0;
-#if RUN_24x7_TESTS
+
 	int c = 0;
 	int iterations = 1000;
-#endif
+	int failures;
 
-	plan_tests(6118);
+	plan_tests(121);
+
 
 	/* reset program variables */
 	reset_variables();
 
 	printf("Reading configuration data...\n");
 
-	config_file = strdup(get_default_config_file());
+	config_file = strdup(TESTDIR "naemon.cfg");
 	config_file_dir = nspath_absolute_dirname(config_file, NULL);
 	/* read in the configuration files (main config file, resource and object config files) */
 	result = read_main_config_file(config_file);
@@ -273,29 +273,42 @@ int main(int argc, char **argv)
 	saved_test_time = 1256511661;
 	saved_test_time = saved_test_time - (24 * 60 * 60);
 
-#if RUN_24x7_TESTS
+	/*
+	 * To find out what has failed, run gdb for this test case
+	 * (libtool --mode=execute gdb t-tap/test_timeperiods) and type
+	 * "watch failures", then it will interupt on increment
+	 */
+
 	putenv("TZ=UTC");
 	tzset();
 	test_time = saved_test_time;
+	failures = 0;
 	for (c = 0; c < iterations; c++) {
 		is_valid_time = check_time_against_period(test_time, temp_timeperiod);
-		ok(is_valid_time == OK, "Always OK for 24x7 with TZ=UTC, time_t=%lu", test_time);
+		if(is_valid_time != OK)
+			failures++;
 		chosen_valid_time = 0L;
 		_get_next_valid_time(test_time, &chosen_valid_time, temp_timeperiod);
-		ok(test_time == chosen_valid_time, "get_next_valid_time always returns same time");
+		if(test_time != chosen_valid_time)
+			failures++;
 		test_time += 1800;
 	}
+	ok(failures == 0, "24x7 with TZ=UTC");
 
 	putenv("TZ=Europe/London");
 	tzset();
 	test_time = saved_test_time;
+	failures = 0;
 	for (c = 0; c < iterations; c++) {
 		is_valid_time = check_time_against_period(test_time, temp_timeperiod);
-		ok(is_valid_time == OK, "Always OK for 24x7 with TZ=Europe/London, time_t=%lu", test_time);
+		if(is_valid_time != OK)
+			failures++;
 		_get_next_valid_time(test_time, &chosen_valid_time, temp_timeperiod);
-		ok(test_time == chosen_valid_time, "get_next_valid_time always returns same time, time_t=%lu", test_time);
+		if(test_time != chosen_valid_time)
+			failures++;
 		test_time += 1800;
 	}
+	ok(failures == 0, "24x7 with TZ=Europe/London");
 
 	/* 2009-11-01 is the day when clocks go back an hour in America. Bug happens during 23:00 to 00:00 */
 	/* This is 23:01:01 */
@@ -305,14 +318,17 @@ int main(int argc, char **argv)
 	putenv("TZ=America/New_York");
 	tzset();
 	test_time = saved_test_time;
+	failures = 0;
 	for (c = 0; c < iterations; c++) {
 		is_valid_time = check_time_against_period(test_time, temp_timeperiod);
-		ok(is_valid_time == OK, "Always OK for 24x7 with TZ=America/New_York, time_t=%lu", test_time);
+		if(is_valid_time != OK)
+			failures++;
 		_get_next_valid_time(test_time, &chosen_valid_time, temp_timeperiod);
-		ok(test_time == chosen_valid_time, "get_next_valid_time always returns same time, time_t=%lu", test_time);
+		if(test_time != chosen_valid_time)
+			failures++;
 		test_time += 1800;
 	}
-#endif
+	ok(failures == 0, "24x7 with TZ=America/New_York");
 
 
 	/* Tests around clock change going back for TZ=Europe/London. 1256511661 = Sun Oct

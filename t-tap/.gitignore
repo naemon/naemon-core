@@ -4,6 +4,7 @@
 /test_timeperiods
 /test_config
 /test_commands
+/test_downtime
 *.dSYM
 test*.log
 test*.trs

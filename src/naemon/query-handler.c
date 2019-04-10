@@ -5,7 +5,6 @@
 #include "events.h"
 #include "utils.h"
 #include "logging.h"
-#include "loadctl.h"
 #include "globals.h"
 #include "commands.h"
 #include "nm_alloc.h"
@@ -13,7 +12,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <string.h>
-#include <stdarg.h>
+#include <glib.h>
 
 /* A registered handler */
 struct query_handler {
@@ -28,7 +27,7 @@ static struct query_handler *qhandlers;
 static int qh_listen_sock = -1; /* the listening socket */
 static unsigned int qh_running;
 unsigned int qh_max_running = 0; /* defaults to unlimited */
-static dkhash_table *qh_table;
+static GHashTable *qh_table;
 
 /* the echo service. stupid, but useful for testing */
 static int qh_echo(int sd, char *buf, unsigned int len)
@@ -43,7 +42,7 @@ static int qh_echo(int sd, char *buf, unsigned int len)
 
 static struct query_handler *qh_find_handler(const char *name)
 {
-	return (struct query_handler *)dkhash_get(qh_table, name, NULL);
+	return g_hash_table_lookup(qh_table, name);
 }
 
 /* subset of http error codes */
@@ -66,7 +65,7 @@ const char *qh_strerror(int code)
 	switch (code) {
 		/* client errors */
 	case 400: return "Bad request";
-	case 401: return "Unauthorized";
+	case 401: return "Unathorized";
 	case 403: return "Forbidden (disabled by config)";
 	case 404: return "Not found";
 	case 405: return "Method not allowed";
@@ -91,155 +90,144 @@ const char *qh_strerror(int code)
 	return "Unknown error";
 }
 
-void qh_error(int sd, int code, const char *fmt, ...)
+static int qh_input(int sd, int events, void *bq_)
 {
-	char *msg = NULL;
-	va_list ap;
-	int ret;
+	nm_bufferqueue *bq = (nm_bufferqueue *)bq_;
+	int result;
+	size_t len;
+	unsigned int query_len = 0;
+	char *buf, *space;
+	struct query_handler *qh;
+	char *handler = NULL, *query = NULL;
 
-	va_start(ap, fmt);
-	ret = vasprintf(&msg, fmt, ap);
-	if (ret < 0 || !msg) {
-		return;
-	}
-	nsock_printf_nul(sd, "%d: %s\n%s", code, qh_strerror(code), msg);
-	free(msg);
-}
-
-static int qh_input(int sd, int events, void *ioc_)
-{
-	iocache *ioc = (iocache *)ioc_;
-
-	/* input on main socket, so accept one */
-	if (sd == qh_listen_sock) {
-		struct sockaddr sa;
-		socklen_t slen = 0;
-		int nsd;
-
-		memset(&sa, 0, sizeof(sa)); /* shut valgrind up */
-		nsd = accept(sd, &sa, &slen);
-		if (qh_max_running && qh_running >= qh_max_running) {
-			nsock_printf(nsd, "503: Server full");
-			close(nsd);
-			return 0;
-		}
-
-		if (!(ioc = iocache_create(16384))) {
-			nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to create iocache for inbound request\n");
-			nsock_printf(nsd, "500: Internal server error");
-			close(nsd);
-			return 0;
-		}
-
-		/*
-		 * @todo: Stash the iocache and the socket in some
-		 * addressable list so we can release them on deinit
-		 */
-		if (iobroker_register(nagios_iobs, nsd, ioc, qh_input) < 0) {
-			nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to register input socket %d with I/O broker: %s\n", nsd, strerror(errno));
-			iocache_destroy(ioc);
-			close(nsd);
-			return 0;
-		}
-
-		/* make it non-blocking, but leave kernel buffers unchanged */
-		worker_set_sockopts(nsd, 0);
-		qh_running++;
+	result = nm_bufferqueue_read(bq, sd);
+	/* disconnect? */
+	if (result == 0 || (result < 0 && errno == EPIPE)) {
+		nm_bufferqueue_destroy(bq);
+		iobroker_close(nagios_iobs, sd);
+		qh_running--;
 		return 0;
+	}
+
+	/*
+	 * A request looks like this: '[@|#]<qh>[<SP>][<query>]\0'.
+	 * That is, optional '#' (oneshot) or '@' (keepalive),
+	 * followed by the name of a registered handler, followed by
+	 * an optional space and an optional query. If the handler
+	 * has no "default" handler, a query is required or an error
+	 * will be thrown.
+	 */
+
+	/* Use data up to the first nul byte */
+	nm_bufferqueue_unshift_to_delim(bq, "\0", 1, &len, (void **)&buf);
+	if (!buf)
+		return 0;
+
+	/* Identify handler part and any magic query bytes */
+	if (*buf == '@' || *buf == '#') {
+		handler = buf + 1;
 	} else {
-		int result;
-		unsigned long len;
-		unsigned int query_len = 0;
-		char *buf, *space;
-		struct query_handler *qh;
-		char *handler = NULL, *query = NULL;
+		handler = buf;
+	}
 
-		result = iocache_read(ioc, sd);
-		/* disconnect? */
-		if (result == 0 || (result < 0 && errno == EPIPE)) {
-			iocache_destroy(ioc);
-			iobroker_close(nagios_iobs, sd);
-			qh_running--;
-			return 0;
-		}
+	/* Locate query (if any) */
+	if ((space = strchr(buf, ' '))) {
+		*space = 0;
+		query = space + 1;
+		query_len = len - ((unsigned long)query - (unsigned long)buf);
+	} else {
+		query = "";
+		query_len = 0;
+	}
 
-		/*
-		 * A request looks like this: '[@|#]<qh>[<SP>][<query>]\0'.
-		 * That is, optional '#' (oneshot) or '@' (keepalive),
-		 * followed by the name of a registered handler, followed by
-		 * an optional space and an optional query. If the handler
-		 * has no "default" handler, a query is required or an error
-		 * will be thrown.
-		 */
+	/* locate the handler */
+	if (!(qh = qh_find_handler(handler))) {
+		/* not found. that's a 404 */
+		nsock_printf(sd, "404: %s: No such handler", handler);
+		nm_free(buf);
+		iobroker_close(nagios_iobs, sd);
+		nm_bufferqueue_destroy(bq);
+		return 0;
+	}
 
-		/* Use data up to the first nul byte */
-		buf = iocache_use_delim(ioc, "\0", 1, &len);
-		if (!buf)
-			return 0;
+	/* strip trailing newlines */
+	while (query_len > 0 && (query[query_len - 1] == 0 || query[query_len - 1] == '\n'))
+		query[--query_len] = 0;
 
-		/* Identify handler part and any magic query bytes */
-		if (*buf == '@' || *buf == '#') {
-			handler = buf + 1;
-		} else {
-			handler = buf;
-		}
+	/* now pass the query to the handler */
+	if ((result = qh->handler(sd, query, query_len)) >= 100) {
+		nsock_printf_nul(sd, "%d: %s", result, qh_strerror(result));
+	}
 
-		/* Locate query (if any) */
-		if ((space = strchr(buf, ' '))) {
-			*space = 0;
-			query = space + 1;
-			query_len = len - ((unsigned long)query - (unsigned long)buf);
-		} else {
-			query = "";
-			query_len = 0;
-		}
+	if (result >= 300 || *buf != '@') {
+		/* error code or one-shot query */
+		nm_free(buf);
+		iobroker_close(nagios_iobs, sd);
+		nm_bufferqueue_destroy(bq);
+		return 0;
+	}
+	nm_free(buf);
 
-		/* locate the handler */
-		if (!(qh = qh_find_handler(handler))) {
-			/* not found. that's a 404 */
-			nsock_printf(sd, "404: %s: No such handler", handler);
-			iobroker_close(nagios_iobs, sd);
-			iocache_destroy(ioc);
-			return 0;
-		}
-
-		/* strip trailing newlines */
-		while (query_len > 0 && (query[query_len - 1] == 0 || query[query_len - 1] == '\n'))
-			query[--query_len] = 0;
-
-		/* now pass the query to the handler */
-		if ((result = qh->handler(sd, query, query_len)) >= 100) {
-			nsock_printf_nul(sd, "%d: %s", result, qh_strerror(result));
-		}
-
-		if (result >= 300 || *buf != '@') {
-			/* error code or one-shot query */
-			iobroker_close(nagios_iobs, sd);
-			iocache_destroy(ioc);
-			return 0;
-		}
-
-		/* check for magic handler codes */
-		switch (result) {
-		case QH_CLOSE: /* oneshot handler */
-		case -1:       /* general error */
-			iobroker_close(nagios_iobs, sd);
-			/* fallthrough */
-		case QH_TAKEOVER: /* handler takes over */
-		case 101:         /* switch protocol (takeover + message) */
-			iocache_destroy(ioc);
-			break;
-		}
+	/* check for magic handler codes */
+	switch (result) {
+	case QH_CLOSE: /* oneshot handler */
+	case -1:       /* general error */
+		iobroker_close(nagios_iobs, sd);
+		/* fallthrough */
+	case QH_TAKEOVER: /* handler takes over */
+	case 101:         /* switch protocol (takeover + message) */
+		nm_bufferqueue_destroy(bq);
+		break;
 	}
 	return 0;
 }
 
-int qh_deregister_handler(const char *name)
+static int qh_registration_input(int sd, int events, void *bq_)
 {
-	struct query_handler *qh, *next, *prev;
+	nm_bufferqueue *bq = (nm_bufferqueue *)bq_;
+	struct sockaddr sa;
+	socklen_t slen = 0;
+	int nsd, result;
 
-	if (!(qh = dkhash_remove(qh_table, name, NULL)))
+	memset(&sa, 0, sizeof(sa)); /* shut valgrind up */
+	nsd = accept(sd, &sa, &slen);
+	if (qh_max_running && qh_running >= qh_max_running) {
+		nsock_printf(nsd, "503: Server full");
+		close(nsd);
 		return 0;
+	}
+
+	if (!(bq = nm_bufferqueue_create())) {
+		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to create iocache for inbound request\n");
+		nsock_printf(nsd, "500: Internal server error");
+		close(nsd);
+		return 0;
+	}
+
+	/*
+	 * @todo: Stash the iocache and the socket in some
+	 * addressable list so we can release them on deinit
+	 */
+	result = iobroker_register(nagios_iobs, nsd, bq, qh_input);
+	if (result < 0) {
+		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to register input socket %d with I/O broker: %s; errno=%d (%s)\n",
+		       nsd, iobroker_strerror(result), errno, strerror(errno));
+		nm_bufferqueue_destroy(bq);
+		close(nsd);
+		return 0;
+	}
+
+	/* make it non-blocking, but leave kernel buffers unchanged */
+	worker_set_sockopts(nsd, 0);
+	qh_running++;
+	return 0;
+}
+
+static void qh_remove(struct query_handler *qh)
+{
+	struct query_handler *next, *prev;
+	if (!qh)
+		return;
 
 	next = qh->next_qh;
 	prev = qh->prev_qh;
@@ -250,18 +238,22 @@ int qh_deregister_handler(const char *name)
 	else
 		qhandlers = next;
 
-	free(qh);
+	nm_free(qh);
+}
 
+int qh_deregister_handler(const char *name)
+{
+	g_hash_table_remove(qh_table, name);
 	return 0;
 }
 
 int qh_register_handler(const char *name, const char *description, unsigned int options, qh_handler handler)
 {
-	struct query_handler *qh;
-	int result;
 
-	if (!name)
-		return -1;
+	struct query_handler *qh;
+
+	g_return_val_if_fail(qh_table != NULL, -1);
+	g_return_val_if_fail(name != NULL, -1);
 
 	if (!handler) {
 		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to register handler '%s': No handler function specified\n", name);
@@ -289,33 +281,19 @@ int qh_register_handler(const char *name, const char *description, unsigned int 
 		qhandlers->prev_qh = qh;
 	qhandlers = qh;
 
-	result = dkhash_insert(qh_table, qh->name, NULL, qh);
-	if (result < 0) {
-		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to insert query handler '%s' (%p) into hash table %p (%d): %s\n",
-		       name, qh, qh_table, result, strerror(errno));
-		free(qh);
-		return result;
-	}
+	g_hash_table_insert(qh_table, nm_strdup(qh->name), qh);
 
 	return 0;
 }
 
 void qh_deinit(const char *path)
 {
-	struct query_handler *qh, *next;
-
-	for (qh = qhandlers; qh; qh = next) {
-		next = qh->next_qh;
-		qh_deregister_handler(qh->name);
-	}
-	dkhash_destroy(qh_table);
+	g_hash_table_destroy(qh_table);
 	qh_table = NULL;
 	qhandlers = NULL;
 
-	if (!path)
-		return;
-
-	unlink(path);
+	if (path)
+		unlink(path);
 }
 
 static int qh_help(int sd, char *buf, unsigned int len)
@@ -349,78 +327,39 @@ static int qh_help(int sd, char *buf, unsigned int len)
 static int qh_command(int sd, char *buf, unsigned int len)
 {
 	char *space;
+	int mode;
 
 	if (!*buf || !strcmp(buf, "help")) {
 		nsock_printf_nul(sd, "Query handler for naemon commands.\n"
 		                 "Available commands:\n"
-							  "  run <command>     Run a command\n"
+		                 "  run <command>     Run a command\n"
+		                 "  runkv <command>   Run a command as escaped kvvec\n"
 							  );
 		return 0;
 	}
 	if ((space = memchr(buf, ' ', len)))
 		* (space++) = 0;
 	if (space) {
+		mode = 0;
 		if (!strcmp(buf, "run")) {
-			int res = process_external_command1(space);
+			mode = COMMAND_SYNTAX_NOKV;
+		}
+		else if(!strcmp(buf, "runkv")) {
+			mode = COMMAND_SYNTAX_KV;
+		}
+		if(mode != 0) {
+			GError *error = NULL;
+			int res = process_external_command(space, mode, &error);
 			if (res == OK) {
 				return 200;
 			} else {
-				nsock_printf_nul(sd, "400: %s", cmd_error_strerror(res));
+				nsock_printf_nul(sd, "400: %s\n", error->message);
+				g_clear_error(&error);
 				return 0;
 			}
 		}
 	}
 
-	return 404;
-}
-
-static int qh_core(int sd, char *buf, unsigned int len)
-{
-	char *space;
-
-	if (!*buf || !strcmp(buf, "help")) {
-		nsock_printf_nul(sd, "Query handler for manipulating nagios core.\n"
-		                 "Available commands:\n"
-		                 "  loadctl           Print information about current load control settings\n"
-		                 "  loadctl <options> Configure nagios load control.\n"
-		                 "                    The options are the same parameters and format as\n"
-		                 "                    returned above.\n"
-		                 "  squeuestats       scheduling queue statistics\n"
-		                );
-		return 0;
-	}
-	if ((space = memchr(buf, ' ', len)))
-		* (space++) = 0;
-	if (!space && !strcmp(buf, "loadctl")) {
-		nsock_printf_nul
-		(sd, "jobs_max=%u;jobs_min=%u;"
-		 "jobs_running=%u;jobs_limit=%u;"
-		 "load=%.2f;"
-		 "backoff_limit=%.2f;backoff_change=%u;"
-		 "rampup_limit=%.2f;rampup_change=%u;"
-		 "nproc_limit=%u;nofile_limit=%u;"
-		 "options=%u;changes=%u;",
-		 loadctl.jobs_max, loadctl.jobs_min,
-		 loadctl.jobs_running, loadctl.jobs_limit,
-		 loadctl.load[0],
-		 loadctl.backoff_limit, loadctl.backoff_change,
-		 loadctl.rampup_limit, loadctl.rampup_change,
-		 loadctl.nproc_limit, loadctl.nofile_limit,
-		 loadctl.options, loadctl.changes);
-		return 0;
-	}
-
-	if (!space && !strcmp(buf, "squeuestats"))
-		return dump_event_stats(sd);
-
-	if (space) {
-		len -= (unsigned long)space - (unsigned long)buf;
-		if (!strcmp(buf, "loadctl")) {
-			return set_loadctl_options(space, len) == OK ? 200 : 400;
-		}
-	}
-
-	/* No matching command found */
 	return 404;
 }
 
@@ -450,26 +389,20 @@ int qh_init(const char *path)
 	(void)fcntl(qh_listen_sock, F_SETFD, FD_CLOEXEC);
 
 	/* most likely overkill, but it's small, so... */
-	if (!(qh_table = dkhash_create(1024))) {
-		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to create hash table\n");
-		close(qh_listen_sock);
-		return ERROR;
-	}
-
+	qh_table = g_hash_table_new_full(g_str_hash, g_str_equal,
+					free, (GDestroyNotify) qh_remove);
 	errno = 0;
-	result = iobroker_register(nagios_iobs, qh_listen_sock, NULL, qh_input);
+	result = iobroker_register(nagios_iobs, qh_listen_sock, NULL, qh_registration_input);
 	if (result < 0) {
-		dkhash_destroy(qh_table);
+		g_hash_table_destroy(qh_table);
 		close(qh_listen_sock);
-		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to register socket with io broker: %s; errno=%d: %s\n", iobroker_strerror(result), errno, strerror(errno));
+		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to register socket with io broker: %s\n", iobroker_strerror(result));
 		return ERROR;
 	}
 
 	nm_log(NSLOG_INFO_MESSAGE, "qh: Socket '%s' successfully initialized\n", path);
 
 	/* now register our the in-core handlers */
-	if (!qh_register_handler("core", "Naemon Core control and info", 0, qh_core))
-		nm_log(NSLOG_INFO_MESSAGE, "qh: core query handler registered\n");
 	qh_register_handler("command", "Naemon external commands interface", 0, qh_command);
 	qh_register_handler("echo", "The Echo Service - What You Put Is What You Get", 0, qh_echo);
 	qh_register_handler("help", "Help for the query handler", 0, qh_help);

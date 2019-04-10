@@ -5,7 +5,9 @@
 #error "Only <naemon/naemon.h> can be included directly."
 #endif
 
-#include "objects.h"
+#include "lib/lnae-utils.h"
+#include <stdio.h>
+#include <sys/resource.h>
 
 /************ SERVICE DEPENDENCY VALUES ***************/
 
@@ -19,62 +21,73 @@
 /* useful for hosts and services to determine time 'til next check */
 #define normal_check_window(o) ((time_t)(o->check_interval * interval_length))
 #define retry_check_window(o) ((time_t)(o->retry_interval * interval_length))
-#define next_check_time(o) _next_check_time(o->last_check, check_window(o))
+/*
+ * NOTE: This macro exists for convenience reasons, to avoid having one
+ * function for hosts and services each. As such, it's makes a bunch of assumptions, namely;
+ * - the passed object has a state_type, current_state, retry_interval and a
+ *   check_interval field
+ * - the value of STATE_OK (for services) is equal to that of STATE_UP (for hosts)
+ **/
 #define check_window(o) \
-	((!o->current_state && o->state_type == SOFT_STATE) ? \
+	((o->current_state != STATE_OK && o->state_type == SOFT_STATE) ? \
 		retry_check_window(o) : \
 		normal_check_window(o))
 
 NAGIOS_BEGIN_DECL
 
-static inline int _next_check_time(time_t last_check, time_t window)
-{
-	time_t now = time(NULL);
+/*
+ * *name can be "Nagios Core", "Merlin", "mod_gearman" or "DNX", fe.
+ * source_name gets passed the 'source' pointer from check_result
+ * and must return a non-free()'able string useful for printing what
+ * we need to determine exactly where the check was received from,
+ * such as "mod_gearman worker@10.11.12.13", or "Nagios Core command
+ * file worker" (for passive checks submitted locally), which will be
+ * stashed with hosts and services and used as the "CHECKSOURCE" macro.
+ */
+struct check_engine {
+	char *name;         /* "Nagios Core", "Merlin", "Mod Gearman" fe */
+	const char *(*source_name)(void *);
+	void (*clean_result)(void *);
+};
 
-	/* if *_interval is 0, we mustn't schedule things immediately */
-	if (!window)
-		window = interval_length;
+typedef struct check_result {
+	int object_check_type;                          /* is this a service or a host check? */
+	char *host_name;                                /* host name */
+	char *service_description;                      /* service description */
+	int check_type;					/* was this an active or passive service check? */
+	int check_options;
+	int scheduled_check;                            /* was this a scheduled or an on-demand check? */
+	char *output_file;                              /* what file is the output stored in? */
+	FILE *output_file_fp;
+	double latency;
+	struct timeval start_time;			/* time the service check was initiated */
+	struct timeval finish_time;			/* time the service check was completed */
+	int early_timeout;                              /* did the service check timeout? */
+	int exited_ok;					/* did the plugin check return okay? */
+	int return_code;				/* plugin return code */
+	char *output;	                                /* plugin output */
+	struct rusage rusage;			/* resource usage by this check */
+	struct check_engine *engine;	/* where did we get this check from? */
+	void *source;					/* engine handles this */
+} check_result;
 
-	/* last_check may be 0 or very far back if we've been shut down */
-	if (last_check < (now - window))
-		last_check = now;
+struct check_output {
+	char *short_output;
+	char *long_output;
+	char *perf_data;
+};
 
-	return last_check + window;
-}
+void checks_init(void); /* Init check execution, schedule events */
 
 int parse_check_output(char *, char **, char **, char **, int, int);
 struct check_output *parse_output(const char *, struct check_output *);
-int check_service_dependencies(service *, int);          	/* checks service dependencies */
-int check_host_dependencies(host *, int);                	/* checks host dependencies */
-void check_for_orphaned_services(void);				/* checks for orphaned services */
-void check_for_orphaned_hosts(void);				/* checks for orphaned hosts */
-void check_service_result_freshness(void);              	/* checks the "freshness" of service check results */
-int is_service_result_fresh(service *, time_t, int);            /* determines if a service's check results are fresh */
-void check_host_result_freshness(void);                 	/* checks the "freshness" of host check results */
-int is_host_result_fresh(host *, time_t, int);                  /* determines if a host's check results are fresh */
 
-int check_host_check_viability(host *, int, int *, time_t *);
-int adjust_host_check_attempt(host *, int);
-int determine_host_reachability(host *);
-int run_scheduled_host_check(host *, int, double);
-int run_async_host_check(host *, int, double, int, int, int *, time_t *);
-int handle_async_host_check_result(host *, check_result *);
-
-int check_service_check_viability(service *, int, int *, time_t *);
-int run_scheduled_service_check(service *, int, double);
-int run_async_service_check(service *, int, double, int, int, int *, time_t *);
-int handle_async_service_check_result(service *, check_result *);
-
-int handle_host_state(host *, int *);               			/* top level host state handler */
-
-int reap_check_results(void);
-
-void schedule_service_check(service *, time_t, int);	/* schedules an immediate or delayed service check */
-void schedule_host_check(host *, time_t, int);		/* schedules an immediate or delayed host check */
-
-/* GONE?!? */
-int perform_on_demand_host_check(host *, int *, int, int, unsigned long);
-int execute_sync_host_check(host *);
+int process_check_result_queue(char *);
+int process_check_result_file(char *);
+int process_check_result(check_result *);
+int delete_check_result_file(char *);
+int init_check_result(check_result *);
+int free_check_result(check_result *);                  	/* frees memory associated with a host/service check result */
 
 NAGIOS_END_DECL
 

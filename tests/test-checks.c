@@ -151,12 +151,61 @@ START_TEST(no_plugin_output_on_first_line)
 
 }
 END_TEST
+
+START_TEST(newline_only)
+{
+	full_output = "\n";
+	output = strdup(full_output);
+	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
+	ck_assert_str_eq("", short_output);
+	ck_assert(NULL == long_output);
+	ck_assert(NULL == perf_data);
+
+}
+END_TEST
+
+START_TEST(multiple_line_output_newline_escaping)
+{
+	full_output = "TEST OK - ...\n"
+				  "Here's a second line of output and\n"
+				  "one \"more\"\n";
+	output = strdup(full_output);
+	parse_check_output(output, &short_output, &long_output, &perf_data, TRUE, FALSE);
+	ck_assert_str_eq("TEST OK - ...", short_output);
+	ck_assert_str_eq("Here's a second line of output and\\none \"more\"\\n", long_output);
+}
+END_TEST
+
+/* Ensure that we do not double escape newlines in long_plugin_output */
+START_TEST(multiple_line_output_double_newline_escaping)
+{
+	full_output = "TEST OK - ...\n"
+				  "Here's a second line of output and\\n"
+				  "one \"more\"\\n";
+	output = strdup(full_output);
+	parse_check_output(output, &short_output, &long_output, &perf_data, TRUE, FALSE);
+	ck_assert_str_eq("TEST OK - ...", short_output);
+	ck_assert_str_eq("Here's a second line of output and\\none \"more\"\\n", long_output);
+}
+END_TEST
+
+START_TEST(multiline_unicode)
+{
+	full_output = "TEST CRITICAL - testoutput with unicode \342\202\254 on firstline and literal \\backslash\nwith multiline\nand literal \\backslash and some unicode \342\202\254 in the long output.|'unicodeperf\342\202\254'=0.001s\n";
+	output = strdup(full_output);
+	parse_check_output(output, &short_output, &long_output, &perf_data, TRUE, FALSE);
+	ck_assert_str_eq("TEST CRITICAL - testoutput with unicode \342\202\254 on firstline and literal \\backslash", short_output);
+	ck_assert_str_eq("with multiline\\nand literal \\backslash and some unicode \342\202\254 in the long output.", long_output);
+	ck_assert_str_eq("'unicodeperf\342\202\254'=0.001s", perf_data);
+}
+END_TEST
+
 Suite*
 checks_suite(void)
 {
 	Suite *s = suite_create("Checks");
 	TCase *tc_output = tcase_create("Output parsing");
-	tcase_add_unchecked_fixture(tc_output, setup, teardown);
+	tcase_add_checked_fixture(tc_output, setup, teardown);
 	tcase_add_test(tc_output, one_line_no_perfdata);
 	tcase_add_test(tc_output, one_line_with_perfdata);
 	tcase_add_test(tc_output, multiple_line_output_no_perfdata);
@@ -167,7 +216,11 @@ checks_suite(void)
 	tcase_add_test(tc_output, multiline_perfdata_only);
 	tcase_add_test(tc_output, no_plugin_output_on_first_line);
 	tcase_add_test(tc_output, no_plugin_output_at_all);
+	tcase_add_test(tc_output, newline_only);
 	tcase_add_test(tc_output, empty_plugin_output);
+	tcase_add_test(tc_output, multiple_line_output_newline_escaping);
+	tcase_add_test(tc_output, multiple_line_output_double_newline_escaping);
+	tcase_add_test(tc_output, multiline_unicode);
 	suite_add_tcase(s, tc_output);
 	return s;
 }
@@ -177,7 +230,7 @@ int main(void)
 	int number_failed = 0;
 	Suite *s = checks_suite();
 	SRunner *sr = srunner_create(s);
-	srunner_run_all(sr, CK_NORMAL);
+	srunner_run_all(sr, CK_ENV);
 	number_failed = srunner_ntests_failed(sr);
 	srunner_free(sr);
 	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;

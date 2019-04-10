@@ -4,9 +4,12 @@
 #include "nm_alloc.h"
 #include <string.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <fcntl.h>
+#include <glib.h>
 #ifdef HAVE_SYS_MMAN_H
 # include <sys/mman.h>
 #endif
@@ -435,40 +438,6 @@ int hashfunc(const char *name1, const char *name2, int hashslots)
 }
 
 
-/* dual hash data comparison */
-int compare_hashdata(const char *val1a, const char *val1b, const char *val2a,
-                     const char *val2b)
-{
-	int result = 0;
-
-	/* NOTE: If hash calculation changes, update the compare_strings() function! */
-
-	/* check first name */
-	if (val1a == NULL && val2a == NULL)
-		result = 0;
-	else if (val1a == NULL)
-		result = 1;
-	else if (val2a == NULL)
-		result = -1;
-	else
-		result = strcmp(val1a, val2a);
-
-	/* check second name if necessary */
-	if (result == 0) {
-		if (val1b == NULL && val2b == NULL)
-			result = 0;
-		else if (val1b == NULL)
-			result = 1;
-		else if (val2b == NULL)
-			result = -1;
-		else
-			result = strcmp(val1b, val2b);
-	}
-
-	return result;
-}
-
-
 /*
  * given a date/time in time_t format, produce a corresponding
  * date/time string, including timezone
@@ -594,4 +563,8 @@ void get_time_breakdown(unsigned long raw_time, int *days, int *hours,
 	*hours = temp_hours;
 	*minutes = temp_minutes;
 	*seconds = temp_seconds;
+}
+
+gint my_strsorter(gconstpointer a, gconstpointer b, gpointer data) {
+ return(g_strcmp0(a, b));
 }

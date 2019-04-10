@@ -1,9 +1,20 @@
 #!/bin/sh
+
+VERSION=1.0.10
 if test -e .git; then
-	git describe --always --tags --dirty | \
-		sed -e 's/^v//' -e 's/-[0-9]*-g/-g/' | tr -d '\n'
-	exit 0
+    if hash git 2>/dev/null; then
+        VERSION=$(git describe --tag --exact-match 2>/dev/null | sed -e 's/^v//')
+        if [ "x$VERSION" = "x" ]; then
+            VERSION=$(git describe --always --tags --dirty | \
+                sed -e 's/^v//' -e 's/-[0-9]*-g/-g/' | tr -d '\n' | tr '-' '.').$(date +%Y%m%d)
+        fi
+    fi
 fi
 
-VERSION=1.0.3
-echo -n "${VERSION}-source"
+if [ -e .naemon.official ]; then
+  echo -n "${VERSION}"
+else
+  echo -n "${VERSION}.source"
+fi
+
+exit 0

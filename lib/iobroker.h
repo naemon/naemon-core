@@ -174,6 +174,25 @@ extern void iobroker_destroy(iobroker_set *iobs, int flags);
  * @return -1 on errors, or number of filedescriptors with input
  */
 extern int iobroker_poll(iobroker_set *iobs, int timeout);
+/**
+ * Push any pending outgoing data
+ * @param iobs The socket set to push everything in.
+ * @returns 0 if any data was pushed, non-zero otherwise
+ */
+int iobroker_push(iobroker_set *iobs);
+
+/**
+ * Write data to this specific fd that is part of this iobroker_set
+ * This data is guaranteed to be sent off in sequence. Two sequential
+ * calls to iobroker_write_packet are not, due to concurrency.
+ *
+ * @param[in] iobs The socket set to send data to
+ * @param[in] fd The socket descriptor to add data to. Must be registered in the set.
+ * @param[in] buf The data to send. Binary-safe.
+ * @param[in] len The length of the data.
+ * @returns 0 if everything worked, non-zero otherwise
+ */
+int iobroker_write_packet(iobroker_set *iobs, int fd, char *buf, size_t len);
 
 NAGIOS_END_DECL
 #endif /* INCLUDE_iobroker_h__ */

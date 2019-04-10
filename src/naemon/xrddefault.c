@@ -1,6 +1,5 @@
 #include "config.h"
 #include "common.h"
-#include "objects.h"
 #include "statusdata.h"
 #include "macros.h"
 #include "sretention.h"
@@ -14,6 +13,7 @@
 #include "logging.h"
 #include "defaults.h"
 #include "nm_alloc.h"
+#include "broker.h"
 #include <string.h>
 
 /******************************************************************/
@@ -21,7 +21,7 @@
 /******************************************************************/
 
 /* initialize retention data */
-int xrddefault_initialize_retention_data(const char *cfgfile)
+int xrddefault_initialize_retention_data(void)
 {
 	nagios_macros *mac;
 
@@ -33,7 +33,6 @@ int xrddefault_initialize_retention_data(const char *cfgfile)
 
 	/* save the retention file macro */
 	nm_free(mac->x[MACRO_RETENTIONDATAFILE]);
-	mac->x[MACRO_RETENTIONDATAFILE] = retention_file;
 	mac->x[MACRO_RETENTIONDATAFILE] = nm_strdup(retention_file);
 	strip(mac->x[MACRO_RETENTIONDATAFILE]);
 
@@ -77,17 +76,14 @@ int xrddefault_save_state_information(void)
 	unsigned long process_host_attribute_mask = 0L;
 	unsigned long process_service_attribute_mask = 0L;
 
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "xrddefault_save_state_information()\n");
-
 	/* make sure we have everything */
-	if (retention_file == NULL || temp_file == NULL) {
+	if (retention_file == NULL) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Error: We don't have the required file names to store retention data!\n");
 		return ERROR;
 	}
 
 	/* open a safe temp file for output */
-	nm_asprintf(&tmp_file, "%sXXXXXX", temp_file);
+	nm_asprintf(&tmp_file, "%sXXXXXX", retention_file);
 	if (tmp_file == NULL)
 		return ERROR;
 	if ((fd = mkstemp(tmp_file)) == -1)
@@ -247,6 +243,7 @@ int xrddefault_save_state_information(void)
 		}
 
 		fprintf(fp, "}\n");
+
 	}
 
 	/* save service state information */
@@ -424,7 +421,7 @@ int xrddefault_save_state_information(void)
 
 	fflush(fp);
 	fsync(fd);
-	result = fclose(fp);
+	result = ferror(fp) | fclose(fp);
 
 	/* save/close was successful */
 	if (result == 0) {
@@ -515,20 +512,13 @@ int xrddefault_read_state_information(void)
 	unsigned long contact_service_attribute_mask = 0L;
 	unsigned long process_host_attribute_mask = 0L;
 	unsigned long process_service_attribute_mask = 0L;
-	int remove_comment = FALSE;
+	int force_remove = FALSE;
 	int ack = FALSE;
-	int was_flapping = FALSE;
-	int allow_flapstart_notification = TRUE;
-	struct timeval tv[2];
-	double runtime[2];
 	int found_directive = FALSE;
 	int is_in_effect = FALSE;
 	int start_notification_sent = FALSE;
 	struct host conf, have;
 	struct contact cont_conf, cont_have;
-
-
-	log_debug_info(DEBUGL_FUNCTIONS, 0, "xrddefault_read_state_information() start\n");
 
 	/* make sure we have what we need */
 	if (retention_file == NULL) {
@@ -537,9 +527,6 @@ int xrddefault_read_state_information(void)
 
 		return ERROR;
 	}
-
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[0], NULL);
 
 	/* open the retention file for reading */
 	if ((thefile = mmap_fopen(retention_file)) == NULL)
@@ -643,29 +630,6 @@ int xrddefault_read_state_information(void)
 					if (temp_host->current_state != STATE_UP && temp_host->state_type == HARD_STATE)
 						temp_host->current_attempt = temp_host->max_attempts;
 
-
-					/* ADDED 02/20/08 assume same flapping state if large install tweaks enabled */
-					if (use_large_installation_tweaks == TRUE) {
-						temp_host->is_flapping = was_flapping;
-					}
-					/* else use normal startup flap detection logic */
-					else {
-						/* host was flapping before program started */
-						/* 11/10/07 don't allow flapping notifications to go out */
-						if (was_flapping == TRUE)
-							allow_flapstart_notification = FALSE;
-						else
-							/* flapstart notifications are okay */
-							allow_flapstart_notification = TRUE;
-
-						/* check for flapping */
-						check_for_host_flapping(temp_host, FALSE, FALSE, allow_flapstart_notification);
-
-						/* host was flapping before and isn't now, so clear recovery check variable if host isn't flapping now */
-						if (was_flapping == TRUE && temp_host->is_flapping == FALSE)
-							temp_host->check_flapping_recovery_notification = FALSE;
-					}
-
 					/* handle new vars added in 2.x */
 					if (temp_host->last_hard_state_change == (time_t)0)
 						temp_host->last_hard_state_change = temp_host->last_state_change;
@@ -673,10 +637,6 @@ int xrddefault_read_state_information(void)
 					/* update host status */
 					update_host_status(temp_host, FALSE);
 				}
-
-				/* reset vars */
-				was_flapping = FALSE;
-				allow_flapstart_notification = TRUE;
 
 				temp_host = NULL;
 				break;
@@ -712,29 +672,6 @@ int xrddefault_read_state_information(void)
 					if (temp_service->current_state != STATE_OK && temp_service->state_type == HARD_STATE)
 						temp_service->current_attempt = temp_service->max_attempts;
 
-
-					/* ADDED 02/20/08 assume same flapping state if large install tweaks enabled */
-					if (use_large_installation_tweaks == TRUE) {
-						temp_service->is_flapping = was_flapping;
-					}
-					/* else use normal startup flap detection logic */
-					else {
-						/* service was flapping before program started */
-						/* 11/10/07 don't allow flapping notifications to go out */
-						if (was_flapping == TRUE)
-							allow_flapstart_notification = FALSE;
-						else
-							/* flapstart notifications are okay */
-							allow_flapstart_notification = TRUE;
-
-						/* check for flapping */
-						check_for_service_flapping(temp_service, FALSE, allow_flapstart_notification);
-
-						/* service was flapping before and isn't now, so clear recovery check variable if service isn't flapping now */
-						if (was_flapping == TRUE && temp_service->is_flapping == FALSE)
-							temp_service->check_flapping_recovery_notification = FALSE;
-					}
-
 					/* handle new vars added in 2.x */
 					if (temp_service->last_hard_state_change == (time_t)0)
 						temp_service->last_hard_state_change = temp_service->last_state_change;
@@ -742,10 +679,6 @@ int xrddefault_read_state_information(void)
 					/* update service status */
 					update_service_status(temp_service, FALSE);
 				}
-
-				/* reset vars */
-				was_flapping = FALSE;
-				allow_flapstart_notification = TRUE;
 
 				nm_free(host_name);
 				temp_service = NULL;
@@ -781,34 +714,46 @@ int xrddefault_read_state_information(void)
 			case XRDDEFAULT_HOSTCOMMENT_DATA:
 			case XRDDEFAULT_SERVICECOMMENT_DATA:
 
-				/* add the comment */
-				add_comment((data_type == XRDDEFAULT_HOSTCOMMENT_DATA) ? HOST_COMMENT : SERVICE_COMMENT, entry_type, host_name, service_description, entry_time, author, comment_data, comment_id, persistent, expires, expire_time, source);
-
-				/* delete the comment if necessary */
-				/* it seems a bit backwards to add and then immediately delete the comment, but its necessary to track comment deletions in the event broker */
-				remove_comment = FALSE;
+				/*
+				 * delete the comment if its object has disappeared
+				 * This only matters for eventbroker modules that
+				 * track comments outside of Naemon's core.
+				 */
+				force_remove = FALSE;
 				/* host no longer exists */
 				if ((temp_host = find_host(host_name)) == NULL)
-					remove_comment = TRUE;
+					force_remove = TRUE;
 				/* service no longer exists */
 				else if (data_type == XRDDEFAULT_SERVICECOMMENT_DATA && (temp_service = find_service(host_name, service_description)) == NULL)
-					remove_comment = TRUE;
+					force_remove = TRUE;
 				/* acknowledgement comments get deleted if they're not persistent and the original problem is no longer acknowledged */
 				else if (entry_type == ACKNOWLEDGEMENT_COMMENT) {
-					ack = FALSE;
 					if (data_type == XRDDEFAULT_HOSTCOMMENT_DATA)
 						ack = temp_host->problem_has_been_acknowledged;
 					else
 						ack = temp_service->problem_has_been_acknowledged;
 					if (ack == FALSE && persistent == FALSE)
-						remove_comment = TRUE;
+						force_remove = TRUE;
+				}
+				/* comments from downtimes don't get removed, they would be immediatly added again anyway, but with incremented id for each reload */
+				else if (entry_type == DOWNTIME_COMMENT) {
 				}
 				/* non-persistent comments don't last past restarts UNLESS they're acks (see above) */
 				else if (persistent == FALSE)
-					remove_comment = TRUE;
+					force_remove = TRUE;
 
-				if (remove_comment == TRUE)
-					delete_comment((data_type == XRDDEFAULT_HOSTCOMMENT_DATA) ? HOST_COMMENT : SERVICE_COMMENT, comment_id);
+				if (force_remove == TRUE) {
+					broker_comment_data
+						(NEBTYPE_COMMENT_DELETE, NEBFLAG_NONE, NEBATTR_NONE,
+						 (data_type == XRDDEFAULT_HOSTCOMMENT_DATA) ? HOST_COMMENT : SERVICE_COMMENT,
+						 entry_type, host_name, service_description,
+						 entry_time, author, comment_data, persistent, source,
+						 expires, expire_time, comment_id
+						);
+				} else {
+					/* add the comment */
+					add_comment((data_type == XRDDEFAULT_HOSTCOMMENT_DATA) ? HOST_COMMENT : SERVICE_COMMENT, entry_type, host_name, service_description, entry_time, author, comment_data, comment_id, persistent, expires, expire_time, source);
+				}
 
 				/* free temp memory */
 				nm_free(host_name);
@@ -830,14 +775,53 @@ int xrddefault_read_state_information(void)
 			case XRDDEFAULT_HOSTDOWNTIME_DATA:
 			case XRDDEFAULT_SERVICEDOWNTIME_DATA:
 
-				/* add the downtime */
-				if (data_type == XRDDEFAULT_HOSTDOWNTIME_DATA)
-					add_host_downtime(host_name, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent);
-				else
-					add_service_downtime(host_name, service_description, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent);
+				/*
+				 * Delete the downtime if its objects no longer exist
+				 * This only matters for eventbroker modules that track
+				 * downtime outside of Naemon's core, and even then only
+				 * for hosts and services that reappear in the config
+				 * when the old version of their names were in scheduled
+				 * downtime at the time they got deleted.
+				 */
+				force_remove = FALSE;
+				if (data_type == XRDDEFAULT_HOSTDOWNTIME_DATA) {
+					if (!host_name || !find_host(host_name))
+						force_remove = TRUE;
+				} else {
+					if (!host_name || !service_description || !find_service(host_name, service_description))
+						force_remove = TRUE;
+				}
 
-				/* must register the downtime with Nagios so it can schedule it, add comments, etc. */
-				register_downtime((data_type == XRDDEFAULT_HOSTDOWNTIME_DATA) ? HOST_DOWNTIME : SERVICE_DOWNTIME, downtime_id);
+				if (force_remove == TRUE) {
+					broker_downtime_data
+						(NEBTYPE_DOWNTIME_STOP, NEBFLAG_NONE,
+						 NEBATTR_DOWNTIME_STOP_CANCELLED,
+						 data_type == XRDDEFAULT_HOSTDOWNTIME_DATA ? HOST_DOWNTIME : SERVICE_DOWNTIME,
+						 host_name, service_description,
+						 entry_time, author, comment_data,
+						 start_time, end_time, fixed, triggered_by,
+						 duration, downtime_id
+						);
+				} else {
+					/* add the downtime */
+					if (data_type == XRDDEFAULT_HOSTDOWNTIME_DATA) {
+						host *hst = NULL;
+						add_host_downtime(host_name, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent, &comment_id);
+
+						if (is_in_effect && (hst = find_host(host_name)) != NULL ) {
+							hst->scheduled_downtime_depth++;
+						}
+					}
+					else {
+						service *svc = NULL;
+						add_service_downtime(host_name, service_description, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent, &comment_id);
+						if (is_in_effect && (svc = find_service(host_name, service_description)) != NULL ) {
+							svc->scheduled_downtime_depth++;
+						}
+					}
+					/* must register the downtime with Nagios so it can schedule it, add comments, etc. */
+					register_downtime((data_type == XRDDEFAULT_HOSTDOWNTIME_DATA) ? HOST_DOWNTIME : SERVICE_DOWNTIME, downtime_id);
+				}
 
 				/* free temp memory */
 				nm_free(host_name);
@@ -881,7 +865,7 @@ int xrddefault_read_state_information(void)
 				if (!strcmp(var, "created")) {
 					creation_time = strtoul(val, NULL, 10);
 					time(&current_time);
-					if (current_time - creation_time < retention_scheduling_horizon)
+					if (creation_time + retention_scheduling_horizon > current_time && creation_time <= current_time)
 						scheduling_info_is_ok = TRUE;
 					else
 						scheduling_info_is_ok = FALSE;
@@ -1062,7 +1046,7 @@ int xrddefault_read_state_information(void)
 						else if (!strcmp(var, "current_notification_id"))
 							temp_host->current_notification_id = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "is_flapping"))
-							was_flapping = atoi(val);
+							temp_host->is_flapping = atoi(val);
 						else if (!strcmp(var, "percent_state_change"))
 							temp_host->percent_state_change = strtod(val, NULL);
 						else if (!strcmp(var, "check_flapping_recovery_notification"))
@@ -1196,7 +1180,7 @@ int xrddefault_read_state_information(void)
 
 								for (temp_customvariablesmember = temp_host->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 									if (!strcmp(customvarname, temp_customvariablesmember->variable_name)) {
-										if ((x = atoi(val)) > 0 && strlen(val) > 3) {
+										if ((x = atoi(val)) > 0 && strlen(val) >= 2) {
 											nm_free(temp_customvariablesmember->variable_value);
 											temp_customvariablesmember->variable_value = nm_strdup(val + 2);
 											temp_customvariablesmember->has_been_modified = (x > 0) ? TRUE : FALSE;
@@ -1323,7 +1307,7 @@ int xrddefault_read_state_information(void)
 						else if (!strcmp(var, "last_notification"))
 							temp_service->last_notification = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "is_flapping"))
-							was_flapping = atoi(val);
+							temp_service->is_flapping = atoi(val);
 						else if (!strcmp(var, "percent_state_change"))
 							temp_service->percent_state_change = strtod(val, NULL);
 						else if (!strcmp(var, "check_flapping_recovery_notification"))
@@ -1458,7 +1442,7 @@ int xrddefault_read_state_information(void)
 								customvarname = nm_strdup(var + 1);
 								for (temp_customvariablesmember = temp_service->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 									if (!strcmp(customvarname, temp_customvariablesmember->variable_name)) {
-										if ((x = atoi(val)) > 0 && strlen(val) > 3) {
+										if ((x = atoi(val)) > 0 && strlen(val) >= 2) {
 											nm_free(temp_customvariablesmember->variable_value);
 											temp_customvariablesmember->variable_value = nm_strdup(val + 2);
 											temp_customvariablesmember->has_been_modified = (x > 0) ? TRUE : FALSE;
@@ -1566,7 +1550,7 @@ int xrddefault_read_state_information(void)
 								customvarname = nm_strdup(var + 1);
 								for (temp_customvariablesmember = temp_contact->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 									if (!strcmp(customvarname, temp_customvariablesmember->variable_name)) {
-										if ((x = atoi(val)) > 0 && strlen(val) > 3) {
+										if ((x = atoi(val)) > 0 && strlen(val) >= 2) {
 											nm_free(temp_customvariablesmember->variable_value);
 											temp_customvariablesmember->variable_value = nm_strdup(val + 2);
 											temp_customvariablesmember->has_been_modified = (x > 0) ? TRUE : FALSE;
@@ -1655,22 +1639,6 @@ int xrddefault_read_state_information(void)
 		return ERROR;
 	if (sort_comments() != OK)
 		return ERROR;
-
-	if (test_scheduling == TRUE)
-		gettimeofday(&tv[1], NULL);
-
-	if (test_scheduling == TRUE) {
-		runtime[0] = (double)((double)(tv[1].tv_sec - tv[0].tv_sec) + (double)((tv[1].tv_usec - tv[0].tv_usec) / 1000.0) / 1000.0);
-
-		runtime[1] = (double)((double)(tv[1].tv_sec - tv[0].tv_sec) + (double)((tv[1].tv_usec - tv[0].tv_usec) / 1000.0) / 1000.0);
-
-		printf("RETENTION DATA TIMES\n");
-		printf("----------------------------------\n");
-		printf("Read and Process:     %.6lf sec\n", runtime[0]);
-		printf("                      ============\n");
-		printf("TOTAL:                %.6lf sec\n", runtime[1]);
-		printf("\n\n");
-	}
 
 	return OK;
 }

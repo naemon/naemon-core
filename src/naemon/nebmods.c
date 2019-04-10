@@ -7,8 +7,6 @@
 #include "nm_alloc.h"
 #include <string.h>
 
-#ifdef USE_EVENT_BROKER
-
 static nebmodule *neb_module_list;
 static nebcallback **neb_callback_list;
 
@@ -26,6 +24,22 @@ static nebcallback **neb_callback_list;
 # define lt_dlexit() 0
 #endif
 
+struct neb_cb_result {
+	int rc;
+	char *description;
+	char *module_name;
+};
+
+struct neb_cb_resultset {
+	GPtrArray *cb_results;
+};
+
+typedef struct neb_cb_resultset_iter_real {
+	neb_cb_resultset *iter_target;
+	ssize_t idx;
+} neb_cb_resultset_iter_real;
+
+void neb_cb_result_g_ptr_array_clear(gpointer data);
 /****************************************************************************/
 /****************************************************************************/
 /* INITIALIZATION/CLEANUP FUNCTIONS                                         */
@@ -264,12 +278,6 @@ int neb_unload_module(nebmodule *mod, int flags, int reason)
 
 	log_debug_info(DEBUGL_EVENTBROKER, 0, "Attempting to unload module '%s': flags=%d, reason=%d\n", mod->filename, flags, reason);
 
-	/* remove the module's demand-loaded file */
-	if (daemon_dumps_core == TRUE && mod->dl_file) {
-		(void)unlink(mod->dl_file);
-		nm_free(mod->dl_file);
-	}
-
 	/* call the de-initialization function if available (and the module was initialized) */
 	if (mod->deinit_func && reason != NEBMODULE_ERROR_BAD_INIT) {
 
@@ -352,8 +360,109 @@ int neb_set_module_info(void *handle, int type, char *data)
 /****************************************************************************/
 /****************************************************************************/
 
+static neb_cb_resultset *neb_cb_resultset_create(void)
+{
+	neb_cb_resultset *cbrs = nm_malloc(sizeof(*cbrs));
+	cbrs->cb_results = g_ptr_array_new_with_free_func(neb_cb_result_g_ptr_array_clear);
+	return cbrs;
+}
+
+void neb_cb_resultset_destroy(neb_cb_resultset *cbrs)
+{
+	if(cbrs == NULL)
+		return;
+	g_ptr_array_free(cbrs->cb_results, TRUE);
+	nm_free(cbrs);
+}
+
+void neb_cb_resultset_iter_init(neb_cb_resultset_iter *iter, neb_cb_resultset *rs)
+{
+	neb_cb_resultset_iter_real *it = (neb_cb_resultset_iter_real *) iter;
+	it->iter_target = rs;
+	it->idx = -1;
+}
+
+neb_cb_resultset_iter *neb_cb_resultset_iter_next(neb_cb_resultset_iter *iter, neb_cb_result **result)
+{
+	neb_cb_resultset_iter_real *it = (neb_cb_resultset_iter_real *) iter;
+
+	if (!it || !it->iter_target)
+		return NULL;
+
+	++it->idx;
+	g_warn_if_fail(it->idx >= 0);
+	if ((gsize) it->idx >= it->iter_target->cb_results->len) {
+		it->idx = -1;
+		*result = NULL;
+		return NULL;
+	}
+
+	*result = g_ptr_array_index(it->iter_target->cb_results, it->idx);
+	return (neb_cb_resultset_iter *)it;
+}
+
+neb_cb_result *neb_cb_result_create_full(int rc, const char *format, ...)
+{
+	va_list ap;
+	neb_cb_result *res = nm_malloc(sizeof(*res));
+	res->module_name = NULL;
+	res->rc = rc;
+
+	va_start(ap, format);
+	if (vasprintf(&(res->description), format, ap) < 0) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Failed to set description for neb_cb_result.");
+		res->description = nm_strdup("<failed to set description>");
+	}
+	va_end(ap);
+	return res;
+}
+
+neb_cb_result *neb_cb_result_create(int rc)
+{
+	return neb_cb_result_create_full(rc, "");
+}
+
+const char *neb_cb_result_module_name(neb_cb_result *cb_result)
+{
+	return cb_result->module_name;
+}
+
+const char *neb_cb_result_description(neb_cb_result *cb_result)
+{
+	return cb_result->description;
+}
+
+void neb_cb_result_set_description(neb_cb_result *cb_result, const char *format, ...)
+{
+	va_list ap;
+	nm_free(cb_result->description);
+
+	va_start(ap, format);
+	if (vasprintf(&(cb_result->description), format, ap) < 0) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Failed to set description for neb_cb_result.");
+		cb_result->description = nm_strdup("<failed to set description>");
+	}
+	va_end(ap);
+}
+
+int neb_cb_result_returncode(neb_cb_result *cb_result)
+{
+	return cb_result->rc;
+}
+
+void neb_cb_result_destroy(neb_cb_result *res)
+{
+	nm_free(res->module_name);
+	nm_free(res->description);
+	nm_free(res);
+}
+
+void neb_cb_result_g_ptr_array_clear(gpointer data) {
+	neb_cb_result_destroy(data);
+}
+
 /* allows a module to register a callback function */
-int neb_register_callback(int callback_type, void *mod_handle, int priority, int (*callback_func)(int, void *))
+int neb_register_callback_full(enum NEBCallbackType callback_type, void *mod_handle, int priority, enum NEBCallbackAPIVersion api_version, void *callback_func)
 {
 	nebmodule *temp_module = NULL;
 	nebcallback *new_callback = NULL;
@@ -369,10 +478,6 @@ int neb_register_callback(int callback_type, void *mod_handle, int priority, int
 	if (mod_handle == NULL)
 		return NEBERROR_NOMODULEHANDLE;
 
-	/* make sure the callback type is within bounds */
-	if (callback_type < 0 || callback_type >= NEBCALLBACK_NUMITEMS)
-		return NEBERROR_CALLBACKBOUNDS;
-
 	/* make sure module handle is valid */
 	for (temp_module = neb_module_list; temp_module; temp_module = temp_module->next) {
 		if (temp_module->module_handle == mod_handle)
@@ -386,6 +491,7 @@ int neb_register_callback(int callback_type, void *mod_handle, int priority, int
 	new_callback->priority = priority;
 	new_callback->module_handle = mod_handle;
 	new_callback->callback_func = callback_func;
+	new_callback->api_version = api_version;
 
 	/* add new function to callback list, sorted by priority (first come, first served for same priority) */
 	new_callback->next = NULL;
@@ -413,6 +519,9 @@ int neb_register_callback(int callback_type, void *mod_handle, int priority, int
 	return OK;
 }
 
+int neb_register_callback(enum NEBCallbackType callback_type, void *mod_handle, int priority, int (*callback_func)(int, void *)) {
+	return neb_register_callback_full(callback_type, mod_handle, priority, NEB_API_VERSION_1, callback_func);
+}
 
 
 /* dregisters all callback functions for a given module */
@@ -420,7 +529,7 @@ int neb_deregister_module_callbacks(nebmodule *mod)
 {
 	nebcallback *temp_callback = NULL;
 	nebcallback *next_callback = NULL;
-	int callback_type = 0;
+	enum NEBCallbackType callback_type;
 
 	if (mod == NULL)
 		return NEBERROR_NOMODULE;
@@ -442,7 +551,7 @@ int neb_deregister_module_callbacks(nebmodule *mod)
 
 
 /* allows a module to deregister a callback function */
-int neb_deregister_callback(int callback_type, int (*callback_func)(int, void *))
+int neb_deregister_callback(enum NEBCallbackType callback_type, void *callback_func)
 {
 	nebcallback *temp_callback = NULL;
 	nebcallback *last_callback = NULL;
@@ -453,10 +562,6 @@ int neb_deregister_callback(int callback_type, int (*callback_func)(int, void *)
 
 	if (neb_callback_list == NULL)
 		return NEBERROR_NOCALLBACKLIST;
-
-	/* make sure the callback type is within bounds */
-	if (callback_type < 0 || callback_type >= NEBCALLBACK_NUMITEMS)
-		return NEBERROR_CALLBACKBOUNDS;
 
 	/* find the callback to remove */
 	for (temp_callback = last_callback = neb_callback_list[callback_type]; temp_callback != NULL; temp_callback = next_callback) {
@@ -485,49 +590,97 @@ int neb_deregister_callback(int callback_type, int (*callback_func)(int, void *)
 	return OK;
 }
 
-
-
-/* make callbacks to modules */
-int neb_make_callbacks(int callback_type, void *data)
+static neb_cb_result * neb_invoke_callback(void *cb, enum NEBCallbackAPIVersion api_version, enum NEBCallbackType callback_type, void *user_data)
 {
-	nebcallback *temp_callback, *next_callback;
-	int (*callbackfunc)(int, void *);
-	register int cbresult = 0;
-	int total_callbacks = 0;
-
-	/* make sure callback list is initialized */
-	if (neb_callback_list == NULL)
-		return ERROR;
-
-	/* make sure the callback type is within bounds */
-	if (callback_type < 0 || callback_type >= NEBCALLBACK_NUMITEMS)
-		return ERROR;
-
-	log_debug_info(DEBUGL_EVENTBROKER, 1, "Making callbacks (type %d)...\n", callback_type);
-
-	/* make the callbacks... */
-	for (temp_callback = neb_callback_list[callback_type]; temp_callback; temp_callback = next_callback) {
-		next_callback = temp_callback->next;
-		callbackfunc = temp_callback->callback_func;
-		cbresult = callbackfunc(callback_type, data);
-		temp_callback = next_callback;
-
-		total_callbacks++;
-		log_debug_info(DEBUGL_EVENTBROKER, 2, "Callback #%d (type %d) return code = %d\n", total_callbacks, callback_type, cbresult);
-
-		/* module wants to cancel callbacks to other modules (and potentially cancel the default Nagios handling of an event) */
-		if (cbresult == NEBERROR_CALLBACKCANCEL)
+	neb_cb_result *cbresult = NULL;
+	switch (api_version) {
+		case NEB_API_VERSION_2:
+			{
+				neb_cb_result *(*callbackfunc)(int, void *) = cb;
+				cbresult = callbackfunc(callback_type, user_data);
+			}
 			break;
-
-		/* module wants to override default Nagios handling of an event */
-		/* not sure if we should bail out here just because one module wants to override things - what about other modules? EG 12/11/2006 */
-		else if (cbresult == NEBERROR_CALLBACKOVERRIDE)
+		case NEB_API_VERSION_1:
+			{
+				int (*callbackfunc)(int, void *) = cb;
+				int rc = callbackfunc(callback_type, user_data);
+				cbresult = neb_cb_result_create_full(rc, "No description available, callback invoked using API version 1");
+			}
 			break;
 	}
 
 	return cbresult;
 }
 
+/* make callbacks to modules */
+neb_cb_resultset * neb_make_callbacks_full(enum NEBCallbackType callback_type, void *data)
+{
+	nebcallback *temp_callback, *next_callback;
+	nebmodule *temp_module;
+	neb_cb_resultset *resultset = neb_cb_resultset_create();
+	neb_cb_result *cbresult = NULL;
+	int total_callbacks = 0;
+	char *temp_module_name = "";
+
+	/* make sure callback list is initialized */
+	if (neb_callback_list == NULL) {
+		cbresult = neb_cb_result_create_full(ERROR, "Uninitialized callback list");
+		g_ptr_array_add(resultset->cb_results, cbresult);
+		return resultset;
+	}
+
+	log_debug_info(DEBUGL_EVENTBROKER, 1, "Making callbacks (type %d)...\n", callback_type);
+
+	/* make the callbacks... */
+	for (temp_callback = neb_callback_list[callback_type]; temp_callback; temp_callback = next_callback) {
+		next_callback = temp_callback->next;
+		/* get name of module reponsible for the callback */
+		for (temp_module = neb_module_list; temp_module != NULL; temp_module = temp_module->next) {
+			if (temp_module->module_handle == temp_callback->module_handle) {
+				if (temp_module->core_module) {
+					temp_module_name = "Unnamed core module";
+				} else {
+					temp_module_name = temp_module->filename;
+				}
+				break;
+			}
+		}
+		cbresult = neb_invoke_callback(temp_callback->callback_func, temp_callback->api_version, callback_type, data);
+		cbresult->module_name = nm_strdup(temp_module_name);
+		g_ptr_array_add(resultset->cb_results, cbresult);
+		temp_callback = next_callback;
+
+		total_callbacks++;
+		log_debug_info(DEBUGL_EVENTBROKER, 2, "Callback #%d (type %d) return code = %d\n", total_callbacks, callback_type, cbresult->rc);
+
+		/* module wants to cancel callbacks to other modules (and potentially cancel the default Nagios handling of an event) */
+		if (cbresult->rc == NEBERROR_CALLBACKCANCEL)
+			break;
+
+		/* module wants to override default Nagios handling of an event */
+		/* not sure if we should bail out here just because one module wants to override things - what about other modules? EG 12/11/2006 */
+		else if (cbresult->rc == NEBERROR_CALLBACKOVERRIDE)
+			break;
+	}
+
+	return resultset;
+}
+
+int neb_make_callbacks(enum NEBCallbackType callback_type, void *data)
+{
+	neb_cb_resultset_iter iter;
+	int rc = 0;
+	neb_cb_result *cb_result = NULL;
+	neb_cb_resultset *resultset = neb_make_callbacks_full(callback_type, data);
+
+	neb_cb_resultset_iter_init(&iter, resultset);
+	while (neb_cb_resultset_iter_next(&iter, &cb_result)) {
+		rc = cb_result->rc;
+	}
+
+	neb_cb_resultset_destroy(resultset);
+	return rc;
+}
 
 
 /* initialize callback list */
@@ -570,4 +723,3 @@ int neb_free_callback_list(void)
 
 	return OK;
 }
-#endif

@@ -4,6 +4,7 @@
 
 #include <getopt.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "lib/nspath.h"
 #include "config.h"
@@ -871,7 +872,6 @@ static int read_status_file(void)
 	int is_flapping = FALSE;
 	int downtime_depth = 0;
 	time_t last_check = 0L;
-	int should_be_scheduled = TRUE;
 	int has_been_checked = TRUE;
 
 
@@ -1020,8 +1020,7 @@ static int read_status_file(void)
 					hosts_in_downtime++;
 				if (has_been_checked == TRUE)
 					hosts_checked++;
-				if (should_be_scheduled == TRUE)
-					hosts_scheduled++;
+				hosts_scheduled++;
 				break;
 
 			case STATUS_SERVICE_DATA:
@@ -1124,8 +1123,7 @@ static int read_status_file(void)
 					services_in_downtime++;
 				if (has_been_checked == TRUE)
 					services_checked++;
-				if (should_be_scheduled == TRUE)
-					services_scheduled++;
+				services_scheduled++;
 				break;
 
 			default:
@@ -1143,7 +1141,6 @@ static int read_status_file(void)
 			downtime_depth = 0;
 			last_check = (time_t)0;
 			has_been_checked = FALSE;
-			should_be_scheduled = FALSE;
 		}
 
 
@@ -1268,8 +1265,6 @@ static int read_status_file(void)
 					last_check = strtoul(val, NULL, 10);
 				else if (!strcmp(var, "has_been_checked"))
 					has_been_checked = (atoi(val) > 0) ? TRUE : FALSE;
-				else if (!strcmp(var, "should_be_scheduled"))
-					should_be_scheduled = (atoi(val) > 0) ? TRUE : FALSE;
 				break;
 
 			case STATUS_SERVICE_DATA:
@@ -1291,8 +1286,6 @@ static int read_status_file(void)
 					last_check = strtoul(val, NULL, 10);
 				else if (!strcmp(var, "has_been_checked"))
 					has_been_checked = (atoi(val) > 0) ? TRUE : FALSE;
-				else if (!strcmp(var, "should_be_scheduled"))
-					should_be_scheduled = (atoi(val) > 0) ? TRUE : FALSE;
 				break;
 
 			default:

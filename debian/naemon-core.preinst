@@ -1,0 +1,37 @@
+#!/bin/sh
+
+set -e
+
+GROUP="naemon"
+USER="naemon"
+DATADIR="/var/lib/naemon"
+
+# creating naemon group if he isn't already there
+if ! getent group $GROUP >/dev/null ; then
+        # Adding system group
+        addgroup --system $GROUP >/dev/null
+fi
+
+# creating naemon user if he isn't already there
+if ! getent passwd $USER >/dev/null ; then
+        # Adding system user
+        adduser \
+          --system \
+          --disabled-login \
+          --ingroup $GROUP \
+          --home $DATADIR \
+          --gecos "naemon" \
+          --shell /bin/false \
+          $USER  >/dev/null
+else
+        if ! test -d $DATADIR ; then
+                mkdir -p $DATADIR
+                chown $USER $DATADIR
+        fi
+        # Take care of folks who installed when we set homedir to /nonexistent
+        if getent passwd $USER | grep nonexistent >/dev/null ; then
+                usermod -d $DATADIR $USER
+        fi
+fi
+
+#DEBHELPER#

@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <stdio.h>
 #include "nsutils.c"
 #include "t-utils.h"

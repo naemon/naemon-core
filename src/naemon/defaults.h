@@ -14,7 +14,7 @@
 #define DEFAULT_SYSLOG_LEVEL					2	/* log only severe events to syslog */
 
 #define DEFAULT_NOTIFICATION_LOGGING				1	/* log notification events? 1=yes, 0=no */
-
+#define DEFAULT_NSR_LOGGING					1	/* log notification suppression reasons? 1=yes, 0=no */
 #define DEFAULT_INTER_CHECK_DELAY				5.0	/* seconds between initial service check scheduling */
 #define DEFAULT_INTERLEAVE_FACTOR      				1       /* default interleave to use when scheduling checks */
 #define DEFAULT_RETRY_INTERVAL  				30	/* services are retried in 30 seconds if they're not OK */
@@ -23,6 +23,7 @@
 #define DEFAULT_MAX_CHECK_RESULT_AGE				3600    /* maximum number of seconds that a check result file is considered to be valid */
 #define DEFAULT_MAX_PARALLEL_SERVICE_CHECKS 			0	/* maximum number of service checks we can have running at any given time (0=unlimited) */
 #define DEFAULT_RETENTION_UPDATE_INTERVAL			60	/* minutes between auto-save of retention data */
+#define DEFAULT_RETAINED_SCHEDULING_RANDOMIZE_WINDOW	60	/* number of seconds used for randomizing the re-scheduling of checks missed over a restart */
 #define DEFAULT_RETENTION_SCHEDULING_HORIZON    		900     /* max seconds between program restarts that we will preserve scheduling information */
 #define DEFAULT_STATUS_UPDATE_INTERVAL				60	/* seconds between aggregated status data updates */
 #define DEFAULT_FRESHNESS_CHECK_INTERVAL        		60      /* seconds between service result freshness checks */
@@ -85,6 +86,8 @@
 #define UPDATE_CHECK_RETRY_INTERVAL_WOBBLE                      60*60*3  /* 3 hour wobble on top of base retry interval */
 
 #define DEFAULT_ALLOW_EMPTY_HOSTGROUP_ASSIGNMENT        2        /* Allow assigning to empty hostgroups by default, but warn about it */
+#define DEFAULT_ALLOW_CIRCULAR_DEPENDENCIES             0        /* Allow circular depdendencies */
+#define DEFAULT_HOST_DOWN_DISABLE_SERVICE_CHECKS        0        /* run service checks if the host is down */
 
 #define DEFAULT_HOST_PERFDATA_FILE_TEMPLATE "[HOSTPERFDATA]\t$TIMET$\t$HOSTNAME$\t$HOSTEXECUTIONTIME$\t$HOSTOUTPUT$\t$HOSTPERFDATA$"
 #define DEFAULT_SERVICE_PERFDATA_FILE_TEMPLATE "[SERVICEPERFDATA]\t$TIMET$\t$HOSTNAME$\t$SERVICEDESC$\t$SERVICEEXECUTIONTIME$\t$SERVICELATENCY$\t$SERVICEOUTPUT$\t$SERVICEPERFDATA$"

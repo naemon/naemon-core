@@ -1,9 +1,169 @@
-next - unreleased
-=================
- * shadownaemon: fix segfault if plugin output contains csv separator
+1.0.10 - Mar 12 2018
+===================
+Features:
+* allow NEBERROR_CALLBACKCANCEL from NEBTYPE_*CHECK_INITIATE neb callbacks
+
+Changed:
+* nothing
+
+Bugfixes:
+* fix newline handling in spoolfile results
+
+
+1.0.9 - Dec 18 2018
+===================
+Features:
+* Add host_down_disable_service_checks config option
+* Add retained_scheduling_randomize_window setting
+
+Changed:
+* No on-demand host checks when service is in hard critical
+* Log successful save of retention data
+* Init: Increase time till SIGKILL is sent
+
+Bugfixes:
+* Make naemon-core depend on libnaemon
+* Add conflicts/replaces tags for naemon-tools
+* parse_check: Don't escape already escaped newlines
+* Reload: Fix defuct for debian/ubuntu packaging (#150)
+* Retain next_check schedule on restart (#156, 224)
+* el6: use correct logrotate script
+* fix pending dependencies
+* fix orphaned checks logic
+* reset is_executing flag when processing active host check result (#154)
+* set CHECK_OPTION_ORPHAN_CHECK flag if check is scheduled from the orphan event handler
+* fix memory leak when overriding checks
+* fix query handler not returning command response
+* Fix heap corruption when callback dereigsters itself
+
+1.0.8 - Jul 16 2018
+===================
+Features:
+  * source defaults file if exists (#241)
+
+Changed:
+  * _nothing_
+
+Bugfixes:
+  * Fix naemon-tools conflict (#242)
+  * Fix reload command on el6 (#239)
+
+1.0.7 - Jun 01 2018
+===================
+Features:
+  * Allow circular dependencies in Naemons host graph (experimental)
+
+Changed:
+  * Do not verify config when starting daemon
+  * first_notification_delay starts on last hard change instead of last ok
+
+Bugfixes:
+  * Fix various memory leaks (#200, #189)
+  * Fix newline escaping for check results (#153)
+  * Fix segfault when there is no eventbroker
+  * Fix segfault on invalid host_notification_commands (#213)
+  * Fix external command CHANGE_SVC_MODATTR (#174)
+  * Fix compilation with GCC 7 & 8 (#184, #228, #229)
+  * Fix notification is sent even if a service is in a schedule flexible downtime
+  * Fix triggered scheduled downtime is removed
+  * Fix downtime comment ids increment on reload
+  * Output an error exit code if daemonization fails instead OK
+  * Restart Naemon on SIGHUP instead of killing (#192)
+  * Fix Naemon killing wrong processes if PID wrap-around is too short (#211)
+  * Reload: fix defunct processes after reload (#150)
+  * Fix quoting in systemd startpre command (#204)
+  * Make systemd startup cleaner
+  * Fix logrotate on EL7
+  * Do not use errno set by function calls in a library
+  * Documentation fix for Sticky Acknowledgments
+  * Make nm_g_log_handler_id extern. Fixes issue when including logging.h in external modules
+
+Removed:
+  * shadownaemon
+  * distributed-monitoring from the contrib/eventhandlers folder
+
+Other:
+  * Decouple core, livestatus and thruk
+  * Add more timing points
+  * Undeprecate check_result_path
+  * Remove NICE from systemd
+  * Format service timeout print to use the same format as host timeouts (#168)
+  * Lower wproc log level to debug_info
+  * Do not log timeouts 3 times for every timeout
+  * Add log message that explains why a service changes directly hard down state when the host is down
+  * make buildopts.h depend on Makefile
+  * version: append date to daily git builds
+
+1.0.6 - Jan 23 2017
+===================
+Bugfixes:
+  * Fix CVE-2016-9566 by removing drop_privileges. Note: naemon cannot be started as root anymore.
+  * Fix shell command parsing for some special cases when defining environment variables in a command
+  * Fix custom variables persistence accros restarts for single byte values
+  * Fix writing to already rotated logfile
+  * Fix memory leak in broker_notification_data
+  * Fix notification commands beeing reaped to early (#137)
+
+1.0.5 - Jun 21 2016
+===================
+Bugfixes:
+  * Fix segfault when trying to log to null pointer (#140)
+  * Fix naemon exiting on USR1 signal (#138, #139)
+
+1.0.4 - Jun 03 2016
+===================
+Features:
+  * Downtimes can now be scheduled to start before their time of their scheduling
+  * Naemon can now start without any configured objects
+  * Add new NEB callback API version with better support for communicating cancellation and override reasons
+  * Naemon now consistently logs when a notification is suppressed, along with
+    the reason why (very useful for troubleshooting notification issues!). This
+    feature is enabled by default, and can be overridden by setting
+    enable_notification_suppression_reason_logging=0 in naemon.cfg.
+  * Scheduling logic completely overhauled to not depend on wallclock time,
+    which makes it much more reliable (no more lost or orphaned events!)
+  * It is now possible to disable status data updates completely
+    (status_update_interval=0)
+  * GLib messages are now logged to the regular outputs.
+
+Bugfixes:
+  * Fix segfault which would happen when a plugin's output is one or more
+    newlines only
+  * Shadownaemon: fix segfault if plugin output contains csv separator
+  * Fix an ancient bug where reconstructing a downtime from retention data
+    would result in double downtime alerts being emitted
+  * Fix another ancient race condition where a rapidly reload and starting
+    naemon would leave you with two instances running
+  * Stop logging if check_result_path (deprecated) is not available even
+    if it's set
+  * Strings in retention data are now properly escaped, fixing various bugs
+  * Various init script fixes
+  * Fix a race condition that would sometimes lead to complete deadlock
+  * Fix a bug where Naemon would allow duplicate objects to be created
+  * Replace in-tree (ha-ha) rbtree with GLib's GTree, to get rid of incorrect
+    node removal behaviour in the former
+  * Fix a race condition that would sometimes occur during a reload
+  * Fix a bug in signal handling code which would sometimes cause the command
+    file worker to become defunct
+  * Fix a bug where the specified retry_interval of a service or host
+    would not be properly respected, and the check_interval would be used instead
+  * Fix a potential crash (segfault) when freeing parent/child references
+  * Fix a bug where "stale" objects would only have one freshness check executed
+  * Fix improper handling of CHECK_OPTION_FORCE_EXECUTION, which would lead to
+    checks not being run, despite being forcibly scheduled
+  * Fix a bug where Naemon wouldn't properly initialize its lock file, but
+    start regardless
+
+Other:
+  * Grafted Nagios git history onto Naemon's for easier code archeology
+  * Lots of code cleanup, typo fixes, new test cases, new assertions &
+    error handling, fixed memory leaks, logging and refactoring
+  * Removed an undocumented, experimental, untested "load control" feature
+  * Decoupled Thruk packages, we now use the official upstream Thruk packages
+
 
 1.0.3 - Mar 29 2015
-=================
+===================
  * shadownaemon: fix request counter
 
 1.0.2 - Mar 28 2015

@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "iobroker.h"
+#include "bufferqueue.h"
 
 /*
  * epoll_*() is linux specific and was added to glibc 2.3.2, so we
@@ -48,6 +49,7 @@ typedef struct {
 	int events; /* events the caller is interested in */
 	int (*handler)(int, int, void *); /* where we send data */
 	void *arg; /* the argument we send to the input handler */
+	nm_bufferqueue *bq_out;
 } iobroker_fd;
 
 
@@ -217,6 +219,7 @@ static int reg_one(iobroker_set *iobs, int fd, int events, void *arg, int (*hand
 	s->fd = fd;
 	s->arg = arg;
 	s->events = events;
+	s->bq_out = nm_bufferqueue_create();
 	iobs->iobroker_fds[fd] = s;
 	iobs->num_fds++;
 
@@ -259,6 +262,9 @@ int iobroker_unregister(iobroker_set *iobs, int fd)
 
 	if (fd < 0 || fd >= iobs->max_fds || !iobs->iobroker_fds[fd])
 		return IOBROKER_EINVAL;
+
+	nm_bufferqueue_destroy(iobs->iobroker_fds[fd]->bq_out);
+	iobs->iobroker_fds[fd]->bq_out = NULL;
 
 	free(iobs->iobroker_fds[fd]);
 	iobs->iobroker_fds[fd] = NULL;
@@ -342,11 +348,12 @@ int iobroker_poll(iobroker_set *iobs, int timeout)
 	if (!iobs)
 		return IOBROKER_ENOSET;
 
-	if (!iobs->num_fds)
-		return IOBROKER_ENOINIT;
-
 #if defined(IOBROKER_USES_EPOLL)
-	nfds = epoll_wait(iobs->epfd, iobs->ep_events, iobs->num_fds, timeout);
+	nfds = epoll_wait(iobs->epfd, iobs->ep_events,
+			/* to gain consistent "idling" behaviour with the other mechanisms,
+			 * we avoid returning immediately here by "faking" maxevents */
+			!iobs->num_fds ? 1 : iobs->num_fds,
+			timeout);
 	if (nfds < 0) {
 		return IOBROKER_ELIB;
 	}
@@ -449,4 +456,39 @@ int iobroker_poll(iobroker_set *iobs, int timeout)
 #endif
 
 	return ret;
+}
+
+int iobroker_push(iobroker_set *iobs)
+{
+	int i, result = 1;
+
+	if (!iobs)
+		return 1;
+
+	for (i = 0; i < iobs->max_fds; i++) {
+		iobroker_fd *s = NULL;
+
+		if (!iobs->iobroker_fds[i])
+			continue;
+
+		s = iobs->iobroker_fds[i];
+		if (s->fd > 0 && nm_bufferqueue_get_available(s->bq_out)) {
+			int ret;
+			result = 0;
+			ret = nm_bufferqueue_write(s->bq_out, s->fd);
+			if (ret < 0) {
+				/* TODO: can't log() in lib */
+			}
+		}
+	}
+	return result;
+}
+
+int iobroker_write_packet(iobroker_set *iobs, int fd, char *buf, size_t len)
+{
+	int ret = 0;
+	if ((ret = nm_bufferqueue_push(iobs->iobroker_fds[fd]->bq_out, buf, len)))
+		return ret;
+	/* horrible idea? */
+	return iobroker_push(iobs);
 }

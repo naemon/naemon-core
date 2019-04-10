@@ -20,8 +20,6 @@ int qh_init(const char *path);
 void qh_deinit(const char *path);
 int qh_register_handler(const char *name, const char *description, unsigned int options, qh_handler handler);
 const char *qh_strerror(int code);
-void qh_error(int sd, int code, const char *fmt, ...)
-	__attribute__((__format__(__printf__, 3, 4)));
 
 NAGIOS_END_DECL
 
