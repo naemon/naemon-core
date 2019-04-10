@@ -119,7 +119,7 @@ static struct wproc_list *get_wproc_list(const char *cmd)
 		wp_list = g_hash_table_lookup(specialized_workers, ++slash);
 	}
 	if (wp_list != NULL) {
-		log_debug_info(DEBUGL_CHECKS, 1, "Found specialized worker(s) for '%s'\n", (slash && *slash != '/') ? slash : cmd_name);
+		log_debug_info(DEBUGL_CHECKS, 1, "Found specialized worker(s) for '%s'\n", (slash && *slash != '/') ? slash : (cmd_name ? cmd_name : "(null)"));
 	}
 	if (cmd_name)
 		free(cmd_name);
