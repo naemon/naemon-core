@@ -847,7 +847,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 			if (state_change == TRUE || hard_state_change == TRUE)
 				temp_service->last_state_change = temp_service->last_check;
 			if (hard_state_change == TRUE) {
-				temp_service->last_hard_state_change = temp_service->last_check;
 				temp_service->state_type = HARD_STATE;
 			}
 
@@ -890,6 +889,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 					handle_service_event(temp_service);
 
 					/* save the last hard state */
+					temp_service->last_hard_state_change = temp_service->last_check;
 					temp_service->last_hard_state = temp_service->current_state;
 				}
 			}
