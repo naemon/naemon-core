@@ -16,7 +16,7 @@ my $etc = "$buildroot/t/etc";
 my $precache = "$buildroot/t/var/objects.precache";
 
 my $options = $> == 0 ? '--allow-root' : '';
-plan tests => 10;
+plan tests => 12;
 
 my $output = `$naemon $options -v "$etc/naemon.cfg"`;
 if ($? == 0) {
@@ -31,6 +31,21 @@ system("grep -v 'Created:' $precache > '$precache.generated'");
 
 my $diff = "diff -u $precache.expected $precache.generated";
 my @output = `$diff`;
+if ($? == 0) {
+	pass( "Naemon precached objects file matches expected" );
+} else {
+	fail( "Naemon precached objects discrepency!!!\nTest with: $diff\nCopy with: cp $precache.generated $precache.expected" );
+	print "#$_" foreach @output;
+}
+
+# naemon-service-dependencies.cfg
+$precache = "$buildroot/t/var/objects.precache.naemon-service-dependencies";
+system("$naemon $options -vp '$etc/naemon-service-dependencies.cfg'");
+is($?, 0, "Cannot create precached objects file");
+system("grep -v 'Created:' $precache > '$precache.generated'");
+
+$diff = "diff -u $precache.expected $precache.generated";
+@output = `$diff`;
 if ($? == 0) {
 	pass( "Naemon precached objects file matches expected" );
 } else {
