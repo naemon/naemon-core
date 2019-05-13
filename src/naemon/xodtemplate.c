@@ -6272,6 +6272,7 @@ static int xodtemplate_register_and_destroy_servicedependency(void *sd_)
 		if (bitmap_isset(parent_map, p->id))
 			continue;
 		bitmap_set(parent_map, p->id);
+		bitmap_clear(service_map);
 
 		/*
 		 * if this is a same-host dependency, we must expand
