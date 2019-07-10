@@ -1842,9 +1842,15 @@ static int host_command_handler(const struct external_command *ext_command, time
 	unsigned long downtime_id = 0L;
 	unsigned long duration = 0L;
 	time_t old_interval = 0L;
+	time_t current_time = 0L;
 
-	if ( ext_command->id != CMD_DEL_HOST_COMMENT)
+	if ( ext_command->id != CMD_DEL_HOST_COMMENT) {
 		target_host = GV("host_name");
+		if(target_host) {
+			time(&current_time);
+			target_host->last_update = current_time;
+		}
+	}
 
 	switch (ext_command->id) {
 		case CMD_ADD_HOST_COMMENT:
@@ -2250,9 +2256,15 @@ static int service_command_handler(const struct external_command *ext_command, t
 	struct service *target_service = NULL;
 	unsigned long downtime_id = 0L;
 	time_t old_interval = 0L;
+	time_t current_time = 0L;
 
-	if (ext_command->id != CMD_DEL_SVC_COMMENT)
+	if (ext_command->id != CMD_DEL_SVC_COMMENT) {
 		target_service = GV_SERVICE("service");
+		if(target_service) {
+			time(&current_time);
+			target_service->last_update = current_time;
+		}
+	}
 
 	switch(ext_command->id) {
 		case CMD_ADD_SVC_COMMENT:

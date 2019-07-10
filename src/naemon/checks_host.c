@@ -253,6 +253,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	start_time.tv_usec = 0L;
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
+	hst->last_update = now;
 
 	neb_result = broker_host_check(NEBTYPE_HOSTCHECK_ASYNC_PRECHECK, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, host_check_timeout, FALSE, 0, NULL, NULL, NULL, NULL, NULL);
 
@@ -609,6 +610,7 @@ int handle_async_host_check_result(host *temp_host, check_result *cr)
 		temp_host->perf_data,
 		cr);
 
+	temp_host->last_update = end_time_hires.tv_sec;
 	return OK;
 }
 
