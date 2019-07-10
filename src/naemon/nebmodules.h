@@ -10,7 +10,7 @@ NAGIOS_BEGIN_DECL
 
 /***** MODULE VERSION INFORMATION *****/
 #define NEB_API_VERSION(x) int __neb_api_version = x;
-#define CURRENT_NEB_API_VERSION    4
+#define CURRENT_NEB_API_VERSION    5
 
 
 /***** MODULE INFORMATION *****/

@@ -262,6 +262,11 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 		               svc->description, svc->host_name, svc->id,
 		               neb_result == NEBERROR_CALLBACKCANCEL ? "cancelled" : "overridden");
 	}
+
+	/* get the command start time */
+	gettimeofday(&start_time, NULL);
+	svc->last_update = start_time.tv_sec;
+
 	/* neb module wants to cancel the service check - the check will be rescheduled for a later time by the scheduling logic */
 	if (neb_result == NEBERROR_CALLBACKCANCEL) {
 		return ERROR;
@@ -296,9 +301,6 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 		log_debug_info(DEBUGL_CHECKS, 0, "Processed check command for service '%s' on host '%s' was NULL - aborting.\n", svc->description, svc->host_name);
 		return ERROR;
 	}
-
-	/* get the command start time */
-	gettimeofday(&start_time, NULL);
 
 	cr = nm_calloc(1, sizeof(*cr));
 	init_check_result(cr);
@@ -1051,6 +1053,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	nm_free(old_plugin_output);
 	nm_free(old_long_plugin_output);
 
+	temp_service->last_update = current_time;
 	return OK;
 }
 

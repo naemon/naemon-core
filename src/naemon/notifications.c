@@ -539,6 +539,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 
 				/* update notifications flags */
 				add_notified_on(svc, svc->current_state);
+				svc->last_update = current_time;
 			}
 
 			/* we didn't end up notifying anyone */
@@ -548,6 +549,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 				svc->current_notification_number--;
 
 				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "No contacts were notified.  Next possible notification time: %s\n", ctime(&svc->next_notification));
+				svc->last_update = current_time;
 			}
 		}
 
@@ -1424,6 +1426,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 				add_notified_on(hst, hst->current_state);
 
 				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "%d contacts were notified.  Next possible notification time: %s\n", contacts_notified, ctime(&hst->next_notification));
+				hst->last_update = current_time;
 			}
 
 			/* we didn't end up notifying anyone */
@@ -1433,6 +1436,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 				hst->current_notification_number--;
 
 				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "No contacts were notified.  Next possible notification time: %s\n", ctime(&hst->next_notification));
+				hst->last_update = current_time;
 			}
 		}
 

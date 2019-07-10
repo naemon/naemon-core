@@ -129,6 +129,7 @@ struct host {
 	/* objects we depend upon */
 	struct objectlist *exec_deps, *notify_deps;
 	struct objectlist *escalation_list;
+	time_t  last_update /* timestamp when object has been updated the last time */;
 	struct  host *next;
 	struct timed_event *next_check_event;
 };
