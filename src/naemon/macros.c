@@ -389,7 +389,7 @@ static int grab_custom_macro_value_r(nagios_macros *mac, char *macro_name, char 
 			g_tree_foreach(temp_hostgroup->members, concat_custom_macro_value, &params);
 			*output = nm_malloc(params.buffer->len + 1);
 			strncpy(*output, params.buffer->str, params.buffer->len);
-			*output[params.buffer->len] = 0;
+			(*output)[params.buffer->len] = 0;
 			g_string_free(params.buffer, TRUE);
 		}
 	}
@@ -1603,7 +1603,7 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 			g_tree_foreach(temp_hostgroup->members, concat_macrox_value, &params);
 			*output = nm_malloc(params.buffer->len + 1);
 			strncpy(*output, params.buffer->str, params.buffer->len);
-			*output[params.buffer->len] = 0;
+			(*output)[params.buffer->len] = 0;
 			g_string_free(params.buffer, TRUE);
 		}
 		break;
