@@ -12,7 +12,6 @@ char *cur_config_file = NULL;
 
 static void init_configuration(void) {
 	int result;
-	FILE *fp;
 
 	/* This is really not used, but needs to be defined */
 	config_file = "(test config filename)";
@@ -22,9 +21,8 @@ static void init_configuration(void) {
 	ck_assert_int_eq(result, OK);
 
 	/* Kick start with a clean config file we can write to with the test */
-	cur_config_file = tempnam(NULL, "nmtst");
-	fp = fopen(cur_config_file, "w");
-	fclose(fp);
+	cur_config_file = strdup("/tmp/nmtst.XXXXXX");
+	close(mkstemp(cur_config_file));
 	add_object_to_objectlist(&objcfg_files, cur_config_file);
 
 }
@@ -152,6 +150,7 @@ START_TEST(test_hostgroup_service_host_override)
 	}
 
 	ck_assert_int_eq(count, 5+1);
+	unlink(cur_config_file);
 }
 END_TEST
 
