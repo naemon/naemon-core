@@ -137,7 +137,6 @@ START_TEST(host_fixed_scheduled_downtime_cancelled)
 
 	ck_assert(OK == unschedule_downtime(HOST_DOWNTIME, downtime_id));
 	ck_assert_int_eq(0, hst->scheduled_downtime_depth);
-	ck_assert(dt->is_in_effect == FALSE);
 	ck_assert(NULL == find_downtime(ANY_DOWNTIME, downtime_id));
 }
 END_TEST
@@ -172,7 +171,6 @@ START_TEST(host_fixed_scheduled_downtime_stopped)
 	 */
 	ck_assert(OK == handle_scheduled_downtime(dt));
 	ck_assert_int_eq(0, hst->scheduled_downtime_depth);
-	ck_assert(dt->is_in_effect == FALSE);
 	ck_assert(NULL == find_downtime(ANY_DOWNTIME, downtime_id));
 }
 END_TEST
@@ -214,12 +212,10 @@ START_TEST(host_multiple_fixed_scheduled_downtimes)
 
 	ck_assert(OK == handle_scheduled_downtime(dt2));
 	ck_assert_int_eq(1, hst->scheduled_downtime_depth);
-	ck_assert(dt2->is_in_effect == FALSE);
 	ck_assert(NULL == find_downtime(ANY_DOWNTIME, downtime_id2));
 
 	ck_assert(OK == handle_scheduled_downtime(dt));
 	ck_assert_int_eq(0, hst->scheduled_downtime_depth);
-	ck_assert(dt->is_in_effect == FALSE);
 	ck_assert(NULL == find_downtime(ANY_DOWNTIME, downtime_id));
 }
 END_TEST
@@ -266,7 +262,6 @@ START_TEST(host_multiple_fixed_scheduled_downtimes_one_cancelled_one_stopped)
 
 	ck_assert(OK == handle_scheduled_downtime(dt));
 	ck_assert_int_eq(0, hst->scheduled_downtime_depth);
-	ck_assert(dt->is_in_effect == FALSE);
 	ck_assert(NULL == find_downtime(ANY_DOWNTIME, downtime_id));
 }
 END_TEST
@@ -499,8 +494,6 @@ START_TEST(host_triggered_scheduled_downtime)
 
 	/* ... and the triggered downtime should expire when the first downtime does */
 	ck_assert(OK == handle_scheduled_downtime(dt));
-	ck_assert(dt->is_in_effect == FALSE);
-	ck_assert(triggered_dt->is_in_effect == FALSE);
 	ck_assert_int_eq(0, hst->scheduled_downtime_depth);
 }
 END_TEST
@@ -548,8 +541,6 @@ START_TEST(host_triggered_scheduled_downtime_across_reload)
 
 	/* ... and the triggered downtime should expire when the first downtime does */
 	ck_assert(OK == handle_scheduled_downtime(dt));
-	ck_assert(dt->is_in_effect == FALSE);
-	ck_assert(triggered_dt->is_in_effect == FALSE);
 	ck_assert_int_eq(0, hst->scheduled_downtime_depth);
 }
 END_TEST
@@ -605,13 +596,10 @@ START_TEST(host_triggered_and_fixed_scheduled_downtime)
 
 	/* ... and the triggered downtime should expire when the first downtime does ... */
 	ck_assert(OK == handle_scheduled_downtime(dt));
-	ck_assert(dt->is_in_effect == FALSE);
-	ck_assert(triggered_dt->is_in_effect == FALSE);
 	ck_assert_int_eq(1, hst->scheduled_downtime_depth);
 
 	/* ... but the regular downtime has to expire by itself (i.e, it's unaffected by the other ones) */
 	ck_assert(OK == handle_scheduled_downtime(fixed_dt));
-	ck_assert(fixed_dt->is_in_effect == FALSE);
 	ck_assert_int_eq(0, hst->scheduled_downtime_depth);
 }
 END_TEST
@@ -679,8 +667,6 @@ START_TEST(service_triggered_scheduled_downtime)
 
 	/* ... and the triggered downtime should expire when the first downtime does */
 	ck_assert(OK == handle_scheduled_downtime(dt));
-	ck_assert(dt->is_in_effect == FALSE);
-	ck_assert(triggered_dt->is_in_effect == FALSE);
 	ck_assert_int_eq(0, svc->scheduled_downtime_depth);
 	ck_assert_int_eq(0, svc1->scheduled_downtime_depth);
 }
