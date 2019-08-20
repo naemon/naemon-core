@@ -5727,8 +5727,10 @@ static int xodtemplate_register_host_relations(void *host_, void *discard)
 			host *parent;
 			strip(parent_host);
 			parent = find_host(parent_host);
-			if (add_parent_to_host(new_host, parent) != OK)
+			if (add_parent_to_host(new_host, parent) != OK) {
 				nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add parent host '%s' to host (config file '%s', starting on line %d)\n", parent_host, xodtemplate_config_file_name(this_host->_config_file), this_host->_start_line);
+				return ERROR;
+			}
 		}
 	}
 
