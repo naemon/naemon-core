@@ -241,6 +241,7 @@ START_TEST(command_worker_launch_shutdown_test)
 	ck_assert_int_eq(0, launch_command_file_worker());
 	worker_pid = command_worker_get_pid();
 	ck_assert_int_ne(0, worker_pid);
+	sleep(1); /* results in race condition on slow boxes otherwise */
 	ck_assert_int_eq(0, shutdown_command_file_worker());
 	ck_assert_int_eq(-1, kill(worker_pid, 0));
 	ck_assert_int_eq(0, command_worker_get_pid());
