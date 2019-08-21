@@ -257,7 +257,6 @@ START_TEST(host_multiple_fixed_scheduled_downtimes_one_cancelled_one_stopped)
 
 	ck_assert(OK == unschedule_downtime(HOST_DOWNTIME, downtime_id2));
 	ck_assert_int_eq(1, hst->scheduled_downtime_depth);
-	ck_assert(dt2->is_in_effect == FALSE);
 	ck_assert(NULL == find_downtime(ANY_DOWNTIME, downtime_id2));
 
 	ck_assert(OK == handle_scheduled_downtime(dt));
