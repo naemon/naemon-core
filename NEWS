@@ -1,4 +1,21 @@
-1.0.10 - Mar 12 2018
+1.1.0 - Sep 02 2019
+===================
+Features:
+* add internal last_update timestamp to track host/service changes
+* speed up configuration check when using lots of dependencies
+
+Changed:
+* increased CURRENT_NEB_API_VERSION, this means you have to recompile your NEB modules
+
+Bugfixes:
+* bail out config check if parent host cannot be resolved
+* bail out config check if group members cannot be resolved (#300)
+* fix calculating group on demand macros
+* fix last_hard_state when using neb modules (#287)
+* fix loading neb modules multiple times
+
+
+1.0.10 - Mar 12 2019
 ===================
 Features:
 * allow NEBERROR_CALLBACKCANCEL from NEBTYPE_*CHECK_INITIATE neb callbacks
