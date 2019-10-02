@@ -278,7 +278,7 @@ timeperiod *find_timeperiod(const char *name)
 static const char *timerange2str(const timerange *tr)
 {
 	static char str[12];
-	int sh, sm, eh, em;
+	short sh, sm, eh, em;
 
 	if (!tr)
 		return "";
@@ -286,7 +286,7 @@ static const char *timerange2str(const timerange *tr)
 	sm = (tr->range_start / 60) % 60;
 	eh = tr->range_end / 3600;
 	em = (tr->range_end / 60) % 60;
-	sprintf(str, "%02d:%02d-%02d:%02d", sh, sm, eh, em);
+	sprintf(str, "%02hd:%02hd-%02hd:%02hd", sh, sm, eh, em);
 	return str;
 }
 
