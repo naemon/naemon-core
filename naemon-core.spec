@@ -31,8 +31,11 @@ BuildRequires: pkgconfig
 BuildRequires: glib2-devel
 BuildRequires: check-devel
 # sles / rhel specific requirements
-%if 0%{?el7}%{?is_fc}
+%if 0%{?el8}%{?el7}%{?is_fc}
 BuildRequires: chrpath
+%endif
+%if 0%{?el8}
+BuildRequires: gdb-headless
 %endif
 %if 0%{?systemd_requires}
 %systemd_requires
