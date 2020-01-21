@@ -8,7 +8,7 @@
 #include "logging.h"
 #include "globals.h"
 #include "nm_alloc.h"
-
+#include "sretention.h"
 
 /******************************************************************/
 /******************** FLAP DETECTION FUNCTIONS ********************/
@@ -423,6 +423,8 @@ void enable_host_flap_detection(host *hst)
 	if (hst->flap_detection_enabled == TRUE)
 		return;
 
+	pre_modify_host_attribute(hst, attr);
+
 	/* set the attribute modified flag */
 	hst->modified_attributes |= attr;
 
@@ -454,6 +456,8 @@ void disable_host_flap_detection(host *hst)
 	/* nothing to do... */
 	if (hst->flap_detection_enabled == FALSE)
 		return;
+
+	pre_modify_host_attribute(hst, attr);
 
 	/* set the attribute modified flag */
 	hst->modified_attributes |= attr;
@@ -523,6 +527,8 @@ void enable_service_flap_detection(service *svc)
 	/* nothing to do... */
 	if (svc->flap_detection_enabled == TRUE)
 		return;
+	
+	pre_modify_service_attribute(svc, attr);
 
 	/* set the attribute modified flag */
 	svc->modified_attributes |= attr;
@@ -555,6 +561,8 @@ void disable_service_flap_detection(service *svc)
 	/* nothing to do... */
 	if (svc->flap_detection_enabled == FALSE)
 		return;
+	
+	pre_modify_service_attribute(svc, attr);
 
 	/* set the attribute modified flag */
 	svc->modified_attributes |= attr;
