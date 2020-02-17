@@ -1048,9 +1048,9 @@ allow_empty_hostgroup_assignment=0
 
 # SET SERVICE/HOST STATUS WHEN SERVICE CHECK SKIPPED
 # These options will allow you to set the status of a service when its
-# service check is skipped due to one of three reasons:
-# 1) failed dependency check; 2) parent's status; 3) host not up
-# Number 3 can only happen if 'host_down_disable_service_checks' above
+# service check is skipped due to one of two reasons:
+# 1) failed dependency check; 2) host not up
+# Number 2 can only happen if 'host_down_disable_service_checks' above
 # is set to 1.
 # Valid values for the service* options are:
 #     -1     Do not change the service status (default)
@@ -1059,7 +1059,6 @@ allow_empty_hostgroup_assignment=0
 #      2     Set the service status to STATE_CRITICAL
 #      3     Set the service status to STATE_UNKNOWN
 #service_skip_check_dependency_status=-1
-#service_skip_check_parent_status=-1
 #service_skip_check_host_down_status=-1
 
 # The host_dependency_skip_check_status option will allow you to set the

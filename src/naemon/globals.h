@@ -147,7 +147,6 @@ extern int allow_empty_hostgroup_assignment;
 extern int allow_circular_dependencies;
 extern int host_down_disable_service_checks;
 extern int service_skip_check_dependency_status;
-extern int service_skip_check_parent_status;
 extern int service_skip_check_host_down_status;
 extern int host_skip_check_dependency_status;
 
