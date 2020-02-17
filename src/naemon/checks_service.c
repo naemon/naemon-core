@@ -201,6 +201,9 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 			/* check service dependencies for execution */
 			log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' checking dependencies...\n", temp_service->description, temp_service->host_name);
 			if (check_service_dependencies(temp_service, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
+				if (service_skip_check_parent_status >= 0) {
+					temp_service->current_state = service_skip_check_parent_status;
+				}
 				log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' failed dependency check. Aborting check\n", temp_service->description, temp_service->host_name);
 				return;
 			}
@@ -213,6 +216,9 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 				} else {
 					if(temp_host->current_state != STATE_UP) {
 						log_debug_info(DEBUGL_CHECKS, 2, "Host state not UP, so service check will not be performed - will be rescheduled as normal.\n");
+						if (service_skip_check_host_down_status >= 0) {
+							temp_host->current_state = service_skip_check_host_down_status;
+						}
 						return;
 					}
 				}

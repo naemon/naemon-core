@@ -241,6 +241,10 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 		/* check host dependencies for execution */
 		log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' checking dependencies...\n", hst->name);
 		if (check_host_dependencies(hst, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
+			if (service_skip_check_dependency_status >= 0) {
+				hst->current_state = service_skip_check_dependency_status;
+			}
+
 			log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' failed dependency check. Aborting check\n", hst->name);
 			return ERROR;
 		}
