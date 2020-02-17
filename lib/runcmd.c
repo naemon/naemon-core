@@ -315,6 +315,9 @@ void runcmd_init(void)
 	}
 #endif
 
+	/* reset pipe handling so child processes can use shell pipes */
+	signal(SIGPIPE, SIG_DFL);
+
 	if (!pids)
 		pids = calloc(maxfd, sizeof(pid_t));
 }
