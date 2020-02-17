@@ -1,3 +1,13 @@
+1.2.0 - Feb 17 2020
+===================
+Features:
+* Add new skip check options to set a particular state on skipped checks
+
+Bugfixes:
+* Retain flap detection option over restarts
+* Don't process perfdata file if perfdata is disabled
+
+
 1.1.0 - Sep 02 2019
 ===================
 Features:
