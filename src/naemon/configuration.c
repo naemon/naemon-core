@@ -1077,13 +1077,6 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 				error = TRUE;
 				break;
 			}
-		} else if(!strcmp(variable,"service_skip_check_parent_status")) {
-			service_skip_check_parent_status = atoi(value);
-			if (service_skip_check_parent_status < -1 || service_skip_check_parent_status > 3) {
-				nm_asprintf(&error_message, "Illegal value for service_skip_check_parent_status");
-				error = TRUE;
-				break;
-			}
 		} else if (!strcmp(variable,"service_skip_check_host_down_status")) {
 			service_skip_check_host_down_status = atoi(value);
 			if (service_skip_check_host_down_status < -1 || service_skip_check_host_down_status > 3) {
