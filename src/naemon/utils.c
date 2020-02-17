@@ -166,6 +166,10 @@ char *use_timezone = NULL;
 int allow_empty_hostgroup_assignment = DEFAULT_ALLOW_EMPTY_HOSTGROUP_ASSIGNMENT;
 int allow_circular_dependencies = DEFAULT_ALLOW_CIRCULAR_DEPENDENCIES;
 int host_down_disable_service_checks = DEFAULT_HOST_DOWN_DISABLE_SERVICE_CHECKS;
+int service_skip_check_dependency_status = -1;
+int service_skip_check_parent_status = -1;
+int service_skip_check_host_down_status = -1;
+int host_skip_check_dependency_status = -1;
 
 static long long check_file_size(char *, unsigned long, struct rlimit);
 
