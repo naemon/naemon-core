@@ -575,6 +575,9 @@ static void xpddefault_process_host_perfdata_file(struct nm_event_execution_prop
 		if (host_perfdata_file_processing_command == NULL)
 			return; /* OK */
 
+		if (process_performance_data == FALSE)
+			return; /* OK */
+
 		/* init macros */
 		memset(&mac, 0, sizeof(mac));
 
@@ -637,6 +640,9 @@ static void xpddefault_process_service_perfdata_file(struct nm_event_execution_p
 
 		/* we don't have a command */
 		if (service_perfdata_file_processing_command == NULL)
+			return; /* OK */
+
+		if (process_performance_data == FALSE)
 			return; /* OK */
 
 		/* init macros */
