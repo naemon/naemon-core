@@ -997,8 +997,9 @@ int add_new_host_downtime(char *host_name, time_t entry_time, char *author, char
 	if (downtime_id != NULL)
 		*downtime_id = new_downtime_id;
 
-	broker_downtime_data(NEBTYPE_DOWNTIME_ADD, NEBFLAG_NONE, NEBATTR_NONE, HOST_DOWNTIME, host_name, NULL, entry_time, author, comment_data, start_time, end_time, fixed, triggered_by, duration, new_downtime_id);
-
+	if (result == OK) {
+		broker_downtime_data(NEBTYPE_DOWNTIME_ADD, NEBFLAG_NONE, NEBATTR_NONE, HOST_DOWNTIME, host_name, NULL, entry_time, author, comment_data, start_time, end_time, fixed, triggered_by, duration, new_downtime_id);
+	}
 	return result;
 }
 
@@ -1030,7 +1031,9 @@ int add_new_service_downtime(char *host_name, char *service_description, time_t 
 	if (downtime_id != NULL)
 		*downtime_id = new_downtime_id;
 
-	broker_downtime_data(NEBTYPE_DOWNTIME_ADD, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_DOWNTIME, host_name, service_description, entry_time, author, comment_data, start_time, end_time, fixed, triggered_by, duration, new_downtime_id);
+	if (result == OK) {
+		broker_downtime_data(NEBTYPE_DOWNTIME_ADD, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_DOWNTIME, host_name, service_description, entry_time, author, comment_data, start_time, end_time, fixed, triggered_by, duration, new_downtime_id);
+	}
 
 	return result;
 }
