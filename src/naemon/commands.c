@@ -1776,13 +1776,13 @@ static void foreach_contact_in_contactgroup(contactgroup *target_contactgroup, v
 }
 
 struct matches_arg {
-	struct external_command *ext_command;
+	const struct external_command *ext_command;
 	int deleted;
 };
 static gboolean delete_if_matches(gpointer _name, gpointer _hst, gpointer user_data)
 {
 	struct matches_arg *match = (struct matches_arg *)user_data;
-	struct external_command *ext_command = match->ext_command;
+	const struct external_command *ext_command = match->ext_command;
 	host *host_ptr = (host *)_hst;
 	if (strcmp(GV_STRING("hostname"), "") && !strcmp(host_ptr->name, GV("hostname")))
 		return FALSE;
@@ -1798,7 +1798,7 @@ static gboolean delete_if_matches(gpointer _name, gpointer _hst, gpointer user_d
 static int del_downtime_by_filter_handler(const struct external_command *ext_command, time_t entry_time)
 {
 	hostgroup *hostgroup_p = NULL;
-	struct matches_arg match;
+	struct matches_arg match = { ext_command, 0 };
 	switch (ext_command->id) {
 		case CMD_DEL_DOWNTIME_BY_HOST_NAME:
 			if(delete_downtime_by_hostname_service_description_start_time_comment(
