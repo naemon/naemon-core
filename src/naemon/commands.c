@@ -1787,7 +1787,7 @@ static gboolean delete_if_matches(gpointer _name, gpointer _hst, gpointer user_d
 	if (strcmp(GV_STRING("hostname"), "") && !strcmp(host_ptr->name, GV("hostname")))
 		return FALSE;
 	match->deleted += delete_downtime_by_hostname_service_description_start_time_comment(
-		!strcmp(GV_STRING("hostname"), "") ? NULL : GV("hostname"),
+		!strcmp(GV_STRING("hostname"), "") ? (char *)_name : GV("hostname"),
 		!strcmp(GV_STRING("service_description"), "") ? NULL : GV("service_description"),
 		GV_TIMESTAMP("downtime_start_time"),
 		!strcmp(GV_STRING("comment"), "") ? NULL : GV("comment")
