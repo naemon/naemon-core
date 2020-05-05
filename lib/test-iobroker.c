@@ -108,7 +108,7 @@ static int listen_handler(int fd, int events, void *arg)
 	return 0;
 }
 
-int sighandler(int sig)
+void sighandler(int sig)
 {
 	/* test failed */
 	t_fail("Caught signal %d", sig);
