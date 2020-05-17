@@ -243,7 +243,7 @@ int main(int argc, char **argv)
 			break;
 		case 'D':
 		    mrtg_delimiter_save = strdup(optarg);
-			mrtg_delimiter = mrtg_delimiter_save;
+		    mrtg_delimiter = mrtg_delimiter_save;
 			break;
 
 		default:
