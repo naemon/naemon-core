@@ -10,6 +10,7 @@
 #include "config.h"
 #include <naemon/common.h>
 #include <naemon/defaults.h>
+#include <naemon/nm_alloc.h>
 
 #define STATUS_NO_DATA             0
 #define STATUS_INFO_DATA           1
@@ -834,8 +835,7 @@ static int read_config_file(void)
 
 	fp = fopen(main_config_file, "r");
 	if (fp == NULL) {
-	    if (main_cfg_dir)
-	        free(main_cfg_dir);
+	    nm_free(main_cfg_dir);
 	    return ERROR;
 	}
 
@@ -863,11 +863,10 @@ static int read_config_file(void)
 	fclose(fp);
 
 	//free
-	/* transfer of owner ship
+	/* we are responsible for freeing the memory
 	 * malloc in nspath.c -> pcomp_construct
 	 */
-	if(main_cfg_dir)
-	    free(main_cfg_dir);
+	nm_free(main_cfg_dir);
 
 	return OK;
 }
@@ -1389,18 +1388,9 @@ void get_time_breakdown(unsigned long raw_time, int *days, int *hours, int *minu
 static void free_memory(void)
 {
     //deallocate memory
-    if (main_config_file)
-        free(main_config_file);
-
-    if (status_file)
-        free(status_file);
-
-    if (status_version)
-        free(status_version);
-
-    if(mrtg_variables)
-        free(mrtg_variables);
-
-    if(mrtg_delimiter_save)
-        free(mrtg_delimiter_save);
+    nm_free(main_config_file);
+    nm_free(status_file);
+    nm_free(status_version);
+    nm_free(mrtg_variables);
+    nm_free(mrtg_delimiter_save);
 }
