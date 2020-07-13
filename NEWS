@@ -1,3 +1,13 @@
+1.2.1 - Jul 13 2020
+===================
+Changed:
+* nothing
+
+Bugfixes:
+* fix executing commands with pipes (#319)
+* fix external command to remove downtimes by filter
+
+
 1.2.0 - Feb 17 2020
 ===================
 Features:
