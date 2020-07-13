@@ -11,10 +11,5 @@ if test -e .git; then
     fi
 fi
 
-if [ -e .naemon.official ]; then
-  echo -n "${VERSION}"
-else
-  echo -n "${VERSION}.source"
-fi
-
+echo -n "${VERSION}"
 exit 0
