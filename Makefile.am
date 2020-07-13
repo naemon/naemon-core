@@ -256,7 +256,7 @@ version:
 		if [ -n "$$NEWVERSION" ] && [ "$$NEWVERSION" != "$$OLDVERSION" ]; then \
 			sed -ri "s/$$OLDVERSION/$$NEWVERSION/" version.sh naemon-core.spec; \
 			sed -e 's/UNRELEASED/unstable/g' -i debian/changelog; \
-			DEBFULLNAME="Naemon Development Team" DEBEMAIL="Naemon Development <naemon-dev@monitoring-lists.org>" dch --newversion "$$NEWVERSION" --package "naemon-livestatus" -D "UNRELEASED" --urgency "low" "new upstream release"; \
+			DEBFULLNAME="Naemon Development Team" DEBEMAIL="Naemon Development <naemon-dev@monitoring-lists.org>" dch --newversion "$$NEWVERSION" --package "naemon-core" -D "UNRELEASED" --urgency "low" "new upstream release"; \
 			sed -e 's/unstable/UNRELEASED/g' -i debian/changelog; \
 			echo "$$NEWVERSION - $(shell date '+%b %d %Y')" > .NEWS; \
 			echo "===================" >> .NEWS; \
