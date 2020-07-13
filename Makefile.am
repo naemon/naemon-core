@@ -28,6 +28,7 @@ EXTRA_DIST += LEGAL
 EXTRA_DIST += THANKS
 EXTRA_DIST += UPGRADING
 EXTRA_DIST += naemon.rpmlintrc
+EXTRA_DIST += version.sh
 EXTRA_DIST += $(CONFIG_FILES:.cfg=.cfg.in)
 noinst_DATA = $(CONFIG_FILES)
 
