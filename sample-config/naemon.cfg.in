@@ -180,14 +180,6 @@ event_broker_options=-1
 #broker_module=/somewhere/module1.o
 #broker_module=/somewhere/module2.o arg1 arg2=3 debug=0
 
-# In order to provide drop-in support for new modules, you can also make use of
-# the include_dir directive. The include_dir directive causes Naemon to parse
-# any configuration (not just object configuration, as with cfg_dir) as if the
-# contents of the files in the pointed-to directory was included on this line.
-# The path to the directory is relative to the path of the main naemon.cfg
-# file.
-include_dir=module-conf.d
-
 # LOG ARCHIVE PATH
 # This is the directory where archived (rotated) log files are placed by the
 # logrotate daemon. It is used by out of core add-ons to discover the logfiles.
@@ -1079,3 +1071,11 @@ allow_empty_hostgroup_assignment=0
 # This feature is experimental and bugs might occur.
 
 allow_circular_dependencies=0
+
+# In order to provide drop-in support for new modules, you can also make use of
+# the include_dir directive. The include_dir directive causes Naemon to parse
+# any configuration (not just object configuration, as with cfg_dir) as if the
+# contents of the files in the pointed-to directory was included on this line.
+# The path to the directory is relative to the path of the main naemon.cfg
+# file.
+include_dir=module-conf.d
