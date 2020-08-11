@@ -388,7 +388,12 @@ static void gather_output(child_process *cp, iobuf *io, int final)
 				/* broken system or no more data. Just return */
 				return;
 			}
-			wlog("job %d (pid=%d): Failed to read(): %s", cp->id, cp->ei->pid, strerror(errno));
+			/* Null pointer check before printing */
+			if (cp && cp->ei) {
+				wlog("job %d (pid=%d): Failed to read(): %s", cp->id, cp->ei->pid, strerror(errno));
+			} else {
+				wlog("Unknown job: Failed to read(): %s", strerror(errno));
+			}
 		}
 
 		/*
