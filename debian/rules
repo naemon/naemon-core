@@ -63,6 +63,7 @@ override_dh_auto_install:
 		install -D -m 0755 debian/naemon-core.naemon.init debian/tmp/usr/bin/naemon-ctl; \
 		install -D -m 0644 sample-config/naemon.sysconfig debian/tmp/etc/default/naemon; \
 	fi
+	mkdir -p -m 0755 debian/tmp/etc/naemon/module-conf.d
 
 override_dh_gencontrol:
 	dh_gencontrol
