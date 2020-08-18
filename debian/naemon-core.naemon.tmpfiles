@@ -1,0 +1,3 @@
+D /run/naemon 0755 naemon naemon -
+r /var/cache/naemon/checkresults/* 0644 naemon naemon 1d
+
