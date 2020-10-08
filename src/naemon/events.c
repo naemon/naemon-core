@@ -81,7 +81,7 @@ static void evheap_set_size(struct timed_event_queue *q, size_t new_size)
 {
 	size_t size = q->size;
 	g_return_if_fail(q != NULL);
-	if(new_size < 1)
+	if (new_size < 1)
 		new_size = 1;
 
 	while (size < new_size) {
@@ -92,7 +92,7 @@ static void evheap_set_size(struct timed_event_queue *q, size_t new_size)
 		size /= 2;
 	}
 
-	if(size != q->size) {
+	if (size != q->size) {
 		q->size = size;
 		q->queue = nm_realloc(q->queue, q->size * sizeof(struct timed_event *));
 	}
@@ -103,7 +103,7 @@ static int evheap_cond_swap(struct timed_event_queue *q, size_t idx_low, size_t 
 	struct timed_event *ev_low, *ev_high;
 	g_return_val_if_fail(q != NULL, 0);
 
-	if(idx_low == idx_high)
+	if (idx_low == idx_high)
 		return 0;
 
 	/* Assume we need to swap */
@@ -111,7 +111,7 @@ static int evheap_cond_swap(struct timed_event_queue *q, size_t idx_low, size_t 
 	ev_high = q->queue[idx_low];
 
 	/* If assumption isn't correct, bail out */
-	if(evheap_compare(ev_high, ev_low) < 0)
+	if (evheap_compare(ev_high, ev_low) < 0)
 		return 0;
 
 	/* Assumption were correct, save */
@@ -129,9 +129,9 @@ static void evheap_bubble_up(struct timed_event_queue *q, size_t idx)
 {
 	size_t parent;
 	g_return_if_fail(q != NULL);
-	while(idx>0) {
-		parent = (idx-1)>>1;
-		if(!evheap_cond_swap(q, parent, idx))
+	while (idx > 0) {
+		parent = (idx - 1) >> 1;
+		if (!evheap_cond_swap(q, parent, idx))
 			break;
 		idx = parent;
 	}
@@ -141,11 +141,11 @@ static void evheap_bubble_down(struct timed_event_queue *q, size_t idx)
 {
 	size_t child;
 	g_return_if_fail(q != NULL);
-	while ((child = (idx<<1)+1) < q->count) {
-		if (child+1 < q->count)
-			if(evheap_compare(q->queue[child], q->queue[child+1]) > 0)
+	while ((child = (idx << 1) + 1) < q->count) {
+		if (child + 1 < q->count)
+			if (evheap_compare(q->queue[child], q->queue[child + 1]) > 0)
 				child++;
-		if(!evheap_cond_swap(q, idx, child))
+		if (!evheap_cond_swap(q, idx, child))
 			break;
 		idx = child;
 	}
@@ -162,7 +162,7 @@ static void evheap_remove(struct timed_event_queue *q, struct timed_event *ev)
 {
 	g_return_if_fail(q != NULL);
 	g_return_if_fail(ev != NULL);
-	q->queue[ev->pos] = q->queue[q->count-1];
+	q->queue[ev->pos] = q->queue[q->count - 1];
 	q->queue[ev->pos]->pos = ev->pos;
 
 	q->count--;
@@ -179,7 +179,7 @@ static void evheap_add(struct timed_event_queue *q, struct timed_event *ev)
 {
 	g_return_if_fail(q != NULL);
 	g_return_if_fail(ev != NULL);
-	evheap_set_size(q, q->count+1);
+	evheap_set_size(q, q->count + 1);
 	ev->pos = q->count;
 	q->queue[ev->pos] = ev;
 	q->count++;
@@ -200,9 +200,10 @@ static struct timed_event_queue *evheap_create(void)
 	return q;
 }
 
-static void evheap_destroy(struct timed_event_queue *q) {
+static void evheap_destroy(struct timed_event_queue *q)
+{
 	/* It must be empty... TODO: verify it is empty */
-	if(q == NULL)
+	if (q == NULL)
 		return;
 	nm_free(q->queue);
 	nm_free(q);
@@ -274,10 +275,10 @@ void destroy_event_queue(void)
 	 * Since naemon doesn't know if things is started, we can't trust that
 	 * destroy event queue actually means we have an event queue to destroy
 	 */
-	if(event_queue == NULL)
+	if (event_queue == NULL)
 		return;
 
-	while((ev = evheap_head(event_queue)) != NULL) {
+	while ((ev = evheap_head(event_queue)) != NULL) {
 		destroy_event(ev);
 	}
 	evheap_destroy(event_queue);
@@ -330,8 +331,7 @@ static int event_poll_full(iobroker_set *iobs, long int timeout_ms)
 			nm_log(NSLOG_RUNTIME_ERROR, "Error: Polling for input on %p failed: %s", iobs, iobroker_strerror(inputs));
 			return -1;
 		}
-	}
-	else if (inputs > 0) {
+	} else if (inputs > 0) {
 		log_debug_info(DEBUGL_IPC, 2, "## %d descriptors had input\n", inputs);
 		/*
 		* Since we got input on one of the file descriptors, this wakeup wasn't
@@ -363,7 +363,7 @@ static int event_poll_full(iobroker_set *iobs, long int timeout_ms)
 	evprop.execution_type = EVENT_EXEC_NORMAL;
 	evprop.user_data = evt->user_data;
 	evprop.attributes.timed.event = evt;
-	evprop.attributes.timed.latency = -time_diff/1000.0;
+	evprop.attributes.timed.latency = -time_diff / 1000.0;
 	execute_and_destroy_event(&evprop);
 
 	return 0;

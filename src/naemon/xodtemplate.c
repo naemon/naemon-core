@@ -167,9 +167,10 @@ struct xod_tree_traverse_store {
 };
 
 /* Add a new value to a tree, return the old value */
-static gpointer xod_tree_insert(GTree *tree, gchar *name, gpointer value) {
+static gpointer xod_tree_insert(GTree *tree, gchar *name, gpointer value)
+{
 	gpointer oldvalue = g_tree_lookup(tree, name);
-	if(oldvalue) {
+	if (oldvalue) {
 		g_free(name);
 		return oldvalue;
 	}
@@ -177,13 +178,15 @@ static gpointer xod_tree_insert(GTree *tree, gchar *name, gpointer value) {
 	return NULL;
 }
 
-static gboolean xod_tree_traverse_visit(gpointer _key, gpointer _object, gpointer _userdata) {
+static gboolean xod_tree_traverse_visit(gpointer _key, gpointer _object, gpointer _userdata)
+{
 	struct xod_tree_traverse_store *stor = (struct xod_tree_traverse_store *)_userdata;
 	stor->result = (*stor->cb)(_object, stor->userdata);
 	return stor->result != OK;
 }
 
-static gboolean xod_tree_traverse(GTree *tree, int (*cb)(gpointer, gpointer), gpointer userdata) {
+static gboolean xod_tree_traverse(GTree *tree, int (*cb)(gpointer, gpointer), gpointer userdata)
+{
 	struct xod_tree_traverse_store stor;
 	stor.cb = cb;
 	stor.userdata = userdata;
@@ -2056,7 +2059,7 @@ static int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, ch
 
 			/* get a list of all services on the host */
 			temp_host = xodtemplate_find_real_host(host_name);
-			if(temp_host == NULL) {
+			if (temp_host == NULL) {
 				nm_log(NSLOG_CONFIG_ERROR, "Error: Cannot expand host_name '%s' (config file '%s', starting at line %d)\n",
 				       host_name, xodtemplate_config_file_name(_config_file), _start_line);
 				return ERROR;
@@ -2492,10 +2495,10 @@ static int xodtemplate_duplicate_services(void)
 			 * on the host itself might be a warning, if the second host group
 			 * services is loaded before the host service.
 			 */
-			if(((xodtemplate_service*)prev)->is_from_hostgroup && !temp_service->is_from_hostgroup) {
+			if (((xodtemplate_service *)prev)->is_from_hostgroup && !temp_service->is_from_hostgroup) {
 				g_tree_remove(xobject_tree[OBJTYPE_SERVICE], service_ident);
 				g_tree_insert(xobject_tree[OBJTYPE_SERVICE], g_strdup(service_ident), temp_service);
-			} else if(((xodtemplate_service*)prev)->is_from_hostgroup == temp_service->is_from_hostgroup) {
+			} else if (((xodtemplate_service *)prev)->is_from_hostgroup == temp_service->is_from_hostgroup) {
 				/*
 				 * we end up here if both services are from the same
 				 * type of source. The remaining case (original
@@ -2512,7 +2515,7 @@ static int xodtemplate_duplicate_services(void)
 		}
 
 		temp_host = xodtemplate_find_real_host(temp_service->host_name);
-		if(temp_host == NULL) {
+		if (temp_host == NULL) {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not expand host_name '%s' (config file '%s', starting on line %d)\n", temp_service->host_name, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
 			return ERROR;
 		}
@@ -8504,14 +8507,14 @@ static int xodtemplate_process_config_dir(char *dir_name)
 		/* Check for encoding errors */
 		if (written_size < 0) {
 			nm_log(NSLOG_RUNTIME_WARNING,
-				"Warning: xodtemplate encoding error on config file path '`%s'.\n", file);
+			       "Warning: xodtemplate encoding error on config file path '`%s'.\n", file);
 			continue;
 		}
 
 		/* Check if the filename was truncated. */
 		if (written_size > 0 && (size_t)written_size >= sizeof(file)) {
 			nm_log(NSLOG_RUNTIME_WARNING,
-				"Warning: xodtemplate truncated path to config file '`%s'.\n", file);
+			       "Warning: xodtemplate truncated path to config file '`%s'.\n", file);
 			continue;
 		}
 

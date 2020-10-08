@@ -16,7 +16,8 @@
 static gboolean g_service_was_checked = FALSE;
 static gboolean g_host_was_checked = FALSE;
 
-int my_broker_host_check(int type, int flags, int attr, host *hst, int check_type, int state, int state_type, struct timeval start_time, struct timeval end_time, char *cmd, double latency, double exectime, int timeout, int early_timeout, int retcode, char *cmdline, char *output, char *long_output, char *perfdata, check_result *cr) {
+int my_broker_host_check(int type, int flags, int attr, host *hst, int check_type, int state, int state_type, struct timeval start_time, struct timeval end_time, char *cmd, double latency, double exectime, int timeout, int early_timeout, int retcode, char *cmdline, char *output, char *long_output, char *perfdata, check_result *cr)
+{
 	if (type == NEBTYPE_HOSTCHECK_INITIATE) {
 		ck_assert_str_eq(TARGET_HOST_NAME, hst->name);
 		g_host_was_checked = TRUE;
@@ -25,7 +26,8 @@ int my_broker_host_check(int type, int flags, int attr, host *hst, int check_typ
 	return 0;
 }
 
-int my_broker_service_check(int type, int flags, int attr, service *svc, int check_type, struct timeval start_time, struct timeval end_time, char *cmd, double latency, double exectime, int timeout, int early_timeout, int retcode, char *cmdline, check_result *cr) {
+int my_broker_service_check(int type, int flags, int attr, service *svc, int check_type, struct timeval start_time, struct timeval end_time, char *cmd, double latency, double exectime, int timeout, int early_timeout, int retcode, char *cmdline, check_result *cr)
+{
 	if (type == NEBTYPE_SERVICECHECK_INITIATE) {
 		ck_assert_str_eq(TARGET_SERVICE_NAME, svc->description);
 		g_service_was_checked = TRUE;
@@ -45,7 +47,8 @@ int my_broker_service_check(int type, int flags, int attr, service *svc, int che
 static host *hst;
 static service *svc;
 static command *cmd;
-void setup (void) {
+void setup(void)
+{
 
 	init_event_queue();
 	init_objects_host(1);
@@ -69,7 +72,8 @@ void setup (void) {
 
 }
 
-void teardown (void) {
+void teardown(void)
+{
 	destroy_event_queue();
 	destroy_objects_command();
 	destroy_objects_service();
@@ -653,8 +657,8 @@ END_TEST
 START_TEST(host_retain_next_check)
 {
 	time_t current_time = time(NULL);
-	time_t next_check = current_time+60;
-	use_retained_scheduling_info=TRUE;
+	time_t next_check = current_time + 60;
+	use_retained_scheduling_info = TRUE;
 
 	hst->retry_interval = 1.0;
 	hst->check_interval = 5.0;
@@ -676,16 +680,16 @@ END_TEST
 START_TEST(host_retain_missed_check)
 {
 	time_t current_time = time(NULL);
-	time_t next_check = current_time-60;
+	time_t next_check = current_time - 60;
 	time_t expected_max_next_check;
-	use_retained_scheduling_info=TRUE;
+	use_retained_scheduling_info = TRUE;
 
 	hst->retry_interval = 1.0;
 	hst->check_interval = 5.0;
 	hst->current_state = STATE_UP;
 	hst->state_type = HARD_STATE;
 	hst->next_check = next_check;
-	expected_max_next_check = current_time+retained_scheduling_randomize_window;
+	expected_max_next_check = current_time + retained_scheduling_randomize_window;
 
 	/* Simulates a restart */
 	checks_init_hosts();
@@ -702,17 +706,17 @@ END_TEST
 START_TEST(host_retain_missed_check_larger_randomize_window)
 {
 	time_t current_time = time(NULL);
-	time_t next_check = current_time-60;
+	time_t next_check = current_time - 60;
 	time_t expected_max_next_check;
-	use_retained_scheduling_info=TRUE;
-	retained_scheduling_randomize_window = 5*60;
+	use_retained_scheduling_info = TRUE;
+	retained_scheduling_randomize_window = 5 * 60;
 
 	hst->retry_interval = 1.0;
 	hst->check_interval = 1.0;
 	hst->current_state = STATE_UP;
 	hst->state_type = HARD_STATE;
 	hst->next_check = next_check;
-	expected_max_next_check = current_time+get_host_check_interval_s(hst);
+	expected_max_next_check = current_time + get_host_check_interval_s(hst);
 
 	/* Simulates a restart */
 	checks_init_hosts();
@@ -729,15 +733,15 @@ START_TEST(host_retain_missed_multiple_checks)
 	time_t current_time = time(NULL);
 	time_t next_check;
 	time_t expected_max_next_check;
-	use_retained_scheduling_info=TRUE;
+	use_retained_scheduling_info = TRUE;
 
 	hst->retry_interval = 1.0;
 	hst->check_interval = 5.0;
 	hst->current_state = STATE_UP;
 	hst->state_type = HARD_STATE;
-	next_check = current_time-(2*get_host_check_interval_s(hst));
+	next_check = current_time - (2 * get_host_check_interval_s(hst));
 	hst->next_check = next_check;
-	expected_max_next_check = current_time+get_host_check_interval_s(hst);
+	expected_max_next_check = current_time + get_host_check_interval_s(hst);
 
 	/* Simulates a restart */
 	checks_init_hosts();
@@ -753,16 +757,16 @@ END_TEST
 START_TEST(host_retain_disabled_next_check)
 {
 	time_t current_time = time(NULL);
-	time_t next_check = current_time+60;
+	time_t next_check = current_time + 60;
 	time_t expected_max_next_check;
-	use_retained_scheduling_info=FALSE;
+	use_retained_scheduling_info = FALSE;
 
 	hst->retry_interval = 1.0;
 	hst->check_interval = 5.0;
 	hst->current_state = STATE_UP;
 	hst->state_type = HARD_STATE;
 	hst->next_check = next_check;
-	expected_max_next_check = current_time+get_host_check_interval_s(hst);
+	expected_max_next_check = current_time + get_host_check_interval_s(hst);
 
 	/* Simulates a restart */
 	checks_init_hosts();
@@ -780,15 +784,15 @@ START_TEST(host_retain_always_within_check_interval)
 {
 	time_t current_time = time(NULL);
 	time_t expected_max_next_check;
-	use_retained_scheduling_info=TRUE;
+	use_retained_scheduling_info = TRUE;
 
 	hst->retry_interval = 1.0;
 	hst->check_interval = 15.0;
 	hst->current_state = STATE_UP;
 	hst->state_type = HARD_STATE;
-	hst->next_check = current_time+get_host_check_interval_s(hst);
+	hst->next_check = current_time + get_host_check_interval_s(hst);
 	hst->check_interval = 5.0;
-	expected_max_next_check = current_time+get_host_check_interval_s(hst);
+	expected_max_next_check = current_time + get_host_check_interval_s(hst);
 
 	/* Simulates a restart */
 	checks_init_hosts();
@@ -804,8 +808,8 @@ END_TEST
 START_TEST(service_retain_next_check)
 {
 	time_t current_time = time(NULL);
-	time_t next_check = current_time+60;
-	use_retained_scheduling_info=TRUE;
+	time_t next_check = current_time + 60;
+	use_retained_scheduling_info = TRUE;
 
 	svc->retry_interval = 1.0;
 	svc->check_interval = 1.0;
@@ -828,16 +832,16 @@ END_TEST
 START_TEST(service_retain_missed_check)
 {
 	time_t current_time = time(NULL);
-	time_t next_check = current_time-60;
+	time_t next_check = current_time - 60;
 	time_t expected_max_next_check;
-	use_retained_scheduling_info=TRUE;
+	use_retained_scheduling_info = TRUE;
 
 	svc->retry_interval = 1.0;
 	svc->check_interval = 5.0;
 	svc->current_state = STATE_UP;
 	svc->state_type = HARD_STATE;
 	svc->next_check = next_check;
-	expected_max_next_check = current_time+retained_scheduling_randomize_window;
+	expected_max_next_check = current_time + retained_scheduling_randomize_window;
 
 	/* Simulates a restart */
 	checks_init_services();
@@ -854,17 +858,17 @@ END_TEST
 START_TEST(service_retain_missed_check_larger_randomize_window)
 {
 	time_t current_time = time(NULL);
-	time_t next_check = current_time-60;
+	time_t next_check = current_time - 60;
 	time_t expected_max_next_check;
-	use_retained_scheduling_info=TRUE;
-	retained_scheduling_randomize_window = 5*60;
+	use_retained_scheduling_info = TRUE;
+	retained_scheduling_randomize_window = 5 * 60;
 
 	svc->retry_interval = 1.0;
 	svc->check_interval = 1.0;
 	svc->current_state = STATE_UP;
 	svc->state_type = HARD_STATE;
 	svc->next_check = next_check;
-	expected_max_next_check = current_time+get_service_check_interval_s(svc);
+	expected_max_next_check = current_time + get_service_check_interval_s(svc);
 
 	/* Simulates a restart */
 	checks_init_services();
@@ -882,15 +886,15 @@ START_TEST(service_retain_missed_multiple_checks)
 	time_t current_time = time(NULL);
 	time_t next_check;
 	time_t expected_max_next_check;
-	use_retained_scheduling_info=TRUE;
+	use_retained_scheduling_info = TRUE;
 
 	svc->retry_interval = 1.0;
 	svc->check_interval = 5.0;
 	svc->current_state = STATE_UP;
 	svc->state_type = HARD_STATE;
-	next_check = current_time-(2*get_service_check_interval_s(svc));
+	next_check = current_time - (2 * get_service_check_interval_s(svc));
 	svc->next_check = next_check;
-	expected_max_next_check = current_time+get_service_check_interval_s(svc);
+	expected_max_next_check = current_time + get_service_check_interval_s(svc);
 
 	/* Simulates a restart */
 	checks_init_services();
@@ -906,16 +910,16 @@ END_TEST
 START_TEST(service_retain_disabled_next_check)
 {
 	time_t current_time = time(NULL);
-	time_t next_check = current_time+60;
+	time_t next_check = current_time + 60;
 	time_t expected_max_next_check;
-	use_retained_scheduling_info=FALSE;
+	use_retained_scheduling_info = FALSE;
 
 	svc->retry_interval = 1.0;
 	svc->check_interval = 5.0;
 	svc->current_state = STATE_UP;
 	svc->state_type = HARD_STATE;
 	svc->next_check = next_check;
-	expected_max_next_check = current_time+get_service_check_interval_s(svc);
+	expected_max_next_check = current_time + get_service_check_interval_s(svc);
 
 	/* Simulates a restart */
 	checks_init_services();
@@ -933,15 +937,15 @@ START_TEST(service_retain_always_within_check_interval)
 {
 	time_t current_time = time(NULL);
 	time_t expected_max_next_check;
-	use_retained_scheduling_info=TRUE;
+	use_retained_scheduling_info = TRUE;
 
 	svc->retry_interval = 1.0;
 	svc->check_interval = 15.0;
 	svc->current_state = STATE_UP;
 	svc->state_type = HARD_STATE;
-	svc->next_check = current_time+get_service_check_interval_s(svc);
+	svc->next_check = current_time + get_service_check_interval_s(svc);
 	svc->check_interval = 5;
-	expected_max_next_check = current_time+get_service_check_interval_s(svc);
+	expected_max_next_check = current_time + get_service_check_interval_s(svc);
 
 	/* Simulates a restart */
 	checks_init_services();
@@ -992,7 +996,7 @@ START_TEST(disable_service_check_host_down)
 }
 END_TEST
 
-Suite*
+Suite *
 check_scheduling_suite(void)
 {
 	Suite *s = suite_create("Check scheduling");

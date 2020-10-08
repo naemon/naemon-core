@@ -12,7 +12,7 @@ servicegroup **servicegroup_ary = NULL;
 
 int init_objects_servicegroup(int elems)
 {
-	servicegroup_ary = nm_calloc(elems, sizeof(servicegroup*));
+	servicegroup_ary = nm_calloc(elems, sizeof(servicegroup *));
 	servicegroup_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;
 }
@@ -25,7 +25,7 @@ void destroy_objects_servicegroup()
 		destroy_servicegroup(this_servicegroup);
 	}
 	servicegroup_list = NULL;
-	if(servicegroup_hash_table)
+	if (servicegroup_hash_table)
 		g_hash_table_destroy(servicegroup_hash_table);
 
 	servicegroup_hash_table = NULL;
@@ -131,9 +131,8 @@ void remove_service_from_servicegroup(servicegroup *temp_servicegroup, service *
 	servicesmember *this_servicesmember, *next_servicesmember, *prev_servicesmember;
 	objectlist *item, *next, *prev;
 	for (prev = NULL, item = svc->servicegroups_ptr;
-		 item;
-		 prev = item, item = next)
-	{
+	     item;
+	     prev = item, item = next) {
 		next = item->next;
 		if (item->object_ptr == temp_servicegroup) {
 			if (prev)
@@ -145,9 +144,8 @@ void remove_service_from_servicegroup(servicegroup *temp_servicegroup, service *
 		}
 	}
 	for (prev_servicesmember = NULL, this_servicesmember = temp_servicegroup->members;
-		 this_servicesmember;
-		 prev_servicesmember = this_servicesmember, this_servicesmember = next_servicesmember)
-	{
+	     this_servicesmember;
+	     prev_servicesmember = this_servicesmember, this_servicesmember = next_servicesmember) {
 		next_servicesmember = this_servicesmember->next;
 		if (this_servicesmember->service_ptr == svc) {
 			if (prev_servicesmember)

@@ -43,7 +43,7 @@ static int walker(struct key_value *kv, void *discard)
 
 	if (discard && vec) {
 		ck_assert_msg(!kv_compare(&vec->kv[step], kv), "step %d on walk %d",
-		     step, walks);
+		              step, walks);
 	}
 
 	step++;
@@ -91,13 +91,14 @@ static void add_vars(struct kvvec *kvv, const char **ary, int len)
 	}
 }
 
- /*
-  * This tests to unpack then pack, and see if everything is back again.
-  *
-  * Because the previous test verifies that the data is unpacked correctly,
-  * using that information, the data must here also be unpacked
-  */
-START_TEST( kvvec_tests ) {
+/*
+ * This tests to unpack then pack, and see if everything is back again.
+ *
+ * Because the previous test verifies that the data is unpacked correctly,
+ * using that information, the data must here also be unpacked
+ */
+START_TEST(kvvec_tests)
+{
 	int i, j;
 	struct kvvec *kvv, *kvv2, *kvv3;
 	struct kvvec_buf *kvvb, *kvvb2;
@@ -134,9 +135,9 @@ START_TEST( kvvec_tests ) {
 		}
 		kv2 = &kvv2->kv[i];
 		ck_assert_msg(!kv_compare(kv1, kv2), "kv pair %d must match ([%s=%s] (%d+%d) != [%s=%s (%d+%d)])", i,
-			       kv1->key, kv1->value, kv1->key_len, kv1->value_len,
-			       kv2->key, kv2->value, kv2->key_len, kv2->value_len
-				);
+		              kv1->key, kv1->value, kv1->key_len, kv1->value_len,
+		              kv2->key, kv2->value, kv2->key_len, kv2->value_len
+		             );
 	}
 
 	ck_assert_msg(kvvb2->buflen == kvvb->buflen, "buflens must match");
@@ -158,22 +159,24 @@ START_TEST( kvvec_tests ) {
 		for (i = 0; i < k.kv_pairs; i++) {
 			struct key_value *kv = &k.kv[i];
 			ck_assert_msg(kv->key_len == kv->value_len, "%d.%d; key_len=%d; value_len=%d (%s = %s)",
-			     j, i, kv->key_len, kv->value_len, kv->key, kv->value);
+			              j, i, kv->key_len, kv->value_len, kv->key, kv->value);
 			ck_assert_msg(kv->value_len == (int)strlen(kv->value),
-			     "%d.%d; kv->value_len(%d) == strlen(%s)(%d)",
-			     j, i, kv->value_len, kv->value, (int)strlen(kv->value));
+			              "%d.%d; kv->value_len(%d) == strlen(%s)(%d)",
+			              j, i, kv->value_len, kv->value, (int)strlen(kv->value));
 		}
 	}
 
- }
+}
 END_TEST
 
-START_TEST( kvvec_test_free_null ) {
+START_TEST(kvvec_test_free_null)
+{
 	kvvec_destroy(NULL, KVVEC_FREE_ALL);
 }
 END_TEST
 
-START_TEST( kvvec_test_lookup_unsorted ) {
+START_TEST(kvvec_test_lookup_unsorted)
+{
 	struct kvvec *kvv;
 	struct key_value *kv;
 	kvv = kvvec_create(1);
@@ -220,7 +223,8 @@ START_TEST( kvvec_test_lookup_unsorted ) {
 }
 END_TEST
 
-START_TEST( kvvec_test_lookup_sorted ) {
+START_TEST(kvvec_test_lookup_sorted)
+{
 	struct kvvec *kvv;
 	struct key_value *kv;
 	kvv = kvvec_create(1);
@@ -278,7 +282,8 @@ END_TEST
  * This shouldn't happen, since is_sorted should only be set if the list is
  * sorted on key.
  */
-START_TEST( kvvec_test_lookup_sorted_uses_binary ) {
+START_TEST(kvvec_test_lookup_sorted_uses_binary)
+{
 	struct kvvec *kvv;
 	struct key_value *kv;
 	kvv = kvvec_create(1);
@@ -326,7 +331,8 @@ Suite *kvvec_suite(void)
 	return s;
 }
 
-int main(void) {
+int main(void)
+{
 	int number_failed = 0;
 	Suite *s = kvvec_suite();
 	SRunner *sr = srunner_create(s);

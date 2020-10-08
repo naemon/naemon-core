@@ -223,7 +223,7 @@ int main(int argc, char **argv)
 	 * Naemon) do not currently go to this handler.
 	 **/
 	nm_g_log_handler_id = g_log_set_handler("GLib", G_LOG_LEVEL_MASK | G_LOG_FLAG_FATAL |
-			G_LOG_FLAG_RECURSION, nm_g_log_handler, NULL);
+	                                        G_LOG_FLAG_RECURSION, nm_g_log_handler, NULL);
 	mac = get_global_macros();
 
 	/* if we're a worker we can skip everything below */

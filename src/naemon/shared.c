@@ -93,8 +93,7 @@ char *my_strtok(char *buffer, const char *tokens)
 	if (buffer == NULL) {
 		if (my_strtok_buffer == NULL)
 			return NULL; /*nothing supplied, nothing stored*/
-	}
-	else {
+	} else {
 		nm_free(original_my_strtok_buffer);
 		my_strtok_buffer = nm_strdup(buffer);
 		original_my_strtok_buffer = my_strtok_buffer;
@@ -565,6 +564,7 @@ void get_time_breakdown(unsigned long raw_time, int *days, int *hours,
 	*seconds = temp_seconds;
 }
 
-gint my_strsorter(gconstpointer a, gconstpointer b, gpointer data) {
- return(g_strcmp0(a, b));
+gint my_strsorter(gconstpointer a, gconstpointer b, gpointer data)
+{
+	return (g_strcmp0(a, b));
 }

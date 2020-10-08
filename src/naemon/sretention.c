@@ -23,12 +23,12 @@ void save_state_information_eventhandler(struct nm_event_execution_properties *e
 {
 	int status;
 
-	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
+	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 		schedule_event(retention_update_interval * interval_length, save_state_information_eventhandler, evprop->user_data);
 
 		status = save_state_information(TRUE);
 
-		if(status == OK) {
+		if (status == OK) {
 			nm_log(NSLOG_PROCESS_INFO,
 			       "Auto-save of retention data completed successfully.\n");
 		}

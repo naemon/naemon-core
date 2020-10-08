@@ -242,40 +242,41 @@ static int finish_job(child_process *cp, int reason)
 /*
  * Get the parent PID from a PID
  */
-static int get_process_parent_id(const pid_t pid, pid_t * ppid) {
-        char buffer[BUFSIZ], *s_ppid;
-        int errreading, size;
-        FILE *fp;
+static int get_process_parent_id(const pid_t pid, pid_t *ppid)
+{
+	char buffer[BUFSIZ], *s_ppid;
+	int errreading, size;
+	FILE *fp;
 
-        sprintf(buffer, "/proc/%d/stat", pid);
-        fp = fopen(buffer, "r");
-        if (!fp) {
-                return errno;
-        }
+	sprintf(buffer, "/proc/%d/stat", pid);
+	fp = fopen(buffer, "r");
+	if (!fp) {
+		return errno;
+	}
 
-        size = fread(buffer, sizeof (char), sizeof (buffer) - 1, fp);
-        if (size > 0) {
-                buffer[size] = '\0';
-        }
-        errreading = ferror(fp);
-        if (fclose(fp) != 0) {
-                return errno;
-        }
+	size = fread(buffer, sizeof(char), sizeof(buffer) - 1, fp);
+	if (size > 0) {
+		buffer[size] = '\0';
+	}
+	errreading = ferror(fp);
+	if (fclose(fp) != 0) {
+		return errno;
+	}
 
-        if (errreading != 0) {
-                return errreading;
-        }
+	if (errreading != 0) {
+		return errreading;
+	}
 
-        strtok(buffer, " "); // (1) pid  %d
-        strtok(NULL, " "); // (2) comm  %s
-        strtok(NULL, " "); // (3) state  %c
+	strtok(buffer, " "); // (1) pid  %d
+	strtok(NULL, " "); // (2) comm  %s
+	strtok(NULL, " "); // (3) state  %c
 
-        if ( (s_ppid = strtok(NULL, " ")) == NULL) {// (4) ppid  %d
-                return EBADF;
-        }
+	if ((s_ppid = strtok(NULL, " ")) == NULL) { // (4) ppid  %d
+		return EBADF;
+	}
 
-        *ppid = atoi(s_ppid);
-        return 0;
+	*ppid = atoi(s_ppid);
+	return 0;
 }
 
 /*

@@ -19,22 +19,24 @@ static void print_heap(struct timed_event_queue *q, size_t i) {
 	print_heap(q, (i<<1) + 2);
 }
 */
-static void func_a(struct nm_event_execution_properties *evprop) {
+static void func_a(struct nm_event_execution_properties *evprop)
+{
 }
 
 /* Verify the heap property: every node is less than its children */
-static void verify_queue_heap(struct timed_event_queue *q) {
+static void verify_queue_heap(struct timed_event_queue *q)
+{
 	size_t i;
 	size_t child;
 
 	_ck_assert_int(q->size, >=, q->count);
 
-	for(i=0;i<q->count;i++) {
-		child = i*2+1;
+	for (i = 0; i < q->count; i++) {
+		child = i * 2 + 1;
 		if (child < q->count) {
 			_ck_assert_int(evheap_compare(q->queue[i], q->queue[child]), <=, 0);
 		}
-		child = i*2+2;
+		child = i * 2 + 2;
 		if (child < q->count) {
 			_ck_assert_int(evheap_compare(q->queue[i], q->queue[child]), <=, 0);
 		}
@@ -54,7 +56,7 @@ START_TEST(event_heap_count_ordered)
 	ck_assert_int_eq(q->size, 1);
 	ck_assert(q->queue != NULL);
 
-	for(i=0; i<test_size; i++) {
+	for (i = 0; i < test_size; i++) {
 		ev = nm_malloc(sizeof(struct timed_event));
 		ev->callback = func_a;
 		ev->event_time.tv_sec = i;
@@ -63,13 +65,13 @@ START_TEST(event_heap_count_ordered)
 		evheap_add(q, ev);
 
 		/* Hard operation, don't do it every time, but often */
-		if(i%500 == 0)
+		if (i % 500 == 0)
 			verify_queue_heap(q);
 	}
 	verify_queue_heap(q);
 
 	i = 0;
-	for(i=0; i<test_size; i++) {
+	for (i = 0; i < test_size; i++) {
 		ev = evheap_head(q);
 		ck_assert(ev != NULL);
 		ck_assert_int_eq(i, (size_t)ev->event_time.tv_nsec);
@@ -77,7 +79,7 @@ START_TEST(event_heap_count_ordered)
 		free(ev);
 
 		/* Hard operation, don't do it every time, but often */
-		if(i%500 == 0)
+		if (i % 500 == 0)
 			verify_queue_heap(q);
 	}
 	verify_queue_heap(q);
@@ -100,7 +102,7 @@ START_TEST(event_heap_count_random_order)
 	ck_assert_int_eq(q->size, 1);
 	ck_assert(q->queue != NULL);
 
-	for(i=0; i<test_size; i++) {
+	for (i = 0; i < test_size; i++) {
 		ev = nm_malloc(sizeof(struct timed_event));
 		ev->callback = func_a;
 		ev->event_time.tv_sec = rand();
@@ -109,7 +111,7 @@ START_TEST(event_heap_count_random_order)
 		evheap_add(q, ev);
 
 		/* Hard operation, don't do it every time, but often */
-		if(i%500 == 0)
+		if (i % 500 == 0)
 			verify_queue_heap(q);
 	}
 	verify_queue_heap(q);
@@ -117,19 +119,19 @@ START_TEST(event_heap_count_random_order)
 	ck_assert_int_eq(q->count, test_size);
 
 	last_value = 0;
-	for(i=0; i<test_size; i++) {
+	for (i = 0; i < test_size; i++) {
 		ev = evheap_head(q);
 		ck_assert(ev != NULL);
 
 		/* Make sure the value increments */
 		ck_assert((time_t)ev->event_time.tv_sec >= last_value);
-		last_value=(time_t)ev->event_time.tv_sec;
+		last_value = (time_t)ev->event_time.tv_sec;
 
 		evheap_remove(q, ev);
 		free(ev);
 
 		/* Hard operation, don't do it every time, but often */
-		if(i%500 == 0)
+		if (i % 500 == 0)
 			verify_queue_heap(q);
 	}
 	verify_queue_heap(q);
@@ -159,7 +161,7 @@ START_TEST(event_heap_count_random_removal)
 	ck_assert_int_eq(q->size, 1);
 	ck_assert(q->queue != NULL);
 
-	for(i=0; i<test_size; i++) {
+	for (i = 0; i < test_size; i++) {
 		ev = nm_malloc(sizeof(struct timed_event));
 		ev->callback = func_a;
 		ev->event_time.tv_sec = i;
@@ -168,23 +170,23 @@ START_TEST(event_heap_count_random_removal)
 		evheap_add(q, ev);
 
 		/* Hard operation, don't do it every time, but often */
-		if(i%500 == 0)
+		if (i % 500 == 0)
 			verify_queue_heap(q);
 	}
 	verify_queue_heap(q);
 
 	ck_assert_int_eq(q->count, test_size);
 
-	for(i=0; i<test_size; i++) {
+	for (i = 0; i < test_size; i++) {
 		ck_assert_int_ne(q->count, 0);
 
 		/* Pick an event at random */
-		ev = q->queue[rand()%q->count];
+		ev = q->queue[rand() % q->count];
 		evheap_remove(q, ev);
 		free(ev);
 
 		/* Hard operation, don't do it every time, but often */
-		if(i%500 == 0)
+		if (i % 500 == 0)
 			verify_queue_heap(q);
 	}
 	ck_assert_int_eq(q->count, 0);
@@ -218,14 +220,14 @@ void event_polling_teardown(void)
 
 static time_t runnable_delays[] = {
 	-14, /*a few seconds in the past*/
-	0, /*right now*/
-	-1462143350, /*a couple of years in the past*/
-	-9999999999, /*a few hundred years in the past */
-	-1, /* one second ago */
-	EVENT_MAX_POLL_TIME_MS / 1000,
-	LONG_MIN / 10,
-	-(1LL << 62)
-};
+	    0, /*right now*/
+	    -1462143350, /*a couple of years in the past*/
+	    -9999999999, /*a few hundred years in the past */
+	    -1, /* one second ago */
+	    EVENT_MAX_POLL_TIME_MS / 1000,
+	    LONG_MIN / 10,
+	    -(1LL << 62)
+    };
 
 static int64_t unrunnable_delays[] = {
 	1, /*a second too late*/
@@ -276,11 +278,11 @@ START_TEST(event_timespec_msdiff)
 	diff_s = timespec_msdiff(&ts1, &ts2) / 1000;
 	ck_assert_int_eq(expected, diff_s);
 
-	ts1.tv_sec = LONG_MAX/10;
+	ts1.tv_sec = LONG_MAX / 10;
 	diff_s = timespec_msdiff(&ts1, &ts2) / 1000;
 	ck_assert(diff_s > 0);
 
-	ts1.tv_sec = LONG_MIN/10;
+	ts1.tv_sec = LONG_MIN / 10;
 	diff_s = timespec_msdiff(&ts1, &ts2) / 1000;
 	ck_assert(diff_s < 0);
 }

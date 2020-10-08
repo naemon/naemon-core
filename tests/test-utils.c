@@ -10,7 +10,7 @@ START_TEST(my_strtok_null_buffer)
 }
 END_TEST
 
-Suite*
+Suite *
 utils_suite(void)
 {
 	Suite *s = suite_create("Utilities");

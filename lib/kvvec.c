@@ -168,8 +168,8 @@ struct key_value *kvvec_fetch(struct kvvec *kvv, const char *key, int keylen)
 	if (kvv->kvv_sorted) {
 		int low = 0;
 		int high = kvv->kv_pairs;
-		while(low < high) {
-			int mid = (low + high)/2;
+		while (low < high) {
+			int mid = (low + high) / 2;
 			struct key_value *midkv = &(kvv->kv[mid]);
 
 			int diff = val_compare(midkv->key, midkv->key_len, key, keylen);
@@ -177,7 +177,7 @@ struct key_value *kvvec_fetch(struct kvvec *kvv, const char *key, int keylen)
 			if (diff > 0) {
 				high = mid;
 			} else if (diff < 0) {
-				low = mid+1;
+				low = mid + 1;
 			} else {
 				return midkv;
 			}
@@ -187,7 +187,7 @@ struct key_value *kvvec_fetch(struct kvvec *kvv, const char *key, int keylen)
 	}
 
 	/* If unsorted, lookup until found. O(n) */
-	for (i=0;i<kvv->kv_pairs;i++) {
+	for (i = 0; i < kvv->kv_pairs; i++) {
 		if (keylen != kvv->kv[i].key_len)
 			continue;
 		if (memcmp(kvv->kv[i].key, key, keylen) != 0)
@@ -237,7 +237,7 @@ void kvvec_free_kvpairs(struct kvvec *kvv, int flags)
 
 int kvvec_destroy(struct kvvec *kvv, int flags)
 {
-	if(kvv == NULL)
+	if (kvv == NULL)
 		return 0;
 	kvvec_free_kvpairs(kvv, flags);
 	free(kvv->kv);

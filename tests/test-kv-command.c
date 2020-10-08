@@ -2,18 +2,20 @@
 
 #include <check.h>
 
-static int test_test_command_handler(const struct external_command *ext_command, time_t entry_time) {
+static int test_test_command_handler(const struct external_command *ext_command, time_t entry_time)
+{
 	return 0;
 }
 
 
 static int validate_int_not_seventeen(void *value)
 {
-	return (*(int*)value) == 17 ? 0 : 1;
+	return (*(int *)value) == 17 ? 0 : 1;
 }
 
 
-static void test_load_commands(void) {
+static void test_load_commands(void)
+{
 	struct external_command *ext_command;
 	check_external_commands = FALSE;
 	registered_commands_init(20);
@@ -24,11 +26,13 @@ static void test_load_commands(void) {
 	command_argument_add(ext_command, "comment", STRING, NULL, NULL);
 	command_register(ext_command, -1);
 }
-static void test_unload_commands(void) {
+static void test_unload_commands(void)
+{
 	registered_commands_deinit();
 }
 
-START_TEST( kv_command_parsing) {
+START_TEST(kv_command_parsing)
+{
 	struct external_command *extcmd;
 	GError *error = NULL;
 	void *argval_ptr;
@@ -45,23 +49,24 @@ START_TEST( kv_command_parsing) {
 	ck_assert(extcmd->handler == test_test_command_handler);
 	g_clear_error(&error);
 
-	argval_ptr = command_argument_get_value(extcmd,"something_bool");
+	argval_ptr = command_argument_get_value(extcmd, "something_bool");
 	ck_assert(argval_ptr != NULL);
-	ck_assert_int_eq(*(int*)argval_ptr, 1);
+	ck_assert_int_eq(*(int *)argval_ptr, 1);
 
-	argval_ptr = command_argument_get_value(extcmd,"author");
+	argval_ptr = command_argument_get_value(extcmd, "author");
 	ck_assert(argval_ptr != NULL);
-	ck_assert_int_eq(*(int*)argval_ptr, 1);
+	ck_assert_int_eq(*(int *)argval_ptr, 1);
 
-	argval_ptr = command_argument_get_value(extcmd,"comment");
+	argval_ptr = command_argument_get_value(extcmd, "comment");
 	ck_assert(argval_ptr != NULL);
-	ck_assert_str_eq((char*)argval_ptr, "boll;kaka");
+	ck_assert_str_eq((char *)argval_ptr, "boll;kaka");
 
 	command_destroy(extcmd);
 }
 END_TEST
 
-START_TEST( kv_command_undefined_command_name) {
+START_TEST(kv_command_undefined_command_name)
+{
 	struct external_command *extcmd;
 	GError *error = NULL;
 
@@ -72,7 +77,8 @@ START_TEST( kv_command_undefined_command_name) {
 }
 END_TEST
 
-START_TEST( kv_command_undefined_variable) {
+START_TEST(kv_command_undefined_variable)
+{
 	struct external_command *extcmd;
 	GError *error = NULL;
 
@@ -83,7 +89,8 @@ START_TEST( kv_command_undefined_variable) {
 }
 END_TEST
 
-START_TEST( kv_command_variable_validator) {
+START_TEST(kv_command_variable_validator)
+{
 	struct external_command *extcmd;
 	GError *error = NULL;
 
@@ -94,7 +101,8 @@ START_TEST( kv_command_variable_validator) {
 }
 END_TEST
 
-START_TEST( kv_command_raw_arguments_set) {
+START_TEST(kv_command_raw_arguments_set)
+{
 	struct external_command *extcmd;
 	GError *error = NULL;
 	const char *raw_args;
@@ -111,7 +119,8 @@ START_TEST( kv_command_raw_arguments_set) {
 }
 END_TEST
 
-Suite *kv_command_suite(void) {
+Suite *kv_command_suite(void)
+{
 	Suite *s = suite_create("Key/Value-command");
 
 	TCase *tc;
@@ -127,7 +136,8 @@ Suite *kv_command_suite(void) {
 	return s;
 }
 
-int main(void) {
+int main(void)
+{
 	int number_failed = 0;
 	Suite *s = kv_command_suite();
 	SRunner *sr = srunner_create(s);
