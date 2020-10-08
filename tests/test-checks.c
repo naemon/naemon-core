@@ -7,14 +7,16 @@ char *long_output;
 char *perf_data;
 char *output;
 
-void setup (void) {
+void setup(void)
+{
 	short_output = NULL;
 	long_output = NULL;
 	perf_data = NULL;
 	full_output = NULL;
 	output = NULL;
 }
-void teardown (void) {
+void teardown(void)
+{
 	free(output);
 	free(short_output);
 	free(long_output);
@@ -47,7 +49,7 @@ END_TEST
 START_TEST(multiple_line_output_no_perfdata)
 {
 	full_output = "TEST WARNING - first a line of output\n"
-				  "and then some more output on another line";
+	              "and then some more output on another line";
 	output = strdup(full_output);
 	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
 	ck_assert_str_eq("TEST WARNING - first a line of output", short_output);
@@ -59,14 +61,14 @@ END_TEST
 START_TEST(multiple_line_output_and_multiple_line_perfdata)
 {
 	full_output = "TEST OK - a line of output and | some=perfdata;\n"
-		"Here's some additional\n"
-		"LONG output\n"
-		"which suddenly becomes | more=perfdata;\n"
-		"on=several;lines;";
+	              "Here's some additional\n"
+	              "LONG output\n"
+	              "which suddenly becomes | more=perfdata;\n"
+	              "on=several;lines;";
 	output = strdup(full_output);
 	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
 	ck_assert_str_eq("TEST OK - a line of output and", short_output);
-	ck_assert_str_eq("Here's some additional\nLONG output\nwhich suddenly becomes ", long_output );
+	ck_assert_str_eq("Here's some additional\nLONG output\nwhich suddenly becomes ", long_output);
 	ck_assert_str_eq("some=perfdata; more=perfdata; on=several;lines;", perf_data);
 
 }
@@ -75,7 +77,7 @@ END_TEST
 START_TEST(multiple_line_output_and_perfdata_but_not_on_first_line)
 {
 	full_output = "TEST CRITICAL - Oh my\n"
-				  "Here's a second line of output and | some=perfdata;";
+	              "Here's a second line of output and | some=perfdata;";
 	output = strdup(full_output);
 	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
 	ck_assert_str_eq("TEST CRITICAL - Oh my", short_output);
@@ -110,7 +112,7 @@ END_TEST
 START_TEST(multiline_perfdata_only)
 {
 	full_output = "| some=perfdata;\n"
-				  "|and=more;perfdata;";
+	              "|and=more;perfdata;";
 	output = strdup(full_output);
 	parse_check_output(output, &short_output, &long_output, &perf_data, FALSE, FALSE);
 	ck_assert_str_eq("", short_output);
@@ -167,8 +169,8 @@ END_TEST
 START_TEST(multiple_line_output_newline_escaping)
 {
 	full_output = "TEST OK - ...\n"
-				  "Here's a second line of output and\n"
-				  "one \"more\"\n";
+	              "Here's a second line of output and\n"
+	              "one \"more\"\n";
 	output = strdup(full_output);
 	parse_check_output(output, &short_output, &long_output, &perf_data, TRUE, FALSE);
 	ck_assert_str_eq("TEST OK - ...", short_output);
@@ -180,8 +182,8 @@ END_TEST
 START_TEST(multiple_line_output_double_newline_escaping)
 {
 	full_output = "TEST OK - ...\n"
-				  "Here's a second line of output and\\n"
-				  "one \"more\"\\n";
+	              "Here's a second line of output and\\n"
+	              "one \"more\"\\n";
 	output = strdup(full_output);
 	parse_check_output(output, &short_output, &long_output, &perf_data, TRUE, FALSE);
 	ck_assert_str_eq("TEST OK - ...", short_output);
@@ -200,7 +202,7 @@ START_TEST(multiline_unicode)
 }
 END_TEST
 
-Suite*
+Suite *
 checks_suite(void)
 {
 	Suite *s = suite_create("Checks");

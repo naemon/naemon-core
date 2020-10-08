@@ -160,24 +160,24 @@ int main(int argc, char **argv)
 		type of the service appropriately.
 
 	*/
-/**
-*	setup_objects((time_t) 1234567800L);
-*	host1->current_state = STATE_DOWN;
-*	svc1->current_state = STATE_OK;
-*	svc1->state_type = HARD_STATE;
-*	setup_check_result();
-*	tmp_check_result->return_code = STATE_CRITICAL;
-*	tmp_check_result->output = strdup("CRITICAL failure");
-*
-*	handle_async_service_check_result(svc1, tmp_check_result);
-*
-*	ok(svc1->last_hard_state_change == (time_t)1234567890, "Got last_hard_state_change time=%lu", svc1->last_hard_state_change);
-*	ok(svc1->last_state_change == svc1->last_hard_state_change, "Got same last_state_change");
-*	ok(svc1->last_hard_state == 2, "Should save the last hard state as critical for next time");
-*	ok(svc1->host_problem_at_last_check == TRUE, "Got host_problem_at_last_check set to TRUE due to host failure - this needs to be saved otherwise extra alerts raised in subsequent runs");
-*	ok(svc1->state_type == HARD_STATE, "This should be a HARD state since the host is in a failure state");
-*	ok(svc1->current_attempt == 1, "Previous status was OK, so this failure should show current_attempt=1") || diag("Current attempt=%d", svc1->current_attempt);
-**/
+	/**
+	*	setup_objects((time_t) 1234567800L);
+	*	host1->current_state = STATE_DOWN;
+	*	svc1->current_state = STATE_OK;
+	*	svc1->state_type = HARD_STATE;
+	*	setup_check_result();
+	*	tmp_check_result->return_code = STATE_CRITICAL;
+	*	tmp_check_result->output = strdup("CRITICAL failure");
+	*
+	*	handle_async_service_check_result(svc1, tmp_check_result);
+	*
+	*	ok(svc1->last_hard_state_change == (time_t)1234567890, "Got last_hard_state_change time=%lu", svc1->last_hard_state_change);
+	*	ok(svc1->last_state_change == svc1->last_hard_state_change, "Got same last_state_change");
+	*	ok(svc1->last_hard_state == 2, "Should save the last hard state as critical for next time");
+	*	ok(svc1->host_problem_at_last_check == TRUE, "Got host_problem_at_last_check set to TRUE due to host failure - this needs to be saved otherwise extra alerts raised in subsequent runs");
+	*	ok(svc1->state_type == HARD_STATE, "This should be a HARD state since the host is in a failure state");
+	*	ok(svc1->current_attempt == 1, "Previous status was OK, so this failure should show current_attempt=1") || diag("Current attempt=%d", svc1->current_attempt);
+	**/
 	destroy_objects();
 
 

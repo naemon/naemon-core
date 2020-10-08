@@ -50,20 +50,21 @@ void wrk_test_cb(struct wproc_result *wpres, void *data, int flags)
 
 	ck_assert(wpres != NULL);
 	ck_assert_msg(wpres->wait_status == t->expected_wait_status,
-	   "wait_status: got %d, expected %d for command '%s'",
-	   wpres->wait_status, t->expected_wait_status, t->command);
+	              "wait_status: got %d, expected %d for command '%s'",
+	              wpres->wait_status, t->expected_wait_status, t->command);
 	ck_assert_msg(0 == strcmp(wpres->outstd, t->expected_stdout),
-	   "STDOUT:\n###GOT\n%s\n##EXPECTED\n%s###STDOUT_END\ncommand: '%s'",
-	   wpres->outstd, t->expected_stdout, t->command);
+	              "STDOUT:\n###GOT\n%s\n##EXPECTED\n%s###STDOUT_END\ncommand: '%s'",
+	              wpres->outstd, t->expected_stdout, t->command);
 
 	ck_assert_int_eq(t->expected_error_code, wpres->error_code);
-		ck_assert_msg(0 == strcmp(wpres->outerr, t->expected_stderr),
-		"STDERR:\n###GOT\n%s###EXPECTED\n%s###STDERR_END\ncommand: '%s'",
-		wpres->outerr, t->expected_stderr, t->command);
+	ck_assert_msg(0 == strcmp(wpres->outerr, t->expected_stderr),
+	              "STDERR:\n###GOT\n%s###EXPECTED\n%s###STDERR_END\ncommand: '%s'",
+	              wpres->outerr, t->expected_stderr, t->command);
 
 }
 
-static void run_main_loop(time_t runtime) {
+static void run_main_loop(time_t runtime)
+{
 	time_t s, n;
 	n = s = time(NULL);
 
@@ -73,7 +74,8 @@ static void run_main_loop(time_t runtime) {
 	}
 }
 
-static void run_worker_test(struct wrk_test *j) {
+static void run_worker_test(struct wrk_test *j)
+{
 	int ret = wproc_run_callback(j->command, j->timeout, wrk_test_cb, j, NULL);
 	ck_assert_int_eq(0, ret);
 
@@ -82,20 +84,21 @@ static void run_worker_test(struct wrk_test *j) {
 	ck_assert_int_eq(1, completed_jobs);
 }
 
-static void test_debug_log_content(int should_exist, const char *expect) {
-	char log_buffer[256*1024];
+static void test_debug_log_content(int should_exist, const char *expect)
+{
+	char log_buffer[256 * 1024];
 	size_t len;
 	FILE *fp;
 	int found;
 
 	fp = fopen(debug_file, "r");
-	len = fread(log_buffer, 1, sizeof(log_buffer)-1, fp);
+	len = fread(log_buffer, 1, sizeof(log_buffer) - 1, fp);
 	fclose(fp);
 	log_buffer[len] = '\0';
 
 	found = strstr(log_buffer, expect) == NULL ? FALSE : TRUE;
 
-	if(should_exist) {
+	if (should_exist) {
 		ck_assert_msg(found, "Expected '%s' to be present in log", expect);
 	} else {
 		ck_assert_msg(!found, "Expected '%s' to not be present in log", expect);
@@ -248,11 +251,13 @@ START_TEST(command_worker_launch_shutdown_test)
 }
 END_TEST
 
-void init_iobroker(void) {
+void init_iobroker(void)
+{
 	ck_assert(NULL != (nagios_iobs = iobroker_create()));
 }
 
-void deinit_iobroker(void) {
+void deinit_iobroker(void)
+{
 	iobroker_destroy(nagios_iobs, IOBROKER_CLOSE_SOCKETS);
 	nagios_iobs = NULL;
 }

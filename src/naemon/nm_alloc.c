@@ -23,32 +23,38 @@
 	}											\
 	return _ptr;
 
-void *nm_malloc(size_t size) {
+void *nm_malloc(size_t size)
+{
 	void *ptr = malloc(size);
 	CHECK_AND_RETURN(ptr);
 }
 
-void *nm_realloc(void *ptr, size_t size)  {
+void *nm_realloc(void *ptr, size_t size)
+{
 	void *new_ptr = realloc(ptr, size);
 	CHECK_AND_RETURN(new_ptr);
 }
 
-void *nm_calloc(size_t count, size_t size) {
+void *nm_calloc(size_t count, size_t size)
+{
 	void *ptr = calloc(count, size);
 	CHECK_AND_RETURN(ptr);
 }
 
-void *nm_strdup(const char *s) {
+void *nm_strdup(const char *s)
+{
 	char *str = strdup(s);
 	CHECK_AND_RETURN(str);
 }
 
-void *nm_strndup(const char *s, size_t size) {
+void *nm_strndup(const char *s, size_t size)
+{
 	char *str = strndup(s, size);
 	CHECK_AND_RETURN(str);
 }
 
-void nm_asprintf(char **strp, const char *fmt, ...) {
+void nm_asprintf(char **strp, const char *fmt, ...)
+{
 	va_list ap;
 	va_start(ap, fmt);
 	if (vasprintf(strp, fmt, ap) < 0) {

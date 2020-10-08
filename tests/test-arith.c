@@ -41,7 +41,7 @@ START_TEST(addition_overflow)
 			b *= -1;
 		}
 
-		bool success = nm_arith_saddl_overflow(a,b,&dest);
+		bool success = nm_arith_saddl_overflow(a, b, &dest);
 		if (success)
 			ck_assert_int_eq(dest, a + b);
 		else
@@ -54,14 +54,14 @@ START_TEST(subtraction_overflow)
 {
 	long dest;
 	int i;
-	ck_assert(!nm_arith_ssubl_overflow(0,LONG_MIN,&dest));
-	ck_assert(nm_arith_ssubl_overflow(0,LONG_MAX,&dest));
+	ck_assert(!nm_arith_ssubl_overflow(0, LONG_MIN, &dest));
+	ck_assert(nm_arith_ssubl_overflow(0, LONG_MAX, &dest));
 	ck_assert_int_eq(-LONG_MAX, dest);
 
-	ck_assert(nm_arith_ssubl_overflow(1234,0,&dest));
+	ck_assert(nm_arith_ssubl_overflow(1234, 0, &dest));
 	ck_assert_int_eq(1234, dest);
 
-	ck_assert(nm_arith_ssubl_overflow(0,0,&dest));
+	ck_assert(nm_arith_ssubl_overflow(0, 0, &dest));
 	ck_assert_int_eq(0, dest);
 
 	for (i = 0; i < 10000; ++i) {
@@ -75,7 +75,7 @@ START_TEST(subtraction_overflow)
 			b *= -1;
 		}
 
-		bool success = nm_arith_ssubl_overflow(a,b,&dest);
+		bool success = nm_arith_ssubl_overflow(a, b, &dest);
 		if (success)
 			ck_assert_int_eq(dest, a - b);
 		else
@@ -86,7 +86,7 @@ END_TEST
 
 START_TEST(multiplication_overflow)
 {
-	long a,b,dest = 0;
+	long a, b, dest = 0;
 	int i;
 	ck_assert(nm_arith_smull_overflow(0, 0, &dest));
 	ck_assert_int_eq(0, dest);
@@ -112,7 +112,7 @@ START_TEST(multiplication_overflow)
 		if (random() % 2 == 0) {
 			b *= -1;
 		}
-		bool success = nm_arith_smull_overflow(a,b,&dest);
+		bool success = nm_arith_smull_overflow(a, b, &dest);
 		if (success)
 			ck_assert_int_eq(dest, a * b);
 		else
@@ -121,7 +121,7 @@ START_TEST(multiplication_overflow)
 }
 END_TEST
 
-Suite*
+Suite *
 arithmetic_suite(void)
 {
 	Suite *s = suite_create("Arithmetics");

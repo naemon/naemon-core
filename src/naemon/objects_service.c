@@ -18,9 +18,9 @@ service **service_ary = NULL;
 
 int init_objects_service(int elems)
 {
-	service_ary = nm_calloc(elems, sizeof(service*));
+	service_ary = nm_calloc(elems, sizeof(service *));
 	service_hash_table = g_hash_table_new_full(nm_service_hash, nm_service_equal,
-			(GDestroyNotify) nm_service_key_destroy, NULL);
+	                     (GDestroyNotify) nm_service_key_destroy, NULL);
 	return OK;
 }
 
@@ -47,7 +47,7 @@ service *create_service(host *hst, const char *description)
 
 	if (!hst) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: No host provided for service '%s'\n",
-		           description);
+		       description);
 		return NULL;
 	}
 
@@ -208,7 +208,7 @@ int register_service(service *new_service)
 
 	if (!(h = find_host(new_service->host_name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Unable to locate host '%s' for service '%s'\n",
-		           new_service->host_name, new_service->description);
+		       new_service->host_name, new_service->description);
 		return ERROR;
 	}
 
@@ -218,7 +218,7 @@ int register_service(service *new_service)
 	}
 
 	g_hash_table_insert(service_hash_table,
-			nm_service_key_create(new_service->host_name, new_service->description), new_service);
+	                    nm_service_key_create(new_service->host_name, new_service->description), new_service);
 
 	new_service->id = num_objects.services++;
 	service_ary[new_service->id] = new_service;
@@ -334,7 +334,9 @@ service *find_service(const char *host_name, const char *svc_desc)
 	if (!host_name || !svc_desc)
 		return NULL;
 
-	return g_hash_table_lookup(service_hash_table, &((nm_service_key){(char *)host_name, (char *)svc_desc}));
+	return g_hash_table_lookup(service_hash_table, &((nm_service_key) {
+		(char *)host_name, (char *)svc_desc
+	}));
 }
 
 int get_service_count(void)
@@ -516,11 +518,11 @@ int log_service_event(service *svc)
 		log_options = NSLOG_SERVICE_OK;
 
 	nm_log(log_options, "SERVICE ALERT: %s;%s;%s;%s;%d;%s",
-	         svc->host_name, svc->description,
-	         service_state_name(svc->current_state),
-	         state_type_name(svc->state_type),
-	         svc->current_attempt,
-	         (svc->plugin_output == NULL) ? "" : svc->plugin_output);
+	       svc->host_name, svc->description,
+	       service_state_name(svc->current_state),
+	       state_type_name(svc->state_type),
+	       svc->current_attempt,
+	       (svc->plugin_output == NULL) ? "" : svc->plugin_output);
 
 	return OK;
 }
@@ -538,12 +540,12 @@ int log_service_states(int type, time_t *timestamp)
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
 
 		nm_log(type, "%s SERVICE STATE: %s;%s;%s;%s;%d;%s",
-		         (type == INITIAL_STATES) ? "INITIAL" : "CURRENT",
-		         temp_service->host_name, temp_service->description,
-		         service_state_name(temp_service->current_state),
-		         state_type_name(temp_service->state_type),
-		         temp_service->current_attempt,
-		         temp_service->plugin_output);
+		       (type == INITIAL_STATES) ? "INITIAL" : "CURRENT",
+		       temp_service->host_name, temp_service->description,
+		       service_state_name(temp_service->current_state),
+		       state_type_name(temp_service->state_type),
+		       temp_service->current_attempt,
+		       temp_service->plugin_output);
 	}
 
 	return OK;
