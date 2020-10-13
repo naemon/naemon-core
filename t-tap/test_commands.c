@@ -446,6 +446,7 @@ void test_host_commands(void) {
 	unsigned int prev_downtime_id;
 	time_t check_time =0;
 	char *cmdstr = NULL;
+	scheduled_downtime *downtime = NULL;
 	target_host = find_host(host_name);
 	target_host->obsess = FALSE;
 	pre = number_of_host_comments(host_name);
@@ -524,11 +525,31 @@ void test_host_commands(void) {
 	ok(check_time == target_host->services->service_ptr->next_check, "SCHEDULE_FORCED_HOST_SVC_CHECKS schedules forced checks for services on a host");
 	free(cmdstr);
 
+	/* Schedule fixed host downtime */
 	prev_downtime_id = next_downtime_id;
 	nm_asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_DOWNTIME;host1;%llu;%llu;1;0;0;myself;my downtime comment", (unsigned long long int)time(NULL), (unsigned long long int)time(NULL) + 1500);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_HOST_DOWNTIME");
 	ok(prev_downtime_id != next_downtime_id, "SCHEDULE_HOST_DOWNTIME schedules one new downtime");
 	ok(NULL != find_host_downtime(prev_downtime_id), "SCHEDULE_HOST_DOWNTIME schedules downtime for a host");
+	free(cmdstr);
+
+	nm_asprintf(&cmdstr, "[1234567890] DEL_HOST_DOWNTIME;%i", prev_downtime_id);
+	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: DEL_HOST_DOWNTIME");
+	ok(!find_host_downtime(prev_downtime_id), "DEL_HOST_DOWNTIME deletes a scheduled host downtime");
+	free(cmdstr);
+
+	/* Schedule flexible host downtime */
+	prev_downtime_id = next_downtime_id;
+	nm_asprintf(
+	    &cmdstr,
+	    "[1234567890] SCHEDULE_HOST_DOWNTIME;host1;%llu;%llu;0;0;300;myself;flexible host downtime",
+	    (unsigned long long int)time(NULL),
+	    (unsigned long long int)time(NULL) + 1500);
+	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_HOST_DOWNTIME");
+	ok(prev_downtime_id != next_downtime_id, "SCHEDULE_HOST_DOWNTIME schedules one new downtime");
+	downtime = find_host_downtime(prev_downtime_id);
+	ok(NULL != downtime, "SCHEDULE_HOST_DOWNTIME schedules flexible downtime for a host");
+	ok(downtime->duration == 300, "SCHEDULE_HOST_DOWNTIME flexible downtime duration is duration argument");
 	free(cmdstr);
 
 	nm_asprintf(&cmdstr, "[1234567890] DEL_HOST_DOWNTIME;%i", prev_downtime_id);
@@ -577,6 +598,51 @@ void test_host_commands(void) {
 	ok(9 == target_host->max_attempts, "CHANGE_MAX_HOST_CHECK_ATTEMPTS changes the maximum number of check attempts for host");
 }
 
+void test_service_commands(void)
+{
+	unsigned int prev_downtime_id;
+	char *cmdstr = NULL;
+	scheduled_downtime *downtime = NULL;
+
+	/* Schedule fixed service downtime */
+	prev_downtime_id = next_downtime_id;
+	nm_asprintf(
+	    &cmdstr,
+	    "[1234567890] SCHEDULE_SVC_DOWNTIME;host1;Dummy service;%llu;%llu;1;0;0;myself;fixed service downtime",
+	    (unsigned long long int)time(NULL),
+	    (unsigned long long int)time(NULL) + 1500);
+	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_SVC_DOWNTIME");
+	ok(prev_downtime_id != next_downtime_id, "SCHEDULE_SVC_DOWNTIME schedules one new fixed downtime");
+	downtime = find_service_downtime(prev_downtime_id);
+	ok(downtime != NULL, "SCHEDULE_SVC_DOWNTIME schedules fixed downtime for a service");
+	ok(downtime->duration == 1500, "SCHEDULE_SVC_DOWNTIME fixed downtime duration is end-start");
+	free(cmdstr);
+
+	nm_asprintf(&cmdstr, "[1234567890] DEL_SVC_DOWNTIME;%i", prev_downtime_id);
+	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: DEL_SVC_DOWNTIME");
+	ok(!find_host_downtime(prev_downtime_id), "DEL_SVC_DOWNTIME deletes a scheduled service downtime");
+	free(cmdstr);
+
+	/* Schedule flexible service downtime */
+	prev_downtime_id = next_downtime_id;
+	nm_asprintf(
+	    &cmdstr,
+	    "[1234567890] SCHEDULE_SVC_DOWNTIME;host1;Dummy service;%llu;%llu;0;0;300;myself;flexible service downtime",
+	    (unsigned long long int)time(NULL),
+	    (unsigned long long int)time(NULL) + 1500);
+	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_SVC_DOWNTIME");
+	ok(prev_downtime_id != next_downtime_id, "SCHEDULE_SVC_DOWNTIME schedules one new flexible downtime");
+	downtime = find_service_downtime(prev_downtime_id);
+	ok(downtime != NULL, "SCHEDULE_SVC_DOWNTIME schedules flexible downtime for a service");
+	ok(downtime->duration == 300, "SCHEDULE_SVC_DOWNTIME flexible downtime duration is duration argument");
+	free(cmdstr);
+
+	nm_asprintf(&cmdstr, "[1234567890] DEL_SVC_DOWNTIME;%i", prev_downtime_id);
+	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: DEL_SVC_DOWNTIME");
+	ok(!find_host_downtime(prev_downtime_id), "DEL_SVC_DOWNTIME deletes a scheduled service downtime");
+	free(cmdstr);
+}
+
 void test_core_commands(void) {
 	/*setup configuration*/
 	pre_flight_check(); /*without this, child_host links are not created and *_BEYOND_HOST test cases fail...*/
@@ -593,6 +659,7 @@ void test_core_commands(void) {
 
 	test_global_commands();
 	test_host_commands();
+	test_service_commands();
 	registered_commands_deinit();
 	free(config_file);
 }
@@ -600,7 +667,7 @@ void test_core_commands(void) {
 int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 {
 	const char *test_config_file = TESTDIR "naemon.cfg";
-	plan_tests(489);
+	plan_tests(507);
 	init_event_queue();
 
 	config_file_dir = nspath_absolute_dirname(test_config_file, NULL);

@@ -2254,9 +2254,9 @@ static int hostgroup_command_handler(const struct external_command *ext_command,
 static int service_command_handler(const struct external_command *ext_command, time_t entry_time)
 {
 	struct service *target_service = NULL;
-	unsigned long downtime_id = 0L;
 	time_t old_interval = 0L;
 	time_t current_time = 0L;
+	unsigned long duration = 0L;
 
 	if (ext_command->id != CMD_DEL_SVC_COMMENT) {
 		target_service = GV_SERVICE("service");
@@ -2320,7 +2320,13 @@ static int service_command_handler(const struct external_command *ext_command, t
 			schedule_service_check(target_service, GV_TIMESTAMP("check_time"), CHECK_OPTION_FORCE_EXECUTION);
 			return OK;
 		case CMD_SCHEDULE_SVC_DOWNTIME:
-			return schedule_downtime(SERVICE_DOWNTIME, target_service->host_name, target_service->description, entry_time, GV("author"), GV("comment"), GV_TIMESTAMP("start_time"), GV_TIMESTAMP("end_time"), GV_BOOL("fixed"), GV_ULONG("trigger_id"), GV_TIMESTAMP("end_time") - GV_TIMESTAMP("start_time"), &downtime_id);
+			if (GV_BOOL("fixed") > 0) {
+				duration = (GV_TIMESTAMP("end_time")) - (GV_TIMESTAMP("start_time"));
+			}
+			else {
+				duration = GV_ULONG("duration");
+			}
+			return schedule_downtime(SERVICE_DOWNTIME, target_service->host_name, target_service->description, entry_time, GV("author"), GV("comment"), GV_TIMESTAMP("start_time"), GV_TIMESTAMP("end_time"), GV_BOOL("fixed"), GV_ULONG("trigger_id"), duration, NULL);
 		case CMD_ENABLE_SVC_FLAP_DETECTION:
 			enable_service_flap_detection(target_service);
 			return OK;
