@@ -122,6 +122,7 @@ void schedule_next_host_check(host *hst, time_t delay, int options)
 	/* Schedule the event */
 	hst->check_options = options;
 	hst->next_check = delay + current_time;
+	hst->last_update = current_time;
 	hst->next_check_event = schedule_event(delay, handle_host_check_event, (void *)hst);
 
 	/* update the status log, since next_check and check_options is updated */
