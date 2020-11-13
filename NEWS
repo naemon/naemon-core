@@ -1,3 +1,20 @@
+1.2.2 - Nov 13 2020
+===================
+Features:
+* none
+
+Changed:
+* improved sample configuration
+* improved external command help
+* debian package source format changed
+* debian packages changed to systemd
+
+Bugfixes:
+* fix scheduling flexible service downtime
+* fix setting last_update whenever next_check changes
+* fix worker crashing
+
+
 1.2.1 - Jul 13 2020
 ===================
 Changed:
