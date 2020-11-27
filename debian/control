@@ -2,7 +2,8 @@ Source: naemon-core
 Section: net
 Priority: optional
 Maintainer: Naemon Core Development Team <naemon-dev@monitoring-lists.org>
-Build-Depends: debhelper (>= 9), gperf, chrpath, help2man, libicu-dev, pkg-config, libglib2.0-dev, fakeroot, autoconf, automake, libtool
+Build-Depends: debhelper (>= 9), gperf, chrpath, help2man, libicu-dev, pkg-config,
+  libglib2.0-dev, fakeroot, autoconf, automake, libtool, dh-systemd
 Standards-Version: 3.7.3
 Homepage: http://www.naemon.org
 Bugs: https://github.com/naemon/naemon-core/issues

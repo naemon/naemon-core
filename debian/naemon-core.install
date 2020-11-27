@@ -1,8 +1,10 @@
+/etc/default/naemon
 /etc/init.d/naemon
 /etc/naemon/naemon.cfg
 /etc/naemon/resource.cfg
 /etc/naemon/module-conf.d
 /usr/bin/naemon
+/usr/bin/naemon-ctl
 /usr/bin/naemonstats
 /var/log/naemon
 /var/log/naemon/archives
