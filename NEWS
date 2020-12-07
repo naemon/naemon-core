@@ -1,3 +1,9 @@
+1.2.3 - Dec 07 2020
+===================
+Bugfixes:
+* fix package update on debian / ubuntu
+
+
 1.2.2 - Nov 13 2020
 ===================
 Features:
