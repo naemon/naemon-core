@@ -111,7 +111,7 @@ test -f configure || ./autogen.sh
 CFLAGS="%{mycflags}" LDFLAGS="$CFLAGS" %configure \
     --datadir="%{_datadir}/naemon" \
     --libdir="%{_libdir}/naemon" \
-    --includedir="%{_includedir}/naemon" \
+    --includedir="%{_includedir}" \
     --localstatedir="%{_localstatedir}/lib/naemon" \
     --sysconfdir="%{_sysconfdir}/naemon" \
     --with-naemon-config-dir="%{_sysconfdir}/naemon/module-conf.d" \
