@@ -12,7 +12,7 @@ override_dh_auto_configure:
 				--bindir="/usr/bin" \
 				--datadir="/usr/share/naemon" \
 				--libdir="/usr/lib/naemon" \
-				--includedir="/usr/include/naemon" \
+				--includedir="/usr/include" \
 				--localstatedir="/var/lib/naemon" \
 				--sysconfdir="/etc/naemon" \
 				--with-naemon-config-dir="/etc/naemon/module-conf.d" \
