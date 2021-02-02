@@ -5,6 +5,8 @@ import os.path
 import signal
 import time
 
+from support import slurp_file
+
 use_step_matcher('re')
 
 
@@ -83,12 +85,18 @@ def naemon_start(context):
     context.return_code = subprocess.call(args)
 
 
+@given('I start naemon and wait until it is ready')
+def naemon_start_and_wait_ready(context):
+    context.execute_steps('Given I start naemon')
+    context.execute_steps('Given I wait 10 seconds for naemon to be ready')
+
+
 @when('I restart naemon')
 def naemon_restart(context):
     assert os.path.exists('./naemon.pid'), (
         'Naemon pid file was not found'
     )
-    pid = int(open('./naemon.pid').read())
+    pid = int(slurp_file('naemon.pid'))
     try:
         os.kill(pid, signal.SIGHUP)
         print(('Sent SIGHUP to naemon process (%i)' % pid))
@@ -102,7 +110,7 @@ def naemon_stop(context):
     assert os.path.exists('./naemon.pid'), (
         'Naemon pid file was not found'
     )
-    pid = int(open('./naemon.pid').read())
+    pid = int(slurp_file('naemon.pid'))
     try:
         os.kill(pid, signal.SIGTERM)
         print('Sent SIGTERM to naemon process (%i)' % pid)
@@ -126,12 +134,33 @@ def naemon_start_success(context):
     )
 
 
+@given(r'I wait (?:(?P<timeout_s>\d+) seconds? )?for naemon to be ready')
+def naemon_started_and_ready(context, timeout_s):
+    timeout_s = int(timeout_s or 30)
+    timeout = time.monotonic() + timeout_s
+    ready = False
+    while not ready and time.monotonic() < timeout:
+        try:
+            log = slurp_file('naemon.log')
+            # When we see this line in the log, we'll wait 1 more second and
+            # then Naemon should be ready, with signal handlers setup so that a
+            # test can SIGTERM it.
+            if 'Successfully launched command file worker with pid' in log:
+                ready = True
+                time.sleep(1)
+                break
+        except OSError:
+            pass
+        time.sleep(1)
+    assert ready, "Naemon did not start within %d seconds" % timeout_s
+
+
 @then('naemon should be running')
 def naemon_is_running(context):
     assert os.path.exists('./naemon.pid'), (
         'Naemon pid file was not found'
     )
-    pid = int(open('./naemon.pid').read())
+    pid = int(slurp_file('naemon.pid'))
     is_running = True
     try:
         os.kill(pid, 0)
@@ -152,12 +181,12 @@ def naemon_is_not_running(context):
 @then('naemon should output a sensible error message')
 def naemon_error_msg(context):
     context.execute_steps('When I start naemon')
-    assert 'Error: Host notification command' in open('naemon.log').read()
+    assert 'Error: Host notification command' in slurp_file('naemon.log')
 
 
 @then('naemon should output a retention data saved log message')
 def naemon_retention_msg(context):
-    assert 'Retention data successfully saved.' in open('naemon.log').read()
+    assert 'Retention data successfully saved.' in slurp_file('naemon.log')
 
 
 @when('I wait for (?P<seconds>[0-9]+) seconds?')

@@ -1,5 +1,6 @@
 from support.naemon_object_config import NaemonObjectConfig
 from support.naemon_system_config import NaemonSystemConfig
+from support import slurp_file
 import tempfile
 import os
 import os.path
@@ -38,7 +39,7 @@ def before_scenario(context, scenario):
 def after_scenario(context, scenario):
     # Kill any naemon daemonsv
     if os.path.isfile('naemon.pid'):
-        pid = int(open('naemon.pid').read())
+        pid = int(slurp_file('naemon.pid'))
         try:
             os.kill(pid, signal.SIGTERM)
             print('Killed the naemon process (%i)' % pid)

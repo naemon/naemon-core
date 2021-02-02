@@ -1,4 +1,5 @@
 from behave import given, use_step_matcher
+import os
 import os.path
 
 use_step_matcher('re')
