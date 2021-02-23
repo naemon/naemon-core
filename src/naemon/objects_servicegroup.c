@@ -17,12 +17,14 @@ int init_objects_servicegroup(int elems)
 	return OK;
 }
 
-void destroy_objects_servicegroup()
+/* destroy a single servicegroup object, set truncate_lists to TRUE when lists should be simply emtied instead of removing item by item.
+ * Enable truncate_list when removing all objects and disble when removing a specific one. */
+void destroy_objects_servicegroup(int truncate_lists)
 {
 	unsigned int i;
 	for (i = 0; i < num_objects.servicegroups; i++) {
 		servicegroup *this_servicegroup = servicegroup_ary[i];
-		destroy_servicegroup(this_servicegroup);
+		destroy_servicegroup(this_servicegroup, truncate_lists);
 	}
 	servicegroup_list = NULL;
 	if (servicegroup_hash_table)
@@ -81,13 +83,28 @@ int register_servicegroup(servicegroup *new_servicegroup)
 	return OK;
 }
 
-void destroy_servicegroup(servicegroup *this_servicegroup)
+/* destroy a single servicegroup object, set truncate_lists to TRUE when lists should be simply emtied instead of removing item by item.
+ * Enable truncate_list when removing all objects and disble when removing a specific one. */
+void destroy_servicegroup(servicegroup *this_servicegroup, int truncate_lists)
 {
+	servicesmember *this_servicesmember, *next_servicesmember;
+
 	if (!this_servicegroup)
 		return;
 
-	while (this_servicegroup->members != NULL) {
-		remove_service_from_servicegroup(this_servicegroup, this_servicegroup->members->service_ptr);
+	if(truncate_lists) {
+		/* remove all in one go */
+		next_servicesmember = this_servicegroup->members;
+		while (next_servicesmember) {
+			this_servicesmember = next_servicesmember;
+			next_servicesmember = this_servicesmember->next;
+			nm_free(this_servicesmember);
+		}
+	} else {
+		/* remove them one by one */
+		while (this_servicegroup->members != NULL) {
+			remove_service_from_servicegroup(this_servicegroup, this_servicegroup->members->service_ptr);
+		}
 	}
 
 	if (this_servicegroup->alias != this_servicegroup->group_name)

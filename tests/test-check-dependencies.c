@@ -53,7 +53,7 @@ void teardown(void)
 {
 	destroy_event_queue();
 	destroy_objects_command();
-	destroy_objects_service();
+	destroy_objects_service(TRUE);
 	destroy_objects_host();
 }
 

@@ -45,7 +45,7 @@ void teardown_objects(void)
 
 	destroy_objects_command();
 	destroy_objects_host();
-	destroy_objects_service();
+	destroy_objects_service(TRUE);
 
 }
 
