@@ -24,12 +24,14 @@ int init_objects_service(int elems)
 	return OK;
 }
 
-void destroy_objects_service()
+/* destroy a single service object, set truncate_lists to TRUE when lists should be simply emtied instead of removing item by item.
+ * Enable truncate_list when removing all objects and disble when removing a specific one. */
+void destroy_objects_service(int truncate_lists)
 {
 	unsigned int i;
 	for (i = 0; i < num_objects.services; i++) {
 		service *this_service = service_ary[i];
-		destroy_service(this_service);
+		destroy_service(this_service, truncate_lists);
 	}
 	service_list = NULL;
 	if (service_hash_table)
@@ -263,7 +265,9 @@ customvariablesmember *add_custom_variable_to_service(service *svc, char *varnam
 	return add_custom_variable_to_object(&svc->custom_variables, varname, varvalue);
 }
 
-void destroy_service(service *this_service)
+/* destroy a single service object, set truncate_lists to TRUE when lists should be simply emtied instead of removing item by item.
+ * Enable truncate_list when removing all objects and disble when removing a specific one. */
+void destroy_service(service *this_service, int truncate_lists)
 {
 	struct contactgroupsmember *this_contactgroupsmember, *next_contactgroupsmember;
 	struct contactsmember *this_contactsmember, *next_contactsmember;
@@ -298,8 +302,13 @@ void destroy_service(service *this_service)
 		nm_free(this_customvariablesmember);
 		this_customvariablesmember = next_customvariablesmember;
 	}
-	while (this_service->servicegroups_ptr)
-		remove_service_from_servicegroup(this_service->servicegroups_ptr->object_ptr, this_service);
+
+	/* free memory for service groups */
+	if(!truncate_lists) {
+		/* remove them one by one */
+		while (this_service->servicegroups_ptr)
+			remove_service_from_servicegroup(this_service->servicegroups_ptr->object_ptr, this_service);
+	}
 
 	for (slavelist = this_service->notify_deps; slavelist; slavelist = slavelist->next)
 		destroy_servicedependency(slavelist->object_ptr);

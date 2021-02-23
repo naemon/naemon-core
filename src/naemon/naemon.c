@@ -408,6 +408,7 @@ int main(int argc, char **argv)
 		}
 
 		/* clean up after ourselves */
+		timing_point("Cleaning up\n");
 		cleanup();
 
 		/* exit */

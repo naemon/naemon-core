@@ -32,11 +32,11 @@ struct servicegroup {
 };
 
 int init_objects_servicegroup(int elems);
-void destroy_objects_servicegroup(void);
+void destroy_objects_servicegroup(int truncate_lists);
 
 servicegroup *create_servicegroup(const char *name, const char *alias, const char *notes, const char *notes_url, const char *action_url);
 int register_servicegroup(servicegroup *this_servicegroup);
-void destroy_servicegroup(servicegroup *this_servicegroup);
+void destroy_servicegroup(servicegroup *this_servicegroup, int truncate_lists);
 struct servicesmember *add_service_to_servicegroup(servicegroup *, service *);
 void remove_service_from_servicegroup(servicegroup *temp_servicegroup, service *svc);
 

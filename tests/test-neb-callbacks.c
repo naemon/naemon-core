@@ -130,7 +130,7 @@ void setup_v2(void)
 void teardown_v1(void)
 {
 	common_teardown();
-	destroy_service(svc);
+	destroy_service(svc, FALSE);
 	destroy_host(hst);
 	free_check_result(cr);
 	nm_free(cr);

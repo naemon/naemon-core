@@ -94,7 +94,7 @@ void teardown(void)
 {
 
 	destroy_objects_command();
-	destroy_objects_service();
+	destroy_objects_service(TRUE);
 	destroy_objects_host();
 	cleanup_retention_data();
 	cleanup_downtime_data();
