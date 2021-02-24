@@ -1039,7 +1039,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	    temp_service->check_type,
 	    queued_check_result->start_time,
 	    queued_check_result->finish_time,
-	    NULL,
+	    temp_service->check_command,
 	    temp_service->latency,
 	    temp_service->execution_time,
 	    service_check_timeout,
