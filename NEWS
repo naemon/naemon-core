@@ -1,3 +1,16 @@
+1.2.4 - Mar 03 2021
+===================
+Features:
+* improve config check when having lots of servicegroups
+
+Changed:
+* migrate ci tests to github actions
+* change header file location in deb/rpm packages
+
+Bugfixes:
+* fix svc in check_command broker call
+
+
 1.2.3 - Dec 07 2020
 ===================
 Bugfixes:
