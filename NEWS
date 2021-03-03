@@ -8,7 +8,7 @@ Changed:
 * change header file location in deb/rpm packages
 
 Bugfixes:
-* fix svc in check_command broker call
+* fix check_command in svc neb broker call
 
 
 1.2.3 - Dec 07 2020
