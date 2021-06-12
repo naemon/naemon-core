@@ -919,3 +919,27 @@ void broker_statechange_data(int type, int flags, int attr, int statechange_type
 
 	return;
 }
+
+/* get vault macro from broker */
+int broker_vault_macro(char *macro_name, char **output, int *free_macro, nagios_macros *mac)
+{
+	nebstruct_vault_macro_data ds;
+
+	if (!(event_broker_options & BROKER_VAULT_MACROS))
+		return OK;
+
+	/* fill struct with relevant data */
+	ds.macro_name = macro_name;
+	ds.value      = NULL;
+	ds.mac        = mac;
+
+	/* make callbacks */
+	neb_make_callbacks(NEBCALLBACK_VAULT_MACRO_DATA, (void *)&ds);
+
+	if(ds.value != NULL) {
+		*free_macro = TRUE;
+		*output = ds.value;
+	}
+
+	return OK;
+}
