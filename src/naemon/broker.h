@@ -10,6 +10,7 @@
 #include "objects_contact.h"
 #include "objects_service.h"
 #include "nebmods.h"
+#include "macros.h"
 
 /*************** EVENT BROKER OPTIONS *****************/
 
@@ -27,7 +28,7 @@
 #define BROKER_COMMENT_DATA         	256	/* DONE */
 #define BROKER_DOWNTIME_DATA		512     /* DONE */
 #define BROKER_SYSTEM_COMMANDS          1024	/* DONE */
-#define BROKER_OCP_DATA_UNUSED          2048	/* reusable */
+#define BROKER_VAULT_MACROS             2048    /* DONE */
 #define BROKER_STATUS_DATA              4096    /* DONE */
 #define BROKER_ADAPTIVE_DATA            8192    /* DONE */
 #define BROKER_EXTERNALCOMMAND_DATA     16384   /* DONE */
@@ -191,6 +192,7 @@ void broker_aggregated_status_data(int, int, int);
 void broker_retention_data(int, int, int);
 void broker_acknowledgement_data(int, int, int, int, void *, char *, char *, int, int, int);
 void broker_statechange_data(int, int, int, int, void *, int, int, int, int);
+int broker_vault_macro(char *, char **, int *, nagios_macros *);
 
 NAGIOS_END_DECL
 #endif

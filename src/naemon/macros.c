@@ -7,6 +7,7 @@
 #include "logging.h"
 #include "globals.h"
 #include "nm_alloc.h"
+#include "broker.h"
 #include <string.h>
 #include <glib.h>
 
@@ -2142,6 +2143,10 @@ static int grab_macro_value_r(nagios_macros *mac, char *macro_buffer, char **out
 		/* use a pre-computed macro value */
 		*output = macro_user[x - 1];
 		return OK;
+	}
+
+	if (strstr(macro_buffer, "VAULT") == macro_buffer) {
+		return(broker_vault_macro(macro_buffer, output, free_macro, mac));
 	}
 
 	/* most frequently used "x" macro gets a shortcut */

@@ -6,6 +6,7 @@
 #endif
 
 #include "common.h"
+#include "macros.h"
 
 NAGIOS_BEGIN_DECL
 
@@ -489,6 +490,13 @@ typedef struct nebstruct_statechange_struct {
 	char            *output;
 	void            *object_ptr;
 } nebstruct_statechange_data;
+
+/* vault macro retrieve structure */
+typedef struct nebstruct_vault_macro_struct {
+	char            *macro_name;
+	char            *value;
+	nagios_macros   *mac;
+} nebstruct_vault_macro_data;
 
 NAGIOS_END_DECL
 #endif
