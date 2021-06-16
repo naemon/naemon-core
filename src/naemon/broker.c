@@ -12,6 +12,12 @@
 #include <string.h>
 #include <sys/time.h>
 
+static struct kvvec global_store = KVVEC_INITIALIZER;
+
+struct kvvec *get_global_store(void)
+{
+	return &global_store;
+}
 
 /* gets timestamp for use by broker */
 static inline void get_broker_timestamp(struct timeval *timestamp)

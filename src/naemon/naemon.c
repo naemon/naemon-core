@@ -135,6 +135,7 @@ int main(int argc, char **argv)
 	nagios_macros *mac;
 	const char *worker_socket = NULL;
 	int i;
+	struct kvvec *global_store;
 
 #ifdef HAVE_GETOPT_H
 	int option_index = 0;
@@ -226,6 +227,11 @@ int main(int argc, char **argv)
 	nm_g_log_handler_id = g_log_set_handler("GLib", G_LOG_LEVEL_MASK | G_LOG_FLAG_FATAL |
 	                                        G_LOG_FLAG_RECURSION, nm_g_log_handler, NULL);
 	mac = get_global_macros();
+
+	global_store = get_global_store();
+	if (global_store && !kvvec_init(global_store, 0)) {
+		exit(ERROR);
+	}
 
 	/* if we're a worker we can skip everything below */
 	if (worker_socket) {

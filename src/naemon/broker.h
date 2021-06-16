@@ -167,6 +167,7 @@
 
 NAGIOS_BEGIN_DECL
 
+struct kvvec *get_global_store(void);
 void broker_program_state(int, int, int);
 void broker_log_data(int, int, int, char *, unsigned long, time_t);
 int broker_event_handler(int, int, int, int, void *, int, int, struct timeval, struct timeval, double, int, int, int, char *, char *, char *);
