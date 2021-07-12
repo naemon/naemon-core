@@ -230,6 +230,7 @@ int xrddefault_save_state_information(void)
 		fprintf(fp, "is_flapping=%d\n", temp_host->is_flapping);
 		fprintf(fp, "percent_state_change=%.2f\n", temp_host->percent_state_change);
 		fprintf(fp, "check_flapping_recovery_notification=%d\n", temp_host->check_flapping_recovery_notification);
+		fprintf(fp, "last_update=%lu\n", temp_host->last_update);
 
 		fprintf(fp, "state_history=");
 		for (x = 0; x < MAX_STATE_HISTORY_ENTRIES; x++)
@@ -322,6 +323,7 @@ int xrddefault_save_state_information(void)
 			fprintf(fp, "config:obsess=%d\n", conf_svc->obsess);
 			fprintf(fp, "obsess=%d\n", temp_service->obsess);
 		}
+		fprintf(fp, "last_update=%lu\n", temp_service->last_update);
 		fprintf(fp, "is_flapping=%d\n", temp_service->is_flapping);
 		fprintf(fp, "percent_state_change=%.2f\n", temp_service->percent_state_change);
 		fprintf(fp, "check_flapping_recovery_notification=%d\n", temp_service->check_flapping_recovery_notification);
@@ -567,13 +569,11 @@ int xrddefault_read_state_information(void)
 			memset(&cont_conf, 0, sizeof(cont_conf));
 			memset(&cont_have, 0, sizeof(cont_have));
 			data_type = XRDDEFAULT_SERVICESTATUS_DATA;
-		}
-		else if (!strcmp(input, "host {")) {
+		} else if (!strcmp(input, "host {")) {
 			memset(&conf, 0, sizeof(conf));
 			memset(&have, 0, sizeof(have));
 			data_type = XRDDEFAULT_HOSTSTATUS_DATA;
-		}
-		else if (!strcmp(input, "contact {"))
+		} else if (!strcmp(input, "contact {"))
 			data_type = XRDDEFAULT_CONTACTSTATUS_DATA;
 		else if (!strcmp(input, "hostcomment {"))
 			data_type = XRDDEFAULT_HOSTCOMMENT_DATA;
@@ -744,12 +744,12 @@ int xrddefault_read_state_information(void)
 
 				if (force_remove == TRUE) {
 					broker_comment_data
-						(NEBTYPE_COMMENT_DELETE, NEBFLAG_NONE, NEBATTR_NONE,
-						 (data_type == XRDDEFAULT_HOSTCOMMENT_DATA) ? HOST_COMMENT : SERVICE_COMMENT,
-						 entry_type, host_name, service_description,
-						 entry_time, author, comment_data, persistent, source,
-						 expires, expire_time, comment_id
-						);
+					(NEBTYPE_COMMENT_DELETE, NEBFLAG_NONE, NEBATTR_NONE,
+					 (data_type == XRDDEFAULT_HOSTCOMMENT_DATA) ? HOST_COMMENT : SERVICE_COMMENT,
+					 entry_type, host_name, service_description,
+					 entry_time, author, comment_data, persistent, source,
+					 expires, expire_time, comment_id
+					);
 				} else {
 					/* add the comment */
 					add_comment((data_type == XRDDEFAULT_HOSTCOMMENT_DATA) ? HOST_COMMENT : SERVICE_COMMENT, entry_type, host_name, service_description, entry_time, author, comment_data, comment_id, persistent, expires, expire_time, source);
@@ -794,28 +794,27 @@ int xrddefault_read_state_information(void)
 
 				if (force_remove == TRUE) {
 					broker_downtime_data
-						(NEBTYPE_DOWNTIME_STOP, NEBFLAG_NONE,
-						 NEBATTR_DOWNTIME_STOP_CANCELLED,
-						 data_type == XRDDEFAULT_HOSTDOWNTIME_DATA ? HOST_DOWNTIME : SERVICE_DOWNTIME,
-						 host_name, service_description,
-						 entry_time, author, comment_data,
-						 start_time, end_time, fixed, triggered_by,
-						 duration, downtime_id
-						);
+					(NEBTYPE_DOWNTIME_STOP, NEBFLAG_NONE,
+					 NEBATTR_DOWNTIME_STOP_CANCELLED,
+					 data_type == XRDDEFAULT_HOSTDOWNTIME_DATA ? HOST_DOWNTIME : SERVICE_DOWNTIME,
+					 host_name, service_description,
+					 entry_time, author, comment_data,
+					 start_time, end_time, fixed, triggered_by,
+					 duration, downtime_id
+					);
 				} else {
 					/* add the downtime */
 					if (data_type == XRDDEFAULT_HOSTDOWNTIME_DATA) {
 						host *hst = NULL;
 						add_host_downtime(host_name, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent, &comment_id);
 
-						if (is_in_effect && (hst = find_host(host_name)) != NULL ) {
+						if (is_in_effect && (hst = find_host(host_name)) != NULL) {
 							hst->scheduled_downtime_depth++;
 						}
-					}
-					else {
+					} else {
 						service *svc = NULL;
 						add_service_downtime(host_name, service_description, entry_time, author, comment_data, start_time, flex_downtime_start, end_time, fixed, triggered_by, duration, downtime_id, is_in_effect, start_notification_sent, &comment_id);
-						if (is_in_effect && (svc = find_service(host_name, service_description)) != NULL ) {
+						if (is_in_effect && (svc = find_service(host_name, service_description)) != NULL) {
 							svc->scheduled_downtime_depth++;
 						}
 					}
@@ -1035,6 +1034,8 @@ int xrddefault_read_state_information(void)
 							temp_host->last_time_down = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "last_time_unreachable"))
 							temp_host->last_time_unreachable = strtoul(val, NULL, 10);
+						else if (!strcmp(var, "last_update"))
+							temp_host->last_update = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "notified_on_down"))
 							temp_host->notified_on |= (atoi(val) > 0 ? OPT_DOWN : 0);
 						else if (!strcmp(var, "notified_on_unreachable"))
@@ -1277,6 +1278,8 @@ int xrddefault_read_state_information(void)
 							temp_service->last_time_unknown = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "last_time_critical"))
 							temp_service->last_time_critical = strtoul(val, NULL, 10);
+						else if (!strcmp(var, "last_update"))
+							temp_service->last_update = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "plugin_output")) {
 							nm_free(temp_service->plugin_output);
 							temp_service->plugin_output = nm_strdup(val);
@@ -1524,19 +1527,16 @@ int xrddefault_read_state_information(void)
 							cont_conf.host_notifications_enabled = atoi(val) > 0 ? TRUE : FALSE;
 						} else if (!strcmp(var, "host_notifications_enabled")) {
 							if (temp_contact->modified_host_attributes & MODATTR_NOTIFICATIONS_ENABLED
-							    || (cont_have.host_notifications_enabled && cont_conf.host_notifications_enabled == temp_contact->host_notifications_enabled))
-							{
+							    || (cont_have.host_notifications_enabled && cont_conf.host_notifications_enabled == temp_contact->host_notifications_enabled)) {
 								pre_modify_contact_attribute(temp_contact, MODATTR_NOTIFICATIONS_ENABLED);
 								temp_contact->host_notifications_enabled = (atoi(val) > 0) ? TRUE : FALSE;
 							}
 						} else if (!strcmp(var, "config:service_notifications_enabled")) {
 							cont_have.service_notifications_enabled = TRUE;
 							cont_conf.service_notifications_enabled = atoi(val) > 0 ? TRUE : FALSE;
-						}
-						else if (!strcmp(var, "service_notifications_enabled")) {
+						} else if (!strcmp(var, "service_notifications_enabled")) {
 							if (temp_contact->modified_service_attributes & MODATTR_NOTIFICATIONS_ENABLED
-							    || (cont_have.service_notifications_enabled && cont_conf.service_notifications_enabled == temp_contact->service_notifications_enabled))
-							{
+							    || (cont_have.service_notifications_enabled && cont_conf.service_notifications_enabled == temp_contact->service_notifications_enabled)) {
 								pre_modify_contact_attribute(temp_contact, MODATTR_NOTIFICATIONS_ENABLED);
 								temp_contact->service_notifications_enabled = (atoi(val) > 0) ? TRUE : FALSE;
 							}

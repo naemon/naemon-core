@@ -14,7 +14,8 @@ static host *dep_hst;
 static service *svc;
 static service *dep_svc;
 static command *cmd;
-void setup (void) {
+void setup(void)
+{
 
 	init_event_queue();
 	init_objects_host(2);
@@ -48,10 +49,11 @@ void setup (void) {
 	register_service(dep_svc);
 }
 
-void teardown (void) {
+void teardown(void)
+{
 	destroy_event_queue();
 	destroy_objects_command();
-	destroy_objects_service();
+	destroy_objects_service(TRUE);
 	destroy_objects_host();
 }
 
@@ -130,7 +132,7 @@ START_TEST(service_execution_dependency_critical)
 }
 END_TEST
 
-Suite*
+Suite *
 check_dependencies_suite(void)
 {
 	Suite *s = suite_create("Check dependencies");

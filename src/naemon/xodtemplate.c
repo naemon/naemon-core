@@ -167,9 +167,10 @@ struct xod_tree_traverse_store {
 };
 
 /* Add a new value to a tree, return the old value */
-static gpointer xod_tree_insert(GTree *tree, gchar *name, gpointer value) {
+static gpointer xod_tree_insert(GTree *tree, gchar *name, gpointer value)
+{
 	gpointer oldvalue = g_tree_lookup(tree, name);
-	if(oldvalue) {
+	if (oldvalue) {
 		g_free(name);
 		return oldvalue;
 	}
@@ -177,13 +178,15 @@ static gpointer xod_tree_insert(GTree *tree, gchar *name, gpointer value) {
 	return NULL;
 }
 
-static gboolean xod_tree_traverse_visit(gpointer _key, gpointer _object, gpointer _userdata) {
+static gboolean xod_tree_traverse_visit(gpointer _key, gpointer _object, gpointer _userdata)
+{
 	struct xod_tree_traverse_store *stor = (struct xod_tree_traverse_store *)_userdata;
 	stor->result = (*stor->cb)(_object, stor->userdata);
 	return stor->result != OK;
 }
 
-static gboolean xod_tree_traverse(GTree *tree, int (*cb)(gpointer, gpointer), gpointer userdata) {
+static gboolean xod_tree_traverse(GTree *tree, int (*cb)(gpointer, gpointer), gpointer userdata)
+{
 	struct xod_tree_traverse_store stor;
 	stor.cb = cb;
 	stor.userdata = userdata;
@@ -403,6 +406,7 @@ static void xodtemplate_free_memory(void)
 		nm_free(this_host->icon_image_alt);
 		nm_free(this_host->statusmap_image);
 		nm_free(this_host->vrml_image);
+		free_objectlist(&this_host->service_list);
 		nm_free(this_host);
 	}
 	xodtemplate_host_list = NULL;
@@ -1910,12 +1914,15 @@ static int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, ch
 	char *service_names = NULL;
 	char *temp_ptr = NULL;
 	xodtemplate_service *temp_service = NULL;
+	xodtemplate_host *temp_host = NULL;
 	regex_t preg;
 	regex_t preg2;
 	int use_regexp_host = FALSE;
 	int use_regexp_service = FALSE;
 	int found_match = TRUE;
 	int reject_item = FALSE;
+	int service_wildcard_match = FALSE;
+	objectlist *slist;
 
 	if (list == NULL)
 		return ERROR;
@@ -1959,11 +1966,9 @@ static int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, ch
 		return OK;
 
 	/* should we use regular expression matching for the host name? */
-	if (use_regexp_matches == TRUE && (use_true_regexp_matching == TRUE || strstr(host_name, "*") || strstr(host_name, "?") || strstr(host_name, "+") || strstr(host_name, "\\.")))
+	if (use_regexp_matches == TRUE && (use_true_regexp_matching == TRUE || strstr(host_name, "*") || strstr(host_name, "?") || strstr(host_name, "+") || strstr(host_name, "\\."))) {
 		use_regexp_host = TRUE;
-
-	/* compile regular expression for host name */
-	if (use_regexp_host == TRUE) {
+		/* compile regular expression for host name */
 		if (regcomp(&preg2, host_name, REG_EXTENDED))
 			return ERROR;
 	}
@@ -1975,6 +1980,8 @@ static int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, ch
 
 		found_match = FALSE;
 		reject_item = FALSE;
+		use_regexp_service = FALSE;
+		service_wildcard_match = FALSE;
 
 		/* strip trailing spaces */
 		strip(temp_ptr);
@@ -1985,54 +1992,55 @@ static int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, ch
 			temp_ptr++;
 		}
 
-		/* should we use regular expression matching for the service description? */
-		if (use_regexp_matches == TRUE && (use_true_regexp_matching == TRUE || strstr(temp_ptr, "*") || strstr(temp_ptr, "?") || strstr(temp_ptr, "+") || strstr(temp_ptr, "\\.")))
-			use_regexp_service = TRUE;
-		else
-			use_regexp_service = FALSE;
+		if (!strcmp(temp_ptr, "*"))
+			service_wildcard_match = TRUE;
+		else if (use_regexp_matches && !strcmp(temp_ptr, ".*"))
+			service_wildcard_match = TRUE;
 
-		/* compile regular expression for service description */
-		if (use_regexp_service == TRUE) {
-			if (regcomp(&preg, temp_ptr, REG_EXTENDED)) {
-				if (use_regexp_host == TRUE)
-					regfree(&preg2);
-				nm_free(service_names);
-				return ERROR;
+		if (service_wildcard_match == FALSE) {
+			/* should we use regular expression matching for the service description? */
+			if (use_regexp_matches == TRUE && (use_true_regexp_matching == TRUE || strstr(temp_ptr, "*") || strstr(temp_ptr, "?") || strstr(temp_ptr, "+") || strstr(temp_ptr, "\\."))) {
+				use_regexp_service = TRUE;
+
+				/* compile regular expression for service description */
+				if (regcomp(&preg, temp_ptr, REG_EXTENDED)) {
+					if (use_regexp_host == TRUE)
+						regfree(&preg2);
+					nm_free(service_names);
+					return ERROR;
+				}
 			}
 		}
 
-		/* use regular expression matching */
-		if (use_regexp_host == TRUE || use_regexp_service == TRUE) {
 
+		/* use regular expression host matching -> iterate over all services on all hosts */
+		if (use_regexp_host == TRUE) {
 			/* test match against all services */
 			for (temp_service = xodtemplate_service_list; temp_service != NULL; temp_service = temp_service->next) {
 
 				if (temp_service->host_name == NULL || temp_service->service_description == NULL)
 					continue;
 
-				/* skip this service if it doesn't match the host name expression */
-				if (use_regexp_host == TRUE) {
-					if (regexec(&preg2, temp_service->host_name, 0, NULL, 0))
-						continue;
-				} else {
-					if (strcmp(temp_service->host_name, host_name))
-						continue;
-				}
-
-				/* skip this service if it doesn't match the service description expression */
-				if (use_regexp_service == TRUE) {
-					if (regexec(&preg, temp_service->service_description, 0, NULL, 0))
-						continue;
-				} else {
-					if (strcmp(temp_service->service_description, temp_ptr))
-						continue;
-				}
-
-				found_match = TRUE;
-
 				/* don't add services that shouldn't be registered */
 				if (temp_service->register_object == FALSE)
 					continue;
+
+				/* skip this service if it doesn't match the host name expression */
+				if (regexec(&preg2, temp_service->host_name, 0, NULL, 0))
+					continue;
+
+				/* skip this service if it doesn't match the service description expression */
+				if (service_wildcard_match == TRUE) {
+					if (use_regexp_service == TRUE) {
+						if (regexec(&preg, temp_service->service_description, 0, NULL, 0))
+							continue;
+					} else {
+						if (strcmp(temp_service->service_description, temp_ptr))
+							continue;
+					}
+				}
+
+				found_match = TRUE;
 
 				/* add service to the list */
 				if (reject_item == TRUE)
@@ -2047,22 +2055,36 @@ static int xodtemplate_expand_services(objectlist **list, bitmap *reject_map, ch
 		}
 
 		/* use standard matching... */
-		else if (!strcmp(temp_ptr, "*")) {
-			/* return a list of all services on the host */
+		else if (service_wildcard_match == TRUE || use_regexp_service == TRUE) {
 
-			found_match = TRUE;
+			/* get a list of all services on the host */
+			temp_host = xodtemplate_find_real_host(host_name);
+			if (temp_host == NULL) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Cannot expand host_name '%s' (config file '%s', starting at line %d)\n",
+				       host_name, xodtemplate_config_file_name(_config_file), _start_line);
+				return ERROR;
+			}
 
-			for (temp_service = xodtemplate_service_list; temp_service != NULL; temp_service = temp_service->next) {
+			if (service_wildcard_match == TRUE)
+				found_match = TRUE;
 
-				if (temp_service->host_name == NULL || temp_service->service_description == NULL)
-					continue;
+			for (slist = temp_host->service_list; slist; slist = slist->next) {
+				temp_service = (xodtemplate_service *)slist->object_ptr;
 
-				if (strcmp(temp_service->host_name, host_name))
+				if (temp_service->service_description == NULL)
 					continue;
 
 				/* don't add services that shouldn't be registered */
 				if (temp_service->register_object == FALSE)
 					continue;
+
+				/* skip this service if it doesn't match the service description expression */
+				if (service_wildcard_match == FALSE) {
+					if (regexec(&preg, temp_service->service_description, 0, NULL, 0))
+						continue;
+				}
+
+				found_match = TRUE;
 
 				/* add service to the list */
 				if (reject_item == TRUE)
@@ -2339,6 +2361,7 @@ static int xodtemplate_duplicate_services(void)
 {
 	gpointer prev;
 	xodtemplate_service *temp_service = NULL;
+	xodtemplate_host *temp_host = NULL;
 
 	xodcount.services = 0;
 	/****** DUPLICATE SERVICE DEFINITIONS WITH ONE OR MORE HOSTGROUP AND/OR HOST NAMES ******/
@@ -2472,10 +2495,10 @@ static int xodtemplate_duplicate_services(void)
 			 * on the host itself might be a warning, if the second host group
 			 * services is loaded before the host service.
 			 */
-			if(((xodtemplate_service*)prev)->is_from_hostgroup && !temp_service->is_from_hostgroup) {
+			if (((xodtemplate_service *)prev)->is_from_hostgroup && !temp_service->is_from_hostgroup) {
 				g_tree_remove(xobject_tree[OBJTYPE_SERVICE], service_ident);
 				g_tree_insert(xobject_tree[OBJTYPE_SERVICE], g_strdup(service_ident), temp_service);
-			} else if(((xodtemplate_service*)prev)->is_from_hostgroup == temp_service->is_from_hostgroup) {
+			} else if (((xodtemplate_service *)prev)->is_from_hostgroup == temp_service->is_from_hostgroup) {
 				/*
 				 * we end up here if both services are from the same
 				 * type of source. The remaining case (original
@@ -2490,6 +2513,14 @@ static int xodtemplate_duplicate_services(void)
 		} else {
 			xodcount.services++;
 		}
+
+		temp_host = xodtemplate_find_real_host(temp_service->host_name);
+		if (temp_host == NULL) {
+			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not expand host_name '%s' (config file '%s', starting on line %d)\n", temp_service->host_name, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
+			return ERROR;
+		}
+		prepend_object_to_objectlist(&temp_host->service_list, temp_service);
+
 		g_free(service_ident);
 	}
 
@@ -5001,6 +5032,7 @@ static int xodtemplate_recombobulate_hostgroups(void)
 	xodtemplate_hostgroup *temp_hostgroup = NULL;
 	char *hostgroup_names = NULL;
 	char *ptr, *next_ptr, *temp_ptr = NULL;
+	int res;
 
 	/* expand members of all hostgroups - this could be done in xodtemplate_register_hostgroup(), but we can save the CGIs some work if we do it here */
 	for (temp_hostgroup = xodtemplate_hostgroup_list; temp_hostgroup; temp_hostgroup = temp_hostgroup->next) {
@@ -5050,9 +5082,8 @@ static int xodtemplate_recombobulate_hostgroups(void)
 		}
 
 		/* get list of hosts in the hostgroup */
-		xodtemplate_expand_hosts(&accepted, temp_hostgroup->reject_map, temp_hostgroup->members, temp_hostgroup->_config_file, temp_hostgroup->_start_line);
-
-		if (!accepted && !bitmap_count_set_bits(temp_hostgroup->reject_map)) {
+		res = xodtemplate_expand_hosts(&accepted, temp_hostgroup->reject_map, temp_hostgroup->members, temp_hostgroup->_config_file, temp_hostgroup->_start_line);
+		if (res != OK || (!accepted && !bitmap_count_set_bits(temp_hostgroup->reject_map))) {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not expand members specified in hostgroup (config file '%s', starting on line %d)\n", xodtemplate_config_file_name(temp_hostgroup->_config_file), temp_hostgroup->_start_line);
 			return ERROR;
 		}
@@ -5183,6 +5214,7 @@ static int xodtemplate_recombobulate_servicegroups(void)
 	xodtemplate_servicegroup *temp_servicegroup = NULL;
 	char *servicegroup_names = NULL;
 	char *temp_ptr;
+	int res;
 
 	/*
 	 * expand servicegroup members. We need this to get the rejected ones
@@ -5232,8 +5264,8 @@ static int xodtemplate_recombobulate_servicegroups(void)
 		}
 
 		/* get list of service members in the servicegroup */
-		xodtemplate_expand_services(&accepted, temp_servicegroup->reject_map, NULL, temp_servicegroup->members, temp_servicegroup->_config_file, temp_servicegroup->_start_line);
-		if (!accepted && !bitmap_count_set_bits(temp_servicegroup->reject_map)) {
+		res = xodtemplate_expand_services(&accepted, temp_servicegroup->reject_map, NULL, temp_servicegroup->members, temp_servicegroup->_config_file, temp_servicegroup->_start_line);
+		if (res != OK || (!accepted && !bitmap_count_set_bits(temp_servicegroup->reject_map))) {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Could not expand members specified in servicegroup '%s' (config file '%s', starting at line %d)\n", temp_servicegroup->servicegroup_name, xodtemplate_config_file_name(temp_servicegroup->_config_file), temp_servicegroup->_start_line);
 			return ERROR;
 		}
@@ -5698,8 +5730,10 @@ static int xodtemplate_register_host_relations(void *host_, void *discard)
 			host *parent;
 			strip(parent_host);
 			parent = find_host(parent_host);
-			if (add_parent_to_host(new_host, parent) != OK)
+			if (add_parent_to_host(new_host, parent) != OK) {
 				nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add parent host '%s' to host (config file '%s', starting on line %d)\n", parent_host, xodtemplate_config_file_name(this_host->_config_file), this_host->_start_line);
+				return ERROR;
+			}
 		}
 	}
 
@@ -6272,6 +6306,7 @@ static int xodtemplate_register_and_destroy_servicedependency(void *sd_)
 		if (bitmap_isset(parent_map, p->id))
 			continue;
 		bitmap_set(parent_map, p->id);
+		bitmap_clear(service_map);
 
 		/*
 		 * if this is a same-host dependency, we must expand
@@ -7459,7 +7494,7 @@ static int xodtemplate_add_object_property(char *input)
 				} else if (!strcmp(temp_ptr, "a") || !strcmp(temp_ptr, "all")) {
 					temp_host->flap_detection_options = OPT_ALL;
 				} else {
-					nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid flap detection option '%s' in host definition.\n", temp_ptr);
+					nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid flap detection option '%s' in host definition.\n", (temp_ptr ? temp_ptr : "(null)"));
 					result = ERROR;
 				}
 			}
@@ -7481,7 +7516,7 @@ static int xodtemplate_add_object_property(char *input)
 				} else if (!strcmp(temp_ptr, "a") || !strcmp(temp_ptr, "all")) {
 					temp_host->notification_options = OPT_ALL;
 				} else {
-					nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid notification option '%s' in host definition.\n", temp_ptr);
+					nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid notification option '%s' in host definition.\n", (temp_ptr ? temp_ptr : "(null)"));
 					result = ERROR;
 				}
 			}
@@ -7508,7 +7543,7 @@ static int xodtemplate_add_object_property(char *input)
 				} else if (!strcmp(temp_ptr, "a") || !strcmp(temp_ptr, "all")) {
 					temp_host->stalking_options = OPT_ALL;
 				} else {
-					nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid stalking option '%s' in host definition.\n", temp_ptr);
+					nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid stalking option '%s' in host definition.\n", (temp_ptr ? temp_ptr : "(null)"));
 					result = ERROR;
 				}
 			}
@@ -7520,29 +7555,29 @@ static int xodtemplate_add_object_property(char *input)
 			xodtemplate_obsoleted(variable, temp_host->_start_line);
 		} else if (!strcmp(variable, "2d_coords")) {
 			if ((temp_ptr = strtok(value, ", ")) == NULL) {
-				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 2d_coords value '%s' in host definition.\n", temp_ptr);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 2d_coords value '%s' in host definition.\n", (temp_ptr ? temp_ptr : "(null)"));
 				return ERROR;
 			}
 			temp_host->x_2d = atoi(temp_ptr);
 			if ((temp_ptr = strtok(NULL, ", ")) == NULL) {
-				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 2d_coords value '%s' in host definition.\n", temp_ptr);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 2d_coords value '%s' in host definition.\n", (temp_ptr ? temp_ptr : "(null)"));
 				return ERROR;
 			}
 			temp_host->y_2d = atoi(temp_ptr);
 			temp_host->have_2d_coords = TRUE;
 		} else if (!strcmp(variable, "3d_coords")) {
 			if ((temp_ptr = strtok(value, ", ")) == NULL) {
-				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 3d_coords value '%s' in host definition.\n", temp_ptr);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 3d_coords value '%s' in host definition.\n", (temp_ptr ? temp_ptr : "(null)"));
 				return ERROR;
 			}
 			temp_host->x_3d = strtod(temp_ptr, NULL);
 			if ((temp_ptr = strtok(NULL, ", ")) == NULL) {
-				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 3d_coords value '%s' in host definition.\n", temp_ptr);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 3d_coords value '%s' in host definition.\n", (temp_ptr ? temp_ptr : "(null)"));
 				return ERROR;
 			}
 			temp_host->y_3d = strtod(temp_ptr, NULL);
 			if ((temp_ptr = strtok(NULL, ", ")) == NULL) {
-				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 3d_coords value '%s' in host definition.\n", temp_ptr);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 3d_coords value '%s' in host definition.\n", (temp_ptr ? temp_ptr : "(null)"));
 				return ERROR;
 			}
 			temp_host->z_3d = strtod(temp_ptr, NULL);
@@ -8147,13 +8182,13 @@ static int xodtemplate_add_object_property(char *input)
 		} else if (!strcmp(variable, "2d_coords")) {
 			temp_ptr = strtok(value, ", ");
 			if (temp_ptr == NULL) {
-				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 2d_coords value '%s' in extended host info definition.\n", temp_ptr);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 2d_coords value '%s' in extended host info definition.\n", (temp_ptr ? temp_ptr : "(null)"));
 				return ERROR;
 			}
 			temp_hostextinfo->x_2d = atoi(temp_ptr);
 			temp_ptr = strtok(NULL, ", ");
 			if (temp_ptr == NULL) {
-				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 2d_coords value '%s' in extended host info definition.\n", temp_ptr);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 2d_coords value '%s' in extended host info definition.\n", (temp_ptr ? temp_ptr : "(null)"));
 				return ERROR;
 			}
 			temp_hostextinfo->y_2d = atoi(temp_ptr);
@@ -8161,19 +8196,19 @@ static int xodtemplate_add_object_property(char *input)
 		} else if (!strcmp(variable, "3d_coords")) {
 			temp_ptr = strtok(value, ", ");
 			if (temp_ptr == NULL) {
-				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 3d_coords value '%s' in extended host info definition.\n", temp_ptr);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 3d_coords value '%s' in extended host info definition.\n", (temp_ptr ? temp_ptr : "(null)"));
 				return ERROR;
 			}
 			temp_hostextinfo->x_3d = strtod(temp_ptr, NULL);
 			temp_ptr = strtok(NULL, ", ");
 			if (temp_ptr == NULL) {
-				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 3d_coords value '%s' in extended host info definition.\n", temp_ptr);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 3d_coords value '%s' in extended host info definition.\n", (temp_ptr ? temp_ptr : "(null)"));
 				return ERROR;
 			}
 			temp_hostextinfo->y_3d = strtod(temp_ptr, NULL);
 			temp_ptr = strtok(NULL, ", ");
 			if (temp_ptr == NULL) {
-				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 3d_coords value '%s' in extended host info definition.\n", temp_ptr);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid 3d_coords value '%s' in extended host info definition.\n", (temp_ptr ? temp_ptr : "(null)"));
 				return ERROR;
 			}
 			temp_hostextinfo->z_3d = strtod(temp_ptr, NULL);
@@ -8340,21 +8375,21 @@ static int xodtemplate_process_config_file(char *filename)
 
 			/* make sure an object type is specified... */
 			if (input[0] == '\x0') {
-				nm_log(NSLOG_CONFIG_ERROR, "Error: No object type specified in file '%s' on line %d.\n", filename, current_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: No object type specified in file '%s' on line %d.\n", filename, (current_line ? current_line : -1));
 				result = ERROR;
 				break;
 			}
 
 			/* we're already in an object definition... */
 			if (in_definition == TRUE) {
-				nm_log(NSLOG_CONFIG_ERROR, "Error: Unexpected start of object definition in file '%s' on line %d.  Make sure you close preceding objects before starting a new one.\n", filename, current_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Unexpected start of object definition in file '%s' on line %d.  Make sure you close preceding objects before starting a new one.\n", filename, (current_line ? current_line : -1));
 				result = ERROR;
 				break;
 			}
 
 			/* start a new definition */
 			if (xodtemplate_begin_object_definition(input, xodtemplate_current_config_file, current_line) == ERROR) {
-				nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add object definition in file '%s' on line %d.\n", filename, current_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Could not add object definition in file '%s' on line %d.\n", filename, (current_line ? current_line : -1));
 				result = ERROR;
 				break;
 			}
@@ -8372,7 +8407,7 @@ static int xodtemplate_process_config_file(char *filename)
 
 				/* close out current definition */
 				if (xodtemplate_end_object_definition() == ERROR) {
-					nm_log(NSLOG_CONFIG_ERROR, "Error: Could not complete object definition in file '%s' on line %d. Have you named all your objects?\n", filename, current_line);
+					nm_log(NSLOG_CONFIG_ERROR, "Error: Could not complete object definition in file '%s' on line %d. Have you named all your objects?\n", filename, (current_line ? current_line : -1));
 					result = ERROR;
 					break;
 				}
@@ -8472,14 +8507,14 @@ static int xodtemplate_process_config_dir(char *dir_name)
 		/* Check for encoding errors */
 		if (written_size < 0) {
 			nm_log(NSLOG_RUNTIME_WARNING,
-				"Warning: xodtemplate encoding error on config file path '`%s'.\n", file);
+			       "Warning: xodtemplate encoding error on config file path '`%s'.\n", file);
 			continue;
 		}
 
 		/* Check if the filename was truncated. */
 		if (written_size > 0 && (size_t)written_size >= sizeof(file)) {
 			nm_log(NSLOG_RUNTIME_WARNING,
-				"Warning: xodtemplate truncated path to config file '`%s'.\n", file);
+			       "Warning: xodtemplate truncated path to config file '`%s'.\n", file);
 			continue;
 		}
 

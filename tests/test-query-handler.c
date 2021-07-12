@@ -7,11 +7,12 @@
 #include "naemon/events.h"
 #include "naemon/query-handler.c"
 
-static void run_main_loop(time_t runtime) {
+static void run_main_loop(time_t runtime)
+{
 	time_t s, n;
 	n = s = time(NULL);
 
-	while (((runtime - (n - s)) > 0) ) {
+	while (((runtime - (n - s)) > 0)) {
 		iobroker_poll(nagios_iobs, 250);
 		n = time(NULL);
 	}
@@ -20,7 +21,7 @@ static void run_main_loop(time_t runtime) {
 START_TEST(common_case)
 {
 	int ret, sd;
-	char buf[256*1024];
+	char buf[256 * 1024];
 
 	/* fake daemon mode to reduce noice on the console */
 	daemon_mode = TRUE;
@@ -70,7 +71,7 @@ START_TEST(common_case)
 }
 END_TEST
 
-Suite*
+Suite *
 checks_suite(void)
 {
 	Suite *s = suite_create("QueryHandler");

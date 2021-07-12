@@ -224,7 +224,7 @@ static int wproc_destroy(struct wproc_worker *wp, int flags)
 		int ret = waitpid(wp->pid, &i, 0);
 		if (ret == wp->pid || (ret < 0 && errno == ECHILD))
 			break;
-	} while(1);
+	} while (1);
 
 	free(wp);
 
@@ -444,9 +444,9 @@ static int handle_worker_result(int sd, int events, void *arg)
 		while (g_hash_table_iter_next(&iter, NULL, &job_)) {
 			struct wproc_job *job = job_;
 			wproc_run_job(
-					create_job(job->callback, job->data, job->timeout, job->command),
-					NULL
-					);
+			    create_job(job->callback, job->data, job->timeout, job->command),
+			    NULL
+			);
 		}
 
 		wproc_destroy(wp, 0);
@@ -499,16 +499,16 @@ static int handle_worker_result(int sd, int events, void *arg)
 			nm_asprintf(&error_reason, "timed out after %.2fs", tv_delta_f(&wpres.start, &wpres.stop));
 		} else if (WIFSIGNALED(wpres.wait_status)) {
 			nm_asprintf(&error_reason, "died by signal %d%s after %.2f seconds",
-			         WTERMSIG(wpres.wait_status),
-			         WCOREDUMP(wpres.wait_status) ? " (core dumped)" : "",
-			         tv_delta_f(&wpres.start, &wpres.stop));
+			            WTERMSIG(wpres.wait_status),
+			            WCOREDUMP(wpres.wait_status) ? " (core dumped)" : "",
+			            tv_delta_f(&wpres.start, &wpres.stop));
 		}
 		if (error_reason) {
 			log_debug_info(DEBUGL_IPC, DEBUGV_BASIC, "wproc: job %d from worker %s %s\n",
-					job->id, wp->name, error_reason);
+			               job->id, wp->name, error_reason);
 			log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   command: %s\n", job->command);
 			log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   early_timeout=%d; exited_ok=%d; wait_status=%d; error_code=%d;\n",
-			      wpres.early_timeout, wpres.exited_ok, wpres.wait_status, wpres.error_code);
+			               wpres.early_timeout, wpres.exited_ok, wpres.wait_status, wpres.error_code);
 			wproc_logdump_buffer(DEBUGL_IPC, DEBUGV_MORE, "wproc:   stderr", wpres.outerr);
 			wproc_logdump_buffer(DEBUGL_IPC, DEBUGV_MORE, "wproc:   stdout", wpres.outstd);
 		}
@@ -596,8 +596,8 @@ static int register_worker(int sd, char *buf, unsigned int len)
 	}
 
 	worker->jobs = g_hash_table_new_full(
-			g_direct_hash, g_direct_equal,
-			NULL, destroy_job);
+	                   g_direct_hash, g_direct_equal,
+	                   NULL, destroy_job);
 
 	if (is_global) {
 		workers.len++;
@@ -652,7 +652,7 @@ static int wproc_query_handler(int sd, char *buf, unsigned int len)
 
 static int spawn_core_worker(void)
 {
-	char * argvec[] = {naemon_binary_path, "--worker", qh_socket_path, NULL};
+	char *argvec[] = {naemon_binary_path, "--worker", qh_socket_path, NULL};
 	int ret;
 
 	if ((ret = spawn_helper(argvec)) < 0)
@@ -673,8 +673,8 @@ int init_workers(int desired_workers)
 	 * so other workers can join us whenever they're ready
 	 */
 	specialized_workers = g_hash_table_new_full(g_str_hash, g_str_equal,
-			free, NULL
-			);
+	                      free, NULL
+	                                           );
 	if (!qh_register_handler("wproc", "Worker process management and info", 0, wproc_query_handler)) {
 		log_debug_info(DEBUGL_IPC, DEBUGV_BASIC, "wproc: Successfully registered manager as @wproc with query handler\n");
 	} else {

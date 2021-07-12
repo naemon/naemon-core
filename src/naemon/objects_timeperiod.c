@@ -16,7 +16,7 @@ timeperiod *timeperiod_list = NULL;
 
 int init_objects_timeperiod(int elems)
 {
-	timeperiod_ary = nm_calloc(elems, sizeof(timeperiod*));
+	timeperiod_ary = nm_calloc(elems, sizeof(timeperiod *));
 	timeperiod_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;
 }
@@ -278,7 +278,7 @@ timeperiod *find_timeperiod(const char *name)
 static const char *timerange2str(const timerange *tr)
 {
 	static char str[12];
-	int sh, sm, eh, em;
+	short sh, sm, eh, em;
 
 	if (!tr)
 		return "";

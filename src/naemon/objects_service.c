@@ -18,18 +18,20 @@ service **service_ary = NULL;
 
 int init_objects_service(int elems)
 {
-	service_ary = nm_calloc(elems, sizeof(service*));
+	service_ary = nm_calloc(elems, sizeof(service *));
 	service_hash_table = g_hash_table_new_full(nm_service_hash, nm_service_equal,
-			(GDestroyNotify) nm_service_key_destroy, NULL);
+	                     (GDestroyNotify) nm_service_key_destroy, NULL);
 	return OK;
 }
 
-void destroy_objects_service()
+/* destroy a single service object, set truncate_lists to TRUE when lists should be simply emtied instead of removing item by item.
+ * Enable truncate_list when removing all objects and disble when removing a specific one. */
+void destroy_objects_service(int truncate_lists)
 {
 	unsigned int i;
 	for (i = 0; i < num_objects.services; i++) {
 		service *this_service = service_ary[i];
-		destroy_service(this_service);
+		destroy_service(this_service, truncate_lists);
 	}
 	service_list = NULL;
 	if (service_hash_table)
@@ -47,7 +49,7 @@ service *create_service(host *hst, const char *description)
 
 	if (!hst) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: No host provided for service '%s'\n",
-		           description);
+		       description);
 		return NULL;
 	}
 
@@ -208,7 +210,7 @@ int register_service(service *new_service)
 
 	if (!(h = find_host(new_service->host_name))) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Unable to locate host '%s' for service '%s'\n",
-		           new_service->host_name, new_service->description);
+		       new_service->host_name, new_service->description);
 		return ERROR;
 	}
 
@@ -218,7 +220,7 @@ int register_service(service *new_service)
 	}
 
 	g_hash_table_insert(service_hash_table,
-			nm_service_key_create(new_service->host_name, new_service->description), new_service);
+	                    nm_service_key_create(new_service->host_name, new_service->description), new_service);
 
 	new_service->id = num_objects.services++;
 	service_ary[new_service->id] = new_service;
@@ -263,7 +265,9 @@ customvariablesmember *add_custom_variable_to_service(service *svc, char *varnam
 	return add_custom_variable_to_object(&svc->custom_variables, varname, varvalue);
 }
 
-void destroy_service(service *this_service)
+/* destroy a single service object, set truncate_lists to TRUE when lists should be simply emtied instead of removing item by item.
+ * Enable truncate_list when removing all objects and disble when removing a specific one. */
+void destroy_service(service *this_service, int truncate_lists)
 {
 	struct contactgroupsmember *this_contactgroupsmember, *next_contactgroupsmember;
 	struct contactsmember *this_contactsmember, *next_contactsmember;
@@ -298,8 +302,13 @@ void destroy_service(service *this_service)
 		nm_free(this_customvariablesmember);
 		this_customvariablesmember = next_customvariablesmember;
 	}
-	while (this_service->servicegroups_ptr)
-		remove_service_from_servicegroup(this_service->servicegroups_ptr->object_ptr, this_service);
+
+	/* free memory for service groups */
+	if(!truncate_lists) {
+		/* remove them one by one */
+		while (this_service->servicegroups_ptr)
+			remove_service_from_servicegroup(this_service->servicegroups_ptr->object_ptr, this_service);
+	}
 
 	for (slavelist = this_service->notify_deps; slavelist; slavelist = slavelist->next)
 		destroy_servicedependency(slavelist->object_ptr);
@@ -334,7 +343,9 @@ service *find_service(const char *host_name, const char *svc_desc)
 	if (!host_name || !svc_desc)
 		return NULL;
 
-	return g_hash_table_lookup(service_hash_table, &((nm_service_key){(char *)host_name, (char *)svc_desc}));
+	return g_hash_table_lookup(service_hash_table, &((nm_service_key) {
+		(char *)host_name, (char *)svc_desc
+	}));
 }
 
 int get_service_count(void)
@@ -516,11 +527,11 @@ int log_service_event(service *svc)
 		log_options = NSLOG_SERVICE_OK;
 
 	nm_log(log_options, "SERVICE ALERT: %s;%s;%s;%s;%d;%s",
-	         svc->host_name, svc->description,
-	         service_state_name(svc->current_state),
-	         state_type_name(svc->state_type),
-	         svc->current_attempt,
-	         (svc->plugin_output == NULL) ? "" : svc->plugin_output);
+	       svc->host_name, svc->description,
+	       service_state_name(svc->current_state),
+	       state_type_name(svc->state_type),
+	       svc->current_attempt,
+	       (svc->plugin_output == NULL) ? "" : svc->plugin_output);
 
 	return OK;
 }
@@ -538,12 +549,12 @@ int log_service_states(int type, time_t *timestamp)
 	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
 
 		nm_log(type, "%s SERVICE STATE: %s;%s;%s;%s;%d;%s",
-		         (type == INITIAL_STATES) ? "INITIAL" : "CURRENT",
-		         temp_service->host_name, temp_service->description,
-		         service_state_name(temp_service->current_state),
-		         state_type_name(temp_service->state_type),
-		         temp_service->current_attempt,
-		         temp_service->plugin_output);
+		       (type == INITIAL_STATES) ? "INITIAL" : "CURRENT",
+		       temp_service->host_name, temp_service->description,
+		       service_state_name(temp_service->current_state),
+		       state_type_name(temp_service->state_type),
+		       temp_service->current_attempt,
+		       temp_service->plugin_output);
 	}
 
 	return OK;

@@ -1,4 +1,77 @@
-1.0.10 - Mar 12 2018
+1.2.4 - Mar 03 2021
+===================
+Features:
+* improve config check when having lots of servicegroups
+
+Changed:
+* migrate ci tests to github actions
+* change header file location in deb/rpm packages
+
+Bugfixes:
+* fix check_command in svc neb broker call
+
+
+1.2.3 - Dec 07 2020
+===================
+Bugfixes:
+* fix package update on debian / ubuntu
+
+
+1.2.2 - Nov 13 2020
+===================
+Features:
+* none
+
+Changed:
+* improved sample configuration
+* improved external command help
+* debian package source format changed
+* debian packages changed to systemd
+
+Bugfixes:
+* fix scheduling flexible service downtime
+* fix setting last_update whenever next_check changes
+* fix worker crashing
+
+
+1.2.1 - Jul 13 2020
+===================
+Changed:
+* nothing
+
+Bugfixes:
+* fix executing commands with pipes (#319)
+* fix external command to remove downtimes by filter
+
+
+1.2.0 - Feb 17 2020
+===================
+Features:
+* Add new skip check options to set a particular state on skipped checks
+
+Bugfixes:
+* Retain flap detection option over restarts
+* Don't process perfdata file if perfdata is disabled
+
+
+1.1.0 - Sep 02 2019
+===================
+Features:
+* add internal last_update timestamp to track host/service changes
+* speed up configuration check when using lots of dependencies
+
+Changed:
+* increased CURRENT_NEB_API_VERSION, this means you have to recompile your NEB modules
+
+Bugfixes:
+* bail out config check if parent host cannot be resolved
+* bail out config check if group members cannot be resolved (#300)
+* fix calculating group on demand macros
+* fix last_hard_state when using neb modules (#287)
+* fix loading neb modules multiple times
+
+
+1.0.10 - Mar 12 2019
 ===================
 Features:
 * allow NEBERROR_CALLBACKCANCEL from NEBTYPE_*CHECK_INITIATE neb callbacks

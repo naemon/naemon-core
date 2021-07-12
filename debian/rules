@@ -6,15 +6,13 @@
 export DH_VERBOSE=1
 DESTDIR=$(CURDIR)/debian/tmp/
 
-WITH_SYSTEMD=$(shell if [ -x "/bin/systemctl" ]; then echo "--with systemd"; else echo ""; fi )
-
 override_dh_auto_configure:
 	test -f configure || ./autogen.sh
 	dh_auto_configure -- --prefix=/usr \
 				--bindir="/usr/bin" \
 				--datadir="/usr/share/naemon" \
 				--libdir="/usr/lib/naemon" \
-				--includedir="/usr/include/naemon" \
+				--includedir="/usr/include" \
 				--localstatedir="/var/lib/naemon" \
 				--sysconfdir="/etc/naemon" \
 				--with-naemon-config-dir="/etc/naemon/module-conf.d" \
@@ -29,14 +27,11 @@ override_dh_auto_configure:
 				--with-logrotatedir="/etc/logrotate.d" \
 				--with-naemon-user="naemon" \
 				--with-naemon-group="naemon" \
-				--with-lockfile="/var/run/naemon/naemon.pid"
+				--with-lockfile="/run/naemon/naemon.pid"
 	if [ "x$(DEB_HOST_MULTIARCH)" != "x" ]; then \
 		echo /usr/lib/naemon/pkgconfig/naemon.pc usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig/ >> debian/naemon-dev.install; \
 	else \
 		echo /usr/lib/naemon/pkgconfig/naemon.pc usr/share/pkgconfig/ >> debian/naemon-dev.install; \
-	fi
-	if [ "x$(WITH_SYSTEMD)" != "x" ]; then \
-		echo "/usr/bin/naemon-ctl" >> debian/naemon-core.install; \
 	fi
 
 
@@ -58,10 +53,9 @@ override_dh_auto_install:
 	# get rid of dependency_libs in la files, see https://wiki.debian.org/ReleaseGoals/LAFileRemoval
 	sed -i "/dependency_libs/ s/'.*'/''/" `find . -name '*.la'`
 	# Move SystemV init-script
-	if [ "x$(WITH_SYSTEMD)" != "x" ]; then \
-		mkdir -p -m 0755 debian/tmp; \
-		install -m 755 debian/naemon-core.naemon.init debian/tmp/usr/bin/naemon-ctl; \
-	fi
+	install -D -m 0755 debian/naemon-core.naemon.init debian/tmp/usr/bin/naemon-ctl
+	install -D -m 0644 sample-config/naemon.sysconfig debian/tmp/etc/default/naemon
+	mkdir -p -m 0755 debian/tmp/etc/naemon/module-conf.d
 
 override_dh_gencontrol:
 	dh_gencontrol

@@ -10,9 +10,9 @@
 
 char *cur_config_file = NULL;
 
-static void init_configuration(void) {
+static void init_configuration(void)
+{
 	int result;
-	FILE *fp;
 
 	/* This is really not used, but needs to be defined */
 	config_file = "(test config filename)";
@@ -22,17 +22,17 @@ static void init_configuration(void) {
 	ck_assert_int_eq(result, OK);
 
 	/* Kick start with a clean config file we can write to with the test */
-	cur_config_file = tempnam(NULL, "nmtst");
-	fp = fopen(cur_config_file, "w");
-	fclose(fp);
+	cur_config_file = strdup("/tmp/nmtst.XXXXXX");
+	close(mkstemp(cur_config_file));
 	add_object_to_objectlist(&objcfg_files, cur_config_file);
 
 }
 
-static void free_configuration(void) {
+static void free_configuration(void)
+{
 
 	/* Clean up the config file afterwards */
-	if(cur_config_file) {
+	if (cur_config_file) {
 		unlink(cur_config_file);
 	}
 
@@ -41,13 +41,15 @@ static void free_configuration(void) {
 	cur_config_file = NULL;
 }
 
-static void object_def_start(const char *type) {
+static void object_def_start(const char *type)
+{
 	FILE *fp = fopen(cur_config_file, "a");
 	fprintf(fp, "define %s {\n", type);
 	fclose(fp);
 
 }
-static void object_def_var(const char *name, const char *var, ...) {
+static void object_def_var(const char *name, const char *var, ...)
+{
 	char tmpbuf[1024] = "";
 	va_list args;
 	FILE *fp;
@@ -61,7 +63,8 @@ static void object_def_var(const char *name, const char *var, ...) {
 	fclose(fp);
 }
 
-static void object_def_end(void) {
+static void object_def_end(void)
+{
 	FILE *fp = fopen(cur_config_file, "a");
 	fprintf(fp, "}\n\n");
 	fclose(fp);
@@ -114,7 +117,7 @@ START_TEST(test_hostgroup_service_host_override)
 	object_def_var("hostgroups", "my_hg");
 	object_def_end();
 
-	for(i=0;i<5;i++) {
+	for (i = 0; i < 5; i++) {
 		object_def_start("host");
 		object_def_var("host_name", "my_host_%d", i);
 		object_def_var("address", "127.0.0.1");
@@ -133,14 +136,14 @@ START_TEST(test_hostgroup_service_host_override)
 	result = read_all_object_data("(test config filename)");
 	ck_assert_int_eq(result, OK);
 
-	count=0;
+	count = 0;
 
-	for(hst=host_list; hst!=NULL; hst=hst->next) {
+	for (hst = host_list; hst != NULL; hst = hst->next) {
 		/* Verify that each host has one, and only one, service */
 		ck_assert(hst->services != NULL);
 		ck_assert(hst->services->next == NULL);
 
-		if(0==strcmp(hst->name, "my_host_nosvc")) {
+		if (0 == strcmp(hst->name, "my_host_nosvc")) {
 			/* Our host with inherited service */
 			ck_assert_msg(hst->services->service_ptr->max_attempts == 17, "max_attempts == %d (expected 17) for service on host %s", hst->services->service_ptr->max_attempts, hst->name);
 		} else {
@@ -151,7 +154,8 @@ START_TEST(test_hostgroup_service_host_override)
 		count++;
 	}
 
-	ck_assert_int_eq(count, 5+1);
+	ck_assert_int_eq(count, 5 + 1);
+	unlink(cur_config_file);
 }
 END_TEST
 

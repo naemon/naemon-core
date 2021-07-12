@@ -24,7 +24,8 @@ struct timed_event {
 #define STR_STRING_SERVICE_NOTIFICATION_ATTEMPT "** Service Notification Attempt **"
 #define STR_STRING_HOST_NOTIFICATION_ATTEMPT "** Host Notification Attempt **"
 
-const char *mocked_get_default_retention_file(void) {
+const char *mocked_get_default_retention_file(void)
+{
 	return "/tmp/naemon-test-scheduled-downtimes.retentiondata";
 }
 
@@ -36,10 +37,11 @@ static host *hst;
 static service *svc, *svc1;
 static command *cmd;
 
-void setup (void) {
+void setup(void)
+{
 
 	int ret;
-	char* workdir = NULL;
+	char *workdir = NULL;
 	init_event_queue();
 	init_objects_host(1);
 	init_objects_service(2);
@@ -88,10 +90,11 @@ void setup (void) {
 
 }
 
-void teardown (void) {
+void teardown(void)
+{
 
 	destroy_objects_command();
-	destroy_objects_service();
+	destroy_objects_service(TRUE);
 	destroy_objects_host();
 	cleanup_retention_data();
 	cleanup_downtime_data();
@@ -99,13 +102,14 @@ void teardown (void) {
 	free(log_file);
 }
 
-void simulate_naemon_reload(void) {
+void simulate_naemon_reload(void)
+{
 	/* dirty hacks to simulate a "reload"*/
 	retain_state_information = TRUE;
 	temp_file = "/tmp/naemon-test-scheduled-downtimes.retentiondata.tmp";
 	ck_assert(OK == save_state_information(
-				0 /* this parameter does nothing ... */
-				));
+	              0 /* this parameter does nothing ... */
+	          ));
 	teardown(); /* uh-oh! */
 	setup();
 
@@ -122,8 +126,8 @@ START_TEST(host_fixed_scheduled_downtime_cancelled)
 	scheduled_downtime *dt = NULL;
 
 	schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author",
-			"Some downtime comment", now, now+duration,
-			fixed, triggered_by, duration, &downtime_id);
+	                  "Some downtime comment", now, now + duration,
+	                  fixed, triggered_by, duration, &downtime_id);
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
 	ck_assert(dt != NULL);
@@ -137,7 +141,6 @@ START_TEST(host_fixed_scheduled_downtime_cancelled)
 
 	ck_assert(OK == unschedule_downtime(HOST_DOWNTIME, downtime_id));
 	ck_assert_int_eq(0, hst->scheduled_downtime_depth);
-	ck_assert(dt->is_in_effect == FALSE);
 	ck_assert(NULL == find_downtime(ANY_DOWNTIME, downtime_id));
 }
 END_TEST
@@ -152,8 +155,8 @@ START_TEST(host_fixed_scheduled_downtime_stopped)
 	scheduled_downtime *dt = NULL;
 
 	schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author",
-			"Some downtime comment", now, now+duration,
-			fixed, triggered_by, duration, &downtime_id);
+	                  "Some downtime comment", now, now + duration,
+	                  fixed, triggered_by, duration, &downtime_id);
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
 	ck_assert(dt != NULL);
@@ -172,7 +175,6 @@ START_TEST(host_fixed_scheduled_downtime_stopped)
 	 */
 	ck_assert(OK == handle_scheduled_downtime(dt));
 	ck_assert_int_eq(0, hst->scheduled_downtime_depth);
-	ck_assert(dt->is_in_effect == FALSE);
 	ck_assert(NULL == find_downtime(ANY_DOWNTIME, downtime_id));
 }
 END_TEST
@@ -188,12 +190,12 @@ START_TEST(host_multiple_fixed_scheduled_downtimes)
 	scheduled_downtime *dt = NULL, *dt2 = NULL;
 
 	schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author 1",
-			"Some downtime comment 1", now, now+duration,
-			fixed, triggered_by, duration, &downtime_id);
+	                  "Some downtime comment 1", now, now + duration,
+	                  fixed, triggered_by, duration, &downtime_id);
 
 	schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author 2",
-			"Some downtime comment 2", now, now+duration,
-			fixed, triggered_by, duration, &downtime_id2);
+	                  "Some downtime comment 2", now, now + duration,
+	                  fixed, triggered_by, duration, &downtime_id2);
 
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
@@ -214,12 +216,10 @@ START_TEST(host_multiple_fixed_scheduled_downtimes)
 
 	ck_assert(OK == handle_scheduled_downtime(dt2));
 	ck_assert_int_eq(1, hst->scheduled_downtime_depth);
-	ck_assert(dt2->is_in_effect == FALSE);
 	ck_assert(NULL == find_downtime(ANY_DOWNTIME, downtime_id2));
 
 	ck_assert(OK == handle_scheduled_downtime(dt));
 	ck_assert_int_eq(0, hst->scheduled_downtime_depth);
-	ck_assert(dt->is_in_effect == FALSE);
 	ck_assert(NULL == find_downtime(ANY_DOWNTIME, downtime_id));
 }
 END_TEST
@@ -235,12 +235,12 @@ START_TEST(host_multiple_fixed_scheduled_downtimes_one_cancelled_one_stopped)
 	scheduled_downtime *dt = NULL, *dt2 = NULL;
 
 	schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author 1",
-			"Some downtime comment 1", now, now+duration,
-			fixed, triggered_by, duration, &downtime_id);
+	                  "Some downtime comment 1", now, now + duration,
+	                  fixed, triggered_by, duration, &downtime_id);
 
 	schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author 2",
-			"Some downtime comment 2", now, now+duration,
-			fixed, triggered_by, duration, &downtime_id2);
+	                  "Some downtime comment 2", now, now + duration,
+	                  fixed, triggered_by, duration, &downtime_id2);
 
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
@@ -261,12 +261,10 @@ START_TEST(host_multiple_fixed_scheduled_downtimes_one_cancelled_one_stopped)
 
 	ck_assert(OK == unschedule_downtime(HOST_DOWNTIME, downtime_id2));
 	ck_assert_int_eq(1, hst->scheduled_downtime_depth);
-	ck_assert(dt2->is_in_effect == FALSE);
 	ck_assert(NULL == find_downtime(ANY_DOWNTIME, downtime_id2));
 
 	ck_assert(OK == handle_scheduled_downtime(dt));
 	ck_assert_int_eq(0, hst->scheduled_downtime_depth);
-	ck_assert(dt->is_in_effect == FALSE);
 	ck_assert(NULL == find_downtime(ANY_DOWNTIME, downtime_id));
 }
 END_TEST
@@ -281,8 +279,8 @@ START_TEST(host_fixed_scheduled_downtime_depth_retained_across_reload)
 	scheduled_downtime *dt = NULL;
 
 	schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author",
-			"Some downtime comment", now, now+duration,
-			fixed, triggered_by, duration, &downtime_id);
+	                  "Some downtime comment", now, now + duration,
+	                  fixed, triggered_by, duration, &downtime_id);
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
 	ck_assert(dt != NULL);
@@ -317,8 +315,8 @@ START_TEST(host_downtime_id_retained_across_reload)
 	unsigned long comment_id;
 
 	schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author",
-			"Some downtime comment", now, now+duration,
-			fixed, triggered_by, duration, &downtime_id);
+	                  "Some downtime comment", now, now + duration,
+	                  fixed, triggered_by, duration, &downtime_id);
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
 	ck_assert(dt != NULL);
@@ -344,8 +342,8 @@ START_TEST(host_flexible_scheduled_downtime)
 	scheduled_downtime *dt = NULL;
 
 	schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author",
-			"Some downtime comment", now, now+duration,
-			fixed, triggered_by, duration, &downtime_id);
+	                  "Some downtime comment", now, now + duration,
+	                  fixed, triggered_by, duration, &downtime_id);
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
 	ck_assert(dt != NULL);
@@ -379,8 +377,8 @@ START_TEST(host_flexible_scheduled_downtime_across_reload)
 	scheduled_downtime *dt = NULL;
 
 	schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author",
-			"Some downtime comment", now, now+duration,
-			fixed, triggered_by, duration, &downtime_id);
+	                  "Some downtime comment", now, now + duration,
+	                  fixed, triggered_by, duration, &downtime_id);
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
 	ck_assert(dt != NULL);
@@ -413,18 +411,18 @@ START_TEST(host_flexible_scheduled_downtime_in_the_past)
 	unsigned long triggered_by = 0;
 	scheduled_downtime *dt = NULL;
 
-	ck_assert(ERROR == schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now-(duration*2), "Some downtime author",
-			"Some downtime comment", now-(duration*2), now-duration,
-			fixed, triggered_by, duration, &downtime_id));
+	ck_assert(ERROR == schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now - (duration * 2), "Some downtime author",
+	                                     "Some downtime comment", now - (duration * 2), now - duration,
+	                                     fixed, triggered_by, duration, &downtime_id));
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
 	ck_assert(dt == NULL);
 
 
 	/* schedule a downtime that starts in the past, but ends in the future */
-	ck_assert(OK == schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now - (duration*0.5), "Some downtime author",
-				"Some downtime comment", now - (duration * 0.5), now + (duration * 0.5),
-				fixed, triggered_by, duration, &downtime_id));
+	ck_assert(OK == schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now - (duration * 0.5), "Some downtime author",
+	                                  "Some downtime comment", now - (duration * 0.5), now + (duration * 0.5),
+	                                  fixed, triggered_by, duration, &downtime_id));
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
 	ck_assert(dt != NULL);
@@ -442,9 +440,9 @@ START_TEST(host_flexible_scheduled_downtime_triggered_when_host_down)
 	scheduled_downtime *dt = NULL;
 
 	/* schedule a downtime that starts in the past, but ends in the future */
-	ck_assert(OK == schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now - (duration*0.5), "Some downtime author",
-				"Some downtime comment", now - (duration * 0.5), now + (duration * 0.5),
-				fixed, triggered_by, duration, &downtime_id));
+	ck_assert(OK == schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now - (duration * 0.5), "Some downtime author",
+	                                  "Some downtime comment", now - (duration * 0.5), now + (duration * 0.5),
+	                                  fixed, triggered_by, duration, &downtime_id));
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
 	ck_assert(dt != NULL);
@@ -475,8 +473,8 @@ START_TEST(host_triggered_scheduled_downtime)
 	scheduled_downtime *triggered_dt = NULL;
 
 	ck_assert(OK == schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author",
-				"Some downtime comment", now, now + duration,
-				fixed, triggered_by, duration, &downtime_id));
+	                                  "Some downtime comment", now, now + duration,
+	                                  fixed, triggered_by, duration, &downtime_id));
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
 	ck_assert(dt != NULL);
@@ -484,8 +482,8 @@ START_TEST(host_triggered_scheduled_downtime)
 	/* now schedule a downtime that's triggered by the one we just scheduled */
 	triggered_by = downtime_id;
 	ck_assert(OK == schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author",
-				"Some downtime comment", now, now + duration,
-				fixed, triggered_by, duration, &triggered_downtime_id));
+	                                  "Some downtime comment", now, now + duration,
+	                                  fixed, triggered_by, duration, &triggered_downtime_id));
 
 	triggered_dt = find_downtime(ANY_DOWNTIME, downtime_id);
 	ck_assert(triggered_dt != NULL);
@@ -499,8 +497,6 @@ START_TEST(host_triggered_scheduled_downtime)
 
 	/* ... and the triggered downtime should expire when the first downtime does */
 	ck_assert(OK == handle_scheduled_downtime(dt));
-	ck_assert(dt->is_in_effect == FALSE);
-	ck_assert(triggered_dt->is_in_effect == FALSE);
 	ck_assert_int_eq(0, hst->scheduled_downtime_depth);
 }
 END_TEST
@@ -517,8 +513,8 @@ START_TEST(host_triggered_scheduled_downtime_across_reload)
 	scheduled_downtime *triggered_dt = NULL;
 
 	ck_assert(OK == schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author",
-				"Some downtime comment", now, now + duration,
-				fixed, triggered_by, duration, &downtime_id));
+	                                  "Some downtime comment", now, now + duration,
+	                                  fixed, triggered_by, duration, &downtime_id));
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
 	ck_assert(dt != NULL);
@@ -526,8 +522,8 @@ START_TEST(host_triggered_scheduled_downtime_across_reload)
 	/* now schedule a downtime that's triggered by the one we just scheduled */
 	triggered_by = downtime_id;
 	ck_assert(OK == schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author",
-				"Some downtime comment", now, now + duration,
-				fixed, triggered_by, duration, &triggered_downtime_id));
+	                                  "Some downtime comment", now, now + duration,
+	                                  fixed, triggered_by, duration, &triggered_downtime_id));
 
 	triggered_dt = find_downtime(ANY_DOWNTIME, downtime_id);
 	ck_assert(triggered_dt != NULL);
@@ -548,8 +544,6 @@ START_TEST(host_triggered_scheduled_downtime_across_reload)
 
 	/* ... and the triggered downtime should expire when the first downtime does */
 	ck_assert(OK == handle_scheduled_downtime(dt));
-	ck_assert(dt->is_in_effect == FALSE);
-	ck_assert(triggered_dt->is_in_effect == FALSE);
 	ck_assert_int_eq(0, hst->scheduled_downtime_depth);
 }
 END_TEST
@@ -568,15 +562,15 @@ START_TEST(host_triggered_and_fixed_scheduled_downtime)
 	scheduled_downtime *fixed_dt = NULL;
 
 	ck_assert(OK == schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author",
-				"Some downtime comment", now, now + duration,
-				fixed, triggered_by, duration, &downtime_id));
+	                                  "Some downtime comment", now, now + duration,
+	                                  fixed, triggered_by, duration, &downtime_id));
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
 	ck_assert(dt != NULL);
 
 	ck_assert(OK == schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author",
-				"Some downtime comment", now, now + duration,
-				fixed, triggered_by, duration, &fixed_downtime_id));
+	                                  "Some downtime comment", now, now + duration,
+	                                  fixed, triggered_by, duration, &fixed_downtime_id));
 
 
 	fixed_dt = find_downtime(ANY_DOWNTIME, fixed_downtime_id);
@@ -585,8 +579,8 @@ START_TEST(host_triggered_and_fixed_scheduled_downtime)
 	/* now schedule a downtime that's triggered by the one we just scheduled */
 	triggered_by = downtime_id;
 	ck_assert(OK == schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author",
-				"Some downtime comment", now, now + duration,
-				fixed, triggered_by, duration, &triggered_downtime_id));
+	                                  "Some downtime comment", now, now + duration,
+	                                  fixed, triggered_by, duration, &triggered_downtime_id));
 
 	triggered_dt = find_downtime(ANY_DOWNTIME, downtime_id);
 	ck_assert(triggered_dt != NULL);
@@ -605,13 +599,10 @@ START_TEST(host_triggered_and_fixed_scheduled_downtime)
 
 	/* ... and the triggered downtime should expire when the first downtime does ... */
 	ck_assert(OK == handle_scheduled_downtime(dt));
-	ck_assert(dt->is_in_effect == FALSE);
-	ck_assert(triggered_dt->is_in_effect == FALSE);
 	ck_assert_int_eq(1, hst->scheduled_downtime_depth);
 
 	/* ... but the regular downtime has to expire by itself (i.e, it's unaffected by the other ones) */
 	ck_assert(OK == handle_scheduled_downtime(fixed_dt));
-	ck_assert(fixed_dt->is_in_effect == FALSE);
 	ck_assert_int_eq(0, hst->scheduled_downtime_depth);
 }
 END_TEST
@@ -646,8 +637,8 @@ START_TEST(service_triggered_scheduled_downtime)
 	clock_gettime(CLOCK_MONOTONIC, &event_time_stop_triggered);
 
 	ck_assert(OK == schedule_downtime(SERVICE_DOWNTIME, TARGET_HOST_NAME, TARGET_SERVICE_NAME, now, "Some downtime author",
-				"Some downtime comment", now, now + duration,
-				fixed, triggered_by, duration, &downtime_id));
+	                                  "Some downtime comment", now, now + duration,
+	                                  fixed, triggered_by, duration, &downtime_id));
 
 	dt = find_downtime(SERVICE_DOWNTIME, downtime_id);
 	ck_assert(dt != NULL);
@@ -655,8 +646,8 @@ START_TEST(service_triggered_scheduled_downtime)
 	/* now schedule a downtime that's triggered by the one we just scheduled */
 	triggered_by = downtime_id;
 	ck_assert(OK == schedule_downtime(SERVICE_DOWNTIME, TARGET_HOST_NAME, TARGET_SERVICE_NAME1, now, "Some downtime author",
-				"Some downtime comment", now, now + duration,
-				fixed, triggered_by, duration, &triggered_downtime_id));
+	                                  "Some downtime comment", now, now + duration,
+	                                  fixed, triggered_by, duration, &triggered_downtime_id));
 
 	triggered_dt = find_downtime(ANY_DOWNTIME, triggered_downtime_id);
 	ck_assert(triggered_dt != NULL);
@@ -670,7 +661,7 @@ START_TEST(service_triggered_scheduled_downtime)
 	ck_assert(dt->is_in_effect == TRUE);
 	ck_assert(triggered_dt->is_in_effect == TRUE);
 	/* just to make sure that the triggered flex_downtime_start is the same as the triggering downtime's flex_downtime_start	 */
-	ck_assert(triggered_dt->flex_downtime_start == dt->flex_downtime_start );
+	ck_assert(triggered_dt->flex_downtime_start == dt->flex_downtime_start);
 	/* make sure the the stop event is scheduled after the current time */
 	ck_assert(event_time_stop_triggered.tv_sec < triggered_dt->stop_event->event_time.tv_sec);
 	ck_assert_int_eq(1, svc->scheduled_downtime_depth);
@@ -679,8 +670,6 @@ START_TEST(service_triggered_scheduled_downtime)
 
 	/* ... and the triggered downtime should expire when the first downtime does */
 	ck_assert(OK == handle_scheduled_downtime(dt));
-	ck_assert(dt->is_in_effect == FALSE);
-	ck_assert(triggered_dt->is_in_effect == FALSE);
 	ck_assert_int_eq(0, svc->scheduled_downtime_depth);
 	ck_assert_int_eq(0, svc1->scheduled_downtime_depth);
 }
@@ -723,19 +712,19 @@ START_TEST(service_flexible_scheduled_downtimes_service_down_notification)
 	svc->max_attempts = 0;
 
 	ck_assert(OK == schedule_downtime(SERVICE_DOWNTIME, TARGET_HOST_NAME, TARGET_SERVICE_NAME, now, "Some downtime author",
-			"Some downtime comment", now, now + duration,
-			fixed, triggered_by, duration, &downtime_id));
+	                                  "Some downtime comment", now, now + duration,
+	                                  fixed, triggered_by, duration, &downtime_id));
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
 
 	ck_assert(dt != NULL);
 
-	ck_assert_int_eq(0,gettimeofday(&(cr.start_time) , NULL));
-	ck_assert_int_eq(0,gettimeofday(&(cr.finish_time) , NULL));
+	ck_assert_int_eq(0, gettimeofday(&(cr.start_time), NULL));
+	ck_assert_int_eq(0, gettimeofday(&(cr.finish_time), NULL));
 
-	 /*Use a temporary file to catch if notification happens, simply because there is not other way (any global variables)
-	 * to check whether it is trying to call the notification function
-	 */
+	/*Use a temporary file to catch if notification happens, simply because there is not other way (any global variables)
+	* to check whether it is trying to call the notification function
+	*/
 	open_debug_log();
 
 	// This will create a handle_downtime_start_event on the event queue
@@ -798,15 +787,15 @@ START_TEST(host_flexible_scheduled_downtimes_service_down_notification)
 	hst->max_attempts = 1;
 
 	ck_assert(OK == schedule_downtime(HOST_DOWNTIME, TARGET_HOST_NAME, NULL, now, "Some downtime author",
-			"Some downtime comment", now, now + duration,
-			fixed, triggered_by, duration, &downtime_id));
+	                                  "Some downtime comment", now, now + duration,
+	                                  fixed, triggered_by, duration, &downtime_id));
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
 
 	ck_assert(dt != NULL);
 
-	ck_assert_int_eq(0,gettimeofday(&(cr.start_time) , NULL));
-	ck_assert_int_eq(0,gettimeofday(&(cr.finish_time) , NULL));
+	ck_assert_int_eq(0, gettimeofday(&(cr.start_time), NULL));
+	ck_assert_int_eq(0, gettimeofday(&(cr.finish_time), NULL));
 
 	/* Use a temporary file to catch if notification happens, simply because there is not other way (any global variables)
 	 * to check whether it is trying to call the notification function
@@ -834,7 +823,7 @@ START_TEST(host_flexible_scheduled_downtimes_service_down_notification)
 }
 END_TEST
 
-Suite*
+Suite *
 scheduled_downtimes_suite(void)
 {
 	Suite *s = suite_create("Scheduled downtimes");

@@ -1,3 +1,39 @@
+naemon-core (1.2.4) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Naemon Development Team <naemon-dev@monitoring-lists.org>  Wed, 03 Mar 2021 10:50:05 +0100
+
+naemon-core (1.2.3) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Naemon Development Team <naemon-dev@monitoring-lists.org>  Mon, 07 Dec 2020 11:57:00 +0100
+
+naemon-core (1.2.2) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Naemon Development Team <naemon-dev@monitoring-lists.org>  Fri, 13 Nov 2020 11:31:55 +0100
+
+naemon-core (1.2.1) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Naemon Development Team <naemon-dev@monitoring-lists.org>  Mon, 13 Jul 2020 14:57:49 +0200
+
+naemon-core (1.2.0) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Naemon Development Team <naemon-dev@monitoring-lists.org>  Mon, 17 Feb 2020 13:43:30 +0100
+
+naemon-core (1.1.0) UNRELEASED; urgency=low
+
+  * new upstream release
+
+ -- Naemon Development Team <naemon-dev@monitoring-lists.org>  Mon, 02 Sep 2019 16:36:48 +0200
+
 naemon-core (1.0.10) UNRELEASED; urgency=low
 
   * new upstream release

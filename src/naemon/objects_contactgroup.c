@@ -12,7 +12,7 @@ contactgroup **contactgroup_ary = NULL;
 
 int init_objects_contactgroup(int elems)
 {
-	contactgroup_ary = nm_calloc(elems, sizeof(contactgroup*));
+	contactgroup_ary = nm_calloc(elems, sizeof(contactgroup *));
 	contactgroup_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;
 }

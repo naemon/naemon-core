@@ -133,7 +133,7 @@ int nsock_write_all(int fd, const void *buf, size_t nbyte)
 {
 	size_t c = 0;
 	int ret = 0;
-	while ( c < nbyte ) {
+	while (c < nbyte) {
 		ret = write(fd, (char *) buf + c, nbyte - c);
 		if (ret < 0) {
 			if (errno == EINTR || errno == EAGAIN)

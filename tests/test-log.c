@@ -24,9 +24,9 @@ START_TEST(common_case)
 
 	// please fail if the files already exist:
 	ck_assert_msg(access(log_file, F_OK) == -1,
-			"Log file '%s' already exists - cowardly refusing to unlink it for you", log_file);
+	              "Log file '%s' already exists - cowardly refusing to unlink it for you", log_file);
 	ck_assert_msg(access(rotated_file, F_OK) == -1,
-			"Log file '%s' already exists - cowardly refusing to unlink it for you", rotated_file);
+	              "Log file '%s' already exists - cowardly refusing to unlink it for you", rotated_file);
 
 	ret = write_to_log("Log information", -1, &log_ts1);
 	ck_assert_int_eq(OK, ret);
@@ -54,7 +54,7 @@ START_TEST(common_case)
 }
 END_TEST
 
-Suite*
+Suite *
 checks_suite(void)
 {
 	Suite *s = suite_create("Logs");

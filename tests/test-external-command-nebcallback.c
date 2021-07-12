@@ -13,17 +13,20 @@ int test_neb_exit_code;
 
 struct external_command *test_command = NULL;
 
-static int test_neb_callback(int type, void *ds) {
+static int test_neb_callback(int type, void *ds)
+{
 	test_neb_exec_count++;
 	return test_neb_exit_code;
 }
 
-static int test_command_handler(const struct external_command *ext_command, time_t entry_time) {
+static int test_command_handler(const struct external_command *ext_command, time_t entry_time)
+{
 	test_command_exec_count++;
 	return OK;
 }
 
-static void setup_neb(void) {
+static void setup_neb(void)
+{
 	int ret = OK;
 	ret = neb_init_callback_list();
 	ck_assert_int_eq(OK, ret);
@@ -38,13 +41,15 @@ static void setup_neb(void) {
 	ret = neb_register_callback(NEBCALLBACK_EXTERNAL_COMMAND_DATA, test_neb_module.module_handle, 0,  test_neb_callback);
 	ck_assert_int_eq(OK, ret);
 }
-static void teardown_neb(void) {
+static void teardown_neb(void)
+{
 	registered_commands_deinit();
 
 	neb_free_callback_list();
 }
 
-START_TEST( test_cb_process_external_command1_ok) {
+START_TEST(test_cb_process_external_command1_ok)
+{
 	test_neb_exit_code = NEB_OK;
 
 	test_command_exec_count = 0;
@@ -55,7 +60,8 @@ START_TEST( test_cb_process_external_command1_ok) {
 }
 END_TEST
 
-START_TEST( test_cb_process_external_command1_cancel) {
+START_TEST(test_cb_process_external_command1_cancel)
+{
 	test_neb_exit_code = NEBERROR_CALLBACKCANCEL;
 
 	test_command_exec_count = 0;
@@ -66,7 +72,8 @@ START_TEST( test_cb_process_external_command1_cancel) {
 }
 END_TEST
 
-START_TEST( test_cb_process_external_command1_override) {
+START_TEST(test_cb_process_external_command1_override)
+{
 	test_neb_exit_code = NEBERROR_CALLBACKOVERRIDE;
 
 	test_command_exec_count = 0;
@@ -77,7 +84,8 @@ START_TEST( test_cb_process_external_command1_override) {
 }
 END_TEST
 
-START_TEST( test_cb_process_external_command2_ok) {
+START_TEST(test_cb_process_external_command2_ok)
+{
 	test_neb_exit_code = NEB_OK;
 
 	test_command_exec_count = 0;
@@ -88,7 +96,8 @@ START_TEST( test_cb_process_external_command2_ok) {
 }
 END_TEST
 
-START_TEST( test_cb_process_external_command2_cancel) {
+START_TEST(test_cb_process_external_command2_cancel)
+{
 	test_neb_exit_code = NEBERROR_CALLBACKCANCEL;
 
 	test_command_exec_count = 0;
@@ -99,7 +108,8 @@ START_TEST( test_cb_process_external_command2_cancel) {
 }
 END_TEST
 
-START_TEST( test_cb_process_external_command2_override) {
+START_TEST(test_cb_process_external_command2_override)
+{
 	test_neb_exit_code = NEBERROR_CALLBACKOVERRIDE;
 
 	test_command_exec_count = 0;
@@ -110,7 +120,7 @@ START_TEST( test_cb_process_external_command2_override) {
 }
 END_TEST
 
-Suite*
+Suite *
 neb_cb_suite(void)
 {
 	Suite *s = suite_create("NEB Callbacks");

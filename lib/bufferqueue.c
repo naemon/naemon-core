@@ -78,9 +78,9 @@ int nm_bufferqueue_peek(nm_bufferqueue *bq, size_t size, void *buffer)
 	while ((left_in_buffer = current_buf->bqb_bufsize - current_buf->bqb_offset) <= size) {
 		if (buffer)
 			memcpy(
-				buffer + used,
-				current_buf->bqb_buf + current_buf->bqb_offset,
-				left_in_buffer);
+			    buffer + used,
+			    current_buf->bqb_buf + current_buf->bqb_offset,
+			    left_in_buffer);
 		current_buf = current_buf->bqb_next;
 		size -= left_in_buffer;
 		used += left_in_buffer;
@@ -95,9 +95,9 @@ int nm_bufferqueue_peek(nm_bufferqueue *bq, size_t size, void *buffer)
 	if (size) {
 		if (buffer)
 			memcpy(
-				buffer + used,
-				current_buf->bqb_buf + current_buf->bqb_offset,
-				size);
+			    buffer + used,
+			    current_buf->bqb_buf + current_buf->bqb_offset,
+			    size);
 	}
 
 	return 0;
@@ -199,7 +199,7 @@ int nm_bufferqueue_unshift_to_delim(nm_bufferqueue *bq, const char *delim, size_
 			*size += (size_t)ptr - ioc_start;
 			*size += delim_len;
 
-			if ((*buffer = calloc(*size, 1)) == NULL )
+			if ((*buffer = calloc(*size, 1)) == NULL)
 				return -1;
 
 			if (nm_bufferqueue_unshift(bq, *size, *buffer)) {

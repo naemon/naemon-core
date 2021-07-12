@@ -199,7 +199,7 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv)
 				set_state(STATE_INSQ | STATE_INARG);
 				continue;
 			}
-			/* FALLTHROUGH */
+		/* FALLTHROUGH */
 		case '"':
 			if (have_state(STATE_INSQ))
 				break;
@@ -314,6 +314,9 @@ void runcmd_init(void)
 		}
 	}
 #endif
+
+	/* reset pipe handling so child processes can use shell pipes */
+	signal(SIGPIPE, SIG_DFL);
 
 	if (!pids)
 		pids = calloc(maxfd, sizeof(pid_t));

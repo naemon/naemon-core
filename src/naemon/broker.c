@@ -511,7 +511,7 @@ void broker_contact_status(int type, int flags, int attr, contact *cntct)
 
 
 /* send notification data to broker */
-neb_cb_resultset * broker_notification_data(int type, int flags, int attr, int notification_type, int reason_type, struct timeval start_time, struct timeval end_time, void *data, char *ack_author, char *ack_data, int escalated, int contacts_notified)
+neb_cb_resultset *broker_notification_data(int type, int flags, int attr, int notification_type, int reason_type, struct timeval start_time, struct timeval end_time, void *data, char *ack_author, char *ack_data, int escalated, int contacts_notified)
 {
 	nebstruct_notification_data ds;
 	host *temp_host = NULL;

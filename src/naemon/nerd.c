@@ -35,7 +35,7 @@ struct nerd_channel {
 	unsigned int required_options; /* event_broker_options required for this channel */
 	unsigned int num_callbacks;
 	unsigned int callbacks[NEBCALLBACK_NUMITEMS];
-	int (*handler)(int , void *); /* callback handler for this channel */
+	int (*handler)(int, void *);  /* callback handler for this channel */
 	objectlist *subscriptions; /* subscriber list */
 };
 

@@ -59,17 +59,17 @@ void checks_init_services(void)
 		/* update status of all services (scheduled or not) */
 		update_service_status(temp_service, FALSE);
 
- 		/* Determine the delay used for the first check event.
- 		 * If use_retained_scheduling_info is enabled, we use the previously set
- 		 * next_check. If the check was missed, schedule it within the next
- 		 * retained_scheduling_randomize_window. If more than one check was missed, we schedule the check
- 		 * randomly instead. If the next_check is more than one check_interval in
- 		 * the future, we also schedule the next check randomly. This indicates
- 		 * that the check_interval has been lowered over restarts.
- 		 */
+		/* Determine the delay used for the first check event.
+		 * If use_retained_scheduling_info is enabled, we use the previously set
+		 * next_check. If the check was missed, schedule it within the next
+		 * retained_scheduling_randomize_window. If more than one check was missed, we schedule the check
+		 * randomly instead. If the next_check is more than one check_interval in
+		 * the future, we also schedule the next check randomly. This indicates
+		 * that the check_interval has been lowered over restarts.
+		 */
 		if (use_retained_scheduling_info == TRUE &&
-		    temp_service->next_check > current_time-get_service_check_interval_s(temp_service) &&
-		    temp_service->next_check <= current_time+get_service_check_interval_s(temp_service)) {
+		    temp_service->next_check > current_time - get_service_check_interval_s(temp_service) &&
+		    temp_service->next_check <= current_time + get_service_check_interval_s(temp_service)) {
 			if (temp_service->next_check < current_time) {
 				int scheduling_window = retained_scheduling_randomize_window;
 				if (retained_scheduling_randomize_window > get_service_check_interval_s(temp_service)) {
@@ -77,7 +77,7 @@ void checks_init_services(void)
 				}
 				delay = ranged_urand(0, scheduling_window);
 			} else {
-				delay = temp_service->next_check-current_time;
+				delay = temp_service->next_check - current_time;
 			}
 		} else {
 			delay = ranged_urand(0, get_service_check_interval_s(temp_service));
@@ -93,7 +93,7 @@ void checks_init_services(void)
 		schedule_event(service_freshness_check_interval, check_service_result_freshness, NULL);
 	}
 
-	if(check_orphaned_services == TRUE) {
+	if (check_orphaned_services == TRUE) {
 		schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_for_orphaned_services_eventhandler, NULL);
 	}
 }
@@ -111,20 +111,21 @@ void schedule_next_service_check(service *svc, time_t delay, int options)
 	/* A closer check is already scheduled, skip this scheduling */
 	if (svc->next_check_event != NULL && svc->next_check < delay + current_time) {
 		/*... unless this is a forced check or postponement is allowed*/
-		if(!(options & (CHECK_OPTION_FORCE_EXECUTION | CHECK_OPTION_ALLOW_POSTPONE))) {
+		if (!(options & (CHECK_OPTION_FORCE_EXECUTION | CHECK_OPTION_ALLOW_POSTPONE))) {
 			return;
 		}
 	}
 
 	/* We have a scheduled check, drop that event to make space for the new event */
-	if(svc->next_check_event != NULL) {
+	if (svc->next_check_event != NULL) {
 		destroy_event(svc->next_check_event);
 	}
 
 	/* Schedule the event */
 	svc->check_options = options;
 	svc->next_check = delay + current_time;
-	svc->next_check_event = schedule_event(delay, handle_service_check_event, (void*)svc);
+	svc->last_update = current_time;
+	svc->next_check_event = schedule_event(delay, handle_service_check_event, (void *)svc);
 
 	/* update the status log, since next_check and check_options is updated */
 	update_service_status(svc, FALSE);
@@ -146,9 +147,9 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 	int options = temp_service->check_options;
 	host *temp_host = NULL;
 
-    log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' handle_service_check_event()...\n", temp_service->description, temp_service->host_name);
+	log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' handle_service_check_event()...\n", temp_service->description, temp_service->host_name);
 
-	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
+	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 
 		/* get event latency */
 		gettimeofday(&tv, NULL);
@@ -201,18 +202,36 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 			/* check service dependencies for execution */
 			log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' checking dependencies...\n", temp_service->description, temp_service->host_name);
 			if (check_service_dependencies(temp_service, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
+				if (service_skip_check_dependency_status >= 0) {
+					temp_service->current_state = service_skip_check_dependency_status;
+					if (strstr(temp_service->plugin_output, "(service dependency check failed)") == NULL) {
+						char *old_output = nm_strdup(temp_service->plugin_output);
+						nm_free(temp_service->plugin_output);
+						nm_asprintf(&temp_service->plugin_output, "(service dependency check failed) was: %s", old_output);
+						nm_free(old_output);
+					}
+				}
 				log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' failed dependency check. Aborting check\n", temp_service->description, temp_service->host_name);
 				return;
 			}
 
 			/* check if host is up - if not, do not perform check */
-			if(host_down_disable_service_checks) {
-				if((temp_host = temp_service->host_ptr) == NULL) {
+			if (host_down_disable_service_checks) {
+				if ((temp_host = temp_service->host_ptr) == NULL) {
 					log_debug_info(DEBUGL_CHECKS, 2, "Host pointer NULL in handle_service_check_event().\n");
 					return;
 				} else {
-					if(temp_host->current_state != STATE_UP) {
+					if (temp_host->current_state != STATE_UP) {
 						log_debug_info(DEBUGL_CHECKS, 2, "Host state not UP, so service check will not be performed - will be rescheduled as normal.\n");
+						if (service_skip_check_host_down_status >= 0) {
+							temp_service->current_state = service_skip_check_host_down_status;
+							if (strstr(temp_service->plugin_output, "(host is down)") == NULL) {
+								char *old_output = nm_strdup(temp_service->plugin_output);
+								nm_free(temp_service->plugin_output);
+								nm_asprintf(&temp_service->plugin_output, "(host is down) was: %s", old_output);
+								nm_free(old_output);
+							}
+						}
 						return;
 					}
 				}
@@ -262,6 +281,11 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 		               svc->description, svc->host_name, svc->id,
 		               neb_result == NEBERROR_CALLBACKCANCEL ? "cancelled" : "overridden");
 	}
+
+	/* get the command start time */
+	gettimeofday(&start_time, NULL);
+	svc->last_update = start_time.tv_sec;
+
 	/* neb module wants to cancel the service check - the check will be rescheduled for a later time by the scheduling logic */
 	if (neb_result == NEBERROR_CALLBACKCANCEL) {
 		return ERROR;
@@ -297,9 +321,6 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 		return ERROR;
 	}
 
-	/* get the command start time */
-	gettimeofday(&start_time, NULL);
-
 	cr = nm_calloc(1, sizeof(*cr));
 	init_check_result(cr);
 
@@ -330,7 +351,7 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	}
 
 	/* paw off the check to a worker to run */
-	runchk_result = wproc_run_callback(processed_command, service_check_timeout, handle_worker_service_check, (void*)cr, &mac);
+	runchk_result = wproc_run_callback(processed_command, service_check_timeout, handle_worker_service_check, (void *)cr, &mac);
 	if (runchk_result == ERROR) {
 		nm_log(NSLOG_RUNTIME_ERROR,
 		       "Unable to send check for service '%s' on host '%s' to worker (ret=%d)\n", svc->description, svc->host_name, runchk_result);
@@ -356,7 +377,7 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 static void handle_worker_service_check(wproc_result *wpres, void *arg, int flags)
 {
 	check_result *cr = (check_result *)arg;
-	if(wpres) {
+	if (wpres) {
 		memcpy(&cr->rusage, &wpres->rusage, sizeof(wpres->rusage));
 		cr->start_time.tv_sec = wpres->start.tv_sec;
 		cr->start_time.tv_usec = wpres->start.tv_usec;
@@ -847,9 +868,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 			if (state_change == TRUE || hard_state_change == TRUE)
 				temp_service->last_state_change = temp_service->last_check;
 			if (hard_state_change == TRUE) {
-				temp_service->last_hard_state_change = temp_service->last_check;
 				temp_service->state_type = HARD_STATE;
-				temp_service->last_hard_state = temp_service->current_state;
 			}
 
 			/* put service into a hard state without attempting check retries and don't send out notifications about it */
@@ -889,6 +908,10 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 					/* run the service event handler to handle the hard state */
 					handle_service_event(temp_service);
+
+					/* save the last hard state */
+					temp_service->last_hard_state_change = temp_service->last_check;
+					temp_service->last_hard_state = temp_service->current_state;
 				}
 			}
 
@@ -911,9 +934,9 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 					if (temp_service->retry_interval != 0.0) {
 						/* respect retry interval even if an earlier check is scheduled */
 						schedule_next_service_check(temp_service,
-								get_service_retry_interval_s(temp_service),
-								CHECK_OPTION_ALLOW_POSTPONE
-								);
+						                            get_service_retry_interval_s(temp_service),
+						                            CHECK_OPTION_ALLOW_POSTPONE
+						                           );
 					}
 				}
 			}
@@ -982,7 +1005,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 			/* (re)send notifications out about this service problem if the host is up (and was at last check also) and the dependencies were okay...
 			 * no need to send the notifications if any downtime will be started on this service*/
-			if (num_downtimes_start == 0 )
+			if (num_downtimes_start == 0)
 				service_notification(temp_service, NOTIFICATION_NORMAL, NULL, NULL, NOTIFICATION_OPTION_NONE);
 
 			/* run the service event handler if we changed state from the last hard state or if this service is flagged as being volatile */
@@ -1009,27 +1032,27 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	}
 
 	broker_service_check(
-		NEBTYPE_SERVICECHECK_PROCESSED,
-		NEBFLAG_NONE,
-		alert_recorded | first_recorded_state,
-		temp_service,
-		temp_service->check_type,
-		queued_check_result->start_time,
-		queued_check_result->finish_time,
-		NULL,
-		temp_service->latency,
-		temp_service->execution_time,
-		service_check_timeout,
-		queued_check_result->early_timeout,
-		queued_check_result->return_code,
-		NULL,
-		queued_check_result);
+	    NEBTYPE_SERVICECHECK_PROCESSED,
+	    NEBFLAG_NONE,
+	    alert_recorded | first_recorded_state,
+	    temp_service,
+	    temp_service->check_type,
+	    queued_check_result->start_time,
+	    queued_check_result->finish_time,
+	    temp_service->check_command,
+	    temp_service->latency,
+	    temp_service->execution_time,
+	    service_check_timeout,
+	    queued_check_result->early_timeout,
+	    queued_check_result->return_code,
+	    NULL,
+	    queued_check_result);
 
 	/* set the checked flag */
 	temp_service->has_been_checked = TRUE;
 
 	/* make sure there is a next check event scheduled */
-	if(temp_service->next_check_event == NULL && temp_service->check_interval != 0.0) {
+	if (temp_service->next_check_event == NULL && temp_service->check_interval != 0.0) {
 		schedule_next_service_check(temp_service, get_service_check_interval_s(temp_service), CHECK_OPTION_NONE);
 	}
 
@@ -1049,6 +1072,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	nm_free(old_plugin_output);
 	nm_free(old_long_plugin_output);
 
+	temp_service->last_update = current_time;
 	return OK;
 }
 
@@ -1091,8 +1115,8 @@ static void check_for_orphaned_services_eventhandler(struct nm_event_execution_p
 
 				log_debug_info(DEBUGL_CHECKS, 1, "Service '%s' on host '%s' was orphaned, so we're scheduling an immediate check...\n", temp_service->description, temp_service->host_name);
 				log_debug_info(DEBUGL_CHECKS, 1, "  next_check=%lu (%s); last_check=%lu (%s);\n",
-							   temp_service->next_check, ctime(&temp_service->next_check),
-							   temp_service->last_check, ctime(&temp_service->last_check));
+				               temp_service->next_check, ctime(&temp_service->next_check),
+				               temp_service->last_check, ctime(&temp_service->last_check));
 
 				/* decrement the number of running service checks */
 				if (currently_running_service_checks > 0)
@@ -1221,7 +1245,7 @@ int check_service_dependencies(service *svc, int dependency_type)
 			return DEPENDENCIES_FAILED;
 
 		/* check for pending flag */
-		if(temp_service->has_been_checked == FALSE && flag_isset(temp_dependency->failure_options, OPT_PENDING))
+		if (temp_service->has_been_checked == FALSE && flag_isset(temp_dependency->failure_options, OPT_PENDING))
 			return DEPENDENCIES_FAILED;
 
 		/* immediate dependencies ok at this point - check parent dependencies if necessary */

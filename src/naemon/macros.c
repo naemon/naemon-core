@@ -39,16 +39,14 @@ static char **macro_x = NULL;
  */
 static nagios_macros global_macros;
 
-struct grab_macro_value_parameters
-{
+struct grab_macro_value_parameters {
 	nagios_macros *mac;
 	int macro_type;
 	GString *buffer;
 	char *delimiter;
 };
 
-struct grab_custom_value_parameters
-{
+struct grab_custom_value_parameters {
 	nagios_macros *mac;
 	char *macro_name;
 	GString *buffer;
@@ -389,7 +387,7 @@ static int grab_custom_macro_value_r(nagios_macros *mac, char *macro_name, char 
 			g_tree_foreach(temp_hostgroup->members, concat_custom_macro_value, &params);
 			*output = nm_malloc(params.buffer->len + 1);
 			strncpy(*output, params.buffer->str, params.buffer->len);
-			*output[params.buffer->len] = 0;
+			(*output)[params.buffer->len] = 0;
 			g_string_free(params.buffer, TRUE);
 		}
 	}
@@ -838,9 +836,9 @@ static int grab_standard_host_macro_r(nagios_macros *mac, int macro_type, host *
 		*output = (char *)mkstr("%u", mac->host_ptr->hourly_value + host_services_value(mac->host_ptr));
 		break;
 
-		/***************/
-		/* MISC MACROS */
-		/***************/
+	/***************/
+	/* MISC MACROS */
+	/***************/
 	case MACRO_HOSTACKAUTHOR:
 	case MACRO_HOSTACKAUTHORNAME:
 	case MACRO_HOSTACKAUTHORALIAS:
@@ -1105,9 +1103,9 @@ static int grab_standard_service_macro_r(nagios_macros *mac, int macro_type, ser
 			nm_free(buf2);
 		}
 		break;
-		/***************/
-		/* MISC MACROS */
-		/***************/
+	/***************/
+	/* MISC MACROS */
+	/***************/
 	case MACRO_SERVICEACKAUTHOR:
 	case MACRO_SERVICEACKAUTHORNAME:
 	case MACRO_SERVICEACKAUTHORALIAS:
@@ -1513,12 +1511,12 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 	/* handle the macro */
 	switch (macro_type) {
 
-		/***************/
-		/* HOST MACROS */
-		/***************/
+	/***************/
+	/* HOST MACROS */
+	/***************/
 	case MACRO_HOSTGROUPNAMES:
 		*free_macro = TRUE;
-		/* FALLTHROUGH */
+	/* FALLTHROUGH */
 	case MACRO_HOSTNAME:
 	case MACRO_HOSTALIAS:
 	case MACRO_HOSTADDRESS:
@@ -1603,17 +1601,17 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 			g_tree_foreach(temp_hostgroup->members, concat_macrox_value, &params);
 			*output = nm_malloc(params.buffer->len + 1);
 			strncpy(*output, params.buffer->str, params.buffer->len);
-			*output[params.buffer->len] = 0;
+			(*output)[params.buffer->len] = 0;
 			g_string_free(params.buffer, TRUE);
 		}
 		break;
 
-		/********************/
-		/* HOSTGROUP MACROS */
-		/********************/
+	/********************/
+	/* HOSTGROUP MACROS */
+	/********************/
 	case MACRO_HOSTGROUPMEMBERS:
 		*free_macro = TRUE;
-		/* FALLTHROUGH */
+	/* FALLTHROUGH */
 	case MACRO_HOSTGROUPNAME:
 	case MACRO_HOSTGROUPALIAS:
 	case MACRO_HOSTGROUPNOTES:
@@ -1637,12 +1635,12 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		result = grab_standard_hostgroup_macro_r(mac, macro_type, temp_hostgroup, output);
 		break;
 
-		/******************/
-		/* SERVICE MACROS */
-		/******************/
+	/******************/
+	/* SERVICE MACROS */
+	/******************/
 	case MACRO_SERVICEGROUPNAMES:
 		*free_macro = TRUE;
-		/* FALLTHROUGH */
+	/* FALLTHROUGH */
 	case MACRO_SERVICEDESC:
 	case MACRO_SERVICESTATE:
 	case MACRO_SERVICESTATEID:
@@ -1752,15 +1750,15 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		}
 		break;
 
-		/***********************/
-		/* SERVICEGROUP MACROS */
-		/***********************/
+	/***********************/
+	/* SERVICEGROUP MACROS */
+	/***********************/
 	case MACRO_SERVICEGROUPMEMBERS:
 	case MACRO_SERVICEGROUPNOTES:
 	case MACRO_SERVICEGROUPNOTESURL:
 	case MACRO_SERVICEGROUPACTIONURL:
 		*free_macro = TRUE;
-		/* FALLTHROUGH */
+	/* FALLTHROUGH */
 	case MACRO_SERVICEGROUPNAME:
 	case MACRO_SERVICEGROUPALIAS:
 		/* a standard servicegroup macro */
@@ -1780,12 +1778,12 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		result = grab_standard_servicegroup_macro_r(mac, macro_type, temp_servicegroup, output);
 		break;
 
-		/******************/
-		/* CONTACT MACROS */
-		/******************/
+	/******************/
+	/* CONTACT MACROS */
+	/******************/
 	case MACRO_CONTACTGROUPNAMES:
 		*free_macro = TRUE;
-		/* FALLTHROUGH */
+	/* FALLTHROUGH */
 	case MACRO_CONTACTNAME:
 	case MACRO_CONTACTALIAS:
 	case MACRO_CONTACTEMAIL:
@@ -1841,12 +1839,12 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		}
 		break;
 
-		/***********************/
-		/* CONTACTGROUP MACROS */
-		/***********************/
+	/***********************/
+	/* CONTACTGROUP MACROS */
+	/***********************/
 	case MACRO_CONTACTGROUPMEMBERS:
 		*free_macro = TRUE;
-		/* FALLTHROUGH */
+	/* FALLTHROUGH */
 	case MACRO_CONTACTGROUPNAME:
 	case MACRO_CONTACTGROUPALIAS:
 		/* a standard contactgroup macro */
@@ -1866,9 +1864,9 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		result = grab_standard_contactgroup_macro(macro_type, temp_contactgroup, output);
 		break;
 
-		/***********************/
-		/* NOTIFICATION MACROS */
-		/***********************/
+	/***********************/
+	/* NOTIFICATION MACROS */
+	/***********************/
 	case MACRO_NOTIFICATIONTYPE:
 	case MACRO_NOTIFICATIONNUMBER:
 	case MACRO_NOTIFICATIONRECIPIENTS:
@@ -1883,9 +1881,9 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		*free_macro = FALSE;
 		break;
 
-		/********************/
-		/* DATE/TIME MACROS */
-		/********************/
+	/********************/
+	/* DATE/TIME MACROS */
+	/********************/
 	case MACRO_LONGDATETIME:
 	case MACRO_SHORTDATETIME:
 	case MACRO_DATE:
@@ -1899,9 +1897,9 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		*free_macro = TRUE;
 		break;
 
-		/*****************/
-		/* STATIC MACROS */
-		/*****************/
+	/*****************/
+	/* STATIC MACROS */
+	/*****************/
 	case MACRO_ADMINEMAIL:
 	case MACRO_ADMINPAGER:
 	case MACRO_MAINCONFIGFILE:
@@ -1923,9 +1921,9 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		*free_macro = FALSE;
 		break;
 
-		/******************/
-		/* SUMMARY MACROS */
-		/******************/
+	/******************/
+	/* SUMMARY MACROS */
+	/******************/
 	case MACRO_TOTALHOSTSUP:
 	case MACRO_TOTALHOSTSDOWN:
 	case MACRO_TOTALHOSTSUNREACHABLE:

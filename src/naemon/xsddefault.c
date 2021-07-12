@@ -232,6 +232,7 @@ int xsddefault_save_status_data(void)
 		fprintf(fp, "\tis_flapping=%d\n", temp_host->is_flapping);
 		fprintf(fp, "\tpercent_state_change=%.2f\n", temp_host->percent_state_change);
 		fprintf(fp, "\tscheduled_downtime_depth=%d\n", temp_host->scheduled_downtime_depth);
+		fprintf(fp, "\tlast_update=%lu\n", temp_host->last_update);
 		/* custom variables */
 		for (temp_customvariablesmember = temp_host->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 			if (temp_customvariablesmember->variable_name)
@@ -298,6 +299,7 @@ int xsddefault_save_status_data(void)
 		fprintf(fp, "\tis_flapping=%d\n", temp_service->is_flapping);
 		fprintf(fp, "\tpercent_state_change=%.2f\n", temp_service->percent_state_change);
 		fprintf(fp, "\tscheduled_downtime_depth=%d\n", temp_service->scheduled_downtime_depth);
+		fprintf(fp, "\tlast_update=%lu\n", temp_service->last_update);
 		/* custom variables */
 		for (temp_customvariablesmember = temp_service->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 			if (temp_customvariablesmember->variable_name)

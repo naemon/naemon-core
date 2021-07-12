@@ -16,7 +16,7 @@ contact **contact_ary = NULL;
 
 int init_objects_contact(int elems)
 {
-	contact_ary = nm_calloc(elems, sizeof(contact*));
+	contact_ary = nm_calloc(elems, sizeof(contact *));
 	contact_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;
 }
@@ -55,7 +55,7 @@ contact *create_contact(const char *name)
 	return new_contact;
 }
 
-int setup_contact_variables(contact *new_contact, const char *alias, const char *email, const char *pager, char * const *addresses, const char *svc_notification_period, const char *host_notification_period, int service_notification_options, int host_notification_options, int host_notifications_enabled, int service_notifications_enabled, int can_submit_commands, int retain_status_information, int retain_nonstatus_information, unsigned int minimum_value)
+int setup_contact_variables(contact *new_contact, const char *alias, const char *email, const char *pager, char *const *addresses, const char *svc_notification_period, const char *host_notification_period, int service_notification_options, int host_notification_options, int host_notifications_enabled, int service_notifications_enabled, int can_submit_commands, int retain_status_information, int retain_nonstatus_information, unsigned int minimum_value)
 {
 	timeperiod *htp = NULL, *stp = NULL;
 	int x = 0;

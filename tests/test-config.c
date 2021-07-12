@@ -23,7 +23,7 @@ START_TEST(services)
 	ck_assert_int_eq(OK, res);
 	res = read_all_object_data(TESTDIR "services/naemon.cfg");
 	ck_assert_int_eq(OK, res);
-	for (s = service_list, hits=0; s; s = s->next, hits++) {
+	for (s = service_list, hits = 0; s; s = s->next, hits++) {
 		if (!strcmp(s->description, "service3")) {
 			ck_assert_str_eq("from_template", s->display_name);
 		}
@@ -56,7 +56,7 @@ START_TEST(recursive)
 	ck_assert_int_eq(OK, res);
 	res = read_all_object_data(TESTDIR "recursive/naemon.cfg");
 	ck_assert_int_eq(OK, res);
-	for (h = host_list, hits=0; h; h = h->next, hits++) {
+	for (h = host_list, hits = 0; h; h = h->next, hits++) {
 		if (!strcmp(h->name, "host1")) {
 			ck_assert_str_eq("from_template", h->alias);
 			ck_assert_str_eq("", h->notes);
@@ -96,7 +96,7 @@ START_TEST(main_include)
 }
 END_TEST
 
-Suite*
+Suite *
 config_suite(void)
 {
 	Suite *s = suite_create("Config");

@@ -1,0 +1,37 @@
+name: citest
+
+on:
+  push:
+  pull_request:
+  release:
+
+jobs:
+  citest:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      #- name: Setup tmate session, see https://github.com/marketplace/actions/debugging-with-tmate
+      #  uses: mxschmitt/action-tmate@v3
+      - name: prepare machine
+        run: |
+          sudo apt-get install \
+              autoconf \
+              build-essential \
+              gperf \
+              check \
+              help2man \
+              python3-pip
+          sudo pip3 install --upgrade 'pip<21.0'
+          sudo pip3 --disable-pip-version-check install behave flake8
+
+      - name: run build
+        run: |
+          ./autogen.sh
+          make
+
+      - name: run tests
+        run: |
+          make check VERBOSE=1
+          make distcheck
+          flake8 features/
+          behave

@@ -8,7 +8,7 @@
 #include "logging.h"
 #include "globals.h"
 #include "nm_alloc.h"
-
+#include "sretention.h"
 
 /******************************************************************/
 /******************** FLAP DETECTION FUNCTIONS ********************/
@@ -79,7 +79,7 @@ void check_for_service_flapping(service *svc, int update)
 		svc->state_history_index = 0;
 
 	svc->percent_state_change = flapping_pct(svc->state_history, svc->state_history_index,
-		                                     MAX_STATE_HISTORY_ENTRIES);
+	                            MAX_STATE_HISTORY_ENTRIES);
 
 	log_debug_info(DEBUGL_FLAPPING, 2, "LFT=%.2f, HFT=%.2f, CPC=%.2f, PSC=%.2f%%\n", low_threshold, high_threshold, svc->percent_state_change, svc->percent_state_change);
 
@@ -161,7 +161,7 @@ void check_for_host_flapping(host *hst, int update, int actual_check)
 		hst->state_history_index = 0;
 
 	hst->percent_state_change = flapping_pct(hst->state_history, hst->state_history_index,
-	                                         MAX_STATE_HISTORY_ENTRIES);
+	                            MAX_STATE_HISTORY_ENTRIES);
 
 	log_debug_info(DEBUGL_FLAPPING, 2, "LFT=%.2f, HFT=%.2f, CPC=%.2f, PSC=%.2f%%\n", low_threshold, high_threshold, hst->percent_state_change, hst->percent_state_change);
 
@@ -423,6 +423,8 @@ void enable_host_flap_detection(host *hst)
 	if (hst->flap_detection_enabled == TRUE)
 		return;
 
+	pre_modify_host_attribute(hst, attr);
+
 	/* set the attribute modified flag */
 	hst->modified_attributes |= attr;
 
@@ -454,6 +456,8 @@ void disable_host_flap_detection(host *hst)
 	/* nothing to do... */
 	if (hst->flap_detection_enabled == FALSE)
 		return;
+
+	pre_modify_host_attribute(hst, attr);
 
 	/* set the attribute modified flag */
 	hst->modified_attributes |= attr;
@@ -524,6 +528,8 @@ void enable_service_flap_detection(service *svc)
 	if (svc->flap_detection_enabled == TRUE)
 		return;
 
+	pre_modify_service_attribute(svc, attr);
+
 	/* set the attribute modified flag */
 	svc->modified_attributes |= attr;
 
@@ -555,6 +561,8 @@ void disable_service_flap_detection(service *svc)
 	/* nothing to do... */
 	if (svc->flap_detection_enabled == FALSE)
 		return;
+
+	pre_modify_service_attribute(svc, attr);
 
 	/* set the attribute modified flag */
 	svc->modified_attributes |= attr;

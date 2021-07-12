@@ -8,7 +8,7 @@ Feature: Logging
         Then naemon should output a sensible error message
 
     Scenario: Output retention data log message when stopped
-        Given I start naemon
+        Given I start naemon and wait until it is ready
         When I stop naemon
         And I wait for 5 seconds
         Then naemon should not be running

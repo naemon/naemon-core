@@ -8,7 +8,8 @@ Homepage: http://www.naemon.org
 Bugs: https://github.com/naemon/naemon-core/issues
 Vcs-Browser: https://github.com/naemon/naemon-core
 Vcs-Git: git://github.com:naemon/naemon-core.git
-Build-Depends: debhelper (>= 9), gperf, chrpath, help2man, libicu-dev, pkg-config, libglib2.0-dev, fakeroot, autoconf, automake, libtool
+Build-Depends: debhelper (>= 9), gperf, chrpath, help2man, libicu-dev, pkg-config,
+  libglib2.0-dev, fakeroot, autoconf, automake, libtool
 Files:
    00000000000000000000000000000000 0000 naemon_1.0.0.orig.tar.gz
    00000000000000000000000000000000 0000 naemon_1.0.0-1.diff.tar.gz

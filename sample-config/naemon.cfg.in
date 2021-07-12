@@ -180,14 +180,6 @@ event_broker_options=-1
 #broker_module=/somewhere/module1.o
 #broker_module=/somewhere/module2.o arg1 arg2=3 debug=0
 
-# In order to provide drop-in support for new modules, you can also make use of
-# the include_dir directive. The include_dir directive causes Naemon to parse
-# any configuration (not just object configuration, as with cfg_dir) as if the
-# contents of the files in the pointed-to directory was included on this line.
-# The path to the directory is relative to the path of the main naemon.cfg
-# file.
-include_dir=module-conf.d
-
 # LOG ARCHIVE PATH
 # This is the directory where archived (rotated) log files are placed by the
 # logrotate daemon. It is used by out of core add-ons to discover the logfiles.
@@ -1046,6 +1038,29 @@ allow_empty_hostgroup_assignment=0
 
 #host_down_disable_service_checks=0
 
+# SET SERVICE/HOST STATUS WHEN SERVICE CHECK SKIPPED
+# These options will allow you to set the status of a service when its
+# service check is skipped due to one of two reasons:
+# 1) failed dependency check; 2) host not up
+# Number 2 can only happen if 'host_down_disable_service_checks' above
+# is set to 1.
+# Valid values for the service* options are:
+#     -1     Do not change the service status (default)
+#      0     Set the service status to STATE_OK
+#      1     Set the service status to STATE_WARNING
+#      2     Set the service status to STATE_CRITICAL
+#      3     Set the service status to STATE_UNKNOWN
+#service_skip_check_dependency_status=-1
+#service_skip_check_host_down_status=-1
+
+# The host_dependency_skip_check_status option will allow you to set the
+# status of a host when its check is skipped due to a failed dependency check.
+# Valid values for the host_dependency_skip_check_status are:
+#     -1     Do not change the service status (default)
+#      0     Set the host status to STATE_UP
+#      1     Set the host status to STATE_DOWN
+#      2     Set the host status to STATE_UNREACHABLE
+#host_skip_check_dependency_status=-1
 
 # CIRCULAR DEPENDENCIES (EXPERIMENTAL)
 # Allow for circular dependencies in naemon's host graph.
@@ -1056,3 +1071,11 @@ allow_empty_hostgroup_assignment=0
 # This feature is experimental and bugs might occur.
 
 allow_circular_dependencies=0
+
+# In order to provide drop-in support for new modules, you can also make use of
+# the include_dir directive. The include_dir directive causes Naemon to parse
+# any configuration (not just object configuration, as with cfg_dir) as if the
+# contents of the files in the pointed-to directory was included on this line.
+# The path to the directory is relative to the path of the main naemon.cfg
+# file.
+include_dir=module-conf.d

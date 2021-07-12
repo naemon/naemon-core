@@ -28,6 +28,7 @@ EXTRA_DIST += LEGAL
 EXTRA_DIST += THANKS
 EXTRA_DIST += UPGRADING
 EXTRA_DIST += naemon.rpmlintrc
+EXTRA_DIST += version.sh
 EXTRA_DIST += $(CONFIG_FILES:.cfg=.cfg.in)
 noinst_DATA = $(CONFIG_FILES)
 
@@ -246,3 +247,29 @@ rpm: dist
 
 deb:
 	debuild -i -us -uc -b
+
+version:
+	[ -e .git ] || { echo "changing versions only works in git clones!"; exit 1; }
+	[ `git status | grep -cP 'working (directory|tree) clean'` -eq 1 ] || { echo "git project is not clean, cannot tag version"; exit 1; }
+	OLDVERSION=$(shell grep ^VERSION version.sh | awk -F = '{ print $$2}'); \
+	NEWVERSION=$$(dialog --stdout --inputbox "New Version:" 0 0 "$$OLDVERSION"); \
+		if [ -n "$$NEWVERSION" ] && [ "$$NEWVERSION" != "$$OLDVERSION" ]; then \
+			sed -ri "s/$$OLDVERSION/$$NEWVERSION/" version.sh naemon-core.spec; \
+			sed -e 's/UNRELEASED/unstable/g' -i debian/changelog; \
+			DEBFULLNAME="Naemon Development Team" DEBEMAIL="Naemon Development <naemon-dev@monitoring-lists.org>" dch --newversion "$$NEWVERSION" --package "naemon-core" -D "UNRELEASED" --urgency "low" "new upstream release"; \
+			sed -e 's/unstable/UNRELEASED/g' -i debian/changelog; \
+			echo "$$NEWVERSION - $(shell date '+%b %d %Y')" > .NEWS; \
+			echo "===================" >> .NEWS; \
+			echo "Features:" >> .NEWS; \
+			echo "*" >> .NEWS; \
+			echo "" >> .NEWS; \
+			echo "Changed:" >> .NEWS; \
+			echo "*" >> .NEWS; \
+			echo "" >> .NEWS; \
+			echo "Bugfixes:" >> .NEWS; \
+			echo "*" >> .NEWS; \
+			echo "" >> .NEWS; \
+			echo "" >> .NEWS; \
+			cat .NEWS NEWS > NEWS.update && mv NEWS.update NEWS; \
+			rm .NEWS; \
+		fi

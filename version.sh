@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=1.0.10
+VERSION=1.2.4
 if test -e .git; then
     if hash git 2>/dev/null; then
         VERSION=$(git describe --tag --exact-match 2>/dev/null | sed -e 's/^v//')
@@ -11,10 +11,5 @@ if test -e .git; then
     fi
 fi
 
-if [ -e .naemon.official ]; then
-  echo -n "${VERSION}"
-else
-  echo -n "${VERSION}.source"
-fi
-
+echo -n "${VERSION}"
 exit 0

@@ -166,6 +166,9 @@ char *use_timezone = NULL;
 int allow_empty_hostgroup_assignment = DEFAULT_ALLOW_EMPTY_HOSTGROUP_ASSIGNMENT;
 int allow_circular_dependencies = DEFAULT_ALLOW_CIRCULAR_DEPENDENCIES;
 int host_down_disable_service_checks = DEFAULT_HOST_DOWN_DISABLE_SERVICE_CHECKS;
+int service_skip_check_dependency_status = DEFAULT_SKIP_CHECK_STATUS;
+int service_skip_check_host_down_status = DEFAULT_SKIP_CHECK_STATUS;
+int host_skip_check_dependency_status = DEFAULT_SKIP_CHECK_STATUS;
 
 static long long check_file_size(char *, unsigned long, struct rlimit);
 
@@ -296,8 +299,8 @@ void reset_sighandler(void)
 	for (i = 0; i < sizeof(signals) / sizeof(signals[0]); ++i) {
 		if (signal(signals[i], SIG_DFL) == SIG_ERR) {
 			nm_log(NSLOG_RUNTIME_ERROR,
-					"Failed to reset signal handler for %s: %s",
-					strsignal(signals[i]), strerror(errno));
+			       "Failed to reset signal handler for %s: %s",
+			       strsignal(signals[i]), strerror(errno));
 		}
 	}
 }
@@ -321,7 +324,8 @@ void sighandler(int sig)
 	}
 }
 
-void signal_react() {
+void signal_react()
+{
 	int signum = sig_id;
 	if (signum <= 0)
 		return;
@@ -485,7 +489,7 @@ int signal_parent(int sig)
 {
 	if (write(upipe_fd[PIPE_WRITE], &sig, sizeof(int)) < 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Failed to signal parent: %s",
-			strerror(errno));
+		       strerror(errno));
 		return ERROR;
 	}
 	return OK;
@@ -530,8 +534,7 @@ int daemon_init(void)
 	/* check for SIGHUP */
 	if (val == 1 && pid == (int)getpid()) {
 		return OK;
-	}
-	else {
+	} else {
 
 		lock.l_type = F_WRLCK;
 		lock.l_start = 0;
@@ -554,20 +557,20 @@ int daemon_init(void)
 	 */
 	if (pipe(upipe_fd) < 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Failed to set up unnamned pipe: %s",
-			strerror(errno));
+		       strerror(errno));
 		return (ERROR);
 	}
 
 	if ((pid = (int)fork()) < 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Unable to fork out the daemon process: %s",
-			strerror(errno));
+		       strerror(errno));
 		return (ERROR);
 	} else if (pid != 0) {
 		/* parent stops - when child is done, we exit here */
 		int return_code = EXIT_FAILURE;
 		if (close(upipe_fd[PIPE_WRITE]) < 0) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Unable to close parent write end: %s",
-				strerror(errno));
+			       strerror(errno));
 			return_code = EXIT_FAILURE;
 		}
 		/*
@@ -576,12 +579,12 @@ int daemon_init(void)
 		 */
 		if (read(upipe_fd[PIPE_READ], &return_code, sizeof(int)) < 0) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Unable to read from pipe: %s",
-				strerror(errno));
+			       strerror(errno));
 			return_code = EXIT_FAILURE;
 		}
 		if (close(upipe_fd[PIPE_READ]) < 0) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Unable to close parent read end: %s",
-				strerror(errno));
+			       strerror(errno));
 			return_code = EXIT_FAILURE;
 		}
 		if (return_code != OK) {
@@ -593,7 +596,7 @@ int daemon_init(void)
 		/* close read end of the pipe in the child */
 		if (close(upipe_fd[PIPE_READ]) < 0) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Unable to close child read end: %s",
-				strerror(errno));
+			       strerror(errno));
 			return ERROR;
 		}
 	}
@@ -964,11 +967,11 @@ void free_memory(nagios_macros *mac)
 	destroy_objects_command();
 	destroy_objects_timeperiod();
 	destroy_objects_host();
-	destroy_objects_service();
+	destroy_objects_service(TRUE);
 	destroy_objects_contact();
 	destroy_objects_contactgroup();
 	destroy_objects_hostgroup();
-	destroy_objects_servicegroup();
+	destroy_objects_servicegroup(TRUE);
 
 	free_comment_data();
 
@@ -1197,7 +1200,8 @@ int reset_variables(void)
 /******************************************************************/
 
 /* escapes newlines in a string. */
-char *escape_plugin_output(const char *rawbuf) {
+char *escape_plugin_output(const char *rawbuf)
+{
 	char *newbuf = NULL;
 	int x;
 	int y;
@@ -1221,8 +1225,7 @@ char *escape_plugin_output(const char *rawbuf) {
 		if (rawbuf[x] == '\n') {
 			newbuf[y++] = '\\';
 			newbuf[y++] = 'n';
-		}
-		else
+		} else
 			newbuf[y++] = rawbuf[x];
 	}
 	newbuf[y] = '\0';
@@ -1231,7 +1234,8 @@ char *escape_plugin_output(const char *rawbuf) {
 }
 
 /* unescapes newlines in a string. */
-char *unescape_plugin_output(const char *rawbuf) {
+char *unescape_plugin_output(const char *rawbuf)
+{
 	char *newbuf = NULL;
 	int x;
 	int y;
@@ -1255,8 +1259,7 @@ char *unescape_plugin_output(const char *rawbuf) {
 		if (rawbuf[x] == '\\' && rawbuf[x + 1] == 'n') {
 			x++;
 			newbuf[y++] = '\n';
-		}
-		else
+		} else
 			newbuf[y++] = rawbuf[x];
 	}
 	newbuf[y] = '\0';

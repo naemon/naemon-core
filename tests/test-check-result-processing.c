@@ -12,7 +12,8 @@
 static host *hst;
 static service *svc;
 static command *cmd;
-void setup (void) {
+void setup(void)
+{
 
 	init_event_queue();
 	init_objects_host(1);
@@ -37,10 +38,11 @@ void setup (void) {
 
 }
 
-void teardown (void) {
+void teardown(void)
+{
 	destroy_event_queue();
 	destroy_objects_command();
-	destroy_objects_service();
+	destroy_objects_service(TRUE);
 	destroy_objects_host();
 }
 
@@ -80,26 +82,26 @@ START_TEST(spool_file_processing)
 	close(fd);
 	fp = fopen(test_spool_file, "a");
 	fprintf(fp,
-		"file_time=%ld\n"
-		"\n"
-		"host_name=%s\n"
-		"service_description=%s\n"
-		"check_type=1\n"
-		"check_options=0\n"
-		"scheduled_check=0\n"
-		"latency=0.000000\n"
-		"start_time=%ld.000000\n"
-		"finish_time=%ld.000000\n"
-		"early_timeout=0\n"
-		"exited_ok=1\n"
-		"return_code=0\n"
-		"output=testoutput\\nwith multiline\\nand \\backslash|perf=0.001s\n",
-		now,
-		TARGET_HOST_NAME,
-		TARGET_SERVICE_NAME,
-		now,
-		now
-	);
+	        "file_time=%ld\n"
+	        "\n"
+	        "host_name=%s\n"
+	        "service_description=%s\n"
+	        "check_type=1\n"
+	        "check_options=0\n"
+	        "scheduled_check=0\n"
+	        "latency=0.000000\n"
+	        "start_time=%ld.000000\n"
+	        "finish_time=%ld.000000\n"
+	        "early_timeout=0\n"
+	        "exited_ok=1\n"
+	        "return_code=0\n"
+	        "output=testoutput\\nwith multiline\\nand \\backslash|perf=0.001s\n",
+	        now,
+	        TARGET_HOST_NAME,
+	        TARGET_SERVICE_NAME,
+	        now,
+	        now
+	       );
 	fclose(fp);
 	result = process_check_result_file(test_spool_file);
 	ck_assert(result == OK);

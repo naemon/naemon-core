@@ -9,9 +9,9 @@
 
 Summary: Open Source Host, Service And Network Monitoring Program
 Name: naemon-core
-Version: 1.0.10
+Version: 1.2.4
 Release: 0
-License: GPLv2
+License: GPL-2.0-only
 Group: Applications/System
 URL: http://www.naemon.org/
 Packager: Naemon Core Development Team <naemon-dev@monitoring-lists.org>
@@ -31,8 +31,11 @@ BuildRequires: pkgconfig
 BuildRequires: glib2-devel
 BuildRequires: check-devel
 # sles / rhel specific requirements
-%if 0%{?el7}%{?is_fc}
+%if 0%{?el8}%{?el7}%{?is_fc}
 BuildRequires: chrpath
+%endif
+%if 0%{?el8}
+BuildRequires: gdb-headless
 %endif
 %if 0%{?systemd_requires}
 %systemd_requires
@@ -108,7 +111,7 @@ test -f configure || ./autogen.sh
 CFLAGS="%{mycflags}" LDFLAGS="$CFLAGS" %configure \
     --datadir="%{_datadir}/naemon" \
     --libdir="%{_libdir}/naemon" \
-    --includedir="%{_includedir}/naemon" \
+    --includedir="%{_includedir}" \
     --localstatedir="%{_localstatedir}/lib/naemon" \
     --sysconfdir="%{_sysconfdir}/naemon" \
     --with-naemon-config-dir="%{_sysconfdir}/naemon/module-conf.d" \
