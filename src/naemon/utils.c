@@ -637,17 +637,6 @@ int daemon_init(void)
 	val |= FD_CLOEXEC;
 	fcntl(lockfile, F_SETFD, val);
 
-	/* close existing stdin, stdout, stderr */
-	close(0);
-	close(1);
-	close(2);
-
-	/* THIS HAS TO BE DONE TO AVOID PROBLEMS WITH STDERR BEING REDIRECTED TO SERVICE MESSAGE PIPE! */
-	/* re-open stdin, stdout, stderr with known values */
-	open("/dev/null", O_RDONLY);
-	open("/dev/null", O_WRONLY);
-	open("/dev/null", O_WRONLY);
-
 	broker_program_state(NEBTYPE_PROCESS_DAEMONIZE, NEBFLAG_NONE, NEBATTR_NONE);
 
 	return OK;
