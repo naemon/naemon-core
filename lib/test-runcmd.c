@@ -88,6 +88,7 @@ struct {
 	{ 0, "\\$foo walla wonga", 3, { "$foo", "walla", "wonga", NULL }, 0, { NULL }},
 	{ 0, "\"\\$bar is\" very wide open", 4, { "$bar is", "very", "wide", "open", NULL }, 0, { NULL }},
 	{ 0, "TEST=123 BL_AH='BLUB' foo=\"bar bar\" EMPTY= EMPTY2='' /bin/true arg1 arg2 arg3", 4, { "/bin/true", "arg1", "arg2","arg3", NULL }, 10, { "TEST", "123", "BL_AH", "BLUB", "foo", "bar bar", "EMPTY", "", "EMPTY2", "", NULL }},
+	{ RUNCMD_HAS_SHVAR, "TEST=123 TEST2=$TEST:1 /bin/true arg1", 3, { "TEST2=$TEST:1", "/bin/true", "arg1", NULL }, 2, { "TEST", "123", NULL }},
 	{ 0, NULL, 0, { NULL, NULL, NULL }, 0, { NULL }},
 };
 
@@ -146,7 +147,7 @@ int main(int argc, char **argv)
 			char *out_env[256];
 			int result = runcmd_cmd2strv(parse_case[i].cmd, &out_argc, out_argv, &out_envc, out_env);
 			out_argv[out_argc] = NULL;
-			ok_int(result, 0, parse_case[i].cmd);
+			ok_int(result, parse_case[i].ret, parse_case[i].cmd);
 			ok_int(out_argc, parse_case[i].argc_exp, parse_case[i].cmd);
 			for (x = 0; x < parse_case[x].argc_exp && out_argv[x]; x++) {
 				ok_str(parse_case[i].argv_exp[x], out_argv[x], "argv comparison test");

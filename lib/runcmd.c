@@ -176,6 +176,18 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv, int *out_en
 			}
 			break;
 
+		case '$':
+			if(have_state(STATE_INSQ)) {
+				break;
+			}
+			/* abort checking for variables, this is something else */
+			if(have_state(STATE_INVAR))
+				env--;
+			if(have_state(STATE_INVAL))
+				env = env - 2;
+			i = len;
+			continue;
+
 		case '\'':
 			if (have_state(STATE_INDQ))
 				break;
