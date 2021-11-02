@@ -12,6 +12,7 @@ ExecStartPre=-/usr/bin/mkdir -p /var/run/naemon
 ExecStartPre=/usr/bin/chown -R naemon:naemon /var/run/naemon/
 ExecStartPre=/bin/su naemon --login --shell=/bin/sh "--command=@bindir@/naemon --verify-config @pkgconfdir@/naemon.cfg"
 ExecStart=@bindir@/naemon --daemon @pkgconfdir@/naemon.cfg
+ExecReload=/bin/su naemon --login --shell=/bin/sh "--command=@bindir@/naemon --verify-config @pkgconfdir@/naemon.cfg"
 ExecReload=/bin/kill -HUP $MAINPID
 User=naemon
 Group=naemon

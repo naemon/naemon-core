@@ -1,3 +1,9 @@
+1.2.5 - ??? ?? ????
+===================
+Changed:
+* check config before reload/start will be done (#364) (ccztux)
+
+
 1.2.4 - Mar 03 2021
 ===================
 Features:
