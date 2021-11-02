@@ -131,16 +131,20 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv, int *out_en
 	unsigned int i;
 	int state, ret = 0;
 	int seen_space = 0;
+	int continue_env_parsing = 1;
 	size_t len;
 	char *argz, *envz;
 
-	// extract leading environment variables
+	/* extract leading environment variables */
 	set_state(STATE_NONE);
 	len = strlen(str);
 	envz = malloc(len + 1);
-	for (i = 0; i < len; i++) {
+	*out_envc = env;
+	for (i = 0; i < len && continue_env_parsing; i++) {
 		const char *p = &str[i];
 
+		/* in this switch 'break' will add the current character to the
+		 * last env var/val and 'continue' goes on without adding the character. */
 		switch (*p) {
 		case 0:
 			return ret;
@@ -150,15 +154,15 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv, int *out_en
 				break;
 			if(is_state(STATE_INVAR)) {
 				/* abort checking for variables, this is something else */
-				env--;
-				i = len;
+				continue_env_parsing = 0;
 				continue;
 			}
 			if(is_state(STATE_INVAL)) {
 				set_state(STATE_NONE);
-				/* variable definition ended */
+				/* variable definition ended, nul terminate last value and increase start of command pointer */
 				envz[e++] = 0;
 				argstart = i;
+				*out_envc = env;
 				continue;
 			}
 			/* skip leading whitespace */
@@ -168,7 +172,7 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv, int *out_en
 			if(in_quotes)
 				break;
 			if(is_state(STATE_INVAR)) {
-				/* variable name ended, start parsing value */
+				/* variable name ended, nul terminate last var name and start parsing value */
 				set_state(STATE_INVAL);
 				envz[e++] = 0;
 				out_env[env++] = &envz[e];
@@ -177,15 +181,10 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv, int *out_en
 			break;
 
 		case '$':
-			if(have_state(STATE_INSQ)) {
+			if(have_state(STATE_INSQ))
 				break;
-			}
-			/* abort checking for variables, this is something else */
-			if(have_state(STATE_INVAR))
-				env--;
-			if(have_state(STATE_INVAL))
-				env = env - 2;
-			i = len;
+			/* abort checking for variables, variable interpolation not supported */
+			continue_env_parsing = 0;
 			continue;
 
 		case '\'':
@@ -211,24 +210,22 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv, int *out_en
 		default:
 			if(in_quotes)
 				break;
+			/* values may contain any character, except whitespace (which is catched earlier already) */
+			if(have_state(STATE_INVAL))
+				break;
+			/* variables must start with a letter/underline and contain only letters, numbers and underlines */
 			if(isalnum(*p) || *p == '_') {
-				if(have_state(STATE_INVAL))
-					break;
 				if(have_state(STATE_INVAR))
 					break;
-				if(isalpha(*p)) {
+				if(isalpha(*p) || *p == '_') {
 					/* starting a new environment variable */
 					set_state(STATE_INVAR);
 					out_env[env++] = &envz[e];
 					break;
 				}
 			}
-			if(have_state(STATE_INVAL))
-				break;
 			/* abort checking for variables, this is something else */
-			if(have_state(STATE_INVAR))
-				env--;
-			i = len;
+			continue_env_parsing = 0;
 			continue;
 		}
 
@@ -236,9 +233,8 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv, int *out_en
 		envz[e++] = str[i];
 	}
 
-	/* make sure we nul-terminate the last argument */
+	/* make sure we nul-terminate the last env var/val */
 	envz[e] = 0;
-	*out_envc = env;
 
 	set_state(STATE_NONE);
 	argz = malloc(len + 1);
