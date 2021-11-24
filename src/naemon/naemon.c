@@ -644,6 +644,7 @@ int main(int argc, char **argv)
 		timing_point("Initialized retention data\n");
 
 		timing_point("Reading initial state information\n");
+		initialize_comment_hashmap();
 		read_initial_state_information();
 		timing_point("Read initial state information\n");
 
