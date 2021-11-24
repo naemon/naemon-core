@@ -472,7 +472,7 @@ static int start_cmd(child_process *cp)
 {
 	int pfd[2] = { -1, -1}, pfderr[2] = { -1, -1};
 
-	cp->outstd.fd = runcmd_open(cp->cmd, pfd, pfderr, NULL);
+	cp->outstd.fd = runcmd_open(cp->cmd, pfd, pfderr);
 	if (cp->outstd.fd < 0) {
 		return -1;
 	}

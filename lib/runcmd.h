@@ -66,9 +66,8 @@ extern const char *runcmd_strerror(int code);
  * @param[in] cmdstring The command to launch
  * @param[out] pfd Child's stdout filedescriptor
  * @param[out] pfderr Child's stderr filedescriptor
- * @param[in] env Currently ignored for portability
  */
-extern int runcmd_open(const char *cmdstring, int *pfd, int *pfderr, char **env)
+extern int runcmd_open(const char *cmdstring, int *pfd, int *pfderr)
 	__attribute__((__nonnull__(1, 2, 3)));
 
 /**
@@ -95,7 +94,7 @@ extern int runcmd_close(int fd);
  * representing f.e. unclosed quotes, job control or output redirection.
  * See the RUNCMD_HAS_* and their ilk to find out about the flag.
  */
-extern int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv);
+extern int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv, int *out_envc, char **out_env);
 
 NAGIOS_END_DECL
 
