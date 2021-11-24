@@ -9,20 +9,31 @@
 #include "events.h"
 #include "globals.h"
 #include "nm_alloc.h"
+#include <glib.h>
 
 comment *comment_list = NULL;
 int defer_comment_sorting = 0;
 comment **comment_hashlist = NULL;
+static GHashTable *comment_hashtable;
 
 
 /******************************************************************/
 /**************** INITIALIZATION/CLEANUP FUNCTIONS ****************/
 /******************************************************************/
 
+int initialize_comment_hashmap(void)
+{
+	if (comment_hashtable == NULL){
+		comment_hashtable = g_hash_table_new(g_direct_hash, g_direct_equal);
+	}
+	return OK;
+}
+
 /* initializes comment data */
 int initialize_comment_data(void)
 {
 	comment *temp_comment = NULL;
+	initialize_comment_hashmap();
 
 	/* find the new starting index for comment id if its missing*/
 	if (next_comment_id == 0L) {
@@ -149,15 +160,9 @@ int delete_comment(int type, unsigned long comment_id)
 	comment *last_hash = NULL;
 
 	/* find the comment we should remove */
-	for (this_comment = comment_list, last_comment = comment_list; this_comment != NULL; this_comment = next_comment) {
-		next_comment = this_comment->next;
+	this_comment = g_hash_table_lookup(comment_hashtable, GINT_TO_POINTER(comment_id));
+	next_comment = this_comment->next;
 
-		/* we found the comment we should delete */
-		if (this_comment->comment_id == comment_id && this_comment->comment_type == type)
-			break;
-
-		last_comment = this_comment;
-	}
 
 	if (this_comment == NULL)
 		return ERROR;
@@ -166,6 +171,7 @@ int delete_comment(int type, unsigned long comment_id)
 
 	/* remove the comment from the list in memory */
 	/* first remove from chained hash list */
+	g_hash_table_remove(comment_hashtable, GINT_TO_POINTER(this_comment->comment_id));
 	hashslot = hashfunc(this_comment->host_name, NULL, COMMENT_HASHSLOTS);
 	last_hash = NULL;
 	for (this_hash = comment_hashlist[hashslot]; this_hash; this_hash = this_hash->nexthash) {
@@ -431,6 +437,8 @@ int add_comment(int comment_type, int entry_type, char *host_name, char *svc_des
 			result = ERROR;
 	}
 
+	g_hash_table_insert(comment_hashtable, GINT_TO_POINTER(new_comment->comment_id), new_comment);
+
 	/* handle errors */
 	if (result == ERROR) {
 		nm_free(new_comment->comment_data);
@@ -526,6 +534,9 @@ void free_comment_data(void)
 {
 	comment *this_comment = NULL;
 	comment *next_comment = NULL;
+
+	g_hash_table_destroy(comment_hashtable);
+	comment_hashtable = NULL;
 
 	/* free memory for the comment list */
 	for (this_comment = comment_list; this_comment != NULL; this_comment = next_comment) {
@@ -641,10 +652,10 @@ comment *find_comment(unsigned long comment_id, int comment_type)
 {
 	comment *temp_comment = NULL;
 
-	for (temp_comment = comment_list; temp_comment != NULL; temp_comment = temp_comment->next) {
-		if (temp_comment->comment_id == comment_id && (temp_comment->comment_type & comment_type))
-			return temp_comment;
-	}
+	temp_comment = g_hash_table_lookup(comment_hashtable, GINT_TO_POINTER(comment_id));
+	if (temp_comment && (temp_comment->comment_type & comment_type))
+		return temp_comment;
 
 	return NULL;
+
 }
