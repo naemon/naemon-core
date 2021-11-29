@@ -324,6 +324,11 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv, int *out_en
 				add_ret(RUNCMD_HAS_REDIR);
 			}
 			break;
+		case '~':
+			if (!have_state(STATE_INSQ)) {
+				add_ret(RUNCMD_HAS_SHVAR);
+			}
+			break;
 		case '&': case ';':
 			if (!in_quotes) {
 				set_state(STATE_SPECIAL);
