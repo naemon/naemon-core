@@ -242,7 +242,7 @@ START_TEST(event_polling_scheduling_past)
 	*user_data = _i;
 	ck_assert(schedule_event(runnable_delays[_i], test_event_callback, user_data) != NULL);
 	ck_assert_int_eq(0, event_poll_full(iobs, EVENT_MAX_POLL_TIME_MS));
-	ck_assert_msg(cb_props_param != NULL, "Event scheduled with delay %llu was never executed", runnable_delays[_i]);
+	ck_assert_msg(cb_props_param != NULL, "Event scheduled with delay %llu was never executed", (long long int)runnable_delays[_i]);
 	ck_assert_int_eq(*(int *)user_data, *(int *)(cb_props_param->user_data));
 	free(user_data);
 }
@@ -253,7 +253,7 @@ START_TEST(event_polling_scheduling_future)
 	time_t delay = (EVENT_MAX_POLL_TIME_MS / 1000) + unrunnable_delays[_i];
 	ck_assert(schedule_event(delay, test_event_callback, NULL) != NULL);
 	ck_assert_int_eq(0, event_poll_full(iobs, 10));
-	ck_assert_msg(cb_props_param == NULL, "Event scheduled with delay %llu was executed even though it's in the future", delay);
+	ck_assert_msg(cb_props_param == NULL, "Event scheduled with delay %llu was executed even though it's in the future", (long long int)delay);
 }
 END_TEST
 
