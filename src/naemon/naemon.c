@@ -244,7 +244,7 @@ int main(int argc, char **argv)
 		printf("Copyright (c) 2009-2013 Nagios Core Development Team and Community Contributors\n");
 		printf("Copyright (c) 1999-2009 Ethan Galstad\n");
 		printf("License: GPL\n\n");
-		printf("Website: http://www.naemon.org\n");
+		printf("Website: https://www.naemon.io\n");
 	}
 
 	/* just display the license */
@@ -284,7 +284,7 @@ int main(int argc, char **argv)
 		printf("  -W, --worker /path/to/socket Act as a worker for an already running daemon\n");
 		printf("  --allow-root                 Let naemon run as root. THIS IS NOT RECOMMENDED AT ALL.\n");
 		printf("\n");
-		printf("Visit the Naemon website at http://www.naemon.org/ for bug fixes, new\n");
+		printf("Visit the Naemon website at https://www.naemon.io/ for bug fixes, new\n");
 		printf("releases, online documentation, FAQs and more...\n");
 		printf("\n");
 
