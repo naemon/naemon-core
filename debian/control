@@ -15,7 +15,7 @@ Build-Depends:
     automake,
     libtool
 Standards-Version: 3.7.3
-Homepage: http://www.naemon.org
+Homepage: https://www.naemon.io
 Bugs: https://github.com/naemon/naemon-core/issues
 Vcs-Browser: https://github.com/naemon/naemon-core
 Vcs-Git: git://github.com:naemon/naemon-core.git
@@ -52,7 +52,7 @@ Description: host/service/network monitoring and management system
  Naemon was written in C and is designed to be easy to understand and modify
  to fit your own needs.
  .
- Upstream URL: http://www.naemon.org/
+ Upstream URL: https://www.naemon.io/
 
 Package: naemon-core-dbg
 Architecture: any

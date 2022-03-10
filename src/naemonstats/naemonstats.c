@@ -254,7 +254,7 @@ int main(int argc, char **argv)
 
 	if (mrtg_mode == FALSE) {
 		printf("\nNaemon Stats " VERSION "\n");
-		printf("Copyright (c) 2013-present Naemon Development Team (www.naemon.org)\n");
+		printf("Copyright (c) 2013-present Naemon Development Team (www.naemon.io)\n");
 		printf("Copyright (c) 2003-2008 Ethan Galstad (www.nagios.org)\n");
 		printf("License: GPL\n\n");
 	}
