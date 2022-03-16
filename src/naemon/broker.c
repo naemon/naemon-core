@@ -460,6 +460,7 @@ void broker_host_status(int type, int flags, int attr, host *hst)
 	ds.flags = flags;
 	ds.attr = attr;
 	get_broker_timestamp(&ds.timestamp);
+	hst->last_update = ds.timestamp.tv_sec;
 
 	ds.object_ptr = (void *)hst;
 
@@ -483,6 +484,7 @@ void broker_service_status(int type, int flags, int attr, service *svc)
 	ds.flags = flags;
 	ds.attr = attr;
 	get_broker_timestamp(&ds.timestamp);
+	svc->last_update = ds.timestamp.tv_sec;
 
 	ds.object_ptr = (void *)svc;
 
