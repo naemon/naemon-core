@@ -521,9 +521,11 @@ interval_length=60
 # AGGRESSIVE HOST CHECKING OPTION
 # If you don't want to turn on aggressive host checking features, set
 # this value to 0 (the default).  Otherwise set this value to 1 to
-# enable the aggressive check option.  Read the docs for more info
+# enable the aggressive check option. When enabled, Naemon will tread
+# WARNING states as UP for host checks. This let's you use the same
+# check plugin for host and service checks. Read the docs for more info
 # on what aggressive host check is or check out the source code in
-# base/checks.c
+# src/naemon/checks_host.c
 
 use_aggressive_host_checking=0
 
