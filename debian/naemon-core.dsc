@@ -4,7 +4,7 @@ Binary: naemon
 Architecture: any
 Version:
 Maintainer: Naemon Core Development Team <naemon-dev@monitoring-lists.org>
-Homepage: http://www.naemon.org
+Homepage: https://www.naemon.io
 Bugs: https://github.com/naemon/naemon-core/issues
 Vcs-Browser: https://github.com/naemon/naemon-core
 Vcs-Git: git://github.com:naemon/naemon-core.git

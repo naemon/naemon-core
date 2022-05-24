@@ -9,11 +9,11 @@
 
 Summary: Open Source Host, Service And Network Monitoring Program
 Name: naemon-core
-Version: 1.3.0
+Version: 1.3.1
 Release: 0
 License: GPL-2.0-only
 Group: Applications/System
-URL: http://www.naemon.org/
+URL: https://www.naemon.io/
 Packager: Naemon Core Development Team <naemon-dev@monitoring-lists.org>
 Vendor: Naemon Core Development Team
 Source0: naemon-%{version}.tar.gz
