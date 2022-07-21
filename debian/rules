@@ -5,13 +5,18 @@
 
 export DH_VERBOSE=1
 DESTDIR=$(CURDIR)/debian/tmp/
+ifeq ($(DEB_HOST_MULTIARCH),)
+	LIBDIR=/usr/lib/naemon
+else
+	LIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH)
+endif
 
 override_dh_auto_configure:
 	test -f configure || ./autogen.sh
 	dh_auto_configure -- --prefix=/usr \
 				--bindir="/usr/bin" \
 				--datadir="/usr/share/naemon" \
-				--libdir="/usr/lib/naemon" \
+				--libdir="$(LIBDIR)" \
 				--includedir="/usr/include" \
 				--localstatedir="/var/lib/naemon" \
 				--sysconfdir="/etc/naemon" \
@@ -29,10 +34,13 @@ override_dh_auto_configure:
 				--with-naemon-group="naemon" \
 				--with-lockfile="/run/naemon/naemon.pid"
 	if [ "x$(DEB_HOST_MULTIARCH)" != "x" ]; then \
-		echo /usr/lib/naemon/pkgconfig/naemon.pc usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig/ >> debian/naemon-dev.install; \
+		echo $(LIBDIR)/pkgconfig/naemon.pc usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig/ >> debian/naemon-dev.install; \
 	else \
-		echo /usr/lib/naemon/pkgconfig/naemon.pc usr/share/pkgconfig/ >> debian/naemon-dev.install; \
+		echo $(LIBDIR)/pkgconfig/naemon.pc usr/share/pkgconfig/ >> debian/naemon-dev.install; \
 	fi
+	echo "$(LIBDIR)/libnaemon.so*" >> debian/libnaemon.install
+	echo "$(LIBDIR)/libnaemon.a"   >> debian/naemon-dev.install
+	echo "$(LIBDIR)/libnaemon.la"  >> debian/naemon-dev.install
 
 
 
@@ -42,11 +50,10 @@ override_dh_auto_install:
 	cp -p debian/tmp/usr/bin/naemon debian/tmp/usr/bin/naemon-dbg
 	strip debian/tmp/usr/bin/naemon
 	strip debian/tmp/usr/bin/naemonstats
-	chrpath -c debian/tmp/usr/bin/naemonstats
-	chrpath -c debian/tmp/usr/bin/naemon-dbg
-	strip debian/tmp/usr/lib/naemon/libnaemon.so.0.0.0
+	strip debian/tmp$(LIBDIR)/libnaemon.so.0.0.0
 	mv debian/tmp/etc/logrotate.d/naemon debian/tmp/etc/logrotate.d/naemon-core
 	cp naemon.logrotate.el7 debian/naemon-core.logrotate
+	mkdir -p debian/tmp/usr/lib/naemon
 	ln -s /usr/lib/nagios/plugins debian/tmp/usr/lib/naemon/plugins
 	mkdir -p -m 0755 debian/tmp/usr/share/naemon/examples
 	mv debian/tmp/etc/naemon/conf.d debian/tmp/usr/share/naemon/examples
