@@ -80,6 +80,7 @@ service *create_service(host *hst, const char *description)
 	new_service->description = nm_strdup(description);
 	new_service->display_name = new_service->description;
 	new_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+	new_service->acknowledgement_end_time = (time_t)0;
 	new_service->check_type = CHECK_TYPE_ACTIVE;
 	new_service->state_type = HARD_STATE;
 	new_service->check_options = CHECK_OPTION_NONE;

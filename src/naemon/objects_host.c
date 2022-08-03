@@ -74,6 +74,7 @@ host *create_host(const char *name)
 	new_host->check_type = CHECK_TYPE_ACTIVE;
 	new_host->state_type = HARD_STATE;
 	new_host->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+	new_host->acknowledgement_end_time = (time_t)0;
 	new_host->check_options = CHECK_OPTION_NONE;
 
 
