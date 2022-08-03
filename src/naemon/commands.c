@@ -3995,11 +3995,16 @@ static void acknowledge_host_problem(host *hst, char *ack_author, char *ack_data
 	/* set the acknowledgement type */
 	hst->acknowledgement_type = type ? ACKNOWLEDGEMENT_STICKY : ACKNOWLEDGEMENT_NORMAL;
 
+	/* set the acknowledgement expire time */
+	time(&current_time);
+	if (end_time <= current_time)
+		end_time = (time_t)0;
+	hst->acknowledgement_end_time = end_time;
+
 	/* update the status log with the host info */
 	update_host_status(hst, FALSE);
 
 	/* add a comment for the acknowledgement */
-	time(&current_time);
 	add_new_host_comment(ACKNOWLEDGEMENT_COMMENT, hst->name, current_time, ack_author, ack_data, persistent, COMMENTSOURCE_INTERNAL, FALSE, (time_t)0, NULL);
 
 	return;
@@ -4027,11 +4032,16 @@ static void acknowledge_service_problem(service *svc, char *ack_author, char *ac
 	/* set the acknowledgement type */
 	svc->acknowledgement_type = type ? ACKNOWLEDGEMENT_STICKY : ACKNOWLEDGEMENT_NORMAL;
 
+	/* set the acknowledgement expire time */
+	time(&current_time);
+	if (end_time <= current_time)
+		end_time = (time_t)0;
+	svc->acknowledgement_end_time = end_time;
+
 	/* update the status log with the service info */
 	update_service_status(svc, FALSE);
 
 	/* add a comment for the acknowledgement */
-	time(&current_time);
 	add_new_service_comment(ACKNOWLEDGEMENT_COMMENT, svc->host_name, svc->description, current_time, ack_author, ack_data, persistent, COMMENTSOURCE_INTERNAL, FALSE, (time_t)0, NULL);
 
 	return;

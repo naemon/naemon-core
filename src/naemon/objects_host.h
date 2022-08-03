@@ -77,6 +77,7 @@ struct host {
 	customvariablesmember *custom_variables;
 	int     problem_has_been_acknowledged;
 	int     acknowledgement_type;
+	time_t  acknowledgement_end_time;
 	int     check_type;
 	int     current_state;
 	int     last_state;
