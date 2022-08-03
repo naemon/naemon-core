@@ -77,6 +77,8 @@ static void acknowledge_host_problem(host *, char *, char *, int, int, int, time
 static void acknowledge_service_problem(service *, char *, char *, int, int, int, time_t);	/* acknowledges a service problem */
 static void remove_host_acknowledgement(host *);		/* removes a host acknowledgement */
 static void remove_service_acknowledgement(service *);		/* removes a service acknowledgement */
+static void handle_host_acknowledgement_expire_event(struct nm_event_execution_properties *evprop); /* removes an expired host acknowledgement */
+static void handle_service_acknowledgement_expire_event(struct nm_event_execution_properties *evprop); /* removes an expired service acknowledgement */
 static void start_executing_service_checks(void);		/* starts executing service checks */
 static void stop_executing_service_checks(void);		/* stops executing service checks */
 static void start_accepting_passive_service_checks(void);	/* starts accepting passive service check results */
@@ -3983,6 +3985,14 @@ static void acknowledge_host_problem(host *hst, char *ack_author, char *ack_data
 	if (hst->current_state == STATE_UP)
 		return;
 
+	/* get the time */
+	time(&current_time);
+
+	/* if the end time is set but in the past, it has already expired
+	   and we don't need to do anything */
+	if (end_time > 0 && end_time <= current_time)
+		return;
+
 	broker_acknowledgement_data(NEBTYPE_ACKNOWLEDGEMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, HOST_ACKNOWLEDGEMENT, (void *)hst, ack_author, ack_data, type, notify, persistent, end_time);
 
 	/* send out an acknowledgement notification */
@@ -3995,10 +4005,11 @@ static void acknowledge_host_problem(host *hst, char *ack_author, char *ack_data
 	/* set the acknowledgement type */
 	hst->acknowledgement_type = type ? ACKNOWLEDGEMENT_STICKY : ACKNOWLEDGEMENT_NORMAL;
 
+	/* if the ack expires in the future, schedule an event to clear it */
+	if (end_time > current_time)
+		schedule_event(end_time - current_time, handle_host_acknowledgement_expire_event, (void *)hst);
+
 	/* set the acknowledgement expire time */
-	time(&current_time);
-	if (end_time <= current_time)
-		end_time = (time_t)0;
 	hst->acknowledgement_end_time = end_time;
 
 	/* update the status log with the host info */
@@ -4020,6 +4031,14 @@ static void acknowledge_service_problem(service *svc, char *ack_author, char *ac
 	if (svc->current_state == STATE_OK)
 		return;
 
+	/* get the time */
+	time(&current_time);
+
+	/* if the end time is set but in the past, it has already expired
+	   and we don't need to do anything */
+	if (end_time > 0 && end_time <= current_time)
+		return;
+
 	broker_acknowledgement_data(NEBTYPE_ACKNOWLEDGEMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_ACKNOWLEDGEMENT, (void *)svc, ack_author, ack_data, type, notify, persistent, end_time);
 
 	/* send out an acknowledgement notification */
@@ -4032,10 +4051,11 @@ static void acknowledge_service_problem(service *svc, char *ack_author, char *ac
 	/* set the acknowledgement type */
 	svc->acknowledgement_type = type ? ACKNOWLEDGEMENT_STICKY : ACKNOWLEDGEMENT_NORMAL;
 
+	/* if the ack expires in the future, schedule an event to clear it */
+	if (end_time > current_time)
+		schedule_event(end_time - current_time, handle_service_acknowledgement_expire_event, (void *)svc);
+
 	/* set the acknowledgement expire time */
-	time(&current_time);
-	if (end_time <= current_time)
-		end_time = (time_t)0;
 	svc->acknowledgement_end_time = end_time;
 
 	/* update the status log with the service info */
@@ -4083,6 +4103,57 @@ static void remove_service_acknowledgement(service *svc)
 	return;
 }
 
+/* removes an expired host acknowledgement */
+static void handle_host_acknowledgement_expire_event(struct nm_event_execution_properties *evprop)
+{
+	time_t current_time = 0L;
+
+	log_debug_info(DEBUGL_EVENTS, 2, "Running event handler for host acknowledgement expiry\n");
+	if (evprop->user_data) {
+		if (evprop->execution_type == EVENT_EXEC_NORMAL) {
+			/* get the host */
+			host *hst = (host *)evprop->user_data;
+
+			/* get the time */
+			time(&current_time);
+
+			/* if the host ack has an end time now or in the
+			   past, remove the ack */
+			if (hst->problem_has_been_acknowledged &&
+			    hst->acknowledgement_end_time > 0 &&
+	                    hst->acknowledgement_end_time <= current_time) {
+				log_debug_info(DEBUGL_EVENTS, 2, "Removing host acknowledgement for host '%s'\n", hst->name);
+				remove_host_acknowledgement(hst);
+			}
+		}
+	}
+}
+
+/* removes an expired service acknowledgement */
+static void handle_service_acknowledgement_expire_event(struct nm_event_execution_properties *evprop)
+{
+	time_t current_time = 0L;
+
+	log_debug_info(DEBUGL_EVENTS, 2, "Running event handler for service acknowledgement expiry\n");
+	if (evprop->user_data) {
+		if (evprop->execution_type == EVENT_EXEC_NORMAL) {
+			/* get the service */
+			service *svc = (service *)evprop->user_data;
+
+			/* get the time */
+			time(&current_time);
+
+			/* if the service ack has an end time now or in the
+			   past, remove the ack */
+			if (svc->problem_has_been_acknowledged &&
+			    svc->acknowledgement_end_time > 0 &&
+	                    svc->acknowledgement_end_time <= current_time) {
+				log_debug_info(DEBUGL_EVENTS, 2, "Removing service acknowledgement for service '%s' on host '%s'\n", svc->description, svc->host_name);
+				remove_service_acknowledgement(svc);
+			}
+		}
+	}
+}
 
 /* starts executing service checks */
 static void start_executing_service_checks(void)
