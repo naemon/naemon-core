@@ -1883,6 +1883,10 @@ static int host_command_handler(const struct external_command *ext_command, time
 		acknowledge_host_problem(target_host, GV("author"), GV("comment"), GV_INT("sticky"),
 		                         GV_BOOL("notify"), GV_BOOL("persistent"), (time_t)0);
 		return OK;
+	case CMD_ACKNOWLEDGE_HOST_PROBLEM_EXPIRE:
+		acknowledge_host_problem(target_host, GV("author"), GV("comment"), GV_INT("sticky"),
+		                         GV_BOOL("notify"), GV_BOOL("persistent"), GV_TIMESTAMP("end_time"));
+		return OK;
 	case CMD_ENABLE_HOST_EVENT_HANDLER:
 		enable_host_event_handler(target_host);
 		return OK;
@@ -2259,6 +2263,10 @@ static int service_command_handler(const struct external_command *ext_command, t
 	case CMD_ACKNOWLEDGE_SVC_PROBLEM:
 		acknowledge_service_problem(target_service, GV("author"), GV("comment"), GV_INT("sticky"),
                                             GV_BOOL("notify"), GV_BOOL("persistent"), (time_t)0);
+		return OK;
+	case CMD_ACKNOWLEDGE_SVC_PROBLEM_EXPIRE:
+		acknowledge_service_problem(target_service, GV("author"), GV("comment"), GV_INT("sticky"),
+		                            GV_BOOL("notify"), GV_BOOL("persistent"), GV_TIMESTAMP("end_time"));
 		return OK;
 	case CMD_ENABLE_PASSIVE_SVC_CHECKS:
 		enable_passive_service_checks(target_service);
@@ -2729,9 +2737,17 @@ void register_core_commands(void)
 	                              "Allows you to acknowledge the current problem for the specified host. By acknowledging the current problem, future notifications (for the same host state) are disabled. If the 'sticky' option is set to one (1), the acknowledgement will remain until the host returns to an UP state. Otherwise the acknowledgement will automatically be removed when the host changes state. If the 'notify' option is set to one (1), a notification will be sent out to contacts indicating that the current host problem has been acknowledged. If the 'persistent' option is set to one (1), the comment associated with the acknowledgement will remain once the acknowledgement is removed. If not, the comment will be deleted when the acknowledgement is removed.", "host=host_name;int=sticky;bool=notify;bool=persistent;str=author;str=comment");
 	command_register(core_command, CMD_ACKNOWLEDGE_HOST_PROBLEM);
 
+	core_command = command_create("ACKNOWLEDGE_HOST_PROBLEM_EXPIRE", host_command_handler,
+	                              "Allows you to acknowledge the current problem for the specified host for a limitied time. By acknowledging the current problem, future notifications (for the same host state) are disabled. The 'end_time' option determines the time after which the acknowledgement is cleared automatically. If the 'sticky' option is set to one (1), the acknowledgement will remain until the host returns to an UP state. Otherwise the acknowledgement will automatically be removed when the host changes state. If the 'notify' option is set to one (1), a notification will be sent out to contacts indicating that the current host problem has been acknowledged. If the 'persistent' option is set to one (1), the comment associated with the acknowledgement will remain once the acknowledgement is removed. If not, the comment will be deleted when the acknowledgement is removed.", "host=host_name;int=sticky;bool=notify;bool=persistent;timestamp=end_time;str=author;str=comment");
+	command_register(core_command, CMD_ACKNOWLEDGE_HOST_PROBLEM_EXPIRE);
+
 	core_command = command_create("ACKNOWLEDGE_SVC_PROBLEM", service_command_handler,
 	                              "Allows you to acknowledge the current problem for the specified service. By acknowledging the current problem, future notifications (for the same servicestate) are disabled. If the 'sticky' option is set to one (1), the acknowledgement will remain until the service returns to an OK state. Otherwise the acknowledgement will automatically be removed when the service changes state. If the 'notify' option is set to one (1), a notification will be sent out to contacts indicating that the current service problem has been acknowledged. If the 'persistent' option is set to one (1), the comment associated with the acknowledgement will remain once the acknowledgement is removed. If not, the comment will be deleted when the acknowledgement is removed.", "service=service;int=sticky;bool=notify;bool=persistent;str=author;str=comment");
 	command_register(core_command, CMD_ACKNOWLEDGE_SVC_PROBLEM);
+
+	core_command = command_create("ACKNOWLEDGE_SVC_PROBLEM_EXPIRE", service_command_handler,
+	                              "Allows you to acknowledge the current problem for the specified service. By acknowledging the current problem, future notifications (for the same servicestate) are disabled. The 'end_time' option determines the time after which the acknowledgement is cleared automatically. If the 'sticky' option is set to one (1), the acknowledgement will remain until the service returns to an OK state. Otherwise the acknowledgement will automatically be removed when the service changes state. If the 'notify' option is set to one (1), a notification will be sent out to contacts indicating that the current service problem has been acknowledged. If the 'persistent' option is set to one (1), the comment associated with the acknowledgement will remain once the acknowledgement is removed. If not, the comment will be deleted when the acknowledgement is removed.", "service=service;int=sticky;bool=notify;bool=persistent;timestamp=end_time;str=author;str=comment");
+	command_register(core_command, CMD_ACKNOWLEDGE_SVC_PROBLEM_EXPIRE);
 
 	core_command = command_create("START_EXECUTING_SVC_CHECKS", global_command_handler,
 	                              "Enables active checks of services on a program-wide basis.", NULL);
