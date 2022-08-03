@@ -969,6 +969,7 @@ static int handle_host_state(host *hst, int *alert_recorded)
 
 			hst->problem_has_been_acknowledged = FALSE;
 			hst->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+			hst->acknowledgement_end_time = (time_t)0;
 
 			/* remove any non-persistant comments associated with the ack */
 			delete_host_acknowledgement_comments(hst);
@@ -976,6 +977,7 @@ static int handle_host_state(host *hst, int *alert_recorded)
 
 			hst->problem_has_been_acknowledged = FALSE;
 			hst->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+			hst->acknowledgement_end_time = (time_t)0;
 
 			/* remove any non-persistant comments associated with the ack */
 			delete_host_acknowledgement_comments(hst);

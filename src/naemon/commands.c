@@ -4054,6 +4054,7 @@ static void remove_host_acknowledgement(host *hst)
 
 	/* set the acknowledgement flag */
 	hst->problem_has_been_acknowledged = FALSE;
+	hst->acknowledgement_end_time = (time_t)0;
 
 	/* update the status log with the host info */
 	update_host_status(hst, FALSE);
@@ -4071,6 +4072,7 @@ static void remove_service_acknowledgement(service *svc)
 
 	/* set the acknowledgement flag */
 	svc->problem_has_been_acknowledged = FALSE;
+	svc->acknowledgement_end_time = (time_t)0;
 
 	/* update the status log with the service info */
 	update_service_status(svc, FALSE);

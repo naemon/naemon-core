@@ -636,6 +636,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 			temp_service->problem_has_been_acknowledged = FALSE;
 			temp_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+			temp_service->acknowledgement_end_time = (time_t)0;
 
 			/* remove any non-persistant comments associated with the ack */
 			delete_service_acknowledgement_comments(temp_service);
@@ -643,6 +644,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 			temp_service->problem_has_been_acknowledged = FALSE;
 			temp_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+			temp_service->acknowledgement_end_time = (time_t)0;
 
 			/* remove any non-persistant comments associated with the ack */
 			delete_service_acknowledgement_comments(temp_service);
@@ -705,6 +707,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		/* reset the acknowledgement flag (this should already have been done, but just in case...) */
 		temp_service->problem_has_been_acknowledged = FALSE;
 		temp_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+		temp_service->acknowledgement_end_time = (time_t)0;
 
 		/* verify the route to the host and send out host recovery notifications */
 		if (temp_host->current_state != STATE_UP) {
@@ -788,6 +791,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		temp_service->current_notification_number = 0;
 		temp_service->problem_has_been_acknowledged = FALSE;
 		temp_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+		temp_service->acknowledgement_end_time = (time_t)0;
 		temp_service->notified_on = 0;
 	}
 
