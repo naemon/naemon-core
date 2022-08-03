@@ -4005,7 +4005,7 @@ static void acknowledge_host_problem(host *hst, char *ack_author, char *ack_data
 	update_host_status(hst, FALSE);
 
 	/* add a comment for the acknowledgement */
-	add_new_host_comment(ACKNOWLEDGEMENT_COMMENT, hst->name, current_time, ack_author, ack_data, persistent, COMMENTSOURCE_INTERNAL, FALSE, (time_t)0, NULL);
+	add_new_host_comment(ACKNOWLEDGEMENT_COMMENT, hst->name, current_time, ack_author, ack_data, persistent, COMMENTSOURCE_INTERNAL, (end_time != 0) ? TRUE : FALSE, end_time, NULL);
 
 	return;
 }
@@ -4042,7 +4042,7 @@ static void acknowledge_service_problem(service *svc, char *ack_author, char *ac
 	update_service_status(svc, FALSE);
 
 	/* add a comment for the acknowledgement */
-	add_new_service_comment(ACKNOWLEDGEMENT_COMMENT, svc->host_name, svc->description, current_time, ack_author, ack_data, persistent, COMMENTSOURCE_INTERNAL, FALSE, (time_t)0, NULL);
+	add_new_service_comment(ACKNOWLEDGEMENT_COMMENT, svc->host_name, svc->description, current_time, ack_author, ack_data, persistent, COMMENTSOURCE_INTERNAL, (end_time != 0) ? TRUE : FALSE, end_time, NULL);
 
 	return;
 }
