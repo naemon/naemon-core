@@ -322,6 +322,9 @@ NAGIOS_END_DECL
 #define CMD_DEL_DOWNTIME_BY_HOSTGROUP_NAME              171
 #define CMD_DEL_DOWNTIME_BY_START_TIME_COMMENT          172
 
+#define CMD_ACKNOWLEDGE_HOST_PROBLEM_EXPIRE             173
+#define CMD_ACKNOWLEDGE_SVC_PROBLEM_EXPIRE              174
+
 /* custom command introduced in Nagios 3.x */
 #define CMD_CUSTOM_COMMAND                              999
 
