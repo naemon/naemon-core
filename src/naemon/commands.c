@@ -3983,7 +3983,7 @@ static void acknowledge_host_problem(host *hst, char *ack_author, char *ack_data
 	if (hst->current_state == STATE_UP)
 		return;
 
-	broker_acknowledgement_data(NEBTYPE_ACKNOWLEDGEMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, HOST_ACKNOWLEDGEMENT, (void *)hst, ack_author, ack_data, type, notify, persistent);
+	broker_acknowledgement_data(NEBTYPE_ACKNOWLEDGEMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, HOST_ACKNOWLEDGEMENT, (void *)hst, ack_author, ack_data, type, notify, persistent, end_time);
 
 	/* send out an acknowledgement notification */
 	if (notify == TRUE)
@@ -4015,7 +4015,7 @@ static void acknowledge_service_problem(service *svc, char *ack_author, char *ac
 	if (svc->current_state == STATE_OK)
 		return;
 
-	broker_acknowledgement_data(NEBTYPE_ACKNOWLEDGEMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_ACKNOWLEDGEMENT, (void *)svc, ack_author, ack_data, type, notify, persistent);
+	broker_acknowledgement_data(NEBTYPE_ACKNOWLEDGEMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_ACKNOWLEDGEMENT, (void *)svc, ack_author, ack_data, type, notify, persistent, end_time);
 
 	/* send out an acknowledgement notification */
 	if (notify == TRUE)
