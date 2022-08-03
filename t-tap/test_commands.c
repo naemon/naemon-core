@@ -509,6 +509,19 @@ void test_host_commands(void)
 	ok(!target_host->problem_has_been_acknowledged, "REMOVE_HOST_ACKNOWLEDGEMENT removes a host acknowledgement");
 	target_host->current_state = STATE_UP;
 
+	target_host->current_state = STATE_DOWN;
+	ok(CMD_ERROR_OK == process_external_command1("[1234567890] ACKNOWLEDGE_HOST_PROBLEM_EXPIRE;host1;2;0;0;4102441200;myself;expire in the future"), "core command: ACKNOWLEDGE_HOST_PROBLEM_EXPIRE");
+	ok(target_host->problem_has_been_acknowledged, "ACKNOWLEDGE_HOST_PROBLEM_EXPIRE with future end_time acknowledges a host problem");
+
+	ok(CMD_ERROR_OK == process_external_command1("[1234567890] REMOVE_HOST_ACKNOWLEDGEMENT;host1"), "core command: REMOVE_HOST_ACKNOWLEDGEMENT");
+	ok(!target_host->problem_has_been_acknowledged, "REMOVE_HOST_ACKNOWLEDGEMENT removes a host acknowledgement with expiry");
+	target_host->current_state = STATE_UP;
+
+	target_host->current_state = STATE_DOWN;
+	ok(CMD_ERROR_OK == process_external_command1("[1234567890] ACKNOWLEDGE_HOST_PROBLEM_EXPIRE;host1;2;0;0;946681200;myself;expire in the past"), "core command: ACKNOWLEDGE_HOST_PROBLEM_EXPIRE");
+	ok(!target_host->problem_has_been_acknowledged, "ACKNOWLEDGE_HOST_PROBLEM_EXPIRE with past end_time doesn't acknowledge a host problem");
+	target_host->current_state = STATE_UP;
+
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] DISABLE_HOST_EVENT_HANDLER;host1"), "core command: DISABLE_HOST_EVENT_HANDLER");
 	ok(!target_host->event_handler_enabled, "DISABLE_HOST_EVENT_HANDLER disables event handler for a host");
 
@@ -670,7 +683,7 @@ void test_core_commands(void)
 int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 {
 	const char *test_config_file = TESTDIR "naemon.cfg";
-	plan_tests(507);
+	plan_tests(513);
 	init_event_queue();
 
 	config_file_dir = nspath_absolute_dirname(test_config_file, NULL);
