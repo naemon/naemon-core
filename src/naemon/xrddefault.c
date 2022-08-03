@@ -203,6 +203,7 @@ int xrddefault_save_state_information(void)
 		}
 		fprintf(fp, "problem_has_been_acknowledged=%d\n", temp_host->problem_has_been_acknowledged);
 		fprintf(fp, "acknowledgement_type=%d\n", temp_host->acknowledgement_type);
+		fprintf(fp, "acknowledgement_end_time=%lu\n", temp_host->acknowledgement_end_time);
 		if (conf_host && conf_host->checks_enabled != temp_host->checks_enabled) {
 			fprintf(fp, "config:active_checks_enabled=%d\n", conf_host->checks_enabled);
 			fprintf(fp, "active_checks_enabled=%d\n", temp_host->checks_enabled);
@@ -311,6 +312,7 @@ int xrddefault_save_state_information(void)
 		}
 		fprintf(fp, "problem_has_been_acknowledged=%d\n", temp_service->problem_has_been_acknowledged);
 		fprintf(fp, "acknowledgement_type=%d\n", temp_service->acknowledgement_type);
+		fprintf(fp, "acknowledgement_end_time=%lu\n", temp_service->acknowledgement_end_time);
 		if (conf_svc && conf_svc->flap_detection_enabled != temp_service->flap_detection_enabled) {
 			fprintf(fp, "config:flap_detection_enabled=%d\n", conf_svc->flap_detection_enabled);
 			fprintf(fp, "flap_detection_enabled=%d\n", temp_service->flap_detection_enabled);
@@ -1092,6 +1094,8 @@ int xrddefault_read_state_information(void)
 							temp_host->problem_has_been_acknowledged = (atoi(val) > 0) ? TRUE : FALSE;
 						} else if (!strcmp(var, "acknowledgement_type")) {
 							temp_host->acknowledgement_type = atoi(val);
+						} else if (!strcmp(var, "acknowledgement_end_time")) {
+							temp_host->acknowledgement_end_time = strtoul(val, NULL, 10);
 						} else if (!strcmp(var, "notifications_enabled")) {
 							RETAIN_BOOL(host, temp_host, notifications_enabled, MODATTR_NOTIFICATIONS_ENABLED);
 						} else if (!strcmp(var, "active_checks_enabled")) {
@@ -1355,6 +1359,8 @@ int xrddefault_read_state_information(void)
 							temp_service->problem_has_been_acknowledged = (atoi(val) > 0) ? TRUE : FALSE;
 						} else if (!strcmp(var, "acknowledgement_type")) {
 							temp_service->acknowledgement_type = atoi(val);
+						} else if (!strcmp(var, "acknowledgement_end_time")) {
+							temp_service->acknowledgement_end_time = strtoul(val, NULL, 10);
 						} else if (!strcmp(var, "notifications_enabled")) {
 							RETAIN_BOOL(service, temp_service, notifications_enabled, MODATTR_NOTIFICATIONS_ENABLED);
 						} else if (!strcmp(var, "active_checks_enabled")) {
