@@ -73,8 +73,8 @@ static void disable_host_notifications(host *);		/* disables host notifications 
 static void enable_and_propagate_notifications(host *hst, struct propagation_parameters *params);
 static void disable_and_propagate_notifications(host *hst, struct propagation_parameters *params);
 static void schedule_and_propagate_downtime(host *temp_host, struct downtime_parameters *params);
-static void acknowledge_host_problem(host *, char *, char *, int, int, int);	/* acknowledges a host problem */
-static void acknowledge_service_problem(service *, char *, char *, int, int, int);	/* acknowledges a service problem */
+static void acknowledge_host_problem(host *, char *, char *, int, int, int, time_t);	/* acknowledges a host problem */
+static void acknowledge_service_problem(service *, char *, char *, int, int, int, time_t);	/* acknowledges a service problem */
 static void remove_host_acknowledgement(host *);		/* removes a host acknowledgement */
 static void remove_service_acknowledgement(service *);		/* removes a service acknowledgement */
 static void start_executing_service_checks(void);		/* starts executing service checks */
@@ -1881,7 +1881,7 @@ static int host_command_handler(const struct external_command *ext_command, time
 		return OK;
 	case CMD_ACKNOWLEDGE_HOST_PROBLEM:
 		acknowledge_host_problem(target_host, GV("author"), GV("comment"), GV_INT("sticky"),
-		                         GV_BOOL("notify"), GV_BOOL("persistent"));
+		                         GV_BOOL("notify"), GV_BOOL("persistent"), (time_t)0);
 		return OK;
 	case CMD_ENABLE_HOST_EVENT_HANDLER:
 		enable_host_event_handler(target_host);
@@ -2257,7 +2257,8 @@ static int service_command_handler(const struct external_command *ext_command, t
 	case CMD_PROCESS_SERVICE_CHECK_RESULT:
 		return process_passive_service_check(entry_time /*entry time as check time*/, target_service->host_name, target_service->description, GV_INT("status_code"), GV("plugin_output"));
 	case CMD_ACKNOWLEDGE_SVC_PROBLEM:
-		acknowledge_service_problem(target_service, GV("author"), GV("comment"), GV_INT("sticky"), GV_BOOL("notify"), GV_BOOL("persistent"));
+		acknowledge_service_problem(target_service, GV("author"), GV("comment"), GV_INT("sticky"),
+                                            GV_BOOL("notify"), GV_BOOL("persistent"), (time_t)0);
 		return OK;
 	case CMD_ENABLE_PASSIVE_SVC_CHECKS:
 		enable_passive_service_checks(target_service);
@@ -3958,7 +3959,7 @@ static void schedule_and_propagate_downtime(host *temp_host, struct downtime_par
 
 
 /* acknowledges a host problem */
-static void acknowledge_host_problem(host *hst, char *ack_author, char *ack_data, int type, int notify, int persistent)
+static void acknowledge_host_problem(host *hst, char *ack_author, char *ack_data, int type, int notify, int persistent, time_t end_time)
 {
 	time_t current_time = 0L;
 
@@ -3990,7 +3991,7 @@ static void acknowledge_host_problem(host *hst, char *ack_author, char *ack_data
 
 
 /* acknowledges a service problem */
-static void acknowledge_service_problem(service *svc, char *ack_author, char *ack_data, int type, int notify, int persistent)
+static void acknowledge_service_problem(service *svc, char *ack_author, char *ack_data, int type, int notify, int persistent, time_t end_time)
 {
 	time_t current_time = 0L;
 
