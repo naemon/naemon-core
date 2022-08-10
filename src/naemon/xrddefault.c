@@ -14,7 +14,12 @@
 #include "defaults.h"
 #include "nm_alloc.h"
 #include "broker.h"
+#include "events.h"
 #include <string.h>
+
+/* from commands.c */
+void handle_host_acknowledgement_expire_event(struct nm_event_execution_properties *evprop); /* removes an expired host acknowledgement */
+void handle_service_acknowledgement_expire_event(struct nm_event_execution_properties *evprop); /* removes an expired service acknowledgement */
 
 /******************************************************************/
 /********************* INIT/CLEANUP FUNCTIONS *********************/
@@ -636,6 +641,23 @@ int xrddefault_read_state_information(void)
 					if (temp_host->last_hard_state_change == (time_t)0)
 						temp_host->last_hard_state_change = temp_host->last_state_change;
 
+					/* if there was an expiring ack */
+					if (temp_host->problem_has_been_acknowledged && temp_host->acknowledgement_end_time > 0) {
+
+						/* get the time */
+						time(&current_time);
+
+						/* and if the expiry time is in the future */
+						if (temp_host->acknowledgement_end_time > current_time) {
+							/* schedule the expiry event */
+							schedule_event(temp_host->acknowledgement_end_time - current_time, handle_host_acknowledgement_expire_event, (void *)temp_host);
+						} else {
+							/* otherwise unacknowledge the problem */
+							temp_host->problem_has_been_acknowledged = FALSE;
+							temp_host->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+							temp_host->acknowledgement_end_time = (time_t)0;
+						}
+					}
 					/* update host status */
 					update_host_status(temp_host, FALSE);
 				}
@@ -678,6 +700,23 @@ int xrddefault_read_state_information(void)
 					if (temp_service->last_hard_state_change == (time_t)0)
 						temp_service->last_hard_state_change = temp_service->last_state_change;
 
+					/* if there was an expiring ack */
+					if (temp_service->problem_has_been_acknowledged && temp_service->acknowledgement_end_time > 0) {
+
+						/* get the time */
+						time(&current_time);
+
+						/* and if the expiry time is in the future */
+						if (temp_service->acknowledgement_end_time > current_time) {
+							/* schedule the expiry event */
+							schedule_event(temp_service->acknowledgement_end_time - current_time, handle_service_acknowledgement_expire_event, (void *)temp_service);
+						} else {
+							/* otherwise unacknowledge the problem */
+							temp_service->problem_has_been_acknowledged = FALSE;
+							temp_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+							temp_service->acknowledgement_end_time = (time_t)0;
+						}
+					}
 					/* update service status */
 					update_service_status(temp_service, FALSE);
 				}
