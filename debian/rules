@@ -58,6 +58,10 @@ override_dh_installinit:
 	rm debian/naemon-core/etc/init.d/naemon
 	dh_installinit --name=naemon
 
+override_dh_makeshlibs:
+	# Don't add ldconfig trigger
+	dh_makeshlibs --no-scripts
+
 override_dh_auto_test:
 
 %:
