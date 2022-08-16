@@ -36,7 +36,6 @@ override_dh_auto_configure:
 
 override_dh_auto_install:
 	dh_auto_install
-	mv debian/tmp/etc/logrotate.d/naemon debian/tmp/etc/logrotate.d/naemon-core
 	cp naemon.logrotate.el7 debian/naemon-core.logrotate
 	ln -s /usr/lib/nagios/plugins debian/tmp/usr/lib/naemon/plugins
 	mkdir -p -m 0755 debian/tmp/usr/share/naemon/examples
