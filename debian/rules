@@ -4,6 +4,8 @@
 export DH_VERBOSE=1
 DESTDIR=$(CURDIR)/debian/tmp/
 
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
 override_dh_auto_configure:
 	test -f configure || ./autogen.sh
 	dh_auto_configure -- --prefix=/usr \
