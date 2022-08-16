@@ -455,7 +455,7 @@ int main(int argc, char **argv)
 		wproc_num_workers_spawned = wproc_num_workers_online = 0;
 
 		/* reset program variables */
-		timing_point("Reseting variables\n");
+		timing_point("Resetting variables\n");
 		reset_variables();
 		timing_point("Reset variables\n");
 
