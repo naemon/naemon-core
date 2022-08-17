@@ -1,1 +1,2 @@
+naemon-core: breakout-link usr/lib/naemon/plugins -> usr/lib/nagios/plugins
 naemon-core: bugs-field-does-not-refer-to-debian-infrastructure https://github.com/naemon/naemon-core/issues
