@@ -214,7 +214,7 @@ daterange *add_exception_to_timeperiod(timeperiod *period, int type, int syear, 
 	if (period == NULL)
 		return NULL;
 
-	/* allocate memory for the date range range */
+	/* allocate memory for the date range */
 	new_daterange = nm_malloc(sizeof(daterange));
 	new_daterange->times = NULL;
 	new_daterange->next = NULL;
@@ -730,7 +730,7 @@ static void _get_next_invalid_time(time_t pref_time, time_t *invalid_time, timep
 		temp_timerange = _get_matching_timerange(earliest_time, tperiod);
 
 		for (; temp_timerange; last_range = temp_timerange, temp_timerange = temp_timerange->next) {
-			/* ranges with start/end of zero mean exlude this day */
+			/* ranges with start/end of zero mean exclude this day */
 
 			day_range_start = (time_t)(midnight + temp_timerange->range_start);
 			day_range_end = (time_t)(midnight + temp_timerange->range_end);
@@ -836,7 +836,7 @@ static void _get_next_valid_time(time_t pref_time, time_t *valid_time, timeperio
 
 		for (; temp_timerange != NULL; temp_timerange = temp_timerange->next) {
 			depth++;
-			/* ranges with start/end of zero mean exlude this day */
+			/* ranges with start/end of zero mean exclude this day */
 			if (temp_timerange->range_start == 0 && temp_timerange->range_end == 0) {
 				continue;
 			}
@@ -991,7 +991,7 @@ static time_t calculate_time_from_day_of_month(int year, int month, int monthday
 		/* make the new time */
 		t.tm_mon = month;
 		t.tm_year = year;
-		/* -1 means last day of month, so add one to to make this correct - Mike Bird */
+		/* -1 means last day of month, so add one to make this correct - Mike Bird */
 		t.tm_mday += (monthday < -30) ? -30 : monthday + 1;
 		t.tm_isdst = -1;
 		midnight = mktime(&t);

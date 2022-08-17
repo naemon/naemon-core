@@ -634,7 +634,7 @@ neb_cb_resultset *neb_make_callbacks_full(enum NEBCallbackType callback_type, vo
 	/* make the callbacks... */
 	for (temp_callback = neb_callback_list[callback_type]; temp_callback; temp_callback = next_callback) {
 		next_callback = temp_callback->next;
-		/* get name of module reponsible for the callback */
+		/* get name of module responsible for the callback */
 		for (temp_module = neb_module_list; temp_module != NULL; temp_module = temp_module->next) {
 			if (temp_module->module_handle == temp_callback->module_handle) {
 				if (temp_module->core_module) {

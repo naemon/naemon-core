@@ -954,7 +954,7 @@ START_TEST(service_retain_always_within_check_interval)
 }
 END_TEST
 
-/* If host_down_disable_service_checks is true, and the the services host is
+/* If host_down_disable_service_checks is true, and the services host is
  * down, then we should not perform service checks
  */
 START_TEST(disable_service_check_host_down)

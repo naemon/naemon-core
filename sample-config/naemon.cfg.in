@@ -170,7 +170,7 @@ event_broker_options=-1
 # This directive is used to specify an event broker module that should
 # be loaded by Naemon at startup.  Use multiple directives if you want
 # to load more than one module.  Arguments that should be passed to
-# the module at startup are seperated from the module path by a space.
+# the module at startup are separated from the module path by a space.
 #
 # Example:
 #
@@ -522,7 +522,7 @@ interval_length=60
 # If you don't want to turn on aggressive host checking features, set
 # this value to 0 (the default).  Otherwise set this value to 1 to
 # enable the aggressive check option. When disabled (0), Naemon will treat
-# WARNING states as UP for host checks. This let's you use the same
+# WARNING states as UP for host checks. This lets you use the same
 # check plugin for host and service checks. Read the docs for more info
 # on what aggressive host check is or check out the source code in
 # src/naemon/checks_host.c
@@ -649,7 +649,7 @@ process_performance_data=0
 # performance data files are opened in write ("w") or append ("a")
 # mode. If you want to use named pipes, you should use the special
 # pipe ("p") mode which avoid blocking at startup, otherwise you will
-# likely want the defult append ("a") mode.
+# likely want the default append ("a") mode.
 
 #host_perfdata_file_mode=a
 #service_perfdata_file_mode=a
@@ -678,7 +678,7 @@ process_performance_data=0
 
 
 # HOST AND SERVICE PERFORMANCE DATA PROCESS EMPTY RESULTS
-# These options determine wether the core will process empty perfdata
+# These options determine whether the core will process empty perfdata
 # results or not. This is needed for distributed monitoring, and intentionally
 # turned on by default.
 # If you don't require empty perfdata - saving some cpu cycles

@@ -735,7 +735,7 @@ int xrddefault_read_state_information(void)
 					if (ack == FALSE && persistent == FALSE)
 						force_remove = TRUE;
 				}
-				/* comments from downtimes don't get removed, they would be immediatly added again anyway, but with incremented id for each reload */
+				/* comments from downtimes don't get removed, they would be immediately added again anyway, but with incremented id for each reload */
 				else if (entry_type == DOWNTIME_COMMENT) {
 				}
 				/* non-persistent comments don't last past restarts UNLESS they're acks (see above) */

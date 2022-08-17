@@ -17,7 +17,7 @@ int init_objects_servicegroup(int elems)
 	return OK;
 }
 
-/* destroy a single servicegroup object, set truncate_lists to TRUE when lists should be simply emtied instead of removing item by item.
+/* destroy a single servicegroup object, set truncate_lists to TRUE when lists should be simply emptied instead of removing item by item.
  * Enable truncate_list when removing all objects and disble when removing a specific one. */
 void destroy_objects_servicegroup(int truncate_lists)
 {
@@ -83,7 +83,7 @@ int register_servicegroup(servicegroup *new_servicegroup)
 	return OK;
 }
 
-/* destroy a single servicegroup object, set truncate_lists to TRUE when lists should be simply emtied instead of removing item by item.
+/* destroy a single servicegroup object, set truncate_lists to TRUE when lists should be simply emptied instead of removing item by item.
  * Enable truncate_list when removing all objects and disble when removing a specific one. */
 void destroy_servicegroup(servicegroup *this_servicegroup, int truncate_lists)
 {

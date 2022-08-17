@@ -24,7 +24,7 @@ int init_objects_service(int elems)
 	return OK;
 }
 
-/* destroy a single service object, set truncate_lists to TRUE when lists should be simply emtied instead of removing item by item.
+/* destroy a single service object, set truncate_lists to TRUE when lists should be simply emptied instead of removing item by item.
  * Enable truncate_list when removing all objects and disble when removing a specific one. */
 void destroy_objects_service(int truncate_lists)
 {
@@ -265,7 +265,7 @@ customvariablesmember *add_custom_variable_to_service(service *svc, char *varnam
 	return add_custom_variable_to_object(&svc->custom_variables, varname, varvalue);
 }
 
-/* destroy a single service object, set truncate_lists to TRUE when lists should be simply emtied instead of removing item by item.
+/* destroy a single service object, set truncate_lists to TRUE when lists should be simply emptied instead of removing item by item.
  * Enable truncate_list when removing all objects and disble when removing a specific one. */
 void destroy_service(service *this_service, int truncate_lists)
 {

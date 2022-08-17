@@ -46,7 +46,7 @@ START_TEST(kvvec_ekvstr_consistancy)
 }
 END_TEST
 /*
- * This test to unpacke an kvvec, to verify escaping of the unpacked data.
+ * This test to unpack an kvvec, to verify escaping of the unpacked data.
  */
 START_TEST(kvvec_ekvstr_unpack)
 {

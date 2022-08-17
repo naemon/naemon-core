@@ -355,7 +355,7 @@ exit 0
 - Add reload for systemctl-based setups
 
 * Thu Feb 06 2014 Sven Nierlein <sven.nierlein@consol.de> 0.1.0-1
-- moved thruks reporting addon into seperate package
+- moved thruks reporting addon into separate package
 
 * Tue Nov 26 2013 Sven Nierlein <sven.nierlein@consol.de> 0.0.1-1
 - initial naemon meta package
