@@ -9,7 +9,7 @@
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: start and stop Naemon monitoring server
-# Description:       Naemon is is a service monitoring system
+# Description:       Naemon is a service monitoring system
 ### END INIT INFO
 
 # Source function library.

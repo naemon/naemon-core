@@ -345,7 +345,7 @@ void signal_react()
 
 /**
  * Handle the SIGXFSZ signal. A SIGXFSZ signal is received when a file exceeds
- * the maximum allowable size either as dictated by the fzise paramater in
+ * the maximum allowable size either as dictated by the fzise parameter in
  * /etc/security/limits.conf (ulimit -f) or by the maximum size allowed by
  * the filesystem
  */
