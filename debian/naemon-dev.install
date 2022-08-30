@@ -1,3 +1,5 @@
 /usr/include/naemon
-/usr/lib/naemon/libnaemon.a
-/usr/lib/naemon/libnaemon.la
+/usr/lib/*/libnaemon.a
+/usr/lib/*/libnaemon.la
+/usr/lib/*/pkgconfig/naemon.pc
+/usr/lib/*/libnaemon.so

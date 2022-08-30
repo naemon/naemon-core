@@ -69,6 +69,7 @@ Description: This package contains the header files, static libraries and develo
 Package: libnaemon
 Section: libs
 Architecture: any
+Multi-Arch: same
 Depends:
     ${misc:Depends},
     ${shlibs:Depends}
