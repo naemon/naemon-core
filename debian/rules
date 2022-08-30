@@ -4,6 +4,7 @@
 export DH_VERBOSE=1
 DESTDIR=$(CURDIR)/debian/tmp/
 
+include /usr/share/dpkg/architecture.mk
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
 override_dh_auto_configure:
@@ -11,7 +12,7 @@ override_dh_auto_configure:
 	dh_auto_configure -- --prefix=/usr \
 				--bindir="/usr/bin" \
 				--datadir="/usr/share/naemon" \
-				--libdir="/usr/lib/naemon" \
+				--libdir="/usr/lib/$(DEB_HOST_MULTIARCH)" \
 				--includedir="/usr/include" \
 				--localstatedir="/var/lib/naemon" \
 				--sysconfdir="/etc/naemon" \
@@ -28,11 +29,6 @@ override_dh_auto_configure:
 				--with-naemon-user="naemon" \
 				--with-naemon-group="naemon" \
 				--with-lockfile="/run/naemon/naemon.pid"
-	if [ "x$(DEB_HOST_MULTIARCH)" != "x" ]; then \
-		echo /usr/lib/naemon/pkgconfig/naemon.pc usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig/ >> debian/naemon-dev.install; \
-	else \
-		echo /usr/lib/naemon/pkgconfig/naemon.pc usr/share/pkgconfig/ >> debian/naemon-dev.install; \
-	fi
 
 
 
@@ -59,10 +55,6 @@ override_dh_installinit:
 	# make space for the debian specific rc file
 	rm debian/naemon-core/etc/init.d/naemon
 	dh_installinit --name=naemon
-
-override_dh_makeshlibs:
-	# Don't add ldconfig trigger
-	dh_makeshlibs --no-scripts
 
 override_dh_auto_test:
 
