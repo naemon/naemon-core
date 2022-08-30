@@ -35,7 +35,6 @@ override_dh_auto_configure:
 override_dh_auto_install:
 	dh_auto_install
 	cp naemon.logrotate.el7 debian/naemon-core.logrotate
-	ln -s /usr/lib/nagios/plugins debian/tmp/usr/lib/naemon/plugins
 	mkdir -p -m 0755 debian/tmp/usr/share/naemon/examples
 	mv debian/tmp/etc/naemon/conf.d debian/tmp/usr/share/naemon/examples
 	# get rid of dependency_libs in la files, see https://wiki.debian.org/ReleaseGoals/LAFileRemoval

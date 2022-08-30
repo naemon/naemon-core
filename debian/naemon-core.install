@@ -8,5 +8,4 @@
 /usr/bin/naemonstats
 /var/log/naemon
 /var/log/naemon/archives
-/usr/lib/naemon/plugins
 /usr/share/naemon/examples
