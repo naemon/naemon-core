@@ -188,6 +188,9 @@ static void handle_host_check_event(struct nm_event_execution_properties *evprop
 			/* update the status log */
 			update_host_status(hst, FALSE);
 		}
+	} else if (evprop->execution_type == EVENT_EXEC_ABORTED) {
+		/* If the event is destroyed, remove the reference. */
+		hst->next_check_event = NULL;
 	}
 }
 
