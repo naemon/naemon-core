@@ -691,6 +691,7 @@ int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 	assert(OK == read_all_object_data(test_config_file));
 	assert(OK == initialize_downtime_data());
 	assert(OK == initialize_retention_data());
+	nagios_iobs = iobroker_create();
 	test_register();
 	test_parsing();
 	test_core_commands();
