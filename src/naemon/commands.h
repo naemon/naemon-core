@@ -10,6 +10,7 @@
 #include "objects_contact.h"
 #include "objects_host.h"
 #include "objects_service.h"
+#include "events.h"
 
 NAGIOS_BEGIN_DECL
 
@@ -219,6 +220,9 @@ int launch_command_file_worker(void);
 int shutdown_command_file_worker(void);
 int disconnect_command_file_worker(void);
 int command_worker_get_pid(void);
+
+void handle_host_acknowledgement_expire_event(struct nm_event_execution_properties *evprop); /* removes an expired host acknowledgement */
+void handle_service_acknowledgement_expire_event(struct nm_event_execution_properties *evprop); /* removes an expired service acknowledgement */
 
 NAGIOS_END_DECL
 

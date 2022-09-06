@@ -15,11 +15,8 @@
 #include "nm_alloc.h"
 #include "broker.h"
 #include "events.h"
+#include "commands.h"
 #include <string.h>
-
-/* from commands.c */
-void handle_host_acknowledgement_expire_event(struct nm_event_execution_properties *evprop); /* removes an expired host acknowledgement */
-void handle_service_acknowledgement_expire_event(struct nm_event_execution_properties *evprop); /* removes an expired service acknowledgement */
 
 /******************************************************************/
 /********************* INIT/CLEANUP FUNCTIONS *********************/

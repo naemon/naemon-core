@@ -77,8 +77,6 @@ static void acknowledge_host_problem(host *, char *, char *, int, int, int, time
 static void acknowledge_service_problem(service *, char *, char *, int, int, int, time_t);	/* acknowledges a service problem */
 static void remove_host_acknowledgement(host *);		/* removes a host acknowledgement */
 static void remove_service_acknowledgement(service *);		/* removes a service acknowledgement */
-void handle_host_acknowledgement_expire_event(struct nm_event_execution_properties *evprop); /* removes an expired host acknowledgement */
-void handle_service_acknowledgement_expire_event(struct nm_event_execution_properties *evprop); /* removes an expired service acknowledgement */
 static void start_executing_service_checks(void);		/* starts executing service checks */
 static void stop_executing_service_checks(void);		/* stops executing service checks */
 static void start_accepting_passive_service_checks(void);	/* starts accepting passive service check results */
