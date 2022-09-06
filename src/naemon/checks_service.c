@@ -240,6 +240,9 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 
 		/* Otherwise, run the event */
 		run_scheduled_service_check(temp_service, options, latency);
+	} else if (evprop->execution_type == EVENT_EXEC_ABORTED) {
+		/* If the event is destroyed, remove the reference. */
+		temp_service->next_check_event = NULL;
 	}
 }
 
