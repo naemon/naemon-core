@@ -71,8 +71,8 @@ int setup_contact_variables(contact *new_contact, const char *alias, const char 
 		return -1;
 	}
 
-	new_contact->host_notification_period = htp ? htp->name : NULL;
-	new_contact->service_notification_period = stp ? stp->name : NULL;
+	new_contact->host_notification_period = htp ? nm_strdup(htp->name) : NULL;
+	new_contact->service_notification_period = stp ? nm_strdup(stp->name) : NULL;
 	new_contact->host_notification_period_ptr = htp;
 	new_contact->service_notification_period_ptr = stp;
 	if (alias)
