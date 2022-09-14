@@ -662,7 +662,7 @@ START_TEST(service_triggered_scheduled_downtime)
 	ck_assert(triggered_dt->is_in_effect == TRUE);
 	/* just to make sure that the triggered flex_downtime_start is the same as the triggering downtime's flex_downtime_start	 */
 	ck_assert(triggered_dt->flex_downtime_start == dt->flex_downtime_start);
-	/* make sure the the stop event is scheduled after the current time */
+	/* make sure the stop event is scheduled after the current time */
 	ck_assert(event_time_stop_triggered.tv_sec < triggered_dt->stop_event->event_time.tv_sec);
 	ck_assert_int_eq(1, svc->scheduled_downtime_depth);
 	ck_assert_int_eq(1, svc1->scheduled_downtime_depth);

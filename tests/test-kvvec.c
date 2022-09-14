@@ -304,7 +304,7 @@ START_TEST(kvvec_test_lookup_sorted_uses_binary)
 	ck_assert_str_eq(kv->key, "alfa");
 	ck_assert_str_eq(kv->value, "1");
 
-	/* Forcing sorted flag, binary search shoud be used */
+	/* Forcing sorted flag, binary search should be used */
 	kvv->kvv_sorted = 1;
 
 	/* alfa shouldn't be found, since binary search reduces to first half */

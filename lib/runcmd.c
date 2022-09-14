@@ -210,7 +210,7 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv, int *out_en
 		default:
 			if(in_quotes)
 				break;
-			/* values may contain any character, except whitespace (which is catched earlier already) */
+			/* values may contain any character, except whitespace (which is caught earlier already) */
 			if(have_state(STATE_INVAL))
 				break;
 			/* variables must start with a letter/underline and contain only letters, numbers and underlines */
@@ -554,7 +554,7 @@ int runcmd_open(const char *cmd, int *pfd, int *pfderr)
 
 	/* parent picks up execution here */
 	/*
-	 * close childs file descriptors in our address space and
+	 * close child file descriptors in our address space and
 	 * release the memory we used that won't get passed to the
 	 * caller.
 	 */

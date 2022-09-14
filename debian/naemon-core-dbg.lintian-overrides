@@ -1,2 +1,0 @@
-naemon-core-dbg: binary-or-shlib-defines-rpath ./usr/bin/naemon-dbg /usr/lib/naemon
-naemon-core-dbg: binary-or-shlib-defines-rpath usr/bin/naemon-dbg /usr/lib/naemon

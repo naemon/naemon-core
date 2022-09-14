@@ -668,6 +668,26 @@ void test_service_commands(void)
 	free(cmdstr);
 }
 
+void test_timeperiod_commands(void)
+{
+	char *contact_name = "third";
+	contact *target_contact = NULL;
+	timeperiod *target_timeperiod = NULL;
+
+	target_timeperiod = find_timeperiod("weekly_complex");
+	assert(NULL != target_timeperiod);
+	assert(!strcmp(target_timeperiod->name, "weekly_complex"));
+
+	target_contact = find_contact(contact_name);
+	assert(NULL != target_contact);
+	assert(!strcmp(target_contact->host_notification_period, "weekly_complex"));
+	assert(target_contact->host_notification_period_ptr == target_timeperiod);
+
+	ok(CMD_ERROR_OK == process_external_command1("[1234567890] CHANGE_CONTACT_HOST_NOTIFICATION_TIMEPERIOD;third;24x7"), "core command: CHANGE_CONTACT_HOST_NOTIFICATION_TIMEPERIOD");
+	ok(!strcmp(target_contact->host_notification_period, "24x7"), "Host notification period is changed correctly");
+	ok(!strcmp(target_timeperiod->name, "weekly_complex"), "The original timeperiod name is unchanged");
+}
+
 void test_core_commands(void)
 {
 	/*setup configuration*/
@@ -686,6 +706,7 @@ void test_core_commands(void)
 	test_global_commands();
 	test_host_commands();
 	test_service_commands();
+	test_timeperiod_commands();
 	registered_commands_deinit();
 	free(config_file);
 }

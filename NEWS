@@ -198,7 +198,7 @@ Bugfixes:
   * Fix custom variables persistence accros restarts for single byte values
   * Fix writing to already rotated logfile
   * Fix memory leak in broker_notification_data
-  * Fix notification commands beeing reaped to early (#137)
+  * Fix notification commands being reaped to early (#137)
 
 1.0.5 - Jun 21 2016
 ===================
@@ -269,7 +269,7 @@ Other:
 
 1.0 - Feb 13 2015
 =================
- * Fix shadownaemon comment and downtime syncronization
+ * Fix shadownaemon comment and downtime synchronization
  * Fix spelling errors
 
 0.9 - Jan 08 2015

@@ -773,7 +773,7 @@ int xrddefault_read_state_information(void)
 					if (ack == FALSE && persistent == FALSE)
 						force_remove = TRUE;
 				}
-				/* comments from downtimes don't get removed, they would be immediatly added again anyway, but with incremented id for each reload */
+				/* comments from downtimes don't get removed, they would be immediately added again anyway, but with incremented id for each reload */
 				else if (entry_type == DOWNTIME_COMMENT) {
 				}
 				/* non-persistent comments don't last past restarts UNLESS they're acks (see above) */
@@ -1546,7 +1546,7 @@ int xrddefault_read_state_information(void)
 								/* make sure the timeperiod still exists... */
 								temp_timeperiod = find_timeperiod(val);
 								if (temp_timeperiod) {
-									temp_contact->host_notification_period = temp_timeperiod->name;
+									temp_contact->host_notification_period = nm_strdup(temp_timeperiod->name);
 									temp_contact->host_notification_period_ptr = temp_timeperiod;
 								} else {
 									temp_contact->modified_host_attributes &= ~MODATTR_NOTIFICATION_TIMEPERIOD;
@@ -1558,7 +1558,7 @@ int xrddefault_read_state_information(void)
 								/* make sure the timeperiod still exists... */
 								temp_timeperiod = find_timeperiod(val);
 								if (temp_timeperiod) {
-									temp_contact->service_notification_period = temp_timeperiod->name;
+									temp_contact->service_notification_period = nm_strdup(temp_timeperiod->name);
 									temp_contact->service_notification_period_ptr = temp_timeperiod;
 								} else {
 									temp_contact->modified_service_attributes &= ~MODATTR_NOTIFICATION_TIMEPERIOD;

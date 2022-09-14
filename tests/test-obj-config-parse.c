@@ -78,7 +78,7 @@ static void object_def_end(void)
  * that service instead of the host group defined one. It uses the required
  * parameter max_check_attempts to identify if it's a local or hostgroup service
  *
- * Since a problem has occured with not all, but just some, services resolved
+ * Since a problem has occurred with not all, but just some, services resolved
  * the inheritance correctly, the test uses at least 5 hosts with locally
  * defined services. (The problem that occured made one host resolve correctly,
  * other hosts used the hostgroup service)

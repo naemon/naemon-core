@@ -276,7 +276,7 @@ int main(int argc, char **argv)
 	/*
 	 * To find out what has failed, run gdb for this test case
 	 * (libtool --mode=execute gdb t-tap/test_timeperiods) and type
-	 * "watch failures", then it will interupt on increment
+	 * "watch failures", then it will interrupt on increment
 	 */
 
 	putenv("TZ=UTC");

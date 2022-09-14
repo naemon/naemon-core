@@ -3,9 +3,8 @@ Section: net
 Priority: optional
 Maintainer: Naemon Core Development Team <naemon-dev@monitoring-lists.org>
 Build-Depends:
-    debhelper (>= 9),
+    debhelper (>= 9.20151219),
     gperf,
-    chrpath,
     help2man,
     libicu-dev,
     pkg-config,
@@ -54,18 +53,6 @@ Description: host/service/network monitoring and management system
  .
  Upstream URL: https://www.naemon.io/
 
-Package: naemon-core-dbg
-Architecture: any
-Section: debug
-Priority: extra
-Depends:
-    ${shlibs:Depends},
-    ${misc:Depends},
-    libnaemon (>= ${binary:Version})
-Description: contains the Naemon core with debug symbols
- Naemon is a monitoring and management system for hosts, services and
- networks.
-
 Package: naemon-dev
 Architecture: any
 Depends:
@@ -82,6 +69,7 @@ Description: This package contains the header files, static libraries and develo
 Package: libnaemon
 Section: libs
 Architecture: any
+Multi-Arch: same
 Depends:
     ${misc:Depends},
     ${shlibs:Depends}
