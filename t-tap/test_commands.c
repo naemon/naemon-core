@@ -714,7 +714,7 @@ void test_core_commands(void)
 int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 {
 	const char *test_config_file = TESTDIR "naemon.cfg";
-	plan_tests(516);
+	plan_tests(519);
 	init_event_queue();
 
 	config_file_dir = nspath_absolute_dirname(test_config_file, NULL);
