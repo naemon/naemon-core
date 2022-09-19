@@ -1164,7 +1164,8 @@ int xrddefault_read_state_information(void)
 								/* make sure the timeperiod still exists... */
 								temp_timeperiod = find_timeperiod(val);
 								if (temp_timeperiod) {
-									temp_host->check_period = temp_timeperiod->name;
+									nm_free(temp_host->check_period);
+									temp_host->check_period = nm_strdup(temp_timeperiod->name);
 									temp_host->check_period_ptr = temp_timeperiod;
 								} else {
 									temp_host->modified_attributes &= ~MODATTR_CHECK_TIMEPERIOD;
@@ -1176,7 +1177,8 @@ int xrddefault_read_state_information(void)
 								/* make sure the timeperiod still exists... */
 								temp_timeperiod = find_timeperiod(val);
 								if (temp_timeperiod) {
-									temp_host->notification_period = temp_timeperiod->name;
+									nm_free(temp_host->notification_period);
+									temp_host->notification_period = nm_strdup(temp_timeperiod->name);
 									temp_host->notification_period_ptr = temp_timeperiod;
 								} else {
 									temp_host->modified_attributes &= ~MODATTR_NOTIFICATION_TIMEPERIOD;
@@ -1430,7 +1432,8 @@ int xrddefault_read_state_information(void)
 								/* make sure the timeperiod still exists... */
 								temp_timeperiod = find_timeperiod(val);
 								if (temp_timeperiod) {
-									temp_service->check_period = temp_timeperiod->name;
+									nm_free(temp_service->check_period);
+									temp_service->check_period = nm_strdup(temp_timeperiod->name);
 									temp_service->check_period_ptr = temp_timeperiod;
 								} else {
 									temp_service->modified_attributes &= ~MODATTR_CHECK_TIMEPERIOD;
@@ -1442,7 +1445,8 @@ int xrddefault_read_state_information(void)
 								/* make sure the timeperiod still exists... */
 								temp_timeperiod = find_timeperiod(val);
 								if (temp_timeperiod) {
-									temp_service->notification_period = temp_timeperiod->name;
+									nm_free(temp_service->notification_period);
+									temp_service->notification_period = nm_strdup(temp_timeperiod->name);
 									temp_service->notification_period_ptr = temp_timeperiod;
 								} else {
 									temp_service->modified_attributes &= ~MODATTR_NOTIFICATION_TIMEPERIOD;
@@ -1546,6 +1550,7 @@ int xrddefault_read_state_information(void)
 								/* make sure the timeperiod still exists... */
 								temp_timeperiod = find_timeperiod(val);
 								if (temp_timeperiod) {
+									nm_free(temp_contact->host_notification_period);
 									temp_contact->host_notification_period = nm_strdup(temp_timeperiod->name);
 									temp_contact->host_notification_period_ptr = temp_timeperiod;
 								} else {
@@ -1558,6 +1563,7 @@ int xrddefault_read_state_information(void)
 								/* make sure the timeperiod still exists... */
 								temp_timeperiod = find_timeperiod(val);
 								if (temp_timeperiod) {
+									nm_free(temp_contact->service_notification_period);
 									temp_contact->service_notification_period = nm_strdup(temp_timeperiod->name);
 									temp_contact->service_notification_period_ptr = temp_timeperiod;
 								} else {

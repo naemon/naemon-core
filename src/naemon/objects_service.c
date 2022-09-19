@@ -139,8 +139,8 @@ int setup_service_variables(service *new_service, const char *display_name, cons
 	/* duplicate vars, but assign what we can */
 	new_service->notification_period_ptr = np;
 	new_service->check_period_ptr = cp;
-	new_service->check_period = cp ? cp->name : NULL;
-	new_service->notification_period = np ? np->name : NULL;
+	new_service->check_period = cp ? nm_strdup(cp->name) : NULL;
+	new_service->notification_period = np ? nm_strdup(np->name) : NULL;
 	new_service->check_command = nm_strdup(check_command);
 	new_service->check_command_ptr = cmd;
 	if (display_name) {
@@ -331,6 +331,8 @@ void destroy_service(service *this_service, int truncate_lists)
 	free_objectlist(&this_service->exec_deps);
 	free_objectlist(&this_service->escalation_list);
 	nm_free(this_service->event_handler);
+	nm_free(this_service->check_period);
+	nm_free(this_service->notification_period);
 	nm_free(this_service->notes);
 	nm_free(this_service->notes_url);
 	nm_free(this_service->action_url);
