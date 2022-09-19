@@ -3214,7 +3214,7 @@ void register_core_commands(void)
 	command_register(core_command, CMD_SET_SVC_NOTIFICATION_NUMBER);
 
 	core_command = command_create("CHANGE_HOST_CHECK_TIMEPERIOD", host_command_handler,
-	                              "Changes the valid check period for the specified host.", "host=host_name;timeperiod=timeperiod");
+	                              "Changes the valid check period for the specified host.", "host=host_name;timeperiod=check_timeperiod");
 	command_register(core_command, CMD_CHANGE_HOST_CHECK_TIMEPERIOD);
 
 	core_command = command_create("CHANGE_SVC_CHECK_TIMEPERIOD", service_command_handler,

@@ -125,10 +125,10 @@ int setup_host_variables(host *new_host, const char *display_name, const char *a
 	if (address)
 		new_host->address = nm_strdup(address);
 	if (check_tp) {
-		new_host->check_period = check_tp->name;
+		new_host->check_period = nm_strdup(check_tp->name);
 		new_host->check_period_ptr = check_tp;
 	}
-	new_host->notification_period = notify_tp ? notify_tp->name : NULL;
+	new_host->notification_period = notify_tp ? nm_strdup(notify_tp->name) : NULL;
 	new_host->notification_period_ptr = notify_tp;
 	if (check_command) {
 		new_host->check_command = nm_strdup(check_command);
@@ -316,6 +316,8 @@ void destroy_host(host *this_host)
 	free_objectlist(&this_host->escalation_list);
 	nm_free(this_host->check_command);
 	nm_free(this_host->event_handler);
+	nm_free(this_host->check_period);
+	nm_free(this_host->notification_period);
 	nm_free(this_host->notes);
 	nm_free(this_host->notes_url);
 	nm_free(this_host->action_url);
