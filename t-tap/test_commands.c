@@ -621,6 +621,9 @@ void test_host_commands(void)
 
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] CHANGE_MAX_HOST_CHECK_ATTEMPTS;host1;9"), "core command: CHANGE_MAX_HOST_CHECK_ATTEMPTS");
 	ok(9 == target_host->max_attempts, "CHANGE_MAX_HOST_CHECK_ATTEMPTS changes the maximum number of check attempts for host");
+
+	ok(CMD_ERROR_OK == process_external_command1("[1234567890] CHANGE_HOST_CHECK_TIMEPERIOD;host1;24x7"), "core command: CHANGE_HOST_CHECK_TIMEPERIOD");
+	ok(!strcmp(target_host->check_period, "24x7"),"CHANGE_HOST_CHECK_TIMEPERIOD changes the current check timeperiod for host");
 }
 
 void test_service_commands(void)
@@ -714,7 +717,7 @@ void test_core_commands(void)
 int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 {
 	const char *test_config_file = TESTDIR "naemon.cfg";
-	plan_tests(519);
+	plan_tests(521);
 	init_event_queue();
 
 	config_file_dir = nspath_absolute_dirname(test_config_file, NULL);
