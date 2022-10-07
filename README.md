@@ -71,23 +71,26 @@ doesn't solve an actual problem or paves the way for solving some
 sort of problem or adding a feature, it's most likely not worth the
 trouble.
 
-### Installing ###
+### Installing Naemon ###
 
-When installing from a released tarball, all you need to do is to run
-```
-./configure
-make
-sudo make install
-```
+We build packages for the most common operating systems. For more
+instructions follow the
+[documentation on naemon.io](http://www.naemon.io/download/).
 
-If you want to help out with development and hence download the source from
-git, you instead need to run
+### Compiling Naemon ###
+
+In order to compile Naemon a number of dependencies are required.
+For reference, see the following documentation on
+[naemon.io](http://www.naemon.io/documentation/developer/build.html).
+
+After installing the required dependencies, Naemon can be compiled
+using the following steps.
+
 ```
 ./autogen.sh
 make
 sudo make install
 ```
-
 
 ### More info ###
 
