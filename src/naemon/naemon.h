@@ -65,16 +65,6 @@
  * header before use.
  */
 
-/************* MISC LENGTH/SIZE DEFINITIONS ***********/
-
-/*
- NOTE: Plugin length is artificially capped at 8k to prevent runaway plugins from returning MBs/GBs of data
- back to Nagios.  If you increase the 8k cap by modifying this value, make sure you also increase the value
- of MAX_EXTERNAL_COMMAND_LENGTH in common.h to allow for passive checks results received through the external
- command file. EG 10/19/07
- */
-#define MAX_PLUGIN_OUTPUT_LENGTH                8192    /* max length of plugin output (including perf data) */
-
 /*********** ROUTE CHECK PROPAGATION TYPES ************/
 
 #define PROPAGATE_TO_PARENT_HOSTS	1
