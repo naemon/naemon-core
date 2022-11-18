@@ -8,6 +8,7 @@
 #include "lnae-utils.h"
 #include "kvvec.h"
 #include "bufferqueue.h"
+#include "nsutils.h"
 
 /**
  * @file worker.h

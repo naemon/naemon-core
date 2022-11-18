@@ -587,18 +587,8 @@ int main(int argc, char **argv)
 		timing_point("Loaded modules\n");
 
 		/* close stdin after the neb modules loaded so they can still ask for passwords */
-		if (daemon_mode == TRUE && sigrestart == FALSE) {
-			/* close existing stdin, stdout, stderr */
-			close(0);
-			close(1);
-			close(2);
-
-			/* THIS HAS TO BE DONE TO AVOID PROBLEMS WITH STDERR BEING REDIRECTED TO SERVICE MESSAGE PIPE! */
-			/* re-open stdin, stdout, stderr with known values */
-			open("/dev/null", O_RDONLY);
-			open("/dev/null", O_WRONLY);
-			open("/dev/null", O_WRONLY);
-		}
+		if (daemon_mode == TRUE && sigrestart == FALSE)
+			close_standard_fds();
 
 		timing_point("Making first callback\n");
 		broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE);
