@@ -57,6 +57,8 @@ int spawn_named_helper(char *path, char **argv)
 	if (pid)
 		return pid;
 
+	close_standard_fds();
+
 	ret = execvp(path, argv);
 	/* if execvp() fails, there's really nothing we can do */
 	exit(ret);

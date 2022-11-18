@@ -81,3 +81,22 @@ const char *mkstr(const char *fmt, ...)
 	va_end(ap);
 	return ret;
 }
+
+
+
+/* close and reopen stdin, stdout and stderr to /dev/null */
+void close_standard_fds(void)
+{
+	/* close existing stdin, stdout, stderr */
+	close(0);
+	close(1);
+	close(2);
+
+	/* THIS HAS TO BE DONE TO AVOID PROBLEMS WITH STDERR BEING REDIRECTED TO SERVICE MESSAGE PIPE! */
+	/* re-open stdin, stdout, stderr with known values */
+	open("/dev/null", O_RDONLY);
+	open("/dev/null", O_WRONLY);
+	open("/dev/null", O_WRONLY);
+
+	return;
+}
