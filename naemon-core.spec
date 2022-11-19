@@ -114,9 +114,7 @@ CFLAGS="%{mycflags}" LDFLAGS="$CFLAGS" %configure \
     --includedir="%{_includedir}" \
     --localstatedir="%{_localstatedir}/lib/naemon" \
     --sysconfdir="%{_sysconfdir}/naemon" \
-    --with-naemon-config-dir="%{_sysconfdir}/naemon/module-conf.d" \
     --with-pkgconfdir="%{_sysconfdir}/naemon" \
-    --enable-event-broker \
     --with-pluginsdir="%{_libdir}/naemon/plugins" \
     --with-tempdir="%{_localstatedir}/cache/naemon" \
     --with-checkresultdir="%{_localstatedir}/cache/naemon/checkresults" \
