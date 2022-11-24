@@ -140,6 +140,7 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv, int *out_en
 	len = strlen(str);
 	envz = malloc(len + 1);
 	*out_envc = env;
+	out_env[0] = envz;
 	for (i = 0; i < len && continue_env_parsing; i++) {
 		const char *p = &str[i];
 
@@ -472,6 +473,8 @@ int runcmd_open(const char *cmd, int *pfd, int *pfderr)
 		argv[2] = strdup(cmd);
 		if (!argv[2]) {
 			free(argv);
+			free(env[0]);
+			free(env);
 			return RUNCMD_EALLOC;
 		}
 		argv[3] = NULL;
@@ -549,6 +552,8 @@ int runcmd_open(const char *cmd, int *pfd, int *pfderr)
 			free(argv[0]);
 		else
 			free(argv[2]);
+		free(env[0]);
+		free(env);
 		_exit(errno);
 	}
 
@@ -565,6 +570,7 @@ int runcmd_open(const char *cmd, int *pfd, int *pfderr)
 	else
 		free(argv[2]);
 	free(argv);
+	free(env[0]);
 	free(env);
 
 	/* tag our file's entry in the pid-list and return it */
