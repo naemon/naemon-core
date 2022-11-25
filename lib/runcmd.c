@@ -69,7 +69,6 @@ static int maxfd = 0;
 # endif /* _SC_OPEN_MAX */
 #endif /* OPEN_MAX */
 
-
 const char *runcmd_strerror(int code)
 {
 	switch (code) {
@@ -423,6 +422,11 @@ void runcmd_init(void)
 		}
 	}
 #endif
+
+	/* add sane max limit, if ulimit is set to unlimited or a very high value we
+	 * don't want to waste memory for nothing */
+	if (maxfd > MAX_FD_LIMIT)
+		maxfd = MAX_FD_LIMIT;
 
 	/* reset pipe handling so child processes can use shell pipes */
 	signal(SIGPIPE, SIG_DFL);
