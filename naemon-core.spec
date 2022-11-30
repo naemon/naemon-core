@@ -268,7 +268,9 @@ case "$*" in
           %{_localstatedir}/log/naemon/naemon.log \
           %{_localstatedir}/log/naemon/archives
     rm -rf /var/run/naemon
-    %{insserv_cleanup}
+    %if 0%{?insserv_cleanup}
+      %{insserv_cleanup}
+    %endif
     chkconfig --del naemon >/dev/null 2>&1 || :
     systemctl try-restart naemon.service >/dev/null 2>&1 || :
     rm -rf %{_libdir}/naemon/.local
