@@ -123,7 +123,7 @@ CFLAGS="%{mycflags}" LDFLAGS="$CFLAGS" %configure \
     --with-logrotatedir="%{_sysconfdir}/logrotate.d" \
     --with-naemon-user="naemon" \
     --with-naemon-group="naemon" \
-    --with-lockfile="%{_localstatedir}/run/naemon/naemon.pid"
+    --with-lockfile="/run/naemon/naemon.pid"
 %{__make} %{?_smp_mflags} -j 1 all
 
 %install
@@ -233,6 +233,7 @@ esac
 touch /var/log/naemon/naemon.log
 chmod 0664 /var/log/naemon/naemon.log
 chown naemon:naemon /var/log/naemon/naemon.log
+systemd-tmpfiles --create %{_tmpfilesdir}/naemon.conf
 
 %preun
 case "$*" in
