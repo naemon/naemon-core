@@ -233,7 +233,9 @@ esac
 touch /var/log/naemon/naemon.log
 chmod 0664 /var/log/naemon/naemon.log
 chown naemon:naemon /var/log/naemon/naemon.log
+%if %{?_unitdir:1}0
 systemd-tmpfiles --create %{_tmpfilesdir}/naemon.conf
+%endif
 
 %preun
 case "$*" in
