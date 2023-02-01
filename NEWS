@@ -1,3 +1,18 @@
+1.4.1 - Feb 01 2023
+===================
+Features:
+* none
+
+Changed:
+* use /run/naemon instead of /var/run/naemon (#410)
+
+Bugfixes:
+* fix bashisms in scripts (#407)
+* fix fg: no job control output (#405)
+* fix memory leak in cmd parser (#404)
+* fix closing worker filehandles (#401)
+
+
 1.4.0 - Nov 11 2022
 ===================
 Breaking changes:
