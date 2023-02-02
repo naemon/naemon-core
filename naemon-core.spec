@@ -30,6 +30,7 @@ BuildRequires: libicu-devel
 BuildRequires: pkgconfig
 BuildRequires: glib2-devel
 BuildRequires: check-devel
+
 # sles / rhel specific requirements
 %if 0%{?el8}%{?el7}%{?is_fc}
 BuildRequires: chrpath
@@ -42,6 +43,12 @@ BuildRequires: gdb-headless
 %endif
 
 %if %{defined suse_version}
+# Specifically require systemd for SUSE
+# as the macro doesn't seem to function well
+Requires(pre): systemd
+Requires(post): systemd
+Requires(preun): systemd
+Requires(postun): systemd
 %if 0%{suse_version} < 1230
 Requires(pre): pwdutils
 %else
