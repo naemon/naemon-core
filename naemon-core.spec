@@ -1,12 +1,5 @@
 %define logmsg logger -t naemon/rpm
 
-# Setup some debugging options in case we build with --with debug
-%if %{defined _with_debug}
-  %define mycflags -O0 -pg -ggdb3
-%else
-  %define mycflags %{nil}
-%endif
-
 Summary: Open Source Host, Service And Network Monitoring Program
 Name: naemon-core
 Version: 1.4.1
@@ -115,7 +108,7 @@ Naemon.
 
 %build
 test -f configure || ./autogen.sh
-CFLAGS="%{mycflags}" LDFLAGS="$CFLAGS" %configure \
+%configure \
     --datadir="%{_datadir}/naemon" \
     --libdir="%{_libdir}/naemon" \
     --includedir="%{_includedir}" \
