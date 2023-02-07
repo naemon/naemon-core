@@ -1,0 +1,59 @@
+# Naemon development environment
+
+Contributing to an open source project can be a challenging task,
+even without figuring out how to launch the corresponding software 
+inside an IDE.
+We are more than happy to see that you are interested in
+contributing to the Naemon Core project.
+
+To help you getting started, we provide predefined configurations
+for [Visual Studio Code](https://code.visualstudio.com/) which will
+attach a debugger and has predefined tasks to run the tests.
+
+Basically this is everything you need to start coding.
+
+Due to Naemon is program for Linux, a Linux system is required for development.
+The shown configuration is tested on Ubuntu 22.04 and Fedora 37.
+This documentation will most likely also work flowlesly on new or
+older versions of Ubuntu and Fedora.
+
+## Reqirements
+- [Visual Studio Code](https://code.visualstudio.com/)
+  - [C/C++ Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools)
+
+
+## Install build dependencies
+Naemon itself depends on several libraries. Everything needed can be easily
+installed via the package manager of your distribution.
+
+### Fedora
+```
+sudo dnf group install "Development Tools"
+sudo dnf install git glib2-devel help2man gperf gcc gcc-c++ cmake3 pkgconfig automake autoconf nagios-plugins-all libtool perl-Test-Simple
+```
+
+### Ubuntu
+```
+sudo apt-get install 
+```
+
+## Setup VS Code
+1. Clone this repository and open the folder with Visual Studio Code
+
+2. Naemon requires a configuration file to launch.
+Luckily there is a pre-configured task that will do all that for you.
+From the menu select `Terminal > Run Task... > initial`
+Normally you only need to run this task once.
+
+3. You are ready to rock! Make your code changes, create breakpoints and so on.
+To run Naemon with an debugger attached, select `Run and Debug > Start Debugging`
+![VSCode with running Debugger](/.vscode/vscode_debugger.png)
+
+4. Before you push your code changes, please make sure that all the tests are still green.
+Again there is a predefined task you can execute via
+`Terminal > Run Task... > Run Tests`
+If all tests passed, feel free to push you code and to create a pull request.
+
+## Naemon configuration files
+Just in case you want to provide your own `naemon.cfg` or any other configuration file
+just copy the files to `build/etc/naemon/`
