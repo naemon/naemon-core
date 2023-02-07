@@ -30,6 +30,8 @@ installed via the package manager of your distribution.
 ```
 sudo dnf group install "Development Tools"
 sudo dnf install git glib2-devel help2man gperf gcc gcc-c++ cmake3 pkgconfig automake autoconf nagios-plugins-all libtool perl-Test-Simple
+
+sudo ln -s /usr/lib64/nagios /usr/lib/nagios
 ```
 
 ### Ubuntu

@@ -6,7 +6,7 @@
         {
             "label": "autogen",
             "type": "shell",
-            "command": "${cwd}/autogen.sh --prefix=${cwd}/build --with-naemon-user=$(whoami) --with-naemon-group=users --with-pluginsdir=/usr/lib64/nagios/plugins",
+            "command": "${cwd}/autogen.sh --prefix=${cwd}/build --with-naemon-user=$(whoami) --with-naemon-group=users --with-pluginsdir=/usr/lib/nagios/plugins",
             "problemMatcher": [],
             "group": {
                 "kind":"build",
