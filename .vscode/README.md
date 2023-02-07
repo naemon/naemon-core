@@ -36,7 +36,7 @@ sudo ln -s /usr/lib64/nagios /usr/lib/nagios
 
 ### Ubuntu
 ```
-sudo apt-get install 
+sudo apt-get install git build-essential automake gperf gcc g++ cmake help2man libtool libglib2.0-dev pkg-config libtest-simple-perl monitoring-plugins
 ```
 
 ## Setup VS Code
@@ -59,3 +59,8 @@ If all tests passed, feel free to push you code and to create a pull request.
 ## Naemon configuration files
 Just in case you want to provide your own `naemon.cfg` or any other configuration file
 just copy the files to `build/etc/naemon/`
+
+## Known issues
+If you get an error message like `Configured debug type 'cppdbg' is not supported` please make
+sure you have the [C/C++ Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools) for
+VS Code installed and enabled.
