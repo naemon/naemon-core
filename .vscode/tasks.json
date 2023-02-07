@@ -68,7 +68,7 @@
             // Run the Naemon test cases
             "label": "Run Tests",
             "type": "shell",
-            "command": "make check-am",
+            "command": "make test",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
