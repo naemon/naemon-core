@@ -1,7 +1,7 @@
 # Naemon development environment
 
 Contributing to an open source project can be a challenging task,
-even without figuring out how to launch the corresponding software 
+even without figuring out how to launch the corresponding software
 inside an IDE.
 We are more than happy to see that you are interested in
 contributing to the Naemon Core project.
@@ -17,6 +17,9 @@ The shown configuration is tested on Ubuntu 22.04 and Fedora 37.
 This documentation will most likely also work flowlesly on new or
 older versions of Ubuntu and Fedora.
 
+In addition it is possible to develop on a Windows system using WSL2 ([Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/install))
+
+
 ## Reqirements
 - [Visual Studio Code](https://code.visualstudio.com/)
   - [C/C++ Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools)
@@ -29,14 +32,14 @@ installed via the package manager of your distribution.
 ### Fedora
 ```
 sudo dnf group install "Development Tools"
-sudo dnf install git glib2-devel help2man gperf gcc gcc-c++ cmake3 pkgconfig automake autoconf nagios-plugins-all libtool perl-Test-Simple
+sudo dnf install git glib2-devel help2man gperf gcc gcc-c++ gdb cmake3 pkgconfig automake autoconf nagios-plugins-all libtool perl-Test-Simple
 
 sudo ln -s /usr/lib64/nagios /usr/lib/nagios
 ```
 
 ### Ubuntu
 ```
-sudo apt-get install git build-essential automake gperf gcc g++ cmake help2man libtool libglib2.0-dev pkg-config libtest-simple-perl monitoring-plugins
+sudo apt-get install git build-essential automake gperf gcc g++ gdb cmake help2man libtool libglib2.0-dev pkg-config libtest-simple-perl monitoring-plugins
 ```
 
 ## Setup VS Code
@@ -64,3 +67,19 @@ just copy the files to `build/etc/naemon/`
 If you get an error message like `Configured debug type 'cppdbg' is not supported` please make
 sure you have the [C/C++ Extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools) for
 VS Code installed and enabled.
+
+## Windows Subsystem for Linux
+If you prefer to use Windows as platform, please make sure to install a Ubuntu or Fedora WSL2 instance.
+The steps are the exactly the same as described above. We recommend to use the [Windows Terminal](https://apps.microsoft.com/store/detail/windows-terminal/9N0DX20HK701?hl=de-de&gl=de)
+to get access to the Linux shell.
+
+Make sure you have Visual Studio Code installed on your Windows System. To launch VS Code with the files
+from the Naemon project, simply run the `code` command.
+
+Run these commands on your WSL linux instance:
+```
+git clone https://github.com/naemon/naemon-core.git
+cd naemon-core/
+code .
+```
+![Using WSL2](/.vscode/vscode_wsl.png)
