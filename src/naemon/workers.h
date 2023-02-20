@@ -12,7 +12,7 @@
 
 #define WPROC_FORCE  (1 << 0)
 
-NAGIOS_BEGIN_DECL;
+NAGIOS_BEGIN_DECL
 
 typedef struct wproc_result {
 	unsigned int job_id;
@@ -45,5 +45,5 @@ int init_workers(int desired_workers);
 
 int wproc_run_callback(char *cmt, int timeout, void (*cb)(struct wproc_result *, void *, int), void *data, nagios_macros *mac);
 
-NAGIOS_END_DECL;
+NAGIOS_END_DECL
 #endif
