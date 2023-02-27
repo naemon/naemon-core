@@ -417,7 +417,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 	char *buf, *error_reason = NULL;
 	size_t size;
 	int ret;
-    unsigned int desired_workers;
+	unsigned int desired_workers;
 	struct wproc_worker *wp = (struct wproc_worker *)arg;
 
 	ret = nm_bufferqueue_read(wp->bq, wp->sd);
@@ -437,7 +437,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 		 * its jobs back to itself*/
 		remove_worker(wp);
 
-        desired_workers = get_desired_workers(num_check_workers);
+		desired_workers = get_desired_workers(num_check_workers);
 
 		if (workers.len < desired_workers) {
 			/* there aren't global workers left, we can't run any more checks
@@ -445,18 +445,18 @@ static int handle_worker_result(int sd, int events, void *arg)
 			 */
 			nm_log(NSLOG_RUNTIME_ERROR, "wproc: We have have less Core Workers than we should have, trying to respawn Core Worker");
 
-            /* Respawn a worker */
-	        if ((ret = spawn_core_worker()) < 0) {
-		        nm_log(NSLOG_RUNTIME_ERROR, "wproc: Failed to respawn Core Worker");
-            } else {
-		        nm_log(NSLOG_INFO_MESSAGE, "wproc: Respawning Core Worker %u was successful", ret);
-            }
+			/* Respawn a worker */
+	        	if ((ret = spawn_core_worker()) < 0) {
+				nm_log(NSLOG_RUNTIME_ERROR, "wproc: Failed to respawn Core Worker");
+			} else {
+				nm_log(NSLOG_INFO_MESSAGE, "wproc: Respawning Core Worker %u was successful", ret);
+			}
 		} else if (workers.len == 0) {
 			/* there aren't global workers left, we can't run any more checks
 			 * we should try respawning a few of the standard ones
 			 */
 			nm_log(NSLOG_RUNTIME_ERROR, "wproc: All our workers are dead, we can't do anything!");
-        }
+		}
 
 		/* reassign this dead worker's jobs */
 		g_hash_table_iter_init(&iter, wp->jobs);
@@ -711,7 +711,7 @@ static int get_desired_workers(int desired_workers)
 	if (desired_workers < (int)workers.len)
 		return -1;
 
-    return desired_workers;
+	return desired_workers;
 }
 
 
@@ -733,8 +733,8 @@ int init_workers(int desired_workers)
 		return -1;
 	}
 
-    /* Get the number of workers we need */
-    desired_workers = get_desired_workers(desired_workers);
+	/* Get the number of workers we need */
+	desired_workers = get_desired_workers(desired_workers);
 
 	for (i = 0; i < desired_workers; i++)
 		spawn_core_worker();
