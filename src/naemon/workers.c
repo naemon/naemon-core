@@ -453,7 +453,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 			}
 		} else if (workers.len == 0) {
 			/* there aren't global workers left, we can't run any more checks
-			 * we should try respawning a few of the standard ones
+			 * this should never happen, because the respawning will be done in the upper if condition
 			 */
 			nm_log(NSLOG_RUNTIME_ERROR, "wproc: All our workers are dead, we can't do anything!");
 		}
