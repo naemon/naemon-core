@@ -39,6 +39,7 @@ int main(int argc, char **argv)
 	time(&now);
 
 	init_event_queue();
+	initialize_comment_data();
 	initialize_downtime_data();
 	init_objects_host(4);
 	init_objects_service(8);

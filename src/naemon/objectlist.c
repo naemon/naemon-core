@@ -72,6 +72,26 @@ int prepend_unique_object_to_objectlist(objectlist **list, void *object_ptr, int
 	return prepend_unique_object_to_objectlist_ptr(list, object_ptr, *comparator_helper, comparator);
 }
 
+/* remove pointer from objectlist */
+int remove_object_from_objectlist(objectlist **list, void *object_ptr) {
+	objectlist *item, *next, *prev;
+
+	if (list == NULL || object_ptr == NULL)
+		return ERROR;
+
+	for (prev = NULL, item = *list; item; prev = item, item = next) {
+		next = item->next;
+		if (item->object_ptr == object_ptr) {
+			if (prev)
+				prev->next = next;
+			else
+				*list = next;
+			nm_free(item);
+			item = prev;
+		}
+	}
+	return OK;
+}
 
 /* frees memory allocated to a temporary object list */
 int free_objectlist(objectlist **temp_list)

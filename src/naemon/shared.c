@@ -413,30 +413,6 @@ void strip(char *buffer)
 }
 
 
-/**************************************************
- *************** HASH FUNCTIONS *******************
- **************************************************/
-/* dual hash function */
-int hashfunc(const char *name1, const char *name2, int hashslots)
-{
-	unsigned int i, result;
-
-	result = 0;
-
-	if (name1)
-		for (i = 0; i < strlen(name1); i++)
-			result += name1[i];
-
-	if (name2)
-		for (i = 0; i < strlen(name2); i++)
-			result += name2[i];
-
-	result = result % hashslots;
-
-	return result;
-}
-
-
 /*
  * given a date/time in time_t format, produce a corresponding
  * date/time string, including timezone

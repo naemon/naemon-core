@@ -9,6 +9,7 @@
 #include "objects_servicedependency.h"
 #include "statusdata.h"
 #include "comments.h"
+#include "downtime.h"
 #include "macros.h"
 #include "broker.h"
 #include "nebmods.h"
@@ -963,6 +964,7 @@ void free_memory(nagios_macros *mac)
 	destroy_objects_servicegroup(TRUE);
 
 	free_comment_data();
+	free_downtime_data();
 
 	nm_free(global_host_event_handler);
 	nm_free(global_service_event_handler);

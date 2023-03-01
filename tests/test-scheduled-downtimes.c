@@ -47,6 +47,7 @@ void setup(void)
 	init_objects_service(2);
 	init_objects_command(1);
 	initialize_downtime_data();
+	initialize_comment_data();
 	initialize_retention_data();
 	workdir = getcwd(NULL, 0);
 

@@ -1848,7 +1848,7 @@ static int host_command_handler(const struct external_command *ext_command, time
 		}
 		return OK;
 	case CMD_DEL_ALL_HOST_COMMENTS:
-		return delete_all_host_comments(target_host->name);
+		return delete_all_host_comments(target_host);
 	case CMD_ENABLE_HOST_NOTIFICATIONS:
 		enable_host_notifications(target_host);
 		return OK;
@@ -2251,7 +2251,7 @@ static int service_command_handler(const struct external_command *ext_command, t
 		target_service->next_notification = GV_TIMESTAMP("notification_time");
 		return OK;
 	case CMD_DEL_ALL_SVC_COMMENTS:
-		return delete_all_comments(SERVICE_COMMENT, target_service->host_name, target_service->description);
+		return delete_all_service_comments(target_service);
 	case CMD_ENABLE_SVC_NOTIFICATIONS:
 		enable_service_notifications(target_service);
 		return OK;

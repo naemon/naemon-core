@@ -137,7 +137,7 @@
 /****** EVENT FLAGS ************************/
 
 #define NEBFLAG_NONE                          0
-#define NEBFLAG_PROCESS_INITIATED             1         /* event was initiated by Nagios process */
+#define NEBFLAG_PROCESS_INITIATED             1         /* event was initiated by Naemon process */
 #define NEBFLAG_USER_INITIATED                2         /* event was initiated by a user request */
 #define NEBFLAG_MODULE_INITIATED              3         /* event was initiated by an event broker module */
 
