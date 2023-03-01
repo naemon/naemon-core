@@ -638,20 +638,19 @@ int main(int argc, char **argv)
 		initialize_downtime_data();
 		timing_point("Initialized downtime data\n");
 
+		/* initialize comment data */
+		timing_point("Initializing comment data\n");
+		initialize_comment_data();
+		timing_point("Initialized comment data\n");
+
 		/* read initial service and host state information  */
 		timing_point("Initializing retention data\n");
 		initialize_retention_data();
 		timing_point("Initialized retention data\n");
 
 		timing_point("Reading initial state information\n");
-		initialize_comment_hashmap();
 		read_initial_state_information();
 		timing_point("Read initial state information\n");
-
-		/* initialize comment data */
-		timing_point("Initializing comment data\n");
-		initialize_comment_data();
-		timing_point("Initialized comment data\n");
 
 		/* initialize performance data */
 		timing_point("Initializing performance data\n");

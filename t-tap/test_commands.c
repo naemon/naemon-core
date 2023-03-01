@@ -449,6 +449,7 @@ void test_host_commands(void)
 	time_t check_time = 0;
 	char *cmdstr = NULL;
 	scheduled_downtime *downtime = NULL;
+	unsigned long downtime_id = 0;
 	target_host = find_host(host_name);
 	target_host->obsess = FALSE;
 	pre = number_of_host_comments(host_name);
@@ -588,10 +589,11 @@ void test_host_commands(void)
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] ENABLE_HOST_FLAP_DETECTION;host1"), "core command: ENABLE_HOST_FLAP_DETECTION");
 	ok(target_host->flap_detection_enabled, "ENABLE_HOST_FLAP_DETECTION enables host flap detection");
 
-	assert(NULL == find_service_downtime(0));
+	downtime_id = next_downtime_id;
+	assert(NULL == find_service_downtime(downtime_id));
 	nm_asprintf(&cmdstr, "[1234567890] SCHEDULE_HOST_SVC_DOWNTIME;host1;%llu;%llu;1;0;0;myself;my downtime comment", (unsigned long long int)time(NULL), (unsigned long long int)time(NULL) + 1500);
 	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: SCHEDULE_HOST_SVC_DOWNTIME");
-	strcmp(host_name, find_service_downtime(0)->host_name);
+	ok(!strcmp(host_name, find_service_downtime(downtime_id)->host_name), "got hostname from service downtime");
 	ok(0 == 0, "SCHEDULE_HOST_SVC_DOWNTIME schedules downtime for services on a host");
 	free(cmdstr);
 
@@ -717,13 +719,14 @@ void test_core_commands(void)
 int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 {
 	const char *test_config_file = TESTDIR "naemon.cfg";
-	plan_tests(521);
+	plan_tests(522);
 	init_event_queue();
 
 	config_file_dir = nspath_absolute_dirname(test_config_file, NULL);
 	assert(OK == read_main_config_file(test_config_file));
 	assert(OK == read_all_object_data(test_config_file));
 	assert(OK == initialize_downtime_data());
+	assert(OK == initialize_comment_data());
 	assert(OK == initialize_retention_data());
 	nagios_iobs = iobroker_create();
 	test_register();
