@@ -508,6 +508,12 @@ int number_of_service_comments(char *host_name, char *svc_description)
 	return total_comments;
 }
 
+/* get the total number of comments */
+int number_of_comments()
+{
+	 return (int)g_hash_table_size(comment_hashtable);
+}
+
 /******************************************************************/
 /********************** SEARCH FUNCTIONS **************************/
 /******************************************************************/

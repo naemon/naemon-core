@@ -68,6 +68,7 @@ struct comment *find_host_comment(unsigned long);                            /* 
 
 int number_of_host_comments(char *);                                         /* returns the number of comments associated with a particular host */
 int number_of_service_comments(char *, char *);                              /* returns the number of comments associated with a particular service */
+int number_of_comments(void);
 
 int add_comment(int, int, char *, char *, time_t, char *, char *, unsigned long, int, int, time_t, int); /* adds a comment (host or service) */
 int sort_comments(void);

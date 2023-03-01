@@ -651,6 +651,8 @@ int main(int argc, char **argv)
 		timing_point("Reading initial state information\n");
 		read_initial_state_information();
 		timing_point("Read initial state information\n");
+		timing_point("Restored %d downtimes\n", number_of_downtimes());
+		timing_point("Restored %d comments\n", number_of_comments());
 
 		/* initialize performance data */
 		timing_point("Initializing performance data\n");
