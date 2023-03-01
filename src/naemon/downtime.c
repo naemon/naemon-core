@@ -1298,6 +1298,12 @@ scheduled_downtime *find_service_downtime(unsigned long downtime_id)
 	return find_downtime(SERVICE_DOWNTIME, downtime_id);
 }
 
+/* get the total number of downtimes */
+int number_of_downtimes()
+{
+	 return (int)g_hash_table_size(dt_hashtable);
+}
+
 
 /******************************************************************/
 /********************* CLEANUP FUNCTIONS **************************/

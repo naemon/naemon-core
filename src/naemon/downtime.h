@@ -73,6 +73,7 @@ int sort_downtime(void);
 struct scheduled_downtime *find_downtime(int, unsigned long);
 struct scheduled_downtime *find_host_downtime(unsigned long);
 struct scheduled_downtime *find_service_downtime(unsigned long);
+int number_of_downtimes(void);
 
 void free_downtime_data(void);                                       /* frees memory allocated to scheduled downtime list */
 
