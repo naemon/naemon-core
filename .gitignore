@@ -64,3 +64,4 @@ debian/naemon-dev/
 debian/tmp/
 debian/libnaemon/
 debian/files
+build
