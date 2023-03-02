@@ -321,7 +321,7 @@ START_TEST(host_downtime_id_retained_across_reload)
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
 	ck_assert(dt != NULL);
-	ck_assert(0 == dt->comment_id);
+	ck_assert(1 == dt->comment_id);
 
 	ck_assert(OK == handle_scheduled_downtime(dt));
 	comment_id = dt->comment_id;
