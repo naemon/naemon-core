@@ -24,7 +24,7 @@ static GHashTable *comment_hashtable;
 int initialize_comment_data(void)
 {
 	comment_hashtable = g_hash_table_new(g_direct_hash, g_direct_equal);
-	next_comment_id = 0;
+	next_comment_id = 1;
 	return OK;
 }
 
@@ -64,7 +64,7 @@ static unsigned long get_next_comment_id(void)
 {
 	unsigned long new_id = next_comment_id;
 	for (;;) {
-		if (!find_comment(HOST_COMMENT | SERVICE_COMMENT, new_id)) {
+		if (!find_comment(new_id, HOST_COMMENT | SERVICE_COMMENT)) {
 			return new_id;
 		}
 		new_id++;
