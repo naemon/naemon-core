@@ -140,17 +140,14 @@ static void handle_host_check_event(struct nm_event_execution_properties *evprop
 	host *hst = (host *)evprop->user_data;
 	double latency;
 	struct timeval tv;
-	struct timeval event_runtime;
 	int options = hst->check_options;
 
 	int result = OK;
 
 	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* get event latency */
+		latency = evprop->attributes.timed.latency;
 		gettimeofday(&tv, NULL);
-		event_runtime.tv_sec = hst->next_check;
-		event_runtime.tv_usec = 0;
-		latency = (double)(tv_delta_f(&event_runtime, &tv));
 
 		/* When the callback is called, the pointer to the timed event is invalid */
 		hst->next_check_event = NULL;

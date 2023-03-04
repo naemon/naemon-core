@@ -143,7 +143,6 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 	int nudge_seconds = 0;
 	double latency;
 	struct timeval tv;
-	struct timeval event_runtime;
 	int options = temp_service->check_options;
 	host *temp_host = NULL;
 
@@ -152,10 +151,8 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 
 		/* get event latency */
+		latency = evprop->attributes.timed.latency;
 		gettimeofday(&tv, NULL);
-		event_runtime.tv_sec = temp_service->next_check;
-		event_runtime.tv_usec = 0;
-		latency = (double)(tv_delta_f(&event_runtime, &tv));
 
 		/* When the callback is called, the pointer to the timed event is invalid */
 		temp_service->next_check_event = NULL;
@@ -485,6 +482,8 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 	/* was this check passive or active? */
 	temp_service->check_type = (queued_check_result->check_type == CHECK_TYPE_ACTIVE) ? CHECK_TYPE_ACTIVE : CHECK_TYPE_PASSIVE;
+
+	temp_service->latency = queued_check_result->latency;
 
 	/* update check statistics for passive checks */
 	if (queued_check_result->check_type == CHECK_TYPE_PASSIVE)
