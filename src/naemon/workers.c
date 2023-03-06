@@ -702,14 +702,8 @@ static int get_desired_workers(int desired_workers)
 			}
 		}
 	}
+
 	wproc_num_workers_desired = desired_workers;
-
-	if (workers_alive() == desired_workers)
-		return 0;
-
-	/* can't shrink the number of workers (yet) */
-	if (desired_workers < (int)workers.len)
-		return -1;
 
 	return desired_workers;
 }
@@ -735,6 +729,13 @@ int init_workers(int desired_workers)
 
 	/* Get the number of workers we need */
 	desired_workers = get_desired_workers(desired_workers);
+
+	if (workers_alive() == desired_workers)
+		return 0;
+
+	/* can't shrink the number of workers (yet) */
+	if (desired_workers < (int)workers.len)
+		return -1;
 
 	for (i = 0; i < desired_workers; i++)
 		spawn_core_worker();
