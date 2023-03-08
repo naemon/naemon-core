@@ -1,6 +1,6 @@
 ## Welcome to Naemon Core ##
 
-[![build](https://github.com/naemon/naemon-core/actions/workflows/citest.yml/badge.svg)](https://github.com/naemon/naemon-core/actions/workflows/citest.yml/badge.svg)
+![build](https://github.com/naemon/naemon-core/actions/workflows/citest.yml/badge.svg)
 
 Naemon is a host/service/network monitoring program written in C and
 released under the GNU General Public License. It works by scheduling
