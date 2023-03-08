@@ -11,7 +11,6 @@ Packager: Naemon Core Development Team <naemon-dev@monitoring-lists.org>
 Vendor: Naemon Core Development Team
 Source0: naemon-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
-Obsoletes: naemon-tools
 BuildRequires: gperf
 BuildRequires: logrotate
 BuildRequires: autoconf
