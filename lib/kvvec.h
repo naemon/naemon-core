@@ -211,7 +211,7 @@ extern int kvvec_destroy(struct kvvec *kvv, int flags);
 /**
  * Free key/value pairs associated with a key/value vector
  * @param kvv The key/value vector to operate on
- * @param flags flags or'ed combination of KVVEC_FREE_{KEYS,VALUES}, or KVVEC_FREE_ALL
+ * @param flags or'ed combination of KVVEC_FREE_{KEYS,VALUES}, or KVVEC_FREE_ALL
  */
 void kvvec_free_kvpairs(struct kvvec *kvv, int flags);
 

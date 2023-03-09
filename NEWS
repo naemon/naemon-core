@@ -1,7 +1,62 @@
-1.2.5 - ??? ?? ????
+1.4.2 - ??? ?? ????
 ===================
 Changed:
 * check config before reload/start will be done (#364) (ccztux)
+
+
+1.4.1 - Feb 01 2023
+===================
+Features:
+* none
+
+Changed:
+* use /run/naemon instead of /var/run/naemon (#410)
+
+Bugfixes:
+* fix bashisms in scripts (#407)
+* fix fg: no job control output (#405)
+* fix memory leak in cmd parser (#404)
+* fix closing worker filehandles (#401)
+
+
+1.4.0 - Nov 11 2022
+===================
+Breaking changes:
+* Due to object structure changes, it is recommended to recompile any NEB modules
+  when upgrading to 1.4.0
+
+Features:
+* Support for expiring acknowledgements
+
+Changed:
+* Improvements to Debian packaging, including multiarch installs
+
+Bugfixes:
+* Fix a crash for external command: CHANGE_CONTACT_HOST_NOTIFICATION_TIMEPERIOD
+* Fix a crash for external command: CHANGE_HOST_CHECK_TIMEPERIOD
+
+1.3.1 - Apr 26 2022
+===================
+Changed:
+* change default url to https://www.naemon.io
+
+Bugfixes:
+* fix running commands containing tilde sign
+* improve updating last_update attribute
+
+
+1.3.0 - Nov 03 2021
+===================
+Features:
+* new vault broker api
+* secure environment variables
+
+Changed:
+* none
+
+Bugfixes:
+* none
+>>>>>>> upstream/master
 
 
 1.2.4 - Mar 03 2021
@@ -181,7 +236,7 @@ Bugfixes:
   * Fix custom variables persistence accros restarts for single byte values
   * Fix writing to already rotated logfile
   * Fix memory leak in broker_notification_data
-  * Fix notification commands beeing reaped to early (#137)
+  * Fix notification commands being reaped to early (#137)
 
 1.0.5 - Jun 21 2016
 ===================
@@ -252,7 +307,7 @@ Other:
 
 1.0 - Feb 13 2015
 =================
- * Fix shadownaemon comment and downtime syncronization
+ * Fix shadownaemon comment and downtime synchronization
  * Fix spelling errors
 
 0.9 - Jan 08 2015

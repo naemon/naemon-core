@@ -24,7 +24,7 @@ int init_objects_service(int elems)
 	return OK;
 }
 
-/* destroy a single service object, set truncate_lists to TRUE when lists should be simply emtied instead of removing item by item.
+/* destroy a single service object, set truncate_lists to TRUE when lists should be simply emptied instead of removing item by item.
  * Enable truncate_list when removing all objects and disble when removing a specific one. */
 void destroy_objects_service(int truncate_lists)
 {
@@ -80,6 +80,7 @@ service *create_service(host *hst, const char *description)
 	new_service->description = nm_strdup(description);
 	new_service->display_name = new_service->description;
 	new_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+	new_service->acknowledgement_end_time = (time_t)0;
 	new_service->check_type = CHECK_TYPE_ACTIVE;
 	new_service->state_type = HARD_STATE;
 	new_service->check_options = CHECK_OPTION_NONE;
@@ -138,8 +139,8 @@ int setup_service_variables(service *new_service, const char *display_name, cons
 	/* duplicate vars, but assign what we can */
 	new_service->notification_period_ptr = np;
 	new_service->check_period_ptr = cp;
-	new_service->check_period = cp ? cp->name : NULL;
-	new_service->notification_period = np ? np->name : NULL;
+	new_service->check_period = cp ? nm_strdup(cp->name) : NULL;
+	new_service->notification_period = np ? nm_strdup(np->name) : NULL;
 	new_service->check_command = nm_strdup(check_command);
 	new_service->check_command_ptr = cmd;
 	if (display_name) {
@@ -265,7 +266,7 @@ customvariablesmember *add_custom_variable_to_service(service *svc, char *varnam
 	return add_custom_variable_to_object(&svc->custom_variables, varname, varvalue);
 }
 
-/* destroy a single service object, set truncate_lists to TRUE when lists should be simply emtied instead of removing item by item.
+/* destroy a single service object, set truncate_lists to TRUE when lists should be simply emptied instead of removing item by item.
  * Enable truncate_list when removing all objects and disble when removing a specific one. */
 void destroy_service(service *this_service, int truncate_lists)
 {
@@ -330,6 +331,8 @@ void destroy_service(service *this_service, int truncate_lists)
 	free_objectlist(&this_service->exec_deps);
 	free_objectlist(&this_service->escalation_list);
 	nm_free(this_service->event_handler);
+	nm_free(this_service->check_period);
+	nm_free(this_service->notification_period);
 	nm_free(this_service->notes);
 	nm_free(this_service->notes_url);
 	nm_free(this_service->action_url);

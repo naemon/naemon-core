@@ -73,8 +73,8 @@ static void disable_host_notifications(host *);		/* disables host notifications 
 static void enable_and_propagate_notifications(host *hst, struct propagation_parameters *params);
 static void disable_and_propagate_notifications(host *hst, struct propagation_parameters *params);
 static void schedule_and_propagate_downtime(host *temp_host, struct downtime_parameters *params);
-static void acknowledge_host_problem(host *, char *, char *, int, int, int);	/* acknowledges a host problem */
-static void acknowledge_service_problem(service *, char *, char *, int, int, int);	/* acknowledges a service problem */
+static void acknowledge_host_problem(host *, char *, char *, int, int, int, time_t);	/* acknowledges a host problem */
+static void acknowledge_service_problem(service *, char *, char *, int, int, int, time_t);	/* acknowledges a service problem */
 static void remove_host_acknowledgement(host *);		/* removes a host acknowledgement */
 static void remove_service_acknowledgement(service *);		/* removes a service acknowledgement */
 static void start_executing_service_checks(void);		/* starts executing service checks */
@@ -1881,7 +1881,11 @@ static int host_command_handler(const struct external_command *ext_command, time
 		return OK;
 	case CMD_ACKNOWLEDGE_HOST_PROBLEM:
 		acknowledge_host_problem(target_host, GV("author"), GV("comment"), GV_INT("sticky"),
-		                         GV_BOOL("notify"), GV_BOOL("persistent"));
+		                         GV_BOOL("notify"), GV_BOOL("persistent"), (time_t)0);
+		return OK;
+	case CMD_ACKNOWLEDGE_HOST_PROBLEM_EXPIRE:
+		acknowledge_host_problem(target_host, GV("author"), GV("comment"), GV_INT("sticky"),
+		                         GV_BOOL("notify"), GV_BOOL("persistent"), GV_TIMESTAMP("end_time"));
 		return OK;
 	case CMD_ENABLE_HOST_EVENT_HANDLER:
 		enable_host_event_handler(target_host);
@@ -2257,7 +2261,12 @@ static int service_command_handler(const struct external_command *ext_command, t
 	case CMD_PROCESS_SERVICE_CHECK_RESULT:
 		return process_passive_service_check(entry_time /*entry time as check time*/, target_service->host_name, target_service->description, GV_INT("status_code"), GV("plugin_output"));
 	case CMD_ACKNOWLEDGE_SVC_PROBLEM:
-		acknowledge_service_problem(target_service, GV("author"), GV("comment"), GV_INT("sticky"), GV_BOOL("notify"), GV_BOOL("persistent"));
+		acknowledge_service_problem(target_service, GV("author"), GV("comment"), GV_INT("sticky"),
+                                            GV_BOOL("notify"), GV_BOOL("persistent"), (time_t)0);
+		return OK;
+	case CMD_ACKNOWLEDGE_SVC_PROBLEM_EXPIRE:
+		acknowledge_service_problem(target_service, GV("author"), GV("comment"), GV_INT("sticky"),
+		                            GV_BOOL("notify"), GV_BOOL("persistent"), GV_TIMESTAMP("end_time"));
 		return OK;
 	case CMD_ENABLE_PASSIVE_SVC_CHECKS:
 		enable_passive_service_checks(target_service);
@@ -2728,9 +2737,17 @@ void register_core_commands(void)
 	                              "Allows you to acknowledge the current problem for the specified host. By acknowledging the current problem, future notifications (for the same host state) are disabled. If the 'sticky' option is set to one (1), the acknowledgement will remain until the host returns to an UP state. Otherwise the acknowledgement will automatically be removed when the host changes state. If the 'notify' option is set to one (1), a notification will be sent out to contacts indicating that the current host problem has been acknowledged. If the 'persistent' option is set to one (1), the comment associated with the acknowledgement will remain once the acknowledgement is removed. If not, the comment will be deleted when the acknowledgement is removed.", "host=host_name;int=sticky;bool=notify;bool=persistent;str=author;str=comment");
 	command_register(core_command, CMD_ACKNOWLEDGE_HOST_PROBLEM);
 
+	core_command = command_create("ACKNOWLEDGE_HOST_PROBLEM_EXPIRE", host_command_handler,
+	                              "Allows you to acknowledge the current problem for the specified host for a limitied time. By acknowledging the current problem, future notifications (for the same host state) are disabled. The 'end_time' option determines the time after which the acknowledgement is cleared automatically. If the 'sticky' option is set to one (1), the acknowledgement will remain until the host returns to an UP state. Otherwise the acknowledgement will automatically be removed when the host changes state. If the 'notify' option is set to one (1), a notification will be sent out to contacts indicating that the current host problem has been acknowledged. If the 'persistent' option is set to one (1), the comment associated with the acknowledgement will remain once the acknowledgement is removed. If not, the comment will be deleted when the acknowledgement is removed.", "host=host_name;int=sticky;bool=notify;bool=persistent;timestamp=end_time;str=author;str=comment");
+	command_register(core_command, CMD_ACKNOWLEDGE_HOST_PROBLEM_EXPIRE);
+
 	core_command = command_create("ACKNOWLEDGE_SVC_PROBLEM", service_command_handler,
 	                              "Allows you to acknowledge the current problem for the specified service. By acknowledging the current problem, future notifications (for the same servicestate) are disabled. If the 'sticky' option is set to one (1), the acknowledgement will remain until the service returns to an OK state. Otherwise the acknowledgement will automatically be removed when the service changes state. If the 'notify' option is set to one (1), a notification will be sent out to contacts indicating that the current service problem has been acknowledged. If the 'persistent' option is set to one (1), the comment associated with the acknowledgement will remain once the acknowledgement is removed. If not, the comment will be deleted when the acknowledgement is removed.", "service=service;int=sticky;bool=notify;bool=persistent;str=author;str=comment");
 	command_register(core_command, CMD_ACKNOWLEDGE_SVC_PROBLEM);
+
+	core_command = command_create("ACKNOWLEDGE_SVC_PROBLEM_EXPIRE", service_command_handler,
+	                              "Allows you to acknowledge the current problem for the specified service. By acknowledging the current problem, future notifications (for the same servicestate) are disabled. The 'end_time' option determines the time after which the acknowledgement is cleared automatically. If the 'sticky' option is set to one (1), the acknowledgement will remain until the service returns to an OK state. Otherwise the acknowledgement will automatically be removed when the service changes state. If the 'notify' option is set to one (1), a notification will be sent out to contacts indicating that the current service problem has been acknowledged. If the 'persistent' option is set to one (1), the comment associated with the acknowledgement will remain once the acknowledgement is removed. If not, the comment will be deleted when the acknowledgement is removed.", "service=service;int=sticky;bool=notify;bool=persistent;timestamp=end_time;str=author;str=comment");
+	command_register(core_command, CMD_ACKNOWLEDGE_SVC_PROBLEM_EXPIRE);
 
 	core_command = command_create("START_EXECUTING_SVC_CHECKS", global_command_handler,
 	                              "Enables active checks of services on a program-wide basis.", NULL);
@@ -2764,7 +2781,7 @@ void register_core_commands(void)
 	                              "Allows you to send a custom service notification. Very useful in dire situations, emergencies or to communicate with all admins that are responsible for a particular service. When the service notification is sent out, the $NOTIFICATIONTYPE$ macro will be set to 'CUSTOM'. The <options> field is a logical OR of the following integer values that affect aspects of the notification that are sent out: 0 = No option (default), 1 = Broadcast (send notification to all normal and all escalated contacts for the service), 2 = Forced (notification is sent out regardless of current time, whether or not notifications are enabled, etc.), 4 = Increment current notification # for the service(this is not done by default for custom notifications)", "service=service;int=options;str=author;str=comment");
 	command_register(core_command, CMD_SEND_CUSTOM_SVC_NOTIFICATION);
 
-	core_command = command_create("CHANGE_HOST_NOTIFICATION_TIMEPERIOD", service_command_handler,
+	core_command = command_create("CHANGE_HOST_NOTIFICATION_TIMEPERIOD", host_command_handler,
 	                              "Changes the host notification timeperiod to what is specified by the 'notification_timeperiod' option. The 'notification_timeperiod' option should be the short name of the timeperiod that is to be used as the service notification timeperiod. The timeperiod must have been configured in Naemon before it was last (re)started.", "host=host_name;timeperiod=notification_timeperiod");
 	command_register(core_command, CMD_CHANGE_HOST_NOTIFICATION_TIMEPERIOD);
 
@@ -3197,7 +3214,7 @@ void register_core_commands(void)
 	command_register(core_command, CMD_SET_SVC_NOTIFICATION_NUMBER);
 
 	core_command = command_create("CHANGE_HOST_CHECK_TIMEPERIOD", host_command_handler,
-	                              "Changes the valid check period for the specified host.", "host=host_name;timeperiod=timeperiod");
+	                              "Changes the valid check period for the specified host.", "host=host_name;timeperiod=check_timeperiod");
 	command_register(core_command, CMD_CHANGE_HOST_CHECK_TIMEPERIOD);
 
 	core_command = command_create("CHANGE_SVC_CHECK_TIMEPERIOD", service_command_handler,
@@ -3958,7 +3975,7 @@ static void schedule_and_propagate_downtime(host *temp_host, struct downtime_par
 
 
 /* acknowledges a host problem */
-static void acknowledge_host_problem(host *hst, char *ack_author, char *ack_data, int type, int notify, int persistent)
+static void acknowledge_host_problem(host *hst, char *ack_author, char *ack_data, int type, int notify, int persistent, time_t end_time)
 {
 	time_t current_time = 0L;
 
@@ -3966,7 +3983,15 @@ static void acknowledge_host_problem(host *hst, char *ack_author, char *ack_data
 	if (hst->current_state == STATE_UP)
 		return;
 
-	broker_acknowledgement_data(NEBTYPE_ACKNOWLEDGEMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, HOST_ACKNOWLEDGEMENT, (void *)hst, ack_author, ack_data, type, notify, persistent);
+	/* get the time */
+	time(&current_time);
+
+	/* if the end time is set but in the past, it has already expired
+	   and we don't need to do anything */
+	if (end_time > 0 && end_time <= current_time)
+		return;
+
+	broker_acknowledgement_data(NEBTYPE_ACKNOWLEDGEMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, HOST_ACKNOWLEDGEMENT, (void *)hst, ack_author, ack_data, type, notify, persistent, end_time);
 
 	/* send out an acknowledgement notification */
 	if (notify == TRUE)
@@ -3978,19 +4003,25 @@ static void acknowledge_host_problem(host *hst, char *ack_author, char *ack_data
 	/* set the acknowledgement type */
 	hst->acknowledgement_type = type ? ACKNOWLEDGEMENT_STICKY : ACKNOWLEDGEMENT_NORMAL;
 
+	/* if the ack expires in the future, schedule an event to clear it */
+	if (end_time > current_time)
+		schedule_event(end_time - current_time, handle_host_acknowledgement_expire_event, (void *)hst);
+
+	/* set the acknowledgement expire time */
+	hst->acknowledgement_end_time = end_time;
+
 	/* update the status log with the host info */
 	update_host_status(hst, FALSE);
 
 	/* add a comment for the acknowledgement */
-	time(&current_time);
-	add_new_host_comment(ACKNOWLEDGEMENT_COMMENT, hst->name, current_time, ack_author, ack_data, persistent, COMMENTSOURCE_INTERNAL, FALSE, (time_t)0, NULL);
+	add_new_host_comment(ACKNOWLEDGEMENT_COMMENT, hst->name, current_time, ack_author, ack_data, persistent, COMMENTSOURCE_INTERNAL, (end_time != 0) ? TRUE : FALSE, end_time, NULL);
 
 	return;
 }
 
 
 /* acknowledges a service problem */
-static void acknowledge_service_problem(service *svc, char *ack_author, char *ack_data, int type, int notify, int persistent)
+static void acknowledge_service_problem(service *svc, char *ack_author, char *ack_data, int type, int notify, int persistent, time_t end_time)
 {
 	time_t current_time = 0L;
 
@@ -3998,7 +4029,15 @@ static void acknowledge_service_problem(service *svc, char *ack_author, char *ac
 	if (svc->current_state == STATE_OK)
 		return;
 
-	broker_acknowledgement_data(NEBTYPE_ACKNOWLEDGEMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_ACKNOWLEDGEMENT, (void *)svc, ack_author, ack_data, type, notify, persistent);
+	/* get the time */
+	time(&current_time);
+
+	/* if the end time is set but in the past, it has already expired
+	   and we don't need to do anything */
+	if (end_time > 0 && end_time <= current_time)
+		return;
+
+	broker_acknowledgement_data(NEBTYPE_ACKNOWLEDGEMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_ACKNOWLEDGEMENT, (void *)svc, ack_author, ack_data, type, notify, persistent, end_time);
 
 	/* send out an acknowledgement notification */
 	if (notify == TRUE)
@@ -4010,12 +4049,18 @@ static void acknowledge_service_problem(service *svc, char *ack_author, char *ac
 	/* set the acknowledgement type */
 	svc->acknowledgement_type = type ? ACKNOWLEDGEMENT_STICKY : ACKNOWLEDGEMENT_NORMAL;
 
+	/* if the ack expires in the future, schedule an event to clear it */
+	if (end_time > current_time)
+		schedule_event(end_time - current_time, handle_service_acknowledgement_expire_event, (void *)svc);
+
+	/* set the acknowledgement expire time */
+	svc->acknowledgement_end_time = end_time;
+
 	/* update the status log with the service info */
 	update_service_status(svc, FALSE);
 
 	/* add a comment for the acknowledgement */
-	time(&current_time);
-	add_new_service_comment(ACKNOWLEDGEMENT_COMMENT, svc->host_name, svc->description, current_time, ack_author, ack_data, persistent, COMMENTSOURCE_INTERNAL, FALSE, (time_t)0, NULL);
+	add_new_service_comment(ACKNOWLEDGEMENT_COMMENT, svc->host_name, svc->description, current_time, ack_author, ack_data, persistent, COMMENTSOURCE_INTERNAL, (end_time != 0) ? TRUE : FALSE, end_time, NULL);
 
 	return;
 }
@@ -4027,6 +4072,7 @@ static void remove_host_acknowledgement(host *hst)
 
 	/* set the acknowledgement flag */
 	hst->problem_has_been_acknowledged = FALSE;
+	hst->acknowledgement_end_time = (time_t)0;
 
 	/* update the status log with the host info */
 	update_host_status(hst, FALSE);
@@ -4044,6 +4090,7 @@ static void remove_service_acknowledgement(service *svc)
 
 	/* set the acknowledgement flag */
 	svc->problem_has_been_acknowledged = FALSE;
+	svc->acknowledgement_end_time = (time_t)0;
 
 	/* update the status log with the service info */
 	update_service_status(svc, FALSE);
@@ -4054,6 +4101,57 @@ static void remove_service_acknowledgement(service *svc)
 	return;
 }
 
+/* removes an expired host acknowledgement */
+void handle_host_acknowledgement_expire_event(struct nm_event_execution_properties *evprop)
+{
+	time_t current_time = 0L;
+
+	log_debug_info(DEBUGL_EVENTS, 2, "Running event handler for host acknowledgement expiry\n");
+	if (evprop->user_data) {
+		if (evprop->execution_type == EVENT_EXEC_NORMAL) {
+			/* get the host */
+			host *hst = (host *)evprop->user_data;
+
+			/* get the time */
+			time(&current_time);
+
+			/* if the host ack has an end time now or in the
+			   past, remove the ack */
+			if (hst->problem_has_been_acknowledged &&
+			    hst->acknowledgement_end_time > 0 &&
+	                    hst->acknowledgement_end_time <= current_time) {
+				log_debug_info(DEBUGL_EVENTS, 2, "Removing host acknowledgement for host '%s'\n", hst->name);
+				remove_host_acknowledgement(hst);
+			}
+		}
+	}
+}
+
+/* removes an expired service acknowledgement */
+void handle_service_acknowledgement_expire_event(struct nm_event_execution_properties *evprop)
+{
+	time_t current_time = 0L;
+
+	log_debug_info(DEBUGL_EVENTS, 2, "Running event handler for service acknowledgement expiry\n");
+	if (evprop->user_data) {
+		if (evprop->execution_type == EVENT_EXEC_NORMAL) {
+			/* get the service */
+			service *svc = (service *)evprop->user_data;
+
+			/* get the time */
+			time(&current_time);
+
+			/* if the service ack has an end time now or in the
+			   past, remove the ack */
+			if (svc->problem_has_been_acknowledged &&
+			    svc->acknowledgement_end_time > 0 &&
+	                    svc->acknowledgement_end_time <= current_time) {
+				log_debug_info(DEBUGL_EVENTS, 2, "Removing service acknowledgement for service '%s' on host '%s'\n", svc->description, svc->host_name);
+				remove_service_acknowledgement(svc);
+			}
+		}
+	}
+}
 
 /* starts executing service checks */
 static void start_executing_service_checks(void)

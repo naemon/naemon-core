@@ -1,0 +1,6 @@
+workflow:
+  steps:
+    - branch_package:
+        source_project: home:naemon:daily
+        source_package: naemon-core
+        target_project: home:naemon:test

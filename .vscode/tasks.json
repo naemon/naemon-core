@@ -1,0 +1,83 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "autogen",
+            "type": "shell",
+            "command": "${cwd}/autogen.sh --prefix=${cwd}/build --with-naemon-user=$(whoami) --with-naemon-group=users --with-pluginsdir=/usr/lib/nagios/plugins",
+            "problemMatcher": [],
+            "group": {
+                "kind":"build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "make all",
+            "type": "shell",
+            "command": "make -j all",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            // Will create all required directories
+            "label": "mkdir",
+            "type": "shell",
+            "command": "mkdir -p ${cwd}/build/var/cache/naemon ${cwd}/build/var/spool/checkresults ${cwd}/build/etc/naemon/module-conf.d",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            // This will install the required default configuration files
+            "label": "make install",
+            "type": "shell",
+            "command": "make install",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            // Initial - Run this task, if you cloed the naemon source code from GitHub and want to start developing
+            // You only need to execute this task once
+            "label": "initial",
+            "type": "shell",
+            "command": "make install",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "dependsOrder": "sequence",
+            "dependsOn":[
+                "autogen",
+                "make all",
+                "make install",
+                "mkdir"
+            ]
+        },
+        {
+            // Run the Naemon test cases
+            "label": "Run Tests",
+            "type": "shell",
+            "command": "make test",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "dependsOrder": "sequence",
+            "dependsOn":[
+                "autogen"
+            ]
+        }
+    ]
+}

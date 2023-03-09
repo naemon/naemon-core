@@ -156,7 +156,7 @@ START_TEST(service_retry_interval_soft_non_OK_states)
 	handle_async_service_check_result(svc, &cr);
 	actual_time_left = get_timed_event_time_left_ms(svc->next_check_event);
 	expected_time_left = get_service_retry_interval_s(svc) * 1000;
-	assert_approximately_equal(expected_time_left, actual_time_left, APPROXIMATION_TOLERANCE_MS);
+	assert_approximately_equal(expected_time_left, actual_time_left, (long int)APPROXIMATION_TOLERANCE_MS);
 }
 END_TEST
 
@@ -195,7 +195,7 @@ START_TEST(service_check_interval_hard_non_OK_states)
 
 	actual_time_left = get_timed_event_time_left_ms(svc->next_check_event);
 	expected_time_left = get_service_check_interval_s(svc) * 1000;
-	assert_approximately_equal(expected_time_left, actual_time_left, APPROXIMATION_TOLERANCE_MS);
+	assert_approximately_equal(expected_time_left, actual_time_left, (long int)APPROXIMATION_TOLERANCE_MS);
 }
 END_TEST
 
@@ -233,7 +233,7 @@ START_TEST(service_check_interval_OK_states)
 
 	actual_time_left = get_timed_event_time_left_ms(svc->next_check_event);
 	expected_time_left = get_service_check_interval_s(svc) * 1000;
-	assert_approximately_equal(expected_time_left, actual_time_left, APPROXIMATION_TOLERANCE_MS);
+	assert_approximately_equal(expected_time_left, actual_time_left, (long int)APPROXIMATION_TOLERANCE_MS);
 }
 END_TEST
 
@@ -269,7 +269,7 @@ START_TEST(host_retry_interval_soft_non_OK_states)
 
 	actual_time_left = get_timed_event_time_left_ms(hst->next_check_event);
 	expected_time_left = get_host_retry_interval_s(hst) * 1000;
-	assert_approximately_equal(expected_time_left, actual_time_left, APPROXIMATION_TOLERANCE_MS);
+	assert_approximately_equal(expected_time_left, actual_time_left, (long int)APPROXIMATION_TOLERANCE_MS);
 }
 END_TEST
 
@@ -308,7 +308,7 @@ START_TEST(host_check_interval_hard_non_OK_states)
 
 	actual_time_left = get_timed_event_time_left_ms(hst->next_check_event);
 	expected_time_left = get_host_check_interval_s(hst) * 1000;
-	assert_approximately_equal(expected_time_left, actual_time_left, APPROXIMATION_TOLERANCE_MS);
+	assert_approximately_equal(expected_time_left, actual_time_left, (long int)APPROXIMATION_TOLERANCE_MS);
 }
 END_TEST
 
@@ -347,7 +347,7 @@ START_TEST(host_check_interval_OK_states)
 
 	actual_time_left = get_timed_event_time_left_ms(hst->next_check_event);
 	expected_time_left = get_host_check_interval_s(hst) * 1000;
-	assert_approximately_equal(expected_time_left, actual_time_left, APPROXIMATION_TOLERANCE_MS);
+	assert_approximately_equal(expected_time_left, actual_time_left, (long int)APPROXIMATION_TOLERANCE_MS);
 }
 END_TEST
 
@@ -440,7 +440,7 @@ START_TEST(ondemand_host_check_on_service_hard_crit)
 
 	actual_time_left = get_timed_event_time_left_ms(hst->next_check_event);
 	expected_time_left = get_host_retry_interval_s(hst) * 1000;
-	assert_approximately_equal(expected_time_left, actual_time_left, APPROXIMATION_TOLERANCE_MS);
+	assert_approximately_equal(expected_time_left, actual_time_left, (long int)APPROXIMATION_TOLERANCE_MS);
 }
 END_TEST
 
@@ -491,7 +491,7 @@ START_TEST(ondemand_host_check_on_service_first_soft_crit)
 
 	actual_time_left = get_timed_event_time_left_ms(hst->next_check_event);
 	expected_time_left = 0;
-	assert_approximately_equal(expected_time_left, actual_time_left, APPROXIMATION_TOLERANCE_MS);
+	assert_approximately_equal(expected_time_left, actual_time_left, (long int)APPROXIMATION_TOLERANCE_MS);
 }
 END_TEST
 
@@ -542,7 +542,7 @@ START_TEST(ondemand_host_check_on_service_second_soft_crit)
 
 	actual_time_left = get_timed_event_time_left_ms(hst->next_check_event);
 	expected_time_left = 0;
-	assert_approximately_equal(expected_time_left, actual_time_left, APPROXIMATION_TOLERANCE_MS);
+	assert_approximately_equal(expected_time_left, actual_time_left, (long int)APPROXIMATION_TOLERANCE_MS);
 }
 END_TEST
 
@@ -593,7 +593,7 @@ START_TEST(ondemand_host_check_on_service_soft_to_hard_crit)
 
 	actual_time_left = get_timed_event_time_left_ms(hst->next_check_event);
 	expected_time_left = 0;
-	assert_approximately_equal(expected_time_left, actual_time_left, APPROXIMATION_TOLERANCE_MS);
+	assert_approximately_equal(expected_time_left, actual_time_left, (long int)APPROXIMATION_TOLERANCE_MS);
 	ck_assert_int_eq(HARD_STATE, svc->state_type);
 }
 END_TEST
@@ -645,7 +645,7 @@ START_TEST(ondemand_host_check_on_service_soft_ok_to_hard_ok)
 
 	actual_time_left = get_timed_event_time_left_ms(hst->next_check_event);
 	expected_time_left = 0;
-	assert_approximately_equal(expected_time_left, actual_time_left, APPROXIMATION_TOLERANCE_MS);
+	assert_approximately_equal(expected_time_left, actual_time_left, (long int)APPROXIMATION_TOLERANCE_MS);
 	ck_assert_int_eq(HARD_STATE, svc->state_type);
 }
 END_TEST
@@ -954,7 +954,7 @@ START_TEST(service_retain_always_within_check_interval)
 }
 END_TEST
 
-/* If host_down_disable_service_checks is true, and the the services host is
+/* If host_down_disable_service_checks is true, and the services host is
  * down, then we should not perform service checks
  */
 START_TEST(disable_service_check_host_down)

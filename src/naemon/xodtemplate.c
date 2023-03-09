@@ -991,7 +991,7 @@ static xodtemplate_daterange *xodtemplate_add_exception_to_timeperiod(xodtemplat
 	if (period == NULL || timeranges == NULL)
 		return NULL;
 
-	/* allocate memory for the date range range */
+	/* allocate memory for the date range */
 	new_daterange = nm_malloc(sizeof(xodtemplate_daterange));
 	new_daterange->next = NULL;
 
@@ -1635,7 +1635,7 @@ static int xodtemplate_expand_hosts(objectlist **list, bitmap *reject_map, char 
 
 				found_match = TRUE;
 
-				/* dont' add hosts that shouldn't be registered */
+				/* don't add hosts that shouldn't be registered */
 				if (temp_host->register_object == FALSE)
 					continue;
 
@@ -1664,7 +1664,7 @@ static int xodtemplate_expand_hosts(objectlist **list, bitmap *reject_map, char 
 					if (temp_host->host_name == NULL)
 						continue;
 
-					/* dont' add hosts that shouldn't be registered */
+					/* don't add hosts that shouldn't be registered */
 					if (temp_host->register_object == FALSE)
 						continue;
 
@@ -2488,7 +2488,7 @@ static int xodtemplate_duplicate_services(void)
 			 *
 			 * But two services on the host itself is wrong.
 			 *
-			 * Also, two services from different hostgroups is ambigous, thus
+			 * Also, two services from different hostgroups is ambiguous, thus
 			 * treat them as a problem too.
 			 *
 			 * The corner case, two services from different host groups, one
@@ -4525,7 +4525,7 @@ static int xodtemplate_get_hostgroup_names(xodtemplate_memberlist **list, xodtem
 
 				found_match = TRUE;
 
-				/* dont' add hostgroups that shouldn't be registered */
+				/* don't add hostgroups that shouldn't be registered */
 				if (temp_hostgroup->register_object == FALSE)
 					continue;
 

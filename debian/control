@@ -2,21 +2,34 @@ Source: naemon-core
 Section: net
 Priority: optional
 Maintainer: Naemon Core Development Team <naemon-dev@monitoring-lists.org>
-Build-Depends: debhelper (>= 9), gperf, chrpath, help2man, libicu-dev, pkg-config,
-  libglib2.0-dev, fakeroot, autoconf, automake, libtool
+Build-Depends:
+    debhelper (>= 9.20151219),
+    gperf,
+    help2man,
+    libicu-dev,
+    pkg-config,
+    libglib2.0-dev,
+    fakeroot,
+    autoconf,
+    automake,
+    libtool
 Standards-Version: 3.7.3
-Homepage: http://www.naemon.org
+Homepage: https://www.naemon.io
 Bugs: https://github.com/naemon/naemon-core/issues
 Vcs-Browser: https://github.com/naemon/naemon-core
 Vcs-Git: git://github.com:naemon/naemon-core.git
 
 Package: naemon-core
 Architecture: any
-Depends: adduser,
-         coreutils (>= 4.5.3),
-         lsb-base (>= 3.0-6),
-         bsd-mailx | mailx | sendemail,
-         ${misc:Depends}, ${perl:Depends}, ${shlibs:Depends}
+Depends:
+    adduser,
+    coreutils (>= 4.5.3),
+    lsb-base (>= 3.0-6),
+    bsd-mailx | mailx | sendemail,
+    libnaemon (>= ${binary:Version})
+    ${misc:Depends},
+    ${perl:Depends},
+    ${shlibs:Depends}
 Replaces: naemon-tools
 Conflicts: naemon-tools
 Recommends: nagios-plugins
@@ -38,22 +51,16 @@ Description: host/service/network monitoring and management system
  Naemon was written in C and is designed to be easy to understand and modify
  to fit your own needs.
  .
- Upstream URL: http://www.naemon.org/
-
-Package: naemon-core-dbg
-Architecture: any
-Section: debug
-Priority: extra
-Depends:
-    ${shlibs:Depends},
-    ${misc:Depends}
-Description: contains the Naemon core with debug symbols
- Naemon is a monitoring and management system for hosts, services and
- networks.
+ Upstream URL: https://www.naemon.io/
 
 Package: naemon-dev
 Architecture: any
-Depends: ${misc:Depends}, ${perl:Depends}, ${shlibs:Depends}, libnaemon, libglib2.0-dev
+Depends:
+    ${misc:Depends},
+    ${perl:Depends},
+    ${shlibs:Depends},
+    libnaemon (>= ${binary:Version}),
+    libglib2.0-dev
 Description: This package contains the header files, static libraries and development
  documentation for Naemon. If you are a NEB-module author or wish to
  write addons for Naemon using Naemons own APIs, you should install
@@ -62,7 +69,10 @@ Description: This package contains the header files, static libraries and develo
 Package: libnaemon
 Section: libs
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Multi-Arch: same
+Depends:
+    ${misc:Depends},
+    ${shlibs:Depends}
 Description: Library for Naemon - common data files
  libnaemon contains the shared library for building NEB modules or addons for
  Naemon.

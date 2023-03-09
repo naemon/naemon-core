@@ -88,6 +88,11 @@
 # define veclen ARRAY_SIZE
 #endif
 
+/* sets a limit for max open files if ulimit is set to unlimited or a unusual high value */
+#ifndef MAX_FD_LIMIT
+#define MAX_FD_LIMIT 100000
+#endif
+
 #ifndef offsetof
 /** standard offsetof macro */
 # define offsetof(t, f) ((unsigned long)&((t *)0)->f)

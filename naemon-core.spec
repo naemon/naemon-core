@@ -1,19 +1,12 @@
 %define logmsg logger -t naemon/rpm
 
-# Setup some debugging options in case we build with --with debug
-%if %{defined _with_debug}
-  %define mycflags -O0 -pg -ggdb3
-%else
-  %define mycflags %{nil}
-%endif
-
 Summary: Open Source Host, Service And Network Monitoring Program
 Name: naemon-core
-Version: 1.2.4
+Version: 1.4.1
 Release: 0
 License: GPL-2.0-only
 Group: Applications/System
-URL: http://www.naemon.org/
+URL: https://www.naemon.io/
 Packager: Naemon Core Development Team <naemon-dev@monitoring-lists.org>
 Vendor: Naemon Core Development Team
 Source0: naemon-%{version}.tar.gz
@@ -30,11 +23,12 @@ BuildRequires: libicu-devel
 BuildRequires: pkgconfig
 BuildRequires: glib2-devel
 BuildRequires: check-devel
+
 # sles / rhel specific requirements
-%if 0%{?el8}%{?el7}%{?is_fc}
+%if 0%{?el9}%{?el8}%{?el7}%{?is_fc}
 BuildRequires: chrpath
 %endif
-%if 0%{?el8}
+%if 0%{?el9}%{?el8}
 BuildRequires: gdb-headless
 %endif
 %if 0%{?systemd_requires}
@@ -42,6 +36,12 @@ BuildRequires: gdb-headless
 %endif
 
 %if %{defined suse_version}
+# Specifically require systemd for SUSE
+# as the macro doesn't seem to function well
+Requires(pre): systemd
+Requires(post): systemd
+Requires(preun): systemd
+Requires(postun): systemd
 %if 0%{suse_version} < 1230
 Requires(pre): pwdutils
 %else
@@ -108,15 +108,13 @@ Naemon.
 
 %build
 test -f configure || ./autogen.sh
-CFLAGS="%{mycflags}" LDFLAGS="$CFLAGS" %configure \
+%configure \
     --datadir="%{_datadir}/naemon" \
     --libdir="%{_libdir}/naemon" \
     --includedir="%{_includedir}" \
     --localstatedir="%{_localstatedir}/lib/naemon" \
     --sysconfdir="%{_sysconfdir}/naemon" \
-    --with-naemon-config-dir="%{_sysconfdir}/naemon/module-conf.d" \
     --with-pkgconfdir="%{_sysconfdir}/naemon" \
-    --enable-event-broker \
     --with-pluginsdir="%{_libdir}/naemon/plugins" \
     --with-tempdir="%{_localstatedir}/cache/naemon" \
     --with-checkresultdir="%{_localstatedir}/cache/naemon/checkresults" \
@@ -125,7 +123,7 @@ CFLAGS="%{mycflags}" LDFLAGS="$CFLAGS" %configure \
     --with-logrotatedir="%{_sysconfdir}/logrotate.d" \
     --with-naemon-user="naemon" \
     --with-naemon-group="naemon" \
-    --with-lockfile="%{_localstatedir}/run/naemon/naemon.pid"
+    --with-lockfile="/run/naemon/naemon.pid"
 %{__make} %{?_smp_mflags} -j 1 all
 
 %install
@@ -235,6 +233,9 @@ esac
 touch /var/log/naemon/naemon.log
 chmod 0664 /var/log/naemon/naemon.log
 chown naemon:naemon /var/log/naemon/naemon.log
+%if %{?_unitdir:1}0
+systemd-tmpfiles --create %{_tmpfilesdir}/naemon.conf
+%endif
 
 %preun
 case "$*" in
@@ -270,7 +271,9 @@ case "$*" in
           %{_localstatedir}/log/naemon/naemon.log \
           %{_localstatedir}/log/naemon/archives
     rm -rf /var/run/naemon
-    %{insserv_cleanup}
+    %if 0%{?insserv_cleanup}
+      %{insserv_cleanup}
+    %endif
     chkconfig --del naemon >/dev/null 2>&1 || :
     systemctl try-restart naemon.service >/dev/null 2>&1 || :
     rm -rf %{_libdir}/naemon/.local
@@ -355,7 +358,7 @@ exit 0
 - Add reload for systemctl-based setups
 
 * Thu Feb 06 2014 Sven Nierlein <sven.nierlein@consol.de> 0.1.0-1
-- moved thruks reporting addon into seperate package
+- moved thruks reporting addon into separate package
 
 * Tue Nov 26 2013 Sven Nierlein <sven.nierlein@consol.de> 0.0.1-1
 - initial naemon meta package

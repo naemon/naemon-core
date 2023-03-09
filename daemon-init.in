@@ -17,7 +17,7 @@
 # Default-Start:     3 5
 # Default-Stop:      0 1 2 6
 # Short-Description: start and stop Naemon monitoring server
-# Description:       Naemon is is a service monitoring system
+# Description:       Naemon is a service monitoring system
 ### END INIT INFO
 
 # Source function library.
@@ -77,10 +77,10 @@ start() {
     # Raise priority to make it run better
 
     NICE_OPT=""
-    if [ "x${is_suse}" == "xyes" ]; then
+    if [ "x${is_suse}" = "xyes" ]; then
         if [ $NICELEVEL != "0" ]; then NICE_OPT="-n $NICELEVEL"; fi
         start_daemon ${NICE_OPT} -p ${pidfile} -u ${user} $exec -d $config
-    elif type start-stop-daemon >/dev/null 2>&1; then
+    elif command -v start-stop-daemon >/dev/null 2>&1; then
         if [ $NICELEVEL != "0" ]; then NICE_OPT="--nicelevel $NICELEVEL"; fi
         start-stop-daemon $NICE_OPT --start --user $user --chuid $user:$group --name $prog --pidfile $pidfile --exec $exec -- -d $config
     else
@@ -96,9 +96,9 @@ start() {
 
 stop() {
     echo -n "Stopping $prog: "
-    if [ "x${is_suse}" == "xyes" ]; then
+    if [ "x${is_suse}" = "xyes" ]; then
         killproc -p ${pidfile} -t 90 $exec
-    elif type start-stop-daemon >/dev/null 2>&1; then
+    elif command -v start-stop-daemon >/dev/null 2>&1; then
         start-stop-daemon --stop --name ${prog} --pidfile ${pidfile} --exec ${exec}
     elif [ -e /etc/redhat-release ]; then
         killproc -p ${pidfile} -d 90 ${exec}
@@ -192,6 +192,11 @@ case "$1" in
         ;;
     configtest|check|checkconfig)
         check_config
+        if command -v runuser >/dev/null 2>&1; then
+          runuser -s /bin/bash - $user -c "$corelimit >/dev/null 2>&1 ; $exec -vp $config"
+        else
+          /bin/su - -s /bin/sh $user -c "$corelimit >/dev/null 2>&1 ; $exec -vp $config"
+        fi
         retval=$?
         ;;
     *)

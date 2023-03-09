@@ -1,5 +1,7 @@
 ## Welcome to Naemon Core ##
 
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/naemon/naemon-core/citest.yml)
+
 Naemon is a host/service/network monitoring program written in C and
 released under the GNU General Public License. It works by scheduling
 checks of the configured objects and then invoking plugins to do the
@@ -69,24 +71,35 @@ doesn't solve an actual problem or paves the way for solving some
 sort of problem or adding a feature, it's most likely not worth the
 trouble.
 
-### Installing ###
 
-When installing from a released tarball, all you need to do is to run
-```
-./configure
-make
-sudo make install
-```
+#### Development environment ####
+We provide a predefined configuration for Visual Studio Code [here](/.vscode/README.md).
+These will help you to start Naemon inside an IDE within a few steps. 
+In case you are not a huge fan of VS Code, there is also an
+[external documentation](https://statusengine.org/tutorials/setup-naemon-development-environment/)
+available explaining the whole process for the _Eclipse IDE_.
 
-If you want to help out with development and hence download the source from
-git, you instead need to run
+### Installing Naemon ###
+
+We build packages for the most common operating systems. For more
+instructions follow the
+[documentation on naemon.io](http://www.naemon.io/download/).
+
+### Compiling Naemon ###
+
+In order to compile Naemon a number of dependencies are required.
+For reference, see the following documentation on
+[naemon.io](http://www.naemon.io/documentation/developer/build.html).
+
+After installing the required dependencies, Naemon can be compiled
+using the following steps.
+
 ```
 ./autogen.sh
 make
 sudo make install
 ```
 
-
 ### More info ###
 
-Visit the Naemon homepage at http://naemon.org
+Visit the Naemon homepage at https://www.naemon.io

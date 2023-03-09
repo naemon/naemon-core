@@ -470,6 +470,7 @@ typedef struct nebstruct_acknowledgement_struct {
 	int             persistent_comment;
 	int             notify_contacts;
 	void            *object_ptr;
+	time_t          end_time;
 } nebstruct_acknowledgement_data;
 
 

@@ -254,7 +254,7 @@ int main(int argc, char **argv)
 
 	if (mrtg_mode == FALSE) {
 		printf("\nNaemon Stats " VERSION "\n");
-		printf("Copyright (c) 2013-present Naemon Development Team (www.naemon.org)\n");
+		printf("Copyright (c) 2013-present Naemon Development Team (www.naemon.io)\n");
 		printf("Copyright (c) 2003-2008 Ethan Galstad (www.nagios.org)\n");
 		printf("License: GPL\n\n");
 	}
@@ -307,7 +307,7 @@ int main(int argc, char **argv)
 		printf(" STATUSFILEAGE        string with age of status data file.\n");
 		printf(" STATUSFILEAGETT      string with age of status data file (time_t format).\n");
 		printf(" NAGIOSVERSION        string with Naemon version.\n");
-		printf(" NAGIOSPID            pid number of Naemon deamon.\n");
+		printf(" NAGIOSPID            pid number of Naemon daemon.\n");
 		printf(" NAGIOSVERPID         string with Naemon version and PID.\n");
 		printf(" TOTCMDBUF            total number of external command buffer slots available.\n");
 		printf(" USEDCMDBUF           number of external command buffer slots currently in use.\n");
@@ -347,18 +347,18 @@ int main(int argc, char **argv)
 		printf(" xxxPSVHSTLAT         MIN/MAX/AVG passive host check latency (ms).\n");
 		printf(" xxxPSVHSTPSC         MIN/MAX/AVG passive host check %% state change.\n");
 		printf(" xxxHSTPSC            MIN/MAX/AVG host check %% state change.\n");
-		printf(" NUMACTHSTCHECKSxM    number of total active host checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMOACTHSTCHECKSxM   number of on-demand active host checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMCACHEDHSTCHECKSxM number of cached host checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMSACTHSTCHECKSxM   number of scheduled active host checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMPARHSTCHECKSxM    number of parallel host checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMSERHSTCHECKSxM    number of serial host checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMPSVHSTCHECKSxM    number of passive host checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMACTSVCCHECKSxM    number of total active service checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMOACTSVCCHECKSxM   number of on-demand active service checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMCACHEDSVCCHECKSxM number of cached service checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMSACTSVCCHECKSxM   number of scheduled active service checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMPSVSVCCHECKSxM    number of passive service checks occuring in last 1/5/15 minutes.\n");
+		printf(" NUMACTHSTCHECKSxM    number of total active host checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMOACTHSTCHECKSxM   number of on-demand active host checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMCACHEDHSTCHECKSxM number of cached host checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMSACTHSTCHECKSxM   number of scheduled active host checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMPARHSTCHECKSxM    number of parallel host checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMSERHSTCHECKSxM    number of serial host checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMPSVHSTCHECKSxM    number of passive host checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMACTSVCCHECKSxM    number of total active service checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMOACTSVCCHECKSxM   number of on-demand active service checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMCACHEDSVCCHECKSxM number of cached service checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMSACTSVCCHECKSxM   number of scheduled active service checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMPSVSVCCHECKSxM    number of passive service checks occurring in last 1/5/15 minutes.\n");
 		printf(" NUMEXTCMDSxM         number of external commands processed in last 1/5/15 minutes.\n");
 
 		printf("\n");

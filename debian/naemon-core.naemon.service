@@ -1,6 +1,6 @@
 [Unit]
 Description=Naemon Monitoring Daemon
-Documentation=http://naemon.org/documentation
+Documentation=https://www.naemon.io/documentation
 After=network.target
 
 [Service]

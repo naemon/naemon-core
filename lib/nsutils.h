@@ -6,6 +6,7 @@
 #endif
 
 #include <sys/types.h>
+#include <fcntl.h>
 
 NAGIOS_BEGIN_DECL
 
@@ -113,6 +114,11 @@ extern int tv_delta_msec(const struct timeval *start, const struct timeval *stop
  * @return time difference in fractions of seconds
  */
 extern float tv_delta_f(const struct timeval *start, const struct timeval *stop);
+
+/**
+ * close and reopen stdin, stdout and stderr to /dev/null
+ */
+void close_standard_fds(void);
 
 NAGIOS_END_DECL
 

@@ -27,6 +27,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <errno.h>
+#include <ctype.h>
 #include "runcmd.h"
 
 
@@ -67,7 +68,6 @@ static pid_t *pids = NULL;
 static int maxfd = 0;
 # endif /* _SC_OPEN_MAX */
 #endif /* OPEN_MAX */
-
 
 const char *runcmd_strerror(int code)
 {
@@ -115,6 +115,8 @@ pid_t runcmd_pid(int fd)
 #define STATE_INDQ  (1 << 3)
 #define STATE_SPECIAL (1 << 4)
 #define STATE_BSLASH (1 << 5)
+#define STATE_INVAR (1 << 6)
+#define STATE_INVAL (1 << 7)
 #define in_quotes (state & (STATE_INSQ | STATE_INDQ))
 #define is_state(s) (state == s)
 #define set_state(s) (state = s)
@@ -122,20 +124,121 @@ pid_t runcmd_pid(int fd)
 #define add_state(s) (state |= s)
 #define del_state(s) (state &= ~s)
 #define add_ret(r) (ret |= r)
-int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv)
+int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv, int *out_envc, char **out_env)
 {
-	int arg = 0, a = 0;
+	int arg = 0, a = 0, env = 0, e = 0, argstart = 0;
 	unsigned int i;
 	int state, ret = 0;
 	int seen_space = 0;
+	int continue_env_parsing = 1;
 	size_t len;
-	char *argz;
+	char *argz, *envz;
 
+	/* extract leading environment variables */
 	set_state(STATE_NONE);
 	len = strlen(str);
+	envz = malloc(len + 1);
+	*out_envc = env;
+	out_env[0] = envz;
+	for (i = 0; i < len && continue_env_parsing; i++) {
+		const char *p = &str[i];
 
+		/* in this switch 'break' will add the current character to the
+		 * last env var/val and 'continue' goes on without adding the character. */
+		switch (*p) {
+		case 0:
+			return ret;
+
+		case ' ': case '\t': case '\r': case '\n':
+			if(in_quotes)
+				break;
+			if(is_state(STATE_INVAR)) {
+				/* abort checking for variables, this is something else */
+				continue_env_parsing = 0;
+				continue;
+			}
+			if(is_state(STATE_INVAL)) {
+				set_state(STATE_NONE);
+				/* variable definition ended, nul terminate last value and increase start of command pointer */
+				envz[e++] = 0;
+				argstart = i;
+				*out_envc = env;
+				continue;
+			}
+			/* skip leading whitespace */
+			continue;
+
+		case '=':
+			if(in_quotes)
+				break;
+			if(is_state(STATE_INVAR)) {
+				/* variable name ended, nul terminate last var name and start parsing value */
+				set_state(STATE_INVAL);
+				envz[e++] = 0;
+				out_env[env++] = &envz[e];
+				continue;
+			}
+			break;
+
+		case '$':
+			if(have_state(STATE_INSQ))
+				break;
+			/* abort checking for variables, variable interpolation not supported */
+			continue_env_parsing = 0;
+			continue;
+
+		case '\'':
+			if (have_state(STATE_INDQ))
+				break;
+			if (have_state(STATE_INSQ)) {
+				del_state(STATE_INSQ);
+				continue;
+			}
+			add_state(STATE_INSQ);
+			continue;
+
+		case '"':
+			if (have_state(STATE_INSQ))
+				break;
+			if (have_state(STATE_INDQ)) {
+				del_state(STATE_INDQ);
+				continue;
+			}
+			add_state(STATE_INDQ);
+			continue;
+
+		default:
+			if(in_quotes)
+				break;
+			/* values may contain any character, except whitespace (which is caught earlier already) */
+			if(have_state(STATE_INVAL))
+				break;
+			/* variables must start with a letter/underline and contain only letters, numbers and underlines */
+			if(isalnum(*p) || *p == '_') {
+				if(have_state(STATE_INVAR))
+					break;
+				if(isalpha(*p) || *p == '_') {
+					/* starting a new environment variable */
+					set_state(STATE_INVAR);
+					out_env[env++] = &envz[e];
+					break;
+				}
+			}
+			/* abort checking for variables, this is something else */
+			continue_env_parsing = 0;
+			continue;
+		}
+
+		/* by default we simply copy the byte */
+		envz[e++] = str[i];
+	}
+
+	/* make sure we nul-terminate the last env var/val */
+	envz[e] = 0;
+
+	set_state(STATE_NONE);
 	argz = malloc(len + 1);
-	for (i = 0; i < len; i++) {
+	for (i = argstart; i < len; i++) {
 		const char *p = &str[i];
 
 		switch (*p) {
@@ -219,6 +322,11 @@ int runcmd_cmd2strv(const char *str, int *out_argc, char **out_argv)
 		case '|':
 			if (!in_quotes) {
 				add_ret(RUNCMD_HAS_REDIR);
+			}
+			break;
+		case '~':
+			if (!have_state(STATE_INSQ)) {
+				add_ret(RUNCMD_HAS_SHVAR);
 			}
 			break;
 		case '&': case ';':
@@ -315,6 +423,11 @@ void runcmd_init(void)
 	}
 #endif
 
+	/* add sane max limit, if ulimit is set to unlimited or a very high value we
+	 * don't want to waste memory for nothing */
+	if (maxfd > MAX_FD_LIMIT)
+		maxfd = MAX_FD_LIMIT;
+
 	/* reset pipe handling so child processes can use shell pipes */
 	signal(SIGPIPE, SIG_DFL);
 
@@ -324,10 +437,11 @@ void runcmd_init(void)
 
 
 /* Start running a command */
-int runcmd_open(const char *cmd, int *pfd, int *pfderr, char **env)
+int runcmd_open(const char *cmd, int *pfd, int *pfderr)
 {
 	char **argv = NULL;
-	int cmd2strv_errors, argc = 0;
+	char **env = NULL;
+	int cmd2strv_errors, argc, envc = 0;
 	size_t cmdlen;
 	pid_t pid;
 
@@ -345,7 +459,13 @@ int runcmd_open(const char *cmd, int *pfd, int *pfderr, char **env)
 	if (!argv)
 		return RUNCMD_EALLOC;
 
-	cmd2strv_errors = runcmd_cmd2strv(cmd, &argc, argv);
+	env = calloc((cmdlen/3), sizeof(char *)); // environment variables use at least 3 characters as in V=<space>, so there cannot be more than len/3
+	if (!env) {
+		free(argv);
+		return RUNCMD_EALLOC;
+	}
+
+	cmd2strv_errors = runcmd_cmd2strv(cmd, &argc, argv, &envc, env);
 	if (cmd2strv_errors) {
 		/*
 		 * if there are complications, we fall back to running
@@ -357,6 +477,8 @@ int runcmd_open(const char *cmd, int *pfd, int *pfderr, char **env)
 		argv[2] = strdup(cmd);
 		if (!argv[2]) {
 			free(argv);
+			free(env[0]);
+			free(env);
 			return RUNCMD_EALLOC;
 		}
 		argv[3] = NULL;
@@ -368,6 +490,8 @@ int runcmd_open(const char *cmd, int *pfd, int *pfderr, char **env)
 		else
 			free(argv[2]);
 		free(argv);
+		free(env[0]);
+		free(env);
 		return RUNCMD_ECMD;
 	}
 	if (pipe(pfderr) < 0) {
@@ -376,6 +500,8 @@ int runcmd_open(const char *cmd, int *pfd, int *pfderr, char **env)
 		else
 			free(argv[2]);
 		free(argv);
+		free(env[0]);
+		free(env);
 		close(pfd[0]);
 		close(pfd[1]);
 		return RUNCMD_EFD;
@@ -387,6 +513,8 @@ int runcmd_open(const char *cmd, int *pfd, int *pfderr, char **env)
 		else
 			free(argv[2]);
 		free(argv);
+		free(env[0]);
+		free(env);
 		close(pfd[0]);
 		close(pfd[1]);
 		close(pfderr[0]);
@@ -418,18 +546,24 @@ int runcmd_open(const char *cmd, int *pfd, int *pfderr, char **env)
 			if (pids[i] > 0)
 				close(i);
 
+		/* initialize environment */
+		for (i = 0; i < envc; i += 2)
+			setenv(env[i], env[i+1], 1);
+
 		i = execvp(argv[0], argv);
 		fprintf(stderr, "execvp(%s, ...) failed. errno is %d: %s\n", argv[0], errno, strerror(errno));
 		if (!cmd2strv_errors)
 			free(argv[0]);
 		else
 			free(argv[2]);
+		free(env[0]);
+		free(env);
 		_exit(errno);
 	}
 
 	/* parent picks up execution here */
 	/*
-	 * close childs file descriptors in our address space and
+	 * close child file descriptors in our address space and
 	 * release the memory we used that won't get passed to the
 	 * caller.
 	 */
@@ -440,6 +574,8 @@ int runcmd_open(const char *cmd, int *pfd, int *pfderr, char **env)
 	else
 		free(argv[2]);
 	free(argv);
+	free(env[0]);
+	free(env);
 
 	/* tag our file's entry in the pid-list and return it */
 	pids[pfd[0]] = pid;

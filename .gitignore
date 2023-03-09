@@ -56,7 +56,6 @@ COPYING
 INSTALL
 naemon.logrotate.el6
 naemon.logrotate.el7
-debian/naemon-core-dbg/
 debian/naemon-core.logrotate
 debian/*.debhelper
 debian/*.substvars
@@ -65,3 +64,4 @@ debian/naemon-dev/
 debian/tmp/
 debian/libnaemon/
 debian/files
+build

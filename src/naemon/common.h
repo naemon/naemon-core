@@ -322,6 +322,9 @@ NAGIOS_END_DECL
 #define CMD_DEL_DOWNTIME_BY_HOSTGROUP_NAME              171
 #define CMD_DEL_DOWNTIME_BY_START_TIME_COMMENT          172
 
+#define CMD_ACKNOWLEDGE_HOST_PROBLEM_EXPIRE             173
+#define CMD_ACKNOWLEDGE_SVC_PROBLEM_EXPIRE              174
+
 /* custom command introduced in Nagios 3.x */
 #define CMD_CUSTOM_COMMAND                              999
 
@@ -471,7 +474,6 @@ NAGIOS_END_DECL
 #define MAX_FILENAME_LENGTH			256	/* max length of path/filename that Nagios will process */
 #define MAX_INPUT_BUFFER			1024	/* size in bytes of max. input buffer (for reading files, misc stuff) */
 #define MAX_COMMAND_BUFFER                      8192    /* max length of raw or processed command line */
-#define MAX_EXTERNAL_COMMAND_LENGTH             8192    /* max length of an external command */
 
 #define MAX_DATETIME_LENGTH			48
 

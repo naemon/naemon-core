@@ -9,7 +9,7 @@
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: start and stop Naemon monitoring server
-# Description:       Naemon is is a service monitoring system
+# Description:       Naemon is a service monitoring system
 ### END INIT INFO
 
 # Source function library.
@@ -203,6 +203,7 @@ case "$1" in
           /bin/su - -s /bin/sh $user -c "$corelimit >/dev/null 2>&1 ; $exec -v $config"
         fi
         retval=$?
+        exit $retval
         ;;
     *)
         echo "Usage: $0 {start|stop|status|restart|condrestart|try-restart|reload|force-reload|configtest}"

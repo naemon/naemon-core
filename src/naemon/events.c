@@ -268,9 +268,20 @@ void init_event_queue(void)
 	event_queue = evheap_create();
 }
 
-void destroy_event_queue(void)
+void clear_event_queue(void)
 {
 	struct timed_event *ev;
+
+	if (event_queue == NULL)
+		return;
+
+	while ((ev = evheap_head(event_queue)) != NULL) {
+		destroy_event(ev);
+	}
+}
+
+void destroy_event_queue(void)
+{
 	/*
 	 * Since naemon doesn't know if things is started, we can't trust that
 	 * destroy event queue actually means we have an event queue to destroy
@@ -278,9 +289,7 @@ void destroy_event_queue(void)
 	if (event_queue == NULL)
 		return;
 
-	while ((ev = evheap_head(event_queue)) != NULL) {
-		destroy_event(ev);
-	}
+	clear_event_queue();
 	evheap_destroy(event_queue);
 	event_queue = NULL;
 }

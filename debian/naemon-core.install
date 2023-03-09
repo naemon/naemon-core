@@ -8,6 +8,4 @@
 /usr/bin/naemonstats
 /var/log/naemon
 /var/log/naemon/archives
-/etc/logrotate.d/naemon-core
-/usr/lib/naemon/plugins
 /usr/share/naemon/examples

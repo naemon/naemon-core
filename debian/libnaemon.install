@@ -1,1 +1,1 @@
-/usr/lib/naemon/libnaemon.so*
+/usr/lib/*/libnaemon.so.*

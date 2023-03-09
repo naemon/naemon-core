@@ -244,7 +244,7 @@ int main(int argc, char **argv)
 		printf("Copyright (c) 2009-2013 Nagios Core Development Team and Community Contributors\n");
 		printf("Copyright (c) 1999-2009 Ethan Galstad\n");
 		printf("License: GPL\n\n");
-		printf("Website: http://www.naemon.org\n");
+		printf("Website: https://www.naemon.io\n");
 	}
 
 	/* just display the license */
@@ -284,7 +284,7 @@ int main(int argc, char **argv)
 		printf("  -W, --worker /path/to/socket Act as a worker for an already running daemon\n");
 		printf("  --allow-root                 Let naemon run as root. THIS IS NOT RECOMMENDED AT ALL.\n");
 		printf("\n");
-		printf("Visit the Naemon website at http://www.naemon.org/ for bug fixes, new\n");
+		printf("Visit the Naemon website at https://www.naemon.io/ for bug fixes, new\n");
 		printf("releases, online documentation, FAQs and more...\n");
 		printf("\n");
 
@@ -455,7 +455,7 @@ int main(int argc, char **argv)
 		wproc_num_workers_spawned = wproc_num_workers_online = 0;
 
 		/* reset program variables */
-		timing_point("Reseting variables\n");
+		timing_point("Resetting variables\n");
 		reset_variables();
 		timing_point("Reset variables\n");
 
@@ -587,18 +587,8 @@ int main(int argc, char **argv)
 		timing_point("Loaded modules\n");
 
 		/* close stdin after the neb modules loaded so they can still ask for passwords */
-		if (daemon_mode == TRUE && sigrestart == FALSE) {
-			/* close existing stdin, stdout, stderr */
-			close(0);
-			close(1);
-			close(2);
-
-			/* THIS HAS TO BE DONE TO AVOID PROBLEMS WITH STDERR BEING REDIRECTED TO SERVICE MESSAGE PIPE! */
-			/* re-open stdin, stdout, stderr with known values */
-			open("/dev/null", O_RDONLY);
-			open("/dev/null", O_WRONLY);
-			open("/dev/null", O_WRONLY);
-		}
+		if (daemon_mode == TRUE && sigrestart == FALSE)
+			close_standard_fds();
 
 		timing_point("Making first callback\n");
 		broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE);

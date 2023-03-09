@@ -143,7 +143,6 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 	int nudge_seconds = 0;
 	double latency;
 	struct timeval tv;
-	struct timeval event_runtime;
 	int options = temp_service->check_options;
 	host *temp_host = NULL;
 
@@ -152,10 +151,8 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 
 		/* get event latency */
+		latency = evprop->attributes.timed.latency;
 		gettimeofday(&tv, NULL);
-		event_runtime.tv_sec = temp_service->next_check;
-		event_runtime.tv_usec = 0;
-		latency = (double)(tv_delta_f(&event_runtime, &tv));
 
 		/* When the callback is called, the pointer to the timed event is invalid */
 		temp_service->next_check_event = NULL;
@@ -240,6 +237,9 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 
 		/* Otherwise, run the event */
 		run_scheduled_service_check(temp_service, options, latency);
+	} else if (evprop->execution_type == EVENT_EXEC_ABORTED) {
+		/* If the event is destroyed, remove the reference. */
+		temp_service->next_check_event = NULL;
 	}
 }
 
@@ -483,6 +483,8 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	/* was this check passive or active? */
 	temp_service->check_type = (queued_check_result->check_type == CHECK_TYPE_ACTIVE) ? CHECK_TYPE_ACTIVE : CHECK_TYPE_PASSIVE;
 
+	temp_service->latency = queued_check_result->latency;
+
 	/* update check statistics for passive checks */
 	if (queued_check_result->check_type == CHECK_TYPE_PASSIVE)
 		update_check_stats(PASSIVE_SERVICE_CHECK_STATS, queued_check_result->start_time.tv_sec);
@@ -636,6 +638,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 			temp_service->problem_has_been_acknowledged = FALSE;
 			temp_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+			temp_service->acknowledgement_end_time = (time_t)0;
 
 			/* remove any non-persistant comments associated with the ack */
 			delete_service_acknowledgement_comments(temp_service);
@@ -643,6 +646,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 			temp_service->problem_has_been_acknowledged = FALSE;
 			temp_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+			temp_service->acknowledgement_end_time = (time_t)0;
 
 			/* remove any non-persistant comments associated with the ack */
 			delete_service_acknowledgement_comments(temp_service);
@@ -705,6 +709,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		/* reset the acknowledgement flag (this should already have been done, but just in case...) */
 		temp_service->problem_has_been_acknowledged = FALSE;
 		temp_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+		temp_service->acknowledgement_end_time = (time_t)0;
 
 		/* verify the route to the host and send out host recovery notifications */
 		if (temp_host->current_state != STATE_UP) {
@@ -788,6 +793,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		temp_service->current_notification_number = 0;
 		temp_service->problem_has_been_acknowledged = FALSE;
 		temp_service->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+		temp_service->acknowledgement_end_time = (time_t)0;
 		temp_service->notified_on = 0;
 	}
 

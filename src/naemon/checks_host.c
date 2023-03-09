@@ -140,17 +140,14 @@ static void handle_host_check_event(struct nm_event_execution_properties *evprop
 	host *hst = (host *)evprop->user_data;
 	double latency;
 	struct timeval tv;
-	struct timeval event_runtime;
 	int options = hst->check_options;
 
 	int result = OK;
 
 	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* get event latency */
+		latency = evprop->attributes.timed.latency;
 		gettimeofday(&tv, NULL);
-		event_runtime.tv_sec = hst->next_check;
-		event_runtime.tv_usec = 0;
-		latency = (double)(tv_delta_f(&event_runtime, &tv));
 
 		/* When the callback is called, the pointer to the timed event is invalid */
 		hst->next_check_event = NULL;
@@ -188,6 +185,9 @@ static void handle_host_check_event(struct nm_event_execution_properties *evprop
 			/* update the status log */
 			update_host_status(hst, FALSE);
 		}
+	} else if (evprop->execution_type == EVENT_EXEC_ABORTED) {
+		/* If the event is destroyed, remove the reference. */
+		hst->next_check_event = NULL;
 	}
 }
 
@@ -969,6 +969,7 @@ static int handle_host_state(host *hst, int *alert_recorded)
 
 			hst->problem_has_been_acknowledged = FALSE;
 			hst->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+			hst->acknowledgement_end_time = (time_t)0;
 
 			/* remove any non-persistant comments associated with the ack */
 			delete_host_acknowledgement_comments(hst);
@@ -976,6 +977,7 @@ static int handle_host_state(host *hst, int *alert_recorded)
 
 			hst->problem_has_been_acknowledged = FALSE;
 			hst->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+			hst->acknowledgement_end_time = (time_t)0;
 
 			/* remove any non-persistant comments associated with the ack */
 			delete_host_acknowledgement_comments(hst);

@@ -1,24 +1,23 @@
 #!/usr/bin/make -f
 # debian/rules makefile for naemon
 
-.PHONY: override_dh_strip
-
 export DH_VERBOSE=1
 DESTDIR=$(CURDIR)/debian/tmp/
+
+include /usr/share/dpkg/architecture.mk
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
 override_dh_auto_configure:
 	test -f configure || ./autogen.sh
 	dh_auto_configure -- --prefix=/usr \
 				--bindir="/usr/bin" \
 				--datadir="/usr/share/naemon" \
-				--libdir="/usr/lib/naemon" \
+				--libdir="/usr/lib/$(DEB_HOST_MULTIARCH)" \
 				--includedir="/usr/include" \
 				--localstatedir="/var/lib/naemon" \
 				--sysconfdir="/etc/naemon" \
-				--with-naemon-config-dir="/etc/naemon/module-conf.d" \
 				--with-pkgconfdir="/etc/naemon" \
 				--mandir="/usr/share/man" \
-				--enable-event-broker \
 				--with-pluginsdir="/usr/lib/naemon/plugins" \
 				--with-tempdir="/var/cache/naemon" \
 				--with-checkresultdir="/var/cache/naemon/checkresults" \
@@ -28,26 +27,12 @@ override_dh_auto_configure:
 				--with-naemon-user="naemon" \
 				--with-naemon-group="naemon" \
 				--with-lockfile="/run/naemon/naemon.pid"
-	if [ "x$(DEB_HOST_MULTIARCH)" != "x" ]; then \
-		echo /usr/lib/naemon/pkgconfig/naemon.pc usr/lib/$(DEB_HOST_MULTIARCH)/pkgconfig/ >> debian/naemon-dev.install; \
-	else \
-		echo /usr/lib/naemon/pkgconfig/naemon.pc usr/share/pkgconfig/ >> debian/naemon-dev.install; \
-	fi
 
 
 
 override_dh_auto_install:
 	dh_auto_install
-	# because we globally disabled binary striping, we have to do this manually for some files
-	cp -p debian/tmp/usr/bin/naemon debian/tmp/usr/bin/naemon-dbg
-	strip debian/tmp/usr/bin/naemon
-	strip debian/tmp/usr/bin/naemonstats
-	chrpath -c debian/tmp/usr/bin/naemonstats
-	chrpath -c debian/tmp/usr/bin/naemon-dbg
-	strip debian/tmp/usr/lib/naemon/libnaemon.so.0.0.0
-	mv debian/tmp/etc/logrotate.d/naemon debian/tmp/etc/logrotate.d/naemon-core
 	cp naemon.logrotate.el7 debian/naemon-core.logrotate
-	ln -s /usr/lib/nagios/plugins debian/tmp/usr/lib/naemon/plugins
 	mkdir -p -m 0755 debian/tmp/usr/share/naemon/examples
 	mv debian/tmp/etc/naemon/conf.d debian/tmp/usr/share/naemon/examples
 	# get rid of dependency_libs in la files, see https://wiki.debian.org/ReleaseGoals/LAFileRemoval
@@ -61,7 +46,7 @@ override_dh_gencontrol:
 	dh_gencontrol
 
 override_dh_strip:
-	dh_strip -pnaemon-core --dbg-package=naemon-core-dbg
+	dh_strip --dbgsym-migration='naemon-core-dbg (<< 1.3.1-1)'
 
 override_dh_installinit:
 	# make space for the debian specific rc file
