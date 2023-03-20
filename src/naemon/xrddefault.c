@@ -67,6 +67,8 @@ int xrddefault_save_state_information(void)
 	service *temp_service = NULL;
 	contact *temp_contact = NULL;
 	comment *temp_comment = NULL;
+	GHashTableIter iter;
+	gpointer comment_;
 	scheduled_downtime *temp_downtime = NULL;
 	int x = 0;
 	int fd = 0;
@@ -378,25 +380,28 @@ int xrddefault_save_state_information(void)
 	}
 
 	/* save all comments */
-	for (temp_comment = comment_list; temp_comment != NULL; temp_comment = temp_comment->next) {
-
-		if (temp_comment->comment_type == HOST_COMMENT)
-			fprintf(fp, "hostcomment {\n");
-		else
-			fprintf(fp, "servicecomment {\n");
-		fprintf(fp, "host_name=%s\n", temp_comment->host_name);
-		if (temp_comment->comment_type == SERVICE_COMMENT)
-			fprintf(fp, "service_description=%s\n", temp_comment->service_description);
-		fprintf(fp, "entry_type=%d\n", temp_comment->entry_type);
-		fprintf(fp, "comment_id=%lu\n", temp_comment->comment_id);
-		fprintf(fp, "source=%d\n", temp_comment->source);
-		fprintf(fp, "persistent=%d\n", temp_comment->persistent);
-		fprintf(fp, "entry_time=%lu\n", temp_comment->entry_time);
-		fprintf(fp, "expires=%d\n", temp_comment->expires);
-		fprintf(fp, "expire_time=%lu\n", temp_comment->expire_time);
-		fprintf(fp, "author=%s\n", temp_comment->author);
-		fprintf(fp, "comment_data=%s\n", temp_comment->comment_data);
-		fprintf(fp, "}\n");
+	if(comment_hashtable != NULL) {
+		g_hash_table_iter_init(&iter, comment_hashtable);
+		while (g_hash_table_iter_next(&iter, NULL, &comment_)) {
+			temp_comment = comment_;
+			if (temp_comment->comment_type == HOST_COMMENT)
+				fprintf(fp, "hostcomment {\n");
+			else
+				fprintf(fp, "servicecomment {\n");
+			fprintf(fp, "host_name=%s\n", temp_comment->host_name);
+			if (temp_comment->comment_type == SERVICE_COMMENT)
+				fprintf(fp, "service_description=%s\n", temp_comment->service_description);
+			fprintf(fp, "entry_type=%d\n", temp_comment->entry_type);
+			fprintf(fp, "comment_id=%lu\n", temp_comment->comment_id);
+			fprintf(fp, "source=%d\n", temp_comment->source);
+			fprintf(fp, "persistent=%d\n", temp_comment->persistent);
+			fprintf(fp, "entry_time=%lu\n", temp_comment->entry_time);
+			fprintf(fp, "expires=%d\n", temp_comment->expires);
+			fprintf(fp, "expire_time=%lu\n", temp_comment->expire_time);
+			fprintf(fp, "author=%s\n", temp_comment->author);
+			fprintf(fp, "comment_data=%s\n", temp_comment->comment_data);
+			fprintf(fp, "}\n");
+		}
 	}
 
 	/* save all downtime */
@@ -549,7 +554,6 @@ int xrddefault_read_state_information(void)
 
 	/* Big speedup when reading retention.dat in bulk */
 	defer_downtime_sorting = 1;
-	defer_comment_sorting = 1;
 
 	/* read all lines in the retention file */
 	while (1) {
@@ -1684,8 +1688,6 @@ int xrddefault_read_state_information(void)
 	mmap_fclose(thefile);
 
 	if (sort_downtime() != OK)
-		return ERROR;
-	if (sort_comments() != OK)
 		return ERROR;
 
 	return OK;

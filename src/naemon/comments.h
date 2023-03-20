@@ -48,7 +48,7 @@ typedef struct comment {
 	struct 	comment *next;
 } comment;
 
-extern struct comment *comment_list;
+extern GHashTable *comment_hashtable;
 
 int initialize_comment_data(void);                                /* initializes comment data */
 int add_new_comment(int, int, char *, char *, time_t, char *, char *, int, int, int, time_t, unsigned long *); /* adds a new host or service comment */
@@ -71,7 +71,6 @@ int number_of_service_comments(char *, char *);                              /* 
 int number_of_comments(void);
 
 int add_comment(int, int, char *, char *, time_t, char *, char *, unsigned long, int, int, time_t, int); /* adds a comment (host or service) */
-int sort_comments(void);
 int add_host_comment(int, char *, time_t, char *, char *, unsigned long, int, int, time_t, int);   /* adds a host comment */
 int add_service_comment(int, char *, char *, time_t, char *, char *, unsigned long, int, int, time_t, int); /* adds a service comment */
 

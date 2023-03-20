@@ -19,8 +19,6 @@ extern char illegal_output_char_map[256];
 
 extern int log_rotation_method;
 extern int check_external_commands;
-/* set this if you're going to add a ton of comments at once */
-extern int defer_comment_sorting;
 extern unsigned long next_downtime_id;
 
 extern char *object_cache_file;

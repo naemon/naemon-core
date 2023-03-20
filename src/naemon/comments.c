@@ -11,9 +11,7 @@
 #include "nm_alloc.h"
 #include <glib.h>
 
-comment *comment_list = NULL;
-int defer_comment_sorting = 0;
-static GHashTable *comment_hashtable;
+GHashTable *comment_hashtable = NULL;
 
 
 /******************************************************************/
@@ -148,16 +146,6 @@ int delete_comment(int type, unsigned long comment_id)
 
 	/* remove the comment from the list in memory */
 	g_hash_table_remove(comment_hashtable, GINT_TO_POINTER(this_comment->comment_id));
-
-	if (comment_list == this_comment) {
-		comment_list = this_comment->next;
-		if (comment_list)
-			comment_list->prev = NULL;
-	} else {
-		this_comment->prev->next = this_comment->next;
-		if (this_comment->next)
-			this_comment->next->prev = this_comment->prev;
-	}
 
 	// remove from svc or host
 	if (type == HOST_COMMENT) {
@@ -348,34 +336,6 @@ int add_comment(int comment_type, int entry_type, char *host_name, char *svc_des
 
 	g_hash_table_insert(comment_hashtable, GINT_TO_POINTER(new_comment->comment_id), new_comment);
 
-	if (defer_comment_sorting || !comment_list) {
-		if (comment_list) {
-			comment_list->prev = new_comment;
-		}
-		new_comment->next = comment_list;
-		new_comment->prev = NULL;
-		comment_list = new_comment;
-	} else {
-		/* add new comment to comment list, sorted by comment id */
-		comment *cur;
-		for (cur = comment_list; cur; cur = cur->next) {
-			if (new_comment->comment_id < cur->comment_id) {
-				new_comment->prev = cur->prev;
-				if (cur->prev)
-					cur->prev->next = new_comment;
-				new_comment->next = cur;
-				cur->prev = new_comment;
-				break;
-			}
-			if (!cur->next) {
-				new_comment->next = NULL;
-				cur->next = new_comment;
-				new_comment->prev = cur;
-				break;
-			}
-		}
-	}
-
 	if (comment_type == HOST_COMMENT)
 		prepend_object_to_objectlist(&temp_host->comments_list, (void *)new_comment);
 
@@ -388,51 +348,6 @@ int add_comment(int comment_type, int entry_type, char *host_name, char *svc_des
 }
 
 
-static int comment_compar(const void *p1, const void *p2)
-{
-	comment *c1 = *(comment **)p1;
-	comment *c2 = *(comment **)p2;
-	return c1->comment_id - c2->comment_id;
-}
-
-
-int sort_comments(void)
-{
-	comment **array, *temp_comment;
-	unsigned long i = 0, unsorted_comments = 0;
-
-	if (!defer_comment_sorting)
-		return OK;
-	defer_comment_sorting = 0;
-
-	temp_comment = comment_list;
-	while (temp_comment != NULL) {
-		temp_comment = temp_comment->next;
-		unsorted_comments++;
-	}
-
-	if (!unsorted_comments)
-		return OK;
-
-	array = nm_malloc(sizeof(*array) * unsorted_comments);
-	while (comment_list) {
-		array[i++] = comment_list;
-		comment_list = comment_list->next;
-	}
-
-	qsort((void *)array, i, sizeof(*array), comment_compar);
-	comment_list = temp_comment = array[0];
-	for (i = 1; i < unsorted_comments; i++) {
-		temp_comment->next = array[i];
-		temp_comment = temp_comment->next;
-		temp_comment->prev = array[i - 1];
-	}
-	temp_comment->next = NULL;
-	nm_free(array);
-	return OK;
-}
-
-
 /******************************************************************/
 /********************* CLEANUP FUNCTIONS **************************/
 /******************************************************************/
@@ -440,24 +355,25 @@ int sort_comments(void)
 /* frees memory allocated for the comment data */
 void free_comment_data(void)
 {
-	comment *this_comment = NULL;
-	comment *next_comment = NULL;
+	GHashTableIter iter;
+	gpointer comment_;
 
-	if(comment_hashtable != NULL)
-		g_hash_table_destroy(comment_hashtable);
-	comment_hashtable = NULL;
+	if(comment_hashtable == NULL)
+		return;
 
 	/* free memory for the comment list */
-	for (this_comment = comment_list; this_comment != NULL; this_comment = next_comment) {
-		next_comment = this_comment->next;
-		nm_free(this_comment->host_name);
-		nm_free(this_comment->service_description);
-		nm_free(this_comment->author);
-		nm_free(this_comment->comment_data);
-		nm_free(this_comment);
+	g_hash_table_iter_init(&iter, comment_hashtable);
+	while (g_hash_table_iter_next(&iter, NULL, &comment_)) {
+		comment *temp_comment = comment_;
+		nm_free(temp_comment->host_name);
+		nm_free(temp_comment->service_description);
+		nm_free(temp_comment->author);
+		nm_free(temp_comment->comment_data);
+		nm_free(temp_comment);
 	}
 
-	comment_list = NULL;
+	g_hash_table_destroy(comment_hashtable);
+	comment_hashtable = NULL;
 
 	return;
 }
