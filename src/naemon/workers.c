@@ -163,6 +163,11 @@ static void run_job_callback(struct wproc_job *job, struct wproc_result *wpres, 
 {
 	if (!job || !job->callback)
 		return;
+	
+	if (!wpres) {
+		nm_log(NSLOG_RUNTIME_ERROR, "---!!!--- wpres is null or so TODO REMOVE THIS");
+		return;
+	}
 
 	(*job->callback)(wpres, job->data, val);
 	job->callback = NULL;
@@ -446,7 +451,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 			nm_log(NSLOG_RUNTIME_ERROR, "wproc: We have have less Core Workers than we should have, trying to respawn Core Worker");
 
 			/* Respawn a worker */
-	        	if ((ret = spawn_core_worker()) < 0) {
+			if ((ret = spawn_core_worker()) < 0) {
 				nm_log(NSLOG_RUNTIME_ERROR, "wproc: Failed to respawn Core Worker");
 			} else {
 				nm_log(NSLOG_INFO_MESSAGE, "wproc: Respawning Core Worker %u was successful", ret);
