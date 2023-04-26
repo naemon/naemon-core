@@ -97,6 +97,8 @@ static int grab_custom_object_macro_r(nagios_macros *mac, char *macro_name, cust
 {
 	customvariablesmember *temp_customvariablesmember = NULL;
 	int result = ERROR;
+	char *temp_buffer = NULL;
+	char *val = NULL;
 
 	if (macro_name == NULL || vars == NULL || output == NULL)
 		return ERROR;
@@ -108,8 +110,25 @@ static int grab_custom_object_macro_r(nagios_macros *mac, char *macro_name, cust
 			continue;
 
 		if (!strcmp(macro_name, temp_customvariablesmember->variable_name)) {
-			if (temp_customvariablesmember->variable_value)
-				*output = temp_customvariablesmember->variable_value;
+			if (temp_customvariablesmember->variable_value) {
+				val = temp_customvariablesmember->variable_value;
+
+				/* check if we might need to handle other macros */
+				if (val[0] == '!' && val[1] != 0x0) {
+
+					/* if we see two flags, treat them as a single literal and do not try to handle macros */
+					if (val[1] == '!')
+						temp_buffer = nm_strdup(val + 1);
+
+					/* post process */
+					else {
+						temp_buffer = nm_strdup("");
+						process_macros_r(mac, val + 1, &temp_buffer, 0);
+					}
+					nm_free(val);
+					*output = temp_buffer;
+				}
+			}
 			result = OK;
 			break;
 		}
