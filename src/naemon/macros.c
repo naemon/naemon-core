@@ -125,9 +125,10 @@ static int grab_custom_object_macro_r(nagios_macros *mac, char *macro_name, cust
 						temp_buffer = nm_strdup("");
 						process_macros_r(mac, val + 1, &temp_buffer, 0);
 					}
-					nm_free(val);
 					*output = temp_buffer;
 				}
+				else
+					*output = temp_customvariablesmember->variable_value;
 			}
 			result = OK;
 			break;
