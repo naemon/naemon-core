@@ -183,7 +183,8 @@ int close_command_file(void)
 	command_file_created = FALSE;
 
 	/* close the command file */
-	fclose(command_file_fp);
+	if (command_file_fp != NULL)
+		fclose(command_file_fp);
 
 	return OK;
 }
