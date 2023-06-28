@@ -471,8 +471,6 @@ NAGIOS_END_DECL
 
 #define MAX_FILENAME_LENGTH			256	/* max length of path/filename that Nagios will process */
 #define MAX_INPUT_BUFFER			1024	/* size in bytes of max. input buffer (for reading files, misc stuff) */
-#define MAX_COMMAND_BUFFER                      8192    /* max length of raw or processed command line */
-
 #define MAX_DATETIME_LENGTH			48
 
 
