@@ -9,7 +9,8 @@
                 //"/usr/lib/gcc/x86_64-redhat-linux/12/include/**", // Fedora
                 "/usr/local/include/**",
                 "/usr/include/**",
-                "/usr/lib64/**"
+                "/usr/lib64/**",
+                "/usr/lib/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
