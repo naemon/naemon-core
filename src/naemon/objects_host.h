@@ -119,6 +119,7 @@ struct host {
 	time_t  last_state_history_update;
 	int     is_flapping;
 	unsigned long flapping_comment_id;
+	struct objectlist *comments_list;
 	double  percent_state_change;
 	int     total_services;
 	unsigned long modified_attributes;

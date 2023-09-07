@@ -110,6 +110,7 @@ struct service {
 	int     state_history_index;
 	int     is_flapping;
 	unsigned long flapping_comment_id;
+	struct objectlist *comments_list;
 	double  percent_state_change;
 	unsigned long modified_attributes;
 	struct host *host_ptr;

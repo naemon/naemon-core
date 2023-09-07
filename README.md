@@ -1,6 +1,6 @@
 ## Welcome to Naemon Core ##
 
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/naemon/naemon-core/citest)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/naemon/naemon-core/citest.yml)
 
 Naemon is a host/service/network monitoring program written in C and
 released under the GNU General Public License. It works by scheduling

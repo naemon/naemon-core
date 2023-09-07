@@ -83,7 +83,7 @@ typedef struct notify_list {
 	struct notify_list *next;
 } notification;
 
-const char *notification_reason_name(unsigned int reason_type);
+const char *notification_reason_name(enum NotificationReason reason_type);
 int check_service_notification_viability(service *, int, int);			/* checks viability of notifying all contacts about a service */
 int is_valid_escalation_for_service_notification(service *, serviceescalation *, int);	/* checks if an escalation entry is valid for a particular service notification */
 int should_service_notification_be_escalated(service *);			/* checks if a service notification should be escalated */

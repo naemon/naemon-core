@@ -76,6 +76,8 @@ int xsddefault_save_status_data(void)
 	service *temp_service = NULL;
 	contact *temp_contact = NULL;
 	comment *temp_comment = NULL;
+	GHashTableIter iter;
+	gpointer comment_;
 	scheduled_downtime *temp_downtime = NULL;
 	time_t current_time;
 	int fd = 0;
@@ -335,25 +337,28 @@ int xsddefault_save_status_data(void)
 	}
 
 	/* save all comments */
-	for (temp_comment = comment_list; temp_comment != NULL; temp_comment = temp_comment->next) {
-
-		if (temp_comment->comment_type == HOST_COMMENT)
-			fprintf(fp, "hostcomment {\n");
-		else
-			fprintf(fp, "servicecomment {\n");
-		fprintf(fp, "\thost_name=%s\n", temp_comment->host_name);
-		if (temp_comment->comment_type == SERVICE_COMMENT)
-			fprintf(fp, "\tservice_description=%s\n", temp_comment->service_description);
-		fprintf(fp, "\tentry_type=%d\n", temp_comment->entry_type);
-		fprintf(fp, "\tcomment_id=%lu\n", temp_comment->comment_id);
-		fprintf(fp, "\tsource=%d\n", temp_comment->source);
-		fprintf(fp, "\tpersistent=%d\n", temp_comment->persistent);
-		fprintf(fp, "\tentry_time=%lu\n", temp_comment->entry_time);
-		fprintf(fp, "\texpires=%d\n", temp_comment->expires);
-		fprintf(fp, "\texpire_time=%lu\n", temp_comment->expire_time);
-		fprintf(fp, "\tauthor=%s\n", temp_comment->author);
-		fprintf(fp, "\tcomment_data=%s\n", temp_comment->comment_data);
-		fprintf(fp, "\t}\n\n");
+	if(comment_hashtable != NULL) {
+		g_hash_table_iter_init(&iter, comment_hashtable);
+		while (g_hash_table_iter_next(&iter, NULL, &comment_)) {
+			temp_comment = comment_;
+			if (temp_comment->comment_type == HOST_COMMENT)
+				fprintf(fp, "hostcomment {\n");
+			else
+				fprintf(fp, "servicecomment {\n");
+			fprintf(fp, "\thost_name=%s\n", temp_comment->host_name);
+			if (temp_comment->comment_type == SERVICE_COMMENT)
+				fprintf(fp, "\tservice_description=%s\n", temp_comment->service_description);
+			fprintf(fp, "\tentry_type=%d\n", temp_comment->entry_type);
+			fprintf(fp, "\tcomment_id=%lu\n", temp_comment->comment_id);
+			fprintf(fp, "\tsource=%d\n", temp_comment->source);
+			fprintf(fp, "\tpersistent=%d\n", temp_comment->persistent);
+			fprintf(fp, "\tentry_time=%lu\n", temp_comment->entry_time);
+			fprintf(fp, "\texpires=%d\n", temp_comment->expires);
+			fprintf(fp, "\texpire_time=%lu\n", temp_comment->expire_time);
+			fprintf(fp, "\tauthor=%s\n", temp_comment->author);
+			fprintf(fp, "\tcomment_data=%s\n", temp_comment->comment_data);
+			fprintf(fp, "\t}\n\n");
+		}
 	}
 
 	/* save all downtime */

@@ -12,3 +12,12 @@
 /test-utils
 /test-check-scheduling
 /test-objects
+/test-arith
+/test-arith-builtins
+/test-check-dependencies
+/test-check-result-processing
+/test-neb-callbacks
+/test-query-handler
+/test-retention
+/test-scheduled-downtimes
+/test-worker
