@@ -41,6 +41,7 @@ Requires(pre): systemd
 Requires(post): systemd
 Requires(preun): systemd
 Requires(postun): systemd
+BuildRequires: pkgconfig(systemd)
 %if 0%{suse_version} < 1230
 Requires(pre): pwdutils
 %else
