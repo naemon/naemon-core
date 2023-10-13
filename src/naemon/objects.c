@@ -141,7 +141,7 @@ int fcache_objects(char *cache_file)
 
 		result = OK;
 
-		/* move the temp file to the status log (overwrite the old status log) */
+		/* move the temp file to the objects data file (overwrite the old objects.cache) */
 		if (my_rename(tmp_file, cache_file)) {
 			unlink(tmp_file);
 			nm_log(NSLOG_RUNTIME_ERROR, "Error: Unable to update cache data file '%s': %s", cache_file, strerror(errno));
