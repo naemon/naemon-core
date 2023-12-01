@@ -165,7 +165,6 @@ static void run_job_callback(struct wproc_job *job, struct wproc_result *wpres, 
 		return;
 	
 	if (!wpres) {
-		nm_log(NSLOG_RUNTIME_ERROR, "---!!!--- wpres is null or so TODO REMOVE THIS");
 		return;
 	}
 
