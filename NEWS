@@ -1,3 +1,18 @@
+1.4.2 - Jan 03 2024
+===================
+Features:
+* remove size limit on external command argument length
+* performance improvements when having lots of comments
+
+Changed:
+* write objects.precache into a tmp file first
+* increased CURRENT_NEB_API_VERSION to 6 (neb modules need to be rebuild)
+
+Bugfixes:
+* fix build error on fedora
+* fix latency calculation having negative value sometimes
+
+
 1.4.1 - Feb 01 2023
 ===================
 Features:
