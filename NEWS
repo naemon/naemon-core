@@ -3,7 +3,7 @@
 Features:
 * remove size limit on external command argument length
 * performance improvements when having lots of comments
-* Respawn dead core worker
+* respawn dead core worker
 
 Changed:
 * write objects.precache into a tmp file first
