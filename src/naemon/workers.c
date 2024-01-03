@@ -64,6 +64,9 @@ static struct wproc_list *to_remove = NULL;
 unsigned int wproc_num_workers_online = 0, wproc_num_workers_desired = 0;
 unsigned int wproc_num_workers_spawned = 0;
 
+static int get_desired_workers(int desired_workers);
+static int spawn_core_worker(void);
+
 #define tv2float(tv) ((float)((tv)->tv_sec) + ((float)(tv)->tv_usec) / 1000000.0)
 
 static void wproc_logdump_buffer(int debuglevel, int verbosity, const char *prefix, char *buf)
@@ -160,6 +163,10 @@ static void run_job_callback(struct wproc_job *job, struct wproc_result *wpres, 
 {
 	if (!job || !job->callback)
 		return;
+	
+	if (!wpres) {
+		return;
+	}
 
 	(*job->callback)(wpres, job->data, val);
 	job->callback = NULL;
@@ -414,6 +421,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 	char *buf, *error_reason = NULL;
 	size_t size;
 	int ret;
+	unsigned int desired_workers;
 	struct wproc_worker *wp = (struct wproc_worker *)arg;
 
 	ret = nm_bufferqueue_read(wp->bq, wp->sd);
@@ -428,16 +436,31 @@ static int handle_worker_result(int sd, int events, void *arg)
 		nm_log(NSLOG_INFO_MESSAGE, "wproc: Socket to worker %s broken, removing", wp->name);
 		wproc_num_workers_online--;
 		iobroker_unregister(nagios_iobs, sd);
-		if (workers.len <= 0) {
-			/* there aren't global workers left, we can't run any more checks
-			 * we should try respawning a few of the standard ones
-			 */
-			nm_log(NSLOG_RUNTIME_ERROR, "wproc: All our workers are dead, we can't do anything!");
-		}
 
 		/* remove worker from worker list - this ensures that we don't reassign
 		 * its jobs back to itself*/
 		remove_worker(wp);
+
+		desired_workers = get_desired_workers(num_check_workers);
+
+		if (workers.len < desired_workers) {
+			/* there aren't global workers left, we can't run any more checks
+			 * we should try respawning a few of the standard ones
+			 */
+			nm_log(NSLOG_RUNTIME_ERROR, "wproc: We have have less Core Workers than we should have, trying to respawn Core Worker");
+
+			/* Respawn a worker */
+			if ((ret = spawn_core_worker()) < 0) {
+				nm_log(NSLOG_RUNTIME_ERROR, "wproc: Failed to respawn Core Worker");
+			} else {
+				nm_log(NSLOG_INFO_MESSAGE, "wproc: Respawning Core Worker %u was successful", ret);
+			}
+		} else if (workers.len == 0) {
+			/* there aren't global workers left, we can't run any more checks
+			 * this should never happen, because the respawning will be done in the upper if condition
+			 */
+			nm_log(NSLOG_RUNTIME_ERROR, "wproc: All our workers are dead, we can't do anything!");
+		}
 
 		/* reassign this dead worker's jobs */
 		g_hash_table_iter_init(&iter, wp->jobs);
@@ -449,7 +472,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 			);
 		}
 
-		wproc_destroy(wp, 0);
+		wproc_destroy(wp, WPROC_FORCE);
 		return 0;
 	}
 	while ((buf = worker_ioc2msg(wp->bq, &size, 0))) {
@@ -664,6 +687,32 @@ static int spawn_core_worker(void)
 }
 
 
+static int get_desired_workers(int desired_workers)
+{
+	if (desired_workers <= 0) {
+		int cpus = online_cpus();
+
+		if (desired_workers < 0) {
+			desired_workers = cpus - desired_workers;
+		}
+		if (desired_workers <= 0) {
+			desired_workers = cpus * 1.5;
+			/* min 4 workers, as it's tested and known to work */
+			if (desired_workers < 4)
+				desired_workers = 4;
+			else if (desired_workers > 48) {
+				/* don't go crazy in NASA's network (1024 cores) */
+				desired_workers = 48;
+			}
+		}
+	}
+
+	wproc_num_workers_desired = desired_workers;
+
+	return desired_workers;
+}
+
+
 int init_workers(int desired_workers)
 {
 	int i;
@@ -682,24 +731,8 @@ int init_workers(int desired_workers)
 		return -1;
 	}
 
-	if (desired_workers <= 0) {
-		int cpus = online_cpus();
-
-		if (desired_workers < 0) {
-			desired_workers = cpus - desired_workers;
-		}
-		if (desired_workers <= 0) {
-			desired_workers = cpus * 1.5;
-			/* min 4 workers, as it's tested and known to work */
-			if (desired_workers < 4)
-				desired_workers = 4;
-			else if (desired_workers > 48) {
-				/* don't go crazy in NASA's network (1024 cores) */
-				desired_workers = 48;
-			}
-		}
-	}
-	wproc_num_workers_desired = desired_workers;
+	/* Get the number of workers we need */
+	desired_workers = get_desired_workers(desired_workers);
 
 	if (workers_alive() == desired_workers)
 		return 0;

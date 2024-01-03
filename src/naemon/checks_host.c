@@ -633,33 +633,35 @@ static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags)
 	if (currently_running_host_checks > 0)
 		currently_running_host_checks--;
 
-	hst = find_host(cr->host_name);
-	if (hst && wpres) {
-		hst->is_executing = FALSE;
-		memcpy(&cr->rusage, &wpres->rusage, sizeof(wpres->rusage));
-		cr->start_time.tv_sec = wpres->start.tv_sec;
-		cr->start_time.tv_usec = wpres->start.tv_usec;
-		cr->finish_time.tv_sec = wpres->stop.tv_sec;
-		cr->finish_time.tv_usec = wpres->stop.tv_usec;
-		if (WIFEXITED(wpres->wait_status)) {
-			cr->return_code = WEXITSTATUS(wpres->wait_status);
-		} else {
-			cr->return_code = STATE_UNKNOWN;
-		}
+	if (wpres) {
+		hst = find_host(cr->host_name);
+		if (hst) {
+			hst->is_executing = FALSE;
+			memcpy(&cr->rusage, &wpres->rusage, sizeof(wpres->rusage));
+			cr->start_time.tv_sec = wpres->start.tv_sec;
+			cr->start_time.tv_usec = wpres->start.tv_usec;
+			cr->finish_time.tv_sec = wpres->stop.tv_sec;
+			cr->finish_time.tv_usec = wpres->stop.tv_usec;
+			if (WIFEXITED(wpres->wait_status)) {
+				cr->return_code = WEXITSTATUS(wpres->wait_status);
+			} else {
+				cr->return_code = STATE_UNKNOWN;
+			}
 
-		if (wpres->outstd && *wpres->outstd) {
-			cr->output = nm_strdup(wpres->outstd);
-		} else if (wpres->outerr && *wpres->outerr) {
-			nm_asprintf(&cr->output, "(No output on stdout) stderr: %s", wpres->outerr);
-		} else {
-			cr->output = NULL;
-		}
+			if (wpres->outstd && *wpres->outstd) {
+				cr->output = nm_strdup(wpres->outstd);
+			} else if (wpres->outerr && *wpres->outerr) {
+				nm_asprintf(&cr->output, "(No output on stdout) stderr: %s", wpres->outerr);
+			} else {
+				cr->output = NULL;
+			}
 
-		cr->early_timeout = wpres->early_timeout;
-		cr->exited_ok = wpres->exited_ok;
-		cr->engine = NULL;
-		cr->source = wpres->source;
-		process_check_result(cr);
+			cr->early_timeout = wpres->early_timeout;
+			cr->exited_ok = wpres->exited_ok;
+			cr->engine = NULL;
+			cr->source = wpres->source;
+			process_check_result(cr);
+		}
 	}
 	free_check_result(cr);
 	nm_free(cr);
