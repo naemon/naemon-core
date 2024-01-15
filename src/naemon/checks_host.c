@@ -21,6 +21,7 @@
 #include "objects_hostdependency.h"
 #include <string.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 
 #include "neberrors.h"
 

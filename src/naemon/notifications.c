@@ -16,6 +16,7 @@
 #include "nm_alloc.h"
 #include <string.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 
 struct notification_job {
 	host *hst;

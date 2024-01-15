@@ -22,6 +22,7 @@
 #include "objects_servicedependency.h"
 #include <string.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 #include "neberrors.h"
 
 /* Scheduling (before worker job is started) */
