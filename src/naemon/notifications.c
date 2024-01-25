@@ -608,18 +608,6 @@ int check_service_notification_viability(service *svc, int type, int options)
 
 	temp_host = svc->host_ptr;
 
-	/* if all parents are bad (usually just one), we shouldn't notify */
-	if (svc->parents) {
-		sm = svc->parents;
-		while (sm && sm->service_ptr->current_state != STATE_OK) {
-			sm = sm->next;
-		}
-		if (sm == NULL) {
-			LOG_SERVICE_NSR(NSR_BAD_PARENTS);
-			return ERROR;
-		}
-	}
-
 	/* if the service has no notification period, inherit one from the host */
 	temp_period = svc->notification_period_ptr;
 	if (temp_period == NULL) {
@@ -669,7 +657,6 @@ int check_service_notification_viability(service *svc, int type, int options)
 	}
 
 
-
 	/****************************************/
 	/*** SPECIAL CASE FOR ACKNOWLEGEMENTS ***/
 	/****************************************/
@@ -686,7 +673,6 @@ int check_service_notification_viability(service *svc, int type, int options)
 		/* acknowledgement viability test passed, so the notification can be sent out */
 		return OK;
 	}
-
 
 	/****************************************/
 	/*** SPECIAL CASE FOR FLAPPING ALERTS ***/
@@ -735,6 +721,21 @@ int check_service_notification_viability(service *svc, int type, int options)
 		return OK;
 	}
 
+	/******************************************************/
+	/*** CHECK SERVICE PARENTS FOR NORMAL NOTIFICATIONS ***/
+	/******************************************************/
+	/* if all parents are bad (usually just one), we shouldn't notify */
+	/* but do not prevent recovery notifications */
+	if (svc->parents && svc->current_state != STATE_OK) {
+		sm = svc->parents;
+		while (sm && sm->service_ptr->current_state != STATE_OK) {
+			sm = sm->next;
+		}
+		if (sm == NULL) {
+			LOG_SERVICE_NSR(NSR_BAD_PARENTS);
+			return ERROR;
+		}
+	}
 
 	/****************************************/
 	/*** NORMAL NOTIFICATIONS ***************/
