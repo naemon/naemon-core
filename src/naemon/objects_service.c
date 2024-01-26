@@ -339,6 +339,9 @@ void destroy_service(service *this_service, int truncate_lists)
 	nm_free(this_service->action_url);
 	nm_free(this_service->icon_image);
 	nm_free(this_service->icon_image_alt);
+	nm_free(this_service->current_notification_id);
+	nm_free(this_service->last_problem_id);
+	nm_free(this_service->current_problem_id);
 	nm_free(this_service);
 }
 

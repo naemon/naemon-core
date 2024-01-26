@@ -400,8 +400,8 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Current notification number: %d (%s)\n", svc->current_notification_number, (increment_notification_number == TRUE) ? "incremented" : "changed");
 
 	/* save and increase the current notification id */
-	svc->current_notification_id = next_notification_id;
-	next_notification_id++;
+	nm_free(svc->current_notification_id);
+	svc->current_notification_id = g_uuid_string_random();
 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Creating list of contacts to be notified.\n");
 
@@ -478,7 +478,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 		mac.x[MACRO_NOTIFICATIONNUMBER] = nm_strdup(mac.x[MACRO_SERVICENOTIFICATIONNUMBER]);
 
 		/* set the notification id macro */
-		nm_asprintf(&mac.x[MACRO_SERVICENOTIFICATIONID], "%lu", svc->current_notification_id);
+		nm_asprintf(&mac.x[MACRO_SERVICENOTIFICATIONID], "%s", svc->current_notification_id);
 
 		/* notify each contact (duplicates have been removed) */
 		for (temp_notification = notification_list; temp_notification != NULL; temp_notification = temp_notification->next) {
@@ -1284,8 +1284,8 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 	log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Current notification number: %d (%s)\n", hst->current_notification_number, (increment_notification_number == TRUE) ? "incremented" : "unchanged");
 
 	/* save and increase the current notification id */
-	hst->current_notification_id = next_notification_id;
-	next_notification_id++;
+	nm_free(hst->current_notification_id);
+	hst->current_notification_id = g_uuid_string_random();
 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Creating list of contacts to be notified.\n");
 
@@ -1361,7 +1361,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 		mac.x[MACRO_NOTIFICATIONNUMBER] = nm_strdup(mac.x[MACRO_HOSTNOTIFICATIONNUMBER]);
 
 		/* set the notification id macro */
-		nm_asprintf(&mac.x[MACRO_HOSTNOTIFICATIONID], "%lu", hst->current_notification_id);
+		nm_asprintf(&mac.x[MACRO_HOSTNOTIFICATIONID], "%s", hst->current_notification_id);
 
 		/* notify each contact (duplicates have been removed) */
 		for (temp_notification = notification_list; temp_notification != NULL; temp_notification = temp_notification->next) {

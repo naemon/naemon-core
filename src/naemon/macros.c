@@ -735,7 +735,7 @@ static int grab_standard_host_macro_r(nagios_macros *mac, int macro_type, host *
 		*output = (char *)mkstr("%d", temp_host->current_notification_number);
 		break;
 	case MACRO_HOSTNOTIFICATIONID:
-		*output = (char *)mkstr("%lu", temp_host->current_notification_id);
+		*output = temp_host->current_notification_id;
 		break;
 	case MACRO_HOSTEVENTID:
 		*output = (char *)mkstr("%lu", temp_host->current_event_id);
@@ -744,10 +744,12 @@ static int grab_standard_host_macro_r(nagios_macros *mac, int macro_type, host *
 		*output = (char *)mkstr("%lu", temp_host->last_event_id);
 		break;
 	case MACRO_HOSTPROBLEMID:
-		*output = (char *)mkstr("%lu", temp_host->current_problem_id);
+		if(temp_host->current_problem_id != NULL)
+			*output = temp_host->current_problem_id;
 		break;
 	case MACRO_LASTHOSTPROBLEMID:
-		*output = (char *)mkstr("%lu", temp_host->last_problem_id);
+		if(temp_host->last_problem_id != NULL)
+			*output = temp_host->last_problem_id;
 		break;
 	case MACRO_HOSTPROBLEMSTART:
 		*output = (char *)mkstr("%lu", (unsigned long)temp_host->problem_start);
@@ -1059,7 +1061,7 @@ static int grab_standard_service_macro_r(nagios_macros *mac, int macro_type, ser
 		*output = (char *)mkstr("%d", temp_service->current_notification_number);
 		break;
 	case MACRO_SERVICENOTIFICATIONID:
-		*output = (char *)mkstr("%lu", temp_service->current_notification_id);
+		*output = temp_service->current_notification_id;
 		break;
 	case MACRO_SERVICEEVENTID:
 		*output = (char *)mkstr("%lu", temp_service->current_event_id);
@@ -1068,10 +1070,10 @@ static int grab_standard_service_macro_r(nagios_macros *mac, int macro_type, ser
 		*output = (char *)mkstr("%lu", temp_service->last_event_id);
 		break;
 	case MACRO_SERVICEPROBLEMID:
-		*output = (char *)mkstr("%lu", temp_service->current_problem_id);
+		*output = temp_service->current_problem_id;
 		break;
 	case MACRO_LASTSERVICEPROBLEMID:
-		*output = (char *)mkstr("%lu", temp_service->last_problem_id);
+		*output = temp_service->last_problem_id;
 		break;
 	case MACRO_SERVICEPROBLEMSTART:
 		*output = (char *)mkstr("%lu", (unsigned long)temp_service->problem_start);

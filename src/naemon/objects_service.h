@@ -83,8 +83,8 @@ struct service {
 	int	current_attempt;
 	unsigned long current_event_id;
 	unsigned long last_event_id;
-	unsigned long current_problem_id;
-	unsigned long last_problem_id;
+	char   *current_problem_id;
+	char   *last_problem_id;
 	time_t  problem_start;
 	time_t  problem_end;
 	time_t	last_notification;
@@ -101,7 +101,7 @@ struct service {
 	int     is_being_freshened;
 	unsigned int notified_on;
 	int     current_notification_number;
-	unsigned long current_notification_id;
+	char   *current_notification_id;
 	double  latency;
 	double  execution_time;
 	int     is_executing;

@@ -128,9 +128,7 @@ unsigned long retained_process_host_attribute_mask = 0L;
 unsigned long retained_process_service_attribute_mask = 0L;
 
 unsigned long next_event_id = 0L;
-unsigned long next_problem_id = 0L;
 unsigned long next_comment_id = 0L;
-unsigned long next_notification_id = 0L;
 
 int verify_config = FALSE;
 int precache_objects = FALSE;
@@ -1140,7 +1138,6 @@ int reset_variables(void)
 	next_comment_id = 0L; /* comment and downtime id get initialized to nonzero elsewhere */
 	next_downtime_id = 0L;
 	next_event_id = 1;
-	next_notification_id = 1;
 
 	status_update_interval = DEFAULT_STATUS_UPDATE_INTERVAL;
 

@@ -686,8 +686,8 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		/* update the problem id when transitioning to a problem state */
 		if (temp_service->last_state == STATE_OK) {
 			/* don't reset last problem id, or it will be zero the next time a problem is encountered */
-			temp_service->current_problem_id = next_problem_id;
-			next_problem_id++;
+			nm_free(temp_service->current_problem_id);
+			temp_service->current_problem_id = (char*)g_uuid_string_random();
 			temp_service->problem_start = current_time;
 			temp_service->problem_end = 0L;
 		}
@@ -695,8 +695,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		/* clear the problem id when transitioning from a problem state to an OK state */
 		if (temp_service->current_state == STATE_OK) {
 			temp_service->last_problem_id = temp_service->current_problem_id;
-			temp_service->current_problem_id = 0L;
-			temp_service->current_problem_id = 0L;
+			temp_service->current_problem_id = NULL;
 			temp_service->problem_end = current_time;
 		}
 	}

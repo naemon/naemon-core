@@ -326,6 +326,9 @@ void destroy_host(host *this_host)
 	nm_free(this_host->icon_image_alt);
 	nm_free(this_host->vrml_image);
 	nm_free(this_host->statusmap_image);
+	nm_free(this_host->current_notification_id);
+	nm_free(this_host->last_problem_id);
+	nm_free(this_host->current_problem_id);
 	nm_free(this_host);
 }
 
