@@ -1008,8 +1008,8 @@ static int handle_host_state(host *hst, int *alert_recorded)
 		/* update the problem id when transitioning to a problem state */
 		if (hst->last_state == STATE_UP) {
 			/* don't reset last problem id, or it will be zero the next time a problem is encountered */
-			hst->current_problem_id = next_problem_id;
-			next_problem_id++;
+			nm_free(hst->current_problem_id);
+			hst->current_problem_id = (char*)g_uuid_string_random();
 			hst->problem_start = current_time;
 			hst->problem_end = 0L;
 		}
@@ -1017,7 +1017,7 @@ static int handle_host_state(host *hst, int *alert_recorded)
 		/* clear the problem id when transitioning from a problem state to an UP state */
 		if (hst->current_state == STATE_UP) {
 			hst->last_problem_id = hst->current_problem_id;
-			hst->current_problem_id = 0L;
+			hst->current_problem_id = NULL;
 			hst->problem_end = current_time;
 		}
 

@@ -154,8 +154,6 @@ int xrddefault_save_state_information(void)
 	fprintf(fp, "next_comment_id=%lu\n", next_comment_id);
 	fprintf(fp, "next_downtime_id=%lu\n", next_downtime_id);
 	fprintf(fp, "next_event_id=%lu\n", next_event_id);
-	fprintf(fp, "next_problem_id=%lu\n", next_problem_id);
-	fprintf(fp, "next_notification_id=%lu\n", next_notification_id);
 	fprintf(fp, "}\n");
 
 	/* save host state information */
@@ -178,8 +176,8 @@ int xrddefault_save_state_information(void)
 		fprintf(fp, "last_hard_state=%d\n", temp_host->last_hard_state);
 		fprintf(fp, "last_event_id=%lu\n", temp_host->last_event_id);
 		fprintf(fp, "current_event_id=%lu\n", temp_host->current_event_id);
-		fprintf(fp, "current_problem_id=%lu\n", temp_host->current_problem_id);
-		fprintf(fp, "last_problem_id=%lu\n", temp_host->last_problem_id);
+		fprintf(fp, "current_problem_id=%s\n", (temp_host->current_problem_id == NULL) ? "" : temp_host->current_problem_id);
+		fprintf(fp, "last_problem_id=%s\n", (temp_host->last_problem_id == NULL) ? "" : temp_host->last_problem_id);
 		fprintf(fp, "problem_start=%lu\n", temp_host->problem_start);
 		fprintf(fp, "problem_end=%lu\n", temp_host->problem_end);
 		fprintf(fp, "plugin_output=%s\n", (temp_host->plugin_output == NULL) ? "" : temp_host->plugin_output);
@@ -202,7 +200,7 @@ int xrddefault_save_state_information(void)
 		fprintf(fp, "notified_on_unreachable=%d\n", flag_isset(temp_host->notified_on, OPT_UNREACHABLE));
 		fprintf(fp, "last_notification=%lu\n", temp_host->last_notification);
 		fprintf(fp, "current_notification_number=%d\n", temp_host->current_notification_number);
-		fprintf(fp, "current_notification_id=%lu\n", temp_host->current_notification_id);
+		fprintf(fp, "current_notification_id=%s\n", (temp_host->current_notification_id == NULL) ? "" : temp_host->current_notification_id);
 		if (conf_host && conf_host->notifications_enabled != temp_host->notifications_enabled) {
 			fprintf(fp, "config:notifications_enabled=%d\n", conf_host->notifications_enabled);
 			fprintf(fp, "notifications_enabled=%d\n", temp_host->notifications_enabled);
@@ -275,8 +273,8 @@ int xrddefault_save_state_information(void)
 		fprintf(fp, "last_hard_state=%d\n", temp_service->last_hard_state);
 		fprintf(fp, "last_event_id=%lu\n", temp_service->last_event_id);
 		fprintf(fp, "current_event_id=%lu\n", temp_service->current_event_id);
-		fprintf(fp, "current_problem_id=%lu\n", temp_service->current_problem_id);
-		fprintf(fp, "last_problem_id=%lu\n", temp_service->last_problem_id);
+		fprintf(fp, "current_problem_id=%s\n", (temp_service->current_problem_id == NULL) ? "" : temp_service->current_problem_id);
+		fprintf(fp, "last_problem_id=%s\n", (temp_service->last_problem_id == NULL) ? "" : temp_service->last_problem_id);
 		fprintf(fp, "problem_start=%lu\n", temp_service->problem_start);
 		fprintf(fp, "problem_end=%lu\n", temp_service->problem_end);
 		fprintf(fp, "current_attempt=%d\n", temp_service->current_attempt);
@@ -300,7 +298,7 @@ int xrddefault_save_state_information(void)
 		fprintf(fp, "notified_on_warning=%d\n", flag_isset(temp_service->notified_on, OPT_WARNING));
 		fprintf(fp, "notified_on_critical=%d\n", flag_isset(temp_service->notified_on, OPT_CRITICAL));
 		fprintf(fp, "current_notification_number=%d\n", temp_service->current_notification_number);
-		fprintf(fp, "current_notification_id=%lu\n", temp_service->current_notification_id);
+		fprintf(fp, "current_notification_id=%s\n", (temp_service->current_notification_id == NULL) ? "" : temp_service->current_notification_id);
 		fprintf(fp, "last_notification=%lu\n", temp_service->last_notification);
 		if (conf_svc && conf_svc->notifications_enabled != temp_service->notifications_enabled) {
 			fprintf(fp, "config:notifications_enabled=%d\n", conf_svc->notifications_enabled);
@@ -1002,10 +1000,6 @@ int xrddefault_read_state_information(void)
 						next_downtime_id = strtoul(val, NULL, 10);
 					else if (!strcmp(var, "next_event_id"))
 						next_event_id = strtoul(val, NULL, 10);
-					else if (!strcmp(var, "next_problem_id"))
-						next_problem_id = strtoul(val, NULL, 10);
-					else if (!strcmp(var, "next_notification_id"))
-						next_notification_id = strtoul(val, NULL, 10);
 				}
 				break;
 
@@ -1064,11 +1058,13 @@ int xrddefault_read_state_information(void)
 							temp_host->current_event_id = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "last_event_id"))
 							temp_host->last_event_id = strtoul(val, NULL, 10);
-						else if (!strcmp(var, "current_problem_id"))
-							temp_host->current_problem_id = strtoul(val, NULL, 10);
-						else if (!strcmp(var, "last_problem_id"))
-							temp_host->last_problem_id = strtoul(val, NULL, 10);
-						else if (!strcmp(var, "problem_start"))
+						else if (!strcmp(var, "current_problem_id")) {
+							nm_free(temp_host->current_problem_id);
+							temp_host->current_problem_id = nm_strdup(val);
+						} else if (!strcmp(var, "last_problem_id")) {
+							nm_free(temp_host->last_problem_id);
+							temp_host->last_problem_id = nm_strdup(val);
+						} else if (!strcmp(var, "problem_start"))
 							temp_host->problem_start = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "problem_end"))
 							temp_host->problem_end = strtoul(val, NULL, 10);
@@ -1094,9 +1090,10 @@ int xrddefault_read_state_information(void)
 							temp_host->last_notification = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "current_notification_number"))
 							temp_host->current_notification_number = atoi(val);
-						else if (!strcmp(var, "current_notification_id"))
-							temp_host->current_notification_id = strtoul(val, NULL, 10);
-						else if (!strcmp(var, "is_flapping"))
+						else if (!strcmp(var, "current_notification_id")) {
+							nm_free(temp_host->current_notification_id);
+							temp_host->current_notification_id = nm_strdup(val);
+						} else if (!strcmp(var, "is_flapping"))
 							temp_host->is_flapping = atoi(val);
 						else if (!strcmp(var, "percent_state_change"))
 							temp_host->percent_state_change = strtod(val, NULL);
@@ -1314,11 +1311,13 @@ int xrddefault_read_state_information(void)
 							temp_service->current_event_id = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "last_event_id"))
 							temp_service->last_event_id = strtoul(val, NULL, 10);
-						else if (!strcmp(var, "current_problem_id"))
-							temp_service->current_problem_id = strtoul(val, NULL, 10);
-						else if (!strcmp(var, "last_problem_id"))
-							temp_service->last_problem_id = strtoul(val, NULL, 10);
-						else if (!strcmp(var, "problem_start"))
+						else if (!strcmp(var, "current_problem_id")) {
+							nm_free(temp_service->current_problem_id);
+							temp_service->current_problem_id = nm_strdup(val);
+						} else if (!strcmp(var, "last_problem_id")) {
+							nm_free(temp_service->last_problem_id);
+							temp_service->last_problem_id = nm_strdup(val);
+						} else if (!strcmp(var, "problem_start"))
 							temp_service->problem_start = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "problem_end"))
 							temp_service->problem_end = strtoul(val, NULL, 10);
@@ -1363,9 +1362,10 @@ int xrddefault_read_state_information(void)
 							temp_service->notified_on |= ((atoi(val) > 0) ? OPT_CRITICAL : 0);
 						else if (!strcmp(var, "current_notification_number"))
 							temp_service->current_notification_number = atoi(val);
-						else if (!strcmp(var, "current_notification_id"))
-							temp_service->current_notification_id = strtoul(val, NULL, 10);
-						else if (!strcmp(var, "last_notification"))
+						else if (!strcmp(var, "current_notification_id")) {
+							nm_free(temp_service->current_notification_id);
+							temp_service->current_notification_id = nm_strdup(val);
+						} else if (!strcmp(var, "last_notification"))
 							temp_service->last_notification = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "is_flapping"))
 							temp_service->is_flapping = atoi(val);
