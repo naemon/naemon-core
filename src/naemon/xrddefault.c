@@ -180,6 +180,8 @@ int xrddefault_save_state_information(void)
 		fprintf(fp, "current_event_id=%lu\n", temp_host->current_event_id);
 		fprintf(fp, "current_problem_id=%lu\n", temp_host->current_problem_id);
 		fprintf(fp, "last_problem_id=%lu\n", temp_host->last_problem_id);
+		fprintf(fp, "problem_start=%lu\n", temp_host->problem_start);
+		fprintf(fp, "problem_end=%lu\n", temp_host->problem_end);
 		fprintf(fp, "plugin_output=%s\n", (temp_host->plugin_output == NULL) ? "" : temp_host->plugin_output);
 		fprintf(fp, "long_plugin_output=%s\n", (temp_host->long_plugin_output == NULL) ? "" : temp_host->long_plugin_output);
 		fprintf(fp, "performance_data=%s\n", (temp_host->perf_data == NULL) ? "" : temp_host->perf_data);
@@ -275,6 +277,8 @@ int xrddefault_save_state_information(void)
 		fprintf(fp, "current_event_id=%lu\n", temp_service->current_event_id);
 		fprintf(fp, "current_problem_id=%lu\n", temp_service->current_problem_id);
 		fprintf(fp, "last_problem_id=%lu\n", temp_service->last_problem_id);
+		fprintf(fp, "problem_start=%lu\n", temp_service->problem_start);
+		fprintf(fp, "problem_end=%lu\n", temp_service->problem_end);
 		fprintf(fp, "current_attempt=%d\n", temp_service->current_attempt);
 		fprintf(fp, "max_attempts=%d\n", temp_service->max_attempts);
 		fprintf(fp, "normal_check_interval=%f\n", temp_service->check_interval);
@@ -1064,6 +1068,10 @@ int xrddefault_read_state_information(void)
 							temp_host->current_problem_id = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "last_problem_id"))
 							temp_host->last_problem_id = strtoul(val, NULL, 10);
+						else if (!strcmp(var, "problem_start"))
+							temp_host->problem_start = strtoul(val, NULL, 10);
+						else if (!strcmp(var, "problem_end"))
+							temp_host->problem_end = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "state_type"))
 							temp_host->state_type = atoi(val);
 						else if (!strcmp(var, "last_state_change"))
@@ -1310,6 +1318,10 @@ int xrddefault_read_state_information(void)
 							temp_service->current_problem_id = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "last_problem_id"))
 							temp_service->last_problem_id = strtoul(val, NULL, 10);
+						else if (!strcmp(var, "problem_start"))
+							temp_service->problem_start = strtoul(val, NULL, 10);
+						else if (!strcmp(var, "problem_end"))
+							temp_service->problem_end = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "state_type"))
 							temp_service->state_type = atoi(val);
 						else if (!strcmp(var, "last_state_change"))

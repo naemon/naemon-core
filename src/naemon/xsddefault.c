@@ -202,6 +202,8 @@ int xsddefault_save_status_data(void)
 		fprintf(fp, "\tcurrent_event_id=%lu\n", temp_host->current_event_id);
 		fprintf(fp, "\tcurrent_problem_id=%lu\n", temp_host->current_problem_id);
 		fprintf(fp, "\tlast_problem_id=%lu\n", temp_host->last_problem_id);
+		fprintf(fp, "\tproblem_start=%lu\n", temp_host->problem_start);
+		fprintf(fp, "\tproblem_end=%lu\n", temp_host->problem_end);
 		fprintf(fp, "\tplugin_output=%s\n", (temp_host->plugin_output == NULL) ? "" : temp_host->plugin_output);
 		fprintf(fp, "\tlong_plugin_output=%s\n", (temp_host->long_plugin_output == NULL) ? "" : temp_host->long_plugin_output);
 		fprintf(fp, "\tperformance_data=%s\n", (temp_host->perf_data == NULL) ? "" : temp_host->perf_data);
@@ -269,6 +271,8 @@ int xsddefault_save_status_data(void)
 		fprintf(fp, "\tcurrent_event_id=%lu\n", temp_service->current_event_id);
 		fprintf(fp, "\tcurrent_problem_id=%lu\n", temp_service->current_problem_id);
 		fprintf(fp, "\tlast_problem_id=%lu\n", temp_service->last_problem_id);
+		fprintf(fp, "\tproblem_start=%lu\n", temp_service->problem_start);
+		fprintf(fp, "\tproblem_end=%lu\n", temp_service->problem_end);
 		fprintf(fp, "\tcurrent_attempt=%d\n", temp_service->current_attempt);
 		fprintf(fp, "\tmax_attempts=%d\n", temp_service->max_attempts);
 		fprintf(fp, "\tstate_type=%d\n", temp_service->state_type);
