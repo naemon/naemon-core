@@ -82,7 +82,19 @@ const char *mkstr(const char *fmt, ...)
 	return ret;
 }
 
+/* format duration seconds into human readable string */
+const char* duration_string(unsigned long duration) {
+	int days, hours, minutes, seconds;
 
+	days = duration / 86400;
+	duration -= (days * 86400);
+	hours = duration / 3600;
+	duration -= (hours * 3600);
+	minutes = duration / 60;
+	duration -= (minutes * 60);
+	seconds = duration;
+	return (char *)mkstr("%dd %dh %dm %ds", days, hours, minutes, seconds);
+}
 
 /* close and reopen stdin, stdout and stderr to /dev/null */
 void close_standard_fds(void)

@@ -1010,12 +1010,15 @@ static int handle_host_state(host *hst, int *alert_recorded)
 			/* don't reset last problem id, or it will be zero the next time a problem is encountered */
 			hst->current_problem_id = next_problem_id;
 			next_problem_id++;
+			hst->problem_start = current_time;
+			hst->problem_end = 0L;
 		}
 
 		/* clear the problem id when transitioning from a problem state to an UP state */
 		if (hst->current_state == STATE_UP) {
 			hst->last_problem_id = hst->current_problem_id;
 			hst->current_problem_id = 0L;
+			hst->problem_end = current_time;
 		}
 
 		/* write the host state change to the main log file */

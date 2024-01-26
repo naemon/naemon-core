@@ -627,10 +627,6 @@ static int grab_standard_host_macro_r(nagios_macros *mac, int macro_type, host *
 	objectlist *temp_objectlist = NULL;
 	time_t current_time = 0L;
 	unsigned long duration = 0L;
-	int days = 0;
-	int hours = 0;
-	int minutes = 0;
-	int seconds = 0;
 	char *buf1 = NULL;
 	char *buf2 = NULL;
 	int total_host_services = 0;
@@ -708,19 +704,10 @@ static int grab_standard_host_macro_r(nagios_macros *mac, int macro_type, host *
 	case MACRO_HOSTDURATION:
 		time(&current_time);
 		duration = (unsigned long)(current_time - temp_host->last_state_change);
-
 		if (macro_type == MACRO_HOSTDURATIONSEC)
 			*output = (char *)mkstr("%lu", duration);
 		else {
-
-			days = duration / 86400;
-			duration -= (days * 86400);
-			hours = duration / 3600;
-			duration -= (hours * 3600);
-			minutes = duration / 60;
-			duration -= (minutes * 60);
-			seconds = duration;
-			*output = (char *)mkstr("%dd %dh %dm %ds", days, hours, minutes, seconds);
+			*output = (char *)mkstr("%s", duration_string(duration));
 		}
 		break;
 	case MACRO_HOSTEXECUTIONTIME:
@@ -761,6 +748,26 @@ static int grab_standard_host_macro_r(nagios_macros *mac, int macro_type, host *
 		break;
 	case MACRO_LASTHOSTPROBLEMID:
 		*output = (char *)mkstr("%lu", temp_host->last_problem_id);
+		break;
+	case MACRO_HOSTPROBLEMSTART:
+		*output = (char *)mkstr("%lu", (unsigned long)temp_host->problem_start);
+		break;
+	case MACRO_HOSTPROBLEMEND:
+		*output = (char *)mkstr("%lu", (unsigned long)temp_host->problem_end);
+		break;
+	case MACRO_HOSTPROBLEMDURATIONSEC:
+	case MACRO_HOSTPROBLEMDURATION:
+		if(temp_host->problem_end > 0) {
+			duration = (unsigned long)(temp_host->problem_end - temp_host->problem_start);
+		} else if(temp_host->problem_start > 0) {
+			time(&current_time);
+			duration = (unsigned long)(current_time - temp_host->problem_start);
+		}
+		if (macro_type == MACRO_HOSTPROBLEMDURATIONSEC)
+			*output = (char *)mkstr("%lu", duration);
+		else {
+			*output = (char *)mkstr("%s", duration_string(duration));
+		}
 		break;
 	case MACRO_HOSTACTIONURL:
 		if (temp_host->action_url)
@@ -950,10 +957,6 @@ static int grab_standard_service_macro_r(nagios_macros *mac, int macro_type, ser
 	objectlist *temp_objectlist = NULL;
 	time_t current_time = 0L;
 	unsigned long duration = 0L;
-	int days = 0;
-	int hours = 0;
-	int minutes = 0;
-	int seconds = 0;
 	char *buf1 = NULL;
 	char *buf2 = NULL;
 
@@ -1044,24 +1047,12 @@ static int grab_standard_service_macro_r(nagios_macros *mac, int macro_type, ser
 		break;
 	case MACRO_SERVICEDURATIONSEC:
 	case MACRO_SERVICEDURATION:
-
 		time(&current_time);
 		duration = (unsigned long)(current_time - temp_service->last_state_change);
-
-		/* get the state duration in seconds */
 		if (macro_type == MACRO_SERVICEDURATIONSEC)
 			*output = (char *)mkstr("%lu", duration);
-
-		/* get the state duration */
 		else {
-			days = duration / 86400;
-			duration -= (days * 86400);
-			hours = duration / 3600;
-			duration -= (hours * 3600);
-			minutes = duration / 60;
-			duration -= (minutes * 60);
-			seconds = duration;
-			*output = (char *)mkstr("%dd %dh %dm %ds", days, hours, minutes, seconds);
+			*output = (char *)mkstr("%s", duration_string(duration));
 		}
 		break;
 	case MACRO_SERVICENOTIFICATIONNUMBER:
@@ -1081,6 +1072,26 @@ static int grab_standard_service_macro_r(nagios_macros *mac, int macro_type, ser
 		break;
 	case MACRO_LASTSERVICEPROBLEMID:
 		*output = (char *)mkstr("%lu", temp_service->last_problem_id);
+		break;
+	case MACRO_SERVICEPROBLEMSTART:
+		*output = (char *)mkstr("%lu", (unsigned long)temp_service->problem_start);
+		break;
+	case MACRO_SERVICEPROBLEMEND:
+		*output = (char *)mkstr("%lu", (unsigned long)temp_service->problem_end);
+		break;
+	case MACRO_SERVICEPROBLEMDURATIONSEC:
+	case MACRO_SERVICEPROBLEMDURATION:
+		if(temp_service->problem_end > 0) {
+			duration = (unsigned long)(temp_service->problem_end - temp_service->problem_start);
+		} else if(temp_service->problem_start > 0) {
+			time(&current_time);
+			duration = (unsigned long)(current_time - temp_service->problem_start);
+		}
+		if (macro_type == MACRO_SERVICEPROBLEMDURATIONSEC)
+			*output = (char *)mkstr("%lu", duration);
+		else {
+			*output = (char *)mkstr("%s", duration_string(duration));
+		}
 		break;
 	case MACRO_SERVICEACTIONURL:
 		if (temp_service->action_url)
@@ -1569,6 +1580,11 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 	case MACRO_LASTHOSTPROBLEMID:
 	case MACRO_LASTHOSTSTATE:
 	case MACRO_LASTHOSTSTATEID:
+	case MACRO_HOSTPROBLEMSTART:
+	case MACRO_HOSTPROBLEMEND:
+	case MACRO_HOSTPROBLEMDURATIONSEC:
+	case MACRO_HOSTPROBLEMDURATION:
+
 
 		/* a standard host macro */
 		if (arg2 == NULL) {
@@ -1688,6 +1704,10 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 	case MACRO_LASTSERVICEPROBLEMID:
 	case MACRO_LASTSERVICESTATE:
 	case MACRO_LASTSERVICESTATEID:
+	case MACRO_SERVICEPROBLEMSTART:
+	case MACRO_SERVICEPROBLEMEND:
+	case MACRO_SERVICEPROBLEMDURATIONSEC:
+	case MACRO_SERVICEPROBLEMDURATION:
 
 		/* use saved service pointer */
 		if (arg1 == NULL && arg2 == NULL) {
@@ -2691,6 +2711,14 @@ int init_macrox_names(void)
 	add_macrox_name(HOSTVALUE);
 	add_macrox_name(SERVICEVALUE);
 	add_macrox_name(PROBLEMVALUE);
+	add_macrox_name(HOSTPROBLEMSTART);
+	add_macrox_name(HOSTPROBLEMEND);
+	add_macrox_name(HOSTPROBLEMDURATIONSEC);
+	add_macrox_name(HOSTPROBLEMDURATION);
+	add_macrox_name(SERVICEPROBLEMSTART);
+	add_macrox_name(SERVICEPROBLEMEND);
+	add_macrox_name(SERVICEPROBLEMDURATIONSEC);
+	add_macrox_name(SERVICEPROBLEMDURATION);
 
 	return OK;
 }

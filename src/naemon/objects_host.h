@@ -91,6 +91,8 @@ struct host {
 	unsigned long last_event_id;
 	unsigned long current_problem_id;
 	unsigned long last_problem_id;
+	time_t  problem_start;
+	time_t  problem_end;
 	double  latency;
 	double  execution_time;
 	int     is_executing;
