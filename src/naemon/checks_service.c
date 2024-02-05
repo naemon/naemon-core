@@ -696,7 +696,8 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		if (temp_service->current_state == STATE_OK) {
 			temp_service->last_problem_id = temp_service->current_problem_id;
 			temp_service->current_problem_id = NULL;
-			temp_service->problem_end = current_time;
+			if(temp_service->problem_start > 0)
+				temp_service->problem_end = current_time;
 		}
 	}
 

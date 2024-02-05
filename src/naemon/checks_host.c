@@ -1018,7 +1018,8 @@ static int handle_host_state(host *hst, int *alert_recorded)
 		if (hst->current_state == STATE_UP) {
 			hst->last_problem_id = hst->current_problem_id;
 			hst->current_problem_id = NULL;
-			hst->problem_end = current_time;
+			if(hst->problem_start > 0)
+				hst->problem_end = current_time;
 		}
 
 		/* write the host state change to the main log file */
