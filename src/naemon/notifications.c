@@ -794,7 +794,7 @@ int check_service_notification_viability(service *svc, int type, int options)
 	}
 
 	/* if this service is currently flapping, don't send the notification */
-	if (svc->is_flapping == TRUE) {
+	if (enable_flap_detection == TRUE && svc->flap_detection_enabled == TRUE && svc->is_flapping == TRUE) {
 		LOG_SERVICE_NSR(NSR_IS_FLAPPING);
 		return ERROR;
 	}
@@ -1654,7 +1654,7 @@ int check_host_notification_viability(host *hst, int type, int options)
 	}
 
 	/* if this host is currently flapping, don't send the notification */
-	if (hst->is_flapping == TRUE) {
+	if (enable_flap_detection == TRUE && hst->flap_detection_enabled == TRUE && hst->is_flapping == TRUE) {
 		LOG_HOST_NSR(NSR_IS_FLAPPING);
 		return ERROR;
 	}
