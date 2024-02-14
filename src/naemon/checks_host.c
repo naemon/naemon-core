@@ -1065,6 +1065,12 @@ static int handle_host_state(host *hst, int *alert_recorded)
 		}
 	}
 
+	/* initialize the last host state change times if necessary */
+	if (hst->last_state_change == (time_t)0)
+		hst->last_state_change = hst->last_check;
+	if (hst->last_hard_state_change == (time_t)0)
+		hst->last_hard_state_change = hst->last_check;
+
 	return OK;
 }
 
