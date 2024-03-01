@@ -195,16 +195,8 @@ fi
 %post
 case "$*" in
   2)
-    # Upgrading so try and restart if already running
-    # For systemctl systems we need to reload the configs
-    # becaues it'll complain if we just installed a new
-    # init script
-    %if %{?_unitdir:1}0
-      systemctl daemon-reload &>/dev/null || true
-      systemctl condrestart naemon.service &>/dev/null || true
-    %else
-      /etc/init.d/naemon condrestart &>/dev/null || true
-    %endif
+    # Upgrade, don't do anything
+    # Restarts are handled in posttrans
   ;;
   1)
     # install example conf.d only once on the first installation
@@ -284,6 +276,18 @@ case "$*" in
   *) echo case "$*" not handled in postun
 esac
 exit 0
+
+%posttrans
+# try and restart if already running
+# For systemctl systems we need to reload the configs
+# because it'll complain if we just installed a new
+# init script
+%if %{?_unitdir:1}0
+  systemctl daemon-reload &>/dev/null || true
+  systemctl condrestart naemon.service &>/dev/null || true
+%else
+  /etc/init.d/naemon condrestart &>/dev/null || true
+%endif
 
 
 
