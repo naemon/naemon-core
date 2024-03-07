@@ -454,6 +454,8 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		}
 	}
 
+	temp_service->last_update = current_time;
+
 	/* clear the freshening flag (it would have been set if this service was determined to be stale) */
 	if (queued_check_result->check_options & CHECK_OPTION_FRESHNESS_CHECK)
 		temp_service->is_being_freshened = FALSE;
@@ -1083,7 +1085,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	nm_free(old_plugin_output);
 	nm_free(old_long_plugin_output);
 
-	temp_service->last_update = current_time;
 	return OK;
 }
 
@@ -1135,6 +1136,7 @@ static void check_for_orphaned_services_eventhandler(struct nm_event_execution_p
 
 				/* disable the executing flag */
 				temp_service->is_executing = FALSE;
+				temp_service->last_update = current_time;
 
 				/* schedule an immediate check of the service */
 				schedule_next_service_check(temp_service, 0, CHECK_OPTION_ORPHAN_CHECK);

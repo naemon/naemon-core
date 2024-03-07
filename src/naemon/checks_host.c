@@ -373,6 +373,7 @@ int update_host_state_post_check(struct host *hst, struct check_result *cr)
 {
 	int result;
 	char *temp_ptr = NULL;
+	time_t now = time(NULL);
 
 	if (!hst || !cr)
 		return ERROR;
@@ -413,6 +414,7 @@ int update_host_state_post_check(struct host *hst, struct check_result *cr)
 
 	/* get the last check time */
 	hst->last_check = cr->start_time.tv_sec;
+	hst->last_update = now;
 
 	/* save the old host state */
 	hst->last_state = hst->current_state;
@@ -629,6 +631,7 @@ static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags)
 {
 	check_result *cr = (check_result *)arg;
 	struct host *hst;
+	time_t now = time(NULL);
 
 	/* decrement the number of host checks still out there... */
 	if (currently_running_host_checks > 0)
@@ -638,6 +641,7 @@ static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags)
 		hst = find_host(cr->host_name);
 		if (hst) {
 			hst->is_executing = FALSE;
+			hst->last_update = now;
 			memcpy(&cr->rusage, &wpres->rusage, sizeof(wpres->rusage));
 			cr->start_time.tv_sec = wpres->start.tv_sec;
 			cr->start_time.tv_usec = wpres->start.tv_usec;
@@ -1179,6 +1183,8 @@ static void check_for_orphaned_hosts_eventhandler(struct nm_event_execution_prop
 
 				/* disable the executing flag */
 				temp_host->is_executing = FALSE;
+
+				temp_host->last_update = current_time;
 
 				/* schedule an immediate check of the host */
 				schedule_next_host_check(temp_host, 0, CHECK_OPTION_ORPHAN_CHECK);
