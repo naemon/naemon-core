@@ -165,6 +165,7 @@ char *use_timezone = NULL;
 int allow_empty_hostgroup_assignment = DEFAULT_ALLOW_EMPTY_HOSTGROUP_ASSIGNMENT;
 int allow_circular_dependencies = DEFAULT_ALLOW_CIRCULAR_DEPENDENCIES;
 int host_down_disable_service_checks = DEFAULT_HOST_DOWN_DISABLE_SERVICE_CHECKS;
+int service_parents_disable_service_checks = DEFAULT_SERVICE_PARENTS_DISABLE_SERVICE_CHECKS;
 int service_skip_check_dependency_status = DEFAULT_SKIP_CHECK_STATUS;
 int service_skip_check_host_down_status = DEFAULT_SKIP_CHECK_STATUS;
 int host_skip_check_dependency_status = DEFAULT_SKIP_CHECK_STATUS;

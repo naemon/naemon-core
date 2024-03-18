@@ -200,27 +200,94 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 			/* check service dependencies for execution */
 			log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' checking dependencies...\n", temp_service->description, temp_service->host_name);
 			if (check_service_dependencies(temp_service, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
-				if (service_skip_check_dependency_status >= 0) {
-					temp_service->current_state = service_skip_check_dependency_status;
-					if (strstr(temp_service->plugin_output, "(service dependency check failed)") == NULL) {
-						char *old_output = nm_strdup(temp_service->plugin_output);
-						nm_free(temp_service->plugin_output);
-						nm_asprintf(&temp_service->plugin_output, "(service dependency check failed) was: %s", old_output);
-						nm_free(old_output);
+				int keep_running = FALSE;
+				switch(service_skip_check_dependency_status) {
+					case SKIP_KEEP_RUNNING_WHEN_UP:
+						if (temp_service->current_state <= STATE_WARNING) {
+							keep_running = TRUE;
+						}
+						break;
+					case STATE_OK:
+					case STATE_WARNING:
+					case STATE_CRITICAL:
+					case STATE_UNKNOWN:
+						temp_service->current_state = service_skip_check_dependency_status;
+						if (strstr(temp_service->plugin_output, "(service dependency check failed)") == NULL) {
+							char *old_output = nm_strdup(temp_service->plugin_output);
+							nm_free(temp_service->plugin_output);
+							nm_asprintf(&temp_service->plugin_output, "(service dependency check failed) was: %s", old_output);
+							nm_free(old_output);
+						}
+						break;
+				}
+				if (!keep_running) {
+					log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' failed dependency check. Aborting check\n", temp_service->description, temp_service->host_name);
+					return;
+				}
+			}
+
+			/* check service parents for execution */
+			if(service_parents_disable_service_checks && temp_service->parents) {
+				int parents_failed = FALSE;
+				if (temp_service->current_state != STATE_OK) {
+					servicesmember *sm = temp_service->parents;
+					while (sm && sm->service_ptr->current_state != STATE_OK) {
+						sm = sm->next;
+					}
+					if (sm == NULL) {
+						parents_failed = TRUE;
 					}
 				}
-				log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' failed dependency check. Aborting check\n", temp_service->description, temp_service->host_name);
-				return;
+				if(parents_failed) {
+					switch(service_skip_check_dependency_status) {
+						case SKIP_KEEP_RUNNING_WHEN_UP:
+							if (temp_service->current_state <= STATE_WARNING) {
+								parents_failed = FALSE;
+							}
+							break;
+						case STATE_OK:
+						case STATE_WARNING:
+						case STATE_CRITICAL:
+						case STATE_UNKNOWN:
+							temp_service->current_state = service_skip_check_dependency_status;
+							if (strstr(temp_service->plugin_output, "(service parents failed)") == NULL) {
+								char *old_output = nm_strdup(temp_service->plugin_output);
+								nm_free(temp_service->plugin_output);
+								nm_asprintf(&temp_service->plugin_output, "(service parents failed) was: %s", old_output);
+								nm_free(old_output);
+							}
+							break;
+					}
+				}
+				if(parents_failed) {
+					log_debug_info(DEBUGL_CHECKS, 0, "Service '%s' on host '%s' failed parents check. Aborting check\n", temp_service->description, temp_service->host_name);
+					return;
+				}
 			}
+
 
 			/* check if host is up - if not, do not perform check */
 			if (host_down_disable_service_checks) {
 				if ((temp_host = temp_service->host_ptr) == NULL) {
 					log_debug_info(DEBUGL_CHECKS, 2, "Host pointer NULL in handle_service_check_event().\n");
 					return;
-				} else {
-					if (temp_host->current_state != STATE_UP) {
+				}
+				if (temp_host->current_state != STATE_UP) {
+					int keep_running = TRUE;
+					switch (service_skip_check_host_down_status) {
+					/* only keep running if service is up or host_down_disable_service_checks is disabled */
+					case SKIP_KEEP_RUNNING_WHEN_UP:
+						if (temp_service->current_state > STATE_WARNING) {
+							log_debug_info(DEBUGL_CHECKS, 2, "Host and service state not UP, so service check will not be performed - will be rescheduled as normal.\n");
+							keep_running = FALSE;
+						}
+						break;
+					default:
 						log_debug_info(DEBUGL_CHECKS, 2, "Host state not UP, so service check will not be performed - will be rescheduled as normal.\n");
+						keep_running = FALSE;
+						break;
+					}
+					if(!keep_running) {
 						if (service_skip_check_host_down_status >= 0) {
 							temp_service->current_state = service_skip_check_host_down_status;
 							if (strstr(temp_service->plugin_output, "(host is down)") == NULL) {
