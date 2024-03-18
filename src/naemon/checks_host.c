@@ -243,18 +243,29 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 		/* check host dependencies for execution */
 		log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' checking dependencies...\n", hst->name);
 		if (check_host_dependencies(hst, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
-			if (host_skip_check_dependency_status >= 0) {
-				hst->current_state = host_skip_check_dependency_status;
-				if (strstr(hst->plugin_output, "(host dependency check failed)") == NULL) {
-					char *old_output = nm_strdup(hst->plugin_output);
-					nm_free(hst->plugin_output);
-					nm_asprintf(&hst->plugin_output, "(host dependency check failed) was: %s", old_output);
-					nm_free(old_output);
-				}
+			int keep_running = FALSE;
+			switch(host_skip_check_dependency_status) {
+				case SKIP_KEEP_RUNNING_WHEN_UP:
+					if (hst->current_state == STATE_UP) {
+						keep_running = TRUE;
+					}
+					break;
+				case STATE_UP:
+				case STATE_DOWN:
+				case STATE_UNREACHABLE:
+					hst->current_state = host_skip_check_dependency_status;
+					if (strstr(hst->plugin_output, "(host dependency check failed)") == NULL) {
+						char *old_output = nm_strdup(hst->plugin_output);
+						nm_free(hst->plugin_output);
+						nm_asprintf(&hst->plugin_output, "(host dependency check failed) was: %s", old_output);
+						nm_free(old_output);
+					}
+					break;
 			}
-
-			log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' failed dependency check. Aborting check\n", hst->name);
-			return ERROR;
+			if(!keep_running) {
+				log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' failed dependency check. Aborting check\n", hst->name);
+				return ERROR;
+			}
 		}
 	}
 

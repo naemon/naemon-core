@@ -1041,18 +1041,27 @@ allow_empty_hostgroup_assignment=0
 # This option will disable all service checks if the host is not in an UP state
 #
 # While desirable in some environments, enabling this value can distort report
-# values as the expected quantity of checks will not have been performed
-
+# values as the expected quantity of checks will not have been performed.
+# Set service_skip_check_host_down_status to -2 to mitigate this.
 #host_down_disable_service_checks=0
+
+# DISABLE SERVICE CHECKS WHEN SERVICE PARENTS DOWN
+# This option will disable all service checks if the service parents are not in an UP state
+#
+# While desirable in some environments, enabling this value can distort report
+# values as the expected quantity of checks will not have been performed.
+# Set service_skip_check_dependency_status to -2 to mitigate this.
+#service_parents_disable_service_checks=0
 
 # SET SERVICE/HOST STATUS WHEN SERVICE CHECK SKIPPED
 # These options will allow you to set the status of a service when its
-# service check is skipped due to one of two reasons:
-# 1) failed dependency check; 2) host not up
+# service check is skipped due to the following reasons:
+# 1) failed dependency check; 2) host not up 3) service parents failed
 # Number 2 can only happen if 'host_down_disable_service_checks' above
 # is set to 1.
 # Valid values for the service* options are:
 #     -1     Do not change the service status (default)
+#     -2     Keep service running as long as it is ok/warning.
 #      0     Set the service status to STATE_OK
 #      1     Set the service status to STATE_WARNING
 #      2     Set the service status to STATE_CRITICAL
@@ -1064,6 +1073,7 @@ allow_empty_hostgroup_assignment=0
 # status of a host when its check is skipped due to a failed dependency check.
 # Valid values for the host_dependency_skip_check_status are:
 #     -1     Do not change the service status (default)
+#     -2     Keep host running as long as it is up.
 #      0     Set the host status to STATE_UP
 #      1     Set the host status to STATE_DOWN
 #      2     Set the host status to STATE_UNREACHABLE

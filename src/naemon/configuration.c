@@ -1067,23 +1067,25 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			allow_circular_dependencies = atoi(value);
 		} else if (!strcmp(variable, "host_down_disable_service_checks")) {
 			host_down_disable_service_checks = strtoul(value, NULL, 0);
+		} else if (!strcmp(variable, "service_parents_disable_service_checks")) {
+			service_parents_disable_service_checks = strtoul(value, NULL, 0);
 		} else if (!strcmp(variable, "service_skip_check_dependency_status")) {
 			service_skip_check_dependency_status = atoi(value);
-			if (service_skip_check_dependency_status < -1 || service_skip_check_dependency_status > 3) {
+			if (service_skip_check_dependency_status < -2 || service_skip_check_dependency_status > 3) {
 				nm_asprintf(&error_message, "Illegal value for service_skip_check_dependency_status");
 				error = TRUE;
 				break;
 			}
 		} else if (!strcmp(variable, "service_skip_check_host_down_status")) {
 			service_skip_check_host_down_status = atoi(value);
-			if (service_skip_check_host_down_status < -1 || service_skip_check_host_down_status > 3) {
+			if (service_skip_check_host_down_status < -2 || service_skip_check_host_down_status > 3) {
 				nm_asprintf(&error_message, "Illegal value for service_skip_check_host_down_status");
 				error = TRUE;
 				break;
 			}
 		} else if (!strcmp(variable, "host_skip_check_dependency_status")) {
 			host_skip_check_dependency_status = atoi(value);
-			if (host_skip_check_dependency_status < -1 || host_skip_check_dependency_status > 3) {
+			if (host_skip_check_dependency_status < -2 || host_skip_check_dependency_status > 3) {
 				nm_asprintf(&error_message, "Illegal value for host_skip_check_dependency_status");
 				error = TRUE;
 				break;
