@@ -16,7 +16,7 @@ contact **contact_ary = NULL;
 
 int init_objects_contact(int elems)
 {
-	contact_ary = nm_calloc(elems, sizeof(contact*));
+	contact_ary = nm_calloc(elems, sizeof(contact *));
 	contact_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;
 }
@@ -55,7 +55,7 @@ contact *create_contact(const char *name)
 	return new_contact;
 }
 
-int setup_contact_variables(contact *new_contact, const char *alias, const char *email, const char *pager, char * const *addresses, const char *svc_notification_period, const char *host_notification_period, int service_notification_options, int host_notification_options, int host_notifications_enabled, int service_notifications_enabled, int can_submit_commands, int retain_status_information, int retain_nonstatus_information, unsigned int minimum_value)
+int setup_contact_variables(contact *new_contact, const char *alias, const char *email, const char *pager, char *const *addresses, const char *svc_notification_period, const char *host_notification_period, int service_notification_options, int host_notification_options, int host_notifications_enabled, int service_notifications_enabled, int can_submit_commands, int retain_status_information, int retain_nonstatus_information, unsigned int minimum_value)
 {
 	timeperiod *htp = NULL, *stp = NULL;
 	int x = 0;
@@ -71,8 +71,8 @@ int setup_contact_variables(contact *new_contact, const char *alias, const char 
 		return -1;
 	}
 
-	new_contact->host_notification_period = htp ? htp->name : NULL;
-	new_contact->service_notification_period = stp ? stp->name : NULL;
+	new_contact->host_notification_period = htp ? nm_strdup(htp->name) : NULL;
+	new_contact->service_notification_period = stp ? nm_strdup(stp->name) : NULL;
 	new_contact->host_notification_period_ptr = htp;
 	new_contact->service_notification_period_ptr = stp;
 	if (alias)
@@ -183,7 +183,7 @@ commandsmember *add_host_notification_command_to_contact(contact *cntct, char *c
 
 	cmd = find_bang_command(command_name);
 	if (cmd == NULL) {
-		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Host notification command '%s' specified for contact '%s' is not defined anywhere!", new_commandsmember->command, cntct->name);
+		nm_log(NSLOG_VERIFICATION_ERROR, "Error: Host notification command '%s' specified for contact '%s' is not defined anywhere!", command_name, cntct->name);
 		return NULL;
 	}
 

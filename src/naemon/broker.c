@@ -12,6 +12,12 @@
 #include <string.h>
 #include <sys/time.h>
 
+static struct kvvec global_store = KVVEC_INITIALIZER;
+
+struct kvvec *get_global_store(void)
+{
+	return &global_store;
+}
 
 /* gets timestamp for use by broker */
 static inline void get_broker_timestamp(struct timeval *timestamp)
@@ -454,6 +460,7 @@ void broker_host_status(int type, int flags, int attr, host *hst)
 	ds.flags = flags;
 	ds.attr = attr;
 	get_broker_timestamp(&ds.timestamp);
+	hst->last_update = ds.timestamp.tv_sec;
 
 	ds.object_ptr = (void *)hst;
 
@@ -477,6 +484,7 @@ void broker_service_status(int type, int flags, int attr, service *svc)
 	ds.flags = flags;
 	ds.attr = attr;
 	get_broker_timestamp(&ds.timestamp);
+	svc->last_update = ds.timestamp.tv_sec;
 
 	ds.object_ptr = (void *)svc;
 
@@ -511,7 +519,7 @@ void broker_contact_status(int type, int flags, int attr, contact *cntct)
 
 
 /* send notification data to broker */
-neb_cb_resultset * broker_notification_data(int type, int flags, int attr, int notification_type, int reason_type, struct timeval start_time, struct timeval end_time, void *data, char *ack_author, char *ack_data, int escalated, int contacts_notified)
+neb_cb_resultset *broker_notification_data(int type, int flags, int attr, int notification_type, int reason_type, struct timeval start_time, struct timeval end_time, void *data, char *ack_author, char *ack_data, int escalated, int contacts_notified)
 {
 	nebstruct_notification_data ds;
 	host *temp_host = NULL;
@@ -839,7 +847,7 @@ void broker_retention_data(int type, int flags, int attr)
 
 
 /* send acknowledgement data to broker */
-void broker_acknowledgement_data(int type, int flags, int attr, int acknowledgement_type, void *data, char *ack_author, char *ack_data, int subtype, int notify_contacts, int persistent_comment)
+void broker_acknowledgement_data(int type, int flags, int attr, int acknowledgement_type, void *data, char *ack_author, char *ack_data, int subtype, int notify_contacts, int persistent_comment, time_t end_time)
 {
 	nebstruct_acknowledgement_data ds;
 	host *temp_host = NULL;
@@ -872,6 +880,7 @@ void broker_acknowledgement_data(int type, int flags, int attr, int acknowledgem
 	ds.is_sticky = (subtype == ACKNOWLEDGEMENT_STICKY) ? TRUE : FALSE;
 	ds.notify_contacts = notify_contacts;
 	ds.persistent_comment = persistent_comment;
+	ds.end_time = end_time;
 
 	/* make callbacks */
 	neb_make_callbacks(NEBCALLBACK_ACKNOWLEDGEMENT_DATA, (void *)&ds);
@@ -918,4 +927,28 @@ void broker_statechange_data(int type, int flags, int attr, int statechange_type
 	neb_make_callbacks(NEBCALLBACK_STATE_CHANGE_DATA, (void *)&ds);
 
 	return;
+}
+
+/* get vault macro from broker */
+int broker_vault_macro(char *macro_name, char **output, int *free_macro, nagios_macros *mac)
+{
+	nebstruct_vault_macro_data ds;
+
+	if (!(event_broker_options & BROKER_VAULT_MACROS))
+		return OK;
+
+	/* fill struct with relevant data */
+	ds.macro_name = macro_name;
+	ds.value      = NULL;
+	ds.mac        = mac;
+
+	/* make callbacks */
+	neb_make_callbacks(NEBCALLBACK_VAULT_MACRO_DATA, (void *)&ds);
+
+	if(ds.value != NULL) {
+		*free_macro = TRUE;
+		*output = ds.value;
+	}
+
+	return OK;
 }

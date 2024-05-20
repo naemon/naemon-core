@@ -23,4 +23,3 @@ Feature: Daemonization
     Scenario: Naemon successfully daemonizes when a valid config is provided
         Given config verification pass
         Then naemon should successfully start
-

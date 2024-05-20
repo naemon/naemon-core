@@ -23,12 +23,12 @@ void save_state_information_eventhandler(struct nm_event_execution_properties *e
 {
 	int status;
 
-	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
+	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 		schedule_event(retention_update_interval * interval_length, save_state_information_eventhandler, evprop->user_data);
 
-		status = save_state_information(FALSE);
+		status = save_state_information(TRUE);
 
-		if(status == OK) {
+		if (status == OK) {
 			nm_log(NSLOG_PROCESS_INFO,
 			       "Auto-save of retention data completed successfully.\n");
 		}
@@ -63,6 +63,10 @@ int cleanup_retention_data(void)
 		nm_free(premod_services[i]);
 	}
 	nm_free(premod_services);
+	for (i = 0; i < num_objects.contacts; i++) {
+		nm_free(premod_contacts[i]);
+	}
+	nm_free(premod_contacts);
 
 	return xrddefault_cleanup_retention_data();
 }
@@ -84,6 +88,10 @@ int save_state_information(int autosave)
 
 	if (result == ERROR)
 		return ERROR;
+
+	if (!autosave) {
+		nm_log(NSLOG_INFO_MESSAGE, "Retention data successfully saved.");
+	}
 
 	return OK;
 }

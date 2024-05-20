@@ -61,7 +61,8 @@ struct {
 	{ RUNCMD_HAS_WILDCARD, "ls -l /dev/tty?" },
 	{ 0, "ls -l /dev/tty\\?" },
 	{ RUNCMD_HAS_SHVAR, "echo $foo" },
-	{ RUNCMD_HAS_SHVAR, "VAR='foo' echo bar" },
+	{ RUNCMD_HAS_SHVAR, "~/test" },
+	{ 0, "VAR='foo' echo bar" },
 	{ 0, "echo \\$foo" },
 	{ RUNCMD_HAS_PAREN, "\\$(hoopla booyaka" },
 	{ 0, "\\$\\(hoopla booyaka" },
@@ -74,18 +75,22 @@ struct {
 	char *cmd;
 	int argc_exp;
 	char *argv_exp[10];
+	int envc_exp;
+	char *env_exp[20];
 } parse_case[] = {
-	{ 0, "foo bar nisse", 3, { "foo", "bar", "nisse", NULL }},
-	{ 0, "foo\\ bar nisse", 2, { "foo bar", "nisse", NULL }},
-	{ 0, "\"\\\\foo\"", 1, { "\\foo", NULL }},
-	{ 0, "\"\\1bs in dq\"", 1, { "\\1bs in dq", NULL }},
-	{ 0, "\"\\\\2bs in dq\"", 1, { "\\2bs in dq", NULL }},
-	{ 0, "\"\\\\\\3bs in dq\"", 1, { "\\\\3bs in dq", NULL }},
-	{ 0, "\"\\\\\\\\4bs in dq\"", 1, { "\\\\4bs in dq", NULL }},
-	{ 0, "\\ \t \\\t  \\ ", 3, { " ", "\t", " ", NULL }},
-	{ 0, "\\$foo walla wonga", 3, { "$foo", "walla", "wonga", NULL }},
-	{ 0, "\"\\$bar is\" very wide open", 4, { "$bar is", "very", "wide", "open", NULL }},
-	{ 0, NULL, 0, { NULL, NULL, NULL }},
+	{ 0, "foo bar nisse", 3, { "foo", "bar", "nisse", NULL }, 0, { NULL }},
+	{ 0, "foo\\ bar nisse", 2, { "foo bar", "nisse", NULL }, 0, { NULL }},
+	{ 0, "\"\\\\foo\"", 1, { "\\foo", NULL }, 0, { NULL }},
+	{ 0, "\"\\1bs in dq\"", 1, { "\\1bs in dq", NULL }, 0, { NULL }},
+	{ 0, "\"\\\\2bs in dq\"", 1, { "\\2bs in dq", NULL }, 0, { NULL }},
+	{ 0, "\"\\\\\\3bs in dq\"", 1, { "\\\\3bs in dq", NULL }, 0, { NULL }},
+	{ 0, "\"\\\\\\\\4bs in dq\"", 1, { "\\\\4bs in dq", NULL }, 0, { NULL }},
+	{ 0, "\\ \t \\\t  \\ ", 3, { " ", "\t", " ", NULL }, 0, { NULL }},
+	{ 0, "\\$foo walla wonga", 3, { "$foo", "walla", "wonga", NULL }, 0, { NULL }},
+	{ 0, "\"\\$bar is\" very wide open", 4, { "$bar is", "very", "wide", "open", NULL }, 0, { NULL }},
+	{ 0, "TEST=123 BL_AH='BLUB' foo=\"bar bar\" EMPTY= EMPTY2='' /bin/true arg1 arg2 arg3", 4, { "/bin/true", "arg1", "arg2","arg3", NULL }, 10, { "TEST", "123", "BL_AH", "BLUB", "foo", "bar bar", "EMPTY", "", "EMPTY2", "", NULL }},
+	{ RUNCMD_HAS_SHVAR, "TEST=123 TEST2=$TEST:1 /bin/true arg1", 3, { "TEST2=$TEST:1", "/bin/true", "arg1", NULL }, 2, { "TEST", "123", NULL }},
+	{ 0, NULL, 0, { NULL, NULL, NULL }, 0, { NULL }},
 };
 
 int main(int argc, char **argv)
@@ -107,7 +112,7 @@ int main(int argc, char **argv)
 				t_fail("asprintf returned failure: %s", strerror(errno));
 				continue;
 			}
-			fd = runcmd_open(cmd, pfd, pfderr, NULL);
+			fd = runcmd_open(cmd, pfd, pfderr);
 			if (read(pfd[0], out, BUF_SIZE) < 0) {
 				t_fail("read returned failure: %s", strerror(errno));
 				continue;
@@ -124,9 +129,10 @@ int main(int argc, char **argv)
 	{
 		int i;
 		for (i = 0; anomaly[i].cmd; i++) {
-			int out_argc;
+			int out_argc, out_envc;
 			char *out_argv[256];
-			int result = runcmd_cmd2strv(anomaly[i].cmd, &out_argc, out_argv);
+			char *out_env[256];
+			int result = runcmd_cmd2strv(anomaly[i].cmd, &out_argc, out_argv, &out_envc, out_env);
 			ok_int(result, anomaly[i].ret, anomaly[i].cmd);
 		}
 	}
@@ -137,14 +143,19 @@ int main(int argc, char **argv)
 	{
 		int i;
 		for (i = 0; parse_case[i].cmd; i++) {
-			int x, out_argc;
+			int x, out_argc, out_envc;
 			char *out_argv[256];
-			int result = runcmd_cmd2strv(parse_case[i].cmd, &out_argc, out_argv);
+			char *out_env[256];
+			int result = runcmd_cmd2strv(parse_case[i].cmd, &out_argc, out_argv, &out_envc, out_env);
 			out_argv[out_argc] = NULL;
-			ok_int(result, 0, parse_case[i].cmd);
+			ok_int(result, parse_case[i].ret, parse_case[i].cmd);
 			ok_int(out_argc, parse_case[i].argc_exp, parse_case[i].cmd);
 			for (x = 0; x < parse_case[x].argc_exp && out_argv[x]; x++) {
 				ok_str(parse_case[i].argv_exp[x], out_argv[x], "argv comparison test");
+			}
+			ok_int(out_envc, parse_case[i].envc_exp, parse_case[i].cmd);
+			for (x = 0; x < parse_case[x].envc_exp; x++) {
+				ok_str(parse_case[i].env_exp[x], out_env[x], "env comparison test");
 			}
 		}
 	}

@@ -7,6 +7,7 @@
 #include "logging.h"
 #include "globals.h"
 #include "nm_alloc.h"
+#include "broker.h"
 #include <string.h>
 #include <glib.h>
 
@@ -39,16 +40,14 @@ static char **macro_x = NULL;
  */
 static nagios_macros global_macros;
 
-struct grab_macro_value_parameters
-{
+struct grab_macro_value_parameters {
 	nagios_macros *mac;
 	int macro_type;
 	GString *buffer;
 	char *delimiter;
 };
 
-struct grab_custom_value_parameters
-{
+struct grab_custom_value_parameters {
 	nagios_macros *mac;
 	char *macro_name;
 	GString *buffer;
@@ -122,8 +121,9 @@ static int grab_custom_object_macro_r(nagios_macros *mac, char *macro_name, cust
 /* given a "raw" command, return the "expanded" or "whole" command line */
 int get_raw_command_line_r(nagios_macros *mac, command *cmd_ptr, char *cmd, char **full_command, int macro_options)
 {
-	char temp_arg[MAX_COMMAND_BUFFER] = "";
+	char *temp_arg = NULL;
 	char *arg_buffer = NULL;
+	size_t cmd_len = 0;
 	register int x = 0;
 	register int y = 0;
 	register int arg_index = 0;
@@ -140,51 +140,56 @@ int get_raw_command_line_r(nagios_macros *mac, command *cmd_ptr, char *cmd, char
 	/* get the full command line */
 	*full_command = nm_strdup((cmd_ptr->command_line == NULL) ? "" : cmd_ptr->command_line);
 
-	/* XXX: Crazy indent */
+	if (cmd == NULL) {
+		log_debug_info(DEBUGL_COMMANDS | DEBUGL_CHECKS | DEBUGL_MACROS, 2, "Expanded Command Output: %s\n", *full_command);
+		return OK;
+	}
+
+	cmd_len = strlen(cmd);
+	temp_arg = nm_malloc(cmd_len);
+
 	/* get the command arguments */
-	if (cmd != NULL) {
+	/* skip the command name (we're about to get the arguments)... */
+	for (arg_index = 0;; arg_index++) {
+		if (cmd[arg_index] == '!' || cmd[arg_index] == '\x0')
+			break;
+	}
 
-		/* skip the command name (we're about to get the arguments)... */
-		for (arg_index = 0;; arg_index++) {
-			if (cmd[arg_index] == '!' || cmd[arg_index] == '\x0')
+	/* get each command argument */
+	for (x = 0; x < MAX_COMMAND_ARGUMENTS; x++) {
+
+		/* we reached the end of the arguments... */
+		if (cmd[arg_index] == '\x0')
+			break;
+
+		/* get the next argument */
+		/* can't use strtok(), as that's used in process_macros... */
+		for (arg_index++, y = 0; y < (int)cmd_len - 1; arg_index++) {
+
+			/* handle escaped argument delimiters */
+			if (cmd[arg_index] == '\\' && cmd[arg_index + 1] == '!') {
+				arg_index++;
+			} else if (cmd[arg_index] == '!' || cmd[arg_index] == '\x0') {
+				/* end of argument */
 				break;
-		}
-
-		/* get each command argument */
-		for (x = 0; x < MAX_COMMAND_ARGUMENTS; x++) {
-
-			/* we reached the end of the arguments... */
-			if (cmd[arg_index] == '\x0')
-				break;
-
-			/* get the next argument */
-			/* can't use strtok(), as that's used in process_macros... */
-			for (arg_index++, y = 0; y < (int)sizeof(temp_arg) - 1; arg_index++) {
-
-				/* handle escaped argument delimiters */
-				if (cmd[arg_index] == '\\' && cmd[arg_index + 1] == '!') {
-					arg_index++;
-				} else if (cmd[arg_index] == '!' || cmd[arg_index] == '\x0') {
-					/* end of argument */
-					break;
-				}
-
-				/* copy the character */
-				temp_arg[y] = cmd[arg_index];
-				y++;
 			}
-			temp_arg[y] = '\x0';
 
-			/* ADDED 01/29/04 EG */
-			/* process any macros we find in the argument */
-			process_macros_r(mac, temp_arg, &arg_buffer, macro_options);
-
-			mac->argv[x] = arg_buffer;
+			/* copy the character */
+			temp_arg[y] = cmd[arg_index];
+			y++;
 		}
+		temp_arg[y] = '\x0';
+
+		/* ADDED 01/29/04 EG */
+		/* process any macros we find in the argument */
+		process_macros_r(mac, temp_arg, &arg_buffer, macro_options);
+
+		mac->argv[x] = arg_buffer;
 	}
 
 	log_debug_info(DEBUGL_COMMANDS | DEBUGL_CHECKS | DEBUGL_MACROS, 2, "Expanded Command Output: %s\n", *full_command);
 
+	nm_free(temp_arg);
 	return OK;
 }
 
@@ -389,7 +394,7 @@ static int grab_custom_macro_value_r(nagios_macros *mac, char *macro_name, char 
 			g_tree_foreach(temp_hostgroup->members, concat_custom_macro_value, &params);
 			*output = nm_malloc(params.buffer->len + 1);
 			strncpy(*output, params.buffer->str, params.buffer->len);
-			*output[params.buffer->len] = 0;
+			(*output)[params.buffer->len] = 0;
 			g_string_free(params.buffer, TRUE);
 		}
 	}
@@ -622,10 +627,6 @@ static int grab_standard_host_macro_r(nagios_macros *mac, int macro_type, host *
 	objectlist *temp_objectlist = NULL;
 	time_t current_time = 0L;
 	unsigned long duration = 0L;
-	int days = 0;
-	int hours = 0;
-	int minutes = 0;
-	int seconds = 0;
 	char *buf1 = NULL;
 	char *buf2 = NULL;
 	int total_host_services = 0;
@@ -703,19 +704,10 @@ static int grab_standard_host_macro_r(nagios_macros *mac, int macro_type, host *
 	case MACRO_HOSTDURATION:
 		time(&current_time);
 		duration = (unsigned long)(current_time - temp_host->last_state_change);
-
 		if (macro_type == MACRO_HOSTDURATIONSEC)
 			*output = (char *)mkstr("%lu", duration);
 		else {
-
-			days = duration / 86400;
-			duration -= (days * 86400);
-			hours = duration / 3600;
-			duration -= (hours * 3600);
-			minutes = duration / 60;
-			duration -= (minutes * 60);
-			seconds = duration;
-			*output = (char *)mkstr("%dd %dh %dm %ds", days, hours, minutes, seconds);
+			*output = (char *)mkstr("%s", duration_string(duration));
 		}
 		break;
 	case MACRO_HOSTEXECUTIONTIME:
@@ -743,7 +735,7 @@ static int grab_standard_host_macro_r(nagios_macros *mac, int macro_type, host *
 		*output = (char *)mkstr("%d", temp_host->current_notification_number);
 		break;
 	case MACRO_HOSTNOTIFICATIONID:
-		*output = (char *)mkstr("%lu", temp_host->current_notification_id);
+		*output = temp_host->current_notification_id;
 		break;
 	case MACRO_HOSTEVENTID:
 		*output = (char *)mkstr("%lu", temp_host->current_event_id);
@@ -752,10 +744,32 @@ static int grab_standard_host_macro_r(nagios_macros *mac, int macro_type, host *
 		*output = (char *)mkstr("%lu", temp_host->last_event_id);
 		break;
 	case MACRO_HOSTPROBLEMID:
-		*output = (char *)mkstr("%lu", temp_host->current_problem_id);
+		if(temp_host->current_problem_id != NULL)
+			*output = temp_host->current_problem_id;
 		break;
 	case MACRO_LASTHOSTPROBLEMID:
-		*output = (char *)mkstr("%lu", temp_host->last_problem_id);
+		if(temp_host->last_problem_id != NULL)
+			*output = temp_host->last_problem_id;
+		break;
+	case MACRO_HOSTPROBLEMSTART:
+		*output = (char *)mkstr("%lu", (unsigned long)temp_host->problem_start);
+		break;
+	case MACRO_HOSTPROBLEMEND:
+		*output = (char *)mkstr("%lu", (unsigned long)temp_host->problem_end);
+		break;
+	case MACRO_HOSTPROBLEMDURATIONSEC:
+	case MACRO_HOSTPROBLEMDURATION:
+		if(temp_host->problem_end > 0) {
+			duration = (unsigned long)(temp_host->problem_end - temp_host->problem_start);
+		} else if(temp_host->problem_start > 0) {
+			time(&current_time);
+			duration = (unsigned long)(current_time - temp_host->problem_start);
+		}
+		if (macro_type == MACRO_HOSTPROBLEMDURATIONSEC)
+			*output = (char *)mkstr("%lu", duration);
+		else {
+			*output = (char *)mkstr("%s", duration_string(duration));
+		}
 		break;
 	case MACRO_HOSTACTIONURL:
 		if (temp_host->action_url)
@@ -838,9 +852,9 @@ static int grab_standard_host_macro_r(nagios_macros *mac, int macro_type, host *
 		*output = (char *)mkstr("%u", mac->host_ptr->hourly_value + host_services_value(mac->host_ptr));
 		break;
 
-		/***************/
-		/* MISC MACROS */
-		/***************/
+	/***************/
+	/* MISC MACROS */
+	/***************/
 	case MACRO_HOSTACKAUTHOR:
 	case MACRO_HOSTACKAUTHORNAME:
 	case MACRO_HOSTACKAUTHORALIAS:
@@ -945,10 +959,6 @@ static int grab_standard_service_macro_r(nagios_macros *mac, int macro_type, ser
 	objectlist *temp_objectlist = NULL;
 	time_t current_time = 0L;
 	unsigned long duration = 0L;
-	int days = 0;
-	int hours = 0;
-	int minutes = 0;
-	int seconds = 0;
 	char *buf1 = NULL;
 	char *buf2 = NULL;
 
@@ -1039,31 +1049,19 @@ static int grab_standard_service_macro_r(nagios_macros *mac, int macro_type, ser
 		break;
 	case MACRO_SERVICEDURATIONSEC:
 	case MACRO_SERVICEDURATION:
-
 		time(&current_time);
 		duration = (unsigned long)(current_time - temp_service->last_state_change);
-
-		/* get the state duration in seconds */
 		if (macro_type == MACRO_SERVICEDURATIONSEC)
 			*output = (char *)mkstr("%lu", duration);
-
-		/* get the state duration */
 		else {
-			days = duration / 86400;
-			duration -= (days * 86400);
-			hours = duration / 3600;
-			duration -= (hours * 3600);
-			minutes = duration / 60;
-			duration -= (minutes * 60);
-			seconds = duration;
-			*output = (char *)mkstr("%dd %dh %dm %ds", days, hours, minutes, seconds);
+			*output = (char *)mkstr("%s", duration_string(duration));
 		}
 		break;
 	case MACRO_SERVICENOTIFICATIONNUMBER:
 		*output = (char *)mkstr("%d", temp_service->current_notification_number);
 		break;
 	case MACRO_SERVICENOTIFICATIONID:
-		*output = (char *)mkstr("%lu", temp_service->current_notification_id);
+		*output = temp_service->current_notification_id;
 		break;
 	case MACRO_SERVICEEVENTID:
 		*output = (char *)mkstr("%lu", temp_service->current_event_id);
@@ -1072,10 +1070,30 @@ static int grab_standard_service_macro_r(nagios_macros *mac, int macro_type, ser
 		*output = (char *)mkstr("%lu", temp_service->last_event_id);
 		break;
 	case MACRO_SERVICEPROBLEMID:
-		*output = (char *)mkstr("%lu", temp_service->current_problem_id);
+		*output = temp_service->current_problem_id;
 		break;
 	case MACRO_LASTSERVICEPROBLEMID:
-		*output = (char *)mkstr("%lu", temp_service->last_problem_id);
+		*output = temp_service->last_problem_id;
+		break;
+	case MACRO_SERVICEPROBLEMSTART:
+		*output = (char *)mkstr("%lu", (unsigned long)temp_service->problem_start);
+		break;
+	case MACRO_SERVICEPROBLEMEND:
+		*output = (char *)mkstr("%lu", (unsigned long)temp_service->problem_end);
+		break;
+	case MACRO_SERVICEPROBLEMDURATIONSEC:
+	case MACRO_SERVICEPROBLEMDURATION:
+		if(temp_service->problem_end > 0) {
+			duration = (unsigned long)(temp_service->problem_end - temp_service->problem_start);
+		} else if(temp_service->problem_start > 0) {
+			time(&current_time);
+			duration = (unsigned long)(current_time - temp_service->problem_start);
+		}
+		if (macro_type == MACRO_SERVICEPROBLEMDURATIONSEC)
+			*output = (char *)mkstr("%lu", duration);
+		else {
+			*output = (char *)mkstr("%s", duration_string(duration));
+		}
 		break;
 	case MACRO_SERVICEACTIONURL:
 		if (temp_service->action_url)
@@ -1105,9 +1123,9 @@ static int grab_standard_service_macro_r(nagios_macros *mac, int macro_type, ser
 			nm_free(buf2);
 		}
 		break;
-		/***************/
-		/* MISC MACROS */
-		/***************/
+	/***************/
+	/* MISC MACROS */
+	/***************/
 	case MACRO_SERVICEACKAUTHOR:
 	case MACRO_SERVICEACKAUTHORNAME:
 	case MACRO_SERVICEACKAUTHORALIAS:
@@ -1513,11 +1531,12 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 	/* handle the macro */
 	switch (macro_type) {
 
-		/***************/
-		/* HOST MACROS */
-		/***************/
+	/***************/
+	/* HOST MACROS */
+	/***************/
 	case MACRO_HOSTGROUPNAMES:
 		*free_macro = TRUE;
+	/* FALLTHROUGH */
 	case MACRO_HOSTNAME:
 	case MACRO_HOSTALIAS:
 	case MACRO_HOSTADDRESS:
@@ -1563,6 +1582,11 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 	case MACRO_LASTHOSTPROBLEMID:
 	case MACRO_LASTHOSTSTATE:
 	case MACRO_LASTHOSTSTATEID:
+	case MACRO_HOSTPROBLEMSTART:
+	case MACRO_HOSTPROBLEMEND:
+	case MACRO_HOSTPROBLEMDURATIONSEC:
+	case MACRO_HOSTPROBLEMDURATION:
+
 
 		/* a standard host macro */
 		if (arg2 == NULL) {
@@ -1602,16 +1626,17 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 			g_tree_foreach(temp_hostgroup->members, concat_macrox_value, &params);
 			*output = nm_malloc(params.buffer->len + 1);
 			strncpy(*output, params.buffer->str, params.buffer->len);
-			*output[params.buffer->len] = 0;
+			(*output)[params.buffer->len] = 0;
 			g_string_free(params.buffer, TRUE);
 		}
 		break;
 
-		/********************/
-		/* HOSTGROUP MACROS */
-		/********************/
+	/********************/
+	/* HOSTGROUP MACROS */
+	/********************/
 	case MACRO_HOSTGROUPMEMBERS:
 		*free_macro = TRUE;
+	/* FALLTHROUGH */
 	case MACRO_HOSTGROUPNAME:
 	case MACRO_HOSTGROUPALIAS:
 	case MACRO_HOSTGROUPNOTES:
@@ -1635,11 +1660,12 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		result = grab_standard_hostgroup_macro_r(mac, macro_type, temp_hostgroup, output);
 		break;
 
-		/******************/
-		/* SERVICE MACROS */
-		/******************/
+	/******************/
+	/* SERVICE MACROS */
+	/******************/
 	case MACRO_SERVICEGROUPNAMES:
 		*free_macro = TRUE;
+	/* FALLTHROUGH */
 	case MACRO_SERVICEDESC:
 	case MACRO_SERVICESTATE:
 	case MACRO_SERVICESTATEID:
@@ -1680,6 +1706,10 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 	case MACRO_LASTSERVICEPROBLEMID:
 	case MACRO_LASTSERVICESTATE:
 	case MACRO_LASTSERVICESTATEID:
+	case MACRO_SERVICEPROBLEMSTART:
+	case MACRO_SERVICEPROBLEMEND:
+	case MACRO_SERVICEPROBLEMDURATIONSEC:
+	case MACRO_SERVICEPROBLEMDURATION:
 
 		/* use saved service pointer */
 		if (arg1 == NULL && arg2 == NULL) {
@@ -1749,14 +1779,15 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		}
 		break;
 
-		/***********************/
-		/* SERVICEGROUP MACROS */
-		/***********************/
+	/***********************/
+	/* SERVICEGROUP MACROS */
+	/***********************/
 	case MACRO_SERVICEGROUPMEMBERS:
 	case MACRO_SERVICEGROUPNOTES:
 	case MACRO_SERVICEGROUPNOTESURL:
 	case MACRO_SERVICEGROUPACTIONURL:
 		*free_macro = TRUE;
+	/* FALLTHROUGH */
 	case MACRO_SERVICEGROUPNAME:
 	case MACRO_SERVICEGROUPALIAS:
 		/* a standard servicegroup macro */
@@ -1776,11 +1807,12 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		result = grab_standard_servicegroup_macro_r(mac, macro_type, temp_servicegroup, output);
 		break;
 
-		/******************/
-		/* CONTACT MACROS */
-		/******************/
+	/******************/
+	/* CONTACT MACROS */
+	/******************/
 	case MACRO_CONTACTGROUPNAMES:
 		*free_macro = TRUE;
+	/* FALLTHROUGH */
 	case MACRO_CONTACTNAME:
 	case MACRO_CONTACTALIAS:
 	case MACRO_CONTACTEMAIL:
@@ -1836,11 +1868,12 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		}
 		break;
 
-		/***********************/
-		/* CONTACTGROUP MACROS */
-		/***********************/
+	/***********************/
+	/* CONTACTGROUP MACROS */
+	/***********************/
 	case MACRO_CONTACTGROUPMEMBERS:
 		*free_macro = TRUE;
+	/* FALLTHROUGH */
 	case MACRO_CONTACTGROUPNAME:
 	case MACRO_CONTACTGROUPALIAS:
 		/* a standard contactgroup macro */
@@ -1860,9 +1893,9 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		result = grab_standard_contactgroup_macro(macro_type, temp_contactgroup, output);
 		break;
 
-		/***********************/
-		/* NOTIFICATION MACROS */
-		/***********************/
+	/***********************/
+	/* NOTIFICATION MACROS */
+	/***********************/
 	case MACRO_NOTIFICATIONTYPE:
 	case MACRO_NOTIFICATIONNUMBER:
 	case MACRO_NOTIFICATIONRECIPIENTS:
@@ -1877,9 +1910,9 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		*free_macro = FALSE;
 		break;
 
-		/********************/
-		/* DATE/TIME MACROS */
-		/********************/
+	/********************/
+	/* DATE/TIME MACROS */
+	/********************/
 	case MACRO_LONGDATETIME:
 	case MACRO_SHORTDATETIME:
 	case MACRO_DATE:
@@ -1893,9 +1926,9 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		*free_macro = TRUE;
 		break;
 
-		/*****************/
-		/* STATIC MACROS */
-		/*****************/
+	/*****************/
+	/* STATIC MACROS */
+	/*****************/
 	case MACRO_ADMINEMAIL:
 	case MACRO_ADMINPAGER:
 	case MACRO_MAINCONFIGFILE:
@@ -1917,9 +1950,9 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		*free_macro = FALSE;
 		break;
 
-		/******************/
-		/* SUMMARY MACROS */
-		/******************/
+	/******************/
+	/* SUMMARY MACROS */
+	/******************/
 	case MACRO_TOTALHOSTSUP:
 	case MACRO_TOTALHOSTSDOWN:
 	case MACRO_TOTALHOSTSUNREACHABLE:
@@ -2138,6 +2171,10 @@ static int grab_macro_value_r(nagios_macros *mac, char *macro_buffer, char **out
 		/* use a pre-computed macro value */
 		*output = macro_user[x - 1];
 		return OK;
+	}
+
+	if (strstr(macro_buffer, "VAULT") == macro_buffer) {
+		return(broker_vault_macro(macro_buffer, output, free_macro, mac));
 	}
 
 	/* most frequently used "x" macro gets a shortcut */
@@ -2676,6 +2713,14 @@ int init_macrox_names(void)
 	add_macrox_name(HOSTVALUE);
 	add_macrox_name(SERVICEVALUE);
 	add_macrox_name(PROBLEMVALUE);
+	add_macrox_name(HOSTPROBLEMSTART);
+	add_macrox_name(HOSTPROBLEMEND);
+	add_macrox_name(HOSTPROBLEMDURATIONSEC);
+	add_macrox_name(HOSTPROBLEMDURATION);
+	add_macrox_name(SERVICEPROBLEMSTART);
+	add_macrox_name(SERVICEPROBLEMEND);
+	add_macrox_name(SERVICEPROBLEMDURATIONSEC);
+	add_macrox_name(SERVICEPROBLEMDURATION);
 
 	return OK;
 }

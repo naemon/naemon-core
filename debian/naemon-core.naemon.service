@@ -1,0 +1,23 @@
+[Unit]
+Description=Naemon Monitoring Daemon
+Documentation=https://www.naemon.io/documentation
+After=network.target
+
+[Service]
+EnvironmentFile=/etc/default/naemon
+Type=forking
+PIDFile=/run/naemon/naemon.pid
+PermissionsStartOnly=true
+ExecStartPre=-/bin/mkdir -p /var/run/naemon
+ExecStartPre=/bin/chown -R naemon:naemon /run/naemon/
+ExecStartPre=/bin/su naemon --login --shell=/bin/sh "--command=/usr/bin/naemon --verify-config /etc/naemon/naemon.cfg"
+ExecStart=/usr/bin/naemon --daemon /etc/naemon/naemon.cfg
+ExecReload=/bin/kill -HUP $MAINPID
+User=naemon
+Group=naemon
+StandardOutput=journal
+StandardError=inherit
+
+[Install]
+WantedBy=multi-user.target
+

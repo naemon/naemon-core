@@ -10,7 +10,7 @@ command **command_ary = NULL;
 
 int init_objects_command(int elems)
 {
-	command_ary = nm_calloc(elems, sizeof(command*));
+	command_ary = nm_calloc(elems, sizeof(command *));
 	command_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;
 }

@@ -18,7 +18,7 @@ host **host_ary = NULL;
 
 int init_objects_host(int elems)
 {
-	host_ary = nm_calloc(elems, sizeof(host*));
+	host_ary = nm_calloc(elems, sizeof(host *));
 	host_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;
 }
@@ -69,11 +69,12 @@ host *create_host(const char *name)
 	new_host = nm_calloc(1, sizeof(*new_host));
 
 	new_host->name = new_host->display_name = new_host->alias = new_host->address = nm_strdup(name);
-	new_host->child_hosts = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
-	new_host->parent_hosts = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
+	new_host->child_hosts = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	new_host->parent_hosts = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
 	new_host->check_type = CHECK_TYPE_ACTIVE;
 	new_host->state_type = HARD_STATE;
 	new_host->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+	new_host->acknowledgement_end_time = (time_t)0;
 	new_host->check_options = CHECK_OPTION_NONE;
 
 
@@ -124,10 +125,10 @@ int setup_host_variables(host *new_host, const char *display_name, const char *a
 	if (address)
 		new_host->address = nm_strdup(address);
 	if (check_tp) {
-		new_host->check_period = check_tp->name;
+		new_host->check_period = nm_strdup(check_tp->name);
 		new_host->check_period_ptr = check_tp;
 	}
-	new_host->notification_period = notify_tp ? notify_tp->name : NULL;
+	new_host->notification_period = notify_tp ? nm_strdup(notify_tp->name) : NULL;
 	new_host->notification_period_ptr = notify_tp;
 	if (check_command) {
 		new_host->check_command = nm_strdup(check_command);
@@ -213,7 +214,8 @@ int register_host(host *new_host)
 	return OK;
 }
 
-static gboolean my_g_tree_visit_pick_one(gpointer key, gpointer value, gpointer data) {
+static gboolean my_g_tree_visit_pick_one(gpointer key, gpointer value, gpointer data)
+{
 	gpointer *outptr = (gpointer *)data;
 	*outptr = value;
 	return TRUE; /* Stop traversal */
@@ -278,10 +280,10 @@ void destroy_host(host *this_host)
 		do {
 			curhost = NULL;
 			g_tree_foreach(this_host->child_hosts, my_g_tree_visit_pick_one, &curhost);
-			if(curhost) {
+			if (curhost) {
 				remove_parent_from_host(curhost, this_host);
 			}
-		} while(curhost != NULL);
+		} while (curhost != NULL);
 		g_tree_unref(this_host->child_hosts);
 		this_host->child_hosts = NULL;
 	}
@@ -290,10 +292,10 @@ void destroy_host(host *this_host)
 		do {
 			curhost = NULL;
 			g_tree_foreach(this_host->parent_hosts, my_g_tree_visit_pick_one, &curhost);
-			if(curhost) {
+			if (curhost) {
 				remove_parent_from_host(this_host, curhost);
 			}
-		} while(curhost != NULL);
+		} while (curhost != NULL);
 		g_tree_unref(this_host->parent_hosts);
 		this_host->parent_hosts = NULL;
 	}
@@ -308,12 +310,15 @@ void destroy_host(host *this_host)
 	nm_free(this_host->plugin_output);
 	nm_free(this_host->long_plugin_output);
 	nm_free(this_host->perf_data);
+	free_objectlist(&this_host->comments_list);
 	free_objectlist(&this_host->hostgroups_ptr);
 	free_objectlist(&this_host->notify_deps);
 	free_objectlist(&this_host->exec_deps);
 	free_objectlist(&this_host->escalation_list);
 	nm_free(this_host->check_command);
 	nm_free(this_host->event_handler);
+	nm_free(this_host->check_period);
+	nm_free(this_host->notification_period);
 	nm_free(this_host->notes);
 	nm_free(this_host->notes_url);
 	nm_free(this_host->action_url);
@@ -321,6 +326,9 @@ void destroy_host(host *this_host)
 	nm_free(this_host->icon_image_alt);
 	nm_free(this_host->vrml_image);
 	nm_free(this_host->statusmap_image);
+	nm_free(this_host->current_notification_id);
+	nm_free(this_host->last_problem_id);
+	nm_free(this_host->current_problem_id);
 	nm_free(this_host);
 }
 
@@ -490,7 +498,7 @@ static gboolean implode_helper(gpointer _name, gpointer _hst, gpointer user_data
 	return FALSE;
 }
 
-char * implode_hosttree(GTree *tree, char *delimiter)
+char *implode_hosttree(GTree *tree, char *delimiter)
 {
 	char *result;
 	struct implode_parameters params;
@@ -597,11 +605,11 @@ int log_host_event(host *hst)
 		log_options = NSLOG_HOST_UP;
 
 	nm_log(log_options, "HOST ALERT: %s;%s;%s;%d;%s\n",
-				hst->name,
-				host_state_name(hst->current_state),
-				state_type_name(hst->state_type),
-				hst->current_attempt,
-				(hst->plugin_output == NULL) ? "" : hst->plugin_output);
+	       hst->name,
+	       host_state_name(hst->current_state),
+	       state_type_name(hst->state_type),
+	       hst->current_attempt,
+	       (hst->plugin_output == NULL) ? "" : hst->plugin_output);
 
 	return OK;
 }
@@ -618,11 +626,11 @@ int log_host_states(int type, time_t *timestamp)
 
 	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
 		nm_log(NSLOG_INFO_MESSAGE, "%s HOST STATE: %s;%s;%s;%d;%s\n", (type == INITIAL_STATES) ? "INITIAL" : "CURRENT",
-					temp_host->name,
-					host_state_name(temp_host->current_state),
-					state_type_name(temp_host->state_type),
-					temp_host->current_attempt,
-					(temp_host->plugin_output == NULL) ? "" : temp_host->plugin_output);
+		       temp_host->name,
+		       host_state_name(temp_host->current_state),
+		       state_type_name(temp_host->state_type),
+		       temp_host->current_attempt,
+		       (temp_host->plugin_output == NULL) ? "" : temp_host->plugin_output);
 	}
 
 	return OK;

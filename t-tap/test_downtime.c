@@ -39,6 +39,7 @@ int main(int argc, char **argv)
 	time(&now);
 
 	init_event_queue();
+	initialize_comment_data();
 	initialize_downtime_data();
 	init_objects_host(4);
 	init_objects_service(8);
@@ -182,7 +183,7 @@ int main(int argc, char **argv)
 	ok(i == 0, "No downtimes left, Left: %d", i);
 
 	destroy_objects_host();
-	destroy_objects_service();
+	destroy_objects_service(TRUE);
 	destroy_event_queue();
 	cleanup_downtime_data();
 	free_comment_data();

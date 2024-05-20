@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
 #include "naemon/events.h"
 #include "worker.h"
 #include "lib/worker.h"
@@ -237,6 +240,46 @@ static int finish_job(child_process *cp, int reason)
 }
 
 /*
+ * Get the parent PID from a PID
+ */
+static int get_process_parent_id(const pid_t pid, pid_t *ppid)
+{
+	char buffer[BUFSIZ], *s_ppid;
+	int errreading, size;
+	FILE *fp;
+
+	sprintf(buffer, "/proc/%d/stat", pid);
+	fp = fopen(buffer, "r");
+	if (!fp) {
+		return errno;
+	}
+
+	size = fread(buffer, sizeof(char), sizeof(buffer) - 1, fp);
+	if (size > 0) {
+		buffer[size] = '\0';
+	}
+	errreading = ferror(fp);
+	if (fclose(fp) != 0) {
+		return errno;
+	}
+
+	if (errreading != 0) {
+		return errreading;
+	}
+
+	strtok(buffer, " "); // (1) pid  %d
+	strtok(NULL, " "); // (2) comm  %s
+	strtok(NULL, " "); // (3) state  %c
+
+	if ((s_ppid = strtok(NULL, " ")) == NULL) { // (4) ppid  %d
+		return EBADF;
+	}
+
+	*ppid = atoi(s_ppid);
+	return 0;
+}
+
+/*
  * "What can the harvest hope for, if not for the care
  * of the Reaper Man?"
  *   -- Terry Pratchett, Reaper Man
@@ -253,6 +296,7 @@ static void kill_job(struct nm_event_execution_properties *event)
 {
 	child_process *cp = event->user_data;
 	int pid, id, ret, status, reaped = 0;
+	pid_t ppid, wpid;
 
 	g_return_if_fail(cp != NULL);
 	g_return_if_fail(cp->ei != NULL);
@@ -261,6 +305,14 @@ static void kill_job(struct nm_event_execution_properties *event)
 	id = cp->id;
 	if (event->execution_type == EVENT_EXEC_ABORTED) {
 		(void)kill(-cp->ei->pid, SIGKILL);
+		return;
+	}
+	/* check if the child we'r killing belongs to this worker process */
+	wpid = getpid();
+	status = get_process_parent_id(pid, &ppid);
+	if (status != 0 || ppid != wpid) {
+		/* the pid might be reallocated but still exists in child proc list */
+		destroy_job(cp);
 		return;
 	}
 
@@ -337,7 +389,12 @@ static void gather_output(child_process *cp, iobuf *io, int final)
 				/* broken system or no more data. Just return */
 				return;
 			}
-			wlog("job %d (pid=%d): Failed to read(): %s", cp->id, cp->ei->pid, strerror(errno));
+			/* Null pointer check before printing */
+			if (cp && cp->ei) {
+				wlog("job %d (pid=%d): Failed to read(): %s", cp->id, cp->ei->pid, strerror(errno));
+			} else {
+				wlog("Unknown job: Failed to read(): %s", strerror(errno));
+			}
 		}
 
 		/*
@@ -415,7 +472,7 @@ static int start_cmd(child_process *cp)
 {
 	int pfd[2] = { -1, -1}, pfderr[2] = { -1, -1};
 
-	cp->outstd.fd = runcmd_open(cp->cmd, pfd, pfderr, NULL);
+	cp->outstd.fd = runcmd_open(cp->cmd, pfd, pfderr);
 	if (cp->outstd.fd < 0) {
 		return -1;
 	}

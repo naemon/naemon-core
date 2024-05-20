@@ -19,8 +19,6 @@ extern char illegal_output_char_map[256];
 
 extern int log_rotation_method;
 extern int check_external_commands;
-/* set this if you're going to add a ton of comments at once */
-extern int defer_comment_sorting;
 extern unsigned long next_downtime_id;
 
 extern char *object_cache_file;
@@ -322,6 +320,9 @@ NAGIOS_END_DECL
 #define CMD_DEL_DOWNTIME_BY_HOSTGROUP_NAME              171
 #define CMD_DEL_DOWNTIME_BY_START_TIME_COMMENT          172
 
+#define CMD_ACKNOWLEDGE_HOST_PROBLEM_EXPIRE             173
+#define CMD_ACKNOWLEDGE_SVC_PROBLEM_EXPIRE              174
+
 /* custom command introduced in Nagios 3.x */
 #define CMD_CUSTOM_COMMAND                              999
 
@@ -385,7 +386,7 @@ NAGIOS_END_DECL
 #define CHECK_OPTION_NONE		0	/* no check options */
 #define CHECK_OPTION_FORCE_EXECUTION	1	/* force execution of a check (ignores disabled services/hosts, invalid timeperiods) */
 #define CHECK_OPTION_FRESHNESS_CHECK    2       /* this is a freshness check */
-                                     /* 4          used to be CHECK_OPTION_ORPHAN_CHECK, but is no longer used */
+#define CHECK_OPTION_ORPHAN_CHECK       4       /* flag for scheduled checks from orphan event handler */
 #define CHECK_OPTION_DEPENDENCY_CHECK   8       /* dependency check. different scheduling rules apply */
 #define CHECK_OPTION_ALLOW_POSTPONE     16      /* allow the check to take precedence over an earlier (sooner) scheduled check */
 
@@ -470,9 +471,6 @@ NAGIOS_END_DECL
 
 #define MAX_FILENAME_LENGTH			256	/* max length of path/filename that Nagios will process */
 #define MAX_INPUT_BUFFER			1024	/* size in bytes of max. input buffer (for reading files, misc stuff) */
-#define MAX_COMMAND_BUFFER                      8192    /* max length of raw or processed command line */
-#define MAX_EXTERNAL_COMMAND_LENGTH             8192    /* max length of an external command */
-
 #define MAX_DATETIME_LENGTH			48
 
 

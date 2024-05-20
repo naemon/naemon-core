@@ -27,6 +27,7 @@
 
 #include <getopt.h>
 #include <string.h>
+#include <fcntl.h>
 
 static int test_path_access(const char *program, int mode)
 {
@@ -134,6 +135,7 @@ int main(int argc, char **argv)
 	nagios_macros *mac;
 	const char *worker_socket = NULL;
 	int i;
+	struct kvvec *global_store;
 
 #ifdef HAVE_GETOPT_H
 	int option_index = 0;
@@ -222,9 +224,14 @@ int main(int argc, char **argv)
 	 * other domains (such as if we did g_message(...) ourselves from inside
 	 * Naemon) do not currently go to this handler.
 	 **/
-	g_log_set_handler("GLib", G_LOG_LEVEL_MASK | G_LOG_FLAG_FATAL |
-			G_LOG_FLAG_RECURSION, nm_g_log_handler, NULL);
+	nm_g_log_handler_id = g_log_set_handler("GLib", G_LOG_LEVEL_MASK | G_LOG_FLAG_FATAL |
+	                                        G_LOG_FLAG_RECURSION, nm_g_log_handler, NULL);
 	mac = get_global_macros();
+
+	global_store = get_global_store();
+	if (global_store && !kvvec_init(global_store, 0)) {
+		exit(ERROR);
+	}
 
 	/* if we're a worker we can skip everything below */
 	if (worker_socket) {
@@ -237,7 +244,7 @@ int main(int argc, char **argv)
 		printf("Copyright (c) 2009-2013 Nagios Core Development Team and Community Contributors\n");
 		printf("Copyright (c) 1999-2009 Ethan Galstad\n");
 		printf("License: GPL\n\n");
-		printf("Website: http://www.naemon.org\n");
+		printf("Website: https://www.naemon.io\n");
 	}
 
 	/* just display the license */
@@ -277,7 +284,7 @@ int main(int argc, char **argv)
 		printf("  -W, --worker /path/to/socket Act as a worker for an already running daemon\n");
 		printf("  --allow-root                 Let naemon run as root. THIS IS NOT RECOMMENDED AT ALL.\n");
 		printf("\n");
-		printf("Visit the Naemon website at http://www.naemon.org/ for bug fixes, new\n");
+		printf("Visit the Naemon website at https://www.naemon.io/ for bug fixes, new\n");
 		printf("releases, online documentation, FAQs and more...\n");
 		printf("\n");
 
@@ -408,6 +415,7 @@ int main(int argc, char **argv)
 		}
 
 		/* clean up after ourselves */
+		timing_point("Cleaning up\n");
 		cleanup();
 
 		/* exit */
@@ -441,13 +449,13 @@ int main(int argc, char **argv)
 	}
 
 	/* keep monitoring things until we get a shutdown command */
+	sigshutdown = sigrestart = FALSE;
 	do {
 		/* reset internal book-keeping (in case we're restarting) */
 		wproc_num_workers_spawned = wproc_num_workers_online = 0;
-		sigshutdown = sigrestart = FALSE;
 
 		/* reset program variables */
-		timing_point("Reseting variables\n");
+		timing_point("Resetting variables\n");
 		reset_variables();
 		timing_point("Reset variables\n");
 
@@ -578,6 +586,10 @@ int main(int argc, char **argv)
 		}
 		timing_point("Loaded modules\n");
 
+		/* close stdin after the neb modules loaded so they can still ask for passwords */
+		if (daemon_mode == TRUE && sigrestart == FALSE)
+			close_standard_fds();
+
 		timing_point("Making first callback\n");
 		broker_program_state(NEBTYPE_PROCESS_PRELAUNCH, NEBFLAG_NONE, NEBATTR_NONE);
 		timing_point("Made first callback\n");
@@ -626,6 +638,11 @@ int main(int argc, char **argv)
 		initialize_downtime_data();
 		timing_point("Initialized downtime data\n");
 
+		/* initialize comment data */
+		timing_point("Initializing comment data\n");
+		initialize_comment_data();
+		timing_point("Initialized comment data\n");
+
 		/* read initial service and host state information  */
 		timing_point("Initializing retention data\n");
 		initialize_retention_data();
@@ -634,11 +651,8 @@ int main(int argc, char **argv)
 		timing_point("Reading initial state information\n");
 		read_initial_state_information();
 		timing_point("Read initial state information\n");
-
-		/* initialize comment data */
-		timing_point("Initializing comment data\n");
-		initialize_comment_data();
-		timing_point("Initialized comment data\n");
+		timing_point("Restored %d downtimes\n", number_of_downtimes());
+		timing_point("Restored %d comments\n", number_of_comments());
 
 		/* initialize performance data */
 		timing_point("Initializing performance data\n");
@@ -666,9 +680,6 @@ int main(int argc, char **argv)
 		log_service_states(INITIAL_STATES, NULL);
 		timing_point("Logged initial states\n");
 
-		/* reset the restart flag */
-		sigrestart = FALSE;
-
 		registered_commands_init(200);
 		register_core_commands();
 		/* fire up command file worker */
@@ -695,6 +706,7 @@ int main(int argc, char **argv)
 		timing_point("Entering event execution loop\n");
 		/***** start monitoring all services *****/
 		/* (doesn't return until a restart or shutdown signal is encountered) */
+		sigshutdown = sigrestart = FALSE;
 		event_execution_loop();
 
 		/*

@@ -40,7 +40,7 @@ distclean-local:
 CLEANFILES += t-tap/smallconfig/naemon.log
 EXTRA_DIST += t-tap/smallconfig/minimal.cfg t-tap/smallconfig/naemon.cfg \
 	t-tap/smallconfig/resource.cfg t-tap/smallconfig/retention.dat
-EXTRA_DIST += tests/configs/recursive tests/configs/services tests/configs/includes
+EXTRA_DIST += tests/configs/recursive tests/configs/services tests/configs/inc
 EXTRA_DIST += $(dist_check_SCRIPTS)
 EXTRA_DIST += t/etc/* t/var/*
 TESTS_ENVIRONMENT = \
@@ -80,10 +80,20 @@ tests_test_scheduled_downtimes_LDADD = $(TESTSLDADD)
 tests_test_scheduled_downtimes_LDFLAGS = $(TESTSLDFLAGS)
 tests_test_scheduled_downtimes_CPPFLAGS = $(TESTSCPPFLAGS)
 
-tests_test_check_scheduling = tests/test-check-scheduling.c
+tests_test_check_scheduling_SOURCES = tests/test-check-scheduling.c
 tests_test_check_scheduling_LDADD =  $(TESTSLDADD)
 tests_test_check_scheduling_LDFLAGS = $(TESTSLDFLAGS)
 tests_test_check_scheduling_CPPFLAGS = $(TESTSCPPFLAGS)
+
+tests_test_check_dependencies_SOURCES = tests/test-check-dependencies.c
+tests_test_check_dependencies_LDADD =  $(TESTSLDADD)
+tests_test_check_dependencies_LDFLAGS = $(TESTSLDFLAGS)
+tests_test_check_dependencies_CPPFLAGS = $(TESTSCPPFLAGS)
+
+tests_test_query_handler_SOURCES = tests/test-query-handler.c
+tests_test_query_handler_LDADD =  $(TESTSLDADD)
+tests_test_query_handler_LDFLAGS = $(TESTSLDFLAGS)
+tests_test_query_handler_CPPFLAGS = $(TESTSCPPFLAGS)
 
 tests_test_arith_SOURCES = tests/test-arith.c
 tests_test_arith_LDADD =  $(TESTSLDADD)
@@ -163,6 +173,8 @@ check_PROGRAMS += \
 	tests/test-check-result-processing \
 	tests/test-scheduled-downtimes \
 	tests/test-check-scheduling \
+	tests/test-check-dependencies \
+	tests/test-query-handler \
 	tests/test-obj-config-parse \
 	tests/test-utils \
 	tests/test-log \

@@ -14,7 +14,7 @@ hostgroup **hostgroup_ary = NULL;
 
 int init_objects_hostgroup(int elems)
 {
-	hostgroup_ary = nm_calloc(elems, sizeof(hostgroup*));
+	hostgroup_ary = nm_calloc(elems, sizeof(hostgroup *));
 	hostgroup_hash_table = g_hash_table_new(g_str_hash, g_str_equal);
 	return OK;
 }
@@ -27,7 +27,7 @@ void destroy_objects_hostgroup()
 		destroy_hostgroup(this_hostgroup);
 	}
 	hostgroup_list = NULL;
-	if(hostgroup_hash_table)
+	if (hostgroup_hash_table)
 		g_hash_table_destroy(hostgroup_hash_table);
 
 	hostgroup_hash_table = NULL;
@@ -58,7 +58,7 @@ hostgroup *create_hostgroup(const char *name, const char *alias, const char *not
 	new_hostgroup->notes = notes ? nm_strdup(notes) : NULL;
 	new_hostgroup->notes_url = notes_url ? nm_strdup(notes_url) : NULL;
 	new_hostgroup->action_url = action_url ? nm_strdup(action_url) : NULL;
-	new_hostgroup->members = g_tree_new_full((GCompareDataFunc)g_strcmp0, NULL, g_free, NULL);
+	new_hostgroup->members = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
 
 	return new_hostgroup;
 }
@@ -85,7 +85,8 @@ int register_hostgroup(hostgroup *new_hostgroup)
 	return OK;
 }
 
-static gboolean my_g_tree_visit_pick_one(gpointer key, gpointer value, gpointer data) {
+static gboolean my_g_tree_visit_pick_one(gpointer key, gpointer value, gpointer data)
+{
 	gpointer *outptr = (gpointer *)data;
 	*outptr = value;
 	return TRUE; /* Stop traversal */
@@ -101,10 +102,10 @@ void destroy_hostgroup(hostgroup *this_hostgroup)
 		do {
 			curhost = NULL;
 			g_tree_foreach(this_hostgroup->members, my_g_tree_visit_pick_one, &curhost);
-			if(curhost) {
+			if (curhost) {
 				remove_host_from_hostgroup(this_hostgroup, curhost);
 			}
-		} while(curhost != NULL);
+		} while (curhost != NULL);
 		g_tree_unref(this_hostgroup->members);
 	}
 	this_hostgroup->members = NULL;
@@ -139,9 +140,8 @@ int remove_host_from_hostgroup(hostgroup *temp_hostgroup, host *h)
 {
 	objectlist *item, *next, *prev;
 	for (prev = NULL, item = h->hostgroups_ptr;
-		 item;
-		 prev = item, item = next)
-	{
+	     item;
+	     prev = item, item = next) {
 		next = item->next;
 		if (item->object_ptr == temp_hostgroup) {
 			if (prev)

@@ -13,7 +13,7 @@
 
 static void update_all_status_data_eventhandler(struct nm_event_execution_properties *evprop)
 {
-	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
+	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/*
 		 * if status data updates are turned off we reschedule
 		 * with a short interval to avoid hammering the scheduling
@@ -32,7 +32,7 @@ static void update_all_status_data_eventhandler(struct nm_event_execution_proper
 
 static void update_status_data_eventhandler(struct nm_event_execution_properties *evprop)
 {
-	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
+	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* Reschedule, so it becomes recurring */
 		schedule_event(5, update_status_data_eventhandler, NULL);
 		update_program_status(FALSE);

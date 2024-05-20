@@ -41,7 +41,7 @@ static void obsoleted_warning(const char *key, const char *msg)
 {
 	char *buf;
 	nm_asprintf(&buf, "Warning: %s is deprecated and will be removed.%s%s\n",
-	         key, msg ? " " : "", msg ? msg : "");
+	            key, msg ? " " : "", msg ? msg : "");
 	prepend_object_to_objectlist(&deprecated, buf);
 }
 
@@ -239,9 +239,9 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		}
 
 		else if (!strcmp(variable, "nagios_user") ||
-				!strcmp(variable, "naemon_user") ||
-				!strcmp(variable, "nagios_group") ||
-				!strcmp(variable, "naemon_group")) {
+		         !strcmp(variable, "naemon_user") ||
+		         !strcmp(variable, "nagios_group") ||
+		         !strcmp(variable, "naemon_group")) {
 			obsoleted_warning(variable, "Naemon is compiled to be run as " NAEMON_USER ":" NAEMON_GROUP);
 		}
 
@@ -279,8 +279,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			}
 
 			log_notifications = (atoi(value) > 0) ? TRUE : FALSE;
-		}
-		else if (!strcmp(variable, "enable_notification_suppression_reason_logging")) {
+		} else if (!strcmp(variable, "enable_notification_suppression_reason_logging")) {
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
 				nm_asprintf(&error_message, "Illegal value for enable_notification_suppression_reason_logging");
 				error = TRUE;
@@ -289,8 +288,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 
 			enable_notification_suppression_reason_logging = (atoi(value) > 0) ? TRUE : FALSE;
 
-		}
-		else if (!strcmp(variable, "log_service_retries")) {
+		} else if (!strcmp(variable, "log_service_retries")) {
 
 			if (strlen(value) != 1 || value[0] < '0' || value[0] > '1') {
 				nm_asprintf(&error_message, "Illegal value for log_service_retries");
@@ -408,6 +406,16 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			}
 
 			use_retained_scheduling_info = (atoi(value) > 0) ? TRUE : FALSE;
+		}
+
+		else if (!strcmp(variable, "retained_scheduling_randomize_window")) {
+
+			retained_scheduling_randomize_window = atoi(value);
+			if (retained_scheduling_randomize_window < 0) {
+				nm_asprintf(&error_message, "Illegal value for retained_scheduling_randomize_window");
+				error = TRUE;
+				break;
+			}
 		}
 
 		else if (!strcmp(variable, "retention_scheduling_horizon")) {
@@ -989,7 +997,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			add_object_to_objectlist(&objcfg_dirs, nspath_absolute(value, config_file_dir));
 		} else if (!strcmp(variable, "include_file")) {
 			char *include_file = nspath_absolute(value, config_file_dir);
-			if (prepend_unique_object_to_objectlist(&maincfg_files, include_file, (int (*)(const void *, const void*))strcmp) == OBJECTLIST_DUPE) {
+			if (prepend_unique_object_to_objectlist(&maincfg_files, include_file, (int (*)(const void *, const void *))strcmp) == OBJECTLIST_DUPE) {
 				error = TRUE;
 				nm_asprintf(&error_message, "Error: File %s explicitly included more than once", include_file);
 				break;
@@ -1001,7 +1009,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			DIR *dirp = NULL;
 			struct dirent *dirfile = NULL;
 
-			if (prepend_unique_object_to_objectlist(&maincfg_dirs, include_dir, (int (*)(const void *, const void*))strcmp) == OBJECTLIST_DUPE) {
+			if (prepend_unique_object_to_objectlist(&maincfg_dirs, include_dir, (int (*)(const void *, const void *))strcmp) == OBJECTLIST_DUPE) {
 				error = TRUE;
 				nm_asprintf(&error_message, "Error: Directory %s explicitly included more than once", include_dir);
 				break;
@@ -1013,6 +1021,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 				break;
 			} else {
 				while ((dirfile = readdir(dirp)) != NULL) {
+					int written_size;
 					char file[MAX_FILENAME_LENGTH];
 
 					/* skip hidden files and directories, current and parent dir, and non-config files */
@@ -1022,16 +1031,29 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 						continue;
 
 					/* create /path/to/file */
-					snprintf(file, sizeof(file), "%s/%s", include_dir, dirfile->d_name);
+					written_size = snprintf(file, sizeof(file), "%s/%s", include_dir, dirfile->d_name);
 					file[sizeof(file) - 1] = '\x0';
+
+					/* Check for encoding errors */
+					if (written_size < 0) {
+						nm_log(NSLOG_RUNTIME_WARNING,
+						       "Warning: encoding error on config file path '`%s'.\n", file);
+						continue;
+					}
+
+					/* Check if the filename was truncated. */
+					if (written_size > 0 && (size_t)written_size >= sizeof(file)) {
+						nm_log(NSLOG_RUNTIME_WARNING,
+						       "Warning: truncated path to config file '%s'.\n", file);
+						continue;
+					}
 
 					error |= read_config_file(file, mac);
 				}
 				closedir(dirp);
 			}
 			nm_free(include_dir);
-		}
-		else if (strstr(input, "object_cache_file=") == input) {
+		} else if (strstr(input, "object_cache_file=") == input) {
 			nm_free(object_cache_file);
 			object_cache_file = nspath_absolute(value, config_file_dir);
 			nm_free(mac->x[MACRO_OBJECTCACHEFILE]);
@@ -1041,6 +1063,33 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			object_precache_file = nspath_absolute(value, config_file_dir);
 		} else if (!strcmp(variable, "allow_empty_hostgroup_assignment")) {
 			allow_empty_hostgroup_assignment = (atoi(value) > 0) ? TRUE : FALSE;
+		} else if (!strcmp(variable, "allow_circular_dependencies")) {
+			allow_circular_dependencies = atoi(value);
+		} else if (!strcmp(variable, "host_down_disable_service_checks")) {
+			host_down_disable_service_checks = strtoul(value, NULL, 0);
+		} else if (!strcmp(variable, "service_parents_disable_service_checks")) {
+			service_parents_disable_service_checks = strtoul(value, NULL, 0);
+		} else if (!strcmp(variable, "service_skip_check_dependency_status")) {
+			service_skip_check_dependency_status = atoi(value);
+			if (service_skip_check_dependency_status < -2 || service_skip_check_dependency_status > 3) {
+				nm_asprintf(&error_message, "Illegal value for service_skip_check_dependency_status");
+				error = TRUE;
+				break;
+			}
+		} else if (!strcmp(variable, "service_skip_check_host_down_status")) {
+			service_skip_check_host_down_status = atoi(value);
+			if (service_skip_check_host_down_status < -2 || service_skip_check_host_down_status > 3) {
+				nm_asprintf(&error_message, "Illegal value for service_skip_check_host_down_status");
+				error = TRUE;
+				break;
+			}
+		} else if (!strcmp(variable, "host_skip_check_dependency_status")) {
+			host_skip_check_dependency_status = atoi(value);
+			if (host_skip_check_dependency_status < -2 || host_skip_check_dependency_status > 3) {
+				nm_asprintf(&error_message, "Illegal value for host_skip_check_dependency_status");
+				error = TRUE;
+				break;
+			}
 		}
 		/* skip external data directives */
 		else if (strstr(input, "x") == input)
@@ -1268,7 +1317,9 @@ int pre_flight_check(void)
 	/********************************************/
 	/* check for circular paths between hosts   */
 	/********************************************/
-	pre_flight_circular_check(&warnings, &errors);
+	if (!allow_circular_dependencies) {
+		pre_flight_circular_check(&warnings, &errors);
+	}
 
 	/********************************************/
 	/* check global event handler commands...   */
@@ -1555,7 +1606,7 @@ int pre_flight_object_check(int *w, int *e)
  * parents.
  */
 /*
- * same as dfs_host_path, but we flip the the tree and traverse it
+ * same as dfs_host_path, but we flip the tree and traverse it
  * backwards, since core Nagios doesn't need the child pointer at
  * later stages.
  */
@@ -1580,8 +1631,7 @@ static int dfs_servicedep_path(char *ary, servicedependency *root)
 		       root->dependent_host_name, root->dependent_service_description,
 		       root->master_service_ptr->host_name, root->master_service_ptr->description);
 		return 1;
-	}
-	else if (ary[root->id] != DFS_UNCHECKED)
+	} else if (ary[root->id] != DFS_UNCHECKED)
 		return ary[root->id] != DFS_OK;
 
 
@@ -1624,8 +1674,7 @@ static int dfs_hostdep_path(char *ary, hostdependency *root)
 		       root->dependent_host_name,
 		       root->master_host_ptr->name);
 		return 1;
-	}
-	else if (ary[root->id] != DFS_UNCHECKED)
+	} else if (ary[root->id] != DFS_UNCHECKED)
 		return ary[root->id] != DFS_OK;
 
 	ary[root->id] = DFS_TEMP_CHECKED;
@@ -1653,7 +1702,8 @@ static int dfs_hostdep_path(char *ary, hostdependency *root)
 	return ary[root->id] != DFS_OK;
 }
 
-static gboolean dfs_host_path_cb(gpointer _name, gpointer _hst, gpointer user_data) {
+static gboolean dfs_host_path_cb(gpointer _name, gpointer _hst, gpointer user_data)
+{
 	return 0 != dfs_host_path((host *)_hst, (struct dfs_parameters *)user_data);
 }
 
@@ -1666,13 +1716,12 @@ static int dfs_host_path(host *root, struct dfs_parameters *params)
 
 	if (ary[root->id] == DFS_TEMP_CHECKED) {
 		nm_log(
-			NSLOG_VERIFICATION_ERROR,
-			"Error: The host '%s' is part of a circular parent/child chain!",
-			root->name);
+		    NSLOG_VERIFICATION_ERROR,
+		    "Error: The host '%s' is part of a circular parent/child chain!",
+		    root->name);
 		(*errors)++;
 		return 0;
-	}
-	else if (ary[root->id] != DFS_UNCHECKED) {
+	} else if (ary[root->id] != DFS_UNCHECKED) {
 		if (ary[root->id] != DFS_OK)
 			(*errors)++;
 		return 0;
@@ -1703,8 +1752,7 @@ static int dfs_timeperiod_path(char *ary, timeperiod *root)
 		nm_log(NSLOG_VERIFICATION_ERROR, "Error: The timeperiod '%s' is part of a circular exclusion chain!",
 		       root->name);
 		return 1;
-	}
-	else if (ary[root->id] != DFS_UNCHECKED)
+	} else if (ary[root->id] != DFS_UNCHECKED)
 		return ary[root->id] != DFS_OK;
 
 	/* Mark the root temporary checked */

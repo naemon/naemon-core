@@ -16,7 +16,7 @@ CONTENTS:
 
 naemon.cfg       - This is a sample main config file
 
-resource.cfg     - This is a sample resource config file, used for definining
+resource.cfg     - This is a sample resource config file, used for defining
                    custom macros, storing sensitive data, etc.
 
 templates/       - This directory contains sample object config files. You'll

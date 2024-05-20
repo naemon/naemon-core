@@ -140,6 +140,10 @@ struct iobroker_set *iobroker_create(void)
 	}
 
 	iobs->max_fds = iobroker_max_usable_fds();
+	/* add sane max limit, if ulimit is set to unlimited or a very high value we
+	 * don't want to waste memory for nothing */
+	if (iobs->max_fds > MAX_FD_LIMIT)
+		iobs->max_fds = MAX_FD_LIMIT;
 	iobs->iobroker_fds = calloc(iobs->max_fds, sizeof(iobroker_fd *));
 	if (!iobs->iobroker_fds) {
 		goto error_out;
@@ -350,10 +354,10 @@ int iobroker_poll(iobroker_set *iobs, int timeout)
 
 #if defined(IOBROKER_USES_EPOLL)
 	nfds = epoll_wait(iobs->epfd, iobs->ep_events,
-			/* to gain consistent "idling" behaviour with the other mechanisms,
-			 * we avoid returning immediately here by "faking" maxevents */
-			!iobs->num_fds ? 1 : iobs->num_fds,
-			timeout);
+	                  /* to gain consistent "idling" behaviour with the other mechanisms,
+	                   * we avoid returning immediately here by "faking" maxevents */
+	                  !iobs->num_fds ? 1 : iobs->num_fds,
+	                  timeout);
 	if (nfds < 0) {
 		return IOBROKER_ELIB;
 	}

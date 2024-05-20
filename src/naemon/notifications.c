@@ -16,6 +16,7 @@
 #include "nm_alloc.h"
 #include <string.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 
 struct notification_job {
 	host *hst;
@@ -23,8 +24,8 @@ struct notification_job {
 	contact *ctc;
 };
 
-static notification * create_notification_list_from_host(nagios_macros *mac, host *hst, int options, int *escalated, int type);
-static notification * create_notification_list_from_service(nagios_macros *mac, service *svc, int options, int *escalated, int type);
+static notification *create_notification_list_from_host(nagios_macros *mac, host *hst, int options, int *escalated, int type);
+static notification *create_notification_list_from_service(nagios_macros *mac, service *svc, int options, int *escalated, int type);
 static int add_notification(notification **notification_list, nagios_macros *mac, contact *);						/* adds a notification instance */
 
 static void free_notification_list(notification *notification_list)
@@ -57,33 +58,33 @@ static contact *find_contact_by_name_or_alias(const char *name)
 const char *notification_reason_name(enum NotificationReason reason)
 {
 	switch (reason) {
-		case NOTIFICATION_NORMAL:
-			return "NORMAL";
-			break;
-		case NOTIFICATION_ACKNOWLEDGEMENT:
-			return "ACKNOWLEDGEMENT";
-			break;
-		case NOTIFICATION_FLAPPINGSTART:
-			return "FLAPPINGSTART";
-			break;
-		case NOTIFICATION_FLAPPINGSTOP:
-			return "FLAPPINGSTOP";
-			break;
-		case NOTIFICATION_FLAPPINGDISABLED:
-			return "FLAPPINGDISABLED";
-			break;
-		case NOTIFICATION_DOWNTIMESTART:
-			return "DOWNTIMESTART";
-			break;
-		case NOTIFICATION_DOWNTIMEEND:
-			return "DOWNTIMEEND";
-			break;
-		case NOTIFICATION_DOWNTIMECANCELLED:
-			return "DOWNTIMECANCELLED";
-			break;
-		case NOTIFICATION_CUSTOM:
-			return "CUSTOM";
-			break;
+	case NOTIFICATION_NORMAL:
+		return "NORMAL";
+		break;
+	case NOTIFICATION_ACKNOWLEDGEMENT:
+		return "ACKNOWLEDGEMENT";
+		break;
+	case NOTIFICATION_FLAPPINGSTART:
+		return "FLAPPINGSTART";
+		break;
+	case NOTIFICATION_FLAPPINGSTOP:
+		return "FLAPPINGSTOP";
+		break;
+	case NOTIFICATION_FLAPPINGDISABLED:
+		return "FLAPPINGDISABLED";
+		break;
+	case NOTIFICATION_DOWNTIMESTART:
+		return "DOWNTIMESTART";
+		break;
+	case NOTIFICATION_DOWNTIMEEND:
+		return "DOWNTIMEEND";
+		break;
+	case NOTIFICATION_DOWNTIMECANCELLED:
+		return "DOWNTIMECANCELLED";
+		break;
+	case NOTIFICATION_CUSTOM:
+		return "CUSTOM";
+		break;
 	}
 	nm_log(NSLOG_RUNTIME_ERROR, "Unhandled notification reason: %d", reason);
 	return NULL;
@@ -96,7 +97,7 @@ const char *notification_reason_name(enum NotificationReason reason)
  * Returns TRUE if the new reason is an update, and FALSE if it is not.
  */
 static int update_notification_suppression_reason(enum NotificationSuppressionType type, unsigned int obj_id,
-		enum NotificationSuppressionReason reason)
+        enum NotificationSuppressionReason reason)
 {
 	/*
 	 * NOTE:
@@ -115,10 +116,10 @@ static int update_notification_suppression_reason(enum NotificationSuppressionTy
 	new_count = obj_id + 1;
 	if (nsr_map[type].count < new_count) {
 		nsr_map[type].reasons = nm_realloc(nsr_map[type].reasons,
-				new_count * sizeof(reason));
+		                                   new_count * sizeof(reason));
 
 		memset(nsr_map[type].reasons + nsr_map[type].count, (int) NSR_OK,
-				(new_count - nsr_map[type].count) * sizeof(reason));
+		       (new_count - nsr_map[type].count) * sizeof(reason));
 		nsr_map[type].count = new_count;
 	}
 
@@ -132,9 +133,9 @@ static int update_notification_suppression_reason(enum NotificationSuppressionTy
 #define _log_nsr(S) if (enable_notification_suppression_reason_logging) { \
 	if (update_notification_suppression_reason(type, objid, reason)) { \
 		nm_log(log_level, "%s NOTIFICATION SUPPRESSED: %s;%s", type_name, objname, S); \
-	} else { log_debug_info(DEBUGL_NOTIFICATIONS, DEBUGV_BASIC, "%s NOTIFICATION SUPPRESSED: %s;%s", type_name, objname, S);}}
+	} else { log_debug_info(DEBUGL_NOTIFICATIONS, DEBUGV_BASIC, "%s NOTIFICATION SUPPRESSED: %s;%s\n", type_name, objname, S);}}
 void log_notification_suppression_reason(enum NotificationSuppressionReason reason,
-		enum NotificationSuppressionType type, void *primary_obj, void *secondary_obj, const char *extra_info)
+        enum NotificationSuppressionType type, void *primary_obj, void *secondary_obj, const char *extra_info)
 {
 	char *objname = NULL;
 	char *type_name = NULL;
@@ -160,10 +161,10 @@ void log_notification_suppression_reason(enum NotificationSuppressionReason reas
 		break;
 	case NS_TYPE_SERVICE_CONTACT:
 		nm_asprintf(&objname, "%s;%s;%s",
-				((contact *)primary_obj)->name,
-				((service *)secondary_obj)->host_name,
-				((service *)secondary_obj)->description
-				);
+		            ((contact *)primary_obj)->name,
+		            ((service *)secondary_obj)->host_name,
+		            ((service *)secondary_obj)->description
+		           );
 		objid = ((contact *)primary_obj)->id;
 		type_name = "SERVICE CONTACT";
 		log_level = NSLOG_SERVICE_NOTIFICATION;
@@ -171,9 +172,9 @@ void log_notification_suppression_reason(enum NotificationSuppressionReason reas
 		break;
 	case NS_TYPE_HOST_CONTACT:
 		nm_asprintf(&objname, "%s;%s",
-				((contact *)primary_obj)->name,
-				((host *)secondary_obj)->name
-				);
+		            ((contact *)primary_obj)->name,
+		            ((host *)secondary_obj)->name
+		           );
 		objid = ((contact *)primary_obj)->id;
 		type_name = "HOST CONTACT";
 		log_level = NSLOG_HOST_NOTIFICATION;
@@ -251,14 +252,13 @@ void log_notification_suppression_reason(enum NotificationSuppressionReason reas
 	case NSR_RE_NOT_YET:
 		_log_nsr("Re-notification blocked for this problem because not enough time has passed since last notification.");
 		break;
-	case NSR_NEB_BLOCKED:
-		{
-			char *s = NULL;
-			nm_asprintf(&s, "Notification was blocked by a NEB module. %s", extra_info);
-			_log_nsr(s);
-			nm_free(s);
-		}
-		break;
+	case NSR_NEB_BLOCKED: {
+		char *s = NULL;
+		nm_asprintf(&s, "Notification was blocked by a NEB module. %s", extra_info);
+		_log_nsr(s);
+		nm_free(s);
+	}
+	break;
 	case NSR_BAD_PARENTS:
 		_log_nsr("Notification blocked because this object is unreachable - its parents are down.");
 		break;
@@ -284,11 +284,12 @@ void log_notification_suppression_reason(enum NotificationSuppressionReason reas
 #define LOG_SERVICE_NSR_NEB_BLOCKED(NSR, NEB_CB_DESCRIPTION) log_notification_suppression_reason(NSR, NS_TYPE_SERVICE, svc, NULL, NEB_CB_DESCRIPTION);
 #define LOG_HOST_NSR_NEB_BLOCKED(NSR, NEB_CB_DESCRIPTION) log_notification_suppression_reason(NSR, NS_TYPE_HOST, hst, NULL, NEB_CB_DESCRIPTION);
 
-static void notification_handle_job_result(struct wproc_result *wpres, void *data, int flags) {
-	struct notification_job *nj = (struct notification_job*)data;
+static void notification_handle_job_result(struct wproc_result *wpres, void *data, int flags)
+{
+	struct notification_job *nj = (struct notification_job *)data;
 	if (wpres) {
 		if (wpres->early_timeout) {
-			if(nj->svc) {
+			if (nj->svc) {
 				nm_log(NSLOG_RUNTIME_WARNING, "Warning: Timeout while notifying contact '%s' of service '%s' on host '%s' by command '%s'\n",
 				       nj->ctc->name, nj->svc->description,
 				       nj->hst->name, wpres->command);
@@ -317,14 +318,14 @@ static void notification_handle_job_result(struct wproc_result *wpres, void *dat
 				code = WEXITSTATUS(wpres->wait_status);
 			}
 			nm_log(NSLOG_RUNTIME_WARNING,
-			      "Warning: Notification command for contact '%s' about %s '%s' %s %i. stdout: '%s', stderr: '%s'",
-			      nj->ctc->name,
-			      objecttype,
-			      objectname,
-			      reason,
-			      code,
-			      wpres->outstd && wpres->outstd[0] ? wpres->outstd : "(empty)",
-			      wpres->outerr && wpres->outerr[0] ? wpres->outerr : "(empty)");
+			       "Warning: Notification command for contact '%s' about %s '%s' %s %i. stdout: '%s', stderr: '%s'",
+			       nj->ctc->name,
+			       objecttype,
+			       objectname,
+			       reason,
+			       code,
+			       wpres->outstd && wpres->outstd[0] ? wpres->outstd : "(empty)",
+			       wpres->outerr && wpres->outerr[0] ? wpres->outerr : "(empty)");
 			free(objectname);
 		}
 	}
@@ -358,7 +359,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	time(&current_time);
 	gettimeofday(&start_time, NULL);
 
-	log_debug_info(DEBUGL_NOTIFICATIONS, 0, "** Service Notification Attempt ** Host: '%s', Service: '%s', Type: %s, Options: %d, Current State: %d, Last Notification: %s", svc->host_name, svc->description, notification_reason_name(type), options, svc->current_state, ctime(&svc->last_notification));
+	log_debug_info(DEBUGL_NOTIFICATIONS, 0, "** Service Notification Attempt ** Host: '%s', Service: '%s', Type: %s, Options: %d, Current State: %d, Last Notification: %s\n", svc->host_name, svc->description, notification_reason_name(type), options, svc->current_state, ctime(&svc->last_notification));
 
 
 	/* check the viability of sending out a service notification */
@@ -379,9 +380,9 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 		if (rc == NEBERROR_CALLBACKCANCEL || rc == NEBERROR_CALLBACKOVERRIDE) {
 			char *description = NULL;
 			nm_asprintf(&description, "Module '%s' %s: '%s'",
-					neb_cb_result_module_name(neb_result),
-					rc == NEBERROR_CALLBACKCANCEL ? "cancelled notification" : "overrode notification",
-					neb_cb_result_description(neb_result));
+			            neb_cb_result_module_name(neb_result),
+			            rc == NEBERROR_CALLBACKCANCEL ? "cancelled notification" : "overrode notification",
+			            neb_cb_result_description(neb_result));
 			LOG_SERVICE_NSR_NEB_BLOCKED(NSR_NEB_BLOCKED, description);
 			nm_free(description);
 			neb_cb_resultset_destroy(neb_resultset);
@@ -399,8 +400,8 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Current notification number: %d (%s)\n", svc->current_notification_number, (increment_notification_number == TRUE) ? "incremented" : "changed");
 
 	/* save and increase the current notification id */
-	svc->current_notification_id = next_notification_id;
-	next_notification_id++;
+	nm_free(svc->current_notification_id);
+	svc->current_notification_id = g_uuid_string_random();
 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Creating list of contacts to be notified.\n");
 
@@ -463,11 +464,9 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 		/* set the notification type macro */
 		if (type != NOTIFICATION_NORMAL) {
 			mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup(notification_reason_name(type));
-		}
-		else if (svc->current_state == STATE_OK) {
+		} else if (svc->current_state == STATE_OK) {
 			mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup("RECOVERY");
-		}
-		else {
+		} else {
 			mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup("PROBLEM");
 		}
 
@@ -479,7 +478,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 		mac.x[MACRO_NOTIFICATIONNUMBER] = nm_strdup(mac.x[MACRO_SERVICENOTIFICATIONNUMBER]);
 
 		/* set the notification id macro */
-		nm_asprintf(&mac.x[MACRO_SERVICENOTIFICATIONID], "%lu", svc->current_notification_id);
+		nm_asprintf(&mac.x[MACRO_SERVICENOTIFICATIONID], "%s", svc->current_notification_id);
 
 		/* notify each contact (duplicates have been removed) */
 		for (temp_notification = notification_list; temp_notification != NULL; temp_notification = temp_notification->next) {
@@ -532,13 +531,14 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 				/* calculate the next acceptable re-notification time */
 				svc->next_notification = get_next_service_notification_time(svc, current_time);
 
-				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "%d contacts were notified.  Next possible notification time: %s", contacts_notified, ctime(&svc->next_notification));
+				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "%d contacts were notified.  Next possible notification time: %s\n", contacts_notified, ctime(&svc->next_notification));
 
 				/* update the last notification time for this service (this is needed for rescheduling later notifications) */
 				svc->last_notification = current_time;
 
 				/* update notifications flags */
 				add_notified_on(svc, svc->current_state);
+				svc->last_update = current_time;
 			}
 
 			/* we didn't end up notifying anyone */
@@ -547,7 +547,8 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 				/* adjust current notification number */
 				svc->current_notification_number--;
 
-				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "No contacts were notified.  Next possible notification time: %s", ctime(&svc->next_notification));
+				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "No contacts were notified.  Next possible notification time: %s\n", ctime(&svc->next_notification));
+				svc->last_update = current_time;
 			}
 		}
 
@@ -607,18 +608,6 @@ int check_service_notification_viability(service *svc, int type, int options)
 
 	temp_host = svc->host_ptr;
 
-	/* if all parents are bad (usually just one), we shouldn't notify */
-	if (svc->parents) {
-		sm = svc->parents;
-		while ( sm && sm->service_ptr->current_state != STATE_OK) {
-			sm = sm->next;
-		}
-		if (sm == NULL) {
-			LOG_SERVICE_NSR(NSR_BAD_PARENTS);
-			return ERROR;
-		}
-	}
-
 	/* if the service has no notification period, inherit one from the host */
 	temp_period = svc->notification_period_ptr;
 	if (temp_period == NULL) {
@@ -668,7 +657,6 @@ int check_service_notification_viability(service *svc, int type, int options)
 	}
 
 
-
 	/****************************************/
 	/*** SPECIAL CASE FOR ACKNOWLEGEMENTS ***/
 	/****************************************/
@@ -685,7 +673,6 @@ int check_service_notification_viability(service *svc, int type, int options)
 		/* acknowledgement viability test passed, so the notification can be sent out */
 		return OK;
 	}
-
 
 	/****************************************/
 	/*** SPECIAL CASE FOR FLAPPING ALERTS ***/
@@ -734,6 +721,21 @@ int check_service_notification_viability(service *svc, int type, int options)
 		return OK;
 	}
 
+	/******************************************************/
+	/*** CHECK SERVICE PARENTS FOR NORMAL NOTIFICATIONS ***/
+	/******************************************************/
+	/* if all parents are bad (usually just one), we shouldn't notify */
+	/* but do not prevent recovery notifications */
+	if (svc->parents && svc->current_state != STATE_OK) {
+		sm = svc->parents;
+		while (sm && sm->service_ptr->current_state != STATE_OK) {
+			sm = sm->next;
+		}
+		if (sm == NULL) {
+			LOG_SERVICE_NSR(NSR_BAD_PARENTS);
+			return ERROR;
+		}
+	}
 
 	/****************************************/
 	/*** NORMAL NOTIFICATIONS ***************/
@@ -778,9 +780,12 @@ int check_service_notification_viability(service *svc, int type, int options)
 	/* see if enough time has elapsed for first notification (Mathias Sundman) */
 	/* 10/02/07 don't place restrictions on recoveries or non-normal notifications, must use last time ok (or program start) in calculation */
 	/* it is reasonable to assume that if the service was never up, the program start time should be used in this calculation */
-	if (type == NOTIFICATION_NORMAL && svc->current_notification_number == 0 && svc->current_state != STATE_OK) {
+	if (type == NOTIFICATION_NORMAL
+	    && svc->current_notification_number == 0
+	    && svc->first_notification_delay > 0
+	    && svc->current_state != STATE_OK) {
 
-		first_problem_time = svc->last_time_ok > 0 ? svc->last_time_ok : program_start;
+		first_problem_time = svc->last_hard_state_change > 0 ? svc->last_hard_state_change : program_start;
 
 		if (current_time < first_problem_time + (time_t)(svc->first_notification_delay * interval_length)) {
 			LOG_SERVICE_NSR(NSR_DELAY);
@@ -789,7 +794,7 @@ int check_service_notification_viability(service *svc, int type, int options)
 	}
 
 	/* if this service is currently flapping, don't send the notification */
-	if (svc->is_flapping == TRUE) {
+	if (enable_flap_detection == TRUE && svc->flap_detection_enabled == TRUE && svc->is_flapping == TRUE) {
 		LOG_SERVICE_NSR(NSR_IS_FLAPPING);
 		return ERROR;
 	}
@@ -813,7 +818,7 @@ int check_service_notification_viability(service *svc, int type, int options)
 	/* don't notify if we haven't waited long enough since the last time (and the service is not marked as being volatile) */
 	if ((current_time < svc->next_notification) && svc->is_volatile == FALSE) {
 		LOG_SERVICE_NSR(NSR_RE_NOT_YET);
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Next valid notification time: %s", ctime(&svc->next_notification));
+		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Next valid notification time: %s\n", ctime(&svc->next_notification));
 		return ERROR;
 	}
 
@@ -996,8 +1001,7 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 		if (log_notifications == TRUE) {
 			if (type != NOTIFICATION_NORMAL) {
 				nm_asprintf(&temp_buffer, "SERVICE NOTIFICATION: %s;%s;%s;%s ($SERVICESTATE$);%s;$SERVICEOUTPUT$;$NOTIFICATIONAUTHOR$;$NOTIFICATIONCOMMENT$\n", cntct->name, svc->host_name, svc->description, notification_reason_name(type), command_name_ptr);
-			}
-			else {
+			} else {
 				nm_asprintf(&temp_buffer, "SERVICE NOTIFICATION: %s;%s;%s;$SERVICESTATE$;%s;$SERVICEOUTPUT$\n", cntct->name, svc->host_name, svc->description, command_name_ptr);
 			}
 			process_macros_r(mac, temp_buffer, &processed_buffer, 0);
@@ -1008,11 +1012,11 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 		}
 
 		/* run the notification command */
-		nj = nm_calloc(1,sizeof(struct notification_job));
+		nj = nm_calloc(1, sizeof(struct notification_job));
 		nj->ctc = cntct;
 		nj->hst = svc->host_ptr;
 		nj->svc = svc;
-		if(ERROR == wproc_run_callback(processed_command, notification_timeout, notification_handle_job_result, nj, mac)) {
+		if (ERROR == wproc_run_callback(processed_command, notification_timeout, notification_handle_job_result, nj, mac)) {
 			nm_log(NSLOG_RUNTIME_ERROR, "wproc: Unable to send notification for service '%s on host '%s' to worker\n", svc->description, svc->host_ptr->name);
 			free(nj);
 		}
@@ -1107,7 +1111,7 @@ int should_service_notification_be_escalated(service *svc)
 
 
 /* given a service, create a list of contacts to be notified, removing duplicates, checking contact notification viability */
-static notification * create_notification_list_from_service(nagios_macros *mac, service *svc, int options, int *escalated, int type)
+static notification *create_notification_list_from_service(nagios_macros *mac, service *svc, int options, int *escalated, int type)
 {
 	notification *notification_list = NULL;
 	serviceescalation *temp_se = NULL;
@@ -1240,7 +1244,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 	time(&current_time);
 	gettimeofday(&start_time, NULL);
 
-	log_debug_info(DEBUGL_NOTIFICATIONS, 0, "** Host Notification Attempt ** Host: '%s', Type: %s, Options: %d, Current State: %d, Last Notification: %s", hst->name, notification_reason_name(type), options, hst->current_state, ctime(&hst->last_notification));
+	log_debug_info(DEBUGL_NOTIFICATIONS, 0, "** Host Notification Attempt ** Host: '%s', Type: %s, Options: %d, Current State: %d, Last Notification: %s\n", hst->name, notification_reason_name(type), options, hst->current_state, ctime(&hst->last_notification));
 
 	/* check viability of sending out a host notification */
 	if (check_host_notification_viability(hst, type, options) == ERROR) {
@@ -1260,9 +1264,9 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 		if (rc == NEBERROR_CALLBACKCANCEL || rc == NEBERROR_CALLBACKOVERRIDE) {
 			char *description = NULL;
 			nm_asprintf(&description, "Module '%s' %s: '%s'",
-					neb_cb_result_module_name(neb_result),
-					rc == NEBERROR_CALLBACKCANCEL ? "cancelled notification" : "overrode notification",
-					neb_cb_result_description(neb_result));
+			            neb_cb_result_module_name(neb_result),
+			            rc == NEBERROR_CALLBACKCANCEL ? "cancelled notification" : "overrode notification",
+			            neb_cb_result_description(neb_result));
 			LOG_HOST_NSR_NEB_BLOCKED(NSR_NEB_BLOCKED, description);
 			nm_free(description);
 			neb_cb_resultset_destroy(neb_resultset);
@@ -1280,8 +1284,8 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 	log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Current notification number: %d (%s)\n", hst->current_notification_number, (increment_notification_number == TRUE) ? "incremented" : "unchanged");
 
 	/* save and increase the current notification id */
-	hst->current_notification_id = next_notification_id;
-	next_notification_id++;
+	nm_free(hst->current_notification_id);
+	hst->current_notification_id = g_uuid_string_random();
 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Creating list of contacts to be notified.\n");
 
@@ -1343,11 +1347,9 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 		/* set the notification type macro */
 		if (type != NOTIFICATION_NORMAL) {
 			mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup(notification_reason_name(type));
-		}
-		else if (hst->current_state == STATE_UP) {
+		} else if (hst->current_state == STATE_UP) {
 			mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup("RECOVERY");
-		}
-		else {
+		} else {
 			mac.x[MACRO_NOTIFICATIONTYPE] = nm_strdup("PROBLEM");
 		}
 
@@ -1359,7 +1361,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 		mac.x[MACRO_NOTIFICATIONNUMBER] = nm_strdup(mac.x[MACRO_HOSTNOTIFICATIONNUMBER]);
 
 		/* set the notification id macro */
-		nm_asprintf(&mac.x[MACRO_HOSTNOTIFICATIONID], "%lu", hst->current_notification_id);
+		nm_asprintf(&mac.x[MACRO_HOSTNOTIFICATIONID], "%s", hst->current_notification_id);
 
 		/* notify each contact (duplicates have been removed) */
 		for (temp_notification = notification_list; temp_notification != NULL; temp_notification = temp_notification->next) {
@@ -1419,7 +1421,8 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 				/* update notifications flags */
 				add_notified_on(hst, hst->current_state);
 
-				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "%d contacts were notified.  Next possible notification time: %s", contacts_notified, ctime(&hst->next_notification));
+				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "%d contacts were notified.  Next possible notification time: %s\n", contacts_notified, ctime(&hst->next_notification));
+				hst->last_update = current_time;
 			}
 
 			/* we didn't end up notifying anyone */
@@ -1428,7 +1431,8 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 				/* adjust current notification number */
 				hst->current_notification_number--;
 
-				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "No contacts were notified.  Next possible notification time: %s", ctime(&hst->next_notification));
+				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "No contacts were notified.  Next possible notification time: %s\n", ctime(&hst->next_notification));
+				hst->last_update = current_time;
 			}
 		}
 
@@ -1636,9 +1640,12 @@ int check_host_notification_viability(host *hst, int type, int options)
 	/* see if enough time has elapsed for first notification (Mathias Sundman) */
 	/* 10/02/07 don't place restrictions on recoveries or non-normal notifications, must use last time up (or program start) in calculation */
 	/* it is reasonable to assume that if the host was never up, the program start time should be used in this calculation */
-	if (type == NOTIFICATION_NORMAL && hst->current_notification_number == 0 && hst->current_state != STATE_UP) {
+	if (type == NOTIFICATION_NORMAL
+	    && hst->current_notification_number == 0
+	    && hst->first_notification_delay > 0
+	    && hst->current_state != STATE_UP) {
 
-		first_problem_time = hst->last_time_up > 0 ? hst->last_time_up : program_start;
+		first_problem_time = hst->last_hard_state_change > 0 ? hst->last_hard_state_change : program_start;
 
 		if (current_time < first_problem_time + (time_t)(hst->first_notification_delay * interval_length)) {
 			LOG_HOST_NSR(NSR_DELAY);
@@ -1647,7 +1654,7 @@ int check_host_notification_viability(host *hst, int type, int options)
 	}
 
 	/* if this host is currently flapping, don't send the notification */
-	if (hst->is_flapping == TRUE) {
+	if (enable_flap_detection == TRUE && hst->flap_detection_enabled == TRUE && hst->is_flapping == TRUE) {
 		LOG_HOST_NSR(NSR_IS_FLAPPING);
 		return ERROR;
 	}
@@ -1671,7 +1678,7 @@ int check_host_notification_viability(host *hst, int type, int options)
 	/* check if its time to re-notify the contacts about the host... */
 	if (current_time < hst->next_notification) {
 		LOG_HOST_NSR(NSR_RE_NOT_YET);
-		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Next acceptable notification time: %s", ctime(&hst->next_notification));
+		log_debug_info(DEBUGL_NOTIFICATIONS, 1, "Next acceptable notification time: %s\n", ctime(&hst->next_notification));
 		return ERROR;
 	}
 
@@ -1839,8 +1846,7 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 		if (log_notifications == TRUE) {
 			if (type != NOTIFICATION_NORMAL) {
 				nm_asprintf(&temp_buffer, "HOST NOTIFICATION: %s;%s;%s ($HOSTSTATE$);%s;$HOSTOUTPUT$;$NOTIFICATIONAUTHOR$;$NOTIFICATIONCOMMENT$\n", cntct->name, hst->name, notification_reason_name(type), command_name_ptr);
-			}
-			else {
+			} else {
 				nm_asprintf(&temp_buffer, "HOST NOTIFICATION: %s;%s;$HOSTSTATE$;%s;$HOSTOUTPUT$\n", cntct->name, hst->name, command_name_ptr);
 			}
 			process_macros_r(mac, temp_buffer, &processed_buffer, 0);
@@ -1851,11 +1857,11 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 		}
 
 		/* run the notification command */
-		nj = nm_calloc(1,sizeof(struct notification_job));
+		nj = nm_calloc(1, sizeof(struct notification_job));
 		nj->ctc = cntct;
 		nj->hst = hst;
 		nj->svc = NULL;
-		if(ERROR == wproc_run_callback(processed_command, notification_timeout, notification_handle_job_result, nj, mac)) {
+		if (ERROR == wproc_run_callback(processed_command, notification_timeout, notification_handle_job_result, nj, mac)) {
 			nm_log(NSLOG_RUNTIME_ERROR, "wproc: Unable to send notification for host '%s' to worker\n", hst->name);
 			free(nj);
 		}
@@ -1952,7 +1958,7 @@ int should_host_notification_be_escalated(host *hst)
 
 
 /* given a host, create a list of contacts to be notified, removing duplicates, checking contact notification viability */
-static notification * create_notification_list_from_host(nagios_macros *mac, host *hst, int options, int *escalated, int type)
+static notification *create_notification_list_from_host(nagios_macros *mac, host *hst, int options, int *escalated, int type)
 {
 	notification *notification_list = NULL;
 	hostescalation *temp_he = NULL;

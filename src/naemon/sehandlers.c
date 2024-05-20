@@ -18,8 +18,8 @@
 
 static int run_service_event_handler(nagios_macros *mac, service *);			/* runs the event handler for a specific service */
 static int run_global_service_event_handler(nagios_macros *mac, service *);		/* runs the global service event handler */
-static int run_host_event_handler(nagios_macros *mac, const host * const);				/* runs the event handler for a specific host */
-static int run_global_host_event_handler(nagios_macros *mac, const host * const);			/* runs the global host event handler */
+static int run_host_event_handler(nagios_macros *mac, const host *const);				/* runs the event handler for a specific host */
+static int run_global_host_event_handler(nagios_macros *mac, const host *const);			/* runs the global host event handler */
 
 struct obsessive_compulsive_job {
 	host *hst;
@@ -30,11 +30,12 @@ struct obsessive_compulsive_job {
 /************* OBSESSIVE COMPULSIVE HANDLER FUNCTIONS *************/
 /******************************************************************/
 
-void obsessive_compulsive_job_handler(struct wproc_result *wpres, void *data, int flags) {
+void obsessive_compulsive_job_handler(struct wproc_result *wpres, void *data, int flags)
+{
 	struct obsessive_compulsive_job *ocj = (struct obsessive_compulsive_job *)data;
 	if (wpres) {
 		if (wpres->early_timeout) {
-			if(ocj->svc) {
+			if (ocj->svc) {
 				nm_log(NSLOG_RUNTIME_WARNING, "Warning: Timeout while executing OCSP command '%s' for service '%s' on host '%s'\n",
 				       wpres->command, ocj->svc->description, ocj->hst->name);
 			} else {
@@ -90,10 +91,10 @@ int obsessive_compulsive_service_check_processor(service *svc)
 	log_debug_info(DEBUGL_CHECKS, 2, "Processed obsessive compulsive service processor command line: %s\n", processed_command);
 
 	/* run the command through a worker */
-	ocj = nm_calloc(1,sizeof(struct obsessive_compulsive_job));
+	ocj = nm_calloc(1, sizeof(struct obsessive_compulsive_job));
 	ocj->hst = svc->host_ptr;
 	ocj->svc = svc;
-	if(ERROR == wproc_run_callback(processed_command, ocsp_timeout, obsessive_compulsive_job_handler, ocj, &mac)) {
+	if (ERROR == wproc_run_callback(processed_command, ocsp_timeout, obsessive_compulsive_job_handler, ocj, &mac)) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Unable to start OCSP job for service '%s on host '%s' to worker\n", svc->description, svc->host_ptr->name);
 		free(ocj);
 	}
@@ -148,10 +149,10 @@ int obsessive_compulsive_host_check_processor(host *hst)
 	log_debug_info(DEBUGL_CHECKS, 2, "Processed obsessive compulsive host processor command line: %s\n", processed_command);
 
 	/* run the command through a worker */
-	ocj = nm_calloc(1,sizeof(struct obsessive_compulsive_job));
+	ocj = nm_calloc(1, sizeof(struct obsessive_compulsive_job));
 	ocj->hst = hst;
 	ocj->svc = NULL;
-	if(ERROR == wproc_run_callback(processed_command, ochp_timeout, obsessive_compulsive_job_handler, ocj, &mac)) {
+	if (ERROR == wproc_run_callback(processed_command, ochp_timeout, obsessive_compulsive_job_handler, ocj, &mac)) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Unable to start OCHP job for host '%s' to worker\n", hst->name);
 		free(ocj);
 	}
@@ -167,9 +168,10 @@ int obsessive_compulsive_host_check_processor(host *hst)
 /**************** SERVICE EVENT HANDLER FUNCTIONS *****************/
 /******************************************************************/
 
-void event_handler_job_handler(struct wproc_result *wpres, void *data, int flags) {
-	const char *event_type = (const char*)data;
-	if(wpres) {
+void event_handler_job_handler(struct wproc_result *wpres, void *data, int flags)
+{
+	const char *event_type = (const char *)data;
+	if (wpres) {
 		if (wpres->early_timeout) {
 			nm_log(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING,
 			       "Warning: %s handler command '%s' timed out\n",
@@ -413,7 +415,7 @@ int handle_host_event(host *hst)
 
 
 /* runs the global host event handler */
-static int run_global_host_event_handler(nagios_macros *mac, const host * const hst)
+static int run_global_host_event_handler(nagios_macros *mac, const host *const hst)
 {
 	char *raw_command = NULL;
 	char *processed_command = NULL;
@@ -498,7 +500,7 @@ static int run_global_host_event_handler(nagios_macros *mac, const host * const 
 
 
 /* runs a host event handler command */
-static int run_host_event_handler(nagios_macros *mac, const host * const hst)
+static int run_host_event_handler(nagios_macros *mac, const host *const hst)
 {
 	char *raw_command = NULL;
 	char *processed_command = NULL;

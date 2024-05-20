@@ -1,0 +1,60 @@
+#!/usr/bin/make -f
+# debian/rules makefile for naemon
+
+export DH_VERBOSE=1
+DESTDIR=$(CURDIR)/debian/tmp/
+
+include /usr/share/dpkg/architecture.mk
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+override_dh_auto_configure:
+	test -f configure || ./autogen.sh
+	dh_auto_configure -- --prefix=/usr \
+				--bindir="/usr/bin" \
+				--datadir="/usr/share/naemon" \
+				--libdir="/usr/lib/$(DEB_HOST_MULTIARCH)" \
+				--includedir="/usr/include" \
+				--localstatedir="/var/lib/naemon" \
+				--sysconfdir="/etc/naemon" \
+				--with-pkgconfdir="/etc/naemon" \
+				--mandir="/usr/share/man" \
+				--with-pluginsdir="/usr/lib/naemon/plugins" \
+				--with-tempdir="/var/cache/naemon" \
+				--with-checkresultdir="/var/cache/naemon/checkresults" \
+				--with-logdir="/var/log/naemon" \
+				--with-initdir="/etc/init.d" \
+				--with-logrotatedir="/etc/logrotate.d" \
+				--with-naemon-user="naemon" \
+				--with-naemon-group="naemon" \
+				--with-lockfile="/run/naemon/naemon.pid"
+
+
+
+override_dh_auto_install:
+	dh_auto_install
+	cp naemon.logrotate.el7 debian/naemon-core.logrotate
+	mkdir -p -m 0755 debian/tmp/usr/share/naemon/examples
+	mv debian/tmp/etc/naemon/conf.d debian/tmp/usr/share/naemon/examples
+	# get rid of dependency_libs in la files, see https://wiki.debian.org/ReleaseGoals/LAFileRemoval
+	sed -i "/dependency_libs/ s/'.*'/''/" `find . -name '*.la'`
+	# Move SystemV init-script
+	install -D -m 0755 debian/naemon-core.naemon.init debian/tmp/usr/bin/naemon-ctl
+	install -D -m 0644 sample-config/naemon.sysconfig debian/tmp/etc/default/naemon
+	mkdir -p -m 0755 debian/tmp/etc/naemon/module-conf.d
+
+override_dh_gencontrol:
+	dh_gencontrol
+
+override_dh_strip:
+	dh_strip --dbgsym-migration='naemon-core-dbg (<< 1.3.1-1)'
+
+override_dh_installinit:
+	# make space for the debian specific rc file
+	rm debian/naemon-core/etc/init.d/naemon
+	dh_installinit --name=naemon
+
+override_dh_auto_test:
+
+%:
+	dh $@
+

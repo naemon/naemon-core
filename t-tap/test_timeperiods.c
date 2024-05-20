@@ -276,7 +276,7 @@ int main(int argc, char **argv)
 	/*
 	 * To find out what has failed, run gdb for this test case
 	 * (libtool --mode=execute gdb t-tap/test_timeperiods) and type
-	 * "watch failures", then it will interupt on increment
+	 * "watch failures", then it will interrupt on increment
 	 */
 
 	putenv("TZ=UTC");
@@ -285,11 +285,11 @@ int main(int argc, char **argv)
 	failures = 0;
 	for (c = 0; c < iterations; c++) {
 		is_valid_time = check_time_against_period(test_time, temp_timeperiod);
-		if(is_valid_time != OK)
+		if (is_valid_time != OK)
 			failures++;
 		chosen_valid_time = 0L;
 		_get_next_valid_time(test_time, &chosen_valid_time, temp_timeperiod);
-		if(test_time != chosen_valid_time)
+		if (test_time != chosen_valid_time)
 			failures++;
 		test_time += 1800;
 	}
@@ -301,10 +301,10 @@ int main(int argc, char **argv)
 	failures = 0;
 	for (c = 0; c < iterations; c++) {
 		is_valid_time = check_time_against_period(test_time, temp_timeperiod);
-		if(is_valid_time != OK)
+		if (is_valid_time != OK)
 			failures++;
 		_get_next_valid_time(test_time, &chosen_valid_time, temp_timeperiod);
-		if(test_time != chosen_valid_time)
+		if (test_time != chosen_valid_time)
 			failures++;
 		test_time += 1800;
 	}
@@ -321,10 +321,10 @@ int main(int argc, char **argv)
 	failures = 0;
 	for (c = 0; c < iterations; c++) {
 		is_valid_time = check_time_against_period(test_time, temp_timeperiod);
-		if(is_valid_time != OK)
+		if (is_valid_time != OK)
 			failures++;
 		_get_next_valid_time(test_time, &chosen_valid_time, temp_timeperiod);
-		if(test_time != chosen_valid_time)
+		if (test_time != chosen_valid_time)
 			failures++;
 		test_time += 1800;
 	}

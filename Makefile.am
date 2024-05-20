@@ -19,17 +19,27 @@ CONFIG_FILES = \
 EXTRA_DIST = src/naemon/buildopts.h.in
 EXTRA_DIST += contrib naemon-uninstalled.pc.in naemon.pc.in
 EXTRA_DIST += src/naemon/wpres-phash.h
+EXTRA_DIST += debian
+EXTRA_DIST += naemon-core.spec
+EXTRA_DIST += sample-config/naemon.sysconfig
+EXTRA_DIST += naemon.tmpfiles.conf
+EXTRA_DIST += README.md
+EXTRA_DIST += LEGAL
+EXTRA_DIST += THANKS
+EXTRA_DIST += UPGRADING
+EXTRA_DIST += naemon.rpmlintrc
+EXTRA_DIST += version.sh
 EXTRA_DIST += $(CONFIG_FILES:.cfg=.cfg.in)
 noinst_DATA = $(CONFIG_FILES)
 
-src/naemon/wpres-phash.h: src/naemon/wpres.gperf
+src/naemon/wpres-phash.h: src/naemon/wpres.gperf Makefile
 	$(AM_V_GEN) $(GPERF) --switch=1 --struct-type \
 		--hash-function-name=wpres_key_phash \
 		--lookup-function-name=wpres_get_key \
 		--language=ANSI-C \
 	$< > $@
 
-src/naemon/buildopts.h: src/naemon/buildopts.h.in
+src/naemon/buildopts.h: src/naemon/buildopts.h.in Makefile
 	sed -e 's,@@NAEMON_SYSCONFDIR@@,$(pkgconfdir),' \
 	 -e 's,@@NAEMON_LOCALSTATEDIR@@,$(localstatedir),' \
 	 -e 's,@@NAEMON_LOGDIR@@,$(logdir),' \
@@ -124,15 +134,14 @@ common_sources = \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = naemon.pc
 
-bin_PROGRAMS = src/naemon/naemon src/naemonstats/naemonstats src/shadownaemon/shadownaemon
+bin_PROGRAMS = src/naemon/naemon src/naemonstats/naemonstats
 manpages: $(bin_PROGRAMS)
 	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "monitoring core"                          ./src/naemon/naemon       > naemon.8
 	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "gather statistics from naemon core"       ./src/naemonstats/naemonstats  > naemonstats.8
-	$(HELP2MAN) --no-info --section=8 --help-option=-h -n "shadow remote cores via livestatus"       ./src/shadownaemon/shadownaemon > shadownaemon.8
 
 all-local: manpages
 
-CLEANFILES = naemon-uninstalled.pc naemon.pc naemon.8 naemonstats.8 shadownaemon.8
+CLEANFILES = naemon-uninstalled.pc naemon.pc naemon.8 naemonstats.8
 CLEANFILES += src/naemon/wpres-phash.h src/naemon/buildopts.h
 CLEANFILES += $(CONFIG_FILES)
 
@@ -141,9 +150,6 @@ src_naemon_naemon_CPPFLAGS = $(AM_CPPFLAGS) -DPREFIX='"$(prefix)"'
 src_naemon_naemon_LDFLAGS = -rdynamic
 
 src_naemonstats_naemonstats_SOURCES = src/naemonstats/naemonstats.c src/naemon/buildopts.h src/naemon/common.h
-
-src_shadownaemon_shadownaemon_SOURCES = src/shadownaemon/shadownaemon.c src/shadownaemon/shadownaemon.h
-src_shadownaemon_shadownaemon_LDFLAGS = -rdynamic
 
 LDADD = libnaemon.la $(GLIB_LIBS) -lm -ldl
 lib_LTLIBRARIES = libnaemon.la
@@ -185,6 +191,7 @@ install-exec-hook:
 	$(mkinstalldirs) $(DESTDIR)$(logdir)
 	$(mkinstalldirs) $(DESTDIR)$(logdir)/archives
 	$(mkinstalldirs) $(DESTDIR)$(libdir)
+	$(mkinstalldirs) $(DESTDIR)$(pkgincludedir)
 	[ -z $(logrotatedir) ] || $(install_sh_DATA) naemon.logrotate.el7 $(DESTDIR)$(logrotatedir)/naemon
 	[ -z $(initrddir) ]    || $(install_sh_SCRIPT) daemon-init      $(DESTDIR)$(initrddir)/naemon
 	if [ ! -d $(DESTDIR)$(pkgconfdir) ]; then \
@@ -209,14 +216,12 @@ install-data-local:
 	mkdir -p $(DESTDIR)$(mandir)/man8/
 	install -m 644 naemon.8       $(DESTDIR)$(mandir)/man8/
 	install -m 644 naemonstats.8  $(DESTDIR)$(mandir)/man8/
-	install -m 644 shadownaemon.8 $(DESTDIR)$(mandir)/man8/
 
 uninstall-hook:
 	[ -z $(logrotatedir) ] || rm $(DESTDIR)$(logrotatedir)/naemon
 	[ -z $(initrddir) ]    || rm $(DESTDIR)$(initrddir)/naemon
 	rm $(DESTDIR)$(mandir)/man8/naemon.8
 	rm $(DESTDIR)$(mandir)/man8/naemonstats.8
-	rm $(DESTDIR)$(mandir)/man8/shadownaemon.8
 	rm $(DESTDIR)$(pkgconfdir)/naemon.cfg
 	rm $(DESTDIR)$(pkgconfdir)/resource.cfg
 	rm -r $(DESTDIR)$(pkgconfdir)/conf.d
@@ -236,3 +241,35 @@ cov-report:
 noinst_LTLIBRARIES = tap/src/libtap.la
 tap_src_libtap_la_SOURCES = tap/src/tap.c tap/src/tap.h
 tap_src_libtap_la_CFLAGS = $(CFLAGS) -Wno-error
+
+rpm: dist
+	rpmbuild -tb naemon-core-${VERSION}.tar.gz
+
+deb:
+	debuild -i -us -uc -b
+
+version:
+	[ -e .git ] || { echo "changing versions only works in git clones!"; exit 1; }
+	[ `git status | grep -cP 'working (directory|tree) clean'` -eq 1 ] || { echo "git project is not clean, cannot tag version"; exit 1; }
+	OLDVERSION=$(shell grep ^VERSION version.sh | awk -F = '{ print $$2}'); \
+	NEWVERSION=$$(dialog --stdout --inputbox "New Version:" 0 0 "$$OLDVERSION"); \
+		if [ -n "$$NEWVERSION" ] && [ "$$NEWVERSION" != "$$OLDVERSION" ]; then \
+			sed -ri "s/$$OLDVERSION/$$NEWVERSION/" version.sh naemon-core.spec; \
+			sed -e 's/UNRELEASED/unstable/g' -i debian/changelog; \
+			DEBFULLNAME="Naemon Development Team" DEBEMAIL="Naemon Development <naemon-dev@monitoring-lists.org>" dch --newversion "$$NEWVERSION" --package "naemon-core" -D "UNRELEASED" --urgency "low" "new upstream release"; \
+			sed -e 's/unstable/UNRELEASED/g' -i debian/changelog; \
+			echo "$$NEWVERSION - $(shell date '+%b %d %Y')" > .NEWS; \
+			echo "===================" >> .NEWS; \
+			echo "Features:" >> .NEWS; \
+			echo "*" >> .NEWS; \
+			echo "" >> .NEWS; \
+			echo "Changed:" >> .NEWS; \
+			echo "*" >> .NEWS; \
+			echo "" >> .NEWS; \
+			echo "Bugfixes:" >> .NEWS; \
+			echo "*" >> .NEWS; \
+			echo "" >> .NEWS; \
+			echo "" >> .NEWS; \
+			cat .NEWS NEWS > NEWS.update && mv NEWS.update NEWS; \
+			rm .NEWS; \
+		fi

@@ -23,10 +23,8 @@ class NaemonSystemConfig(object):
         self.current_config[name] = value
 
     def to_string(self):
-        res = ''
-        for key, value in self.current_config.items():
-            res += ("%s=%s\n" % (key, value))
-        return res
+        lines = ["%s=%s" % (k, v) for k, v in self.current_config.items()]
+        return "\n".join(lines)
 
     def to_file(self, filename):
         f = open(filename, 'w')

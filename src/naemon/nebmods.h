@@ -126,7 +126,7 @@ int neb_cb_result_returncode(neb_cb_result *cb_result);
 /**
  * Frees a \p neb_cb_resultset and associated resources. Note
  * that this also frees all the contained \p neb_cb_results contained
- * withing the set.
+ * within the set.
  * @param cb_resultset a \p neb_cb_resultset
  */
 void neb_cb_resultset_destroy(neb_cb_resultset *);

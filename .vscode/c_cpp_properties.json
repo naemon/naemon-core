@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                //"/usr/lib/gcc/x86_64-linux-gnu/11/include/**", // Debian / Ubuntu
+                //"/usr/include/x86_64-linux-gnu/**", // Debian / Ubuntu
+                //"/usr/lib/gcc/x86_64-redhat-linux/12/include/**", // Fedora
+                "/usr/local/include/**",
+                "/usr/include/**",
+                "/usr/lib64/**",
+                "/usr/lib/**"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}

@@ -23,6 +23,7 @@
 #define DEFAULT_MAX_CHECK_RESULT_AGE				3600    /* maximum number of seconds that a check result file is considered to be valid */
 #define DEFAULT_MAX_PARALLEL_SERVICE_CHECKS 			0	/* maximum number of service checks we can have running at any given time (0=unlimited) */
 #define DEFAULT_RETENTION_UPDATE_INTERVAL			60	/* minutes between auto-save of retention data */
+#define DEFAULT_RETAINED_SCHEDULING_RANDOMIZE_WINDOW	60	/* number of seconds used for randomizing the re-scheduling of checks missed over a restart */
 #define DEFAULT_RETENTION_SCHEDULING_HORIZON    		900     /* max seconds between program restarts that we will preserve scheduling information */
 #define DEFAULT_STATUS_UPDATE_INTERVAL				60	/* seconds between aggregated status data updates */
 #define DEFAULT_FRESHNESS_CHECK_INTERVAL        		60      /* seconds between service result freshness checks */
@@ -85,6 +86,11 @@
 #define UPDATE_CHECK_RETRY_INTERVAL_WOBBLE                      60*60*3  /* 3 hour wobble on top of base retry interval */
 
 #define DEFAULT_ALLOW_EMPTY_HOSTGROUP_ASSIGNMENT        2        /* Allow assigning to empty hostgroups by default, but warn about it */
+#define DEFAULT_ALLOW_CIRCULAR_DEPENDENCIES             0        /* Allow circular dependencies */
+#define DEFAULT_HOST_DOWN_DISABLE_SERVICE_CHECKS        0        /* run service checks if the host is down */
+#define DEFAULT_SKIP_CHECK_STATUS                      -1        /* do not change status by default */
+#define SKIP_KEEP_RUNNING_WHEN_UP                      -2        /* run service checks as long as the host and service is up (ok/warning) */
+#define DEFAULT_SERVICE_PARENTS_DISABLE_SERVICE_CHECKS  0        /* run service checks if service parents are down */
 
 #define DEFAULT_HOST_PERFDATA_FILE_TEMPLATE "[HOSTPERFDATA]\t$TIMET$\t$HOSTNAME$\t$HOSTEXECUTIONTIME$\t$HOSTOUTPUT$\t$HOSTPERFDATA$"
 #define DEFAULT_SERVICE_PERFDATA_FILE_TEMPLATE "[SERVICEPERFDATA]\t$TIMET$\t$HOSTNAME$\t$SERVICEDESC$\t$SERVICEEXECUTIONTIME$\t$SERVICELATENCY$\t$SERVICEOUTPUT$\t$SERVICEPERFDATA$"

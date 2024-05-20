@@ -1,0 +1,38 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch in dgb",
+            "type": "cppdbg",
+            "request": "launch",
+
+            // This will trigger the "make all" task from tasks.json
+            "preLaunchTask": "make all",
+            // We are not using the binary from the build folder because we do not want to run the "make install" task.
+            // The "make install" task is only to generate the default naemon configurtion files
+            "program": "${workspaceFolder}/src/naemon/.libs/naemon",
+            "args": [
+                //"--help",
+                "${workspaceFolder}/build/etc/naemon/naemon.cfg"
+            ],
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/.libs"
+                }
+            ],
+
+            // Optional parameter. If true, the debugger should stop at the entrypoint of the target.
+            "stopAtEntry": true,
+
+
+            "launchCompleteCommand": "exec-run",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+          }
+    ]
+}

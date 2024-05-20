@@ -26,11 +26,6 @@
 #define FLAPPING_COMMENT                3
 #define ACKNOWLEDGEMENT_COMMENT         4
 
-
-/*************************** CHAINED HASH LIMITS ***************************/
-#define COMMENT_HASHSLOTS      1024
-
-
 /**************************** DATA STRUCTURES ******************************/
 
 NAGIOS_BEGIN_DECL
@@ -49,11 +44,11 @@ typedef struct comment {
 	char 	*service_description;
 	char 	*author;
 	char 	*comment_data;
+	struct 	comment *prev;
 	struct 	comment *next;
-	struct 	comment *nexthash;
 } comment;
 
-extern struct comment *comment_list;
+extern GHashTable *comment_hashtable;
 
 int initialize_comment_data(void);                                /* initializes comment data */
 int add_new_comment(int, int, char *, char *, time_t, char *, char *, int, int, int, time_t, unsigned long *); /* adds a new host or service comment */
@@ -62,28 +57,22 @@ int add_new_service_comment(int, char *, char *, time_t, char *, char *, int, in
 int delete_comment(int, unsigned long);                             /* deletes a host or service comment */
 int delete_host_comment(unsigned long);                             /* deletes a host comment */
 int delete_service_comment(unsigned long);                          /* deletes a service comment */
-int delete_all_comments(int, char *, char *);                       /* deletes all comments for a particular host or service */
-int delete_all_host_comments(char *);                               /* deletes all comments for a specific host */
+int delete_all_host_comments(struct host *);                               /* deletes all comments for a specific host */
 int delete_host_acknowledgement_comments(struct host *);                   /* deletes all non-persistent ack comments for a specific host */
-int delete_all_service_comments(char *, char *);                    /* deletes all comments for a specific service */
+int delete_all_service_comments(struct service *);                    /* deletes all comments for a specific service */
 int delete_service_acknowledgement_comments(struct service *);             /* deletes all non-persistent ack comments for a specific service */
 
 struct comment *find_comment(unsigned long, int);                            /* finds a specific comment */
 struct comment *find_service_comment(unsigned long);                         /* finds a specific service comment */
 struct comment *find_host_comment(unsigned long);                            /* finds a specific host comment */
 
-struct comment *get_first_comment_by_host(char *);
-struct comment *get_next_comment_by_host(char *, struct comment *);
-
-int number_of_host_comments(char *);			              /* returns the number of comments associated with a particular host */
-int number_of_service_comments(char *, char *);		              /* returns the number of comments associated with a particular service */
+int number_of_host_comments(char *);                                         /* returns the number of comments associated with a particular host */
+int number_of_service_comments(char *, char *);                              /* returns the number of comments associated with a particular service */
+int number_of_comments(void);
 
 int add_comment(int, int, char *, char *, time_t, char *, char *, unsigned long, int, int, time_t, int); /* adds a comment (host or service) */
-int sort_comments(void);
 int add_host_comment(int, char *, time_t, char *, char *, unsigned long, int, int, time_t, int);   /* adds a host comment */
 int add_service_comment(int, char *, char *, time_t, char *, char *, unsigned long, int, int, time_t, int); /* adds a service comment */
-
-int add_comment_to_hashlist(struct comment *);
 
 void free_comment_data(void);                                             /* frees memory allocated to the comment list */
 

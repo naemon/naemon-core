@@ -16,7 +16,8 @@ static command *cmd;
 static service *svc;
 
 /* This is separate due to it being required from inside the tests. */
-void setup_objects (void) {
+void setup_objects(void)
+{
 
 	init_objects_command(1);
 	cmd = create_command("my_command", "/bin/true");
@@ -39,15 +40,17 @@ void setup_objects (void) {
 
 }
 
-void teardown_objects (void) {
+void teardown_objects(void)
+{
 
 	destroy_objects_command();
 	destroy_objects_host();
-	destroy_objects_service();
+	destroy_objects_service(TRUE);
 
 }
 
-void setup (void) {
+void setup(void)
+{
 
 	init_event_queue();
 	setup_objects();
@@ -60,7 +63,8 @@ void setup (void) {
 
 }
 
-void teardown (void) {
+void teardown(void)
+{
 
 	teardown_objects();
 	cleanup_retention_data();
@@ -71,7 +75,7 @@ void teardown (void) {
 START_TEST(retention_data_for_hosts_long_output)
 {
 
-	const char * long_output = "This is a long \n plugin output \n of some sort \n and such \n";
+	const char *long_output = g_strescape("This is a long \n plugin output \n of some sort \n and such \n", "");
 
 	hst->long_plugin_output = strdup(long_output);
 
@@ -89,7 +93,7 @@ END_TEST
 START_TEST(retention_data_for_services_long_output)
 {
 
-	const char * long_output = "This is a long \n plugin output \n of some sort \n and such \n";
+	const char *long_output = g_strescape("This is a long \n plugin output \n of some sort \n and such \n", "");
 
 	svc->long_plugin_output = strdup(long_output);
 
@@ -104,7 +108,7 @@ START_TEST(retention_data_for_services_long_output)
 }
 END_TEST
 
-Suite*
+Suite *
 retention_suite(void)
 {
 	Suite *s = suite_create("Retention data");

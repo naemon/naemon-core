@@ -287,6 +287,7 @@ typedef struct xodtemplate_host_struct {
 
     unsigned has_been_resolved : 1;
     unsigned register_object : 1;
+    objectlist *service_list;
     struct xodtemplate_host_struct *next;
 } xodtemplate_host;
 

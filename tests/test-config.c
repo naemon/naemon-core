@@ -23,7 +23,7 @@ START_TEST(services)
 	ck_assert_int_eq(OK, res);
 	res = read_all_object_data(TESTDIR "services/naemon.cfg");
 	ck_assert_int_eq(OK, res);
-	for (s = service_list, hits=0; s; s = s->next, hits++) {
+	for (s = service_list, hits = 0; s; s = s->next, hits++) {
 		if (!strcmp(s->description, "service3")) {
 			ck_assert_str_eq("from_template", s->display_name);
 		}
@@ -56,7 +56,7 @@ START_TEST(recursive)
 	ck_assert_int_eq(OK, res);
 	res = read_all_object_data(TESTDIR "recursive/naemon.cfg");
 	ck_assert_int_eq(OK, res);
-	for (h = host_list, hits=0; h; h = h->next, hits++) {
+	for (h = host_list, hits = 0; h; h = h->next, hits++) {
 		if (!strcmp(h->name, "host1")) {
 			ck_assert_str_eq("from_template", h->alias);
 			ck_assert_str_eq("", h->notes);
@@ -75,12 +75,12 @@ END_TEST
 START_TEST(main_include)
 {
 	int res;
-	char *file_cfg = nspath_normalize(TESTDIR "includes/a_file.cfg");
-	char *dir_cfg = nspath_normalize(TESTDIR "includes/a_dir");
+	char *file_cfg = nspath_normalize(TESTDIR "inc/a_file.cfg");
+	char *dir_cfg = nspath_normalize(TESTDIR "inc/a_dir");
 	objcfg_files = NULL;
 	objcfg_dirs = NULL;
-	config_file_dir = nspath_absolute_dirname(TESTDIR "includes/naemon.cfg", NULL);
-	res = read_main_config_file(TESTDIR "includes/naemon.cfg");
+	config_file_dir = nspath_absolute_dirname(TESTDIR "inc/naemon.cfg", NULL);
+	res = read_main_config_file(TESTDIR "inc/naemon.cfg");
 	ck_assert_int_eq(OK, res);
 	ck_assert_int_eq(1448, event_handler_timeout);
 	// leave files without .cfg suffix alone:
@@ -96,7 +96,7 @@ START_TEST(main_include)
 }
 END_TEST
 
-Suite*
+Suite *
 config_suite(void)
 {
 	Suite *s = suite_create("Config");

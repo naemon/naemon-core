@@ -67,7 +67,7 @@ static void reap_check_results(struct nm_event_execution_properties *evprop)
 {
 	int reaped_checks = 0;
 
-	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
+	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* Reschedule, since reccuring */
 		schedule_event(check_reaper_interval, reap_check_results, NULL);
 
@@ -94,7 +94,8 @@ static void reap_check_results(struct nm_event_execution_properties *evprop)
  * @param check_output Where to store the parsed output
  * @return Pointer to the populated check_output struct, or NULL on error
  */
-struct check_output *parse_output(const char *buf, struct check_output *check_output) {
+struct check_output *parse_output(const char *buf, struct check_output *check_output)
+{
 	char *saveptr = NULL, *tmpbuf = NULL;
 	char *p = NULL, *tmp = NULL;
 	GString *perf_data_string;
@@ -102,7 +103,7 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 	check_output->perf_data = NULL;
 	check_output->long_output = NULL;
 	check_output->short_output = NULL;
-	if(!buf || !*buf)
+	if (!buf || !*buf)
 		return check_output;
 	tmpbuf = nm_strdup(buf);
 
@@ -113,9 +114,8 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 	}
 	if (p == NULL) {
 		/* No perfdata in first line of output. */
-			check_output->short_output = tmp ? nm_strdup(tmp) : nm_strdup("");
-	}
-	else {
+		check_output->short_output = tmp ? nm_strdup(tmp) : nm_strdup("");
+	} else {
 		/*
 		 * There is perfdata on the first line
 		 * the short output consists of the all bytes up
@@ -123,30 +123,28 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 		 * bytes and add the rest of the string to the
 		 * perf data buffer.
 		 * */
-		if (p!= tmp) {
-			check_output->short_output = nm_strndup(tmp, (size_t) (p - tmp));
-		}
-		else {
+		if (p != tmp) {
+			check_output->short_output = nm_strndup(tmp, (size_t)(p - tmp));
+		} else {
 			check_output->short_output = nm_strdup("");
 		}
-		perf_data_string = g_string_append(perf_data_string, tmp+(p-tmp)+1);
+		perf_data_string = g_string_append(perf_data_string, tmp + (p - tmp) + 1);
 	}
 
 	/*
 	 * Get the rest of the string, if any.
 	 * */
-	if ( (tmp = strtok_r(NULL, "", &saveptr)) ) {
+	if ((tmp = strtok_r(NULL, "", &saveptr))) {
 
 		/* Is there a perf data delimiter somewhere in the long output? */
 		p = strpbrk((const char *) tmp, "|");
 		if (p == NULL) {
 			/* No more perfdata, rest is long output*/
 			check_output->long_output = nm_strdup(tmp);
-		}
-		else {
+		} else {
 			/* There is perfdata, limit what we regard as long output */
 			if (p != tmp) {
-				check_output->long_output = nm_strndup(tmp, (size_t) (p - tmp));
+				check_output->long_output = nm_strndup(tmp, (size_t)(p - tmp));
 			}
 
 			/*
@@ -154,7 +152,7 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 			 * This also gets rid of any interleaved newlines in the
 			 * perf data - we're not interested in those.
 			 * */
-			tmp = strtok_r(p+1, "\n", &saveptr);
+			tmp = strtok_r(p + 1, "\n", &saveptr);
 			while (tmp) {
 
 				/* Backwards compatibility
@@ -186,8 +184,13 @@ int parse_check_output(char *buf, char **short_output, char **long_output, char 
 	struct check_output *check_output = nm_malloc(sizeof(struct check_output));
 	check_output = parse_output(buf, check_output);
 	*short_output = check_output->short_output;
-	*long_output = check_output->long_output;
 	*perf_data = check_output->perf_data;
+	if (escape_newlines_please == TRUE && check_output->long_output != NULL) {
+		*long_output = escape_plugin_output(check_output->long_output);
+		free(check_output->long_output);
+	} else {
+		*long_output = check_output->long_output;
+	}
 	free(check_output);
 	strip(*short_output);
 	strip(*perf_data);
@@ -239,13 +242,27 @@ int process_check_result_queue(char *dirname)
 			break;
 		}
 
-		/* create /path/to/file */
-		snprintf(file, sizeof(file), "%s/%s", dirname, dirfile->d_name);
-		file[sizeof(file) - 1] = '\x0';
-
 		/* process this if it's a check result file... */
 		x = strlen(dirfile->d_name);
 		if (x == 7 && dirfile->d_name[0] == 'c') {
+
+			/* create /path/to/file */
+			int written_size = snprintf(file, sizeof(file), "%s/%s", dirname, dirfile->d_name);
+			file[sizeof(file) - 1] = '\x0';
+
+			/* Check for encoding errors */
+			if (written_size < 0) {
+				nm_log(NSLOG_RUNTIME_WARNING,
+				       "Warning: encoding error on check result file path '`%s'.\n", file);
+				continue;
+			}
+
+			/* Check if the filename was truncated */
+			if (written_size > 0 && (size_t)written_size >= sizeof(file)) {
+				nm_log(NSLOG_RUNTIME_WARNING,
+				       "Warning: truncated path to check result file '%s'.\n", file);
+				continue;
+			}
 
 			if (stat(file, &stat_buf) == -1) {
 				nm_log(NSLOG_RUNTIME_WARNING,
@@ -443,7 +460,7 @@ int process_check_result_file(char *fname)
 			else if (!strcmp(var, "return_code"))
 				cr.return_code = atoi(val);
 			else if (!strcmp(var, "output"))
-				cr.output = nm_strdup(val);
+				cr.output = unescape_plugin_output(val);
 		}
 	}
 

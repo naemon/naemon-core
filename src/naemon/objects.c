@@ -11,6 +11,7 @@
 #include "logging.h"
 #include "globals.h"
 #include "nm_alloc.h"
+#include "utils.h"
 
 int __nagios_object_structure_version = CURRENT_OBJECT_STRUCTURE_VERSION;
 
@@ -20,6 +21,9 @@ int fcache_objects(char *cache_file)
 	FILE *fp = NULL;
 	time_t current_time = 0L;
 	unsigned int i;
+	char *tmp_file = NULL;
+	int fd = 0;
+	int result = OK;
 
 	/* some people won't want to cache their objects */
 	if (!cache_file || !strcmp(cache_file, "/dev/null"))
@@ -27,10 +31,22 @@ int fcache_objects(char *cache_file)
 
 	time(&current_time);
 
+	nm_asprintf(&tmp_file, "%sXXXXXX", cache_file);
+	if (tmp_file == NULL)
+		return ERROR;
+
+	if ((fd = mkstemp(tmp_file)) == -1) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Unable to create temp file '%s' for writing object cache data: %s\n", tmp_file, strerror(errno));
+		nm_free(tmp_file);
+		return ERROR;
+	}
+
 	/* open the cache file for writing */
-	fp = fopen(cache_file, "w");
+	fp = (FILE *)fopen(tmp_file, "w");
 	if (fp == NULL) {
-		nm_log(NSLOG_CONFIG_WARNING, "Warning: Could not open object cache file '%s' for writing!\n", cache_file);
+		unlink(tmp_file);
+		nm_log(NSLOG_CONFIG_WARNING, "Warning: Could not open object cache data file '%s' for writing!\n", tmp_file);
+		nm_free(tmp_file);
 		return ERROR;
 	}
 
@@ -43,7 +59,6 @@ int fcache_objects(char *cache_file)
 	fprintf(fp, "#\n");
 	fprintf(fp, "# Created: %s", ctime(&current_time));
 	fprintf(fp, "########################################\n\n");
-
 
 	/* cache timeperiods */
 	for (i = 0; i < num_objects.timeperiods; i++)
@@ -109,7 +124,41 @@ int fcache_objects(char *cache_file)
 			fcache_hostescalation(fp, esclist->object_ptr);
 	}
 
-	fclose(fp);
+	/* reset file permissions */
+	fchmod(fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH);
 
-	return OK;
+	/* flush the file to disk */
+	fflush(fp);
+
+	/* fsync the file so that it is completely written out before moving it */
+	fsync(fd);
+
+	/* close the temp file */
+	result = ferror(fp) | fclose(fp);
+
+	/* save/close was successful */
+	if (result == 0) {
+
+		result = OK;
+
+		/* move the temp file to the objects data file (overwrite the old objects.cache) */
+		if (my_rename(tmp_file, cache_file)) {
+			unlink(tmp_file);
+			nm_log(NSLOG_RUNTIME_ERROR, "Error: Unable to update cache data file '%s': %s", cache_file, strerror(errno));
+			result = ERROR;
+		}
+	}
+
+	/* a problem occurred saving the file */
+	else {
+		result = ERROR;
+
+		/* remove temp file and log an error */
+		unlink(tmp_file);
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Unable to save cache data file: %s", strerror(errno));
+	}
+
+	nm_free(tmp_file);
+
+	return result;
 }

@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <fcntl.h>
+#include <glib.h>
 #ifdef HAVE_SYS_MMAN_H
 # include <sys/mman.h>
 #endif
@@ -92,8 +93,7 @@ char *my_strtok(char *buffer, const char *tokens)
 	if (buffer == NULL) {
 		if (my_strtok_buffer == NULL)
 			return NULL; /*nothing supplied, nothing stored*/
-	}
-	else {
+	} else {
 		nm_free(original_my_strtok_buffer);
 		my_strtok_buffer = nm_strdup(buffer);
 		original_my_strtok_buffer = my_strtok_buffer;
@@ -413,30 +413,6 @@ void strip(char *buffer)
 }
 
 
-/**************************************************
- *************** HASH FUNCTIONS *******************
- **************************************************/
-/* dual hash function */
-int hashfunc(const char *name1, const char *name2, int hashslots)
-{
-	unsigned int i, result;
-
-	result = 0;
-
-	if (name1)
-		for (i = 0; i < strlen(name1); i++)
-			result += name1[i];
-
-	if (name2)
-		for (i = 0; i < strlen(name2); i++)
-			result += name2[i];
-
-	result = result % hashslots;
-
-	return result;
-}
-
-
 /*
  * given a date/time in time_t format, produce a corresponding
  * date/time string, including timezone
@@ -562,4 +538,9 @@ void get_time_breakdown(unsigned long raw_time, int *days, int *hours,
 	*hours = temp_hours;
 	*minutes = temp_minutes;
 	*seconds = temp_seconds;
+}
+
+gint my_strsorter(gconstpointer a, gconstpointer b, gpointer data)
+{
+	return (g_strcmp0(a, b));
 }

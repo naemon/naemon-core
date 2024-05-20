@@ -19,7 +19,7 @@ guint nm_service_hash(gconstpointer key)
 	return (g_str_hash(k->hostname) ^ g_str_hash(k->service_description));
 }
 
-nm_service_key * nm_service_key_create(const char *hostname, const char *service_description)
+nm_service_key *nm_service_key_create(const char *hostname, const char *service_description)
 {
 	nm_service_key *k = calloc(1, sizeof(*k));
 	if (!k)

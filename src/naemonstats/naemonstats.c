@@ -10,6 +10,7 @@
 #include "config.h"
 #include <naemon/common.h>
 #include <naemon/defaults.h>
+#include <naemon/nm_alloc.h>
 
 #define STATUS_NO_DATA             0
 #define STATUS_INFO_DATA           1
@@ -22,6 +23,7 @@ static char *main_config_file = NULL;
 char *status_file = NULL;
 static char *mrtg_variables = NULL;
 static const char *mrtg_delimiter = "\n";
+char *mrtg_delimiter_save = NULL;
 
 static int mrtg_mode = FALSE;
 
@@ -177,7 +179,7 @@ static int display_mrtg_values(void);
 static int display_stats(void);
 static int read_config_file(void);
 static int read_status_file(void);
-
+static void free_memory(void);
 
 int main(int argc, char **argv)
 {
@@ -241,7 +243,8 @@ int main(int argc, char **argv)
 			mrtg_variables = strdup(optarg);
 			break;
 		case 'D':
-			mrtg_delimiter = strdup(optarg);
+			mrtg_delimiter_save = strdup(optarg);
+			mrtg_delimiter = mrtg_delimiter_save;
 			break;
 
 		default:
@@ -251,7 +254,7 @@ int main(int argc, char **argv)
 
 	if (mrtg_mode == FALSE) {
 		printf("\nNaemon Stats " VERSION "\n");
-		printf("Copyright (c) 2013-present Naemon Development Team (www.naemon.org)\n");
+		printf("Copyright (c) 2013-present Naemon Development Team (www.naemon.io)\n");
 		printf("Copyright (c) 2003-2008 Ethan Galstad (www.nagios.org)\n");
 		printf("License: GPL\n\n");
 	}
@@ -269,6 +272,8 @@ int main(int argc, char **argv)
 		printf("You should have received a copy of the GNU General Public License\n");
 		printf("along with this program; if not, write to the Free Software\n");
 		printf("Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.\n\n");
+
+		free_memory();
 
 		exit(OK);
 	}
@@ -302,7 +307,7 @@ int main(int argc, char **argv)
 		printf(" STATUSFILEAGE        string with age of status data file.\n");
 		printf(" STATUSFILEAGETT      string with age of status data file (time_t format).\n");
 		printf(" NAGIOSVERSION        string with Naemon version.\n");
-		printf(" NAGIOSPID            pid number of Naemon deamon.\n");
+		printf(" NAGIOSPID            pid number of Naemon daemon.\n");
 		printf(" NAGIOSVERPID         string with Naemon version and PID.\n");
 		printf(" TOTCMDBUF            total number of external command buffer slots available.\n");
 		printf(" USEDCMDBUF           number of external command buffer slots currently in use.\n");
@@ -342,24 +347,26 @@ int main(int argc, char **argv)
 		printf(" xxxPSVHSTLAT         MIN/MAX/AVG passive host check latency (ms).\n");
 		printf(" xxxPSVHSTPSC         MIN/MAX/AVG passive host check %% state change.\n");
 		printf(" xxxHSTPSC            MIN/MAX/AVG host check %% state change.\n");
-		printf(" NUMACTHSTCHECKSxM    number of total active host checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMOACTHSTCHECKSxM   number of on-demand active host checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMCACHEDHSTCHECKSxM number of cached host checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMSACTHSTCHECKSxM   number of scheduled active host checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMPARHSTCHECKSxM    number of parallel host checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMSERHSTCHECKSxM    number of serial host checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMPSVHSTCHECKSxM    number of passive host checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMACTSVCCHECKSxM    number of total active service checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMOACTSVCCHECKSxM   number of on-demand active service checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMCACHEDSVCCHECKSxM number of cached service checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMSACTSVCCHECKSxM   number of scheduled active service checks occuring in last 1/5/15 minutes.\n");
-		printf(" NUMPSVSVCCHECKSxM    number of passive service checks occuring in last 1/5/15 minutes.\n");
+		printf(" NUMACTHSTCHECKSxM    number of total active host checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMOACTHSTCHECKSxM   number of on-demand active host checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMCACHEDHSTCHECKSxM number of cached host checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMSACTHSTCHECKSxM   number of scheduled active host checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMPARHSTCHECKSxM    number of parallel host checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMSERHSTCHECKSxM    number of serial host checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMPSVHSTCHECKSxM    number of passive host checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMACTSVCCHECKSxM    number of total active service checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMOACTSVCCHECKSxM   number of on-demand active service checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMCACHEDSVCCHECKSxM number of cached service checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMSACTSVCCHECKSxM   number of scheduled active service checks occurring in last 1/5/15 minutes.\n");
+		printf(" NUMPSVSVCCHECKSxM    number of passive service checks occurring in last 1/5/15 minutes.\n");
 		printf(" NUMEXTCMDSxM         number of external commands processed in last 1/5/15 minutes.\n");
 
 		printf("\n");
 		printf(" Note: Replace x's in MRTG variable names with 'MIN', 'MAX', 'AVG', or the\n");
 		printf("       the appropriate number (i.e. '1', '5', '15', or '60').\n");
 		printf("\n");
+
+		free_memory();
 
 		exit(1);
 	}
@@ -370,6 +377,7 @@ int main(int argc, char **argv)
 		result = read_config_file();
 		if (result == ERROR && mrtg_mode == FALSE) {
 			printf("Error processing config file '%s'\n", main_config_file);
+			free_memory();
 			return 1;
 		}
 	}
@@ -378,6 +386,7 @@ int main(int argc, char **argv)
 	result = read_status_file();
 	if (result == ERROR && mrtg_mode == FALSE) {
 		printf("Error reading status file '%s': %s\n", status_file, strerror(errno));
+		free_memory();
 		return 1;
 	}
 
@@ -386,6 +395,9 @@ int main(int argc, char **argv)
 		display_stats();
 	else
 		display_mrtg_values();
+
+	//deallocate memory
+	free_memory();
 
 	/* Opsera patch - return based on error, because mrtg_mode was always returning OK */
 	if (result == ERROR)
@@ -398,7 +410,7 @@ int main(int argc, char **argv)
 
 static int display_mrtg_values(void)
 {
-	char *temp_ptr;
+	char *temp_ptr = NULL;
 	time_t current_time;
 	unsigned long time_difference;
 	int days;
@@ -809,10 +821,10 @@ static int display_stats(void)
 
 static int read_config_file(void)
 {
-	char temp_buffer[MAX_INPUT_BUFFER];
-	FILE *fp;
-	char *var;
-	char *val;
+	char temp_buffer[MAX_INPUT_BUFFER] = {0};
+	FILE *fp = NULL;
+	char *var = NULL;
+	char *val = NULL;
 	char *main_cfg_dir = NULL;
 	char *slash = NULL;
 
@@ -822,8 +834,10 @@ static int read_config_file(void)
 		* slash = 0;
 
 	fp = fopen(main_config_file, "r");
-	if (fp == NULL)
+	if (fp == NULL) {
+		nm_free(main_cfg_dir);
 		return ERROR;
+	}
 
 	/* read all lines from the main nagios config file */
 	while (fgets(temp_buffer, sizeof(temp_buffer) - 1, fp)) {
@@ -844,10 +858,15 @@ static int read_config_file(void)
 				free(status_file);
 			status_file = nspath_absolute(val, main_cfg_dir);
 		}
-
 	}
 
 	fclose(fp);
+
+	//free
+	/* we are responsible for freeing the memory
+	 * malloc in nspath.c -> pcomp_construct
+	 */
+	nm_free(main_cfg_dir);
 
 	return OK;
 }
@@ -855,7 +874,7 @@ static int read_config_file(void)
 
 static int read_status_file(void)
 {
-	char temp_buffer[MAX_INPUT_BUFFER];
+	char temp_buffer[MAX_INPUT_BUFFER] = {0};
 	FILE *fp = NULL;
 	int data_type = STATUS_NO_DATA;
 	char *var = NULL;
@@ -1364,4 +1383,14 @@ void get_time_breakdown(unsigned long raw_time, int *days, int *hours, int *minu
 	*seconds = temp_seconds;
 
 	return;
+}
+
+static void free_memory(void)
+{
+	//deallocate memory
+	nm_free(main_config_file);
+	nm_free(status_file);
+	nm_free(status_version);
+	nm_free(mrtg_variables);
+	nm_free(mrtg_delimiter_save);
 }

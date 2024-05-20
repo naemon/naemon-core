@@ -64,6 +64,9 @@ static struct wproc_list *to_remove = NULL;
 unsigned int wproc_num_workers_online = 0, wproc_num_workers_desired = 0;
 unsigned int wproc_num_workers_spawned = 0;
 
+static int get_desired_workers(int desired_workers);
+static int spawn_core_worker(void);
+
 #define tv2float(tv) ((float)((tv)->tv_sec) + ((float)(tv)->tv_usec) / 1000000.0)
 
 static void wproc_logdump_buffer(int debuglevel, int verbosity, const char *prefix, char *buf)
@@ -119,7 +122,7 @@ static struct wproc_list *get_wproc_list(const char *cmd)
 		wp_list = g_hash_table_lookup(specialized_workers, ++slash);
 	}
 	if (wp_list != NULL) {
-		log_debug_info(DEBUGL_CHECKS, 1, "Found specialized worker(s) for '%s'", (slash && *slash != '/') ? slash : cmd_name);
+		log_debug_info(DEBUGL_CHECKS, 1, "Found specialized worker(s) for '%s'\n", (slash && *slash != '/') ? slash : (cmd_name ? cmd_name : "(null)"));
 	}
 	if (cmd_name)
 		free(cmd_name);
@@ -160,6 +163,10 @@ static void run_job_callback(struct wproc_job *job, struct wproc_result *wpres, 
 {
 	if (!job || !job->callback)
 		return;
+	
+	if (!wpres) {
+		return;
+	}
 
 	(*job->callback)(wpres, job->data, val);
 	job->callback = NULL;
@@ -224,7 +231,7 @@ static int wproc_destroy(struct wproc_worker *wp, int flags)
 		int ret = waitpid(wp->pid, &i, 0);
 		if (ret == wp->pid || (ret < 0 && errno == ECHILD))
 			break;
-	} while(1);
+	} while (1);
 
 	free(wp);
 
@@ -414,6 +421,7 @@ static int handle_worker_result(int sd, int events, void *arg)
 	char *buf, *error_reason = NULL;
 	size_t size;
 	int ret;
+	unsigned int desired_workers;
 	struct wproc_worker *wp = (struct wproc_worker *)arg;
 
 	ret = nm_bufferqueue_read(wp->bq, wp->sd);
@@ -428,28 +436,43 @@ static int handle_worker_result(int sd, int events, void *arg)
 		nm_log(NSLOG_INFO_MESSAGE, "wproc: Socket to worker %s broken, removing", wp->name);
 		wproc_num_workers_online--;
 		iobroker_unregister(nagios_iobs, sd);
-		if (workers.len <= 0) {
-			/* there aren't global workers left, we can't run any more checks
-			 * we should try respawning a few of the standard ones
-			 */
-			nm_log(NSLOG_RUNTIME_ERROR, "wproc: All our workers are dead, we can't do anything!");
-		}
 
 		/* remove worker from worker list - this ensures that we don't reassign
 		 * its jobs back to itself*/
 		remove_worker(wp);
+
+		desired_workers = get_desired_workers(num_check_workers);
+
+		if (workers.len < desired_workers) {
+			/* there aren't global workers left, we can't run any more checks
+			 * we should try respawning a few of the standard ones
+			 */
+			nm_log(NSLOG_RUNTIME_ERROR, "wproc: We have have less Core Workers than we should have, trying to respawn Core Worker");
+
+			/* Respawn a worker */
+			if ((ret = spawn_core_worker()) < 0) {
+				nm_log(NSLOG_RUNTIME_ERROR, "wproc: Failed to respawn Core Worker");
+			} else {
+				nm_log(NSLOG_INFO_MESSAGE, "wproc: Respawning Core Worker %u was successful", ret);
+			}
+		} else if (workers.len == 0) {
+			/* there aren't global workers left, we can't run any more checks
+			 * this should never happen, because the respawning will be done in the upper if condition
+			 */
+			nm_log(NSLOG_RUNTIME_ERROR, "wproc: All our workers are dead, we can't do anything!");
+		}
 
 		/* reassign this dead worker's jobs */
 		g_hash_table_iter_init(&iter, wp->jobs);
 		while (g_hash_table_iter_next(&iter, NULL, &job_)) {
 			struct wproc_job *job = job_;
 			wproc_run_job(
-					create_job(job->callback, job->data, job->timeout, job->command),
-					NULL
-					);
+			    create_job(job->callback, job->data, job->timeout, job->command),
+			    NULL
+			);
 		}
 
-		wproc_destroy(wp, 0);
+		wproc_destroy(wp, WPROC_FORCE);
 		return 0;
 	}
 	while ((buf = worker_ioc2msg(wp->bq, &size, 0))) {
@@ -499,16 +522,16 @@ static int handle_worker_result(int sd, int events, void *arg)
 			nm_asprintf(&error_reason, "timed out after %.2fs", tv_delta_f(&wpres.start, &wpres.stop));
 		} else if (WIFSIGNALED(wpres.wait_status)) {
 			nm_asprintf(&error_reason, "died by signal %d%s after %.2f seconds",
-			         WTERMSIG(wpres.wait_status),
-			         WCOREDUMP(wpres.wait_status) ? " (core dumped)" : "",
-			         tv_delta_f(&wpres.start, &wpres.stop));
+			            WTERMSIG(wpres.wait_status),
+			            WCOREDUMP(wpres.wait_status) ? " (core dumped)" : "",
+			            tv_delta_f(&wpres.start, &wpres.stop));
 		}
 		if (error_reason) {
-			log_debug_info(DEBUGL_IPC, DEBUGV_BASIC, "wproc: job %d from worker %s %s",
-					job->id, wp->name, error_reason);
+			log_debug_info(DEBUGL_IPC, DEBUGV_BASIC, "wproc: job %d from worker %s %s\n",
+			               job->id, wp->name, error_reason);
 			log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   command: %s\n", job->command);
 			log_debug_info(DEBUGL_IPC, DEBUGV_MORE, "wproc:   early_timeout=%d; exited_ok=%d; wait_status=%d; error_code=%d;\n",
-			      wpres.early_timeout, wpres.exited_ok, wpres.wait_status, wpres.error_code);
+			               wpres.early_timeout, wpres.exited_ok, wpres.wait_status, wpres.error_code);
 			wproc_logdump_buffer(DEBUGL_IPC, DEBUGV_MORE, "wproc:   stderr", wpres.outerr);
 			wproc_logdump_buffer(DEBUGL_IPC, DEBUGV_MORE, "wproc:   stdout", wpres.outstd);
 		}
@@ -596,8 +619,8 @@ static int register_worker(int sd, char *buf, unsigned int len)
 	}
 
 	worker->jobs = g_hash_table_new_full(
-			g_direct_hash, g_direct_equal,
-			NULL, destroy_job);
+	                   g_direct_hash, g_direct_equal,
+	                   NULL, destroy_job);
 
 	if (is_global) {
 		workers.len++;
@@ -652,7 +675,7 @@ static int wproc_query_handler(int sd, char *buf, unsigned int len)
 
 static int spawn_core_worker(void)
 {
-	char * argvec[] = {naemon_binary_path, "--worker", qh_socket_path, NULL};
+	char *argvec[] = {naemon_binary_path, "--worker", qh_socket_path, NULL};
 	int ret;
 
 	if ((ret = spawn_helper(argvec)) < 0)
@@ -664,24 +687,8 @@ static int spawn_core_worker(void)
 }
 
 
-int init_workers(int desired_workers)
+static int get_desired_workers(int desired_workers)
 {
-	int i;
-
-	/*
-	 * we register our query handler before launching workers,
-	 * so other workers can join us whenever they're ready
-	 */
-	specialized_workers = g_hash_table_new_full(g_str_hash, g_str_equal,
-			free, NULL
-			);
-	if (!qh_register_handler("wproc", "Worker process management and info", 0, wproc_query_handler)) {
-		log_debug_info(DEBUGL_IPC, DEBUGV_BASIC, "wproc: Successfully registered manager as @wproc with query handler\n");
-	} else {
-		nm_log(NSLOG_RUNTIME_ERROR, "wproc: Failed to register manager with query handler\n");
-		return -1;
-	}
-
 	if (desired_workers <= 0) {
 		int cpus = online_cpus();
 
@@ -699,7 +706,33 @@ int init_workers(int desired_workers)
 			}
 		}
 	}
+
 	wproc_num_workers_desired = desired_workers;
+
+	return desired_workers;
+}
+
+
+int init_workers(int desired_workers)
+{
+	int i;
+
+	/*
+	 * we register our query handler before launching workers,
+	 * so other workers can join us whenever they're ready
+	 */
+	specialized_workers = g_hash_table_new_full(g_str_hash, g_str_equal,
+	                      free, NULL
+	                                           );
+	if (!qh_register_handler("wproc", "Worker process management and info", 0, wproc_query_handler)) {
+		log_debug_info(DEBUGL_IPC, DEBUGV_BASIC, "wproc: Successfully registered manager as @wproc with query handler\n");
+	} else {
+		nm_log(NSLOG_RUNTIME_ERROR, "wproc: Failed to register manager with query handler\n");
+		return -1;
+	}
+
+	/* Get the number of workers we need */
+	desired_workers = get_desired_workers(desired_workers);
 
 	if (workers_alive() == desired_workers)
 		return 0;

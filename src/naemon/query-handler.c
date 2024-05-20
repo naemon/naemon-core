@@ -63,7 +63,7 @@ const char *qh_strerror(int code)
 		return "Redirected (possibly deprecated address)";
 
 	switch (code) {
-		/* client errors */
+	/* client errors */
 	case 400: return "Bad request";
 	case 401: return "Unathorized";
 	case 403: return "Forbidden (disabled by config)";
@@ -79,7 +79,7 @@ const char *qh_strerror(int code)
 	case 413: return "Request too large";
 	case 414: return "Request-URI too long";
 
-		/* server errors */
+	/* server errors */
 	case 500: return "Internal server error";
 	case 501: return "Not implemented";
 	case 502: return "Bad gateway";
@@ -173,7 +173,7 @@ static int qh_input(int sd, int events, void *bq_)
 	case QH_CLOSE: /* oneshot handler */
 	case -1:       /* general error */
 		iobroker_close(nagios_iobs, sd);
-		/* fallthrough */
+	/* fallthrough */
 	case QH_TAKEOVER: /* handler takes over */
 	case 101:         /* switch protocol (takeover + message) */
 		nm_bufferqueue_destroy(bq);
@@ -334,7 +334,7 @@ static int qh_command(int sd, char *buf, unsigned int len)
 		                 "Available commands:\n"
 		                 "  run <command>     Run a command\n"
 		                 "  runkv <command>   Run a command as escaped kvvec\n"
-							  );
+		                );
 		return 0;
 	}
 	if ((space = memchr(buf, ' ', len)))
@@ -343,17 +343,16 @@ static int qh_command(int sd, char *buf, unsigned int len)
 		mode = 0;
 		if (!strcmp(buf, "run")) {
 			mode = COMMAND_SYNTAX_NOKV;
-		}
-		else if(!strcmp(buf, "runkv")) {
+		} else if (!strcmp(buf, "runkv")) {
 			mode = COMMAND_SYNTAX_KV;
 		}
-		if(mode != 0) {
+		if (mode != 0) {
 			GError *error = NULL;
 			int res = process_external_command(space, mode, &error);
 			if (res == OK) {
 				return 200;
 			} else {
-				nsock_printf_nul(sd, "400: %s", error->message);
+				nsock_printf_nul(sd, "400: %s\n", error->message);
 				g_clear_error(&error);
 				return 0;
 			}
@@ -390,7 +389,7 @@ int qh_init(const char *path)
 
 	/* most likely overkill, but it's small, so... */
 	qh_table = g_hash_table_new_full(g_str_hash, g_str_equal,
-					free, (GDestroyNotify) qh_remove);
+	                                 free, (GDestroyNotify) qh_remove);
 	errno = 0;
 	result = iobroker_register(nagios_iobs, qh_listen_sock, NULL, qh_registration_input);
 	if (result < 0) {

@@ -6,6 +6,7 @@
 #endif
 
 #include <sys/types.h>
+#include <fcntl.h>
 
 NAGIOS_BEGIN_DECL
 
@@ -98,6 +99,14 @@ extern const char *mkstr(const char *fmt, ...)
 	__attribute__((__format__(__printf__, 1, 2)));
 
 /**
+ * format duration seconds into human readable string.
+ * @note The returned string must *not* be free()'d!
+ * @param[in] duration The duration in seconds
+ * @return A pointer to the formatted string on success. Undefined on errors
+ */
+extern const char *duration_string(unsigned long);
+
+/**
  * Calculate the millisecond delta between two timeval structs
  * @param[in] start The start time
  * @param[in] stop The stop time
@@ -113,6 +122,11 @@ extern int tv_delta_msec(const struct timeval *start, const struct timeval *stop
  * @return time difference in fractions of seconds
  */
 extern float tv_delta_f(const struct timeval *start, const struct timeval *stop);
+
+/**
+ * close and reopen stdin, stdout and stderr to /dev/null
+ */
+void close_standard_fds(void);
 
 NAGIOS_END_DECL
 

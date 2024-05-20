@@ -13,10 +13,11 @@
 nebmodule *test_nebmodule;
 static void *received_callback_data[NEBCALLBACK_NUMITEMS][NUM_NEBTYPES];
 
-void clear_callback_data(void) {
+void clear_callback_data(void)
+{
 	int i = 0, j = 0;
 	for (i = 0; i < NEBCALLBACK_NUMITEMS; i++) {
-		for(j = 0; j < NUM_NEBTYPES; j++) {
+		for (j = 0; j < NUM_NEBTYPES; j++) {
 			if (received_callback_data[i][j] != NULL) {
 				nm_free(received_callback_data[i][j]);
 			}
@@ -33,31 +34,32 @@ int _test_cb(int type, void *data)
 	 * the first member of all nebstruct_'s is an int denoting the type,
 	 * this hackery allows us to avoid a huge switch-case
 	 */
-	int nebtype = (int) *((int *)data);
-	switch(nebtype) {
-		case NEBTYPE_SERVICECHECK_PROCESSED:
-			sz = sizeof(nebstruct_service_check_data);
-			break;
-		case NEBTYPE_HOSTCHECK_PROCESSED:
-			sz = sizeof(nebstruct_host_check_data);
-			break;
-		default:
-			ck_abort_msg("Unhandled nebtype - update _test_cb()");
+	int nebtype = (int) * ((int *)data);
+	switch (nebtype) {
+	case NEBTYPE_SERVICECHECK_PROCESSED:
+		sz = sizeof(nebstruct_service_check_data);
+		break;
+	case NEBTYPE_HOSTCHECK_PROCESSED:
+		sz = sizeof(nebstruct_host_check_data);
+		break;
+	default:
+		ck_abort_msg("Unhandled nebtype - update _test_cb()");
 	}
 
 	ck_assert_msg(received_callback_data[type][nebtype] == NULL, "Cowardly refusing to overwrite existing callback data");
 	received_callback_data[type][nebtype] = nm_malloc(sz);
-	memcpy( received_callback_data[type][nebtype], data, sz);
+	memcpy(received_callback_data[type][nebtype], data, sz);
 	return 0;
 }
 
-neb_cb_result * _test_cb_v2(enum NEBCallbackType type, void *data)
+neb_cb_result *_test_cb_v2(enum NEBCallbackType type, void *data)
 {
-	neb_cb_result * result = neb_cb_result_create_full(0, data);
+	neb_cb_result *result = neb_cb_result_create_full(0, data);
 	return result;
 }
 
-void common_setup(void) {
+void common_setup(void)
+{
 	int ret = OK;
 	ret = neb_init_callback_list();
 	ck_assert_int_eq(OK, ret);
@@ -67,7 +69,8 @@ void common_setup(void) {
 	ck_assert_int_eq(0, ret);
 }
 
-void common_teardown(void) {
+void common_teardown(void)
+{
 	nm_free(test_nebmodule);
 	neb_free_callback_list();
 }
@@ -75,7 +78,8 @@ void common_teardown(void) {
 struct check_result *cr;
 struct host *hst;
 struct service *svc;
-void setup_v1(void) {
+void setup_v1(void)
+{
 	int ret = OK;
 	common_setup();
 	init_event_queue();
@@ -111,27 +115,30 @@ void setup_v1(void) {
 
 }
 
-void setup_v2(void) {
+void setup_v2(void)
+{
 	int ret = 0;
 	common_setup();
-	ret = neb_register_callback_full( NEBCALLBACK_PROCESS_DATA,
-			test_nebmodule->module_handle, 0, NEB_API_VERSION_2,
-			_test_cb_v2);
+	ret = neb_register_callback_full(NEBCALLBACK_PROCESS_DATA,
+	                                 test_nebmodule->module_handle, 0, NEB_API_VERSION_2,
+	                                 _test_cb_v2);
 
 	ck_assert_int_eq(OK, ret);
 	event_broker_options = BROKER_EVERYTHING;
 }
 
-void teardown_v1(void) {
+void teardown_v1(void)
+{
 	common_teardown();
-	destroy_service(svc);
+	destroy_service(svc, FALSE);
 	destroy_host(hst);
 	free_check_result(cr);
 	nm_free(cr);
 	clear_callback_data();
 }
 
-void teardown_v2(void) {
+void teardown_v2(void)
+{
 	common_teardown();
 }
 START_TEST(test_cb_service_check_processed)
@@ -298,7 +305,7 @@ START_TEST(test_cb_api_v2)
 }
 END_TEST
 
-Suite*
+Suite *
 neb_cb_suite(void)
 {
 	Suite *s = suite_create("NEB Callbacks");

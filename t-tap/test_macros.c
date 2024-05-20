@@ -36,6 +36,7 @@
 #include "tap.h"
 
 #define TEST_HOSTNAME "name'&%"
+#define TEST_HOSTGROUPNAME "hostgroup name'&%"
 
 /*****************************************************************************/
 /*                             Local test environment                        */
@@ -62,7 +63,7 @@ static struct service test_service = {
 };
 
 static struct hostgroup test_hostgroup = {
-	.group_name = "hostgroup name'&%",
+	.group_name = TEST_HOSTGROUPNAME,
 	.notes = "notes'&%\"($HOSTGROUPACTIONURL$)",
 	.action_url = "action_url'&%",
 };
@@ -90,10 +91,14 @@ void init_environment(void)
 	}
 	init_objects_host(1);
 	init_objects_service(1);
+	init_objects_hostgroup(1);
 	test_service.host_name = test_host.name;
 	test_service.host_ptr = &test_host;
 	register_host(&test_host);
 	register_service(&test_service);
+	test_hostgroup.members = g_tree_new_full((GCompareDataFunc)my_strsorter, NULL, g_free, NULL);
+	register_hostgroup(&test_hostgroup);
+	add_host_to_hostgroup(&test_hostgroup, &test_host);
 }
 
 nagios_macros *setup_macro_object(void)
@@ -205,6 +210,10 @@ static void test_ondemand_macros(nagios_macros *mac)
 	RUN_MACRO_TEST_EXPECT_SAME("$SERVICESTATEID:" TEST_HOSTNAME ",service description$", 0);
 	/* this is valid and should return the real value as a string */
 	RUN_MACRO_TEST("$SERVICESTATEID:" TEST_HOSTNAME ":service description$", "2", 0);
+
+	/* on demand hostgroup macro */
+	RUN_MACRO_TEST("$HOSTSTATEID:" TEST_HOSTGROUPNAME ":,$", "0", 0);
+	RUN_MACRO_TEST("$HOSTNAME:" TEST_HOSTGROUPNAME ":,$", TEST_HOSTNAME, 0);
 }
 
 /*****************************************************************************/
@@ -215,7 +224,7 @@ int main(void)
 {
 	nagios_macros *mac;
 
-	plan_tests(24);
+	plan_tests(26);
 
 	reset_variables();
 	init_environment();

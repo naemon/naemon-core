@@ -58,6 +58,7 @@ long get_timed_event_time_left_ms(timed_event *ev);
 /* Main function */
 void init_event_queue(void); /* creates the queue nagios_squeue */
 int event_poll(void); /* main monitoring/event handler loop */
+void clear_event_queue(void); /* remove all events from the event queue */
 void destroy_event_queue(void); /* destroys the queue nagios_squeue */
 
 NAGIOS_END_DECL

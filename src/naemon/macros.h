@@ -22,7 +22,7 @@
 /****************** MACRO DEFINITIONS *****************/
 #define MACRO_ENV_VAR_PREFIX			"NAGIOS_"
 #define MAX_USER_MACROS				256	/* max $USERx$ macros */
-#define MACRO_X_COUNT				156	/* size of macro_x[] array */
+#define MACRO_X_COUNT				164	/* size of macro_x[] array */
 
 NAGIOS_BEGIN_DECL
 
@@ -201,7 +201,15 @@ typedef struct nagios_macros nagios_macros;
 #define MACRO_HOSTVALUE                         153
 #define MACRO_SERVICEVALUE                      154
 #define MACRO_PROBLEMVALUE                      155
-
+#define MACRO_HOSTPROBLEMSTART                  156
+#define MACRO_HOSTPROBLEMEND                    157
+#define MACRO_HOSTPROBLEMDURATIONSEC            158
+#define MACRO_HOSTPROBLEMDURATION               159
+#define MACRO_SERVICEPROBLEMSTART               160
+#define MACRO_SERVICEPROBLEMEND                 161
+#define MACRO_SERVICEPROBLEMDURATIONSEC         162
+#define MACRO_SERVICEPROBLEMDURATION            163
+/* NOTE: update MACRO_X_COUNT above to highest macro + 1 */
 
 /************* MACRO CLEANING OPTIONS *****************/
 #define STRIP_ILLEGAL_MACRO_CHARS       1

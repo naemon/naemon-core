@@ -21,6 +21,7 @@
 #include "objects_hostdependency.h"
 #include <string.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 
 #include "neberrors.h"
 
@@ -48,10 +49,12 @@ static int determine_host_reachability(host *hst);
 void checks_init_hosts(void)
 {
 	host *temp_host = NULL;
+	time_t delay;
+	time_t current_time = time(NULL);
 
 	/******** SCHEDULE HOST CHECKS  ********/
 
-	log_debug_info(DEBUGL_EVENTS, 2, "Scheduling host checks...");
+	log_debug_info(DEBUGL_EVENTS, 2, "Scheduling host checks...\n");
 
 	/* add scheduled host checks to event queue */
 	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
@@ -59,8 +62,32 @@ void checks_init_hosts(void)
 		/* update status of all hosts (scheduled or not) */
 		update_host_status(temp_host, FALSE);
 
+		/* Determine the delay used for the first check event.
+		 * If use_retained_scheduling_info is enabled, we use the previously set
+		 * next_check. If the check was missed, schedule it within the next
+		 * retained_scheduling_randomize_window. If more than one check was missed, we schedule the check
+		 * randomly instead. If the next_check is more than one check_interval in
+		 * the future, we also schedule the next check randomly. This indicates
+		 * that the check_interval has been lowered over restarts.
+		 */
+		if (use_retained_scheduling_info == TRUE &&
+		    temp_host->next_check > current_time - get_host_check_interval_s(temp_host) &&
+		    temp_host->next_check <= current_time + get_host_check_interval_s(temp_host)) {
+			if (temp_host->next_check < current_time) {
+				int scheduling_window = retained_scheduling_randomize_window;
+				if (retained_scheduling_randomize_window > get_host_check_interval_s(temp_host)) {
+					scheduling_window = get_host_check_interval_s(temp_host);
+				}
+				delay = ranged_urand(0, scheduling_window);
+			} else {
+				delay = temp_host->next_check - current_time;
+			}
+		} else {
+			delay = ranged_urand(0, get_host_check_interval_s(temp_host));
+		}
+
 		/* schedule a new host check event */
-		schedule_next_host_check(temp_host, ranged_urand(0, get_host_check_interval_s(temp_host)), CHECK_OPTION_NONE);
+		schedule_next_host_check(temp_host, delay, CHECK_OPTION_NONE);
 	}
 
 	/* add a host result "freshness" check event */
@@ -82,21 +109,22 @@ void schedule_next_host_check(host *hst, time_t delay, int options)
 	time_t current_time = time(NULL);
 
 	/* A closer check is already scheduled, skip this scheduling */
-	if(hst->next_check_event != NULL && hst->next_check < delay + current_time) {
+	if (hst->next_check_event != NULL && hst->next_check < delay + current_time) {
 		/*... unless this is a forced check or postponement is allowed*/
 		if (!(options & (CHECK_OPTION_FORCE_EXECUTION | CHECK_OPTION_ALLOW_POSTPONE)))
 			return;
 	}
 
 	/* We have a scheduled check, drop that event to make space for the new event */
-	if(hst->next_check_event != NULL) {
+	if (hst->next_check_event != NULL) {
 		destroy_event(hst->next_check_event);
 	}
 
 	/* Schedule the event */
 	hst->check_options = options;
 	hst->next_check = delay + current_time;
-	hst->next_check_event = schedule_event(delay, handle_host_check_event, (void*)hst);
+	hst->last_update = current_time;
+	hst->next_check_event = schedule_event(delay, handle_host_check_event, (void *)hst);
 
 	/* update the status log, since next_check and check_options is updated */
 	update_host_status(hst, FALSE);
@@ -105,7 +133,7 @@ void schedule_next_host_check(host *hst, time_t delay, int options)
 /* schedules an immediate or delayed host check, DEPRECATED */
 void schedule_host_check(host *hst, time_t check_time, int options)
 {
-	schedule_next_host_check( hst, check_time-time(NULL), options);
+	schedule_next_host_check(hst, check_time - time(NULL), options);
 }
 
 static void handle_host_check_event(struct nm_event_execution_properties *evprop)
@@ -113,17 +141,14 @@ static void handle_host_check_event(struct nm_event_execution_properties *evprop
 	host *hst = (host *)evprop->user_data;
 	double latency;
 	struct timeval tv;
-	struct timeval event_runtime;
 	int options = hst->check_options;
 
 	int result = OK;
 
-	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
+	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* get event latency */
+		latency = evprop->attributes.timed.latency;
 		gettimeofday(&tv, NULL);
-		event_runtime.tv_sec = hst->next_check;
-		event_runtime.tv_usec = 0;
-		latency = (double)(tv_delta_f(&event_runtime, &tv));
 
 		/* When the callback is called, the pointer to the timed event is invalid */
 		hst->next_check_event = NULL;
@@ -136,7 +161,7 @@ static void handle_host_check_event(struct nm_event_execution_properties *evprop
 		 * But this is only done if checks are recurring, that is non-zero
 		 * check_interval
 		 */
-		if (hst->check_interval != 0.0)
+		if (hst->check_interval != 0.0 && hst->is_executing == FALSE)
 			schedule_next_host_check(hst, get_host_check_interval_s(hst), CHECK_OPTION_NONE);
 
 		/* Don't run checks if checks are disabled, unless foreced */
@@ -153,14 +178,17 @@ static void handle_host_check_event(struct nm_event_execution_properties *evprop
 		/* an error occurred, so reschedule the check */
 		if (result == ERROR) {
 			/* Somethings wrong, reschedule for retry interval instead, if retry_interval is specified. */
-			if (hst->retry_interval != 0.0) {
+			if (hst->retry_interval != 0.0 && hst->is_executing == FALSE) {
 				schedule_next_host_check(hst, get_host_retry_interval_s(hst), CHECK_OPTION_NONE);
-				log_debug_info(DEBUGL_CHECKS, 1, "Rescheduled next host check for %s", ctime(&hst->next_check));
+				log_debug_info(DEBUGL_CHECKS, 1, "Rescheduled next host check for %s\n", ctime(&hst->next_check));
 			}
 
 			/* update the status log */
 			update_host_status(hst, FALSE);
 		}
+	} else if (evprop->execution_type == EVENT_EXEC_ABORTED) {
+		/* If the event is destroyed, remove the reference. */
+		hst->next_check_event = NULL;
 	}
 }
 
@@ -213,8 +241,31 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 		}
 
 		/* check host dependencies for execution */
+		log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' checking dependencies...\n", hst->name);
 		if (check_host_dependencies(hst, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
-			return ERROR;
+			int keep_running = FALSE;
+			switch(host_skip_check_dependency_status) {
+				case SKIP_KEEP_RUNNING_WHEN_UP:
+					if (hst->current_state == STATE_UP) {
+						keep_running = TRUE;
+					}
+					break;
+				case STATE_UP:
+				case STATE_DOWN:
+				case STATE_UNREACHABLE:
+					hst->current_state = host_skip_check_dependency_status;
+					if (strstr(hst->plugin_output, "(host dependency check failed)") == NULL) {
+						char *old_output = nm_strdup(hst->plugin_output);
+						nm_free(hst->plugin_output);
+						nm_asprintf(&hst->plugin_output, "(host dependency check failed) was: %s", old_output);
+						nm_free(old_output);
+					}
+					break;
+			}
+			if(!keep_running) {
+				log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' failed dependency check. Aborting check\n", hst->name);
+				return ERROR;
+			}
 		}
 	}
 
@@ -225,6 +276,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	start_time.tv_usec = 0L;
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
+	hst->last_update = now;
 
 	neb_result = broker_host_check(NEBTYPE_HOSTCHECK_ASYNC_PRECHECK, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, host_check_timeout, FALSE, 0, NULL, NULL, NULL, NULL, NULL);
 
@@ -291,14 +343,15 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	neb_result = broker_host_check(NEBTYPE_HOSTCHECK_INITIATE, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, host_check_timeout, FALSE, 0, processed_command, NULL, NULL, NULL, cr);
 
 	/* neb module wants to override the service check - perhaps it will check the service itself */
-	if (neb_result == NEBERROR_CALLBACKOVERRIDE) {
+	if (neb_result == NEBERROR_CALLBACKOVERRIDE || neb_result == NEBERROR_CALLBACKCANCEL) {
 		clear_volatile_macros_r(&mac);
 		free_check_result(cr);
+		nm_free(cr);
 		nm_free(processed_command);
-		return OK;
+		return neb_result == NEBERROR_CALLBACKOVERRIDE ? OK : ERROR;
 	}
 
-	runchk_result = wproc_run_callback(processed_command, host_check_timeout, handle_worker_host_check, (void*)cr, &mac);
+	runchk_result = wproc_run_callback(processed_command, host_check_timeout, handle_worker_host_check, (void *)cr, &mac);
 	if (runchk_result == ERROR) {
 		nm_log(NSLOG_RUNTIME_ERROR,
 		       "Unable to send check for host '%s' to worker (ret=%d)\n", hst->name, runchk_result);
@@ -331,6 +384,7 @@ int update_host_state_post_check(struct host *hst, struct check_result *cr)
 {
 	int result;
 	char *temp_ptr = NULL;
+	time_t now = time(NULL);
 
 	if (!hst || !cr)
 		return ERROR;
@@ -371,6 +425,7 @@ int update_host_state_post_check(struct host *hst, struct check_result *cr)
 
 	/* get the last check time */
 	hst->last_check = cr->start_time.tv_sec;
+	hst->last_update = now;
 
 	/* save the old host state */
 	hst->last_state = hst->current_state;
@@ -393,7 +448,7 @@ int update_host_state_post_check(struct host *hst, struct check_result *cr)
 	/* replace semicolons in plugin output (but not performance data) with colons */
 	if ((temp_ptr = hst->plugin_output)) {
 		while ((temp_ptr = strchr(temp_ptr, ';')))
-			*temp_ptr = ':';
+			* temp_ptr = ':';
 	}
 
 	log_debug_info(DEBUGL_CHECKS, 2, "Parsing check output...\n");
@@ -407,6 +462,8 @@ int update_host_state_post_check(struct host *hst, struct check_result *cr)
 
 	/* adjust return code (active checks only) */
 	if (cr->check_type == CHECK_TYPE_ACTIVE) {
+		hst->is_executing = FALSE;
+
 		if (cr->early_timeout) {
 			nm_free(hst->plugin_output);
 			nm_free(hst->long_plugin_output);
@@ -476,8 +533,7 @@ int update_host_state_post_check(struct host *hst, struct check_result *cr)
 			adjust_host_check_attempt(hst, FALSE);
 		else
 			hst->state_type = HARD_STATE;
-	}
-	else if (hst->check_type == CHECK_TYPE_ACTIVE)
+	} else if (hst->check_type == CHECK_TYPE_ACTIVE)
 		adjust_host_check_attempt(hst, TRUE);
 
 	if (hst->current_attempt >= hst->max_attempts)
@@ -557,27 +613,28 @@ int handle_async_host_check_result(host *temp_host, check_result *cr)
 	gettimeofday(&end_time_hires, NULL);
 
 	broker_host_check(
-		NEBTYPE_HOSTCHECK_PROCESSED,
-		NEBFLAG_NONE,
-		alert_recorded | first_recorded_state,
-		temp_host,
-		temp_host->check_type,
-		temp_host->current_state,
-		temp_host->state_type,
-		cr->start_time,
-		cr->finish_time,
-		temp_host->check_command,
-		temp_host->latency,
-		temp_host->execution_time,
-		host_check_timeout,
-		cr->early_timeout,
-		cr->return_code,
-		NULL,
-		temp_host->plugin_output,
-		temp_host->long_plugin_output,
-		temp_host->perf_data,
-		cr);
+	    NEBTYPE_HOSTCHECK_PROCESSED,
+	    NEBFLAG_NONE,
+	    alert_recorded | first_recorded_state,
+	    temp_host,
+	    temp_host->check_type,
+	    temp_host->current_state,
+	    temp_host->state_type,
+	    cr->start_time,
+	    cr->finish_time,
+	    temp_host->check_command,
+	    temp_host->latency,
+	    temp_host->execution_time,
+	    host_check_timeout,
+	    cr->early_timeout,
+	    cr->return_code,
+	    NULL,
+	    temp_host->plugin_output,
+	    temp_host->long_plugin_output,
+	    temp_host->perf_data,
+	    cr);
 
+	temp_host->last_update = end_time_hires.tv_sec;
 	return OK;
 }
 
@@ -585,41 +642,45 @@ static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags)
 {
 	check_result *cr = (check_result *)arg;
 	struct host *hst;
+	time_t now = time(NULL);
 
 	/* decrement the number of host checks still out there... */
 	if (currently_running_host_checks > 0)
 		currently_running_host_checks--;
 
-	hst = find_host(cr->host_name);
-	if (hst && wpres) {
-		hst->is_executing = FALSE;
-		memcpy(&cr->rusage, &wpres->rusage, sizeof(wpres->rusage));
-		cr->start_time.tv_sec = wpres->start.tv_sec;
-		cr->start_time.tv_usec = wpres->start.tv_usec;
-		cr->finish_time.tv_sec = wpres->stop.tv_sec;
-		cr->finish_time.tv_usec = wpres->stop.tv_usec;
-		if (WIFEXITED(wpres->wait_status)) {
-			cr->return_code = WEXITSTATUS(wpres->wait_status);
-		} else {
-			cr->return_code = STATE_UNKNOWN;
-		}
+	if (wpres) {
+		hst = find_host(cr->host_name);
+		if (hst) {
+			hst->is_executing = FALSE;
+			hst->last_update = now;
+			memcpy(&cr->rusage, &wpres->rusage, sizeof(wpres->rusage));
+			cr->start_time.tv_sec = wpres->start.tv_sec;
+			cr->start_time.tv_usec = wpres->start.tv_usec;
+			cr->finish_time.tv_sec = wpres->stop.tv_sec;
+			cr->finish_time.tv_usec = wpres->stop.tv_usec;
+			if (WIFEXITED(wpres->wait_status)) {
+				cr->return_code = WEXITSTATUS(wpres->wait_status);
+			} else {
+				cr->return_code = STATE_UNKNOWN;
+			}
 
-		if (wpres->outstd && *wpres->outstd) {
-			cr->output = nm_strdup(wpres->outstd);
-		} else if (wpres->outerr && *wpres->outerr) {
-			nm_asprintf(&cr->output, "(No output on stdout) stderr: %s", wpres->outerr);
-		} else {
-			cr->output = NULL;
-		}
+			if (wpres->outstd && *wpres->outstd) {
+				cr->output = nm_strdup(wpres->outstd);
+			} else if (wpres->outerr && *wpres->outerr) {
+				nm_asprintf(&cr->output, "(No output on stdout) stderr: %s", wpres->outerr);
+			} else {
+				cr->output = NULL;
+			}
 
-		cr->early_timeout = wpres->early_timeout;
-		cr->exited_ok = wpres->exited_ok;
-		cr->engine = NULL;
-		cr->source = wpres->source;
-		process_check_result(cr);
+			cr->early_timeout = wpres->early_timeout;
+			cr->exited_ok = wpres->exited_ok;
+			cr->engine = NULL;
+			cr->source = wpres->source;
+			process_check_result(cr);
+		}
 	}
 	free_check_result(cr);
-	free(cr);
+	nm_free(cr);
 }
 
 static gboolean propagate_when_not_up(gpointer _name, gpointer _hst, gpointer user_data)
@@ -850,9 +911,14 @@ static int process_host_check_result(host *hst, host *prev, int *alert_recorded)
 		if (hst->retry_interval != 0.0) {
 			/* respect retry interval even if an earlier check is scheduled */
 			schedule_next_host_check(hst,
-					get_host_retry_interval_s(hst),
-					CHECK_OPTION_ALLOW_POSTPONE);
+			                         get_host_retry_interval_s(hst),
+			                         CHECK_OPTION_ALLOW_POSTPONE);
 		}
+	}
+
+	/* make sure there is a next check event scheduled */
+	if (hst->check_interval != 0.0 && hst->next_check_event == NULL) {
+		schedule_next_host_check(hst, get_host_check_interval_s(hst), CHECK_OPTION_NONE);
 	}
 
 	/* update host status - for both active (scheduled) and passive (non-scheduled) hosts */
@@ -921,6 +987,7 @@ static int handle_host_state(host *hst, int *alert_recorded)
 
 			hst->problem_has_been_acknowledged = FALSE;
 			hst->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+			hst->acknowledgement_end_time = (time_t)0;
 
 			/* remove any non-persistant comments associated with the ack */
 			delete_host_acknowledgement_comments(hst);
@@ -928,6 +995,7 @@ static int handle_host_state(host *hst, int *alert_recorded)
 
 			hst->problem_has_been_acknowledged = FALSE;
 			hst->acknowledgement_type = ACKNOWLEDGEMENT_NONE;
+			hst->acknowledgement_end_time = (time_t)0;
 
 			/* remove any non-persistant comments associated with the ack */
 			delete_host_acknowledgement_comments(hst);
@@ -940,6 +1008,7 @@ static int handle_host_state(host *hst, int *alert_recorded)
 		hard_state_change = TRUE;
 
 	if (state_change == TRUE || hard_state_change == TRUE) {
+		int num_downtimes_start = 0;
 
 		/* update last state change times */
 		hst->last_state_change = current_time;
@@ -954,14 +1023,18 @@ static int handle_host_state(host *hst, int *alert_recorded)
 		/* update the problem id when transitioning to a problem state */
 		if (hst->last_state == STATE_UP) {
 			/* don't reset last problem id, or it will be zero the next time a problem is encountered */
-			hst->current_problem_id = next_problem_id;
-			next_problem_id++;
+			nm_free(hst->current_problem_id);
+			hst->current_problem_id = (char*)g_uuid_string_random();
+			hst->problem_start = current_time;
+			hst->problem_end = 0L;
 		}
 
 		/* clear the problem id when transitioning from a problem state to an UP state */
 		if (hst->current_state == STATE_UP) {
 			hst->last_problem_id = hst->current_problem_id;
-			hst->current_problem_id = 0L;
+			hst->current_problem_id = NULL;
+			if(hst->problem_start > 0)
+				hst->problem_end = current_time;
 		}
 
 		/* write the host state change to the main log file */
@@ -972,10 +1045,11 @@ static int handle_host_state(host *hst, int *alert_recorded)
 
 		/* check for start of flexible (non-fixed) scheduled downtime */
 		/* It can start on soft states */
-		check_pending_flex_host_downtime(hst);
+		num_downtimes_start = check_pending_flex_host_downtime(hst);
 
 		/* notify contacts about the recovery or problem if its a "hard" state */
-		if (hst->state_type == HARD_STATE)
+		/* And only if no downtime is being started */
+		if (hst->state_type == HARD_STATE && num_downtimes_start == 0)
 			host_notification(hst, NOTIFICATION_NORMAL, NULL, NULL, NOTIFICATION_OPTION_NONE);
 
 		/* handle the host state change */
@@ -1006,6 +1080,12 @@ static int handle_host_state(host *hst, int *alert_recorded)
 		}
 	}
 
+	/* initialize the last host state change times if necessary */
+	if (hst->last_state_change == (time_t)0)
+		hst->last_state_change = hst->last_check;
+	if (hst->last_hard_state_change == (time_t)0)
+		hst->last_hard_state_change = hst->last_check;
+
 	return OK;
 }
 
@@ -1020,7 +1100,7 @@ static void check_host_result_freshness(struct nm_event_execution_properties *ev
 	host *temp_host = NULL;
 	time_t current_time = 0L;
 
-	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
+	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* get the current time */
 		time(&current_time);
 
@@ -1079,7 +1159,7 @@ static void check_for_orphaned_hosts_eventhandler(struct nm_event_execution_prop
 	time_t current_time = 0L;
 	time_t expected_time = 0L;
 
-	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
+	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 		schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_for_orphaned_hosts_eventhandler, evprop->user_data);
 
 		/* get the current time */
@@ -1115,8 +1195,10 @@ static void check_for_orphaned_hosts_eventhandler(struct nm_event_execution_prop
 				/* disable the executing flag */
 				temp_host->is_executing = FALSE;
 
+				temp_host->last_update = current_time;
+
 				/* schedule an immediate check of the host */
-				schedule_next_host_check(temp_host, 0, CHECK_OPTION_NONE);
+				schedule_next_host_check(temp_host, 0, CHECK_OPTION_ORPHAN_CHECK);
 			}
 
 		}
@@ -1135,6 +1217,8 @@ int check_host_dependencies(host *hst, int dependency_type)
 	host *temp_host = NULL;
 	int state = STATE_UP;
 	time_t current_time = 0L;
+
+	log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' check_host_dependencies()\n", hst->name);
 
 	if (dependency_type == NOTIFICATION_DEPENDENCY) {
 		list = hst->notify_deps;
@@ -1161,8 +1245,14 @@ int check_host_dependencies(host *hst, int dependency_type)
 		else
 			state = temp_host->current_state;
 
+		log_debug_info(DEBUGL_CHECKS, 1, "  depending on host '%s' with state: %d / has_been_checked: %d\n", temp_host->name, state, temp_host->has_been_checked);
+
 		/* is the host we depend on in state that fails the dependency tests? */
 		if (flag_isset(temp_dependency->failure_options, 1 << state))
+			return DEPENDENCIES_FAILED;
+
+		/* check for pending flag */
+		if (temp_host->has_been_checked == FALSE && flag_isset(temp_dependency->failure_options, OPT_PENDING))
 			return DEPENDENCIES_FAILED;
 
 		/* immediate dependencies ok at this point - check parent dependencies if necessary */

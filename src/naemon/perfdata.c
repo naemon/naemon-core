@@ -88,14 +88,14 @@ int initialize_performance_data(const char *cfgfile)
 	/* open the performance data caches */
 	host_perfdata_bq = nm_bufferqueue_create();
 	host_perfdata_fd = xpddefault_open_perfdata_file(
-		host_perfdata_file,
-		host_perfdata_file_pipe,
-		host_perfdata_file_append);
+	                       host_perfdata_file,
+	                       host_perfdata_file_pipe,
+	                       host_perfdata_file_append);
 	service_perfdata_bq = nm_bufferqueue_create();
 	service_perfdata_fd = xpddefault_open_perfdata_file(
-		service_perfdata_file,
-		service_perfdata_file_pipe,
-		service_perfdata_file_append);
+	                          service_perfdata_file,
+	                          service_perfdata_file_pipe,
+	                          service_perfdata_file_append);
 
 	/* verify that performance data commands are valid */
 	if (host_perfdata_command != NULL) {
@@ -318,7 +318,8 @@ int update_host_performance_data(host *hst)
 /************** PERFORMANCE DATA COMMAND FUNCTIONS ****************/
 /******************************************************************/
 
-static void xpddefault_perfdata_job_handler(struct wproc_result *wpres, void *data, int flags) {
+static void xpddefault_perfdata_job_handler(struct wproc_result *wpres, void *data, int flags)
+{
 	/* Don't do anything */
 }
 
@@ -423,14 +424,15 @@ static int xpddefault_open_perfdata_file(char *perfdata_file, int is_pipe, int a
 }
 
 /* flush the perfdata stored in `bq` to the file referred to by `fd`, named by `filename`. Returns -1 on error, 0 on success. */
-static int flush_perfdata(nm_bufferqueue *bq, int fd, const char *filename) {
+static int flush_perfdata(nm_bufferqueue *bq, int fd, const char *filename)
+{
 	if (fd >= 0) {
 		if (nm_bufferqueue_write(bq, fd) >= 0) {
 			return 0;
 		}
 		nm_log(NSLOG_RUNTIME_WARNING,
-				"Warning: Failed to flush performance data to performance file %s",
-				filename);
+		       "Warning: Failed to flush performance data to performance file %s",
+		       filename);
 	}
 	return -1;
 
@@ -483,18 +485,21 @@ static int xpddefault_update_service_performance_data_file(nagios_macros *mac, s
 	if (svc == NULL)
 		return ERROR;
 
+	if (service_perfdata_fd < 0)
+		return OK;
+
 	if (service_perfdata_file_template == NULL)
 		return OK;
 
 	nm_asprintf(&raw_output, "%s\n", service_perfdata_file_template);
-	log_debug_info(DEBUGL_PERFDATA, 2, "Raw service performance data file output: %s", raw_output);
+	log_debug_info(DEBUGL_PERFDATA, 2, "Raw service performance data file output: %s\n", raw_output);
 
 	/* process any macros in the raw output */
 	process_macros_r(mac, raw_output, &processed_output, 0);
 	if (processed_output == NULL)
 		return ERROR;
 
-	log_debug_info(DEBUGL_PERFDATA, 2, "Processed service performance data file output: %s", processed_output);
+	log_debug_info(DEBUGL_PERFDATA, 2, "Processed service performance data file output: %s\n", processed_output);
 
 	nm_bufferqueue_push(service_perfdata_bq, processed_output, strlen(processed_output));
 	/* temporary failures are fine - if it's serious, we log before we run the processing event */
@@ -518,18 +523,21 @@ static int xpddefault_update_host_performance_data_file(nagios_macros *mac, host
 	if (hst == NULL)
 		return ERROR;
 
+	if (host_perfdata_fd < 0)
+		return OK;
+
 	if (host_perfdata_file_template == NULL)
 		return OK;
 
 	nm_asprintf(&raw_output, "%s\n", host_perfdata_file_template);
-	log_debug_info(DEBUGL_PERFDATA, 2, "Raw host performance file output: %s", raw_output);
+	log_debug_info(DEBUGL_PERFDATA, 2, "Raw host performance file output: %s\n", raw_output);
 
 	/* process any macros in the raw output */
 	process_macros_r(mac, raw_output, &processed_output, 0);
 	if (processed_output == NULL)
 		return ERROR;
 
-	log_debug_info(DEBUGL_PERFDATA, 2, "Processed host performance data file output: %s", processed_output);
+	log_debug_info(DEBUGL_PERFDATA, 2, "Processed host performance data file output: %s\n", processed_output);
 
 	nm_bufferqueue_push(host_perfdata_bq, processed_output, strlen(processed_output));
 	/* temporary failures are fine - if it's serious, we log before we run the processing event */
@@ -545,12 +553,12 @@ static void xpddefault_process_host_job_handler(struct wproc_result *wpres, void
 {
 	if (wpres && wpres->early_timeout) {
 		nm_log(NSLOG_RUNTIME_WARNING,
-			   "Warning: Host performance data file processing command '%s' timed out after %d seconds\n", wpres->command, perfdata_timeout);
+		       "Warning: Host performance data file processing command '%s' timed out after %d seconds\n", wpres->command, perfdata_timeout);
 	}
 	host_perfdata_fd = xpddefault_open_perfdata_file(
-		host_perfdata_file,
-		host_perfdata_file_pipe,
-		host_perfdata_file_append);
+	                       host_perfdata_file,
+	                       host_perfdata_file_pipe,
+	                       host_perfdata_file_append);
 }
 
 /* periodically process the host perf data file */
@@ -561,12 +569,15 @@ static void xpddefault_process_host_perfdata_file(struct nm_event_execution_prop
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	nagios_macros mac;
 
-	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
+	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* Recurring event */
 		schedule_event(host_perfdata_file_processing_interval, xpddefault_process_host_perfdata_file, NULL);
 
 		/* we don't have a command */
 		if (host_perfdata_file_processing_command == NULL)
+			return; /* OK */
+
+		if (process_performance_data == FALSE)
 			return; /* OK */
 
 		/* init macros */
@@ -609,12 +620,12 @@ static void xpddefault_process_service_job_handler(struct wproc_result *wpres, v
 {
 	if (wpres && wpres->early_timeout) {
 		nm_log(NSLOG_RUNTIME_WARNING,
-			   "Warning: Service performance data file processing command '%s' timed out after %d seconds\n", wpres->command, perfdata_timeout);
+		       "Warning: Service performance data file processing command '%s' timed out after %d seconds\n", wpres->command, perfdata_timeout);
 	}
 	service_perfdata_fd = xpddefault_open_perfdata_file(
-		service_perfdata_file,
-		service_perfdata_file_pipe,
-		service_perfdata_file_append);
+	                          service_perfdata_file,
+	                          service_perfdata_file_pipe,
+	                          service_perfdata_file_append);
 }
 
 /* periodically process the service perf data file */
@@ -625,12 +636,15 @@ static void xpddefault_process_service_perfdata_file(struct nm_event_execution_p
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	nagios_macros mac;
 
-	if(evprop->execution_type == EVENT_EXEC_NORMAL) {
+	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* Recurring event */
 		schedule_event(service_perfdata_file_processing_interval, xpddefault_process_service_perfdata_file, NULL);
 
 		/* we don't have a command */
 		if (service_perfdata_file_processing_command == NULL)
+			return; /* OK */
+
+		if (process_performance_data == FALSE)
 			return; /* OK */
 
 		/* init macros */

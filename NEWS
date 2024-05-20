@@ -1,3 +1,242 @@
+1.4.2 - Jan 03 2024
+===================
+Features:
+* remove size limit on external command argument length
+* performance improvements when having lots of comments
+* respawn dead core worker
+
+Changed:
+* write objects.precache into a tmp file first
+* increased CURRENT_NEB_API_VERSION to 6 (neb modules need to be rebuild)
+
+Bugfixes:
+* fix build error on fedora
+* fix latency calculation having negative value sometimes
+
+
+1.4.1 - Feb 01 2023
+===================
+Features:
+* none
+
+Changed:
+* use /run/naemon instead of /var/run/naemon (#410)
+
+Bugfixes:
+* fix bashisms in scripts (#407)
+* fix fg: no job control output (#405)
+* fix memory leak in cmd parser (#404)
+* fix closing worker filehandles (#401)
+
+
+1.4.0 - Nov 11 2022
+===================
+Breaking changes:
+* Due to object structure changes, it is recommended to recompile any NEB modules
+  when upgrading to 1.4.0
+
+Features:
+* Support for expiring acknowledgements
+
+Changed:
+* Improvements to Debian packaging, including multiarch installs
+
+Bugfixes:
+* Fix a crash for external command: CHANGE_CONTACT_HOST_NOTIFICATION_TIMEPERIOD
+* Fix a crash for external command: CHANGE_HOST_CHECK_TIMEPERIOD
+
+1.3.1 - Apr 26 2022
+===================
+Changed:
+* change default url to https://www.naemon.io
+
+Bugfixes:
+* fix running commands containing tilde sign
+* improve updating last_update attribute
+
+
+1.3.0 - Nov 03 2021
+===================
+Features:
+* new vault broker api
+* secure environment variables
+
+Changed:
+* none
+
+Bugfixes:
+* none
+
+
+1.2.4 - Mar 03 2021
+===================
+Features:
+* improve config check when having lots of servicegroups
+
+Changed:
+* migrate ci tests to github actions
+* change header file location in deb/rpm packages
+
+Bugfixes:
+* fix check_command in svc neb broker call
+
+
+1.2.3 - Dec 07 2020
+===================
+Bugfixes:
+* fix package update on debian / ubuntu
+
+
+1.2.2 - Nov 13 2020
+===================
+Features:
+* none
+
+Changed:
+* improved sample configuration
+* improved external command help
+* debian package source format changed
+* debian packages changed to systemd
+
+Bugfixes:
+* fix scheduling flexible service downtime
+* fix setting last_update whenever next_check changes
+* fix worker crashing
+
+
+1.2.1 - Jul 13 2020
+===================
+Changed:
+* nothing
+
+Bugfixes:
+* fix executing commands with pipes (#319)
+* fix external command to remove downtimes by filter
+
+
+1.2.0 - Feb 17 2020
+===================
+Features:
+* Add new skip check options to set a particular state on skipped checks
+
+Bugfixes:
+* Retain flap detection option over restarts
+* Don't process perfdata file if perfdata is disabled
+
+
+1.1.0 - Sep 02 2019
+===================
+Features:
+* add internal last_update timestamp to track host/service changes
+* speed up configuration check when using lots of dependencies
+
+Changed:
+* increased CURRENT_NEB_API_VERSION, this means you have to recompile your NEB modules
+
+Bugfixes:
+* bail out config check if parent host cannot be resolved
+* bail out config check if group members cannot be resolved (#300)
+* fix calculating group on demand macros
+* fix last_hard_state when using neb modules (#287)
+* fix loading neb modules multiple times
+
+
+1.0.10 - Mar 12 2019
+===================
+Features:
+* allow NEBERROR_CALLBACKCANCEL from NEBTYPE_*CHECK_INITIATE neb callbacks
+
+Changed:
+* nothing
+
+Bugfixes:
+* fix newline handling in spoolfile results
+
+
+1.0.9 - Dec 18 2018
+===================
+Features:
+* Add host_down_disable_service_checks config option
+* Add retained_scheduling_randomize_window setting
+
+Changed:
+* No on-demand host checks when service is in hard critical
+* Log successful save of retention data
+* Init: Increase time till SIGKILL is sent
+
+Bugfixes:
+* Make naemon-core depend on libnaemon
+* Add conflicts/replaces tags for naemon-tools
+* parse_check: Don't escape already escaped newlines
+* Reload: Fix defuct for debian/ubuntu packaging (#150)
+* Retain next_check schedule on restart (#156, 224)
+* el6: use correct logrotate script
+* fix pending dependencies
+* fix orphaned checks logic
+* reset is_executing flag when processing active host check result (#154)
+* set CHECK_OPTION_ORPHAN_CHECK flag if check is scheduled from the orphan event handler
+* fix memory leak when overriding checks
+* fix query handler not returning command response
+* Fix heap corruption when callback dereigsters itself
+
+1.0.8 - Jul 16 2018
+===================
+Features:
+  * source defaults file if exists (#241)
+
+Changed:
+  * _nothing_
+
+Bugfixes:
+  * Fix naemon-tools conflict (#242)
+  * Fix reload command on el6 (#239)
+
+1.0.7 - Jun 01 2018
+===================
+Features:
+  * Allow circular dependencies in Naemons host graph (experimental)
+
+Changed:
+  * Do not verify config when starting daemon
+  * first_notification_delay starts on last hard change instead of last ok
+
+Bugfixes:
+  * Fix various memory leaks (#200, #189)
+  * Fix newline escaping for check results (#153)
+  * Fix segfault when there is no eventbroker
+  * Fix segfault on invalid host_notification_commands (#213)
+  * Fix external command CHANGE_SVC_MODATTR (#174)
+  * Fix compilation with GCC 7 & 8 (#184, #228, #229)
+  * Fix notification is sent even if a service is in a schedule flexible downtime
+  * Fix triggered scheduled downtime is removed
+  * Fix downtime comment ids increment on reload
+  * Output an error exit code if daemonization fails instead OK
+  * Restart Naemon on SIGHUP instead of killing (#192)
+  * Fix Naemon killing wrong processes if PID wrap-around is too short (#211)
+  * Reload: fix defunct processes after reload (#150)
+  * Fix quoting in systemd startpre command (#204)
+  * Make systemd startup cleaner
+  * Fix logrotate on EL7
+  * Do not use errno set by function calls in a library
+  * Documentation fix for Sticky Acknowledgments
+  * Make nm_g_log_handler_id extern. Fixes issue when including logging.h in external modules
+
+Removed:
+  * shadownaemon
+  * distributed-monitoring from the contrib/eventhandlers folder
+
+Other:
+  * Decouple core, livestatus and thruk
+  * Add more timing points
+  * Undeprecate check_result_path
+  * Remove NICE from systemd
+  * Format service timeout print to use the same format as host timeouts (#168)
+  * Lower wproc log level to debug_info
+  * Do not log timeouts 3 times for every timeout
+  * Add log message that explains why a service changes directly hard down state when the host is down
+  * make buildopts.h depend on Makefile
+  * version: append date to daily git builds
+
 1.0.6 - Jan 23 2017
 ===================
 Bugfixes:
@@ -6,7 +245,7 @@ Bugfixes:
   * Fix custom variables persistence accros restarts for single byte values
   * Fix writing to already rotated logfile
   * Fix memory leak in broker_notification_data
-  * Fix notification commands beeing reaped to early (#137)
+  * Fix notification commands being reaped to early (#137)
 
 1.0.5 - Jun 21 2016
 ===================
@@ -77,7 +316,7 @@ Other:
 
 1.0 - Feb 13 2015
 =================
- * Fix shadownaemon comment and downtime syncronization
+ * Fix shadownaemon comment and downtime synchronization
  * Fix spelling errors
 
 0.9 - Jan 08 2015

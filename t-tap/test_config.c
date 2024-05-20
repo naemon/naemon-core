@@ -85,6 +85,7 @@ int main(int argc, char **argv)
 
 	initialize_retention_data();
 	initialize_downtime_data();
+	initialize_comment_data();
 
 	ok(xrddefault_read_state_information() == OK, "Reading retention data");
 
