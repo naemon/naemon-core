@@ -197,6 +197,7 @@ int setup_service_variables(service *new_service, const char *display_name, cons
 	new_service->current_state = initial_state;
 	new_service->last_state = initial_state;
 	new_service->last_hard_state = initial_state;
+	new_service->display_status = initial_state;
 
 	/* check the service check_command */
 
@@ -339,9 +340,6 @@ void destroy_service(service *this_service, int truncate_lists)
 	nm_free(this_service->action_url);
 	nm_free(this_service->icon_image);
 	nm_free(this_service->icon_image_alt);
-	nm_free(this_service->current_notification_id);
-	nm_free(this_service->last_problem_id);
-	nm_free(this_service->current_problem_id);
 	nm_free(this_service);
 }
 
@@ -518,6 +516,32 @@ void fcache_service(FILE *fp, const service *temp_service)
 int log_service_event(service *svc)
 {
 	unsigned long log_options = 0L;
+
+	if ( svc->scheduled_downtime_depth > 0 ) {
+			svc->display_status = 1;
+	}
+	else if (svc->problem_has_been_acknowledged == TRUE)  {
+			svc->display_status = 2;
+	}
+	/* Flapping*/
+	else if (svc->is_flapping > 0) {
+			svc->display_status = 3;
+	}
+	/* Warning */
+	else if (svc->current_state == STATE_WARNING) {
+			svc->display_status = 4;
+	}
+	/* Unknown */
+	else if (svc->current_state == STATE_UNKNOWN) {
+			svc->display_status = 5;
+	}
+	/* CRITICAL */
+	else if (svc->current_state == STATE_CRITICAL) {
+			svc->display_status = 6;
+	}
+	else if (svc->current_state == STATE_OK) {
+			svc->display_status = 0;
+	}
 
 	/* don't log soft errors if the user doesn't want to */
 	if (svc->state_type == SOFT_STATE && !log_service_retries)

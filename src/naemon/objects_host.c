@@ -188,6 +188,7 @@ int setup_host_variables(host *new_host, const char *display_name, const char *a
 	new_host->last_hard_state = initial_state;
 	new_host->current_attempt = (initial_state == STATE_UP) ? 1 : max_attempts;
 	new_host->notifications_enabled = (notifications_enabled > 0) ? TRUE : FALSE;
+	new_host->display_status = initial_state;
 
 	return 0;
 }
@@ -326,9 +327,6 @@ void destroy_host(host *this_host)
 	nm_free(this_host->icon_image_alt);
 	nm_free(this_host->vrml_image);
 	nm_free(this_host->statusmap_image);
-	nm_free(this_host->current_notification_id);
-	nm_free(this_host->last_problem_id);
-	nm_free(this_host->current_problem_id);
 	nm_free(this_host);
 }
 
@@ -595,6 +593,31 @@ void fcache_host(FILE *fp, const host *temp_host)
 int log_host_event(host *hst)
 {
 	unsigned long log_options = 0L;
+
+	/* set displays status */
+	/* handle Downtime and ACK */
+	// if ( (hst->scheduled_downtime_depth > 0) && (hst->problem_has_been_acknowledged == FALSE) ) {
+	if ( hst->scheduled_downtime_depth > 0 ) {
+			hst->display_status = 1;
+	}
+	else if (hst->problem_has_been_acknowledged == TRUE)  {
+			hst->display_status = 2;
+	}
+	/* Flapping*/
+	else if (hst->is_flapping > 0) {
+			hst->display_status = 3;
+	}
+	/* Unreachable */
+	else if (hst->current_state == STATE_UNREACHABLE) {
+			hst->display_status = 7;
+	}
+	/* Down */
+	else if (hst->current_state == STATE_DOWN) {
+			hst->display_status = 8;
+	}
+	else if (hst->current_state == STATE_OK) {
+			hst->display_status = 0;
+	}
 
 	/* get the log options */
 	if (hst->current_state == STATE_DOWN)

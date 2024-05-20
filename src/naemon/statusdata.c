@@ -5,6 +5,7 @@
 #include "broker.h"
 #include "globals.h"
 #include "events.h"
+#include "sehandlers.h"
 
 
 /******************************************************************/
@@ -86,6 +87,40 @@ int update_program_status(int aggregated_dump)
 int update_host_status(host *hst, int aggregated_dump)
 {
 
+	int display_status = 0;
+
+	display_status = hst->display_status;
+
+	/* Downtime */
+	if (hst->scheduled_downtime_depth > 0) {
+			display_status = 1;
+	}
+	/* ACK */
+	else if (hst->problem_has_been_acknowledged == TRUE)  {
+			display_status = 2;
+	}
+	/* Flapping*/
+	else if (hst->is_flapping > 0) {
+			display_status = 3;
+	}
+	/* Unreachable */
+	else if (hst->current_state == STATE_UNREACHABLE) {
+			display_status = 7;
+	}
+	/* Down */
+	else if (hst->current_state == STATE_DOWN) {
+			display_status = 8;
+	}
+	else if (hst->current_state == STATE_OK) {
+			display_status = 0;
+	}
+
+	if (display_status != hst->display_status) {
+			hst->display_status = display_status;
+			log_host_event(hst);
+			broker_statechange_data(NEBTYPE_STATECHANGE_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_STATECHANGE, (void *)hst, hst->current_state, hst->state_type, hst->current_attempt, hst->max_attempts);
+	}
+
 	if (aggregated_dump == FALSE)
 		broker_host_status(NEBTYPE_HOSTSTATUS_UPDATE, NEBFLAG_NONE, NEBATTR_NONE, hst);
 
@@ -96,6 +131,43 @@ int update_host_status(host *hst, int aggregated_dump)
 /* updates service status info */
 int update_service_status(service *svc, int aggregated_dump)
 {
+	int display_status;
+
+	display_status = svc->display_status;
+
+	/* Downtime */
+	if ( svc->scheduled_downtime_depth > 0) {
+			display_status = 1;
+	}
+	/* ACK */
+	else if (svc->problem_has_been_acknowledged == TRUE)  {
+			display_status = 2;
+	}
+	/* Flapping*/
+	else if (svc->is_flapping > 0) {
+			display_status = 3;
+	}
+	/* Warning */
+	else if (svc->current_state == STATE_WARNING) {
+			display_status = 4;
+	}
+	/* Unknown */
+	else if (svc->current_state == STATE_UNKNOWN) {
+			display_status = 5;
+	}
+	/* CRITICAL */
+	else if (svc->current_state == STATE_CRITICAL) {
+			display_status = 6;
+	}
+	else if (svc->current_state == STATE_OK) {
+			display_status = 0;
+	}
+
+	if (display_status != svc->display_status) {
+			svc->display_status = display_status;
+			log_service_event(svc);
+			broker_statechange_data(NEBTYPE_STATECHANGE_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_STATECHANGE, (void *)svc, svc->current_state, svc->state_type, svc->current_attempt, svc->max_attempts);
+	}
 
 	if (aggregated_dump == FALSE)
 		broker_service_status(NEBTYPE_SERVICESTATUS_UPDATE, NEBFLAG_NONE, NEBATTR_NONE, svc);
