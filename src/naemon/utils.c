@@ -130,6 +130,7 @@ unsigned long retained_process_service_attribute_mask = 0L;
 unsigned long next_event_id = 0L;
 unsigned long next_comment_id = 0L;
 
+int ignore_warnings = FALSE;
 int verify_config = FALSE;
 int precache_objects = FALSE;
 int use_precached_objects = FALSE;

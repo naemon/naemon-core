@@ -1404,7 +1404,11 @@ int pre_flight_check(void)
 
 	if (verify_config) {
 		printf("\n");
-		printf("Total Warnings: %d\n", warnings);
+
+		if (!ignore_warnings) {
+			printf("Total Warnings: %d\n", warnings);
+		}
+
 		printf("Total Errors:   %d\n", errors);
 	}
 
@@ -1437,6 +1441,10 @@ int pre_flight_object_check(int *w, int *e)
 	}
 #endif
 
+	if (ignore_warnings) {
+		nm_log(NSLOG_VERIFICATION_WARNING, "IMPORTANT: Checks that generate warnings are being ignored!\n");
+	}
+
 	if (verify_config)
 		printf("Checking objects...\n");
 
@@ -1448,34 +1456,37 @@ int pre_flight_object_check(int *w, int *e)
 
 		total_objects++;
 
-		/* check for sane recovery options */
-		if (temp_service->notification_options == OPT_RECOVERY) {
-			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Recovery notification option in service '%s' for host '%s' doesn't make any sense - specify warning and/or critical options as well", temp_service->description, temp_service->host_name);
-			warnings++;
-		}
+		/* Since these checks only generate warnings, skip them all if warnings are ignored. */
+		if (!ignore_warnings) {
+			/* check for sane recovery options */
+			if (temp_service->notification_options == OPT_RECOVERY) {
+				nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Recovery notification option in service '%s' for host '%s' doesn't make any sense - specify warning and/or critical options as well", temp_service->description, temp_service->host_name);
+				warnings++;
+			}
 
-		/* check to see if there is at least one contact/group */
-		if (temp_service->contacts == NULL && temp_service->contact_groups == NULL) {
-			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Service '%s' on host '%s' has no default contacts or contactgroups defined!", temp_service->description, temp_service->host_name);
-			warnings++;
-		}
+			/* check to see if there is at least one contact/group */
+			if (temp_service->contacts == NULL && temp_service->contact_groups == NULL) {
+				nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Service '%s' on host '%s' has no default contacts or contactgroups defined!", temp_service->description, temp_service->host_name);
+				warnings++;
+			}
 
-		/* verify service check timeperiod */
-		if (temp_service->check_period == NULL) {
-			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Service '%s' on host '%s' has no check time period defined!", temp_service->description, temp_service->host_name);
-			warnings++;
-		}
+			/* verify service check timeperiod */
+			if (temp_service->check_period == NULL) {
+				nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Service '%s' on host '%s' has no check time period defined!", temp_service->description, temp_service->host_name);
+				warnings++;
+			}
 
-		/* check service notification timeperiod */
-		if (temp_service->notification_period == NULL) {
-			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Service '%s' on host '%s' has no notification time period defined!", temp_service->description, temp_service->host_name);
-			warnings++;
-		}
+			/* check service notification timeperiod */
+			if (temp_service->notification_period == NULL) {
+				nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Service '%s' on host '%s' has no notification time period defined!", temp_service->description, temp_service->host_name);
+				warnings++;
+			}
 
-		/* see if the notification interval is less than the check interval */
-		if (temp_service->notification_interval < temp_service->check_interval && temp_service->notification_interval != 0) {
-			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Service '%s' on host '%s'  has a notification interval less than its check interval!  Notifications are only re-sent after checks are made, so the effective notification interval will be that of the check interval.", temp_service->description, temp_service->host_name);
-			warnings++;
+			/* see if the notification interval is less than the check interval */
+			if (temp_service->notification_interval < temp_service->check_interval && temp_service->notification_interval != 0) {
+				nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Service '%s' on host '%s'  has a notification interval less than its check interval!  Notifications are only re-sent after checks are made, so the effective notification interval will be that of the check interval.", temp_service->description, temp_service->host_name);
+				warnings++;
+			}
 		}
 	}
 
@@ -1492,21 +1503,24 @@ int pre_flight_object_check(int *w, int *e)
 
 		total_objects++;
 
-		/* make sure each host has at least one service associated with it */
-		if (temp_host->services == NULL && verify_config >= 2) {
-			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Host '%s' has no services associated with it!", temp_host->name);
-			warnings++;
-		}
+		/* Since these checks only generate warnings, skip them all if warnings are ignored. */
+		if (!ignore_warnings) {
+			/* make sure each host has at least one service associated with it */
+			if (temp_host->services == NULL && verify_config >= 2) {
+				nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Host '%s' has no services associated with it!", temp_host->name);
+				warnings++;
+			}
 
-		/* check to see if there is at least one contact/group */
-		if (temp_host->contacts == NULL && temp_host->contact_groups == NULL) {
-			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Host '%s' has no default contacts or contactgroups defined!", temp_host->name);
-			warnings++;
-		}
-		/* check for sane recovery options */
-		if (temp_host->notification_options == OPT_RECOVERY) {
-			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Recovery notification option in host '%s' definition doesn't make any sense - specify down and/or unreachable options as well", temp_host->name);
-			warnings++;
+			/* check to see if there is at least one contact/group */
+			if (temp_host->contacts == NULL && temp_host->contact_groups == NULL) {
+				nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Host '%s' has no default contacts or contactgroups defined!", temp_host->name);
+				warnings++;
+			}
+			/* check for sane recovery options */
+			if (temp_host->notification_options == OPT_RECOVERY) {
+				nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Recovery notification option in host '%s' definition doesn't make any sense - specify down and/or unreachable options as well", temp_host->name);
+				warnings++;
+			}
 		}
 	}
 
@@ -1531,28 +1545,32 @@ int pre_flight_object_check(int *w, int *e)
 			errors++;
 		}
 
-		/* check service notification timeperiod */
-		if (temp_contact->service_notification_period == NULL) {
-			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Contact '%s' has no service notification time period defined!", temp_contact->name);
-			warnings++;
-		}
+		/* Since these checks only generate warnings, skip them all if warnings are ignored. */
+		if (!ignore_warnings) {
 
-		/* check host notification timeperiod */
-		if (temp_contact->host_notification_period == NULL) {
-			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Contact '%s' has no host notification time period defined!", temp_contact->name);
-			warnings++;
-		}
+			/* check service notification timeperiod */
+			if (temp_contact->service_notification_period == NULL) {
+				nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Contact '%s' has no service notification time period defined!", temp_contact->name);
+				warnings++;
+			}
 
-		/* check for sane host recovery options */
-		if (temp_contact->host_notification_options == OPT_RECOVERY) {
-			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Host recovery notification option for contact '%s' doesn't make any sense - specify down and/or unreachable options as well", temp_contact->name);
-			warnings++;
-		}
+			/* check host notification timeperiod */
+			if (temp_contact->host_notification_period == NULL) {
+				nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Contact '%s' has no host notification time period defined!", temp_contact->name);
+				warnings++;
+			}
 
-		/* check for sane service recovery options */
-		if (temp_contact->service_notification_options == OPT_RECOVERY) {
-			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Service recovery notification option for contact '%s' doesn't make any sense - specify critical and/or warning options as well", temp_contact->name);
-			warnings++;
+			/* check for sane host recovery options */
+			if (temp_contact->host_notification_options == OPT_RECOVERY) {
+				nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Host recovery notification option for contact '%s' doesn't make any sense - specify down and/or unreachable options as well", temp_contact->name);
+				warnings++;
+			}
+
+			/* check for sane service recovery options */
+			if (temp_contact->service_notification_options == OPT_RECOVERY) {
+				nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Service recovery notification option for contact '%s' doesn't make any sense - specify critical and/or warning options as well", temp_contact->name);
+				warnings++;
+			}
 		}
 	}
 

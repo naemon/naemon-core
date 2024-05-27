@@ -70,6 +70,7 @@ extern int notification_timeout;
 
 extern volatile sig_atomic_t sig_id;
 
+extern int ignore_warnings;
 extern int verify_config;
 extern int precache_objects;
 extern int use_precached_objects;

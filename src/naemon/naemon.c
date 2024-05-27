@@ -144,6 +144,7 @@ int main(int argc, char **argv)
 		{"version", no_argument, 0, 'V'},
 		{"license", no_argument, 0, 'V'},
 		{"verify-config", no_argument, 0, 'v'},
+		{"ignore-warnings", no_argument, 0, 'i'},
 		{"daemon", no_argument, 0, 'd'},
 		{"precache-objects", no_argument, 0, 'p'},
 		{"use-precached-objects", no_argument, 0, 'u'},
@@ -161,7 +162,7 @@ int main(int argc, char **argv)
 
 	/* get all command line arguments */
 	while (1) {
-		c = getopt(argc, argv, "+hVvdspuxTW");
+		c = getopt(argc, argv, "+hVvidspuxTW");
 
 		if (c == -1 || c == EOF)
 			break;
@@ -179,6 +180,10 @@ int main(int argc, char **argv)
 
 		case 'v': /* verify */
 			verify_config++;
+			break;
+
+		case 'i': /* ignore warnings */
+			ignore_warnings++;
 			break;
 
 		case 's': /* scheduling check */
@@ -276,6 +281,7 @@ int main(int argc, char **argv)
 		printf("Options:\n");
 		printf("\n");
 		printf("  -v, --verify-config          Verify all configuration data (-v -v for more info)\n");
+		printf("  -i, --ignore-warnings        Ignore all checks that generate warnings when verifying the config\n");
 		printf("  -T, --enable-timing-point    Enable timed commentary on initialization\n");
 		printf("  -x, --dont-verify-paths      Deprecated (Don't check for circular object paths)\n");
 		printf("  -p, --precache-objects       Precache object configuration\n");
