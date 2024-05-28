@@ -1451,13 +1451,13 @@ int pre_flight_object_check(int *w, int *e)
 	/*****************************************/
 	/* check each service...                 */
 	/*****************************************/
-	total_objects = 0;
-	for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
+	/* Since these checks only generate warnings, skip them all if warnings are ignored. */
+	if (!ignore_warnings) {
+		total_objects = 0;
+		for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
 
-		total_objects++;
+			total_objects++;
 
-		/* Since these checks only generate warnings, skip them all if warnings are ignored. */
-		if (!ignore_warnings) {
 			/* check for sane recovery options */
 			if (temp_service->notification_options == OPT_RECOVERY) {
 				nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Recovery notification option in service '%s' for host '%s' doesn't make any sense - specify warning and/or critical options as well", temp_service->description, temp_service->host_name);
@@ -1488,23 +1488,28 @@ int pre_flight_object_check(int *w, int *e)
 				warnings++;
 			}
 		}
+
+		if (verify_config) {
+			printf("\tChecked %d services.\n", total_objects);
+		}
 	}
 
-	if (verify_config)
-		printf("\tChecked %d services.\n", total_objects);
-
-
+	if (ignore_warnings) {
+		if (verify_config) {
+			printf("Option -i used. Skipped checking services...\n");
+		}
+	}
 
 	/*****************************************/
 	/* check all hosts...                    */
 	/*****************************************/
-	total_objects = 0;
-	for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
+	/* Since these checks only generate warnings, skip them all if warnings are ignored. */
+	if (!ignore_warnings) {
+		total_objects = 0;
+		for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
 
-		total_objects++;
+			total_objects++;
 
-		/* Since these checks only generate warnings, skip them all if warnings are ignored. */
-		if (!ignore_warnings) {
 			/* make sure each host has at least one service associated with it */
 			if (temp_host->services == NULL && verify_config >= 2) {
 				nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Host '%s' has no services associated with it!", temp_host->name);
@@ -1522,11 +1527,17 @@ int pre_flight_object_check(int *w, int *e)
 				warnings++;
 			}
 		}
+
+		if (verify_config) {
+			printf("\tChecked %d hosts.\n", total_objects);
+		}
 	}
 
-	if (verify_config)
-		printf("\tChecked %d hosts.\n", total_objects);
-
+	if (ignore_warnings) {
+		if (verify_config) {
+			printf("Option -i used. Skipped checking hosts...\n");
+		}
+	}
 
 	/*****************************************/
 	/* check all contacts...                 */
