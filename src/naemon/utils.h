@@ -37,6 +37,7 @@ void signal_react(void);				/* General signal reaction routines */
 void handle_sigxfsz(void);				/* handle SIGXFSZ */
 int signal_parent(int);					/* signal parent when daemonizing */
 int daemon_init(void);				     		/* switches to daemon mode */
+void close_lockfile_fd(void);			/* close lock_file file handle */
 
 int init_check_stats(void);
 int update_check_stats(int, time_t);
