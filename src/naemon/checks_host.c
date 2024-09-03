@@ -830,7 +830,10 @@ static int process_host_check_result(host *hst, host *prev, int *alert_recorded)
 			if (hst->check_type == CHECK_TYPE_ACTIVE || passive_host_checks_are_soft == TRUE) {
 
 				/* set the state type */
-				hst->state_type = SOFT_STATE;
+				if (hst->current_attempt == hst->max_attempts)
+					hst->state_type = HARD_STATE;
+				else
+					hst->state_type = SOFT_STATE;
 			}
 
 			/* by default, passive check results are treated as HARD states */
