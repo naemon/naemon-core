@@ -2308,7 +2308,7 @@ int run_global_service_notification_handler(nagios_macros *mac, service *svc, in
 	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Processed notification command: %s\n", processed_command);
 
 	/* log the notification to program log file */
-	if (log_notifications == TRUE) {
+	if (log_global_notifications == TRUE) {
 		if (type != NOTIFICATION_NORMAL) {
 			nm_asprintf(&temp_buffer, "SERVICE NOTIFICATION: %s;%s;%s;%s ($SERVICESTATE$);%s;$SERVICEOUTPUT$;$NOTIFICATIONAUTHOR$;$NOTIFICATIONCOMMENT$\n", "GLOBAL", svc->host_name, svc->description, notification_reason_name(type), command_name_ptr);
 		} else {
@@ -2400,7 +2400,7 @@ int run_global_host_notification_handler(nagios_macros *mac, host *hst, int type
 	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Processed notification command: %s\n", processed_command);
 
 	/* log the notification to program log file */
-	if (log_notifications == TRUE) {
+	if (log_global_notifications == TRUE) {
 		if (type != NOTIFICATION_NORMAL) {
 			nm_asprintf(&temp_buffer, "HOST NOTIFICATION: %s;%s;%s ($HOSTSTATE$);%s;$HOSTOUTPUT$;$NOTIFICATIONAUTHOR$;$NOTIFICATIONCOMMENT$\n", "GLOBAL", hst->name, notification_reason_name(type), command_name_ptr);
 		} else {
