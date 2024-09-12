@@ -158,6 +158,8 @@ int xsddefault_save_status_data(void)
 	fprintf(fp, "\tprocess_performance_data=%d\n", process_performance_data);
 	fprintf(fp, "\tglobal_host_event_handler=%s\n", (global_host_event_handler == NULL) ? "" : global_host_event_handler);
 	fprintf(fp, "\tglobal_service_event_handler=%s\n", (global_service_event_handler == NULL) ? "" : global_service_event_handler);
+	fprintf(fp, "\tglobal_host_notification_handler=%s\n", (global_host_notification_handler == NULL) ? "" : global_host_notification_handler);
+	fprintf(fp, "\tglobal_service_notification_handler=%s\n", (global_service_notification_handler == NULL) ? "" : global_service_notification_handler);
 	fprintf(fp, "\tnext_comment_id=%lu\n", next_comment_id);
 	fprintf(fp, "\tnext_downtime_id=%lu\n", next_downtime_id);
 	fprintf(fp, "\tnext_event_id=%lu\n", next_event_id);

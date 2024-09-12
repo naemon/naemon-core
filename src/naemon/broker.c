@@ -439,6 +439,8 @@ void broker_program_status(int type, int flags, int attr)
 	ds.modified_service_attributes = modified_service_process_attributes;
 	ds.global_host_event_handler = global_host_event_handler;
 	ds.global_service_event_handler = global_service_event_handler;
+	ds.global_host_notification_handler = global_host_notification_handler;
+	ds.global_service_notification_handler = global_service_notification_handler;
 
 	/* make callbacks */
 	neb_make_callbacks(NEBCALLBACK_PROGRAM_STATUS_DATA, (void *)&ds);
@@ -582,7 +584,9 @@ int broker_contact_notification_data(int type, int flags, int attr, int notifica
 	ds.start_time = start_time;
 	ds.end_time = end_time;
 	ds.reason_type = reason_type;
-	ds.contact_name = cntct->name;
+	ds.contact_name = NULL;
+	if(cntct != NULL)
+		ds.contact_name = cntct->name;
 	if (notification_type == SERVICE_NOTIFICATION) {
 		temp_service = (service *)data;
 		ds.host_name = temp_service->host_name;
@@ -640,7 +644,9 @@ int broker_contact_notification_method_data(int type, int flags, int attr, int n
 	ds.start_time = start_time;
 	ds.end_time = end_time;
 	ds.reason_type = reason_type;
-	ds.contact_name = cntct->name;
+	ds.contact_name = NULL;
+	if(cntct != NULL)
+		ds.contact_name = cntct->name;
 	ds.command_name = command_name;
 	ds.command_args = command_args;
 	if (notification_type == SERVICE_NOTIFICATION) {
