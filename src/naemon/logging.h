@@ -39,6 +39,7 @@
 
 #define NSLOG_HOST_NOTIFICATION		524288
 #define NSLOG_SERVICE_NOTIFICATION	1048576
+#define NSLOG_EXT_CUSTOM			2097152
 
 /***************** DEBUGGING LEVELS *******************/
 

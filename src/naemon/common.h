@@ -323,6 +323,8 @@ NAGIOS_END_DECL
 #define CMD_ACKNOWLEDGE_HOST_PROBLEM_EXPIRE             173
 #define CMD_ACKNOWLEDGE_SVC_PROBLEM_EXPIRE              174
 
+#define CMD_LOG                                         175
+
 /* custom command introduced in Nagios 3.x */
 #define CMD_CUSTOM_COMMAND                              999
 
