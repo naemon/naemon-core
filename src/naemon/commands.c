@@ -1680,6 +1680,13 @@ static int global_command_handler(const struct external_command *ext_command, ti
 	case CMD_PROCESS_FILE:
 		return process_external_commands_from_file(GV_STRING("file_name"), GV_BOOL("delete"));
 
+	case CMD_CHANGE_GLOBAL_SVC_EVENT_HANDLER:
+		/* disabled */
+		return ERROR;
+	case CMD_CHANGE_GLOBAL_HOST_EVENT_HANDLER:
+		/* disabled */
+		return ERROR;
+
 	default:
 		nm_log(NSLOG_RUNTIME_ERROR, "Unknown global command ID %d", ext_command->id);
 		return ERROR;

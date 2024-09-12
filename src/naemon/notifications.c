@@ -27,6 +27,8 @@ struct notification_job {
 static notification *create_notification_list_from_host(nagios_macros *mac, host *hst, int options, int *escalated, int type);
 static notification *create_notification_list_from_service(nagios_macros *mac, service *svc, int options, int *escalated, int type);
 static int add_notification(notification **notification_list, nagios_macros *mac, contact *);						/* adds a notification instance */
+static int run_global_service_notification_handler(nagios_macros *mac, service *svc, int type, char *not_author, char *not_data, int options, int escalated);
+static int run_global_host_notification_handler(nagios_macros *mac, host *hst, int type, char *not_author, char *not_data, int options, int escalated);
 
 static void free_notification_list(notification *notification_list)
 {
@@ -291,11 +293,11 @@ static void notification_handle_job_result(struct wproc_result *wpres, void *dat
 		if (wpres->early_timeout) {
 			if (nj->svc) {
 				nm_log(NSLOG_RUNTIME_WARNING, "Warning: Timeout while notifying contact '%s' of service '%s' on host '%s' by command '%s'\n",
-				       nj->ctc->name, nj->svc->description,
+				       nj->ctc != NULL ? nj->ctc->name : "GLOBAL", nj->svc->description,
 				       nj->hst->name, wpres->command);
 			} else {
 				nm_log(NSLOG_RUNTIME_WARNING, "Warning: Timeout while notifying contact '%s' of host '%s' by command '%s'\n",
-				       nj->ctc->name, nj->hst->name,
+				       nj->ctc != NULL ? nj->ctc->name : "GLOBAL", nj->hst->name,
 				       wpres->command);
 			}
 		} else if (!WIFEXITED(wpres->wait_status) || WEXITSTATUS(wpres->wait_status)) {
@@ -319,7 +321,7 @@ static void notification_handle_job_result(struct wproc_result *wpres, void *dat
 			}
 			nm_log(NSLOG_RUNTIME_WARNING,
 			       "Warning: Notification command for contact '%s' about %s '%s' %s %i. stdout: '%s', stderr: '%s'",
-			       nj->ctc->name,
+			       nj->ctc != NULL ? nj->ctc->name : "GLOBAL",
 			       objecttype,
 			       objectname,
 			       reason,
@@ -426,7 +428,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	notification_list = create_notification_list_from_service(&mac, svc, options, &escalated, type);
 
 	/* we have contacts to notify... */
-	if (notification_list != NULL) {
+	if (notification_list != NULL || global_service_notification_handler != NULL) {
 
 		/* grab the macro variables */
 		grab_service_macros_r(&mac, svc);
@@ -479,6 +481,10 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 
 		/* set the notification id macro */
 		nm_asprintf(&mac.x[MACRO_SERVICENOTIFICATIONID], "%s", svc->current_notification_id);
+
+		/* run the global service notification handler */
+		if(run_global_service_notification_handler(&mac, svc, type, not_author, not_data, options, escalated) == OK)
+			contacts_notified++;
 
 		/* notify each contact (duplicates have been removed) */
 		for (temp_notification = notification_list; temp_notification != NULL; temp_notification = temp_notification->next) {
@@ -1308,7 +1314,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 	notification_list = create_notification_list_from_host(&mac, hst, options, &escalated, type);
 
 	/* there are contacts to be notified... */
-	if (notification_list != NULL) {
+	if (notification_list != NULL || global_host_notification_handler != NULL) {
 
 		/* grab the macro variables */
 		grab_host_macros_r(&mac, hst);
@@ -1363,14 +1369,15 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 		/* set the notification id macro */
 		nm_asprintf(&mac.x[MACRO_HOSTNOTIFICATIONID], "%s", hst->current_notification_id);
 
+		/* run the global service notification handler */
+		if(run_global_host_notification_handler(&mac, hst, type, not_author, not_data, options, escalated) == OK)
+			contacts_notified++;
+
 		/* notify each contact (duplicates have been removed) */
 		for (temp_notification = notification_list; temp_notification != NULL; temp_notification = temp_notification->next) {
 
 			/* grab the macro variables for this contact */
 			grab_contact_macros_r(&mac, temp_notification->contact);
-
-			/* clear summary macros (they are customized for each contact) */
-			clear_summary_macros_r(&mac);
 
 			/* notify this contact */
 			result = notify_contact_of_host(&mac, temp_notification->contact, hst, type, not_author, not_data, options, escalated);
@@ -2242,6 +2249,191 @@ int add_notification(notification **notification_list, nagios_macros *mac, conta
 		strcat(mac->x[MACRO_NOTIFICATIONRECIPIENTS], ",");
 		strcat(mac->x[MACRO_NOTIFICATIONRECIPIENTS], cntct->name);
 	}
+
+	return OK;
+}
+
+int run_global_service_notification_handler(nagios_macros *mac, service *svc, int type, char *not_author, char *not_data, int options, int escalated) {
+	char *command_name = NULL;
+	char *command_name_ptr = NULL;
+	char *raw_command = NULL;
+	char *processed_command = NULL;
+	char *temp_buffer = NULL;
+	char *processed_buffer = NULL;
+	struct timeval start_time, end_time;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int neb_result;
+	struct notification_job *nj;
+
+	if (global_service_notification_handler == NULL)
+		return ERROR;
+
+	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "** Notifying global service handler\n");
+
+	/* get start time */
+	gettimeofday(&start_time, NULL);
+
+	end_time.tv_sec = 0L;
+	end_time.tv_usec = 0L;
+	neb_result = broker_contact_notification_data(NEBTYPE_CONTACTNOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, start_time, end_time, (void *)svc, NULL, not_author, not_data, escalated);
+	if (NEBERROR_CALLBACKCANCEL == neb_result)
+		return ERROR;
+	else if (NEBERROR_CALLBACKOVERRIDE == neb_result)
+		return OK;
+
+	neb_result = broker_contact_notification_method_data(NEBTYPE_CONTACTNOTIFICATIONMETHOD_START, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, start_time, end_time, (void *)svc, NULL, global_service_notification_handler, not_author, not_data, escalated);
+	if (NEBERROR_CALLBACKCANCEL == neb_result)
+		return ERROR;
+	else if (NEBERROR_CALLBACKOVERRIDE == neb_result)
+		return OK;
+
+	get_raw_command_line_r(mac, global_service_notification_handler_ptr, global_service_notification_handler, &raw_command, macro_options);
+	if (raw_command == NULL)
+		return ERROR;
+
+	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Raw notification command: %s\n", raw_command);
+
+	/* process any macros contained in the argument */
+	process_macros_r(mac, raw_command, &processed_command, macro_options);
+	nm_free(raw_command);
+	if (processed_command == NULL)
+		return ERROR;
+
+	/* get the command name */
+	command_name = nm_strdup(global_service_notification_handler);
+	command_name_ptr = strtok(command_name, "!");
+
+	/* run the notification command... */
+
+	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Processed notification command: %s\n", processed_command);
+
+	/* log the notification to program log file */
+	if (log_notifications == TRUE) {
+		if (type != NOTIFICATION_NORMAL) {
+			nm_asprintf(&temp_buffer, "SERVICE NOTIFICATION: %s;%s;%s;%s ($SERVICESTATE$);%s;$SERVICEOUTPUT$;$NOTIFICATIONAUTHOR$;$NOTIFICATIONCOMMENT$\n", "GLOBAL", svc->host_name, svc->description, notification_reason_name(type), command_name_ptr);
+		} else {
+			nm_asprintf(&temp_buffer, "SERVICE NOTIFICATION: %s;%s;%s;$SERVICESTATE$;%s;$SERVICEOUTPUT$\n", "GLOBAL", svc->host_name, svc->description, command_name_ptr);
+		}
+		process_macros_r(mac, temp_buffer, &processed_buffer, 0);
+		nm_log(NSLOG_SERVICE_NOTIFICATION, "%s", processed_buffer);
+
+		nm_free(temp_buffer);
+		nm_free(processed_buffer);
+	}
+
+	/* run the notification command */
+	nj = nm_calloc(1, sizeof(struct notification_job));
+	nj->ctc = NULL;
+	nj->hst = svc->host_ptr;
+	nj->svc = svc;
+	if (ERROR == wproc_run_callback(processed_command, notification_timeout, notification_handle_job_result, nj, mac)) {
+		nm_log(NSLOG_RUNTIME_ERROR, "wproc: Unable to send notification for service '%s on host '%s' to worker\n", svc->description, svc->host_ptr->name);
+		free(nj);
+	}
+
+	nm_free(command_name);
+	nm_free(processed_command);
+
+	broker_contact_notification_method_data(NEBTYPE_CONTACTNOTIFICATIONMETHOD_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, start_time, end_time, (void *)svc, NULL, global_service_notification_handler, not_author, not_data, escalated);
+
+	/* get end time */
+	gettimeofday(&end_time, NULL);
+
+	broker_contact_notification_data(NEBTYPE_CONTACTNOTIFICATION_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, start_time, end_time, (void *)svc, NULL, not_author, not_data, escalated);
+
+	return OK;
+}
+
+int run_global_host_notification_handler(nagios_macros *mac, host *hst, int type, char *not_author, char *not_data, int options, int escalated) {
+	char *command_name = NULL;
+	char *command_name_ptr = NULL;
+	char *temp_buffer = NULL;
+	char *processed_buffer = NULL;
+	char *raw_command = NULL;
+	char *processed_command = NULL;
+	struct timeval start_time;
+	struct timeval end_time;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int neb_result;
+	struct notification_job *nj;
+
+	if (global_host_notification_handler == NULL)
+		return ERROR;
+
+	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "** Notifying global host handler\n");
+
+	/* get start time */
+	gettimeofday(&start_time, NULL);
+
+	end_time.tv_sec = 0L;
+	end_time.tv_usec = 0L;
+	neb_result = broker_contact_notification_data(NEBTYPE_CONTACTNOTIFICATION_START, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, start_time, end_time, (void *)hst, NULL, not_author, not_data, escalated);
+	if (NEBERROR_CALLBACKCANCEL == neb_result)
+		return ERROR;
+	else if (NEBERROR_CALLBACKOVERRIDE == neb_result)
+		return OK;
+
+	neb_result = broker_contact_notification_method_data(NEBTYPE_CONTACTNOTIFICATIONMETHOD_START, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, start_time, end_time, (void *)hst, NULL, global_host_notification_handler, not_author, not_data, escalated);
+	if (NEBERROR_CALLBACKCANCEL == neb_result)
+		return ERROR;
+	else if (NEBERROR_CALLBACKOVERRIDE == neb_result)
+		return OK;
+
+	get_raw_command_line_r(mac, global_host_notification_handler_ptr, global_host_notification_handler, &raw_command, macro_options);
+	if (raw_command == NULL)
+		return ERROR;
+
+	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Raw notification command: %s\n", raw_command);
+
+	/* process any macros contained in the argument */
+	process_macros_r(mac, raw_command, &processed_command, macro_options);
+	nm_free(raw_command);
+	if (processed_command == NULL)
+		return ERROR;
+
+	/* get the command name */
+	command_name = nm_strdup(global_host_notification_handler);
+	command_name_ptr = strtok(command_name, "!");
+
+	/* run the notification command... */
+
+	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "Processed notification command: %s\n", processed_command);
+
+	/* log the notification to program log file */
+	if (log_notifications == TRUE) {
+		if (type != NOTIFICATION_NORMAL) {
+			nm_asprintf(&temp_buffer, "HOST NOTIFICATION: %s;%s;%s ($HOSTSTATE$);%s;$HOSTOUTPUT$;$NOTIFICATIONAUTHOR$;$NOTIFICATIONCOMMENT$\n", "GLOBAL", hst->name, notification_reason_name(type), command_name_ptr);
+		} else {
+			nm_asprintf(&temp_buffer, "HOST NOTIFICATION: %s;%s;$HOSTSTATE$;%s;$HOSTOUTPUT$\n", "GLOBAL", hst->name, command_name_ptr);
+		}
+		process_macros_r(mac, temp_buffer, &processed_buffer, 0);
+		nm_log(NSLOG_HOST_NOTIFICATION, "%s", processed_buffer);
+
+		nm_free(temp_buffer);
+		nm_free(processed_buffer);
+	}
+
+	/* run the notification command */
+	nj = nm_calloc(1, sizeof(struct notification_job));
+	nj->ctc = NULL;
+	nj->hst = hst;
+	nj->svc = NULL;
+	if (ERROR == wproc_run_callback(processed_command, notification_timeout, notification_handle_job_result, nj, mac)) {
+		nm_log(NSLOG_RUNTIME_ERROR, "wproc: Unable to send notification for host '%s' to worker\n", hst->name);
+		free(nj);
+	}
+
+	/* @todo Handle nebmod stuff when getting results from workers */
+
+	nm_free(command_name);
+	nm_free(processed_command);
+
+	broker_contact_notification_method_data(NEBTYPE_CONTACTNOTIFICATIONMETHOD_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, start_time, end_time, (void *)hst, NULL, global_host_notification_handler, not_author, not_data, escalated);
+
+	/* get end time */
+	gettimeofday(&end_time, NULL);
+
+	broker_contact_notification_data(NEBTYPE_CONTACTNOTIFICATION_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, start_time, end_time, (void *)hst, NULL, not_author, not_data, escalated);
 
 	return OK;
 }

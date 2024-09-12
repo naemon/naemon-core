@@ -87,6 +87,11 @@ char *global_service_event_handler = NULL;
 command *global_host_event_handler_ptr = NULL;
 command *global_service_event_handler_ptr = NULL;
 
+char *global_host_notification_handler = NULL;
+char *global_service_notification_handler = NULL;
+command *global_host_notification_handler_ptr = NULL;
+command *global_service_notification_handler_ptr = NULL;
+
 int check_reaper_interval = DEFAULT_CHECK_REAPER_INTERVAL;
 int max_check_reaper_time = DEFAULT_MAX_REAPER_TIME;
 int service_freshness_check_interval = DEFAULT_FRESHNESS_CHECK_INTERVAL;
@@ -968,6 +973,9 @@ void free_memory(nagios_macros *mac)
 	nm_free(global_host_event_handler);
 	nm_free(global_service_event_handler);
 
+	nm_free(global_host_notification_handler);
+	nm_free(global_service_notification_handler);
+
 	/* free obsessive compulsive commands */
 	nm_free(ocsp_command);
 	nm_free(ochp_command);
@@ -1172,6 +1180,11 @@ int reset_variables(void)
 	global_service_event_handler = NULL;
 	global_host_event_handler_ptr = NULL;
 	global_service_event_handler_ptr = NULL;
+
+	global_host_notification_handler = NULL;
+	global_service_notification_handler = NULL;
+	global_host_notification_handler_ptr = NULL;
+	global_service_notification_handler_ptr = NULL;
 
 	ocsp_command = NULL;
 	ochp_command = NULL;

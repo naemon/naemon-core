@@ -46,6 +46,11 @@ extern char *global_service_event_handler;
 extern command *global_host_event_handler_ptr;
 extern command *global_service_event_handler_ptr;
 
+extern char *global_host_notification_handler;
+extern char *global_service_notification_handler;
+extern command *global_host_notification_handler_ptr;
+extern command *global_service_notification_handler_ptr;
+
 extern int use_regexp_matches;
 extern int use_true_regexp_matching;
 

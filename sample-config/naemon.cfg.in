@@ -288,6 +288,19 @@ log_passive_checks=1
 
 
 
+# GLOBAL HOST AND SERVICE NOTIFICATION HANDLERS
+# These options allow you to specify a host and service notification handler
+# command that is to be run for every host or service.
+# The global notification handler is executed immediately prior to the other
+# notifications that you have optionally specified in each host or
+# service definition. The command argument is the short name of a
+# command definition that you define in your host configuration file.
+
+#global_host_notification_handler=somecommand
+#global_service_notification_handler=somecommand
+
+
+
 # MAXIMUM CONCURRENT SERVICE CHECKS
 # This option allows you to specify the maximum number of
 # service checks that can be run in parallel at any given time.

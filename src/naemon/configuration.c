@@ -228,6 +228,16 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			global_service_event_handler = nm_strdup(value);
 		}
 
+		else if (!strcmp(variable, "global_host_notification_handler")) {
+			nm_free(global_host_notification_handler);
+			global_host_notification_handler = nm_strdup(value);
+		}
+
+		else if (!strcmp(variable, "global_service_notification_handler")) {
+			nm_free(global_service_notification_handler);
+			global_service_notification_handler = nm_strdup(value);
+		}
+
 		else if (!strcmp(variable, "ocsp_command")) {
 			nm_free(ocsp_command);
 			ocsp_command = nm_strdup(value);
@@ -1342,6 +1352,27 @@ int pre_flight_check(void)
 	}
 
 
+	/********************************************/
+	/* check global notification handler commands...   */
+	/********************************************/
+	if (verify_config)
+		printf("Checking global notification handlers...\n");
+	if (global_host_notification_handler != NULL) {
+		global_host_notification_handler_ptr = find_bang_command(global_host_notification_handler);
+		if (global_host_notification_handler_ptr == NULL) {
+			nm_log(NSLOG_VERIFICATION_ERROR, "Error: Global host notification handler command '%s' is not defined anywhere!", global_host_notification_handler);
+			errors++;
+		}
+	}
+	if (global_service_notification_handler != NULL) {
+		global_service_notification_handler_ptr = find_bang_command(global_service_notification_handler);
+		if (global_service_notification_handler_ptr == NULL) {
+			nm_log(NSLOG_VERIFICATION_ERROR, "Error: Global service notification handler command '%s' is not defined anywhere!", global_service_notification_handler);
+			errors++;
+		}
+	}
+
+
 	/**************************************************/
 	/* check obsessive processor commands...          */
 	/**************************************************/
@@ -1455,7 +1486,7 @@ int pre_flight_object_check(int *w, int *e)
 		}
 
 		/* check to see if there is at least one contact/group */
-		if (temp_service->contacts == NULL && temp_service->contact_groups == NULL) {
+		if (temp_service->contacts == NULL && temp_service->contact_groups == NULL && global_service_event_handler == NULL) {
 			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Service '%s' on host '%s' has no default contacts or contactgroups defined!", temp_service->description, temp_service->host_name);
 			warnings++;
 		}
@@ -1499,7 +1530,7 @@ int pre_flight_object_check(int *w, int *e)
 		}
 
 		/* check to see if there is at least one contact/group */
-		if (temp_host->contacts == NULL && temp_host->contact_groups == NULL) {
+		if (temp_host->contacts == NULL && temp_host->contact_groups == NULL && global_host_notification_handler == NULL) {
 			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Host '%s' has no default contacts or contactgroups defined!", temp_host->name);
 			warnings++;
 		}
