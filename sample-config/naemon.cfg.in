@@ -274,6 +274,15 @@ log_passive_checks=1
 
 
 
+# GLOBAL NOTIFICATIONS LOGGING OPTION
+# If you don't want Naemon to log global notifications, set
+# this value to 0.  If they should be logged, set
+# this value to 1.
+
+log_global_notifications=1
+
+
+
 # GLOBAL HOST AND SERVICE EVENT HANDLERS
 # These options allow you to specify a host and service event handler
 # command that is to be run for every host or service state change.
