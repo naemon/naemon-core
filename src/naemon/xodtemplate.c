@@ -2508,6 +2508,7 @@ static int xodtemplate_duplicate_services(void)
 				 * override a host-assigned service.
 				 */
 				nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for service '%s' on host '%s' (config file '%s', starting on line %d)\n", temp_service->service_description, temp_service->host_name, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
+				nm_log(NSLOG_CONFIG_WARNING, "Warning: Already defined in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_service *)prev)->_config_file), ((xodtemplate_service *)prev)->_start_line);
 			}
 
 		} else {
@@ -6554,7 +6555,7 @@ static int xodtemplate_register_objects(void)
 /* adds a property to an object definition */
 static int xodtemplate_add_object_property(char *input)
 {
-	int result = OK;
+	int has_value = FALSE;
 	struct rbnode *prev;
 	char *variable = NULL;
 	char *value = NULL;
@@ -6585,21 +6586,19 @@ static int xodtemplate_add_object_property(char *input)
 	/* get variable name */
 	variable = input;
 
-	result = ERROR;
 	/* trim at first whitespace occurrence */
 	for (x = 0; variable[x] != '\x0'; x++) {
 		if (variable[x] == ' ' || variable[x] == '\t') {
-			result = OK;
+			has_value = TRUE;
 			variable[x] = 0;
 			break;
 		}
 	}
 
-	if (result != OK) {
+	if (!has_value) {
 		/* we found key without a value, so do the equivalent of
 		 * value = strdup(""), without allocating the trailing NULL byte */
 		value = input + x;
-		result = OK;
 	} else {
 		/* get variable value */
 		value = input + x + 1;
@@ -6621,24 +6620,22 @@ static int xodtemplate_add_object_property(char *input)
 
 			temp_timeperiod->name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_TIMEPERIOD], g_strdup(temp_timeperiod->name), temp_timeperiod);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for timeperiod '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_timeperiod->_config_file), temp_timeperiod->_start_line);
-					result = ERROR;
-				}
+			prev = xod_tree_insert(xobject_template_tree[OBJTYPE_TIMEPERIOD], g_strdup(temp_timeperiod->name), temp_timeperiod);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for timeperiod '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_timeperiod->_config_file), temp_timeperiod->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_timeperiod *)prev)->_config_file), ((xodtemplate_timeperiod *)prev)->_start_line);
+				return ERROR;
 			}
 		} else if (!strcmp(variable, "timeperiod_name")) {
 			temp_timeperiod->timeperiod_name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_tree[OBJTYPE_TIMEPERIOD], g_strdup(temp_timeperiod->timeperiod_name), temp_timeperiod);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for timeperiod '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_timeperiod->_config_file), temp_timeperiod->_start_line);
-					result = ERROR;
-				} else {
-					xodcount.timeperiods++;
-				}
+			prev = xod_tree_insert(xobject_tree[OBJTYPE_TIMEPERIOD], g_strdup(temp_timeperiod->timeperiod_name), temp_timeperiod);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for timeperiod '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_timeperiod->_config_file), temp_timeperiod->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_timeperiod *)prev)->_config_file), ((xodtemplate_timeperiod *)prev)->_start_line);
+				return ERROR;
+			} else {
+				xodcount.timeperiods++;
 			}
 		} else if (!strcmp(variable, "alias")) {
 			temp_timeperiod->alias = nm_strdup(value);
@@ -6647,7 +6644,7 @@ static int xodtemplate_add_object_property(char *input)
 		} else if (!strcmp(variable, "register"))
 			temp_timeperiod->register_object = (atoi(value) > 0) ? TRUE : FALSE;
 		else if (xodtemplate_parse_timeperiod_directive(temp_timeperiod, variable, value) == OK)
-			result = OK;
+			return OK;
 		else {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid timeperiod object directive '%s'.\n", variable);
 			return ERROR;
@@ -6665,24 +6662,22 @@ static int xodtemplate_add_object_property(char *input)
 		} else if (!strcmp(variable, "name")) {
 			temp_command->name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_COMMAND], g_strdup(temp_command->name), temp_command);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for command '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_command->_config_file), temp_command->_start_line);
-					result = ERROR;
-				}
+			prev = xod_tree_insert(xobject_template_tree[OBJTYPE_COMMAND], g_strdup(temp_command->name), temp_command);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for command '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_command->_config_file), temp_command->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_command *)prev)->_config_file), ((xodtemplate_command *)prev)->_start_line);
+				return ERROR;
 			}
 		} else if (!strcmp(variable, "command_name")) {
 			temp_command->command_name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_tree[OBJTYPE_COMMAND], g_strdup(temp_command->command_name), temp_command);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for command '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_command->_config_file), temp_command->_start_line);
-					result = ERROR;
-				} else {
-					xodcount.commands++;
-				}
+			prev = xod_tree_insert(xobject_tree[OBJTYPE_COMMAND], g_strdup(temp_command->command_name), temp_command);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for command '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_command->_config_file), temp_command->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_command *)prev)->_config_file), ((xodtemplate_command *)prev)->_start_line);
+				return ERROR;
+			} else {
+				xodcount.commands++;
 			}
 		} else if (!strcmp(variable, "command_line")) {
 			temp_command->command_line = nm_strdup(value);
@@ -6705,24 +6700,22 @@ static int xodtemplate_add_object_property(char *input)
 
 			temp_contactgroup->name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_CONTACTGROUP], g_strdup(temp_contactgroup->name), temp_contactgroup);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for contactgroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_contactgroup->_config_file), temp_contactgroup->_start_line);
-					result = ERROR;
-				}
+			prev = xod_tree_insert(xobject_template_tree[OBJTYPE_CONTACTGROUP], g_strdup(temp_contactgroup->name), temp_contactgroup);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for contactgroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_contactgroup->_config_file), temp_contactgroup->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_contactgroup *)prev)->_config_file), ((xodtemplate_contactgroup *)prev)->_start_line);
+				return ERROR;
 			}
 		} else if (!strcmp(variable, "contactgroup_name")) {
 			temp_contactgroup->contactgroup_name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_tree[OBJTYPE_CONTACTGROUP], g_strdup(temp_contactgroup->contactgroup_name), temp_contactgroup);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for contactgroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_contactgroup->_config_file), temp_contactgroup->_start_line);
-					result = ERROR;
-				} else {
-					xodcount.contactgroups++;
-				}
+			prev = xod_tree_insert(xobject_tree[OBJTYPE_CONTACTGROUP], g_strdup(temp_contactgroup->contactgroup_name), temp_contactgroup);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for contactgroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_contactgroup->_config_file), temp_contactgroup->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_contactgroup *)prev)->_config_file), ((xodtemplate_contactgroup *)prev)->_start_line);
+				return ERROR;
+			} else {
+				xodcount.contactgroups++;
 			}
 		} else if (!strcmp(variable, "alias")) {
 			temp_contactgroup->alias = nm_strdup(value);
@@ -6736,7 +6729,7 @@ static int xodtemplate_add_object_property(char *input)
 					strcat(temp_contactgroup->members, value);
 				}
 				if (temp_contactgroup->members == NULL)
-					result = ERROR;
+					return ERROR;
 			}
 			temp_contactgroup->have_members = TRUE;
 		} else if (!strcmp(variable, "contactgroup_members")) {
@@ -6749,7 +6742,7 @@ static int xodtemplate_add_object_property(char *input)
 					strcat(temp_contactgroup->contactgroup_members, value);
 				}
 				if (temp_contactgroup->contactgroup_members == NULL)
-					result = ERROR;
+					return ERROR;
 			}
 			temp_contactgroup->have_contactgroup_members = TRUE;
 		} else if (!strcmp(variable, "register"))
@@ -6771,24 +6764,22 @@ static int xodtemplate_add_object_property(char *input)
 
 			temp_hostgroup->name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_HOSTGROUP], g_strdup(temp_hostgroup->name), temp_hostgroup);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for hostgroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostgroup->_config_file), temp_hostgroup->_start_line);
-					result = ERROR;
-				}
+			prev = xod_tree_insert(xobject_template_tree[OBJTYPE_HOSTGROUP], g_strdup(temp_hostgroup->name), temp_hostgroup);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for hostgroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostgroup->_config_file), temp_hostgroup->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_hostgroup *)prev)->_config_file), ((xodtemplate_hostgroup *)prev)->_start_line);
+				return ERROR;
 			}
 		} else if (!strcmp(variable, "hostgroup_name")) {
 			temp_hostgroup->hostgroup_name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_tree[OBJTYPE_HOSTGROUP], g_strdup(temp_hostgroup->hostgroup_name), temp_hostgroup);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for hostgroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostgroup->_config_file), temp_hostgroup->_start_line);
-					result = ERROR;
-				} else {
-					xodcount.hostgroups++;
-				}
+			prev = xod_tree_insert(xobject_tree[OBJTYPE_HOSTGROUP], g_strdup(temp_hostgroup->hostgroup_name), temp_hostgroup);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for hostgroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostgroup->_config_file), temp_hostgroup->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_hostgroup *)prev)->_config_file), ((xodtemplate_hostgroup *)prev)->_start_line);
+				return ERROR;
+			} else {
+				xodcount.hostgroups++;
 			}
 		} else if (!strcmp(variable, "alias")) {
 			temp_hostgroup->alias = nm_strdup(value);
@@ -6802,7 +6793,7 @@ static int xodtemplate_add_object_property(char *input)
 					strcat(temp_hostgroup->members, value);
 				}
 				if (temp_hostgroup->members == NULL)
-					result = ERROR;
+					return ERROR;
 			}
 			temp_hostgroup->have_members = TRUE;
 		} else if (!strcmp(variable, "hostgroup_members")) {
@@ -6815,7 +6806,7 @@ static int xodtemplate_add_object_property(char *input)
 					strcat(temp_hostgroup->hostgroup_members, value);
 				}
 				if (temp_hostgroup->hostgroup_members == NULL)
-					result = ERROR;
+					return ERROR;
 			}
 			temp_hostgroup->have_hostgroup_members = TRUE;
 		} else if (!strcmp(variable, "notes")) {
@@ -6852,24 +6843,22 @@ static int xodtemplate_add_object_property(char *input)
 		} else if (!strcmp(variable, "name")) {
 
 			temp_servicegroup->name = nm_strdup(value);
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_SERVICEGROUP], g_strdup(temp_servicegroup->name), temp_servicegroup);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for servicegroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_servicegroup->_config_file), temp_servicegroup->_start_line);
-					result = ERROR;
-				}
+			prev = xod_tree_insert(xobject_template_tree[OBJTYPE_SERVICEGROUP], g_strdup(temp_servicegroup->name), temp_servicegroup);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for servicegroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_servicegroup->_config_file), temp_servicegroup->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_servicegroup *)prev)->_config_file), ((xodtemplate_servicegroup *)prev)->_start_line);
+				return ERROR;
 			}
 		} else if (!strcmp(variable, "servicegroup_name")) {
 			temp_servicegroup->servicegroup_name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_tree[OBJTYPE_SERVICEGROUP], g_strdup(temp_servicegroup->servicegroup_name), temp_servicegroup);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for servicegroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_servicegroup->_config_file), temp_servicegroup->_start_line);
-					result = ERROR;
-				} else {
-					xodcount.servicegroups++;
-				}
+			prev = xod_tree_insert(xobject_tree[OBJTYPE_SERVICEGROUP], g_strdup(temp_servicegroup->servicegroup_name), temp_servicegroup);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for servicegroup '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_servicegroup->_config_file), temp_servicegroup->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_servicegroup *)prev)->_config_file), ((xodtemplate_servicegroup *)prev)->_start_line);
+				return ERROR;
+			} else {
+				xodcount.servicegroups++;
 			}
 		} else if (!strcmp(variable, "alias")) {
 			temp_servicegroup->alias = nm_strdup(value);
@@ -6883,7 +6872,7 @@ static int xodtemplate_add_object_property(char *input)
 					strcat(temp_servicegroup->members, value);
 				}
 				if (temp_servicegroup->members == NULL)
-					result = ERROR;
+					return ERROR;
 			}
 			temp_servicegroup->have_members = TRUE;
 		} else if (!strcmp(variable, "servicegroup_members")) {
@@ -6896,7 +6885,7 @@ static int xodtemplate_add_object_property(char *input)
 					strcat(temp_servicegroup->servicegroup_members, value);
 				}
 				if (temp_servicegroup->servicegroup_members == NULL)
-					result = ERROR;
+					return ERROR;
 			}
 			temp_servicegroup->have_servicegroup_members = TRUE;
 		} else if (!strcmp(variable, "notes")) {
@@ -6934,12 +6923,11 @@ static int xodtemplate_add_object_property(char *input)
 
 			temp_servicedependency->name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_SERVICEDEPENDENCY], g_strdup(temp_servicedependency->name), temp_servicedependency);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for service dependency '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_servicedependency->_config_file), temp_servicedependency->_start_line);
-					result = ERROR;
-				}
+			prev = xod_tree_insert(xobject_template_tree[OBJTYPE_SERVICEDEPENDENCY], g_strdup(temp_servicedependency->name), temp_servicedependency);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for service dependency '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_servicedependency->_config_file), temp_servicedependency->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_servicedependency *)prev)->_config_file), ((xodtemplate_servicedependency *)prev)->_start_line);
+				return ERROR;
 			}
 		} else if (!strcmp(variable, "servicegroup") || !strcmp(variable, "servicegroups") || !strcmp(variable, "servicegroup_name")) {
 			if (strcmp(value, XODTEMPLATE_NULL)) {
@@ -7055,12 +7043,11 @@ static int xodtemplate_add_object_property(char *input)
 
 			temp_serviceescalation->name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_SERVICEESCALATION], g_strdup(temp_serviceescalation->name), temp_serviceescalation);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for service escalation '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_serviceescalation->_config_file), temp_serviceescalation->_start_line);
-					result = ERROR;
-				}
+			prev = xod_tree_insert(xobject_template_tree[OBJTYPE_SERVICEESCALATION], g_strdup(temp_serviceescalation->name), temp_serviceescalation);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for service escalation '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_serviceescalation->_config_file), temp_serviceescalation->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_serviceescalation *)prev)->_config_file), ((xodtemplate_serviceescalation *)prev)->_start_line);
+				return ERROR;
 			}
 		} else if (!strcmp(variable, "host") || !strcmp(variable, "host_name")) {
 
@@ -7147,24 +7134,22 @@ static int xodtemplate_add_object_property(char *input)
 
 			temp_contact->name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_CONTACT], g_strdup(temp_contact->name), temp_contact);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for contact '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_contact->_config_file), temp_contact->_start_line);
-					result = ERROR;
-				}
+			prev = xod_tree_insert(xobject_template_tree[OBJTYPE_CONTACT], g_strdup(temp_contact->name), temp_contact);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for contact '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_contact->_config_file), temp_contact->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_contact *)prev)->_config_file), ((xodtemplate_contact *)prev)->_start_line);
+				return ERROR;
 			}
 		} else if (!strcmp(variable, "contact_name")) {
 			temp_contact->contact_name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_tree[OBJTYPE_CONTACT], g_strdup(temp_contact->contact_name), temp_contact);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for contact '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_contact->_config_file), temp_contact->_start_line);
-					result = ERROR;
-				} else {
-					temp_contact->id = xodcount.contacts++;
-				}
+			prev = xod_tree_insert(xobject_tree[OBJTYPE_CONTACT], g_strdup(temp_contact->contact_name), temp_contact);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for contact '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_contact->_config_file), temp_contact->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_contact *)prev)->_config_file), ((xodtemplate_contact *)prev)->_start_line);
+				return ERROR;
+			} else {
+				temp_contact->id = xodcount.contacts++;
 			}
 		} else if (!strcmp(variable, "alias")) {
 			temp_contact->alias = nm_strdup(value);
@@ -7186,12 +7171,11 @@ static int xodtemplate_add_object_property(char *input)
 		} else if (strstr(variable, "address") == variable) {
 			x = atoi(variable + 7);
 			if (x < 1 || x > MAX_CONTACT_ADDRESSES)
-				result = ERROR;
+				return ERROR;
 			else if (strcmp(value, XODTEMPLATE_NULL)) {
 				temp_contact->address[x - 1] = nm_strdup(value);
 			}
-			if (result == OK)
-				temp_contact->have_address[x - 1] = TRUE;
+			temp_contact->have_address[x - 1] = TRUE;
 		} else if (!strcmp(variable, "host_notification_period")) {
 			if (strcmp(value, XODTEMPLATE_NULL)) {
 				temp_contact->host_notification_period = nm_strdup(value);
@@ -7323,24 +7307,22 @@ static int xodtemplate_add_object_property(char *input)
 
 			temp_host->name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_HOST], g_strdup(temp_host->name), temp_host);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for host '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_host->_config_file), temp_host->_start_line);
-					result = ERROR;
-				}
+			prev = xod_tree_insert(xobject_template_tree[OBJTYPE_HOST], g_strdup(temp_host->name), temp_host);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for host '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_host->_config_file), temp_host->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_host *)prev)->_config_file), ((xodtemplate_host *)prev)->_start_line);
+				return ERROR;
 			}
 		} else if (!strcmp(variable, "host_name")) {
 			temp_host->host_name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_tree[OBJTYPE_HOST], g_strdup(temp_host->host_name), temp_host);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for host '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_host->_config_file), temp_host->_start_line);
-					result = ERROR;
-				} else {
-					temp_host->id = xodcount.hosts++;
-				}
+			prev = xod_tree_insert(xobject_tree[OBJTYPE_HOST], g_strdup(temp_host->host_name), temp_host);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for host '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_host->_config_file), temp_host->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_host *)prev)->_config_file), ((xodtemplate_host *)prev)->_start_line);
+				return ERROR;
+			} else {
+				temp_host->id = xodcount.hosts++;
 			}
 			temp_host->id = xodcount.hosts++;
 		} else if (!strcmp(variable, "display_name")) {
@@ -7438,7 +7420,7 @@ static int xodtemplate_add_object_property(char *input)
 				temp_host->initial_state = 2; /* STATE_UNREACHABLE */
 			else {
 				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid initial state '%s' in host definition.\n", value);
-				result = ERROR;
+				return ERROR;
 			}
 			temp_host->have_initial_state = TRUE;
 		} else if (!strcmp(variable, "check_interval") || !strcmp(variable, "normal_check_interval")) {
@@ -7495,7 +7477,7 @@ static int xodtemplate_add_object_property(char *input)
 					temp_host->flap_detection_options = OPT_ALL;
 				} else {
 					nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid flap detection option '%s' in host definition.\n", (temp_ptr ? temp_ptr : "(null)"));
-					result = ERROR;
+					return ERROR;
 				}
 			}
 			temp_host->have_flap_detection_options = TRUE;
@@ -7517,7 +7499,7 @@ static int xodtemplate_add_object_property(char *input)
 					temp_host->notification_options = OPT_ALL;
 				} else {
 					nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid notification option '%s' in host definition.\n", (temp_ptr ? temp_ptr : "(null)"));
-					result = ERROR;
+					return ERROR;
 				}
 			}
 			temp_host->have_notification_options = TRUE;
@@ -7544,7 +7526,7 @@ static int xodtemplate_add_object_property(char *input)
 					temp_host->stalking_options = OPT_ALL;
 				} else {
 					nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid stalking option '%s' in host definition.\n", (temp_ptr ? temp_ptr : "(null)"));
-					result = ERROR;
+					return ERROR;
 				}
 			}
 			temp_host->have_stalking_options = TRUE;
@@ -7636,12 +7618,11 @@ static int xodtemplate_add_object_property(char *input)
 
 			temp_service->name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_SERVICE], g_strdup(temp_service->name), temp_service);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for service '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
-					result = ERROR;
-				}
+			prev = xod_tree_insert(xobject_template_tree[OBJTYPE_SERVICE], g_strdup(temp_service->name), temp_service);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for service '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_service *)prev)->_config_file), ((xodtemplate_service *)prev)->_start_line);
+				return ERROR;
 			}
 		} else if (!strcmp(variable, "host") || !strcmp(variable, "hosts") || !strcmp(variable, "host_name")) {
 			if (strcmp(value, XODTEMPLATE_NULL)) {
@@ -7650,11 +7631,12 @@ static int xodtemplate_add_object_property(char *input)
 			temp_service->have_host_name = TRUE;
 
 			/* NOTE: services are indexed in xodtemplate_duplicate_services(), except if daemon is using precached config */
-			if (result == OK && force_index == TRUE  && temp_service->host_name != NULL && temp_service->service_description != NULL) {
+			if (force_index == TRUE  && temp_service->host_name != NULL && temp_service->service_description != NULL) {
 				prev = xod_tree_insert(xobject_tree[OBJTYPE_SERVICE], g_strdup_printf("%s;%s", temp_service->host_name, temp_service->service_description), temp_service);
 				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for service '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
-					result = ERROR;
+					nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for service '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
+					nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_service *)prev)->_config_file), ((xodtemplate_service *)prev)->_start_line);
+					return ERROR;
 				} else {
 					temp_service->id = xodcount.services++;
 				}
@@ -7666,11 +7648,12 @@ static int xodtemplate_add_object_property(char *input)
 			temp_service->have_service_description = TRUE;
 
 			/* NOTE: services are indexed in xodtemplate_duplicate_services(), except if daemon is using precached config */
-			if (result == OK && force_index == TRUE  && temp_service->host_name != NULL && temp_service->service_description != NULL) {
+			if (force_index == TRUE  && temp_service->host_name != NULL && temp_service->service_description != NULL) {
 				prev = xod_tree_insert(xobject_tree[OBJTYPE_SERVICE], g_strdup_printf("%s;%s", temp_service->host_name, temp_service->service_description), temp_service);
 				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for service '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
-					result = ERROR;
+					nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for service '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
+					nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_service *)prev)->_config_file), ((xodtemplate_service *)prev)->_start_line);
+					return ERROR;
 				} else {
 					temp_service->id = xodcount.services++;
 				}
@@ -7768,7 +7751,7 @@ static int xodtemplate_add_object_property(char *input)
 				temp_service->initial_state = STATE_CRITICAL;
 			else {
 				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid initial state '%s' in service definition.\n", value);
-				result = ERROR;
+				return ERROR;
 			}
 			temp_service->have_initial_state = TRUE;
 		} else if (!strcmp(variable, "hourly_value")) {
@@ -7953,12 +7936,11 @@ static int xodtemplate_add_object_property(char *input)
 
 			temp_hostdependency->name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_HOSTDEPENDENCY], g_strdup(temp_hostdependency->name), temp_hostdependency);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for host dependency '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostdependency->_config_file), temp_hostdependency->_start_line);
-					result = ERROR;
-				}
+			prev = xod_tree_insert(xobject_template_tree[OBJTYPE_HOSTDEPENDENCY], g_strdup(temp_hostdependency->name), temp_hostdependency);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for host dependency '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostdependency->_config_file), temp_hostdependency->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_hostdependency *)prev)->_config_file), ((xodtemplate_hostdependency *)prev)->_start_line);
+				return ERROR;
 			}
 		} else if (!strcmp(variable, "hostgroup") || !strcmp(variable, "hostgroups") || !strcmp(variable, "hostgroup_name")) {
 			if (strcmp(value, XODTEMPLATE_NULL)) {
@@ -8049,12 +8031,11 @@ static int xodtemplate_add_object_property(char *input)
 
 			temp_hostescalation->name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_HOSTESCALATION], g_strdup(temp_hostescalation->name), temp_hostescalation);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for host escalation '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostescalation->_config_file), temp_hostescalation->_start_line);
-					result = ERROR;
-				}
+			prev = xod_tree_insert(xobject_template_tree[OBJTYPE_HOSTESCALATION], g_strdup(temp_hostescalation->name), temp_hostescalation);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for host escalation '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostescalation->_config_file), temp_hostescalation->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_hostescalation *)prev)->_config_file), ((xodtemplate_hostescalation *)prev)->_start_line);
+				return ERROR;
 			}
 		} else if (!strcmp(variable, "hostgroup") || !strcmp(variable, "hostgroups") || !strcmp(variable, "hostgroup_name")) {
 			if (strcmp(value, XODTEMPLATE_NULL)) {
@@ -8127,12 +8108,11 @@ static int xodtemplate_add_object_property(char *input)
 
 			temp_hostextinfo->name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_HOSTEXTINFO], g_strdup(temp_hostextinfo->name), temp_hostextinfo);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for extended host info '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostextinfo->_config_file), temp_hostextinfo->_start_line);
-					result = ERROR;
-				}
+			prev = xod_tree_insert(xobject_template_tree[OBJTYPE_HOSTEXTINFO], g_strdup(temp_hostextinfo->name), temp_hostextinfo);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for extended host info '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_hostextinfo->_config_file), temp_hostextinfo->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_hostextinfo *)prev)->_config_file), ((xodtemplate_hostextinfo *)prev)->_start_line);
+				return ERROR;
 			}
 		} else if (!strcmp(variable, "host_name")) {
 			if (strcmp(value, XODTEMPLATE_NULL)) {
@@ -8232,12 +8212,11 @@ static int xodtemplate_add_object_property(char *input)
 
 			temp_serviceextinfo->name = nm_strdup(value);
 
-			if (result == OK) {
-				prev = xod_tree_insert(xobject_template_tree[OBJTYPE_SERVICEEXTINFO], g_strdup(temp_serviceextinfo->name), temp_serviceextinfo);
-				if (prev) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Duplicate definition found for extended service info '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_serviceextinfo->_config_file), temp_serviceextinfo->_start_line);
-					result = ERROR;
-				}
+			prev = xod_tree_insert(xobject_template_tree[OBJTYPE_SERVICEEXTINFO], g_strdup(temp_serviceextinfo->name), temp_serviceextinfo);
+			if (prev) {
+				nm_log(NSLOG_CONFIG_ERROR, "Error: Duplicate definition found for extended service info '%s' (config file '%s', starting on line %d)\n", value, xodtemplate_config_file_name(temp_serviceextinfo->_config_file), temp_serviceextinfo->_start_line);
+				nm_log(NSLOG_CONFIG_ERROR, "Error: First occurrence in config file '%s', starting on line %d\n", xodtemplate_config_file_name(((xodtemplate_serviceextinfo *)prev)->_config_file), ((xodtemplate_serviceextinfo *)prev)->_start_line);
+				return ERROR;
 			}
 		} else if (!strcmp(variable, "host_name")) {
 			if (strcmp(value, XODTEMPLATE_NULL)) {
@@ -8293,7 +8272,7 @@ static int xodtemplate_add_object_property(char *input)
 		break;
 	}
 
-	return result;
+	return OK;
 }
 
 
