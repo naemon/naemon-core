@@ -144,7 +144,23 @@ static bitmap *service_map = NULL, *parent_map = NULL;
 		} \
 	} while(0)
 
-
+/* parse boolean 0/1 value */
+#define xod_parse_bool(o, t, v) ({ \
+	int result = OK; \
+	switch(*v) { \
+		case '0':  \
+			o->t = FALSE; \
+			break; \
+		case '1':  \
+			o->t = TRUE; \
+			break; \
+		default: \
+			nm_log(NSLOG_CONFIG_ERROR, "Error: invalid value for '"#t"', expected 0/1.\n"); \
+			result = ERROR; \
+			break; \
+	} \
+	result; \
+})
 
 /* returns the name of a numbered config file */
 static const char *xodtemplate_config_file_name(int cfgfile)
@@ -6642,7 +6658,7 @@ static int xodtemplate_add_object_property(char *input)
 		} else if (!strcmp(variable, "exclude")) {
 			temp_timeperiod->exclusions = nm_strdup(value);
 		} else if (!strcmp(variable, "register"))
-			temp_timeperiod->register_object = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_timeperiod, register_object, value);
 		else if (xodtemplate_parse_timeperiod_directive(temp_timeperiod, variable, value) == OK)
 			return OK;
 		else {
@@ -6682,7 +6698,7 @@ static int xodtemplate_add_object_property(char *input)
 		} else if (!strcmp(variable, "command_line")) {
 			temp_command->command_line = nm_strdup(value);
 		} else if (!strcmp(variable, "register"))
-			temp_command->register_object = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_command, register_object, value);
 		else {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid command object directive '%s'.\n", variable);
 			return ERROR;
@@ -6746,7 +6762,7 @@ static int xodtemplate_add_object_property(char *input)
 			}
 			temp_contactgroup->have_contactgroup_members = TRUE;
 		} else if (!strcmp(variable, "register"))
-			temp_contactgroup->register_object = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_contactgroup, register_object, value);
 		else {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid contactgroup object directive '%s'.\n", variable);
 			return ERROR;
@@ -6825,7 +6841,7 @@ static int xodtemplate_add_object_property(char *input)
 			}
 			temp_hostgroup->have_action_url = TRUE;
 		} else if (!strcmp(variable, "register"))
-			temp_hostgroup->register_object = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_hostgroup, register_object, value);
 		else {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid hostgroup object directive '%s'.\n", variable);
 			return ERROR;
@@ -6904,7 +6920,7 @@ static int xodtemplate_add_object_property(char *input)
 			}
 			temp_servicegroup->have_action_url = TRUE;
 		} else if (!strcmp(variable, "register"))
-			temp_servicegroup->register_object = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_servicegroup, register_object, value);
 		else {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid servicegroup object directive '%s'.\n", variable);
 			return ERROR;
@@ -6975,7 +6991,7 @@ static int xodtemplate_add_object_property(char *input)
 			}
 			temp_servicedependency->have_dependency_period = TRUE;
 		} else if (!strcmp(variable, "inherits_parent")) {
-			temp_servicedependency->inherits_parent = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_servicedependency, inherits_parent, value);
 			temp_servicedependency->have_inherits_parent = TRUE;
 		} else if (!strcmp(variable, "execution_failure_options") || !strcmp(variable, "execution_failure_criteria")) {
 			temp_servicedependency->have_execution_failure_options = TRUE;
@@ -7024,7 +7040,7 @@ static int xodtemplate_add_object_property(char *input)
 				}
 			}
 		} else if (!strcmp(variable, "register"))
-			temp_servicedependency->register_object = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_servicedependency, register_object, value);
 		else {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid servicedependency object directive '%s'.\n", variable);
 			return ERROR;
@@ -7115,7 +7131,7 @@ static int xodtemplate_add_object_property(char *input)
 			}
 			temp_serviceescalation->have_escalation_options = TRUE;
 		} else if (!strcmp(variable, "register"))
-			temp_serviceescalation->register_object = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_serviceescalation, register_object, value);
 		else {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid serviceescalation object directive '%s'.\n", variable);
 			return ERROR;
@@ -7243,25 +7259,25 @@ static int xodtemplate_add_object_property(char *input)
 			}
 			temp_contact->have_service_notification_options = TRUE;
 		} else if (!strcmp(variable, "host_notifications_enabled")) {
-			temp_contact->host_notifications_enabled = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_contact, host_notifications_enabled, value);
 			temp_contact->have_host_notifications_enabled = TRUE;
 		} else if (!strcmp(variable, "service_notifications_enabled")) {
-			temp_contact->service_notifications_enabled = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_contact, service_notifications_enabled, value);
 			temp_contact->have_service_notifications_enabled = TRUE;
 		} else if (!strcmp(variable, "can_submit_commands")) {
-			temp_contact->can_submit_commands = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_contact, can_submit_commands, value);
 			temp_contact->have_can_submit_commands = TRUE;
 		} else if (!strcmp(variable, "retain_status_information")) {
-			temp_contact->retain_status_information = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_contact, retain_status_information, value);
 			temp_contact->have_retain_status_information = TRUE;
 		} else if (!strcmp(variable, "retain_nonstatus_information")) {
-			temp_contact->retain_nonstatus_information = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_contact, retain_nonstatus_information, value);
 			temp_contact->have_retain_nonstatus_information = TRUE;
 		} else if (!strcmp(variable, "minimum_value")) {
 			temp_contact->minimum_value = strtoul(value, NULL, 10);
 			temp_contact->have_minimum_value = TRUE;
 		} else if (!strcmp(variable, "register"))
-			temp_contact->register_object = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_contact, register_object, value);
 		else if (variable[0] == '_') {
 
 			/* get the variable name */
@@ -7436,16 +7452,16 @@ static int xodtemplate_add_object_property(char *input)
 			temp_host->max_check_attempts = atoi(value);
 			temp_host->have_max_check_attempts = TRUE;
 		} else if (!strcmp(variable, "checks_enabled") || !strcmp(variable, "active_checks_enabled")) {
-			temp_host->active_checks_enabled = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_host, active_checks_enabled, value);
 			temp_host->have_active_checks_enabled = TRUE;
 		} else if (!strcmp(variable, "passive_checks_enabled")) {
-			temp_host->passive_checks_enabled = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_host, passive_checks_enabled, value);
 			temp_host->have_passive_checks_enabled = TRUE;
 		} else if (!strcmp(variable, "event_handler_enabled")) {
-			temp_host->event_handler_enabled = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_host, event_handler_enabled, value);
 			temp_host->have_event_handler_enabled = TRUE;
 		} else if (!strcmp(variable, "check_freshness")) {
-			temp_host->check_freshness = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_host, check_freshness, value);
 			temp_host->have_check_freshness = TRUE;
 		} else if (!strcmp(variable, "freshness_threshold")) {
 			temp_host->freshness_threshold = atoi(value);
@@ -7457,7 +7473,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_host->high_flap_threshold = strtod(value, NULL);
 			temp_host->have_high_flap_threshold = TRUE;
 		} else if (!strcmp(variable, "flap_detection_enabled")) {
-			temp_host->flap_detection_enabled = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_host, flap_detection_enabled, value);
 			temp_host->have_flap_detection_enabled = TRUE;
 		} else if (!strcmp(variable, "flap_detection_options")) {
 
@@ -7504,7 +7520,7 @@ static int xodtemplate_add_object_property(char *input)
 			}
 			temp_host->have_notification_options = TRUE;
 		} else if (!strcmp(variable, "notifications_enabled")) {
-			temp_host->notifications_enabled = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_host, notifications_enabled, value);
 			temp_host->have_notifications_enabled = TRUE;
 		} else if (!strcmp(variable, "notification_interval")) {
 			temp_host->notification_interval = strtod(value, NULL);
@@ -7531,7 +7547,7 @@ static int xodtemplate_add_object_property(char *input)
 			}
 			temp_host->have_stalking_options = TRUE;
 		} else if (!strcmp(variable, "process_perf_data")) {
-			temp_host->process_perf_data = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_host, process_perf_data, value);
 			temp_host->have_process_perf_data = TRUE;
 		} else if (!strcmp(variable, "failure_prediction_enabled")) {
 			xodtemplate_obsoleted(variable, temp_host->_start_line);
@@ -7565,16 +7581,16 @@ static int xodtemplate_add_object_property(char *input)
 			temp_host->z_3d = strtod(temp_ptr, NULL);
 			temp_host->have_3d_coords = TRUE;
 		} else if (!strcmp(variable, "obsess_over_host") || !strcmp(variable, "obsess")) {
-			temp_host->obsess = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_host, obsess, value);
 			temp_host->have_obsess = TRUE;
 		} else if (!strcmp(variable, "retain_status_information")) {
-			temp_host->retain_status_information = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_host, retain_status_information, value);
 			temp_host->have_retain_status_information = TRUE;
 		} else if (!strcmp(variable, "retain_nonstatus_information")) {
-			temp_host->retain_nonstatus_information = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_host, retain_nonstatus_information, value);
 			temp_host->have_retain_nonstatus_information = TRUE;
 		} else if (!strcmp(variable, "register"))
-			temp_host->register_object = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_host, register_object, value);
 		else if (variable[0] == '_') {
 
 			/* get the variable name */
@@ -7767,10 +7783,10 @@ static int xodtemplate_add_object_property(char *input)
 			temp_service->retry_interval = strtod(value, NULL);
 			temp_service->have_retry_interval = TRUE;
 		} else if (!strcmp(variable, "active_checks_enabled")) {
-			temp_service->active_checks_enabled = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_service, active_checks_enabled, value);
 			temp_service->have_active_checks_enabled = TRUE;
 		} else if (!strcmp(variable, "passive_checks_enabled")) {
-			temp_service->passive_checks_enabled = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_service, passive_checks_enabled, value);
 			temp_service->have_passive_checks_enabled = TRUE;
 		} else if (!strcmp(variable, "parallelize_check")) {
 			/* deprecated and was never implemented
@@ -7779,16 +7795,16 @@ static int xodtemplate_add_object_property(char *input)
 			 * for existing configs
 			 */
 		} else if (!strcmp(variable, "is_volatile")) {
-			temp_service->is_volatile = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_service, is_volatile, value);
 			temp_service->have_is_volatile = TRUE;
 		} else if (!strcmp(variable, "obsess_over_service") || !strcmp(variable, "obsess")) {
-			temp_service->obsess = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_service, obsess, value);
 			temp_service->have_obsess = TRUE;
 		} else if (!strcmp(variable, "event_handler_enabled")) {
-			temp_service->event_handler_enabled = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_service, event_handler_enabled, value);
 			temp_service->have_event_handler_enabled = TRUE;
 		} else if (!strcmp(variable, "check_freshness")) {
-			temp_service->check_freshness = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_service, check_freshness, value);
 			temp_service->have_check_freshness = TRUE;
 		} else if (!strcmp(variable, "freshness_threshold")) {
 			temp_service->freshness_threshold = atoi(value);
@@ -7800,7 +7816,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_service->high_flap_threshold = strtod(value, NULL);
 			temp_service->have_high_flap_threshold = TRUE;
 		} else if (!strcmp(variable, "flap_detection_enabled")) {
-			temp_service->flap_detection_enabled = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_service, flap_detection_enabled, value);
 			temp_service->have_flap_detection_enabled = TRUE;
 		} else if (!strcmp(variable, "flap_detection_options")) {
 
@@ -7851,7 +7867,7 @@ static int xodtemplate_add_object_property(char *input)
 			}
 			temp_service->have_notification_options = TRUE;
 		} else if (!strcmp(variable, "notifications_enabled")) {
-			temp_service->notifications_enabled = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_service, notifications_enabled, value);
 			temp_service->have_notifications_enabled = TRUE;
 		} else if (!strcmp(variable, "notification_interval")) {
 			temp_service->notification_interval = strtod(value, NULL);
@@ -7880,18 +7896,18 @@ static int xodtemplate_add_object_property(char *input)
 			}
 			temp_service->have_stalking_options = TRUE;
 		} else if (!strcmp(variable, "process_perf_data")) {
-			temp_service->process_perf_data = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_service, process_perf_data, value);
 			temp_service->have_process_perf_data = TRUE;
 		} else if (!strcmp(variable, "failure_prediction_enabled")) {
 			xodtemplate_obsoleted(variable, temp_service->_start_line);
 		} else if (!strcmp(variable, "retain_status_information")) {
-			temp_service->retain_status_information = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_service, retain_status_information, value);
 			temp_service->have_retain_status_information = TRUE;
 		} else if (!strcmp(variable, "retain_nonstatus_information")) {
-			temp_service->retain_nonstatus_information = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_service, retain_nonstatus_information, value);
 			temp_service->have_retain_nonstatus_information = TRUE;
 		} else if (!strcmp(variable, "register"))
-			temp_service->register_object = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_service, register_object, value);
 		else if (variable[0] == '_') {
 
 			/* get the variable name */
@@ -7968,7 +7984,7 @@ static int xodtemplate_add_object_property(char *input)
 			}
 			temp_hostdependency->have_dependency_period = TRUE;
 		} else if (!strcmp(variable, "inherits_parent")) {
-			temp_hostdependency->inherits_parent = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_hostdependency, inherits_parent, value);
 			temp_hostdependency->have_inherits_parent = TRUE;
 		} else if (!strcmp(variable, "notification_failure_options") || !strcmp(variable, "notification_failure_criteria")) {
 			temp_hostdependency->have_notification_failure_options = TRUE;
@@ -8012,7 +8028,7 @@ static int xodtemplate_add_object_property(char *input)
 			}
 			temp_hostdependency->have_execution_failure_options = TRUE;
 		} else if (!strcmp(variable, "register"))
-			temp_hostdependency->register_object = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_hostdependency, register_object, value);
 		else {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid hostdependency object directive '%s'.\n", variable);
 			return ERROR;
@@ -8090,7 +8106,7 @@ static int xodtemplate_add_object_property(char *input)
 			}
 			temp_hostescalation->have_escalation_options = TRUE;
 		} else if (!strcmp(variable, "register"))
-			temp_hostescalation->register_object = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_hostescalation, register_object, value);
 		else {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid hostescalation object directive '%s'.\n", variable);
 			return ERROR;
@@ -8194,7 +8210,7 @@ static int xodtemplate_add_object_property(char *input)
 			temp_hostextinfo->z_3d = strtod(temp_ptr, NULL);
 			temp_hostextinfo->have_3d_coords = TRUE;
 		} else if (!strcmp(variable, "register"))
-			temp_hostextinfo->register_object = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_hostextinfo, register_object, value);
 		else {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid hostextinfo object directive '%s'.\n", variable);
 			return ERROR;
@@ -8259,7 +8275,7 @@ static int xodtemplate_add_object_property(char *input)
 			}
 			temp_serviceextinfo->have_icon_image_alt = TRUE;
 		} else if (!strcmp(variable, "register"))
-			temp_serviceextinfo->register_object = (atoi(value) > 0) ? TRUE : FALSE;
+			return xod_parse_bool(temp_serviceextinfo, register_object, value);
 		else {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid serviceextinfo object directive '%s'.\n", variable);
 			return ERROR;
