@@ -1497,7 +1497,7 @@ int pre_flight_object_check(int *w, int *e)
 		}
 
 		/* check to see if there is at least one contact/group */
-		if (temp_service->contacts == NULL && temp_service->contact_groups == NULL && global_service_event_handler == NULL) {
+		if (temp_service->contacts == NULL && temp_service->contact_groups == NULL && global_service_notification_handler == NULL) {
 			nm_log(NSLOG_VERIFICATION_WARNING, "Warning: Service '%s' on host '%s' has no default contacts or contactgroups defined!", temp_service->description, temp_service->host_name);
 			warnings++;
 		}
