@@ -76,7 +76,7 @@ static const struct macro_key_code *find_macro_key(const char *name)
 	struct macro_key_code *key;
 
 	high = MACRO_X_COUNT;
-	while (high - low > 0) {
+	while (high > low) {
 		unsigned int mid = low + ((high - low) / 2);
 		key = &macro_keys[mid];
 		value = strcmp(name, key->name);

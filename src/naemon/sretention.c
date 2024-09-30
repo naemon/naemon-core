@@ -24,7 +24,7 @@ void save_state_information_eventhandler(struct nm_event_execution_properties *e
 	int status;
 
 	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
-		schedule_event(retention_update_interval * interval_length, save_state_information_eventhandler, evprop->user_data);
+		schedule_event((time_t)retention_update_interval * interval_length, save_state_information_eventhandler, evprop->user_data);
 
 		status = save_state_information(TRUE);
 
@@ -44,7 +44,7 @@ int initialize_retention_data()
 
 	/* add a retention data save event if needed */
 	if (retain_state_information == TRUE && retention_update_interval > 0)
-		schedule_event(retention_update_interval * interval_length, save_state_information_eventhandler, NULL);
+		schedule_event((time_t)retention_update_interval * interval_length, save_state_information_eventhandler, NULL);
 
 	return xrddefault_initialize_retention_data();
 }
