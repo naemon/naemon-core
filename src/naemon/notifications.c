@@ -1873,8 +1873,6 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 			free(nj);
 		}
 
-		/* @todo Handle nebmod stuff when getting results from workers */
-
 		nm_free(command_name);
 		nm_free(processed_command);
 
@@ -2422,8 +2420,6 @@ int run_global_host_notification_handler(nagios_macros *mac, host *hst, int type
 		nm_log(NSLOG_RUNTIME_ERROR, "wproc: Unable to send notification for host '%s' to worker\n", hst->name);
 		free(nj);
 	}
-
-	/* @todo Handle nebmod stuff when getting results from workers */
 
 	nm_free(command_name);
 	nm_free(processed_command);
