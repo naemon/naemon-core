@@ -840,6 +840,9 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 			/* this is a soft recovery */
 			temp_service->state_type = SOFT_STATE;
 
+			/* this is a soft recovery */
+			temp_service->last_state_was_soft_recovery = TRUE;
+
 			/* log the soft recovery */
 			log_service_event(temp_service);
 			alert_recorded = NEBATTR_CHECK_ALERT;
@@ -851,6 +854,14 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		/* else no service state change has occurred... */
 		else {
 			log_debug_info(DEBUGL_CHECKS, 1, "Service did not change state.\n");
+
+			if (temp_service->last_state_was_soft_recovery == TRUE) {
+				/* log the hard state after the last check which was a soft recovery */
+				log_service_event(temp_service);
+				alert_recorded = NEBATTR_CHECK_ALERT;
+			}
+
+			temp_service->last_state_was_soft_recovery = FALSE;
 		}
 
 		/* should we obsessive over service checks? */
