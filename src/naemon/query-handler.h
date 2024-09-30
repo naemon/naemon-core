@@ -20,6 +20,7 @@ int qh_init(const char *path);
 void qh_deinit(const char *path);
 int qh_register_handler(const char *name, const char *description, unsigned int options, qh_handler handler);
 const char *qh_strerror(int code);
+void qh_close_socket(void);
 
 NAGIOS_END_DECL
 

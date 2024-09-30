@@ -543,22 +543,6 @@ int main(int argc, char **argv)
 		nerd_init();
 		timing_point("Initialized NERD\n");
 
-		/* initialize check workers */
-		timing_point("Spawning %u workers\n", wproc_num_workers_spawned);
-		if (init_workers(num_check_workers) < 0) {
-			nm_log(NSLOG_RUNTIME_ERROR, "Failed to spawn workers. Aborting\n");
-			exit(EXIT_FAILURE);
-		}
-		timing_point("Spawned %u workers\n", wproc_num_workers_spawned);
-
-		timing_point("Connecting %u workers\n", wproc_num_workers_online);
-		i = 0;
-		while (i < 50 && wproc_num_workers_online < wproc_num_workers_spawned) {
-			iobroker_poll(nagios_iobs, 50);
-			i++;
-		}
-		timing_point("Connected %u workers\n", wproc_num_workers_online);
-
 		/* read in all object config data */
 		if (result == OK) {
 			timing_point("Reading all object data\n");
@@ -575,6 +559,29 @@ int main(int argc, char **argv)
 		timing_point("Initializing Event queue\n");
 		init_event_queue();
 		timing_point("Initialized Event queue\n");
+
+		registered_commands_init(200);
+		register_core_commands();
+		/* fire up command file worker */
+		timing_point("Launching command file worker\n");
+		launch_command_file_worker();
+		timing_point("Launched command file worker\n");
+
+		/* initialize check workers */
+		timing_point("Spawning %u workers\n", wproc_num_workers_spawned);
+		if (init_workers(num_check_workers) < 0) {
+			nm_log(NSLOG_RUNTIME_ERROR, "Failed to spawn workers. Aborting\n");
+			exit(EXIT_FAILURE);
+		}
+		timing_point("Spawned %u workers\n", wproc_num_workers_spawned);
+
+		timing_point("Connecting %u workers\n", wproc_num_workers_online);
+		i = 0;
+		while (i < 50 && wproc_num_workers_online < wproc_num_workers_spawned) {
+			iobroker_poll(nagios_iobs, 50);
+			i++;
+		}
+		timing_point("Connected %u workers\n", wproc_num_workers_online);
 
 		/* load modules */
 		timing_point("Loading modules\n");
@@ -619,6 +626,7 @@ int main(int argc, char **argv)
 			broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_PROCESS_INITIATED, NEBATTR_SHUTDOWN_ABNORMAL);
 
 			cleanup();
+			shutdown_command_file_worker();
 			exit(ERROR);
 		}
 
@@ -679,13 +687,6 @@ int main(int argc, char **argv)
 		log_host_states(INITIAL_STATES, NULL);
 		log_service_states(INITIAL_STATES, NULL);
 		timing_point("Logged initial states\n");
-
-		registered_commands_init(200);
-		register_core_commands();
-		/* fire up command file worker */
-		timing_point("Launching command file worker\n");
-		launch_command_file_worker();
-		timing_point("Launched command file worker\n");
 
 		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPSTART, NEBFLAG_NONE, NEBATTR_NONE);
 
