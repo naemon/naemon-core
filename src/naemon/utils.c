@@ -881,11 +881,11 @@ int generate_check_stats(void)
 			/* determine value by weighting this/last buckets... */
 			/* if this is the current bucket, use its full value + weighted % of last bucket */
 			if (x == 0) {
-				bucket_value = (int)(this_bucket_value + floor(last_bucket_value * last_bucket_weight));
+				bucket_value = (int)(this_bucket_value + floor((double)last_bucket_value * last_bucket_weight));
 			}
 			/* otherwise use weighted % of this and last bucket */
 			else {
-				bucket_value = (int)(ceil(this_bucket_value * this_bucket_weight) + floor(last_bucket_value * last_bucket_weight));
+				bucket_value = (int)(ceil((double)this_bucket_value * this_bucket_weight) + floor((double)last_bucket_value * (double)last_bucket_weight));
 			}
 
 			/* 1 minute stats */
