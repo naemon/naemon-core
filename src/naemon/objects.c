@@ -42,7 +42,7 @@ int fcache_objects(char *cache_file)
 	}
 
 	/* open the cache file for writing */
-	fp = (FILE *)fopen(tmp_file, "w");
+	fp = (FILE *)fdopen(fd, "w");
 	if (fp == NULL) {
 		unlink(tmp_file);
 		nm_log(NSLOG_CONFIG_WARNING, "Warning: Could not open object cache data file '%s' for writing!\n", tmp_file);
