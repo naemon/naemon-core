@@ -125,6 +125,7 @@ int main(int argc, char **argv)
 {
 	int result;
 	int error = FALSE;
+	int display_version = FALSE;
 	int display_license = FALSE;
 	int display_help = FALSE;
 	int c = 0;
@@ -142,7 +143,7 @@ int main(int argc, char **argv)
 	static struct option long_options[] = {
 		{"help", no_argument, 0, 'h'},
 		{"version", no_argument, 0, 'V'},
-		{"license", no_argument, 0, 'V'},
+		{"license", no_argument, 0, 'L'},
 		{"verify-config", no_argument, 0, 'v'},
 		{"daemon", no_argument, 0, 'd'},
 		{"precache-objects", no_argument, 0, 'p'},
@@ -161,7 +162,7 @@ int main(int argc, char **argv)
 
 	/* get all command line arguments */
 	while (1) {
-		c = getopt(argc, argv, "+hVvdspuxTW");
+		c = getopt(argc, argv, "+hLVvdspuxTW");
 
 		if (c == -1 || c == EOF)
 			break;
@@ -174,6 +175,10 @@ int main(int argc, char **argv)
 			break;
 
 		case 'V': /* version */
+			display_version = TRUE;
+			break;
+
+		case 'L': /* license */
 			display_license = TRUE;
 			break;
 
@@ -238,17 +243,18 @@ int main(int argc, char **argv)
 		exit(nm_core_worker(worker_socket));
 	}
 
-	if (daemon_mode == FALSE) {
-		printf("\nNaemon Core " VERSION "\n");
+	if (display_version == TRUE) {
+		printf("Naemon Core " VERSION "\n");
+
+		exit(OK);
+	}
+
+	if (display_license == TRUE) {
 		printf("Copyright (c) 2013-present Naemon Core Development Team and Community Contributors\n");
 		printf("Copyright (c) 2009-2013 Nagios Core Development Team and Community Contributors\n");
 		printf("Copyright (c) 1999-2009 Ethan Galstad\n");
-		printf("License: GPL\n\n");
+		printf("License: GPLv2\n\n");
 		printf("Website: https://www.naemon.io\n");
-	}
-
-	/* just display the license */
-	if (display_license == TRUE) {
 
 		printf("This program is free software; you can redistribute it and/or modify\n");
 		printf("it under the terms of the GNU General Public License version 2 as\n");
@@ -283,6 +289,10 @@ int main(int argc, char **argv)
 		printf("  -d, --daemon                 Starts Naemon in daemon mode, instead of as a foreground process\n");
 		printf("  -W, --worker /path/to/socket Act as a worker for an already running daemon\n");
 		printf("  --allow-root                 Let naemon run as root. THIS IS NOT RECOMMENDED AT ALL.\n");
+		printf("\n");
+		printf("  -h, --help                   Print this help and exit\n");
+		printf("  -V, --version                Print the version and exit\n");
+		printf("  -L, --license                Print the license and exit\n");
 		printf("\n");
 		printf("Visit the Naemon website at https://www.naemon.io/ for bug fixes, new\n");
 		printf("releases, online documentation, FAQs and more...\n");
