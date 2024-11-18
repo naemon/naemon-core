@@ -1,3 +1,26 @@
+1.4.3 - Nov 19 2024
+===================
+Features:
+* add global notifications handler (#477)
+* add external command to add log entries (#477)
+* add hint of previous object when duplicate detection fails (#479)
+* add options to keep services running as long as they are up (#459)
+* add problem timestamps and duration (#447)
+
+Changed:
+* clean up output of naemon -V (#484)
+* change problem_id and notification_id to uuids (#362)
+* change service parents suppressing only normal notifcations (#446)
+
+Bugfixes:
+* fix leaking object.cache file references (#462)
+* fix host not being in hard state with max_check_attempts=1 (#473)
+* throw config errors if boolean values cannot be parsed (#478)
+* fix retrieving comments after deleting first (#474)
+* fix rpm installation race condition (#456)
+* fix resetting modified_attributes (#449)
+
+
 1.4.2 - Jan 03 2024
 ===================
 Features:
