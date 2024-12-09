@@ -566,13 +566,7 @@ int xrddefault_read_state_information(void)
 		if ((inputbuf = mmap_fgets(thefile)) == NULL)
 			break;
 
-		input = inputbuf;
-
-		/* far better than strip()ing */
-		if (input[0] == '\t')
-			input++;
-
-		strip(input);
+		input = trim(inputbuf);
 
 		if (!strcmp(input, "service {")) {
 			memset(&conf, 0, sizeof(conf));
