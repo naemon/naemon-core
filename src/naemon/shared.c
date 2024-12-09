@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <glib.h>
+#include <ctype.h>
 #ifdef HAVE_SYS_MMAN_H
 # include <sys/mman.h>
 #endif
@@ -412,6 +413,29 @@ void strip(char *buffer)
 	}
 }
 
+// strip trailing whitespace, returns pointer to stripped string
+char *rstrip(char *c)
+{
+    char *w = c + strlen(c) - 1;
+    while (w >= c && isspace(*w))
+        *w-- = '\0';
+    return c;
+}
+
+// strip trailing whitespace, returns pointer to stripped string
+// NOTE: you need to free the original pointer, not the stripped one
+char *lstrip(char *c)
+{
+    while (isspace(*c)) c++;
+    return c;
+}
+
+// trim leading/trailing whitespace, returns pointer to stripped string
+// NOTE: you need to free the original pointer, not the stripped one
+char *trim(char *c)
+{
+    return(lstrip(rstrip(c)));
+}
 
 /*
  * given a date/time in time_t format, produce a corresponding
