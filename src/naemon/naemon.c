@@ -571,6 +571,7 @@ int main(int argc, char **argv)
 
 		/* read in all object config data */
 		if (result == OK) {
+			nm_log(NSLOG_INFO_MESSAGE, "Reading all config object data\n");
 			timing_point("Reading all object data\n");
 			result = read_all_object_data(config_file);
 			timing_point("Read all object data\n");
@@ -587,6 +588,7 @@ int main(int argc, char **argv)
 		timing_point("Initialized Event queue\n");
 
 		/* load modules */
+		nm_log(NSLOG_INFO_MESSAGE, "Loading neb modules\n");
 		timing_point("Loading modules\n");
 		if (neb_load_all_modules() != OK) {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Module loading failed. Aborting.\n");
