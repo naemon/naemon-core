@@ -237,6 +237,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 
 		/* make sure this is a valid time to check the host */
 		if (check_time_against_period(time(NULL), hst->check_period_ptr) != OK) {
+			delay_host_if_next_check_is_outside_timeperiod(hst);
 			return ERROR;
 		}
 
@@ -1392,4 +1393,29 @@ static int determine_host_reachability(host *hst)
 
 	log_debug_info(DEBUGL_CHECKS, 2, "No parents were up, so host is UNREACHABLE.\n");
 	return STATE_UNREACHABLE;
+}
+
+/* ensure next check falls into check period */
+void delay_host_if_next_check_is_outside_timeperiod(host *hst)
+{
+	time_t timeperiod_start = time(NULL);
+
+	if(hst->next_check == 0) {
+		return;
+	}
+
+	if(check_time_against_period(hst->next_check, hst->check_period_ptr) == OK) {
+		return;
+	}
+
+	get_next_valid_time(hst->next_check, &timeperiod_start, hst->check_period_ptr);
+	if(timeperiod_start == 0) {
+		return;
+	}
+
+	// add random delay, so not all checks start at the same second
+	timeperiod_start += ranged_urand(0, retained_scheduling_randomize_window);
+
+	log_debug_info(DEBUGL_CHECKS, 1, "delay next service check for %s until check timeperiod starts: %s\n", hst->name, ctime(&timeperiod_start));
+	schedule_host_check(hst, timeperiod_start, CHECK_OPTION_ALLOW_POSTPONE);
 }
