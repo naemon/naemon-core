@@ -661,8 +661,6 @@ int check_time_against_period(time_t test_time, const timeperiod *tperiod)
 	timerange *temp_timerange = NULL;
 	time_t midnight = (time_t)0L;
 
-	midnight = get_midnight(test_time);
-
 	/* if no period was specified, assume the time is good */
 	if (tperiod == NULL)
 		return OK;
@@ -670,6 +668,7 @@ int check_time_against_period(time_t test_time, const timeperiod *tperiod)
 	if (is_time_excluded(test_time, tperiod))
 		return ERROR;
 
+	midnight = get_midnight(test_time);
 	for (temp_timerange = _get_matching_timerange(test_time, tperiod); temp_timerange != NULL; temp_timerange = temp_timerange->next) {
 		if (timerange_includes_time(temp_timerange, test_time - midnight))
 			return OK;
