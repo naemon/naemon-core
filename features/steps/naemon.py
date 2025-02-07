@@ -145,7 +145,7 @@ def naemon_started_and_ready(context, timeout_s):
             # When we see this line in the log, we'll wait 1 more second and
             # then Naemon should be ready, with signal handlers setup so that a
             # test can SIGTERM it.
-            if 'Successfully launched command file worker with pid' in log:
+            if 'Naemon successfully initialized' in log:
                 ready = True
                 time.sleep(1)
                 break
