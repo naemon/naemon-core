@@ -556,14 +556,6 @@ int main(int argc, char **argv)
 		nerd_init();
 		timing_point("Initialized NERD\n");
 
-		/* read in all object config data */
-		if (result == OK) {
-			nm_log(NSLOG_INFO_MESSAGE, "Reading all config object data\n");
-			timing_point("Reading all object data\n");
-			result = read_all_object_data(config_file);
-			timing_point("Read all object data\n");
-		}
-
 		/*
 		 * the queue has to be initialized before loading the neb modules
 		 * to give them the chance to register user events.
@@ -580,6 +572,16 @@ int main(int argc, char **argv)
 		timing_point("Launching command file worker\n");
 		launch_command_file_worker();
 		timing_point("Launched command file worker\n");
+
+		/* read in all object config data after launching the command worker
+		 * to keep the memory footprint of the command worker smaller
+		 */
+		if (result == OK) {
+			nm_log(NSLOG_INFO_MESSAGE, "Reading all config object data\n");
+			timing_point("Reading all object data\n");
+			result = read_all_object_data(config_file);
+			timing_point("Read all object data\n");
+		}
 
 		/* initialize check workers */
 		timing_point("Spawning %u workers\n", wproc_num_workers_spawned);
@@ -604,6 +606,7 @@ int main(int argc, char **argv)
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Module loading failed. Aborting.\n");
 			/* give already loaded modules a chance to deinitialize */
 			neb_unload_all_modules(NEBMODULE_FORCE_UNLOAD, NEBMODULE_NEB_SHUTDOWN);
+			shutdown_command_file_worker();
 			exit(EXIT_FAILURE);
 		}
 		timing_point("Loaded modules\n");
