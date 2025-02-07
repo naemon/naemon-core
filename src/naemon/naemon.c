@@ -599,6 +599,7 @@ int main(int argc, char **argv)
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Module loading failed. Aborting.\n");
 			/* give already loaded modules a chance to deinitialize */
 			neb_unload_all_modules(NEBMODULE_FORCE_UNLOAD, NEBMODULE_NEB_SHUTDOWN);
+			shutdown_command_file_worker();
 			exit(EXIT_FAILURE);
 		}
 		timing_point("Loaded modules\n");
