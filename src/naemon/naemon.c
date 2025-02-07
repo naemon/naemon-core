@@ -719,6 +719,8 @@ int main(int argc, char **argv)
 			}
 		}
 
+		nm_log(NSLOG_INFO_MESSAGE, "Naemon successfully initialized (PID=%d)\n", (int)getpid());
+
 		timing_point("Entering event execution loop\n");
 		/***** start monitoring all services *****/
 		/* (doesn't return until a restart or shutdown signal is encountered) */
