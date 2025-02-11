@@ -7,7 +7,7 @@ on:
 
 jobs:
   citest:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v2
       #- name: Setup tmate session, see https://github.com/marketplace/actions/debugging-with-tmate
@@ -17,12 +17,13 @@ jobs:
           sudo apt-get install \
               autoconf \
               build-essential \
+              libglib2.0-dev \
               gperf \
               check \
               help2man \
-              python3-pip
-          sudo pip3 install --upgrade 'pip<21.0'
-          sudo pip3 --disable-pip-version-check install behave flake8
+              python3-pip \
+              flake8 \
+              python3-behave
 
       - name: run build
         run: |
