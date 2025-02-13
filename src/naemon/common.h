@@ -44,6 +44,7 @@ extern int obsess_over_hosts;
 extern int enable_timing_point;
 
 extern char *config_file_dir;
+extern char *config_rel_path;
 
 #ifdef HAVE_TZNAME
 #ifdef CYGWIN
