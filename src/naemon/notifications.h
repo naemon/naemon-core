@@ -98,6 +98,7 @@ int check_contact_host_notification_viability(contact *, host *, int, int);	/* c
 int notify_contact_of_host(nagios_macros *mac, contact *, host *, int, char *, char *, int, int);        	/* notify a single contact about a host */
 time_t get_next_host_notification_time(host *, time_t);				/* calculates next acceptable re-notification time for a host */
 time_t get_next_service_notification_time(service *, time_t);			/* calculates next acceptable re-notification time for a service */
+void free_notification_suppression_map(void);
 
 NAGIOS_END_DECL
 
