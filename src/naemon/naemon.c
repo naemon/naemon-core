@@ -323,6 +323,8 @@ int main(int argc, char **argv)
 	}
 
 	config_file_dir = nspath_absolute_dirname(config_file, NULL);
+	if(config_file_dir != NULL)
+		config_rel_path = nm_strdup(config_file_dir);
 
 	/*
 	 * Set the signal handler for the SIGXFSZ signal here because
@@ -433,8 +435,9 @@ int main(int argc, char **argv)
 
 		/* make valgrind shut up about still reachable memory */
 		neb_free_module_list();
-		free(config_file_dir);
-		free(config_file);
+		nm_free(config_file_dir);
+		nm_free(config_rel_path);
+		nm_free(config_file);
 
 		exit(result);
 	}
@@ -781,6 +784,7 @@ int main(int argc, char **argv)
 	nm_free(lock_file);
 	nm_free(config_file);
 	nm_free(config_file_dir);
+	nm_free(config_rel_path);
 	nm_free(naemon_binary_path);
 
 	return OK;
