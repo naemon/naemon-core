@@ -53,6 +53,7 @@ int obsess_over_hosts = FALSE;
 unsigned long next_downtime_id = 0;
 
 char *config_file_dir = NULL;
+char *config_rel_path = NULL;
 
 
 /* silly debug-ish helper used to track down hotspots in config parsing */

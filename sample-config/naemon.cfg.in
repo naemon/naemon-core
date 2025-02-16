@@ -10,6 +10,13 @@
 ##############################################################################
 
 
+# BASE DIRECTORY
+# ALl (not absolute) paths in this config file are relative to the folder of
+# the naemon.cfg file. If you want use paths relative to a different folder,
+# use this option.
+#config_rel_path=@pkgconfdir@
+
+
 # LOG FILE
 # This is the main log file where service and host events are logged
 # for historical purposes.  This should be the first option specified

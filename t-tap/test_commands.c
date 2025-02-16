@@ -723,6 +723,7 @@ int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 	init_event_queue();
 
 	config_file_dir = nspath_absolute_dirname(test_config_file, NULL);
+	config_rel_path = nm_strdup(config_file_dir);
 	assert(OK == read_main_config_file(test_config_file));
 	assert(OK == read_all_object_data(test_config_file));
 	assert(OK == initialize_downtime_data());

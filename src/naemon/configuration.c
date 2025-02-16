@@ -109,7 +109,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 
 			/* save the macro */
 			nm_free(mac->x[MACRO_RESOURCEFILE]);
-			mac->x[MACRO_RESOURCEFILE] = nspath_absolute(value, config_file_dir);
+			mac->x[MACRO_RESOURCEFILE] = nspath_absolute(value, config_rel_path);
 
 			/* process the resource file */
 			if (read_resource_file(mac->x[MACRO_RESOURCEFILE]) == ERROR) {
@@ -117,11 +117,16 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			}
 		}
 
+		else if (!strcmp(variable, "config_rel_path")) {
+			nm_free(config_rel_path);
+			config_rel_path = nspath_absolute(value, NULL);
+		}
+
 		else if (!strcmp(variable, "check_workers"))
 			num_check_workers = atoi(value);
 		else if (!strcmp(variable, "query_socket")) {
 			nm_free(qh_socket_path);
-			qh_socket_path = nspath_absolute(value, config_file_dir);
+			qh_socket_path = nspath_absolute(value, config_rel_path);
 		} else if (!strcmp(variable, "log_file")) {
 
 			if (strlen(value) > MAX_FILENAME_LENGTH - 1) {
@@ -131,7 +136,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			}
 
 			nm_free(log_file);
-			log_file = nspath_absolute(value, config_file_dir);
+			log_file = nspath_absolute(value, config_rel_path);
 			/* make sure the configured logfile takes effect */
 			close_log_file();
 		} else if (!strcmp(variable, "debug_level"))
@@ -149,7 +154,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			}
 
 			nm_free(debug_file);
-			debug_file = nspath_absolute(value, config_file_dir);
+			debug_file = nspath_absolute(value, config_rel_path);
 		}
 
 		else if (!strcmp(variable, "max_debug_file_size"))
@@ -164,7 +169,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			}
 
 			nm_free(command_file);
-			command_file = nspath_absolute(value, config_file_dir);
+			command_file = nspath_absolute(value, config_rel_path);
 
 			/* save the macro */
 			mac->x[MACRO_COMMANDFILE] = command_file;
@@ -177,7 +182,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 
 		else if (!strcmp(variable, "temp_path")) {
 			nm_free(temp_path);
-			temp_path = nspath_absolute(value, config_file_dir);
+			temp_path = nspath_absolute(value, config_rel_path);
 		}
 
 		else if (!strcmp(variable, "check_result_path")) {
@@ -188,7 +193,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			}
 
 			nm_free(check_result_path);
-			check_result_path = nspath_absolute(value, config_file_dir);
+			check_result_path = nspath_absolute(value, config_rel_path);
 			/* make sure we don't have a trailing slash */
 			if (check_result_path[strlen(check_result_path) - 1] == '/')
 				check_result_path[strlen(check_result_path) - 1] = '\x0';
@@ -215,7 +220,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			}
 
 			nm_free(lock_file);
-			lock_file = nspath_absolute(value, config_file_dir);
+			lock_file = nspath_absolute(value, config_rel_path);
 		}
 
 		else if (!strcmp(variable, "global_host_event_handler")) {
@@ -640,7 +645,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			}
 
 			nm_free(log_archive_path);
-			log_archive_path = nspath_absolute(value, config_file_dir);
+			log_archive_path = nspath_absolute(value, config_rel_path);
 		}
 
 		else if (!strcmp(variable, "enable_event_handlers"))
@@ -912,7 +917,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		else if (!strcmp(variable, "broker_module")) {
 			modptr = strtok(value, " \n");
 			argptr = strtok(NULL, "\n");
-			modptr = nspath_absolute(modptr, config_file_dir);
+			modptr = nspath_absolute(modptr, config_rel_path);
 			if (modptr) {
 				neb_add_module(modptr, argptr, TRUE);
 				free(modptr);
@@ -962,9 +967,9 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 
 		/* BEGIN status data variables */
 		else if (!strcmp(variable, "status_file"))
-			status_file = nspath_absolute(value, config_file_dir);
+			status_file = nspath_absolute(value, config_rel_path);
 		else if (strstr(input, "state_retention_file=") == input)
-			retention_file = nspath_absolute(value, config_file_dir);
+			retention_file = nspath_absolute(value, config_rel_path);
 		/* END status data variables */
 
 		/*** BEGIN perfdata variables ***/
@@ -979,9 +984,9 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		else if (!strcmp(variable, "service_perfdata_file_template"))
 			service_perfdata_file_template = nm_strdup(value);
 		else if (!strcmp(variable, "host_perfdata_file"))
-			host_perfdata_file = nspath_absolute(value, config_file_dir);
+			host_perfdata_file = nspath_absolute(value, config_rel_path);
 		else if (!strcmp(variable, "service_perfdata_file"))
-			service_perfdata_file = nspath_absolute(value, config_file_dir);
+			service_perfdata_file = nspath_absolute(value, config_rel_path);
 		else if (!strcmp(variable, "host_perfdata_file_mode")) {
 			host_perfdata_file_pipe = FALSE;
 			if (strstr(value, "p") != NULL)
@@ -1013,11 +1018,11 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		/*** END perfdata variables */
 
 		else if (!strcmp(variable, "cfg_file")) {
-			add_object_to_objectlist(&objcfg_files, nspath_absolute(value, config_file_dir));
+			add_object_to_objectlist(&objcfg_files, nspath_absolute(value, config_rel_path));
 		} else if (!strcmp(variable, "cfg_dir")) {
-			add_object_to_objectlist(&objcfg_dirs, nspath_absolute(value, config_file_dir));
+			add_object_to_objectlist(&objcfg_dirs, nspath_absolute(value, config_rel_path));
 		} else if (!strcmp(variable, "include_file")) {
-			char *include_file = nspath_absolute(value, config_file_dir);
+			char *include_file = nspath_absolute(value, config_rel_path);
 			if (prepend_unique_object_to_objectlist(&maincfg_files, include_file, (int (*)(const void *, const void *))strcmp) == OBJECTLIST_DUPE) {
 				error = TRUE;
 				nm_asprintf(&error_message, "Error: File %s explicitly included more than once", include_file);
@@ -1026,7 +1031,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			error |= read_config_file(include_file, mac);
 			nm_free(include_file);
 		} else if (!strcmp(variable, "include_dir")) {
-			char *include_dir = nspath_absolute(value, config_file_dir);
+			char *include_dir = nspath_absolute(value, config_rel_path);
 			DIR *dirp = NULL;
 			struct dirent *dirfile = NULL;
 
@@ -1076,12 +1081,12 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			nm_free(include_dir);
 		} else if (strstr(input, "object_cache_file=") == input) {
 			nm_free(object_cache_file);
-			object_cache_file = nspath_absolute(value, config_file_dir);
+			object_cache_file = nspath_absolute(value, config_rel_path);
 			nm_free(mac->x[MACRO_OBJECTCACHEFILE]);
 			mac->x[MACRO_OBJECTCACHEFILE] = nm_strdup(object_cache_file);
 		} else if (strstr(input, "precached_object_file=") == input) {
 			nm_free(object_precache_file);
-			object_precache_file = nspath_absolute(value, config_file_dir);
+			object_precache_file = nspath_absolute(value, config_rel_path);
 		} else if (!strcmp(variable, "allow_empty_hostgroup_assignment")) {
 			allow_empty_hostgroup_assignment = (atoi(value) > 0) ? TRUE : FALSE;
 		} else if (!strcmp(variable, "allow_circular_dependencies")) {
@@ -1198,7 +1203,7 @@ int read_main_config_file(const char *main_config_file)
 	} else if (*temp_file == '.') {
 		/* temp_file is relative. Make it naemon.cfg-relative */
 		char *foo = temp_file;
-		temp_file = nspath_absolute(temp_file, config_file_dir);
+		temp_file = nspath_absolute(temp_file, config_rel_path);
 		free(foo);
 	} else if (*temp_file != '/') {
 		/*

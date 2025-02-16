@@ -19,6 +19,7 @@ START_TEST(services)
 	res = reset_variables();
 	ck_assert_int_eq(OK, res);
 	config_file_dir = nspath_absolute_dirname(TESTDIR "services/naemon.cfg", NULL);
+	config_rel_path = nm_strdup(config_file_dir);
 	res = read_main_config_file(TESTDIR "services/naemon.cfg");
 	ck_assert_int_eq(OK, res);
 	res = read_all_object_data(TESTDIR "services/naemon.cfg");
@@ -35,6 +36,7 @@ START_TEST(services)
 	ck_assert_int_eq(2, s5_hits);
 	ck_assert_int_eq(5, hits);
 	nm_free(config_file_dir);
+	nm_free(config_rel_path);
 	cleanup();
 }
 END_TEST
@@ -52,6 +54,7 @@ START_TEST(recursive)
 	res = reset_variables();
 	ck_assert_int_eq(OK, res);
 	config_file_dir = nspath_absolute_dirname(TESTDIR "recursive/naemon.cfg", NULL);
+	config_rel_path = nm_strdup(config_file_dir);
 	res = read_main_config_file(TESTDIR "recursive/naemon.cfg");
 	ck_assert_int_eq(OK, res);
 	res = read_all_object_data(TESTDIR "recursive/naemon.cfg");
@@ -68,6 +71,7 @@ START_TEST(recursive)
 	}
 	ck_assert_msg(hits == 2, "Expected 2 hosts, found %i", hits);
 	nm_free(config_file_dir);
+	nm_free(config_rel_path);
 	cleanup();
 }
 END_TEST
@@ -80,6 +84,7 @@ START_TEST(main_include)
 	objcfg_files = NULL;
 	objcfg_dirs = NULL;
 	config_file_dir = nspath_absolute_dirname(TESTDIR "inc/naemon.cfg", NULL);
+	config_rel_path = nm_strdup(config_file_dir);
 	res = read_main_config_file(TESTDIR "inc/naemon.cfg");
 	ck_assert_int_eq(OK, res);
 	ck_assert_int_eq(1448, event_handler_timeout);
@@ -93,6 +98,7 @@ START_TEST(main_include)
 	nm_free(file_cfg);
 	nm_free(dir_cfg);
 	nm_free(config_file_dir);
+	nm_free(config_rel_path);
 }
 END_TEST
 
