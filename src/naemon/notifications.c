@@ -24,6 +24,11 @@ struct notification_job {
 	contact *ctc;
 };
 
+static struct {
+	unsigned int count;
+	enum NotificationSuppressionReason *reasons;
+} nsr_map[NS_TYPE__COUNT];
+
 static notification *create_notification_list_from_host(nagios_macros *mac, host *hst, int options, int *escalated, int type);
 static notification *create_notification_list_from_service(nagios_macros *mac, service *svc, int options, int *escalated, int type);
 static int add_notification(notification **notification_list, nagios_macros *mac, contact *);						/* adds a notification instance */
@@ -101,17 +106,6 @@ const char *notification_reason_name(enum NotificationReason reason)
 static int update_notification_suppression_reason(enum NotificationSuppressionType type, unsigned int obj_id,
         enum NotificationSuppressionReason reason)
 {
-	/*
-	 * NOTE:
-	 * This map only ever grows currently, since we never delete objects. It
-	 * doesn't allocate everything at once (based on whatever the highest ID
-	 * is, for example), since this way makes it easier to accommodate dynamic
-	 * object configuration. At least it doesn't make it significantly harder.
-	 */
-	static struct {
-		unsigned int count;
-		enum NotificationSuppressionReason *reasons;
-	} nsr_map[NS_TYPE__COUNT];
 	unsigned int new_count;
 
 	/* object id:s start at zero */
@@ -130,6 +124,13 @@ static int update_notification_suppression_reason(enum NotificationSuppressionTy
 		return TRUE;
 	}
 	return FALSE;
+}
+
+void free_notification_suppression_map() {
+	for(int x = 0; x < NS_TYPE__COUNT; x++) {
+		nm_free(nsr_map[x].reasons);
+		nsr_map[x].count = 0;
+	}
 }
 
 #define _log_nsr(S) if (enable_notification_suppression_reason_logging) { \

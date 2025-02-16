@@ -945,6 +945,8 @@ void cleanup(void)
 		neb_deinit_modules();
 	}
 
+	free_notification_suppression_map();
+
 	/* free all allocated memory - including macros */
 	free_memory(get_global_macros());
 	close_log_file();
