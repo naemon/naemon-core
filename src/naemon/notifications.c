@@ -127,7 +127,8 @@ static int update_notification_suppression_reason(enum NotificationSuppressionTy
 }
 
 void free_notification_suppression_map() {
-	for(int x = 0; x < NS_TYPE__COUNT; x++) {
+	int x;
+	for(x = 0; x < NS_TYPE__COUNT; x++) {
 		nm_free(nsr_map[x].reasons);
 		nsr_map[x].count = 0;
 	}
