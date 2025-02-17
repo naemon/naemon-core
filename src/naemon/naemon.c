@@ -556,6 +556,33 @@ int main(int argc, char **argv)
 		nerd_init();
 		timing_point("Initialized NERD\n");
 
+		/*
+		 * the queue has to be initialized before loading the neb modules
+		 * to give them the chance to register user events.
+		 * (initializing event queue requires number of objects, so do
+		 * this after parsing the objects)
+		 */
+		timing_point("Initializing Event queue\n");
+		init_event_queue();
+		timing_point("Initialized Event queue\n");
+
+		registered_commands_init(200);
+		register_core_commands();
+		/* fire up command file worker */
+		timing_point("Launching command file worker\n");
+		launch_command_file_worker();
+		timing_point("Launched command file worker\n");
+
+		/* read in all object config data after launching the command worker
+		 * to keep the memory footprint of the command worker smaller
+		 */
+		if (result == OK) {
+			nm_log(NSLOG_INFO_MESSAGE, "Reading all config object data\n");
+			timing_point("Reading all object data\n");
+			result = read_all_object_data(config_file);
+			timing_point("Read all object data\n");
+		}
+
 		/* initialize check workers */
 		timing_point("Spawning %u workers\n", wproc_num_workers_spawned);
 		if (init_workers(num_check_workers) < 0) {
@@ -572,24 +599,6 @@ int main(int argc, char **argv)
 		}
 		timing_point("Connected %u workers\n", wproc_num_workers_online);
 
-		/* read in all object config data */
-		if (result == OK) {
-			nm_log(NSLOG_INFO_MESSAGE, "Reading all config object data\n");
-			timing_point("Reading all object data\n");
-			result = read_all_object_data(config_file);
-			timing_point("Read all object data\n");
-		}
-
-		/*
-		 * the queue has to be initialized before loading the neb modules
-		 * to give them the chance to register user events.
-		 * (initializing event queue requires number of objects, so do
-		 * this after parsing the objects)
-		 */
-		timing_point("Initializing Event queue\n");
-		init_event_queue();
-		timing_point("Initialized Event queue\n");
-
 		/* load modules */
 		nm_log(NSLOG_INFO_MESSAGE, "Loading neb modules\n");
 		timing_point("Loading modules\n");
@@ -597,6 +606,7 @@ int main(int argc, char **argv)
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Module loading failed. Aborting.\n");
 			/* give already loaded modules a chance to deinitialize */
 			neb_unload_all_modules(NEBMODULE_FORCE_UNLOAD, NEBMODULE_NEB_SHUTDOWN);
+			shutdown_command_file_worker();
 			exit(EXIT_FAILURE);
 		}
 		timing_point("Loaded modules\n");
@@ -634,6 +644,7 @@ int main(int argc, char **argv)
 			broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_PROCESS_INITIATED, NEBATTR_SHUTDOWN_ABNORMAL);
 
 			cleanup();
+			shutdown_command_file_worker();
 			exit(ERROR);
 		}
 
@@ -695,13 +706,6 @@ int main(int argc, char **argv)
 		log_service_states(INITIAL_STATES, NULL);
 		timing_point("Logged initial states\n");
 
-		registered_commands_init(200);
-		register_core_commands();
-		/* fire up command file worker */
-		timing_point("Launching command file worker\n");
-		launch_command_file_worker();
-		timing_point("Launched command file worker\n");
-
 		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPSTART, NEBFLAG_NONE, NEBATTR_NONE);
 
 		/* get event start time and save as macro */
@@ -717,6 +721,8 @@ int main(int argc, char **argv)
 				exit(ERROR);
 			}
 		}
+
+		nm_log(NSLOG_INFO_MESSAGE, "Naemon successfully initialized (PID=%d)\n", (int)getpid());
 
 		timing_point("Entering event execution loop\n");
 		/***** start monitoring all services *****/
