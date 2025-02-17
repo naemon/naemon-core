@@ -11,7 +11,7 @@
 
 
 # BASE DIRECTORY
-# ALl (not absolute) paths in this config file are relative to the folder of
+# All (not absolute) paths in this config file are relative to the folder of
 # the naemon.cfg file. If you want use paths relative to a different folder,
 # use this option.
 #config_rel_path=@pkgconfdir@
