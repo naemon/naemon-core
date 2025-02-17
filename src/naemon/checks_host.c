@@ -1035,6 +1035,7 @@ static int handle_host_state(host *hst, int *alert_recorded)
 
 		/* clear the problem id when transitioning from a problem state to an UP state */
 		if (hst->current_state == STATE_UP) {
+			nm_free(hst->last_problem_id);
 			hst->last_problem_id = hst->current_problem_id;
 			hst->current_problem_id = NULL;
 			if(hst->problem_start > 0)

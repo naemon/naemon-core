@@ -764,6 +764,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 		/* clear the problem id when transitioning from a problem state to an OK state */
 		if (temp_service->current_state == STATE_OK) {
+			nm_free(temp_service->last_problem_id);
 			temp_service->last_problem_id = temp_service->current_problem_id;
 			temp_service->current_problem_id = NULL;
 			if(temp_service->problem_start > 0)
