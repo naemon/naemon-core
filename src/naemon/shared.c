@@ -438,6 +438,12 @@ char *trim(char *c)
     return(lstrip(rstrip(c)));
 }
 
+void noeol_ctime(const time_t *when, char *buf)
+{
+	ctime_r(when, buf);
+	buf[strlen(buf) - 1] = 0;
+}
+
 /*
  * given a date/time in time_t format, produce a corresponding
  * date/time string, including timezone

@@ -24,8 +24,8 @@ int handle_async_service_check_result(service *, check_result *);
 /* Immutable, check if service is reachable */
 int check_service_dependencies(service *, int);
 
-/* ensure next check falls into check period */
-void delay_service_if_next_check_is_outside_timeperiod(service *);
+/* move next check into a valid check period slot */
+void delay_service_check_till_next_timeperiod_slot(service *);
 
 NAGIOS_END_DECL
 
