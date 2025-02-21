@@ -194,7 +194,7 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 
 			/* make sure this is a valid time to check the service */
 			if (check_time_against_period(time(NULL), temp_service->check_period_ptr) == ERROR) {
-				delay_service_if_next_check_is_outside_timeperiod(temp_service);
+				delay_service_check_till_next_timeperiod_slot(temp_service);
 				return;
 			}
 
@@ -1438,25 +1438,20 @@ static int is_service_result_fresh(service *temp_service, time_t current_time, i
 }
 
 /* ensure next check falls into check period */
-void delay_service_if_next_check_is_outside_timeperiod(service *svc)
+void delay_service_check_till_next_timeperiod_slot(service *svc)
 {
-	time_t timeperiod_start = time(NULL);
+	time_t timeperiod_start;
+	time_t check_interval;
 
-	if(svc->next_check == 0) {
-		return;
-	}
+	if (svc->current_state != STATE_UP && svc->state_type == SOFT_STATE && svc->retry_interval != 0.0)
+		check_interval = get_service_check_interval_s(svc);
+	else
+		check_interval = get_service_retry_interval_s(svc);
 
-	if(check_time_against_period(svc->next_check, svc->check_period_ptr) == OK) {
-		return;
-	}
-
-	get_next_valid_time(svc->next_check, &timeperiod_start, svc->check_period_ptr);
+	timeperiod_start = get_random_next_timeperiod_slot(check_interval, svc->check_period_ptr);
 	if(timeperiod_start == 0) {
 		return;
 	}
-
-	// add random delay, so not all checks start at the same second
-	timeperiod_start += ranged_urand(0, retained_scheduling_randomize_window);
 
 	log_debug_info(DEBUGL_CHECKS, 1, "delay next service check for %s - %s until check timeperiod starts: %s\n", svc->host_name, svc->description, ctime(&timeperiod_start));
 	schedule_service_check(svc, timeperiod_start, CHECK_OPTION_ALLOW_POSTPONE);

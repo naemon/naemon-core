@@ -678,9 +678,10 @@ int check_time_against_period(time_t test_time, const timeperiod *tperiod)
 
 
 /*#define TEST_TIMEPERIODS_B 1*/
-static void _get_next_valid_time(time_t pref_time, time_t *valid_time, timeperiod *tperiod);
+static void _get_next_valid_time(time_t pref_time, time_t *valid_time, const timeperiod *tperiod);
 
-static void _get_next_invalid_time(time_t pref_time, time_t *invalid_time, timeperiod *tperiod)
+/* calculate the next time this period ends */
+void get_next_invalid_time(time_t pref_time, time_t *invalid_time, const timeperiod *tperiod)
 {
 	timeperiodexclusion *temp_timeperiodexclusion = NULL;
 	int depth = 0;
@@ -795,7 +796,7 @@ static void _get_next_invalid_time(time_t pref_time, time_t *invalid_time, timep
 
 
 /* Separate this out from public get_next_valid_time for testing */
-static void _get_next_valid_time(time_t pref_time, time_t *valid_time, timeperiod *tperiod)
+static void _get_next_valid_time(time_t pref_time, time_t *valid_time, const timeperiod *tperiod)
 {
 	timeperiodexclusion *temp_timeperiodexclusion = NULL;
 	int depth = 0;
@@ -878,7 +879,7 @@ static void _get_next_valid_time(time_t pref_time, time_t *valid_time, timeperio
 				if (check_time_against_period(earliest_time, temp_timeperiodexclusion->timeperiod_ptr) == ERROR) {
 					continue;
 				}
-				_get_next_invalid_time(earliest_time, &excluded_time, temp_timeperiodexclusion->timeperiod_ptr);
+				get_next_invalid_time(earliest_time, &excluded_time, temp_timeperiodexclusion->timeperiod_ptr);
 				if (!max_excluded || max_excluded < excluded_time) {
 					max_excluded = excluded_time;
 					earliest_time = excluded_time;
@@ -900,7 +901,7 @@ static void _get_next_valid_time(time_t pref_time, time_t *valid_time, timeperio
 
 
 /* given a preferred time, get the next valid time within a time period */
-void get_next_valid_time(time_t pref_time, time_t *valid_time, timeperiod *tperiod)
+void get_next_valid_time(time_t pref_time, time_t *valid_time, const timeperiod *tperiod)
 {
 	time_t current_time = (time_t)0L;
 
