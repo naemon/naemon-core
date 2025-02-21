@@ -15,6 +15,7 @@
 #include "flapping.h"
 #include "sehandlers.h"
 #include "notifications.h"
+#include "objects_timeperiod.h"
 #include "logging.h"
 #include "globals.h"
 #include "nm_alloc.h"
@@ -543,4 +544,63 @@ int free_check_result(check_result *info)
 	nm_free(info->output);
 
 	return OK;
+}
+
+/* ensure next check falls into check period */
+time_t get_random_next_timeperiod_slot(time_t check_interval, const timeperiod *check_period_ptr)
+{
+	char buf_from[32];
+	char buf_to[32];
+	char buf_final[32];
+	time_t next_check = time(NULL);
+	time_t timeperiod_start = time(NULL);
+	time_t timeperiod_end = time(NULL);
+	time_t check_slot_duration;
+	time_t delay_max;
+
+	/* get start of next check_period block */
+	get_next_valid_time(next_check, &timeperiod_start, check_period_ptr);
+	if(timeperiod_start == 0) {
+		return 0;
+	}
+
+	/* get end of current check_period block */
+	get_next_invalid_time(timeperiod_start, &timeperiod_end, check_period_ptr);
+	if(timeperiod_end == 0) {
+		return 0;
+	}
+
+	/* Add random delay, so not all checks start at the same second.
+	 * The delay is a random number of seconds between 0 and
+	 * whatever is smaller, either the duration of the next block in the
+	 * timeperiod or the check_interval.
+	 * However, it should not be less than the configured randomize window.
+	 */
+	check_slot_duration = timeperiod_end - timeperiod_start;
+	delay_max = check_slot_duration;
+	if(check_interval > 0 && delay_max > check_interval)
+		delay_max = check_interval;
+	if(delay_max < retained_scheduling_randomize_window)
+		delay_max = retained_scheduling_randomize_window;
+	if(delay_max > check_slot_duration)
+		delay_max = check_slot_duration;
+
+	if(delay_max <= 1)
+		return 0;
+
+	noeol_ctime(&timeperiod_start, buf_from);
+	noeol_ctime(&timeperiod_end, buf_to);
+
+	/* reduce by one second because the last second is the start of the invalid time slot already */
+	timeperiod_start += ranged_urand(0, (delay_max-1));
+	noeol_ctime(&timeperiod_start, buf_final);
+
+	log_debug_info(DEBUGL_CHECKS, 1, "delay next check within next valid timeperiod block (from %s till %s) check_interval: %lu, max delay: %lu -> %s\n",
+			buf_from,
+			buf_to,
+			check_interval,
+			delay_max,
+			buf_final);
+
+	return(timeperiod_start);
 }

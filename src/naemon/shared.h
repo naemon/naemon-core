@@ -51,6 +51,7 @@ void strip(char *buffer);
 char *rstrip(char *c);
 char *lstrip(char *c);
 char *trim(char *c);
+void noeol_ctime(const time_t *, char *);
 void get_datetime_string(time_t *raw_time, char *buffer,
                                 int buffer_length, int type);
 void get_time_breakdown(unsigned long raw_time, int *days, int *hours,
