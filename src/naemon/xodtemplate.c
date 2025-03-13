@@ -8319,6 +8319,7 @@ static int xodtemplate_process_config_file(char *filename)
 	register int x = 0;
 	register int y = 0;
 	char *ptr = NULL;
+	int has_escaped_semicolon = 0;
 
 
 	if (verify_config >= 2)
@@ -8342,6 +8343,7 @@ static int xodtemplate_process_config_file(char *filename)
 	while (1) {
 
 		nm_free(inputbuf);
+		has_escaped_semicolon = 0;
 
 		/* read the next line */
 		if(use_precached_objects) {
@@ -8358,6 +8360,7 @@ static int xodtemplate_process_config_file(char *filename)
 						break;
 					else if (inputbuf[x - 1] != '\\')
 						break;
+					has_escaped_semicolon = 1;
 				}
 			}
 			inputbuf[x] = '\x0';
@@ -8371,6 +8374,17 @@ static int xodtemplate_process_config_file(char *filename)
 		/* skip empty lines */
 		if (input[0] == '\x0' || input[0] == '#')
 			continue;
+
+		/* remove backslashes before semicolons */
+		if(has_escaped_semicolon) {
+			for (x = 0; input[x + 1] != '\x0'; x++) {
+				if (input[x] == '\\' && input[x + 1] == ';') {
+					for (y = x; input[y] != '\x0'; y++)
+						input[y] = input[y + 1];
+					input[y] = '\x0';
+				}
+			}
+		}
 
 		/* this is the start of an object definition */
 		if (!strncmp(input, "define", 6)) {
