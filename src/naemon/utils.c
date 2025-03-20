@@ -178,6 +178,8 @@ int host_skip_check_dependency_status = DEFAULT_SKIP_CHECK_STATUS;
 
 static long long check_file_size(char *, unsigned long, struct rlimit);
 
+static int lock_file_fd = -1; /* the file handle of the lockfile */
+
 time_t max_check_result_file_age = DEFAULT_MAX_CHECK_RESULT_AGE;
 
 check_stats     check_statistics[MAX_CHECK_STATS_TYPES];
@@ -504,7 +506,6 @@ int signal_parent(int sig)
 int daemon_init(void)
 {
 	int pid = 0;
-	int lockfile = 0;
 	int val = 0;
 	char buf[256];
 	struct flock lock;
@@ -515,16 +516,16 @@ int daemon_init(void)
 
 	umask(S_IWGRP | S_IWOTH);
 
-	lockfile = open(lock_file, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+	lock_file_fd = open(lock_file, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 
-	if (lockfile < 0) {
+	if (lock_file_fd < 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Failed to obtain lock on file %s: %s\n", lock_file, strerror(errno));
 		nm_log(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, "Bailing out due to errors encountered while attempting to daemonize... (PID=%d)", (int)getpid());
 		return (ERROR);
 	}
 
 	/* see if we can read the contents of the lockfile */
-	if ((val = read(lockfile, buf, (size_t)10)) < 0) {
+	if ((val = read(lock_file_fd, buf, (size_t)10)) < 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Lockfile exists but cannot be read");
 		return (ERROR);
 	}
@@ -546,7 +547,7 @@ int daemon_init(void)
 		lock.l_start = 0;
 		lock.l_whence = SEEK_SET;
 		lock.l_len = 0;
-		if (fcntl(lockfile, F_GETLK, &lock) == -1) {
+		if (fcntl(lock_file_fd, F_GETLK, &lock) == -1) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Failed to access lockfile '%s'. %s. Bailing out...", lock_file, strerror(errno));
 			return (ERROR);
 		}
@@ -615,9 +616,9 @@ int daemon_init(void)
 	lock.l_whence = SEEK_SET;
 	lock.l_len = 0;
 	lock.l_pid = getpid();
-	if (fcntl(lockfile, F_SETLK, &lock) == -1) {
+	if (fcntl(lock_file_fd, F_SETLK, &lock) == -1) {
 		if (errno == EACCES || errno == EAGAIN) {
-			fcntl(lockfile, F_GETLK, &lock);
+			fcntl(lock_file_fd, F_GETLK, &lock);
 			nm_log(NSLOG_RUNTIME_ERROR, "Lockfile '%s' looks like its already held by another instance of Naemon (PID %d).  Bailing out, post-fork...", lock_file, (int)lock.l_pid);
 		} else
 			nm_log(NSLOG_RUNTIME_ERROR, "Cannot lock lockfile '%s': %s. Bailing out...", lock_file, strerror(errno));
@@ -626,26 +627,32 @@ int daemon_init(void)
 	}
 
 	/* write PID to lockfile... */
-	lseek(lockfile, 0, SEEK_SET);
-	if (ftruncate(lockfile, 0) != 0) {
+	lseek(lock_file_fd, 0, SEEK_SET);
+	if (ftruncate(lock_file_fd, 0) != 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Cannot truncate lockfile '%s': %s. Bailing out...", lock_file, strerror(errno));
 		return (ERROR);
 	}
 	sprintf(buf, "%d\n", (int)getpid());
 
-	if (nsock_write_all(lockfile, buf, strlen(buf)) != 0) {
+	if (nsock_write_all(lock_file_fd, buf, strlen(buf)) != 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Cannot write PID to lockfile '%s': %s. Bailing out...", lock_file, strerror(errno));
 		return (ERROR);
 	}
 
 	/* make sure lock file stays open while program is executing... */
-	val = fcntl(lockfile, F_GETFD, 0);
+	val = fcntl(lock_file_fd, F_GETFD, 0);
 	val |= FD_CLOEXEC;
-	fcntl(lockfile, F_SETFD, val);
+	fcntl(lock_file_fd, F_SETFD, val);
 
 	broker_program_state(NEBTYPE_PROCESS_DAEMONIZE, NEBFLAG_NONE, NEBATTR_NONE);
 
 	return OK;
+}
+
+void close_lockfile_fd() {
+	if(lock_file_fd > 0)
+		close(lock_file_fd);
+	lock_file_fd = -1;
 }
 
 /******************************************************************/

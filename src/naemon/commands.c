@@ -19,6 +19,7 @@
 #include "globals.h"
 #include "logging.h"
 #include "nm_alloc.h"
+#include "query-handler.h"
 #include "lib/libnaemon.h"
 #include <string.h>
 #include <sys/types.h>
@@ -387,6 +388,13 @@ int launch_command_file_worker(void)
 
 	/* make our own process-group so we can be traced into and stuff */
 	setpgid(0, 0);
+
+
+	// close inherited file handles
+	close_log_file();
+	close_standard_fds();
+	qh_close_socket();
+	close_lockfile_fd();
 
 	str = nm_strdup(command_file);
 	free_memory(get_global_macros());
