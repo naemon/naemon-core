@@ -317,7 +317,8 @@ int process_check_result(check_result *cr)
 	source_name = check_result_source(cr);
 
 	/* trim whitespace at the end of the plugin output */
-	rstrip(cr->output);
+	if(cr->output != NULL)
+		rstrip(cr->output);
 
 	if (cr->object_check_type == SERVICE_CHECK) {
 		service *svc;
