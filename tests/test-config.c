@@ -102,6 +102,40 @@ START_TEST(main_include)
 }
 END_TEST
 
+START_TEST(umlauts)
+{
+	int res;
+	objcfg_files = NULL;
+	objcfg_dirs = NULL;
+	config_file_dir = nspath_absolute_dirname(TESTDIR "umlauts/naemon.cfg", NULL);
+	config_rel_path = nm_strdup(config_file_dir);
+	res = read_main_config_file(TESTDIR "umlauts/naemon.cfg");
+	ck_assert_int_eq(OK, res);
+	ck_assert(NULL != objcfg_files);
+	res = read_all_object_data(TESTDIR "umlauts/naemon.cfg");
+	ck_assert_int_eq(OK, res);
+	nm_free(config_file_dir);
+	nm_free(config_rel_path);
+}
+END_TEST
+
+START_TEST(tabs)
+{
+	int res;
+	objcfg_files = NULL;
+	objcfg_dirs = NULL;
+	config_file_dir = nspath_absolute_dirname(TESTDIR "tabs/naemon.cfg", NULL);
+	config_rel_path = nm_strdup(config_file_dir);
+	res = read_main_config_file(TESTDIR "tabs/naemon.cfg");
+	ck_assert_int_eq(OK, res);
+	ck_assert(NULL != objcfg_files);
+	res = read_all_object_data(TESTDIR "tabs/naemon.cfg");
+	ck_assert_int_eq(ERROR, res);
+	nm_free(config_file_dir);
+	nm_free(config_rel_path);
+}
+END_TEST
+
 Suite *
 config_suite(void)
 {
@@ -110,6 +144,8 @@ config_suite(void)
 	tcase_add_test(parse, recursive);
 	tcase_add_test(parse, services);
 	tcase_add_test(parse, main_include);
+	tcase_add_test(parse, umlauts);
+	tcase_add_test(parse, tabs);
 	suite_add_tcase(s, parse);
 	return s;
 }
