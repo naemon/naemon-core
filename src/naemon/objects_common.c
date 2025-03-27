@@ -3,6 +3,7 @@
 #include "nm_alloc.h"
 #include "xodtemplate.h"
 #include <string.h>
+#include <ctype.h>
 
 char *illegal_object_chars = NULL;
 
@@ -94,7 +95,7 @@ int contains_illegal_object_chars(const char *name)
 	register int x = 0;
 	register int y = 0;
 
-	if (name == NULL || illegal_object_chars == NULL)
+	if (name == NULL)
 		return FALSE;
 
 	x = (int)strlen(name) - 1;
@@ -103,8 +104,15 @@ int contains_illegal_object_chars(const char *name)
 		/* illegal user-specified characters */
 		if (illegal_object_chars != NULL)
 			for (y = 0; illegal_object_chars[y]; y++)
-				if (name[x] == illegal_object_chars[y])
+				if (name[x] == illegal_object_chars[y]) {
+					nm_log(NSLOG_CONFIG_ERROR, "Error: illegal ascii character dec(%d) at pos %d in '%s'\n", (unsigned int)name[x], x, name);
 					return TRUE;
+				}
+		/* ascii control codes are illegal */
+		if (iscntrl(name[x])) {
+			nm_log(NSLOG_CONFIG_ERROR, "Error: illegal ascii character dec(%d) at pos %d in '%s'\n", (unsigned int)name[x], x, name);
+			return TRUE;
+		}
 	}
 
 	return FALSE;
