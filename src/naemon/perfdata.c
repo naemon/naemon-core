@@ -86,16 +86,23 @@ int initialize_performance_data(const char *cfgfile)
 	xpddefault_preprocess_file_templates(service_perfdata_file_template);
 
 	/* open the performance data caches */
-	host_perfdata_bq = nm_bufferqueue_create();
 	host_perfdata_fd = xpddefault_open_perfdata_file(
 	                       host_perfdata_file,
 	                       host_perfdata_file_pipe,
 	                       host_perfdata_file_append);
-	service_perfdata_bq = nm_bufferqueue_create();
+	if(host_perfdata_fd > 0) {
+		nm_log(NSLOG_RUNTIME_WARNING, "Warning: host perfdata file %s could not be opened - host performance data will not be processed!\n", host_perfdata_file);
+		host_perfdata_bq = nm_bufferqueue_create();
+	}
+
 	service_perfdata_fd = xpddefault_open_perfdata_file(
 	                          service_perfdata_file,
 	                          service_perfdata_file_pipe,
 	                          service_perfdata_file_append);
+	if (service_perfdata_fd > 0) {
+		nm_log(NSLOG_RUNTIME_WARNING, "Warning: service perfdata file %s could not be opened - service performance data will not be processed!\n", service_perfdata_file);
+		service_perfdata_bq = nm_bufferqueue_create();
+	}
 
 	/* verify that performance data commands are valid */
 	if (host_perfdata_command != NULL) {
@@ -426,6 +433,8 @@ static int xpddefault_open_perfdata_file(char *perfdata_file, int is_pipe, int a
 /* flush the perfdata stored in `bq` to the file referred to by `fd`, named by `filename`. Returns -1 on error, 0 on success. */
 static int flush_perfdata(nm_bufferqueue *bq, int fd, const char *filename)
 {
+	if(bq == NULL)
+		return -1;
 	if (fd >= 0) {
 		if (nm_bufferqueue_write(bq, fd) >= 0) {
 			return 0;
@@ -485,7 +494,7 @@ static int xpddefault_update_service_performance_data_file(nagios_macros *mac, s
 	if (svc == NULL)
 		return ERROR;
 
-	if (service_perfdata_fd < 0)
+	if (service_perfdata_bq == NULL)
 		return OK;
 
 	if (service_perfdata_file_template == NULL)
@@ -502,8 +511,8 @@ static int xpddefault_update_service_performance_data_file(nagios_macros *mac, s
 	log_debug_info(DEBUGL_PERFDATA, 2, "Processed service performance data file output: %s\n", processed_output);
 
 	nm_bufferqueue_push(service_perfdata_bq, processed_output, strlen(processed_output));
-	/* temporary failures are fine - if it's serious, we log before we run the processing event */
 
+	/* temporary failures are fine - if it's serious, we log before we run the processing event */
 	flush_perfdata(service_perfdata_bq, service_perfdata_fd, service_perfdata_file);
 
 	nm_free(raw_output);
@@ -523,7 +532,7 @@ static int xpddefault_update_host_performance_data_file(nagios_macros *mac, host
 	if (hst == NULL)
 		return ERROR;
 
-	if (host_perfdata_fd < 0)
+	if (host_perfdata_bq == NULL)
 		return OK;
 
 	if (host_perfdata_file_template == NULL)
@@ -540,6 +549,7 @@ static int xpddefault_update_host_performance_data_file(nagios_macros *mac, host
 	log_debug_info(DEBUGL_PERFDATA, 2, "Processed host performance data file output: %s\n", processed_output);
 
 	nm_bufferqueue_push(host_perfdata_bq, processed_output, strlen(processed_output));
+
 	/* temporary failures are fine - if it's serious, we log before we run the processing event */
 	flush_perfdata(host_perfdata_bq, host_perfdata_fd, host_perfdata_file);
 
@@ -559,6 +569,8 @@ static void xpddefault_process_host_job_handler(struct wproc_result *wpres, void
 	                       host_perfdata_file,
 	                       host_perfdata_file_pipe,
 	                       host_perfdata_file_append);
+	if (host_perfdata_fd > 0)
+		flush_perfdata(host_perfdata_bq, host_perfdata_fd, host_perfdata_file);
 }
 
 /* periodically process the host perf data file */
@@ -626,6 +638,8 @@ static void xpddefault_process_service_job_handler(struct wproc_result *wpres, v
 	                          service_perfdata_file,
 	                          service_perfdata_file_pipe,
 	                          service_perfdata_file_append);
+	if (service_perfdata_fd > 0)
+		flush_perfdata(service_perfdata_bq, service_perfdata_fd, service_perfdata_file);
 }
 
 /* periodically process the service perf data file */
