@@ -14,6 +14,7 @@ jobs:
       #  uses: mxschmitt/action-tmate@v3
       - name: prepare machine
         run: |
+          sudo apt-get update
           sudo apt-get install \
               autoconf \
               build-essential \
