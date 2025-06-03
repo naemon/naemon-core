@@ -1,3 +1,21 @@
+1.4.4 - Jun 03 2025
+===================
+Features:
+* trim spaces from list of templates (#500)
+* add support for configurable relative configuration paths (#491)
+* postpone check until check period starts (#490)
+
+Changed:
+* make ascii control characters in object names illegal (#499)
+* improve config parser performance (#488)
+* launch command worker earlier (#470)
+* remove backslashes before semicolons (#495)
+* trim whitespace at end of plugin output (#495)
+
+Bugfixes:
+* fix handling performance data (#501)
+
+
 1.4.3 - Nov 19 2024
 ===================
 Features:
