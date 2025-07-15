@@ -70,6 +70,7 @@ int log_host_retries = DEFAULT_LOG_HOST_RETRIES;
 int log_event_handlers = DEFAULT_LOG_EVENT_HANDLERS;
 int log_external_commands = DEFAULT_LOG_EXTERNAL_COMMANDS;
 int log_passive_checks = DEFAULT_LOG_PASSIVE_CHECKS;
+int log_global_notifications = DEFAULT_LOG_GLOBAL_NOTIFICATIONS;
 unsigned long logging_options = 0;
 unsigned long syslog_options = 0;
 
@@ -86,6 +87,11 @@ char *global_host_event_handler = NULL;
 char *global_service_event_handler = NULL;
 command *global_host_event_handler_ptr = NULL;
 command *global_service_event_handler_ptr = NULL;
+
+char *global_host_notification_handler = NULL;
+char *global_service_notification_handler = NULL;
+command *global_host_notification_handler_ptr = NULL;
+command *global_service_notification_handler_ptr = NULL;
 
 int check_reaper_interval = DEFAULT_CHECK_REAPER_INTERVAL;
 int max_check_reaper_time = DEFAULT_MAX_REAPER_TIME;
@@ -171,6 +177,8 @@ int service_skip_check_host_down_status = DEFAULT_SKIP_CHECK_STATUS;
 int host_skip_check_dependency_status = DEFAULT_SKIP_CHECK_STATUS;
 
 static long long check_file_size(char *, unsigned long, struct rlimit);
+
+static int lock_file_fd = -1; /* the file handle of the lockfile */
 
 time_t max_check_result_file_age = DEFAULT_MAX_CHECK_RESULT_AGE;
 
@@ -498,7 +506,6 @@ int signal_parent(int sig)
 int daemon_init(void)
 {
 	int pid = 0;
-	int lockfile = 0;
 	int val = 0;
 	char buf[256];
 	struct flock lock;
@@ -509,16 +516,16 @@ int daemon_init(void)
 
 	umask(S_IWGRP | S_IWOTH);
 
-	lockfile = open(lock_file, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+	lock_file_fd = open(lock_file, O_RDWR | O_CREAT, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 
-	if (lockfile < 0) {
+	if (lock_file_fd < 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Failed to obtain lock on file %s: %s\n", lock_file, strerror(errno));
 		nm_log(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, "Bailing out due to errors encountered while attempting to daemonize... (PID=%d)", (int)getpid());
 		return (ERROR);
 	}
 
 	/* see if we can read the contents of the lockfile */
-	if ((val = read(lockfile, buf, (size_t)10)) < 0) {
+	if ((val = read(lock_file_fd, buf, (size_t)10)) < 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Lockfile exists but cannot be read");
 		return (ERROR);
 	}
@@ -540,7 +547,7 @@ int daemon_init(void)
 		lock.l_start = 0;
 		lock.l_whence = SEEK_SET;
 		lock.l_len = 0;
-		if (fcntl(lockfile, F_GETLK, &lock) == -1) {
+		if (fcntl(lock_file_fd, F_GETLK, &lock) == -1) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Failed to access lockfile '%s'. %s. Bailing out...", lock_file, strerror(errno));
 			return (ERROR);
 		}
@@ -609,9 +616,9 @@ int daemon_init(void)
 	lock.l_whence = SEEK_SET;
 	lock.l_len = 0;
 	lock.l_pid = getpid();
-	if (fcntl(lockfile, F_SETLK, &lock) == -1) {
+	if (fcntl(lock_file_fd, F_SETLK, &lock) == -1) {
 		if (errno == EACCES || errno == EAGAIN) {
-			fcntl(lockfile, F_GETLK, &lock);
+			fcntl(lock_file_fd, F_GETLK, &lock);
 			nm_log(NSLOG_RUNTIME_ERROR, "Lockfile '%s' looks like its already held by another instance of Naemon (PID %d).  Bailing out, post-fork...", lock_file, (int)lock.l_pid);
 		} else
 			nm_log(NSLOG_RUNTIME_ERROR, "Cannot lock lockfile '%s': %s. Bailing out...", lock_file, strerror(errno));
@@ -620,26 +627,32 @@ int daemon_init(void)
 	}
 
 	/* write PID to lockfile... */
-	lseek(lockfile, 0, SEEK_SET);
-	if (ftruncate(lockfile, 0) != 0) {
+	lseek(lock_file_fd, 0, SEEK_SET);
+	if (ftruncate(lock_file_fd, 0) != 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Cannot truncate lockfile '%s': %s. Bailing out...", lock_file, strerror(errno));
 		return (ERROR);
 	}
 	sprintf(buf, "%d\n", (int)getpid());
 
-	if (nsock_write_all(lockfile, buf, strlen(buf)) != 0) {
+	if (nsock_write_all(lock_file_fd, buf, strlen(buf)) != 0) {
 		nm_log(NSLOG_RUNTIME_ERROR, "Cannot write PID to lockfile '%s': %s. Bailing out...", lock_file, strerror(errno));
 		return (ERROR);
 	}
 
 	/* make sure lock file stays open while program is executing... */
-	val = fcntl(lockfile, F_GETFD, 0);
+	val = fcntl(lock_file_fd, F_GETFD, 0);
 	val |= FD_CLOEXEC;
-	fcntl(lockfile, F_SETFD, val);
+	fcntl(lock_file_fd, F_SETFD, val);
 
 	broker_program_state(NEBTYPE_PROCESS_DAEMONIZE, NEBFLAG_NONE, NEBATTR_NONE);
 
 	return OK;
+}
+
+void close_lockfile_fd() {
+	if(lock_file_fd > 0)
+		close(lock_file_fd);
+	lock_file_fd = -1;
 }
 
 /******************************************************************/
@@ -875,11 +888,11 @@ int generate_check_stats(void)
 			/* determine value by weighting this/last buckets... */
 			/* if this is the current bucket, use its full value + weighted % of last bucket */
 			if (x == 0) {
-				bucket_value = (int)(this_bucket_value + floor(last_bucket_value * last_bucket_weight));
+				bucket_value = (int)(this_bucket_value + floor((double)last_bucket_value * last_bucket_weight));
 			}
 			/* otherwise use weighted % of this and last bucket */
 			else {
-				bucket_value = (int)(ceil(this_bucket_value * this_bucket_weight) + floor(last_bucket_value * last_bucket_weight));
+				bucket_value = (int)(ceil((double)this_bucket_value * this_bucket_weight) + floor((double)last_bucket_value * (double)last_bucket_weight));
 			}
 
 			/* 1 minute stats */
@@ -939,6 +952,8 @@ void cleanup(void)
 		neb_deinit_modules();
 	}
 
+	free_notification_suppression_map();
+
 	/* free all allocated memory - including macros */
 	free_memory(get_global_macros());
 	close_log_file();
@@ -967,6 +982,9 @@ void free_memory(nagios_macros *mac)
 
 	nm_free(global_host_event_handler);
 	nm_free(global_service_event_handler);
+
+	nm_free(global_host_notification_handler);
+	nm_free(global_service_notification_handler);
 
 	/* free obsessive compulsive commands */
 	nm_free(ocsp_command);
@@ -1072,10 +1090,11 @@ int reset_variables(void)
 	log_event_handlers = DEFAULT_LOG_EVENT_HANDLERS;
 	log_external_commands = DEFAULT_LOG_EXTERNAL_COMMANDS;
 	log_passive_checks = DEFAULT_LOG_PASSIVE_CHECKS;
+	log_global_notifications = DEFAULT_LOG_GLOBAL_NOTIFICATIONS;
 
-	logging_options = NSLOG_RUNTIME_ERROR | NSLOG_RUNTIME_WARNING | NSLOG_VERIFICATION_ERROR | NSLOG_VERIFICATION_WARNING | NSLOG_CONFIG_ERROR | NSLOG_CONFIG_WARNING | NSLOG_PROCESS_INFO | NSLOG_HOST_NOTIFICATION | NSLOG_SERVICE_NOTIFICATION | NSLOG_EVENT_HANDLER | NSLOG_EXTERNAL_COMMAND | NSLOG_PASSIVE_CHECK | NSLOG_HOST_UP | NSLOG_HOST_DOWN | NSLOG_HOST_UNREACHABLE | NSLOG_SERVICE_OK | NSLOG_SERVICE_WARNING | NSLOG_SERVICE_UNKNOWN | NSLOG_SERVICE_CRITICAL | NSLOG_INFO_MESSAGE;
+	logging_options = NSLOG_RUNTIME_ERROR | NSLOG_RUNTIME_WARNING | NSLOG_VERIFICATION_ERROR | NSLOG_VERIFICATION_WARNING | NSLOG_CONFIG_ERROR | NSLOG_CONFIG_WARNING | NSLOG_PROCESS_INFO | NSLOG_HOST_NOTIFICATION | NSLOG_SERVICE_NOTIFICATION | NSLOG_EVENT_HANDLER | NSLOG_EXTERNAL_COMMAND | NSLOG_PASSIVE_CHECK | NSLOG_HOST_UP | NSLOG_HOST_DOWN | NSLOG_HOST_UNREACHABLE | NSLOG_SERVICE_OK | NSLOG_SERVICE_WARNING | NSLOG_SERVICE_UNKNOWN | NSLOG_SERVICE_CRITICAL | NSLOG_INFO_MESSAGE | NSLOG_EXT_CUSTOM;
 
-	syslog_options = NSLOG_RUNTIME_ERROR | NSLOG_RUNTIME_WARNING | NSLOG_VERIFICATION_ERROR | NSLOG_VERIFICATION_WARNING | NSLOG_CONFIG_ERROR | NSLOG_CONFIG_WARNING | NSLOG_PROCESS_INFO | NSLOG_HOST_NOTIFICATION | NSLOG_SERVICE_NOTIFICATION | NSLOG_EVENT_HANDLER | NSLOG_EXTERNAL_COMMAND | NSLOG_PASSIVE_CHECK | NSLOG_HOST_UP | NSLOG_HOST_DOWN | NSLOG_HOST_UNREACHABLE | NSLOG_SERVICE_OK | NSLOG_SERVICE_WARNING | NSLOG_SERVICE_UNKNOWN | NSLOG_SERVICE_CRITICAL | NSLOG_INFO_MESSAGE;
+	syslog_options = NSLOG_RUNTIME_ERROR | NSLOG_RUNTIME_WARNING | NSLOG_VERIFICATION_ERROR | NSLOG_VERIFICATION_WARNING | NSLOG_CONFIG_ERROR | NSLOG_CONFIG_WARNING | NSLOG_PROCESS_INFO | NSLOG_HOST_NOTIFICATION | NSLOG_SERVICE_NOTIFICATION | NSLOG_EVENT_HANDLER | NSLOG_EXTERNAL_COMMAND | NSLOG_PASSIVE_CHECK | NSLOG_HOST_UP | NSLOG_HOST_DOWN | NSLOG_HOST_UNREACHABLE | NSLOG_SERVICE_OK | NSLOG_SERVICE_WARNING | NSLOG_SERVICE_UNKNOWN | NSLOG_SERVICE_CRITICAL | NSLOG_INFO_MESSAGE | NSLOG_EXT_CUSTOM;
 
 	service_check_timeout = DEFAULT_SERVICE_CHECK_TIMEOUT;
 	host_check_timeout = DEFAULT_HOST_CHECK_TIMEOUT;
@@ -1172,6 +1191,11 @@ int reset_variables(void)
 	global_service_event_handler = NULL;
 	global_host_event_handler_ptr = NULL;
 	global_service_event_handler_ptr = NULL;
+
+	global_host_notification_handler = NULL;
+	global_service_notification_handler = NULL;
+	global_host_notification_handler_ptr = NULL;
+	global_service_notification_handler_ptr = NULL;
 
 	ocsp_command = NULL;
 	ochp_command = NULL;

@@ -1,0 +1,48 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  schedule:
+    - cron: '41 4 * * 2'
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: 'ubuntu-24.04'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - language: c-cpp
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+
+    - name: Install packages
+      run: |
+        sudo apt update
+        sudo apt-get install -y \
+              autoconf \
+              build-essential \
+              libglib2.0-dev \
+              gperf \
+              check \
+              help2man \
+
+    - name: Build
+      run: |
+        ./autogen.sh
+        make
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{matrix.language}}"

@@ -154,7 +154,6 @@ int delete_comment(int type, unsigned long comment_id)
 	}
 	else if (type == SERVICE_COMMENT) {
 		service *temp_service = find_service(this_comment->host_name, this_comment->service_description);
-		temp_service->comments_list = NULL;
 		remove_object_from_objectlist(&temp_service->comments_list, this_comment);
 	}
 

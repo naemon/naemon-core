@@ -237,6 +237,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 
 		/* make sure this is a valid time to check the host */
 		if (check_time_against_period(time(NULL), hst->check_period_ptr) != OK) {
+			delay_host_check_till_next_timeperiod_slot(hst);
 			return ERROR;
 		}
 
@@ -830,7 +831,10 @@ static int process_host_check_result(host *hst, host *prev, int *alert_recorded)
 			if (hst->check_type == CHECK_TYPE_ACTIVE || passive_host_checks_are_soft == TRUE) {
 
 				/* set the state type */
-				hst->state_type = SOFT_STATE;
+				if (hst->current_attempt == hst->max_attempts)
+					hst->state_type = HARD_STATE;
+				else
+					hst->state_type = SOFT_STATE;
 			}
 
 			/* by default, passive check results are treated as HARD states */
@@ -1031,6 +1035,7 @@ static int handle_host_state(host *hst, int *alert_recorded)
 
 		/* clear the problem id when transitioning from a problem state to an UP state */
 		if (hst->current_state == STATE_UP) {
+			nm_free(hst->last_problem_id);
 			hst->last_problem_id = hst->current_problem_id;
 			hst->current_problem_id = NULL;
 			if(hst->problem_start > 0)
@@ -1389,4 +1394,24 @@ static int determine_host_reachability(host *hst)
 
 	log_debug_info(DEBUGL_CHECKS, 2, "No parents were up, so host is UNREACHABLE.\n");
 	return STATE_UNREACHABLE;
+}
+
+/* ensure next check falls into check period */
+void delay_host_check_till_next_timeperiod_slot(host *hst)
+{
+	time_t timeperiod_start;
+	time_t check_interval;
+
+	if (hst->current_state != STATE_UP && hst->state_type == SOFT_STATE && hst->retry_interval != 0.0)
+		check_interval = get_host_check_interval_s(hst);
+	else
+		check_interval = get_host_retry_interval_s(hst);
+
+	timeperiod_start = get_random_next_timeperiod_slot(check_interval, hst->check_period_ptr);
+	if(timeperiod_start == 0) {
+		return;
+	}
+
+	log_debug_info(DEBUGL_CHECKS, 1, "delay next host check for %s until check timeperiod starts: %s\n", hst->name, ctime(&timeperiod_start));
+	schedule_host_check(hst, timeperiod_start, CHECK_OPTION_ALLOW_POSTPONE);
 }

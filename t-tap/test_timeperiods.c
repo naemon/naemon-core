@@ -32,13 +32,8 @@
 #include "naemon/configuration.h"
 #include "naemon/defaults.h"
 #include "naemon/globals.h"
+#include "naemon/shared.h"
 #include "tap.h"
-
-static void noeol_ctime(const time_t *when, char *buf)
-{
-	ctime_r(when, buf);
-	buf[strlen(buf) - 1] = 0;
-}
 
 static struct timeperiod *test_get_timeperiod(const char *name)
 {
@@ -86,7 +81,7 @@ static struct timeperiod *test_get_timeperiod(const char *name)
 		char ct_expect[32], ct_chosen[32], ct_when[32]; \
 		struct timeperiod *tp; \
 		tp = test_get_timeperiod(tp_name); \
-		_get_next_invalid_time(when, &chosen, tp); \
+		get_next_invalid_time(when, &chosen, tp); \
 		noeol_ctime(&chosen, ct_chosen); \
 		noeol_ctime(&t_when, ct_when); \
 		noeol_ctime(&t_expect, ct_expect); \
@@ -139,6 +134,7 @@ int main(int argc, char **argv)
 
 	config_file = strdup(TESTDIR "naemon.cfg");
 	config_file_dir = nspath_absolute_dirname(config_file, NULL);
+	config_rel_path = nm_strdup(config_file_dir);
 	/* read in the configuration files (main config file, resource and object config files) */
 	result = read_main_config_file(config_file);
 	ok(result == OK, "Read main configuration file okay - if fails, use nagios -v to check");

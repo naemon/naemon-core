@@ -6,6 +6,7 @@
 #endif
 
 #include "lib/lnae-utils.h"
+#include "objects_timeperiod.h"
 #include <stdio.h>
 #include <sys/resource.h>
 
@@ -88,6 +89,7 @@ int process_check_result(check_result *);
 int delete_check_result_file(char *);
 int init_check_result(check_result *);
 int free_check_result(check_result *);                  	/* frees memory associated with a host/service check result */
+time_t get_random_next_timeperiod_slot(time_t, const timeperiod *);
 
 NAGIOS_END_DECL
 

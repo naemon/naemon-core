@@ -194,6 +194,7 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 
 			/* make sure this is a valid time to check the service */
 			if (check_time_against_period(time(NULL), temp_service->check_period_ptr) == ERROR) {
+				delay_service_check_till_next_timeperiod_slot(temp_service);
 				return;
 			}
 
@@ -763,6 +764,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 		/* clear the problem id when transitioning from a problem state to an OK state */
 		if (temp_service->current_state == STATE_OK) {
+			nm_free(temp_service->last_problem_id);
 			temp_service->last_problem_id = temp_service->current_problem_id;
 			temp_service->current_problem_id = NULL;
 			if(temp_service->problem_start > 0)
@@ -1444,4 +1446,24 @@ static int is_service_result_fresh(service *temp_service, time_t current_time, i
 	log_debug_info(DEBUGL_CHECKS, 1, "Check results for service '%s' on host '%s' are fresh.\n", temp_service->description, temp_service->host_name);
 
 	return TRUE;
+}
+
+/* ensure next check falls into check period */
+void delay_service_check_till_next_timeperiod_slot(service *svc)
+{
+	time_t timeperiod_start;
+	time_t check_interval;
+
+	if (svc->current_state != STATE_UP && svc->state_type == SOFT_STATE && svc->retry_interval != 0.0)
+		check_interval = get_service_check_interval_s(svc);
+	else
+		check_interval = get_service_retry_interval_s(svc);
+
+	timeperiod_start = get_random_next_timeperiod_slot(check_interval, svc->check_period_ptr);
+	if(timeperiod_start == 0) {
+		return;
+	}
+
+	log_debug_info(DEBUGL_CHECKS, 1, "delay next service check for %s - %s until check timeperiod starts: %s\n", svc->host_name, svc->description, ctime(&timeperiod_start));
+	schedule_service_check(svc, timeperiod_start, CHECK_OPTION_ALLOW_POSTPONE);
 }

@@ -251,6 +251,8 @@ typedef struct nebstruct_program_status_struct {
 	unsigned long   modified_service_attributes;
 	char            *global_host_event_handler;
 	char            *global_service_event_handler;
+	char            *global_host_notification_handler;
+	char            *global_service_notification_handler;
 } nebstruct_program_status_data;
 
 

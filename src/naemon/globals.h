@@ -46,6 +46,11 @@ extern char *global_service_event_handler;
 extern command *global_host_event_handler_ptr;
 extern command *global_service_event_handler_ptr;
 
+extern char *global_host_notification_handler;
+extern char *global_service_notification_handler;
+extern command *global_host_notification_handler_ptr;
+extern command *global_service_notification_handler_ptr;
+
 extern int use_regexp_matches;
 extern int use_true_regexp_matching;
 
@@ -59,6 +64,7 @@ extern int log_host_retries;
 extern int log_event_handlers;
 extern int log_external_commands;
 extern int log_passive_checks;
+extern int log_global_notifications;
 extern unsigned long logging_options;
 extern unsigned long syslog_options;
 

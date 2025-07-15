@@ -394,7 +394,7 @@ int qh_init(const char *path)
 	result = iobroker_register(nagios_iobs, qh_listen_sock, NULL, qh_registration_input);
 	if (result < 0) {
 		g_hash_table_destroy(qh_table);
-		close(qh_listen_sock);
+		qh_close_socket();
 		nm_log(NSLOG_RUNTIME_ERROR, "qh: Failed to register socket with io broker: %s\n", iobroker_strerror(result));
 		return ERROR;
 	}
@@ -407,4 +407,10 @@ int qh_init(const char *path)
 	qh_register_handler("help", "Help for the query handler", 0, qh_help);
 
 	return 0;
+}
+
+void qh_close_socket() {
+	if( qh_listen_sock > 0 )
+		close(qh_listen_sock);
+	qh_listen_sock = -1;
 }

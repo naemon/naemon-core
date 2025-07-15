@@ -151,6 +151,8 @@ int xrddefault_save_state_information(void)
 	fprintf(fp, "process_performance_data=%d\n", process_performance_data);
 	fprintf(fp, "global_host_event_handler=%s\n", (global_host_event_handler == NULL) ? "" : global_host_event_handler);
 	fprintf(fp, "global_service_event_handler=%s\n", (global_service_event_handler == NULL) ? "" : global_service_event_handler);
+	fprintf(fp, "global_host_notification_handler=%s\n", (global_host_notification_handler == NULL) ? "" : global_host_notification_handler);
+	fprintf(fp, "global_service_notification_handler=%s\n", (global_service_notification_handler == NULL) ? "" : global_service_notification_handler);
 	fprintf(fp, "next_comment_id=%lu\n", next_comment_id);
 	fprintf(fp, "next_downtime_id=%lu\n", next_downtime_id);
 	fprintf(fp, "next_event_id=%lu\n", next_event_id);
@@ -564,13 +566,7 @@ int xrddefault_read_state_information(void)
 		if ((inputbuf = mmap_fgets(thefile)) == NULL)
 			break;
 
-		input = inputbuf;
-
-		/* far better than strip()ing */
-		if (input[0] == '\t')
-			input++;
-
-		strip(input);
+		input = trim(inputbuf);
 
 		if (!strcmp(input, "service {")) {
 			memset(&conf, 0, sizeof(conf));
@@ -991,6 +987,29 @@ int xrddefault_read_state_information(void)
 							if (temp_command && tempval) {
 								nm_free(global_service_event_handler);
 								global_service_event_handler = tempval;
+							}
+						}
+					} else if (!strcmp(var, "global_host_notification_handler")) {
+						if (modified_host_process_attributes & MODATTR_NOTIFICATION_HANDLER_COMMAND) {
+
+							/* make sure the check command still exists... */
+							tempval = nm_strdup(val);
+							temp_command = find_bang_command(tempval);
+							if (temp_command && tempval) {
+								nm_free(global_host_notification_handler);
+								global_host_notification_handler = tempval;
+							}
+						}
+					} else if (!strcmp(var, "global_service_notification_handler")) {
+						if (modified_service_process_attributes & MODATTR_NOTIFICATION_HANDLER_COMMAND) {
+
+							/* make sure the check command still exists... */
+							tempval = nm_strdup(val);
+							temp_command = find_bang_command(tempval);
+
+							if (temp_command && tempval) {
+								nm_free(global_service_notification_handler);
+								global_service_notification_handler = tempval;
 							}
 						}
 					} else if (!strcmp(var, "next_comment_id"))

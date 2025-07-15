@@ -19,6 +19,7 @@
 #include "globals.h"
 #include "logging.h"
 #include "nm_alloc.h"
+#include "query-handler.h"
 #include "lib/libnaemon.h"
 #include <string.h>
 #include <sys/types.h>
@@ -387,6 +388,13 @@ int launch_command_file_worker(void)
 
 	/* make our own process-group so we can be traced into and stuff */
 	setpgid(0, 0);
+
+
+	// close inherited file handles
+	close_log_file();
+	close_standard_fds();
+	qh_close_socket();
+	close_lockfile_fd();
 
 	str = nm_strdup(command_file);
 	free_memory(get_global_macros());
@@ -1679,6 +1687,17 @@ static int global_command_handler(const struct external_command *ext_command, ti
 
 	case CMD_PROCESS_FILE:
 		return process_external_commands_from_file(GV_STRING("file_name"), GV_BOOL("delete"));
+
+	case CMD_CHANGE_GLOBAL_SVC_EVENT_HANDLER:
+		/* disabled */
+		return ERROR;
+	case CMD_CHANGE_GLOBAL_HOST_EVENT_HANDLER:
+		/* disabled */
+		return ERROR;
+
+	case CMD_LOG:
+		nm_log(NSLOG_EXT_CUSTOM, "%s", ext_command->raw_arguments);
+		return OK;
 
 	default:
 		nm_log(NSLOG_RUNTIME_ERROR, "Unknown global command ID %d", ext_command->id);
@@ -3286,6 +3305,10 @@ void register_core_commands(void)
 	core_command = command_create("CHANGE_RETRY_HOST_CHECK_INTERVAL", host_command_handler,
 	                              "Changes the retry check interval for a particular host.", "host=host_name;timestamp=check_interval");
 	command_register(core_command, CMD_CHANGE_RETRY_HOST_CHECK_INTERVAL);
+
+	core_command = command_create("LOG", global_command_handler,
+	                              "Adds custom entry to the default log file.", NULL);
+	command_register(core_command, CMD_LOG);
 }
 
 /******************************************************************/
@@ -3427,6 +3450,8 @@ int process_external_command(char *cmd, int mode, GError **error)
 		/* passive checks are logged in checks.c as well, as some my bypass external commands by getting dropped in checkresults dir */
 		if (log_passive_checks == TRUE)
 			nm_log(NSLOG_PASSIVE_CHECK, "%s", temp_buffer);
+	} else if (id == CMD_LOG) {
+		/* skip loging same message twice */
 	} else if (log_external_commands == TRUE) {
 		nm_log(NSLOG_EXTERNAL_COMMAND, "%s", temp_buffer);
 	}

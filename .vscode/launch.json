@@ -32,6 +32,15 @@
 
             "launchCompleteCommand": "exec-run",
             "MIMode": "gdb",
+
+            // Especially when working with the Query Handler "Broken Pipe" issues may occur. In this case it is useful to ignore SIGPIPE.
+            //"setupCommands": [
+            //    {
+            //        "description": "Ignore SIGPIPE",
+            //        "text": "handle SIGPIPE nostop noprint pass"
+            //    }
+            //],
+
             "miDebuggerPath": "/usr/bin/gdb",
           }
     ]

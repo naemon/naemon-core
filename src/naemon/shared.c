@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <glib.h>
+#include <ctype.h>
 #ifdef HAVE_SYS_MMAN_H
 # include <sys/mman.h>
 #endif
@@ -53,6 +54,7 @@ int obsess_over_hosts = FALSE;
 unsigned long next_downtime_id = 0;
 
 char *config_file_dir = NULL;
+char *config_rel_path = NULL;
 
 
 /* silly debug-ish helper used to track down hotspots in config parsing */
@@ -412,6 +414,35 @@ void strip(char *buffer)
 	}
 }
 
+// strip trailing whitespace, returns pointer to stripped string
+char *rstrip(char *c)
+{
+    char *w = c + strlen(c) - 1;
+    while (w >= c && isspace(*w))
+        *w-- = '\0';
+    return c;
+}
+
+// strip trailing whitespace, returns pointer to stripped string
+// NOTE: you need to free the original pointer, not the stripped one
+char *lstrip(char *c)
+{
+    while (isspace(*c)) c++;
+    return c;
+}
+
+// trim leading/trailing whitespace, returns pointer to stripped string
+// NOTE: you need to free the original pointer, not the stripped one
+char *trim(char *c)
+{
+    return(lstrip(rstrip(c)));
+}
+
+void noeol_ctime(const time_t *when, char *buf)
+{
+	ctime_r(when, buf);
+	buf[strlen(buf) - 1] = 0;
+}
 
 /*
  * given a date/time in time_t format, produce a corresponding

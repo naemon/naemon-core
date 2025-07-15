@@ -1,3 +1,44 @@
+1.4.4 - Jun 03 2025
+===================
+Features:
+* trim spaces from list of templates (#500)
+* add support for configurable relative configuration paths (#491)
+* postpone check until check period starts (#490)
+
+Changed:
+* make ascii control characters in object names illegal (#499)
+* improve config parser performance (#488)
+* launch command worker earlier (#470)
+* remove backslashes before semicolons (#495)
+* trim whitespace at end of plugin output (#495)
+
+Bugfixes:
+* fix handling performance data (#501)
+
+
+1.4.3 - Nov 19 2024
+===================
+Features:
+* add global notifications handler (#477)
+* add external command to add log entries (#477)
+* add hint of previous object when duplicate detection fails (#479)
+* add options to keep services running as long as they are up (#459)
+* add problem timestamps and duration (#447)
+
+Changed:
+* clean up output of naemon -V (#484)
+* change problem_id and notification_id to uuids (#362)
+* change service parents suppressing only normal notifcations (#446)
+
+Bugfixes:
+* fix leaking object.cache file references (#462)
+* fix host not being in hard state with max_check_attempts=1 (#473)
+* throw config errors if boolean values cannot be parsed (#478)
+* fix retrieving comments after deleting first (#474)
+* fix rpm installation race condition (#456)
+* fix resetting modified_attributes (#449)
+
+
 1.4.2 - Jan 03 2024
 ===================
 Features:

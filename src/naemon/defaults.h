@@ -47,6 +47,7 @@
 #define DEFAULT_LOG_CURRENT_STATES				1	/* log current service and host states after rotating log */
 #define DEFAULT_LOG_EXTERNAL_COMMANDS				1	/* log external commands */
 #define DEFAULT_LOG_PASSIVE_CHECKS				1	/* log passive service checks */
+#define DEFAULT_LOG_GLOBAL_NOTIFICATIONS			1	/* log global notifications */
 
 #define DEFAULT_DEBUG_LEVEL                                     0       /* don't log any debugging information */
 #define DEFAULT_DEBUG_VERBOSITY                                 1
