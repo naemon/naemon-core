@@ -656,8 +656,6 @@ int xrddefault_read_state_information(void)
 							temp_host->acknowledgement_end_time = (time_t)0;
 						}
 					}
-					/* update host status */
-					update_host_status(temp_host, FALSE);
 				}
 
 				temp_host = NULL;
@@ -715,8 +713,6 @@ int xrddefault_read_state_information(void)
 							temp_service->acknowledgement_end_time = (time_t)0;
 						}
 					}
-					/* update service status */
-					update_service_status(temp_service, FALSE);
 				}
 
 				nm_free(host_name);
