@@ -70,7 +70,6 @@ struct service {
 	int     acknowledgement_type;
 	time_t  acknowledgement_end_time;
 	int     host_problem_at_last_check;
-	int     last_state_was_soft_recovery;
 	int     check_type;
 	int	current_state;
 	int	last_state;
