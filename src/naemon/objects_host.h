@@ -89,8 +89,10 @@ struct host {
 	int     current_attempt;
 	unsigned long current_event_id;
 	unsigned long last_event_id;
-	unsigned long current_problem_id;
-	unsigned long last_problem_id;
+	char   *current_problem_id;
+	char   *last_problem_id;
+	time_t  problem_start;
+	time_t  problem_end;
 	double  latency;
 	double  execution_time;
 	int     is_executing;
@@ -110,7 +112,7 @@ struct host {
 	int     notified_on;
 	int     current_notification_number;
 	int     no_more_notifications;
-	unsigned long current_notification_id;
+	char   *current_notification_id;
 	int     check_flapping_recovery_notification;
 	int     scheduled_downtime_depth;
 	int     pending_flex_downtime; /* UNUSED */
@@ -119,6 +121,7 @@ struct host {
 	time_t  last_state_history_update;
 	int     is_flapping;
 	unsigned long flapping_comment_id;
+	struct objectlist *comments_list;
 	double  percent_state_change;
 	int     total_services;
 	unsigned long modified_attributes;

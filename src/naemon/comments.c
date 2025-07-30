@@ -9,10 +9,9 @@
 #include "events.h"
 #include "globals.h"
 #include "nm_alloc.h"
+#include <glib.h>
 
-comment *comment_list = NULL;
-int defer_comment_sorting = 0;
-comment **comment_hashlist = NULL;
+GHashTable *comment_hashtable = NULL;
 
 
 /******************************************************************/
@@ -22,20 +21,8 @@ comment **comment_hashlist = NULL;
 /* initializes comment data */
 int initialize_comment_data(void)
 {
-	comment *temp_comment = NULL;
-
-	/* find the new starting index for comment id if its missing*/
-	if (next_comment_id == 0L) {
-		for (temp_comment = comment_list; temp_comment != NULL; temp_comment = temp_comment->next) {
-			if (temp_comment->comment_id >= next_comment_id)
-				next_comment_id = temp_comment->comment_id + 1;
-		}
-	}
-
-	/* initialize next comment id if necessary */
-	if (next_comment_id == 0L)
-		next_comment_id = 1;
-
+	comment_hashtable = g_hash_table_new(g_direct_hash, g_direct_equal);
+	next_comment_id = 1;
 	return OK;
 }
 
@@ -71,20 +58,30 @@ int add_new_comment(int type, int entry_type, char *host_name, char *svc_descrip
 	return result;
 }
 
+static unsigned long get_next_comment_id(void)
+{
+	unsigned long new_id = next_comment_id;
+	for (;;) {
+		if (!find_comment(new_id, HOST_COMMENT | SERVICE_COMMENT)) {
+			return new_id;
+		}
+		new_id++;
+	}
+	return 0;
+}
+
 /* adds a new host comment */
 int add_new_host_comment(int entry_type, char *host_name, time_t entry_time, char *author_name, char *comment_data, int persistent, int source, int expires, time_t expire_time, unsigned long *comment_id)
 {
 	int result = OK;
 
 	if (!find_host(host_name)) {
-		nm_log(NSLOG_RUNTIME_ERROR, "Error: Ignoring request to add comment to non-existing host '%s'.\n",
-		       host_name);
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Ignoring request to add comment to non-existing host '%s'.\n", host_name);
 		return ERROR;
 	}
 
 	/* find the next valid comment id */
-	while (find_comment(next_comment_id, HOST_COMMENT | SERVICE_COMMENT) != NULL)
-		next_comment_id++;
+	next_comment_id = get_next_comment_id();
 
 	/* add comment to list in memory */
 	add_host_comment(entry_type, host_name, entry_time, author_name, comment_data, next_comment_id, persistent, expires, expire_time, source);
@@ -94,7 +91,7 @@ int add_new_host_comment(int entry_type, char *host_name, time_t entry_time, cha
 
 	broker_comment_data(NEBTYPE_COMMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, HOST_COMMENT, entry_type, host_name, NULL, entry_time, author_name, comment_data, persistent, source, expires, expire_time, next_comment_id);
 
-	/* increment the comment id, AFTER, broker_comment_data(),
+	/* increment the comment id AFTER broker_comment_data(),
 	 * as we use it in that call
 	 */
 	next_comment_id++;
@@ -107,14 +104,12 @@ int add_new_host_comment(int entry_type, char *host_name, time_t entry_time, cha
 int add_new_service_comment(int entry_type, char *host_name, char *svc_description, time_t entry_time, char *author_name, char *comment_data, int persistent, int source, int expires, time_t expire_time, unsigned long *comment_id)
 {
 	if (!find_service(host_name, svc_description)) {
-		nm_log(NSLOG_RUNTIME_ERROR, "Error: Ignoring request to add comment to non-existing service '%s' on host '%s'\n",
-		       svc_description, host_name);
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Ignoring request to add comment to non-existing service '%s' on host '%s'\n", svc_description, host_name);
 		return ERROR;
 	}
 
 	/* find the next valid comment id */
-	while (find_comment(next_comment_id, HOST_COMMENT | SERVICE_COMMENT) != NULL)
-		next_comment_id++;
+	next_comment_id = get_next_comment_id();
 
 	/* add comment to list in memory */
 	add_service_comment(entry_type, host_name, svc_description, entry_time, author_name, comment_data, next_comment_id, persistent, expires, expire_time, source);
@@ -124,8 +119,7 @@ int add_new_service_comment(int entry_type, char *host_name, char *svc_descripti
 
 	broker_comment_data(NEBTYPE_COMMENT_ADD, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_COMMENT, entry_type, host_name, svc_description, entry_time, author_name, comment_data, persistent, source, expires, expire_time, next_comment_id);
 
-	/*
-	 * increment the comment id, AFTER broker_comment_data,
+	/* increment the comment id AFTER broker_comment_data(),
 	 * as we use it in that call
 	 */
 	next_comment_id++;
@@ -142,52 +136,26 @@ int add_new_service_comment(int entry_type, char *host_name, char *svc_descripti
 int delete_comment(int type, unsigned long comment_id)
 {
 	comment *this_comment = NULL;
-	comment *last_comment = NULL;
-	comment *next_comment = NULL;
-	int hashslot = 0;
-	comment *this_hash = NULL;
-	comment *last_hash = NULL;
 
 	/* find the comment we should remove */
-	for (this_comment = comment_list, last_comment = comment_list; this_comment != NULL; this_comment = next_comment) {
-		next_comment = this_comment->next;
-
-		/* we found the comment we should delete */
-		if (this_comment->comment_id == comment_id && this_comment->comment_type == type)
-			break;
-
-		last_comment = this_comment;
-	}
-
+	this_comment = find_comment(comment_id, type);
 	if (this_comment == NULL)
 		return ERROR;
 
 	broker_comment_data(NEBTYPE_COMMENT_DELETE, NEBFLAG_NONE, NEBATTR_NONE, type, this_comment->entry_type, this_comment->host_name, this_comment->service_description, this_comment->entry_time, this_comment->author, this_comment->comment_data, this_comment->persistent, this_comment->source, this_comment->expires, this_comment->expire_time, comment_id);
 
 	/* remove the comment from the list in memory */
-	/* first remove from chained hash list */
-	hashslot = hashfunc(this_comment->host_name, NULL, COMMENT_HASHSLOTS);
-	last_hash = NULL;
-	for (this_hash = comment_hashlist[hashslot]; this_hash; this_hash = this_hash->nexthash) {
-		if (this_hash == this_comment) {
-			if (last_hash)
-				last_hash->nexthash = this_hash->nexthash;
-			else {
-				if (this_hash->nexthash)
-					comment_hashlist[hashslot] = this_hash->nexthash;
-				else
-					comment_hashlist[hashslot] = NULL;
-			}
-			break;
-		}
-		last_hash = this_hash;
-	}
+	g_hash_table_remove(comment_hashtable, GINT_TO_POINTER(this_comment->comment_id));
 
-	/* then removed from linked list */
-	if (comment_list == this_comment)
-		comment_list = this_comment->next;
-	else
-		last_comment->next = next_comment;
+	// remove from svc or host
+	if (type == HOST_COMMENT) {
+		host *temp_host = find_host(this_comment->host_name);
+		remove_object_from_objectlist(&temp_host->comments_list, this_comment);
+	}
+	else if (type == SERVICE_COMMENT) {
+		service *temp_service = find_service(this_comment->host_name, this_comment->service_description);
+		remove_object_from_objectlist(&temp_service->comments_list, this_comment);
+	}
 
 	nm_free(this_comment->host_name);
 	nm_free(this_comment->service_description);
@@ -223,147 +191,77 @@ int delete_service_comment(unsigned long comment_id)
 }
 
 
-/* deletes all comments for a particular host or service */
-int delete_all_comments(int type, char *host_name, char *svc_description)
-{
-	int result = OK;
-
-	if (type == HOST_COMMENT)
-		result = delete_all_host_comments(host_name);
-	else
-		result = delete_all_service_comments(host_name, svc_description);
-
-	return result;
-}
-
-
 /* deletes all comments for a particular host */
-int delete_all_host_comments(char *host_name)
+int delete_all_host_comments(host *hst)
 {
-	int result = OK;
-	comment *temp_comment = NULL;
-	comment *next_comment = NULL;
-
-	if (host_name == NULL)
-		return ERROR;
+	objectlist *temp_obj, *next = NULL;
+	comment * temp_comment = NULL;
 
 	/* delete host comments from memory */
-	for (temp_comment = get_first_comment_by_host(host_name); temp_comment != NULL; temp_comment = next_comment) {
-		next_comment = get_next_comment_by_host(host_name, temp_comment);
-		if (temp_comment->comment_type == HOST_COMMENT)
-			delete_comment(HOST_COMMENT, temp_comment->comment_id);
+	for (temp_obj = hst->comments_list; temp_obj != NULL; ) {
+		next = temp_obj->next;
+		temp_comment = temp_obj->object_ptr;
+		delete_comment(HOST_COMMENT, temp_comment->comment_id);
+		temp_obj = next;
 	}
 
-	return result;
+	return OK;
 }
 
 
 /* deletes all non-persistent acknowledgement comments for a particular host */
 int delete_host_acknowledgement_comments(host *hst)
 {
-	int result = OK;
-	comment *temp_comment = NULL;
-	comment *next_comment = NULL;
+	objectlist *temp_obj, *next = NULL;
+	comment * temp_comment = NULL;
 
-	if (hst == NULL)
-		return ERROR;
-
-	/* delete comments from memory */
-	temp_comment = get_first_comment_by_host(hst->name);
-	while (temp_comment) {
-		next_comment = get_next_comment_by_host(hst->name, temp_comment);
-		if (temp_comment->comment_type == HOST_COMMENT && temp_comment->entry_type == ACKNOWLEDGEMENT_COMMENT && temp_comment->persistent == FALSE) {
+	/* delete host comments from memory */
+	for (temp_obj = hst->comments_list; temp_obj != NULL;) {
+		next = temp_obj->next;
+		temp_comment = temp_obj->object_ptr;
+		if (temp_comment->comment_type == HOST_COMMENT && temp_comment->entry_type == ACKNOWLEDGEMENT_COMMENT && temp_comment->persistent == FALSE)
 			delete_comment(HOST_COMMENT, temp_comment->comment_id);
-		}
-		temp_comment = next_comment;
+		temp_obj = next;
 	}
 
-	return result;
+	return OK;
 }
 
 
 /* deletes all comments for a particular service */
-int delete_all_service_comments(char *host_name, char *svc_description)
+int delete_all_service_comments(service *svc)
 {
-	int result = OK;
-	comment *temp_comment = NULL;
-	comment *next_comment = NULL;
-
-	if (host_name == NULL || svc_description == NULL)
-		return ERROR;
+	objectlist *temp_obj, *next = NULL;
+	comment * temp_comment = NULL;
 
 	/* delete service comments from memory */
-	for (temp_comment = comment_list; temp_comment != NULL; temp_comment = next_comment) {
-		next_comment = temp_comment->next;
-		if (temp_comment->comment_type == SERVICE_COMMENT && !g_strcmp0(temp_comment->host_name, host_name) && !g_strcmp0(temp_comment->service_description, svc_description))
-			delete_comment(SERVICE_COMMENT, temp_comment->comment_id);
+	for (temp_obj = svc->comments_list; temp_obj != NULL;) {
+		next = temp_obj->next;
+		temp_comment = temp_obj->object_ptr;
+		delete_comment(SERVICE_COMMENT, temp_comment->comment_id);
+		temp_obj = next;
 	}
 
-	return result;
+	return OK;
 }
 
 
 /* deletes all non-persistent acknowledgement comments for a particular service */
 int delete_service_acknowledgement_comments(service *svc)
 {
-	int result = OK;
-	comment *temp_comment = NULL;
-	comment *next_comment = NULL;
-
-	if (svc == NULL)
-		return ERROR;
+	objectlist *temp_obj, *next = NULL;
+	comment * temp_comment = NULL;
 
 	/* delete comments from memory */
-	for (temp_comment = comment_list; temp_comment != NULL; temp_comment = next_comment) {
-		next_comment = temp_comment->next;
-		if (temp_comment->comment_type == SERVICE_COMMENT && !g_strcmp0(temp_comment->host_name, svc->host_name) && !g_strcmp0(temp_comment->service_description, svc->description)  && temp_comment->entry_type == ACKNOWLEDGEMENT_COMMENT && temp_comment->persistent == FALSE)
+	for (temp_obj = svc->comments_list; temp_obj != NULL;) {
+		next = temp_obj->next;
+		temp_comment = temp_obj->object_ptr;
+		if (temp_comment->comment_type == SERVICE_COMMENT && temp_comment->entry_type == ACKNOWLEDGEMENT_COMMENT && temp_comment->persistent == FALSE)
 			delete_comment(SERVICE_COMMENT, temp_comment->comment_id);
+		temp_obj = next;
 	}
 
-	return result;
-}
-
-
-/******************************************************************/
-/****************** CHAINED HASH FUNCTIONS ************************/
-/******************************************************************/
-
-/* adds comment to hash list in memory */
-int add_comment_to_hashlist(comment *new_comment)
-{
-	comment *temp_comment = NULL;
-	comment *lastpointer = NULL;
-	int hashslot = 0;
-
-	/* initialize hash list */
-	if (comment_hashlist == NULL) {
-		int i;
-
-		comment_hashlist = nm_malloc(sizeof(comment *) * COMMENT_HASHSLOTS);
-
-		for (i = 0; i < COMMENT_HASHSLOTS; i++)
-			comment_hashlist[i] = NULL;
-	}
-
-	if (!new_comment)
-		return 0;
-
-	hashslot = hashfunc(new_comment->host_name, NULL, COMMENT_HASHSLOTS);
-	lastpointer = NULL;
-	for (temp_comment = comment_hashlist[hashslot]; temp_comment && g_strcmp0(temp_comment->host_name, new_comment->host_name) < 0; temp_comment = temp_comment->nexthash) {
-		if (g_strcmp0(temp_comment->host_name, new_comment->host_name) >= 0)
-			break;
-		lastpointer = temp_comment;
-	}
-
-	/* multiples are allowed */
-	if (lastpointer)
-		lastpointer->nexthash = new_comment;
-	else
-		comment_hashlist[hashslot] = new_comment;
-	new_comment->nexthash = temp_comment;
-
-	return 1;
+	return OK;
 }
 
 
@@ -397,13 +295,23 @@ int add_service_comment(int entry_type, char *host_name, char *svc_description, 
 int add_comment(int comment_type, int entry_type, char *host_name, char *svc_description, time_t entry_time, char *author, char *comment_data, unsigned long comment_id, int persistent, int expires, time_t expire_time, int source)
 {
 	comment *new_comment = NULL;
-	comment *last_comment = NULL;
-	comment *temp_comment = NULL;
-	int result = OK;
+	host *temp_host = NULL;
+	service *temp_service = NULL;
 
 	/* make sure we have the data we need */
 	if (host_name == NULL || author == NULL || comment_data == NULL || (comment_type == SERVICE_COMMENT && svc_description == NULL))
 		return ERROR;
+
+	if (comment_type == HOST_COMMENT) {
+		temp_host = find_host(host_name);
+		if(temp_host == NULL)
+			return ERROR;
+	}
+	else if (comment_type == SERVICE_COMMENT) {
+		temp_service = find_service(host_name, svc_description);
+		if(temp_service == NULL)
+			return ERROR;
+	}
 
 	/* allocate memory for the comment */
 	new_comment = nm_calloc(1, sizeof(comment));
@@ -425,94 +333,16 @@ int add_comment(int comment_type, int entry_type, char *host_name, char *svc_des
 	new_comment->expires = (expires == TRUE) ? TRUE : FALSE;
 	new_comment->expire_time = expire_time;
 
-	/* add comment to hash list */
-	if (result == OK) {
-		if (!add_comment_to_hashlist(new_comment))
-			result = ERROR;
-	}
+	g_hash_table_insert(comment_hashtable, GINT_TO_POINTER(new_comment->comment_id), new_comment);
 
-	/* handle errors */
-	if (result == ERROR) {
-		nm_free(new_comment->comment_data);
-		nm_free(new_comment->author);
-		nm_free(new_comment->service_description);
-		nm_free(new_comment->host_name);
-		nm_free(new_comment);
-		return ERROR;
-	}
+	if (comment_type == HOST_COMMENT)
+		prepend_object_to_objectlist(&temp_host->comments_list, (void *)new_comment);
 
-	if (defer_comment_sorting) {
-		new_comment->next = comment_list;
-		comment_list = new_comment;
-	} else {
-		/* add new comment to comment list, sorted by comment id */
-		last_comment = comment_list;
-		for (temp_comment = comment_list; temp_comment != NULL; temp_comment = temp_comment->next) {
-			if (new_comment->comment_id < temp_comment->comment_id) {
-				new_comment->next = temp_comment;
-				if (temp_comment == comment_list)
-					comment_list = new_comment;
-				else
-					last_comment->next = new_comment;
-				break;
-			} else
-				last_comment = temp_comment;
-		}
-		if (comment_list == NULL) {
-			new_comment->next = NULL;
-			comment_list = new_comment;
-		} else if (temp_comment == NULL) {
-			new_comment->next = NULL;
-			last_comment->next = new_comment;
-		}
-	}
+	if (comment_type == SERVICE_COMMENT)
+		prepend_object_to_objectlist(&temp_service->comments_list, (void *)new_comment);
 
 	broker_comment_data(NEBTYPE_COMMENT_LOAD, NEBFLAG_NONE, NEBATTR_NONE, comment_type, entry_type, host_name, svc_description, entry_time, author, comment_data, persistent, source, expires, expire_time, comment_id);
 
-	return OK;
-}
-
-
-static int comment_compar(const void *p1, const void *p2)
-{
-	comment *c1 = *(comment **)p1;
-	comment *c2 = *(comment **)p2;
-	return c1->comment_id - c2->comment_id;
-}
-
-
-int sort_comments(void)
-{
-	comment **array, *temp_comment;
-	unsigned long i = 0, unsorted_comments = 0;
-
-	if (!defer_comment_sorting)
-		return OK;
-	defer_comment_sorting = 0;
-
-	temp_comment = comment_list;
-	while (temp_comment != NULL) {
-		temp_comment = temp_comment->next;
-		unsorted_comments++;
-	}
-
-	if (!unsorted_comments)
-		return OK;
-
-	array = nm_malloc(sizeof(*array) * unsorted_comments);
-	while (comment_list) {
-		array[i++] = comment_list;
-		comment_list = comment_list->next;
-	}
-
-	qsort((void *)array, i, sizeof(*array), comment_compar);
-	comment_list = temp_comment = array[0];
-	for (i = 1; i < unsorted_comments; i++) {
-		temp_comment->next = array[i];
-		temp_comment = temp_comment->next;
-	}
-	temp_comment->next = NULL;
-	nm_free(array);
 	return OK;
 }
 
@@ -524,23 +354,25 @@ int sort_comments(void)
 /* frees memory allocated for the comment data */
 void free_comment_data(void)
 {
-	comment *this_comment = NULL;
-	comment *next_comment = NULL;
+	GHashTableIter iter;
+	gpointer comment_;
+
+	if(comment_hashtable == NULL)
+		return;
 
 	/* free memory for the comment list */
-	for (this_comment = comment_list; this_comment != NULL; this_comment = next_comment) {
-		next_comment = this_comment->next;
-		nm_free(this_comment->host_name);
-		nm_free(this_comment->service_description);
-		nm_free(this_comment->author);
-		nm_free(this_comment->comment_data);
-		nm_free(this_comment);
+	g_hash_table_iter_init(&iter, comment_hashtable);
+	while (g_hash_table_iter_next(&iter, NULL, &comment_)) {
+		comment *temp_comment = comment_;
+		nm_free(temp_comment->host_name);
+		nm_free(temp_comment->service_description);
+		nm_free(temp_comment->author);
+		nm_free(temp_comment->comment_data);
+		nm_free(temp_comment);
 	}
 
-	/* free hash list and reset list pointer */
-	nm_free(comment_hashlist);
-	comment_hashlist = NULL;
-	comment_list = NULL;
+	g_hash_table_destroy(comment_hashtable);
+	comment_hashtable = NULL;
 
 	return;
 }
@@ -553,16 +385,19 @@ void free_comment_data(void)
 /* get the number of comments associated with a particular host */
 int number_of_host_comments(char *host_name)
 {
-	comment *temp_comment = NULL;
+	objectlist *temp_obj = NULL;
+	host * temp_host = NULL;
 	int total_comments = 0;
 
 	if (host_name == NULL)
 		return 0;
 
-	for (temp_comment = get_first_comment_by_host(host_name); temp_comment != NULL; temp_comment = get_next_comment_by_host(host_name, temp_comment)) {
-		if (temp_comment->comment_type == HOST_COMMENT)
-			total_comments++;
-	}
+	temp_host = find_host(host_name);
+	if (temp_host == NULL)
+		return 0;
+
+	for (temp_obj = temp_host->comments_list; temp_obj != NULL; temp_obj = temp_obj->next)
+		total_comments++;
 
 	return total_comments;
 }
@@ -571,52 +406,28 @@ int number_of_host_comments(char *host_name)
 /* get the number of comments associated with a particular service */
 int number_of_service_comments(char *host_name, char *svc_description)
 {
-	comment *temp_comment = NULL;
+	objectlist *temp_obj = NULL;
+	service *temp_service = NULL;
 	int total_comments = 0;
 
 	if (host_name == NULL || svc_description == NULL)
 		return 0;
 
-	for (temp_comment = get_first_comment_by_host(host_name); temp_comment != NULL; temp_comment = get_next_comment_by_host(host_name, temp_comment)) {
-		if (temp_comment->comment_type == SERVICE_COMMENT && !g_strcmp0(temp_comment->service_description, svc_description))
-			total_comments++;
-	}
+	temp_service = find_service(host_name, svc_description);
+	if (temp_service == NULL)
+		return 0;
+
+	for (temp_obj = temp_service->comments_list; temp_obj != NULL; temp_obj = temp_obj->next)
+		total_comments++;
 
 	return total_comments;
 }
 
-
-/******************************************************************/
-/********************* TRAVERSAL FUNCTIONS ************************/
-/******************************************************************/
-
-comment *get_first_comment_by_host(char *host_name)
+/* get the total number of comments */
+int number_of_comments()
 {
-
-	return get_next_comment_by_host(host_name, NULL);
+	 return (int)g_hash_table_size(comment_hashtable);
 }
-
-
-comment *get_next_comment_by_host(char *host_name, comment *start)
-{
-	comment *temp_comment = NULL;
-
-	if (host_name == NULL || comment_hashlist == NULL)
-		return NULL;
-
-	if (start == NULL)
-		temp_comment = comment_hashlist[hashfunc(host_name, NULL, COMMENT_HASHSLOTS)];
-	else
-		temp_comment = start->nexthash;
-
-	for (; temp_comment && g_strcmp0(temp_comment->host_name, host_name) < 0; temp_comment = temp_comment->nexthash);
-
-	if (temp_comment && g_strcmp0(temp_comment->host_name, host_name) == 0)
-		return temp_comment;
-
-	return NULL;
-}
-
 
 /******************************************************************/
 /********************** SEARCH FUNCTIONS **************************/
@@ -641,10 +452,9 @@ comment *find_comment(unsigned long comment_id, int comment_type)
 {
 	comment *temp_comment = NULL;
 
-	for (temp_comment = comment_list; temp_comment != NULL; temp_comment = temp_comment->next) {
-		if (temp_comment->comment_id == comment_id && (temp_comment->comment_type & comment_type))
-			return temp_comment;
-	}
+	temp_comment = g_hash_table_lookup(comment_hashtable, GINT_TO_POINTER(comment_id));
+	if (temp_comment && (temp_comment->comment_type & comment_type))
+		return temp_comment;
 
 	return NULL;
 }

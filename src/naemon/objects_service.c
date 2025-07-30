@@ -326,6 +326,7 @@ void destroy_service(service *this_service, int truncate_lists)
 	nm_free(this_service->long_plugin_output);
 	nm_free(this_service->perf_data);
 	nm_free(this_service->event_handler_args);
+	free_objectlist(&this_service->comments_list);
 	free_objectlist(&this_service->servicegroups_ptr);
 	free_objectlist(&this_service->notify_deps);
 	free_objectlist(&this_service->exec_deps);
@@ -338,6 +339,9 @@ void destroy_service(service *this_service, int truncate_lists)
 	nm_free(this_service->action_url);
 	nm_free(this_service->icon_image);
 	nm_free(this_service->icon_image_alt);
+	nm_free(this_service->current_notification_id);
+	nm_free(this_service->last_problem_id);
+	nm_free(this_service->current_problem_id);
 	nm_free(this_service);
 }
 

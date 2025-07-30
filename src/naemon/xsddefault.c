@@ -76,6 +76,8 @@ int xsddefault_save_status_data(void)
 	service *temp_service = NULL;
 	contact *temp_contact = NULL;
 	comment *temp_comment = NULL;
+	GHashTableIter iter;
+	gpointer comment_;
 	scheduled_downtime *temp_downtime = NULL;
 	time_t current_time;
 	int fd = 0;
@@ -156,11 +158,11 @@ int xsddefault_save_status_data(void)
 	fprintf(fp, "\tprocess_performance_data=%d\n", process_performance_data);
 	fprintf(fp, "\tglobal_host_event_handler=%s\n", (global_host_event_handler == NULL) ? "" : global_host_event_handler);
 	fprintf(fp, "\tglobal_service_event_handler=%s\n", (global_service_event_handler == NULL) ? "" : global_service_event_handler);
+	fprintf(fp, "\tglobal_host_notification_handler=%s\n", (global_host_notification_handler == NULL) ? "" : global_host_notification_handler);
+	fprintf(fp, "\tglobal_service_notification_handler=%s\n", (global_service_notification_handler == NULL) ? "" : global_service_notification_handler);
 	fprintf(fp, "\tnext_comment_id=%lu\n", next_comment_id);
 	fprintf(fp, "\tnext_downtime_id=%lu\n", next_downtime_id);
 	fprintf(fp, "\tnext_event_id=%lu\n", next_event_id);
-	fprintf(fp, "\tnext_problem_id=%lu\n", next_problem_id);
-	fprintf(fp, "\tnext_notification_id=%lu\n", next_notification_id);
 	fprintf(fp, "\tactive_scheduled_host_check_stats=%d,%d,%d\n", check_statistics[ACTIVE_SCHEDULED_HOST_CHECK_STATS].minute_stats[0], check_statistics[ACTIVE_SCHEDULED_HOST_CHECK_STATS].minute_stats[1], check_statistics[ACTIVE_SCHEDULED_HOST_CHECK_STATS].minute_stats[2]);
 	fprintf(fp, "\tactive_ondemand_host_check_stats=%d,%d,%d\n", check_statistics[ACTIVE_ONDEMAND_HOST_CHECK_STATS].minute_stats[0], check_statistics[ACTIVE_ONDEMAND_HOST_CHECK_STATS].minute_stats[1], check_statistics[ACTIVE_ONDEMAND_HOST_CHECK_STATS].minute_stats[2]);
 	fprintf(fp, "\tpassive_host_check_stats=%d,%d,%d\n", check_statistics[PASSIVE_HOST_CHECK_STATS].minute_stats[0], check_statistics[PASSIVE_HOST_CHECK_STATS].minute_stats[1], check_statistics[PASSIVE_HOST_CHECK_STATS].minute_stats[2]);
@@ -198,8 +200,10 @@ int xsddefault_save_status_data(void)
 		fprintf(fp, "\tlast_hard_state=%d\n", temp_host->last_hard_state);
 		fprintf(fp, "\tlast_event_id=%lu\n", temp_host->last_event_id);
 		fprintf(fp, "\tcurrent_event_id=%lu\n", temp_host->current_event_id);
-		fprintf(fp, "\tcurrent_problem_id=%lu\n", temp_host->current_problem_id);
-		fprintf(fp, "\tlast_problem_id=%lu\n", temp_host->last_problem_id);
+		fprintf(fp, "\tcurrent_problem_id=%s\n", (temp_host->current_problem_id == NULL) ? "" : temp_host->current_problem_id);
+		fprintf(fp, "\tlast_problem_id=%s\n", (temp_host->last_problem_id == NULL) ? "" : temp_host->last_problem_id);
+		fprintf(fp, "\tproblem_start=%lu\n", temp_host->problem_start);
+		fprintf(fp, "\tproblem_end=%lu\n", temp_host->problem_end);
 		fprintf(fp, "\tplugin_output=%s\n", (temp_host->plugin_output == NULL) ? "" : temp_host->plugin_output);
 		fprintf(fp, "\tlong_plugin_output=%s\n", (temp_host->long_plugin_output == NULL) ? "" : temp_host->long_plugin_output);
 		fprintf(fp, "\tperformance_data=%s\n", (temp_host->perf_data == NULL) ? "" : temp_host->perf_data);
@@ -218,7 +222,7 @@ int xsddefault_save_status_data(void)
 		fprintf(fp, "\tnext_notification=%lu\n", temp_host->next_notification);
 		fprintf(fp, "\tno_more_notifications=%d\n", temp_host->no_more_notifications);
 		fprintf(fp, "\tcurrent_notification_number=%d\n", temp_host->current_notification_number);
-		fprintf(fp, "\tcurrent_notification_id=%lu\n", temp_host->current_notification_id);
+		fprintf(fp, "\tcurrent_notification_id=%s\n", (temp_host->current_notification_id == NULL) ? "" : temp_host->current_notification_id);
 		fprintf(fp, "\tnotifications_enabled=%d\n", temp_host->notifications_enabled);
 		fprintf(fp, "\tproblem_has_been_acknowledged=%d\n", temp_host->problem_has_been_acknowledged);
 		fprintf(fp, "\tacknowledgement_type=%d\n", temp_host->acknowledgement_type);
@@ -265,8 +269,10 @@ int xsddefault_save_status_data(void)
 		fprintf(fp, "\tlast_hard_state=%d\n", temp_service->last_hard_state);
 		fprintf(fp, "\tlast_event_id=%lu\n", temp_service->last_event_id);
 		fprintf(fp, "\tcurrent_event_id=%lu\n", temp_service->current_event_id);
-		fprintf(fp, "\tcurrent_problem_id=%lu\n", temp_service->current_problem_id);
-		fprintf(fp, "\tlast_problem_id=%lu\n", temp_service->last_problem_id);
+		fprintf(fp, "\tcurrent_problem_id=%s\n", (temp_service->current_problem_id == NULL) ? "" : temp_service->current_problem_id);
+		fprintf(fp, "\tlast_problem_id=%s\n", (temp_service->last_problem_id == NULL) ? "" : temp_service->last_problem_id);
+		fprintf(fp, "\tproblem_start=%lu\n", temp_service->problem_start);
+		fprintf(fp, "\tproblem_end=%lu\n", temp_service->problem_end);
 		fprintf(fp, "\tcurrent_attempt=%d\n", temp_service->current_attempt);
 		fprintf(fp, "\tmax_attempts=%d\n", temp_service->max_attempts);
 		fprintf(fp, "\tstate_type=%d\n", temp_service->state_type);
@@ -283,7 +289,7 @@ int xsddefault_save_status_data(void)
 		fprintf(fp, "\tnext_check=%lu\n", temp_service->next_check);
 		fprintf(fp, "\tcheck_options=%d\n", temp_service->check_options);
 		fprintf(fp, "\tcurrent_notification_number=%d\n", temp_service->current_notification_number);
-		fprintf(fp, "\tcurrent_notification_id=%lu\n", temp_service->current_notification_id);
+		fprintf(fp, "\tcurrent_notification_id=%s\n", (temp_service->current_notification_id == NULL) ? "" : temp_service->current_notification_id);
 		fprintf(fp, "\tlast_notification=%lu\n", temp_service->last_notification);
 		fprintf(fp, "\tnext_notification=%lu\n", temp_service->next_notification);
 		fprintf(fp, "\tno_more_notifications=%d\n", temp_service->no_more_notifications);
@@ -335,25 +341,28 @@ int xsddefault_save_status_data(void)
 	}
 
 	/* save all comments */
-	for (temp_comment = comment_list; temp_comment != NULL; temp_comment = temp_comment->next) {
-
-		if (temp_comment->comment_type == HOST_COMMENT)
-			fprintf(fp, "hostcomment {\n");
-		else
-			fprintf(fp, "servicecomment {\n");
-		fprintf(fp, "\thost_name=%s\n", temp_comment->host_name);
-		if (temp_comment->comment_type == SERVICE_COMMENT)
-			fprintf(fp, "\tservice_description=%s\n", temp_comment->service_description);
-		fprintf(fp, "\tentry_type=%d\n", temp_comment->entry_type);
-		fprintf(fp, "\tcomment_id=%lu\n", temp_comment->comment_id);
-		fprintf(fp, "\tsource=%d\n", temp_comment->source);
-		fprintf(fp, "\tpersistent=%d\n", temp_comment->persistent);
-		fprintf(fp, "\tentry_time=%lu\n", temp_comment->entry_time);
-		fprintf(fp, "\texpires=%d\n", temp_comment->expires);
-		fprintf(fp, "\texpire_time=%lu\n", temp_comment->expire_time);
-		fprintf(fp, "\tauthor=%s\n", temp_comment->author);
-		fprintf(fp, "\tcomment_data=%s\n", temp_comment->comment_data);
-		fprintf(fp, "\t}\n\n");
+	if(comment_hashtable != NULL) {
+		g_hash_table_iter_init(&iter, comment_hashtable);
+		while (g_hash_table_iter_next(&iter, NULL, &comment_)) {
+			temp_comment = comment_;
+			if (temp_comment->comment_type == HOST_COMMENT)
+				fprintf(fp, "hostcomment {\n");
+			else
+				fprintf(fp, "servicecomment {\n");
+			fprintf(fp, "\thost_name=%s\n", temp_comment->host_name);
+			if (temp_comment->comment_type == SERVICE_COMMENT)
+				fprintf(fp, "\tservice_description=%s\n", temp_comment->service_description);
+			fprintf(fp, "\tentry_type=%d\n", temp_comment->entry_type);
+			fprintf(fp, "\tcomment_id=%lu\n", temp_comment->comment_id);
+			fprintf(fp, "\tsource=%d\n", temp_comment->source);
+			fprintf(fp, "\tpersistent=%d\n", temp_comment->persistent);
+			fprintf(fp, "\tentry_time=%lu\n", temp_comment->entry_time);
+			fprintf(fp, "\texpires=%d\n", temp_comment->expires);
+			fprintf(fp, "\texpire_time=%lu\n", temp_comment->expire_time);
+			fprintf(fp, "\tauthor=%s\n", temp_comment->author);
+			fprintf(fp, "\tcomment_data=%s\n", temp_comment->comment_data);
+			fprintf(fp, "\t}\n\n");
+		}
 	}
 
 	/* save all downtime */

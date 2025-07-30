@@ -310,6 +310,7 @@ void destroy_host(host *this_host)
 	nm_free(this_host->plugin_output);
 	nm_free(this_host->long_plugin_output);
 	nm_free(this_host->perf_data);
+	free_objectlist(&this_host->comments_list);
 	free_objectlist(&this_host->hostgroups_ptr);
 	free_objectlist(&this_host->notify_deps);
 	free_objectlist(&this_host->exec_deps);
@@ -325,6 +326,9 @@ void destroy_host(host *this_host)
 	nm_free(this_host->icon_image_alt);
 	nm_free(this_host->vrml_image);
 	nm_free(this_host->statusmap_image);
+	nm_free(this_host->current_notification_id);
+	nm_free(this_host->last_problem_id);
+	nm_free(this_host->current_problem_id);
 	nm_free(this_host);
 }
 

@@ -21,6 +21,7 @@
 #include "objects_hostdependency.h"
 #include <string.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 
 #include "neberrors.h"
 
@@ -236,24 +237,36 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 
 		/* make sure this is a valid time to check the host */
 		if (check_time_against_period(time(NULL), hst->check_period_ptr) != OK) {
+			delay_host_check_till_next_timeperiod_slot(hst);
 			return ERROR;
 		}
 
 		/* check host dependencies for execution */
 		log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' checking dependencies...\n", hst->name);
 		if (check_host_dependencies(hst, EXECUTION_DEPENDENCY) == DEPENDENCIES_FAILED) {
-			if (host_skip_check_dependency_status >= 0) {
-				hst->current_state = host_skip_check_dependency_status;
-				if (strstr(hst->plugin_output, "(host dependency check failed)") == NULL) {
-					char *old_output = nm_strdup(hst->plugin_output);
-					nm_free(hst->plugin_output);
-					nm_asprintf(&hst->plugin_output, "(host dependency check failed) was: %s", old_output);
-					nm_free(old_output);
-				}
+			int keep_running = FALSE;
+			switch(host_skip_check_dependency_status) {
+				case SKIP_KEEP_RUNNING_WHEN_UP:
+					if (hst->current_state == STATE_UP) {
+						keep_running = TRUE;
+					}
+					break;
+				case STATE_UP:
+				case STATE_DOWN:
+				case STATE_UNREACHABLE:
+					hst->current_state = host_skip_check_dependency_status;
+					if (strstr(hst->plugin_output, "(host dependency check failed)") == NULL) {
+						char *old_output = nm_strdup(hst->plugin_output);
+						nm_free(hst->plugin_output);
+						nm_asprintf(&hst->plugin_output, "(host dependency check failed) was: %s", old_output);
+						nm_free(old_output);
+					}
+					break;
 			}
-
-			log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' failed dependency check. Aborting check\n", hst->name);
-			return ERROR;
+			if(!keep_running) {
+				log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' failed dependency check. Aborting check\n", hst->name);
+				return ERROR;
+			}
 		}
 	}
 
@@ -372,6 +385,7 @@ int update_host_state_post_check(struct host *hst, struct check_result *cr)
 {
 	int result;
 	char *temp_ptr = NULL;
+	time_t now = time(NULL);
 
 	if (!hst || !cr)
 		return ERROR;
@@ -412,6 +426,7 @@ int update_host_state_post_check(struct host *hst, struct check_result *cr)
 
 	/* get the last check time */
 	hst->last_check = cr->start_time.tv_sec;
+	hst->last_update = now;
 
 	/* save the old host state */
 	hst->last_state = hst->current_state;
@@ -628,38 +643,42 @@ static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags)
 {
 	check_result *cr = (check_result *)arg;
 	struct host *hst;
+	time_t now = time(NULL);
 
 	/* decrement the number of host checks still out there... */
 	if (currently_running_host_checks > 0)
 		currently_running_host_checks--;
 
-	hst = find_host(cr->host_name);
-	if (hst && wpres) {
-		hst->is_executing = FALSE;
-		memcpy(&cr->rusage, &wpres->rusage, sizeof(wpres->rusage));
-		cr->start_time.tv_sec = wpres->start.tv_sec;
-		cr->start_time.tv_usec = wpres->start.tv_usec;
-		cr->finish_time.tv_sec = wpres->stop.tv_sec;
-		cr->finish_time.tv_usec = wpres->stop.tv_usec;
-		if (WIFEXITED(wpres->wait_status)) {
-			cr->return_code = WEXITSTATUS(wpres->wait_status);
-		} else {
-			cr->return_code = STATE_UNKNOWN;
-		}
+	if (wpres) {
+		hst = find_host(cr->host_name);
+		if (hst) {
+			hst->is_executing = FALSE;
+			hst->last_update = now;
+			memcpy(&cr->rusage, &wpres->rusage, sizeof(wpres->rusage));
+			cr->start_time.tv_sec = wpres->start.tv_sec;
+			cr->start_time.tv_usec = wpres->start.tv_usec;
+			cr->finish_time.tv_sec = wpres->stop.tv_sec;
+			cr->finish_time.tv_usec = wpres->stop.tv_usec;
+			if (WIFEXITED(wpres->wait_status)) {
+				cr->return_code = WEXITSTATUS(wpres->wait_status);
+			} else {
+				cr->return_code = STATE_UNKNOWN;
+			}
 
-		if (wpres->outstd && *wpres->outstd) {
-			cr->output = nm_strdup(wpres->outstd);
-		} else if (wpres->outerr && *wpres->outerr) {
-			nm_asprintf(&cr->output, "(No output on stdout) stderr: %s", wpres->outerr);
-		} else {
-			cr->output = NULL;
-		}
+			if (wpres->outstd && *wpres->outstd) {
+				cr->output = nm_strdup(wpres->outstd);
+			} else if (wpres->outerr && *wpres->outerr) {
+				nm_asprintf(&cr->output, "(No output on stdout) stderr: %s", wpres->outerr);
+			} else {
+				cr->output = NULL;
+			}
 
-		cr->early_timeout = wpres->early_timeout;
-		cr->exited_ok = wpres->exited_ok;
-		cr->engine = NULL;
-		cr->source = wpres->source;
-		process_check_result(cr);
+			cr->early_timeout = wpres->early_timeout;
+			cr->exited_ok = wpres->exited_ok;
+			cr->engine = NULL;
+			cr->source = wpres->source;
+			process_check_result(cr);
+		}
 	}
 	free_check_result(cr);
 	nm_free(cr);
@@ -812,7 +831,10 @@ static int process_host_check_result(host *hst, host *prev, int *alert_recorded)
 			if (hst->check_type == CHECK_TYPE_ACTIVE || passive_host_checks_are_soft == TRUE) {
 
 				/* set the state type */
-				hst->state_type = SOFT_STATE;
+				if (hst->current_attempt == hst->max_attempts)
+					hst->state_type = HARD_STATE;
+				else
+					hst->state_type = SOFT_STATE;
 			}
 
 			/* by default, passive check results are treated as HARD states */
@@ -1005,14 +1027,19 @@ static int handle_host_state(host *hst, int *alert_recorded)
 		/* update the problem id when transitioning to a problem state */
 		if (hst->last_state == STATE_UP) {
 			/* don't reset last problem id, or it will be zero the next time a problem is encountered */
-			hst->current_problem_id = next_problem_id;
-			next_problem_id++;
+			nm_free(hst->current_problem_id);
+			hst->current_problem_id = (char*)g_uuid_string_random();
+			hst->problem_start = current_time;
+			hst->problem_end = 0L;
 		}
 
 		/* clear the problem id when transitioning from a problem state to an UP state */
 		if (hst->current_state == STATE_UP) {
+			nm_free(hst->last_problem_id);
 			hst->last_problem_id = hst->current_problem_id;
-			hst->current_problem_id = 0L;
+			hst->current_problem_id = NULL;
+			if(hst->problem_start > 0)
+				hst->problem_end = current_time;
 		}
 
 		/* write the host state change to the main log file */
@@ -1057,6 +1084,12 @@ static int handle_host_state(host *hst, int *alert_recorded)
 			*alert_recorded = NEBATTR_CHECK_ALERT;
 		}
 	}
+
+	/* initialize the last host state change times if necessary */
+	if (hst->last_state_change == (time_t)0)
+		hst->last_state_change = hst->last_check;
+	if (hst->last_hard_state_change == (time_t)0)
+		hst->last_hard_state_change = hst->last_check;
 
 	return OK;
 }
@@ -1166,6 +1199,8 @@ static void check_for_orphaned_hosts_eventhandler(struct nm_event_execution_prop
 
 				/* disable the executing flag */
 				temp_host->is_executing = FALSE;
+
+				temp_host->last_update = current_time;
 
 				/* schedule an immediate check of the host */
 				schedule_next_host_check(temp_host, 0, CHECK_OPTION_ORPHAN_CHECK);
@@ -1359,4 +1394,24 @@ static int determine_host_reachability(host *hst)
 
 	log_debug_info(DEBUGL_CHECKS, 2, "No parents were up, so host is UNREACHABLE.\n");
 	return STATE_UNREACHABLE;
+}
+
+/* ensure next check falls into check period */
+void delay_host_check_till_next_timeperiod_slot(host *hst)
+{
+	time_t timeperiod_start;
+	time_t check_interval;
+
+	if (hst->current_state != STATE_UP && hst->state_type == SOFT_STATE && hst->retry_interval != 0.0)
+		check_interval = get_host_check_interval_s(hst);
+	else
+		check_interval = get_host_retry_interval_s(hst);
+
+	timeperiod_start = get_random_next_timeperiod_slot(check_interval, hst->check_period_ptr);
+	if(timeperiod_start == 0) {
+		return;
+	}
+
+	log_debug_info(DEBUGL_CHECKS, 1, "delay next host check for %s until check timeperiod starts: %s\n", hst->name, ctime(&timeperiod_start));
+	schedule_host_check(hst, timeperiod_start, CHECK_OPTION_ALLOW_POSTPONE);
 }

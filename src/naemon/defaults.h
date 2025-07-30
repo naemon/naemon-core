@@ -47,6 +47,7 @@
 #define DEFAULT_LOG_CURRENT_STATES				1	/* log current service and host states after rotating log */
 #define DEFAULT_LOG_EXTERNAL_COMMANDS				1	/* log external commands */
 #define DEFAULT_LOG_PASSIVE_CHECKS				1	/* log passive service checks */
+#define DEFAULT_LOG_GLOBAL_NOTIFICATIONS			1	/* log global notifications */
 
 #define DEFAULT_DEBUG_LEVEL                                     0       /* don't log any debugging information */
 #define DEFAULT_DEBUG_VERBOSITY                                 1
@@ -89,6 +90,8 @@
 #define DEFAULT_ALLOW_CIRCULAR_DEPENDENCIES             0        /* Allow circular dependencies */
 #define DEFAULT_HOST_DOWN_DISABLE_SERVICE_CHECKS        0        /* run service checks if the host is down */
 #define DEFAULT_SKIP_CHECK_STATUS                      -1        /* do not change status by default */
+#define SKIP_KEEP_RUNNING_WHEN_UP                      -2        /* run service checks as long as the host and service is up (ok/warning) */
+#define DEFAULT_SERVICE_PARENTS_DISABLE_SERVICE_CHECKS  0        /* run service checks if service parents are down */
 
 #define DEFAULT_HOST_PERFDATA_FILE_TEMPLATE "[HOSTPERFDATA]\t$TIMET$\t$HOSTNAME$\t$HOSTEXECUTIONTIME$\t$HOSTOUTPUT$\t$HOSTPERFDATA$"
 #define DEFAULT_SERVICE_PERFDATA_FILE_TEMPLATE "[SERVICEPERFDATA]\t$TIMET$\t$HOSTNAME$\t$SERVICEDESC$\t$SERVICEEXECUTIONTIME$\t$SERVICELATENCY$\t$SERVICEOUTPUT$\t$SERVICEPERFDATA$"

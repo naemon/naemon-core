@@ -488,9 +488,9 @@ int register_downtime(int type, unsigned long downtime_id)
 	/* add a non-persistent comment to the host or service regarding the scheduled outage */
 	if (find_comment(temp_downtime->comment_id, HOST_COMMENT | SERVICE_COMMENT) == NULL) {
 		if (temp_downtime->type == SERVICE_DOWNTIME)
-			add_new_comment(SERVICE_COMMENT, DOWNTIME_COMMENT, svc->host_name, svc->description, time(NULL), (NULL == temp_downtime->author ? "(Nagios Process)" : temp_downtime->author), temp_buffer, 0, COMMENTSOURCE_INTERNAL, FALSE, (time_t)0, &(temp_downtime->comment_id));
+			add_new_comment(SERVICE_COMMENT, DOWNTIME_COMMENT, svc->host_name, svc->description, time(NULL), (NULL == temp_downtime->author ? "(Naemon Process)" : temp_downtime->author), temp_buffer, 0, COMMENTSOURCE_INTERNAL, FALSE, (time_t)0, &(temp_downtime->comment_id));
 		else
-			add_new_comment(HOST_COMMENT, DOWNTIME_COMMENT, hst->name, NULL, time(NULL), (NULL == temp_downtime->author ? "(Nagios Process)" : temp_downtime->author), temp_buffer, 0, COMMENTSOURCE_INTERNAL, FALSE, (time_t)0, &(temp_downtime->comment_id));
+			add_new_comment(HOST_COMMENT, DOWNTIME_COMMENT, hst->name, NULL, time(NULL), (NULL == temp_downtime->author ? "(Naemon Process)" : temp_downtime->author), temp_buffer, 0, COMMENTSOURCE_INTERNAL, FALSE, (time_t)0, &(temp_downtime->comment_id));
 	}
 
 	nm_free(temp_buffer);
@@ -1298,6 +1298,12 @@ scheduled_downtime *find_service_downtime(unsigned long downtime_id)
 	return find_downtime(SERVICE_DOWNTIME, downtime_id);
 }
 
+/* get the total number of downtimes */
+int number_of_downtimes()
+{
+	 return (int)g_hash_table_size(dt_hashtable);
+}
+
 
 /******************************************************************/
 /********************* CLEANUP FUNCTIONS **************************/
@@ -1309,7 +1315,8 @@ void free_downtime_data(void)
 	scheduled_downtime *this_downtime = NULL;
 	scheduled_downtime *next_downtime = NULL;
 
-	g_hash_table_destroy(dt_hashtable);
+	if(dt_hashtable != NULL)
+		g_hash_table_destroy(dt_hashtable);
 	dt_hashtable = NULL;
 
 	/* free memory for the scheduled_downtime list */

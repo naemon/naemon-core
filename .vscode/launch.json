@@ -12,13 +12,19 @@
             // This will trigger the "make all" task from tasks.json
             "preLaunchTask": "make all",
             // We are not using the binary from the build folder because we do not want to run the "make install" task.
-            // The "make install" task is only to generate the default naemon configurtion files 
+            // The "make install" task is only to generate the default naemon configurtion files
             "program": "${workspaceFolder}/src/naemon/.libs/naemon",
             "args": [
                 //"--help",
                 "${workspaceFolder}/build/etc/naemon/naemon.cfg"
             ],
             "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/.libs"
+                }
+            ],
 
             // Optional parameter. If true, the debugger should stop at the entrypoint of the target.
             "stopAtEntry": true,
@@ -26,6 +32,15 @@
 
             "launchCompleteCommand": "exec-run",
             "MIMode": "gdb",
+
+            // Especially when working with the Query Handler "Broken Pipe" issues may occur. In this case it is useful to ignore SIGPIPE.
+            //"setupCommands": [
+            //    {
+            //        "description": "Ignore SIGPIPE",
+            //        "text": "handle SIGPIPE nostop noprint pass"
+            //    }
+            //],
+
             "miDebuggerPath": "/usr/bin/gdb",
           }
     ]

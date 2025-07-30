@@ -46,6 +46,11 @@ extern char *global_service_event_handler;
 extern command *global_host_event_handler_ptr;
 extern command *global_service_event_handler_ptr;
 
+extern char *global_host_notification_handler;
+extern char *global_service_notification_handler;
+extern command *global_host_notification_handler_ptr;
+extern command *global_service_notification_handler_ptr;
+
 extern int use_regexp_matches;
 extern int use_true_regexp_matching;
 
@@ -59,6 +64,7 @@ extern int log_host_retries;
 extern int log_event_handlers;
 extern int log_external_commands;
 extern int log_passive_checks;
+extern int log_global_notifications;
 extern unsigned long logging_options;
 extern unsigned long syslog_options;
 
@@ -146,6 +152,7 @@ extern unsigned long max_debug_file_size;
 extern int allow_empty_hostgroup_assignment;
 extern int allow_circular_dependencies;
 extern int host_down_disable_service_checks;
+extern int service_parents_disable_service_checks;
 extern int service_skip_check_dependency_status;
 extern int service_skip_check_host_down_status;
 extern int host_skip_check_dependency_status;
@@ -158,9 +165,7 @@ extern int currently_running_service_checks;
 extern int currently_running_host_checks;
 
 extern unsigned long next_event_id;
-extern unsigned long next_problem_id;
 extern unsigned long next_comment_id;
-extern unsigned long next_notification_id;
 
 extern unsigned long modified_process_attributes;
 extern unsigned long modified_host_process_attributes;

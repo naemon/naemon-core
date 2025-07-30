@@ -28,6 +28,9 @@ int check_host_dependencies(host *hst, int dependency_type);
 /* adjusts current host check attempt when a check is processed */
 int adjust_host_check_attempt(host *hst, int is_active);
 
+/* move next check into a valid check period slot */
+void delay_host_check_till_next_timeperiod_slot(host *);
+
 NAGIOS_END_DECL
 
 #endif

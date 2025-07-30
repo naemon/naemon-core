@@ -19,6 +19,7 @@
 #include "globals.h"
 #include "logging.h"
 #include "nm_alloc.h"
+#include "query-handler.h"
 #include "lib/libnaemon.h"
 #include <string.h>
 #include <sys/types.h>
@@ -183,7 +184,8 @@ int close_command_file(void)
 	command_file_created = FALSE;
 
 	/* close the command file */
-	fclose(command_file_fp);
+	if (command_file_fp != NULL)
+		fclose(command_file_fp);
 
 	return OK;
 }
@@ -386,6 +388,13 @@ int launch_command_file_worker(void)
 
 	/* make our own process-group so we can be traced into and stuff */
 	setpgid(0, 0);
+
+
+	// close inherited file handles
+	close_log_file();
+	close_standard_fds();
+	qh_close_socket();
+	close_lockfile_fd();
 
 	str = nm_strdup(command_file);
 	free_memory(get_global_macros());
@@ -1679,6 +1688,17 @@ static int global_command_handler(const struct external_command *ext_command, ti
 	case CMD_PROCESS_FILE:
 		return process_external_commands_from_file(GV_STRING("file_name"), GV_BOOL("delete"));
 
+	case CMD_CHANGE_GLOBAL_SVC_EVENT_HANDLER:
+		/* disabled */
+		return ERROR;
+	case CMD_CHANGE_GLOBAL_HOST_EVENT_HANDLER:
+		/* disabled */
+		return ERROR;
+
+	case CMD_LOG:
+		nm_log(NSLOG_EXT_CUSTOM, "%s", ext_command->raw_arguments);
+		return OK;
+
 	default:
 		nm_log(NSLOG_RUNTIME_ERROR, "Unknown global command ID %d", ext_command->id);
 		return ERROR;
@@ -1848,7 +1868,7 @@ static int host_command_handler(const struct external_command *ext_command, time
 		}
 		return OK;
 	case CMD_DEL_ALL_HOST_COMMENTS:
-		return delete_all_host_comments(target_host->name);
+		return delete_all_host_comments(target_host);
 	case CMD_ENABLE_HOST_NOTIFICATIONS:
 		enable_host_notifications(target_host);
 		return OK;
@@ -2251,7 +2271,7 @@ static int service_command_handler(const struct external_command *ext_command, t
 		target_service->next_notification = GV_TIMESTAMP("notification_time");
 		return OK;
 	case CMD_DEL_ALL_SVC_COMMENTS:
-		return delete_all_comments(SERVICE_COMMENT, target_service->host_name, target_service->description);
+		return delete_all_service_comments(target_service);
 	case CMD_ENABLE_SVC_NOTIFICATIONS:
 		enable_service_notifications(target_service);
 		return OK;
@@ -2538,20 +2558,32 @@ static int contactgroup_command_handler(const struct external_command *ext_comma
 
 static int change_custom_var_handler(const struct external_command *ext_command, time_t entry_time)
 {
+	time_t current_time = 0L;
 	customvariablesmember *customvariablesmember_p = NULL;
 	char *varname;
 	int x = 0;
+	struct service *target_service = NULL;
+	struct host * target_host = NULL;
+	struct contact * target_contact = NULL;
+
+	time(&current_time);
+
 	switch (ext_command->id) {
 	case CMD_CHANGE_CUSTOM_SVC_VAR:
-		customvariablesmember_p = ((service *)GV("service"))->custom_variables;
+		target_service = GV_SERVICE("service");
+		target_service->last_update = current_time;
+		customvariablesmember_p = target_service->custom_variables;
 		break;
 
 	case CMD_CHANGE_CUSTOM_HOST_VAR:
-		customvariablesmember_p = ((host *)GV("host_name"))->custom_variables;
+		target_host = GV_HOST("host_name");
+		target_host->last_update = current_time;
+		customvariablesmember_p = target_host->custom_variables;
 		break;
 
 	case CMD_CHANGE_CUSTOM_CONTACT_VAR:
-		customvariablesmember_p = ((contact *)GV("contact_name"))->custom_variables;
+		target_contact = GV_CONTACT("contact_name");
+		customvariablesmember_p = target_contact->custom_variables;
 		break;
 	default:
 		nm_log(NSLOG_RUNTIME_ERROR, "Unknown custom variables modification command ID %d", (ext_command->id));
@@ -2586,16 +2618,16 @@ static int change_custom_var_handler(const struct external_command *ext_command,
 	nm_free(varname);
 	switch (ext_command->id) {
 	case CMD_CHANGE_CUSTOM_SVC_VAR:
-		((service *)GV("service"))->modified_attributes |= MODATTR_CUSTOM_VARIABLE;
-		return update_service_status(GV("service"), FALSE);
+		target_service->modified_attributes |= MODATTR_CUSTOM_VARIABLE;
+		return update_service_status(target_service, FALSE);
 		break;
 	case CMD_CHANGE_CUSTOM_HOST_VAR:
-		((host *)GV("host_name"))->modified_attributes |= MODATTR_CUSTOM_VARIABLE;
-		return update_host_status(GV("host_name"), FALSE);
+		target_host->modified_attributes |= MODATTR_CUSTOM_VARIABLE;
+		return update_host_status(target_host, FALSE);
 		break;
 	case CMD_CHANGE_CUSTOM_CONTACT_VAR:
-		((contact *)GV("contact_name"))->modified_attributes |= MODATTR_CUSTOM_VARIABLE;
-		return update_contact_status(GV("contact_name"), FALSE);
+		target_contact->modified_attributes |= MODATTR_CUSTOM_VARIABLE;
+		return update_contact_status(target_contact, FALSE);
 		break;
 	default:
 		nm_log(NSLOG_RUNTIME_ERROR, "Unknown custom variables modification command ID %d", (ext_command->id));
@@ -3273,6 +3305,10 @@ void register_core_commands(void)
 	core_command = command_create("CHANGE_RETRY_HOST_CHECK_INTERVAL", host_command_handler,
 	                              "Changes the retry check interval for a particular host.", "host=host_name;timestamp=check_interval");
 	command_register(core_command, CMD_CHANGE_RETRY_HOST_CHECK_INTERVAL);
+
+	core_command = command_create("LOG", global_command_handler,
+	                              "Adds custom entry to the default log file.", NULL);
+	command_register(core_command, CMD_LOG);
 }
 
 /******************************************************************/
@@ -3414,6 +3450,8 @@ int process_external_command(char *cmd, int mode, GError **error)
 		/* passive checks are logged in checks.c as well, as some my bypass external commands by getting dropped in checkresults dir */
 		if (log_passive_checks == TRUE)
 			nm_log(NSLOG_PASSIVE_CHECK, "%s", temp_buffer);
+	} else if (id == CMD_LOG) {
+		/* skip loging same message twice */
 	} else if (log_external_commands == TRUE) {
 		nm_log(NSLOG_EXTERNAL_COMMAND, "%s", temp_buffer);
 	}

@@ -47,6 +47,7 @@ void setup(void)
 	init_objects_service(2);
 	init_objects_command(1);
 	initialize_downtime_data();
+	initialize_comment_data();
 	initialize_retention_data();
 	workdir = getcwd(NULL, 0);
 
@@ -320,7 +321,7 @@ START_TEST(host_downtime_id_retained_across_reload)
 
 	dt = find_downtime(ANY_DOWNTIME, downtime_id);
 	ck_assert(dt != NULL);
-	ck_assert(0 == dt->comment_id);
+	ck_assert(1 == dt->comment_id);
 
 	ck_assert(OK == handle_scheduled_downtime(dt));
 	comment_id = dt->comment_id;

@@ -56,6 +56,15 @@ int prepend_unique_object_to_objectlist(objectlist **list, void *object_ptr, int
  * @returns OK if successful, OBJECTLIST_DUPE if the element was already in the list, ERROR otherwise.
  */
 int prepend_unique_object_to_objectlist_ptr(objectlist **list, void *object_ptr, int (*comparator)(const void *a, const void *b, void *user_data), void *user_data);
+
+/**
+ * Remove first matching object_ptr from the list.
+ * @param list An reference to an objectlist. Note that an empty objectlist is just NULL.
+ * @param object_ptr The object you want to remove from the list.
+ * @returns OK if successful, ERROR otherwise.
+ */
+int remove_object_from_objectlist(objectlist **list, void *object_ptr);
+
 /**
  * Free all the allocated memory of the objectlist. Note: this will completely
  * orphan any allocated memory inside the objectlist.

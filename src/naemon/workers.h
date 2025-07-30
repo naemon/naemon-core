@@ -12,6 +12,10 @@
 
 #define WPROC_FORCE  (1 << 0)
 
+#ifndef ETIME
+#define ETIME ETIMEDOUT
+#endif
+
 NAGIOS_BEGIN_DECL
 
 typedef struct wproc_result {

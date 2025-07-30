@@ -10,6 +10,13 @@
 ##############################################################################
 
 
+# BASE DIRECTORY
+# All (not absolute) paths in this config file are relative to the folder of
+# the naemon.cfg file. If you want use paths relative to a different folder,
+# use this option.
+#config_rel_path=@pkgconfdir@
+
+
 # LOG FILE
 # This is the main log file where service and host events are logged
 # for historical purposes.  This should be the first option specified
@@ -274,6 +281,15 @@ log_passive_checks=1
 
 
 
+# GLOBAL NOTIFICATIONS LOGGING OPTION
+# If you don't want Naemon to log global notifications, set
+# this value to 0.  If they should be logged, set
+# this value to 1.
+
+log_global_notifications=1
+
+
+
 # GLOBAL HOST AND SERVICE EVENT HANDLERS
 # These options allow you to specify a host and service event handler
 # command that is to be run for every host or service state change.
@@ -285,6 +301,19 @@ log_passive_checks=1
 
 #global_host_event_handler=somecommand
 #global_service_event_handler=somecommand
+
+
+
+# GLOBAL HOST AND SERVICE NOTIFICATION HANDLERS
+# These options allow you to specify a host and service notification handler
+# command that is to be run for every host or service.
+# The global notification handler is executed immediately prior to the other
+# notifications that you have optionally specified in each host or
+# service definition. The command argument is the short name of a
+# command definition that you define in your host configuration file.
+
+#global_host_notification_handler=somecommand
+#global_service_notification_handler=somecommand
 
 
 
@@ -1041,18 +1070,27 @@ allow_empty_hostgroup_assignment=0
 # This option will disable all service checks if the host is not in an UP state
 #
 # While desirable in some environments, enabling this value can distort report
-# values as the expected quantity of checks will not have been performed
-
+# values as the expected quantity of checks will not have been performed.
+# Set service_skip_check_host_down_status to -2 to mitigate this.
 #host_down_disable_service_checks=0
+
+# DISABLE SERVICE CHECKS WHEN SERVICE PARENTS DOWN
+# This option will disable all service checks if the service parents are not in an UP state
+#
+# While desirable in some environments, enabling this value can distort report
+# values as the expected quantity of checks will not have been performed.
+# Set service_skip_check_dependency_status to -2 to mitigate this.
+#service_parents_disable_service_checks=0
 
 # SET SERVICE/HOST STATUS WHEN SERVICE CHECK SKIPPED
 # These options will allow you to set the status of a service when its
-# service check is skipped due to one of two reasons:
-# 1) failed dependency check; 2) host not up
+# service check is skipped due to the following reasons:
+# 1) failed dependency check; 2) host not up 3) service parents failed
 # Number 2 can only happen if 'host_down_disable_service_checks' above
 # is set to 1.
 # Valid values for the service* options are:
 #     -1     Do not change the service status (default)
+#     -2     Keep service running as long as it is ok/warning.
 #      0     Set the service status to STATE_OK
 #      1     Set the service status to STATE_WARNING
 #      2     Set the service status to STATE_CRITICAL
@@ -1064,6 +1102,7 @@ allow_empty_hostgroup_assignment=0
 # status of a host when its check is skipped due to a failed dependency check.
 # Valid values for the host_dependency_skip_check_status are:
 #     -1     Do not change the service status (default)
+#     -2     Keep host running as long as it is up.
 #      0     Set the host status to STATE_UP
 #      1     Set the host status to STATE_DOWN
 #      2     Set the host status to STATE_UNREACHABLE

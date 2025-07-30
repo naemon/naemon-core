@@ -195,9 +195,11 @@ int neb_load_module(nebmodule *mod)
 
 	/* check the module API version */
 	if (module_version_ptr == NULL || ((*module_version_ptr) != CURRENT_NEB_API_VERSION)) {
-
-		nm_log(NSLOG_RUNTIME_ERROR, "Error: Module '%s' is using an old or unspecified version of the event broker API.  Module will be unloaded.\n", mod->filename);
-
+		if (module_version_ptr == NULL) {
+			nm_log(NSLOG_RUNTIME_ERROR, "Error: Module '%s' did not specify a version of the event broker API. Module will be unloaded.\n", mod->filename);
+		} else {
+			nm_log(NSLOG_RUNTIME_ERROR, "Error: Module '%s' is using an incompatible version (v%d) of the event broker API (current version: v%d). Module will be unloaded.\n", mod->filename, *module_version_ptr, CURRENT_NEB_API_VERSION);
+		}
 		neb_unload_module(mod, NEBMODULE_FORCE_UNLOAD, NEBMODULE_ERROR_API_VERSION);
 
 		return ERROR;

@@ -56,6 +56,7 @@ int main(int argc, char **argv)
 
 	config_file = strdup(TESTDIR "naemon.cfg");
 	config_file_dir = nspath_absolute_dirname(config_file, NULL);
+	config_rel_path = nm_strdup(config_file_dir);
 	/* read in the configuration files (main config file, resource and object config files) */
 	result = read_main_config_file(config_file);
 	ok(result == OK, "Read main configuration file okay - if fails, use nagios -v to check");
@@ -85,6 +86,7 @@ int main(int argc, char **argv)
 
 	initialize_retention_data();
 	initialize_downtime_data();
+	initialize_comment_data();
 
 	ok(xrddefault_read_state_information() == OK, "Reading retention data");
 

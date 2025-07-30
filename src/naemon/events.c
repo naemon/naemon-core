@@ -343,10 +343,10 @@ static int event_poll_full(iobroker_set *iobs, long int timeout_ms)
 	} else if (inputs > 0) {
 		log_debug_info(DEBUGL_IPC, 2, "## %d descriptors had input\n", inputs);
 		/*
+		* Event was cancelled by iobroker input:
 		* Since we got input on one of the file descriptors, this wakeup wasn't
 		* about a timed event, so start the main loop over.
 		*/
-		log_debug_info(DEBUGL_EVENTS, 0, "Event was cancelled by iobroker input\n");
 		return 0;
 	}
 

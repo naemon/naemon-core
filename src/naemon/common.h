@@ -19,8 +19,6 @@ extern char illegal_output_char_map[256];
 
 extern int log_rotation_method;
 extern int check_external_commands;
-/* set this if you're going to add a ton of comments at once */
-extern int defer_comment_sorting;
 extern unsigned long next_downtime_id;
 
 extern char *object_cache_file;
@@ -46,6 +44,7 @@ extern int obsess_over_hosts;
 extern int enable_timing_point;
 
 extern char *config_file_dir;
+extern char *config_rel_path;
 
 #ifdef HAVE_TZNAME
 #ifdef CYGWIN
@@ -325,6 +324,8 @@ NAGIOS_END_DECL
 #define CMD_ACKNOWLEDGE_HOST_PROBLEM_EXPIRE             173
 #define CMD_ACKNOWLEDGE_SVC_PROBLEM_EXPIRE              174
 
+#define CMD_LOG                                         175
+
 /* custom command introduced in Nagios 3.x */
 #define CMD_CUSTOM_COMMAND                              999
 
@@ -473,8 +474,6 @@ NAGIOS_END_DECL
 
 #define MAX_FILENAME_LENGTH			256	/* max length of path/filename that Nagios will process */
 #define MAX_INPUT_BUFFER			1024	/* size in bytes of max. input buffer (for reading files, misc stuff) */
-#define MAX_COMMAND_BUFFER                      8192    /* max length of raw or processed command line */
-
 #define MAX_DATETIME_LENGTH			48
 
 
@@ -498,4 +497,5 @@ NAGIOS_END_DECL
 #define MODATTR_CHECK_TIMEPERIOD                16384
 #define MODATTR_CUSTOM_VARIABLE                 32768
 #define MODATTR_NOTIFICATION_TIMEPERIOD         65536
+#define MODATTR_NOTIFICATION_HANDLER_COMMAND   131072
 #endif /* INCLUDE_COMMON_H */

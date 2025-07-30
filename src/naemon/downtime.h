@@ -30,7 +30,6 @@ typedef struct scheduled_downtime {
 	char *comment;
 	unsigned long comment_id;
 	int start_flex_downtime;
-	int incremented_pending_downtime; /* UNUSED */
 	struct scheduled_downtime *next;
 	struct timed_event *start_event, *stop_event;
 	struct scheduled_downtime *prev;
@@ -74,6 +73,7 @@ int sort_downtime(void);
 struct scheduled_downtime *find_downtime(int, unsigned long);
 struct scheduled_downtime *find_host_downtime(unsigned long);
 struct scheduled_downtime *find_service_downtime(unsigned long);
+int number_of_downtimes(void);
 
 void free_downtime_data(void);                                       /* frees memory allocated to scheduled downtime list */
 

@@ -125,6 +125,7 @@ int main(int argc, char **argv)
 {
 	int result;
 	int error = FALSE;
+	int display_version = FALSE;
 	int display_license = FALSE;
 	int display_help = FALSE;
 	int c = 0;
@@ -142,7 +143,7 @@ int main(int argc, char **argv)
 	static struct option long_options[] = {
 		{"help", no_argument, 0, 'h'},
 		{"version", no_argument, 0, 'V'},
-		{"license", no_argument, 0, 'V'},
+		{"license", no_argument, 0, 'L'},
 		{"verify-config", no_argument, 0, 'v'},
 		{"daemon", no_argument, 0, 'd'},
 		{"precache-objects", no_argument, 0, 'p'},
@@ -161,7 +162,7 @@ int main(int argc, char **argv)
 
 	/* get all command line arguments */
 	while (1) {
-		c = getopt(argc, argv, "+hVvdspuxTW");
+		c = getopt(argc, argv, "+hLVvdspuxTW");
 
 		if (c == -1 || c == EOF)
 			break;
@@ -174,6 +175,10 @@ int main(int argc, char **argv)
 			break;
 
 		case 'V': /* version */
+			display_version = TRUE;
+			break;
+
+		case 'L': /* license */
 			display_license = TRUE;
 			break;
 
@@ -238,17 +243,18 @@ int main(int argc, char **argv)
 		exit(nm_core_worker(worker_socket));
 	}
 
-	if (daemon_mode == FALSE) {
-		printf("\nNaemon Core " VERSION "\n");
+	if (display_version == TRUE) {
+		printf("Naemon Core " VERSION "\n");
+
+		exit(OK);
+	}
+
+	if (display_license == TRUE) {
 		printf("Copyright (c) 2013-present Naemon Core Development Team and Community Contributors\n");
 		printf("Copyright (c) 2009-2013 Nagios Core Development Team and Community Contributors\n");
 		printf("Copyright (c) 1999-2009 Ethan Galstad\n");
-		printf("License: GPL\n\n");
+		printf("License: GPLv2\n\n");
 		printf("Website: https://www.naemon.io\n");
-	}
-
-	/* just display the license */
-	if (display_license == TRUE) {
 
 		printf("This program is free software; you can redistribute it and/or modify\n");
 		printf("it under the terms of the GNU General Public License version 2 as\n");
@@ -284,6 +290,10 @@ int main(int argc, char **argv)
 		printf("  -W, --worker /path/to/socket Act as a worker for an already running daemon\n");
 		printf("  --allow-root                 Let naemon run as root. THIS IS NOT RECOMMENDED AT ALL.\n");
 		printf("\n");
+		printf("  -h, --help                   Print this help and exit\n");
+		printf("  -V, --version                Print the version and exit\n");
+		printf("  -L, --license                Print the license and exit\n");
+		printf("\n");
 		printf("Visit the Naemon website at https://www.naemon.io/ for bug fixes, new\n");
 		printf("releases, online documentation, FAQs and more...\n");
 		printf("\n");
@@ -313,6 +323,8 @@ int main(int argc, char **argv)
 	}
 
 	config_file_dir = nspath_absolute_dirname(config_file, NULL);
+	if(config_file_dir != NULL)
+		config_rel_path = nm_strdup(config_file_dir);
 
 	/*
 	 * Set the signal handler for the SIGXFSZ signal here because
@@ -423,8 +435,9 @@ int main(int argc, char **argv)
 
 		/* make valgrind shut up about still reachable memory */
 		neb_free_module_list();
-		free(config_file_dir);
-		free(config_file);
+		nm_free(config_file_dir);
+		nm_free(config_rel_path);
+		nm_free(config_file);
 
 		exit(result);
 	}
@@ -543,6 +556,33 @@ int main(int argc, char **argv)
 		nerd_init();
 		timing_point("Initialized NERD\n");
 
+		/*
+		 * the queue has to be initialized before loading the neb modules
+		 * to give them the chance to register user events.
+		 * (initializing event queue requires number of objects, so do
+		 * this after parsing the objects)
+		 */
+		timing_point("Initializing Event queue\n");
+		init_event_queue();
+		timing_point("Initialized Event queue\n");
+
+		registered_commands_init(200);
+		register_core_commands();
+		/* fire up command file worker */
+		timing_point("Launching command file worker\n");
+		launch_command_file_worker();
+		timing_point("Launched command file worker\n");
+
+		/* read in all object config data after launching the command worker
+		 * to keep the memory footprint of the command worker smaller
+		 */
+		if (result == OK) {
+			nm_log(NSLOG_INFO_MESSAGE, "Reading all config object data\n");
+			timing_point("Reading all object data\n");
+			result = read_all_object_data(config_file);
+			timing_point("Read all object data\n");
+		}
+
 		/* initialize check workers */
 		timing_point("Spawning %u workers\n", wproc_num_workers_spawned);
 		if (init_workers(num_check_workers) < 0) {
@@ -559,29 +599,14 @@ int main(int argc, char **argv)
 		}
 		timing_point("Connected %u workers\n", wproc_num_workers_online);
 
-		/* read in all object config data */
-		if (result == OK) {
-			timing_point("Reading all object data\n");
-			result = read_all_object_data(config_file);
-			timing_point("Read all object data\n");
-		}
-
-		/*
-		 * the queue has to be initialized before loading the neb modules
-		 * to give them the chance to register user events.
-		 * (initializing event queue requires number of objects, so do
-		 * this after parsing the objects)
-		 */
-		timing_point("Initializing Event queue\n");
-		init_event_queue();
-		timing_point("Initialized Event queue\n");
-
 		/* load modules */
+		nm_log(NSLOG_INFO_MESSAGE, "Loading neb modules\n");
 		timing_point("Loading modules\n");
 		if (neb_load_all_modules() != OK) {
 			nm_log(NSLOG_CONFIG_ERROR, "Error: Module loading failed. Aborting.\n");
 			/* give already loaded modules a chance to deinitialize */
 			neb_unload_all_modules(NEBMODULE_FORCE_UNLOAD, NEBMODULE_NEB_SHUTDOWN);
+			shutdown_command_file_worker();
 			exit(EXIT_FAILURE);
 		}
 		timing_point("Loaded modules\n");
@@ -619,6 +644,7 @@ int main(int argc, char **argv)
 			broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_PROCESS_INITIATED, NEBATTR_SHUTDOWN_ABNORMAL);
 
 			cleanup();
+			shutdown_command_file_worker();
 			exit(ERROR);
 		}
 
@@ -638,6 +664,11 @@ int main(int argc, char **argv)
 		initialize_downtime_data();
 		timing_point("Initialized downtime data\n");
 
+		/* initialize comment data */
+		timing_point("Initializing comment data\n");
+		initialize_comment_data();
+		timing_point("Initialized comment data\n");
+
 		/* read initial service and host state information  */
 		timing_point("Initializing retention data\n");
 		initialize_retention_data();
@@ -646,11 +677,8 @@ int main(int argc, char **argv)
 		timing_point("Reading initial state information\n");
 		read_initial_state_information();
 		timing_point("Read initial state information\n");
-
-		/* initialize comment data */
-		timing_point("Initializing comment data\n");
-		initialize_comment_data();
-		timing_point("Initialized comment data\n");
+		timing_point("Restored %d downtimes\n", number_of_downtimes());
+		timing_point("Restored %d comments\n", number_of_comments());
 
 		/* initialize performance data */
 		timing_point("Initializing performance data\n");
@@ -678,13 +706,6 @@ int main(int argc, char **argv)
 		log_service_states(INITIAL_STATES, NULL);
 		timing_point("Logged initial states\n");
 
-		registered_commands_init(200);
-		register_core_commands();
-		/* fire up command file worker */
-		timing_point("Launching command file worker\n");
-		launch_command_file_worker();
-		timing_point("Launched command file worker\n");
-
 		broker_program_state(NEBTYPE_PROCESS_EVENTLOOPSTART, NEBFLAG_NONE, NEBATTR_NONE);
 
 		/* get event start time and save as macro */
@@ -700,6 +721,8 @@ int main(int argc, char **argv)
 				exit(ERROR);
 			}
 		}
+
+		nm_log(NSLOG_INFO_MESSAGE, "Naemon successfully initialized (PID=%d)\n", (int)getpid());
 
 		timing_point("Entering event execution loop\n");
 		/***** start monitoring all services *****/
@@ -767,6 +790,7 @@ int main(int argc, char **argv)
 	nm_free(lock_file);
 	nm_free(config_file);
 	nm_free(config_file_dir);
+	nm_free(config_rel_path);
 	nm_free(naemon_binary_path);
 
 	return OK;
