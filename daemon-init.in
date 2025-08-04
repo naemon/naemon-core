@@ -64,6 +64,7 @@ status() {
 }
 
 start() {
+    check_config
     test -x $exec || exit 5
     test -f $config || exit 6
     echo -n "Starting $prog: "
@@ -118,6 +119,7 @@ restart() {
 }
 
 reload() {
+    check_config
     echo -n "Reloading $prog: "
     if [ -e $pidfile ]; then
         PID=`cat $pidfile`;
@@ -131,6 +133,27 @@ reload() {
 
 force_reload() {
     restart
+}
+
+check_config() {
+	echo -n "Running configuration check... "
+
+    if type runuser >/dev/null 2>&1; then
+        runuser -s /bin/bash - $user -c "$corelimit >/dev/null 2>&1 ; $exec -vp $config" >/dev/null 2>&1;
+    else
+        /bin/su - -s /bin/sh $user -c "$corelimit >/dev/null 2>&1 ; $exec -vp $config" >/dev/null 2>&1;
+    fi
+
+    retval=$?
+
+    if [ $retval == 0 ] ;then
+        echo "OK"
+        return $retval
+    else
+        echo "CONFIG ERROR!"
+        echo "Reload/start aborted. Check your Naemon configuration."
+        exit $retval
+    fi
 }
 
 case "$1" in
@@ -168,6 +191,7 @@ case "$1" in
         restart
         ;;
     configtest|check|checkconfig)
+        check_config
         if command -v runuser >/dev/null 2>&1; then
           runuser -s /bin/bash - $user -c "$corelimit >/dev/null 2>&1 ; $exec -vp $config"
         else
