@@ -668,7 +668,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	}
 
 
-	/* increment the current attempt number if this is a soft state (service was rechecked) and last state was not ok (no ok soft recovery) */
+	/* increment the current attempt number if this is a soft state (service was rechecked) and last state was not a OK state */
 	if (temp_service->state_type == SOFT_STATE && temp_service->current_attempt < temp_service->max_attempts && temp_service->last_state != STATE_OK)
 		temp_service->current_attempt = temp_service->current_attempt + 1;
 
