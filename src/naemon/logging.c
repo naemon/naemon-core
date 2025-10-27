@@ -8,6 +8,7 @@
 #include <syslog.h>
 #include <stdarg.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 
 static FILE *debug_file_fp;
 static FILE *log_fp;
@@ -22,14 +23,36 @@ guint nm_g_log_handler_id = 0;
 
 static FILE *open_log_file(void)
 {
+	int fh;
+	struct stat st;
+
 	if (log_fp) /* keep it open unless we rotate */
 		return log_fp;
 
-	log_fp = fopen(log_file, "a+");
-	if (log_fp == NULL) {
-		if (daemon_mode == FALSE) {
+	if ((fh = open(log_file, O_RDWR|O_APPEND|O_CREAT|O_NOFOLLOW, S_IRUSR|S_IWUSR)) == -1) {
+		if (daemon_mode == FALSE)
 			printf("Warning: Cannot open log file '%s' for writing\n", log_file);
-		}
+		return NULL;
+	}
+	log_fp = fdopen(fh, "a+");
+	if (log_fp == NULL) {
+		if (daemon_mode == FALSE)
+			printf("Warning: Cannot open log file '%s' for writing\n", log_file);
+		return NULL;
+	}
+
+	if ((fstat(fh, &st)) == -1) {
+		log_fp = NULL;
+		close(fh);
+		if (daemon_mode == FALSE)
+			printf("Warning: Cannot fstat log file '%s'\n", log_file);
+		return NULL;
+	}
+	if (st.st_nlink != 1 || (st.st_mode & S_IFMT) != S_IFREG) {
+		log_fp = NULL;
+		close(fh);
+		if (daemon_mode == FALSE)
+			printf("Warning: log file '%s' has an invalid mode\n", log_file);
 		return NULL;
 	}
 
@@ -237,6 +260,8 @@ int write_log_file_info(time_t *timestamp)
 /* opens the debug log for writing */
 int open_debug_log(void)
 {
+	int fh;
+	struct stat st;
 
 	/* don't do anything if we're not actually running... */
 	if (verify_config)
@@ -246,10 +271,23 @@ int open_debug_log(void)
 	if (debug_level == DEBUGL_NONE)
 		return OK;
 
-	if ((debug_file_fp = fopen(debug_file, "a+")) == NULL)
+	if ((fh = open(debug_file, O_RDWR|O_APPEND|O_CREAT|O_NOFOLLOW, S_IRUSR|S_IWUSR)) == -1)
+		return ERROR;
+	if((debug_file_fp = fdopen(fh, "a+")) == NULL)
 		return ERROR;
 
-	(void)fcntl(fileno(debug_file_fp), F_SETFD, FD_CLOEXEC);
+	if ((fstat(fh, &st)) == -1) {
+		debug_file_fp = NULL;
+		close(fh);
+		return ERROR;
+	}
+	if (st.st_nlink != 1 || (st.st_mode & S_IFMT) != S_IFREG) {
+		debug_file_fp = NULL;
+		close(fh);
+		return ERROR;
+	}
+
+	(void)fcntl(fh, F_SETFD, FD_CLOEXEC);
 
 	return OK;
 }
