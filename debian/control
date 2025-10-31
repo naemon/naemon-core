@@ -24,7 +24,6 @@ Architecture: any
 Depends:
     adduser,
     coreutils (>= 4.5.3),
-    lsb-base (>= 3.0-6),
     bsd-mailx | mailx | sendemail,
     libnaemon (>= ${binary:Version})
     ${misc:Depends},
