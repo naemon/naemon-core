@@ -204,7 +204,7 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 				int keep_running = FALSE;
 				switch(service_skip_check_dependency_status) {
 					case SKIP_KEEP_RUNNING_WHEN_UP:
-						if (temp_service->current_state <= STATE_WARNING) {
+						if (temp_service->current_state <= STATE_WARNING && temp_service->has_been_checked == TRUE) {
 							keep_running = TRUE;
 						}
 						break;
