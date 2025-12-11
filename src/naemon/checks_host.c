@@ -1242,7 +1242,7 @@ int check_host_dependencies(host *hst, int dependency_type)
 		/* skip this dependency if it has a timeperiod and the current time isn't valid */
 		time(&current_time);
 		if (temp_dependency->dependency_period != NULL && check_time_against_period(current_time, temp_dependency->dependency_period_ptr) == ERROR)
-			return FALSE;
+			continue;
 
 		/* get the status to use (use last hard state if its currently in a soft state) */
 		if (temp_host->state_type == SOFT_STATE && soft_state_dependencies == FALSE)
