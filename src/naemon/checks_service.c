@@ -495,6 +495,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	service *master_service = NULL;
 	int state_changes_use_cached_state = TRUE; /* TODO - 09/23/07 move this to a global variable */
 	int flapping_check_done = FALSE;
+	int hard_recovery_after_soft = FALSE;
 
 	/* make sure we have what we need */
 	if (temp_service == NULL || queued_check_result == NULL)
@@ -667,8 +668,8 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	}
 
 
-	/* increment the current attempt number if this is a soft state (service was rechecked) */
-	if (temp_service->state_type == SOFT_STATE && (temp_service->current_attempt < temp_service->max_attempts))
+	/* increment the current attempt number if this is a soft state (service was rechecked) and last state was not a OK state */
+	if (temp_service->state_type == SOFT_STATE && temp_service->current_attempt < temp_service->max_attempts && temp_service->last_state != STATE_OK)
 		temp_service->current_attempt = temp_service->current_attempt + 1;
 
 
@@ -692,6 +693,12 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	if (temp_service->current_attempt >= temp_service->max_attempts && temp_service->current_state != temp_service->last_hard_state) {
 		log_debug_info(DEBUGL_CHECKS, 2, "Service had a HARD STATE CHANGE!!\n");
 		hard_state_change = TRUE;
+	}
+
+	/* identify a hard recovery scenario where a soft recovery has stabilized to an OK state */
+	if (temp_service->state_type == SOFT_STATE && temp_service->last_state == STATE_OK && temp_service->current_state == STATE_OK) {
+		log_debug_info(DEBUGL_CHECKS, 2, "Service had a HARD RECOVERY AFTER SOFT RECOVERY!!\n");
+		hard_recovery_after_soft = TRUE;
 	}
 
 	/* a state change occurred... */
@@ -852,18 +859,39 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 		/* else no service state change has occurred... */
 		else {
-			log_debug_info(DEBUGL_CHECKS, 1, "Service did not change state.\n");
+
+			/* no state change detected, service remains in the same status */
+			if (hard_recovery_after_soft == FALSE) {
+				log_debug_info(DEBUGL_CHECKS, 1, "Service did not change state.\n");
+
+			}
+
+			/* service transitioned from SOFT to HARD recovery, update state and generate alert */
+			else {
+				log_debug_info(DEBUGL_CHECKS, 1, "Service experienced a HARD RECOVERY AFTER A SOFT RECOVERY.\n");
+
+				/* reset state type to HARD for accurate log message classification */
+				temp_service->state_type = HARD_STATE;
+
+				/* log the hard recovery */
+				log_service_event(temp_service);
+				alert_recorded = NEBATTR_CHECK_ALERT;
+			}
 		}
 
 		/* should we obsessive over service checks? */
 		if (obsess_over_services == TRUE)
 			obsessive_compulsive_service_check_processor(temp_service);
 
-		/* reset all service variables because its okay now... */
+		/* reset state type and last hard state service variables when its ok hard */
+		if (temp_service->state_type == HARD_STATE) {
+			temp_service->state_type = HARD_STATE;
+			temp_service->last_hard_state = STATE_OK;
+		}
+
+		/* reset all other service variables because its okay now... */
 		temp_service->host_problem_at_last_check = FALSE;
 		temp_service->current_attempt = 1;
-		temp_service->state_type = HARD_STATE;
-		temp_service->last_hard_state = STATE_OK;
 		temp_service->last_notification = (time_t)0;
 		temp_service->next_notification = (time_t)0;
 		temp_service->current_notification_number = 0;
