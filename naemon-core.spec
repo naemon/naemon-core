@@ -50,6 +50,9 @@ Requires(pre): shadow
 %if 0%{?suse_version} < 1315
 Requires(pre): shadow-utils
 %endif
+
+# satisfy opensuse 16 rpmlint issue: E: lto-no-text-in-archive
+%define _lto_cflags %{nil}
 %endif
 Requires:  logrotate
 Requires:  libnaemon >= %{version}
