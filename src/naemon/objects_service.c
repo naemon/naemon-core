@@ -25,7 +25,7 @@ int init_objects_service(int elems)
 }
 
 /* destroy a single service object, set truncate_lists to TRUE when lists should be simply emptied instead of removing item by item.
- * Enable truncate_list when removing all objects and disble when removing a specific one. */
+ * Enable truncate_list when removing all objects and disable when removing a specific one. */
 void destroy_objects_service(int truncate_lists)
 {
 	unsigned int i;
@@ -273,6 +273,7 @@ void destroy_service(service *this_service, int truncate_lists)
 	struct contactgroupsmember *this_contactgroupsmember, *next_contactgroupsmember;
 	struct contactsmember *this_contactsmember, *next_contactsmember;
 	struct customvariablesmember *this_customvariablesmember, *next_customvariablesmember;
+	struct servicesmember *this_servicesmember, *next_servicesmember;
 	struct objectlist *slavelist;
 
 	if (!this_service)
@@ -302,6 +303,14 @@ void destroy_service(service *this_service, int truncate_lists)
 		nm_free(this_customvariablesmember->variable_value);
 		nm_free(this_customvariablesmember);
 		this_customvariablesmember = next_customvariablesmember;
+	}
+
+	/* free memory for service parents */
+	this_servicesmember = this_service->parents;
+	while (this_servicesmember != NULL) {
+		next_servicesmember = this_servicesmember->next;
+		nm_free(this_servicesmember);
+		this_servicesmember = next_servicesmember;
 	}
 
 	/* free memory for service groups */
