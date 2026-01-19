@@ -460,6 +460,7 @@ static void xodtemplate_free_memory(void)
 			nm_free(this_service->icon_image_alt);
 			nm_free(this_service->hostgroup_name);
 			nm_free(this_service->service_description);
+			nm_free(this_service->parents);
 		}
 		nm_free(this_service);
 	}
