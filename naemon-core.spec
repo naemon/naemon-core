@@ -296,7 +296,6 @@ exit 0
 %doc AUTHORS
 %doc COPYING
 %doc ChangeLog
-%doc INSTALL
 %doc LEGAL
 %doc NEWS
 %doc README
