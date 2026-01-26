@@ -465,6 +465,7 @@ int iobroker_poll(iobroker_set *iobs, int timeout)
 int iobroker_push(iobroker_set *iobs)
 {
 	int i, result = 1;
+	int num_fds = 0;
 
 	if (!iobs)
 		return 1;
@@ -472,9 +473,13 @@ int iobroker_push(iobroker_set *iobs)
 	for (i = 0; i < iobs->max_fds; i++) {
 		iobroker_fd *s = NULL;
 
+		if (num_fds == iobs->num_fds)
+			break;
+
 		if (!iobs->iobroker_fds[i])
 			continue;
 
+		num_fds++;
 		s = iobs->iobroker_fds[i];
 		if (s->fd > 0 && nm_bufferqueue_get_available(s->bq_out)) {
 			int ret;
