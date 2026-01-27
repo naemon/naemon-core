@@ -57,6 +57,9 @@ Requires(pre): shadow-utils
 Requires:  logrotate
 Requires:  libnaemon >= %{version}
 
+Provides: user(naemon)
+Provides: group(naemon)
+
 %description
 Naemon is an application, system and network monitoring application.
 It can escalate problems by email, pager or any other medium. It is
