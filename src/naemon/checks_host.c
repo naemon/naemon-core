@@ -106,10 +106,11 @@ void checks_init_hosts(void)
 
 void schedule_next_host_check(host *hst, time_t delay, int options)
 {
-	time_t current_time = time(NULL);
+	struct timeval current_time;
+	tv_set(&current_time);
 
 	/* A closer check is already scheduled, skip this scheduling */
-	if (hst->next_check_event != NULL && hst->next_check < delay + current_time) {
+	if (hst->next_check_event != NULL && hst->next_check < delay + current_time.tv_sec) {
 		/*... unless this is a forced check or postponement is allowed*/
 		if (!(options & (CHECK_OPTION_FORCE_EXECUTION | CHECK_OPTION_ALLOW_POSTPONE)))
 			return;
@@ -122,8 +123,8 @@ void schedule_next_host_check(host *hst, time_t delay, int options)
 
 	/* Schedule the event */
 	hst->check_options = options;
-	hst->next_check = delay + current_time;
-	hst->last_update = current_time;
+	hst->next_check = delay + current_time.tv_sec;
+	tv_set(&hst->last_update);
 	hst->next_check_event = schedule_event(delay, handle_host_check_event, (void *)hst);
 
 	/* update the status log, since next_check and check_options is updated */
@@ -148,7 +149,7 @@ static void handle_host_check_event(struct nm_event_execution_properties *evprop
 	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 		/* get event latency */
 		latency = evprop->attributes.timed.latency;
-		gettimeofday(&tv, NULL);
+		tv_set(&tv);
 
 		/* When the callback is called, the pointer to the timed event is invalid */
 		hst->next_check_event = NULL;
@@ -208,7 +209,8 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	int runchk_result = OK;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	int neb_result = OK;
-	time_t now = time(NULL);
+	struct timeval now;
+	tv_set(&now);
 
 	log_debug_info(DEBUGL_CHECKS, 0, "** Running async check of host '%s'...\n", hst->name);
 
@@ -225,7 +227,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 		}
 
 		/* abort if check was recently completed */
-		if (hst->last_check + cached_host_check_horizon > now && hst->last_check <= now) {
+		if (hst->last_check + cached_host_check_horizon > now.tv_sec && hst->last_check <= now.tv_sec) {
 			log_debug_info(DEBUGL_CHECKS, 0, "Host '%s' was last checked within its cache horizon. Aborting check\n", hst->name);
 			return ERROR;
 		}
@@ -277,7 +279,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	start_time.tv_usec = 0L;
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
-	hst->last_update = now;
+	tv_set(&hst->last_update);
 
 	neb_result = broker_host_check(NEBTYPE_HOSTCHECK_ASYNC_PRECHECK, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, host_check_timeout, FALSE, 0, NULL, NULL, NULL, NULL, NULL);
 
@@ -321,7 +323,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	}
 
 	/* get the command start time */
-	gettimeofday(&start_time, NULL);
+	tv_set(&start_time);
 
 	cr = nm_calloc(1, sizeof(*cr));
 	init_check_result(cr);
@@ -385,7 +387,6 @@ int update_host_state_post_check(struct host *hst, struct check_result *cr)
 {
 	int result;
 	char *temp_ptr = NULL;
-	time_t now = time(NULL);
 
 	if (!hst || !cr)
 		return ERROR;
@@ -426,7 +427,7 @@ int update_host_state_post_check(struct host *hst, struct check_result *cr)
 
 	/* get the last check time */
 	hst->last_check = cr->start_time.tv_sec;
-	hst->last_update = now;
+	tv_set(&hst->last_update);
 
 	/* save the old host state */
 	hst->last_state = hst->current_state;
@@ -563,7 +564,6 @@ int update_host_state_post_check(struct host *hst, struct check_result *cr)
 int handle_async_host_check_result(host *temp_host, check_result *cr)
 {
 	int alert_recorded = NEBATTR_NONE;
-	struct timeval end_time_hires;
 	struct host pre;
 	int first_recorded_state = NEBATTR_NONE;
 
@@ -610,9 +610,6 @@ int handle_async_host_check_result(host *temp_host, check_result *cr)
 
 	log_debug_info(DEBUGL_CHECKS, 1, "** Async check result for host '%s' handled: new state=%d\n", temp_host->name, temp_host->current_state);
 
-	/* high resolution end time for event broker */
-	gettimeofday(&end_time_hires, NULL);
-
 	broker_host_check(
 	    NEBTYPE_HOSTCHECK_PROCESSED,
 	    NEBFLAG_NONE,
@@ -635,7 +632,7 @@ int handle_async_host_check_result(host *temp_host, check_result *cr)
 	    temp_host->perf_data,
 	    cr);
 
-	temp_host->last_update = end_time_hires.tv_sec;
+	tv_set(&temp_host->last_update);
 	return OK;
 }
 
@@ -643,7 +640,6 @@ static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags)
 {
 	check_result *cr = (check_result *)arg;
 	struct host *hst;
-	time_t now = time(NULL);
 
 	/* decrement the number of host checks still out there... */
 	if (currently_running_host_checks > 0)
@@ -653,7 +649,7 @@ static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags)
 		hst = find_host(cr->host_name);
 		if (hst) {
 			hst->is_executing = FALSE;
-			hst->last_update = now;
+			tv_set(&hst->last_update);
 			memcpy(&cr->rusage, &wpres->rusage, sizeof(wpres->rusage));
 			cr->start_time.tv_sec = wpres->start.tv_sec;
 			cr->start_time.tv_usec = wpres->start.tv_usec;
@@ -1161,14 +1157,14 @@ static void check_host_result_freshness(struct nm_event_execution_properties *ev
 static void check_for_orphaned_hosts_eventhandler(struct nm_event_execution_properties *evprop)
 {
 	host *temp_host = NULL;
-	time_t current_time = 0L;
 	time_t expected_time = 0L;
+	struct timeval current_time;
 
 	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 		schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_for_orphaned_hosts_eventhandler, evprop->user_data);
 
 		/* get the current time */
-		time(&current_time);
+		tv_set(&current_time);
 
 		/* check all hosts... */
 		for (temp_host = host_list; temp_host != NULL; temp_host = temp_host->next) {
@@ -1185,7 +1181,7 @@ static void check_for_orphaned_hosts_eventhandler(struct nm_event_execution_prop
 			expected_time = (time_t)(temp_host->next_check + temp_host->latency + host_check_timeout + check_reaper_interval + 600);
 
 			/* this host was supposed to have executed a while ago, but for some reason the results haven't come back in... */
-			if (expected_time < current_time) {
+			if (expected_time < current_time.tv_sec) {
 
 				/* log a warning */
 				nm_log(NSLOG_RUNTIME_WARNING,
@@ -1200,7 +1196,7 @@ static void check_for_orphaned_hosts_eventhandler(struct nm_event_execution_prop
 				/* disable the executing flag */
 				temp_host->is_executing = FALSE;
 
-				temp_host->last_update = current_time;
+				tv_set(&temp_host->last_update);
 
 				/* schedule an immediate check of the host */
 				schedule_next_host_check(temp_host, 0, CHECK_OPTION_ORPHAN_CHECK);

@@ -242,7 +242,7 @@ static int run_global_service_event_handler(nagios_macros *mac, service *svc)
 	log_debug_info(DEBUGL_EVENTHANDLERS, 1, "Running global event handler for service '%s' on host '%s'...\n", svc->description, svc->host_name);
 
 	/* get start time */
-	gettimeofday(&start_time, NULL);
+	tv_set(&start_time);
 
 	get_raw_command_line_r(mac, global_service_event_handler_ptr, global_service_event_handler, &raw_command, macro_options);
 	if (raw_command == NULL) {
@@ -285,7 +285,7 @@ static int run_global_service_event_handler(nagios_macros *mac, service *svc)
 		nm_log(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, "Warning: Global service event handler command '%s' timed out after %d seconds\n", processed_command, event_handler_timeout);
 
 	/* get end time */
-	gettimeofday(&end_time, NULL);
+	tv_set(&end_time);
 
 	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, GLOBAL_SERVICE_EVENTHANDLER, (void *)svc, svc->current_state, svc->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, global_service_event_handler, processed_command, command_output);
 
@@ -324,7 +324,7 @@ static int run_service_event_handler(nagios_macros *mac, service *svc)
 	log_debug_info(DEBUGL_EVENTHANDLERS, 1, "Running event handler for service '%s' on host '%s'...\n", svc->description, svc->host_name);
 
 	/* get start time */
-	gettimeofday(&start_time, NULL);
+	tv_set(&start_time);
 
 	get_raw_command_line_r(mac, svc->event_handler_ptr, svc->event_handler, &raw_command, macro_options);
 	if (raw_command == NULL)
@@ -366,7 +366,7 @@ static int run_service_event_handler(nagios_macros *mac, service *svc)
 		nm_log(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, "Warning: Service event handler command '%s' timed out after %d seconds\n", processed_command, event_handler_timeout);
 
 	/* get end time */
-	gettimeofday(&end_time, NULL);
+	tv_set(&end_time);
 
 	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_EVENTHANDLER, (void *)svc, svc->current_state, svc->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, svc->event_handler, processed_command, command_output);
 
@@ -444,7 +444,7 @@ static int run_global_host_event_handler(nagios_macros *mac, const host *const h
 	log_debug_info(DEBUGL_EVENTHANDLERS, 1, "Running global event handler for host '%s'..\n", hst->name);
 
 	/* get start time */
-	gettimeofday(&start_time, NULL);
+	tv_set(&start_time);
 
 	get_raw_command_line_r(mac, global_host_event_handler_ptr, global_host_event_handler, &raw_command, macro_options);
 	if (raw_command == NULL)
@@ -486,7 +486,7 @@ static int run_global_host_event_handler(nagios_macros *mac, const host *const h
 		nm_log(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, "Warning: Global host event handler command '%s' timed out after %d seconds\n", processed_command, event_handler_timeout);
 
 	/* get end time */
-	gettimeofday(&end_time, NULL);
+	tv_set(&end_time);
 
 	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, GLOBAL_HOST_EVENTHANDLER, (void *)hst, hst->current_state, hst->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, global_host_event_handler, processed_command, command_output);
 
@@ -525,7 +525,7 @@ static int run_host_event_handler(nagios_macros *mac, const host *const hst)
 	log_debug_info(DEBUGL_EVENTHANDLERS, 1, "Running event handler for host '%s'..\n", hst->name);
 
 	/* get start time */
-	gettimeofday(&start_time, NULL);
+	tv_set(&start_time);
 
 	get_raw_command_line_r(mac, hst->event_handler_ptr, hst->event_handler, &raw_command, macro_options);
 	if (raw_command == NULL)
@@ -567,7 +567,7 @@ static int run_host_event_handler(nagios_macros *mac, const host *const hst)
 		nm_log(NSLOG_EVENT_HANDLER | NSLOG_RUNTIME_WARNING, "Warning: Host event handler command '%s' timed out after %d seconds\n", processed_command, event_handler_timeout);
 
 	/* get end time */
-	gettimeofday(&end_time, NULL);
+	tv_set(&end_time);
 
 	broker_event_handler(NEBTYPE_EVENTHANDLER_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_EVENTHANDLER, (void *)hst, hst->current_state, hst->state_type, start_time, end_time, exectime, event_handler_timeout, early_timeout, result, hst->event_handler, processed_command, command_output);
 

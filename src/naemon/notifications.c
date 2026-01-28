@@ -347,7 +347,6 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	notification *notification_list = NULL;
 	notification *temp_notification = NULL;
 	contact *temp_contact = NULL;
-	time_t current_time;
 	struct timeval start_time;
 	struct timeval end_time;
 	int escalated = FALSE;
@@ -360,8 +359,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	neb_cb_result *neb_result = NULL;
 
 	/* get the current time */
-	time(&current_time);
-	gettimeofday(&start_time, NULL);
+	tv_set(&start_time);
 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 0, "** Service Notification Attempt ** Host: '%s', Service: '%s', Type: %s, Options: %d, Current State: %d, Last Notification: %s\n", svc->host_name, svc->description, notification_reason_name(type), options, svc->current_state, ctime(&svc->last_notification));
 
@@ -537,16 +535,16 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 			if (contacts_notified > 0) {
 
 				/* calculate the next acceptable re-notification time */
-				svc->next_notification = get_next_service_notification_time(svc, current_time);
+				svc->next_notification = get_next_service_notification_time(svc, start_time.tv_sec);
 
 				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "%d contacts were notified.  Next possible notification time: %s\n", contacts_notified, ctime(&svc->next_notification));
 
 				/* update the last notification time for this service (this is needed for rescheduling later notifications) */
-				svc->last_notification = current_time;
+				svc->last_notification = start_time.tv_sec;
 
 				/* update notifications flags */
 				add_notified_on(svc, svc->current_state);
-				svc->last_update = current_time;
+				tv_set(&svc->last_update);
 			}
 
 			/* we didn't end up notifying anyone */
@@ -556,7 +554,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 				svc->current_notification_number--;
 
 				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "No contacts were notified.  Next possible notification time: %s\n", ctime(&svc->next_notification));
-				svc->last_update = current_time;
+				tv_set(&svc->last_update);
 			}
 		}
 
@@ -577,7 +575,7 @@ int service_notification(service *svc, int type, char *not_author, char *not_dat
 	nm_free(mac.x[MACRO_NOTIFICATIONISESCALATED]);
 
 	/* get the time we finished */
-	gettimeofday(&end_time, NULL);
+	tv_set(&end_time);
 
 	neb_resultset = broker_notification_data(NEBTYPE_NOTIFICATION_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, start_time, end_time, (void *)svc, not_author, not_data, escalated, contacts_notified);
 	neb_cb_resultset_destroy(neb_resultset);
@@ -961,7 +959,7 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "** Notifying contact '%s'\n", cntct->name);
 
 	/* get start time */
-	gettimeofday(&start_time, NULL);
+	tv_set(&start_time);
 
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
@@ -975,7 +973,7 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 	for (temp_commandsmember = cntct->service_notification_commands; temp_commandsmember != NULL; temp_commandsmember = temp_commandsmember->next) {
 
 		/* get start time */
-		gettimeofday(&method_start_time, NULL);
+		tv_set(&method_start_time);
 
 		method_end_time.tv_sec = 0L;
 		method_end_time.tv_usec = 0L;
@@ -1033,13 +1031,13 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 		nm_free(processed_command);
 
 		/* get end time */
-		gettimeofday(&method_end_time, NULL);
+		tv_set(&method_end_time);
 
 		broker_contact_notification_method_data(NEBTYPE_CONTACTNOTIFICATIONMETHOD_END, NEBFLAG_NONE, NEBATTR_NONE, SERVICE_NOTIFICATION, type, method_start_time, method_end_time, (void *)svc, cntct, temp_commandsmember->command, not_author, not_data, escalated);
 	}
 
 	/* get end time */
-	gettimeofday(&end_time, NULL);
+	tv_set(&end_time);
 
 	/* update the contact's last service notification time */
 	cntct->last_service_notification = start_time.tv_sec;
@@ -1236,7 +1234,6 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 	notification *notification_list = NULL;
 	notification *temp_notification = NULL;
 	contact *temp_contact = NULL;
-	time_t current_time;
 	struct timeval start_time;
 	struct timeval end_time;
 	int escalated = FALSE;
@@ -1249,8 +1246,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 	neb_cb_result *neb_result = NULL;
 
 	/* get the current time */
-	time(&current_time);
-	gettimeofday(&start_time, NULL);
+	tv_set(&start_time);
 
 	log_debug_info(DEBUGL_NOTIFICATIONS, 0, "** Host Notification Attempt ** Host: '%s', Type: %s, Options: %d, Current State: %d, Last Notification: %s\n", hst->name, notification_reason_name(type), options, hst->current_state, ctime(&hst->last_notification));
 
@@ -1422,16 +1418,16 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 			if (contacts_notified > 0) {
 
 				/* calculate the next acceptable re-notification time */
-				hst->next_notification = get_next_host_notification_time(hst, current_time);
+				hst->next_notification = get_next_host_notification_time(hst, start_time.tv_sec);
 
 				/* update the last notification time for this host (this is needed for scheduling the next problem notification) */
-				hst->last_notification = current_time;
+				hst->last_notification = start_time.tv_sec;
 
 				/* update notifications flags */
 				add_notified_on(hst, hst->current_state);
 
 				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "%d contacts were notified.  Next possible notification time: %s\n", contacts_notified, ctime(&hst->next_notification));
-				hst->last_update = current_time;
+				tv_set(&hst->last_update);
 			}
 
 			/* we didn't end up notifying anyone */
@@ -1441,7 +1437,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 				hst->current_notification_number--;
 
 				log_debug_info(DEBUGL_NOTIFICATIONS, 0, "No contacts were notified.  Next possible notification time: %s\n", ctime(&hst->next_notification));
-				hst->last_update = current_time;
+				tv_set(&hst->last_update);
 			}
 		}
 
@@ -1461,7 +1457,7 @@ int host_notification(host *hst, int type, char *not_author, char *not_data, int
 	nm_free(mac.x[MACRO_NOTIFICATIONISESCALATED]);
 
 	/* get the time we finished */
-	gettimeofday(&end_time, NULL);
+	tv_set(&end_time);
 
 	neb_resultset = broker_notification_data(NEBTYPE_NOTIFICATION_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, start_time, end_time, (void *)hst, not_author, not_data, escalated, contacts_notified);
 	neb_cb_resultset_destroy(neb_resultset);
@@ -1807,7 +1803,7 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 	log_debug_info(DEBUGL_NOTIFICATIONS, 2, "** Notifying contact '%s'\n", cntct->name);
 
 	/* get start time */
-	gettimeofday(&start_time, NULL);
+	tv_set(&start_time);
 
 	end_time.tv_sec = 0L;
 	end_time.tv_usec = 0L;
@@ -1821,7 +1817,7 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 	for (temp_commandsmember = cntct->host_notification_commands; temp_commandsmember != NULL; temp_commandsmember = temp_commandsmember->next) {
 
 		/* get start time */
-		gettimeofday(&method_start_time, NULL);
+		tv_set(&method_start_time);
 
 		method_end_time.tv_sec = 0L;
 		method_end_time.tv_usec = 0L;
@@ -1879,13 +1875,13 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 		nm_free(processed_command);
 
 		/* get end time */
-		gettimeofday(&method_end_time, NULL);
+		tv_set(&method_end_time);
 
 		broker_contact_notification_method_data(NEBTYPE_CONTACTNOTIFICATIONMETHOD_END, NEBFLAG_NONE, NEBATTR_NONE, HOST_NOTIFICATION, type, method_start_time, method_end_time, (void *)hst, cntct, temp_commandsmember->command, not_author, not_data, escalated);
 	}
 
 	/* get end time */
-	gettimeofday(&end_time, NULL);
+	tv_set(&end_time);
 
 	/* update the contact's last host notification time */
 	cntct->last_host_notification = start_time.tv_sec;

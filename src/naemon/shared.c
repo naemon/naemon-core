@@ -68,15 +68,13 @@ void timing_point(const char *fmt, ...)
 		return;
 
 	if (first.tv_sec == 0) {
-		gettimeofday(&first, NULL);
-		last.tv_sec = first.tv_sec;
-		last.tv_usec = first.tv_usec;
+		tv_set(&first);
+		tv_clone(&last, &first);
 		printf("[0.0000 (+0.0000)] ");
 	} else {
-		gettimeofday(&now, NULL);
+		tv_set(&now);
 		printf("[%.4f (+%.4f)] ", tv_delta_f(&first, &now), tv_delta_f(&last, &now));
-		last.tv_sec = now.tv_sec;
-		last.tv_usec = now.tv_usec;
+		tv_clone(&last, &now);
 	}
 	va_start(ap, fmt);
 	vprintf(fmt, ap);

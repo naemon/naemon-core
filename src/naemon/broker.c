@@ -19,12 +19,6 @@ struct kvvec *get_global_store(void)
 	return &global_store;
 }
 
-/* gets timestamp for use by broker */
-static inline void get_broker_timestamp(struct timeval *timestamp)
-{
-	gettimeofday(timestamp, NULL);
-}
-
 /******************************************************************/
 /************************* EVENT FUNCTIONS ************************/
 /******************************************************************/
@@ -43,7 +37,7 @@ void broker_program_state(int type, int flags, int attr)
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	/* make callbacks */
 	neb_make_callbacks(NEBCALLBACK_PROCESS_DATA, (void *)&ds);
@@ -64,7 +58,7 @@ void broker_log_data(int type, int flags, int attr, char *data, unsigned long da
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.entry_time = entry_time;
 	ds.data_type = data_type;
@@ -92,7 +86,7 @@ void broker_system_command(int type, int flags, int attr, struct timeval start_t
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.start_time = start_time;
 	ds.end_time = end_time;
@@ -138,7 +132,7 @@ int broker_event_handler(int type, int flags, int attr, int eventhandler_type, v
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.eventhandler_type = eventhandler_type;
 	if (eventhandler_type == SERVICE_EVENTHANDLER || eventhandler_type == GLOBAL_SERVICE_EVENTHANDLER) {
@@ -199,7 +193,7 @@ int broker_host_check(int type, int flags, int attr, host *hst, int check_type, 
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.host_name = hst->name;
 	ds.object_ptr = (void *)hst;
@@ -259,7 +253,7 @@ int broker_service_check(int type, int flags, int attr, service *svc, int check_
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.host_name = svc->host_name;
 	ds.service_description = svc->description;
@@ -306,7 +300,7 @@ void broker_comment_data(int type, int flags, int attr, int comment_type, int en
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.comment_type = comment_type;
 	ds.entry_type = entry_type;
@@ -341,7 +335,7 @@ void broker_downtime_data(int type, int flags, int attr, int downtime_type, char
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.downtime_type = downtime_type;
 	ds.host_name = host_name;
@@ -381,7 +375,7 @@ void broker_flapping_data(int type, int flags, int attr, int flapping_type, void
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.flapping_type = flapping_type;
 	if (flapping_type == SERVICE_FLAPPING) {
@@ -419,7 +413,7 @@ void broker_program_status(int type, int flags, int attr)
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.program_start = program_start;
 	ds.pid = nagios_pid;
@@ -461,8 +455,8 @@ void broker_host_status(int type, int flags, int attr, host *hst)
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
-	hst->last_update = ds.timestamp.tv_sec;
+	tv_set(&ds.timestamp);
+	tv_clone(&hst->last_update, &ds.timestamp);
 
 	ds.object_ptr = (void *)hst;
 
@@ -485,8 +479,8 @@ void broker_service_status(int type, int flags, int attr, service *svc)
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
-	svc->last_update = ds.timestamp.tv_sec;
+	tv_set(&ds.timestamp);
+	tv_clone(&svc->last_update, &ds.timestamp);
 
 	ds.object_ptr = (void *)svc;
 
@@ -509,7 +503,7 @@ void broker_contact_status(int type, int flags, int attr, contact *cntct)
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.object_ptr = (void *)cntct;
 
@@ -534,7 +528,7 @@ neb_cb_resultset *broker_notification_data(int type, int flags, int attr, int no
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.notification_type = notification_type;
 	ds.start_time = start_time;
@@ -578,7 +572,7 @@ int broker_contact_notification_data(int type, int flags, int attr, int notifica
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.notification_type = notification_type;
 	ds.start_time = start_time;
@@ -638,7 +632,7 @@ int broker_contact_notification_method_data(int type, int flags, int attr, int n
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.notification_type = notification_type;
 	ds.start_time = start_time;
@@ -689,7 +683,7 @@ void broker_adaptive_program_data(int type, int flags, int attr, int command_typ
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.command_type = command_type;
 	ds.modified_host_attribute = modhattr;
@@ -716,7 +710,7 @@ void broker_adaptive_host_data(int type, int flags, int attr, host *hst, int com
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.command_type = command_type;
 	ds.modified_attribute = modattr;
@@ -742,7 +736,7 @@ void broker_adaptive_service_data(int type, int flags, int attr, service *svc, i
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.command_type = command_type;
 	ds.modified_attribute = modattr;
@@ -768,7 +762,7 @@ void broker_adaptive_contact_data(int type, int flags, int attr, contact *cntct,
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.command_type = command_type;
 	ds.modified_attribute = modattr;
@@ -798,7 +792,7 @@ int broker_external_command(int type, int flags, int attr, int command_type, tim
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.command_type = command_type;
 	ds.entry_time = entry_time;
@@ -822,7 +816,7 @@ void broker_aggregated_status_data(int type, int flags, int attr)
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	/* make callbacks */
 	neb_make_callbacks(NEBCALLBACK_AGGREGATED_STATUS_DATA, (void *)&ds);
@@ -843,7 +837,7 @@ void broker_retention_data(int type, int flags, int attr)
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	/* make callbacks */
 	neb_make_callbacks(NEBCALLBACK_RETENTION_DATA, (void *)&ds);
@@ -866,7 +860,7 @@ void broker_acknowledgement_data(int type, int flags, int attr, int acknowledgem
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.acknowledgement_type = acknowledgement_type;
 	if (acknowledgement_type == SERVICE_ACKNOWLEDGEMENT) {
@@ -909,7 +903,7 @@ void broker_statechange_data(int type, int flags, int attr, int statechange_type
 	ds.type = type;
 	ds.flags = flags;
 	ds.attr = attr;
-	get_broker_timestamp(&ds.timestamp);
+	tv_set(&ds.timestamp);
 
 	ds.statechange_type = statechange_type;
 	if (statechange_type == SERVICE_STATECHANGE) {

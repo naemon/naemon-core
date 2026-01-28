@@ -107,10 +107,11 @@ void checks_init_services(void)
 
 void schedule_next_service_check(service *svc, time_t delay, int options)
 {
-	time_t current_time = time(NULL);
+	struct timeval current_time;
+	tv_set(&current_time);
 
 	/* A closer check is already scheduled, skip this scheduling */
-	if (svc->next_check_event != NULL && svc->next_check < delay + current_time) {
+	if (svc->next_check_event != NULL && svc->next_check < delay + current_time.tv_sec) {
 		/*... unless this is a forced check or postponement is allowed*/
 		if (!(options & (CHECK_OPTION_FORCE_EXECUTION | CHECK_OPTION_ALLOW_POSTPONE))) {
 			return;
@@ -124,8 +125,8 @@ void schedule_next_service_check(service *svc, time_t delay, int options)
 
 	/* Schedule the event */
 	svc->check_options = options;
-	svc->next_check = delay + current_time;
-	svc->last_update = current_time;
+	svc->next_check = delay + current_time.tv_sec;
+	tv_set(&svc->last_update);
 	svc->next_check_event = schedule_event(delay, handle_service_check_event, (void *)svc);
 
 	/* update the status log, since next_check and check_options is updated */
@@ -153,7 +154,7 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 
 		/* get event latency */
 		latency = evprop->attributes.timed.latency;
-		gettimeofday(&tv, NULL);
+		tv_set(&tv);
 
 		/* When the callback is called, the pointer to the timed event is invalid */
 		temp_service->next_check_event = NULL;
@@ -352,8 +353,8 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	}
 
 	/* get the command start time */
-	gettimeofday(&start_time, NULL);
-	svc->last_update = start_time.tv_sec;
+	tv_set(&start_time);
+	tv_clone(&svc->last_update, &start_time);
 
 	/* neb module wants to cancel the service check - the check will be rescheduled for a later time by the scheduling logic */
 	if (neb_result == NEBERROR_CALLBACKCANCEL) {
@@ -485,7 +486,6 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	int hard_state_change = FALSE;
 	int first_host_check_initiated = FALSE;
 	int route_result = STATE_UP;
-	time_t current_time = 0L;
 	int alert_recorded = NEBATTR_NONE;
 	int first_recorded_state = NEBATTR_NONE;
 	char *old_plugin_output = NULL;
@@ -495,13 +495,14 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	service *master_service = NULL;
 	int state_changes_use_cached_state = TRUE; /* TODO - 09/23/07 move this to a global variable */
 	int flapping_check_done = FALSE;
+	struct timeval current_time;
 
 	/* make sure we have what we need */
 	if (temp_service == NULL || queued_check_result == NULL)
 		return ERROR;
 
 	/* get the current time */
-	time(&current_time);
+	tv_set(&current_time);
 
 	log_debug_info(DEBUGL_CHECKS, 0, "** Handling check result for service '%s' on host '%s' from '%s'...\n", temp_service->description, temp_service->host_name, check_result_source(queued_check_result));
 	log_debug_info(DEBUGL_CHECKS, 1, "HOST: %s, SERVICE: %s, CHECK TYPE: %s, OPTIONS: %d, SCHEDULED: %s, EXITED OK: %s, RETURN CODE: %d, OUTPUT: %s\n", temp_service->host_name, temp_service->description, (queued_check_result->check_type == CHECK_TYPE_ACTIVE) ? "Active" : "Passive", queued_check_result->check_options, (queued_check_result->scheduled_check == TRUE) ? "Yes" : "No", (queued_check_result->exited_ok == TRUE) ? "Yes" : "No", queued_check_result->return_code, queued_check_result->output);
@@ -522,7 +523,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		}
 	}
 
-	temp_service->last_update = current_time;
+	tv_set(&temp_service->last_update);
 
 	/* clear the freshening flag (it would have been set if this service was determined to be stale) */
 	if (queued_check_result->check_options & CHECK_OPTION_FRESHNESS_CHECK)
@@ -536,7 +537,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	/* If a services goes stale, Nagios will initiate a forced check in order to freshen it.  There is a race condition whereby a passive check
 	   could arrive between the 1) initiation of the forced check and 2) the time when the forced check result is processed here.  This would
 	   make the service fresh again, so we do a quick check to make sure the service is still stale before we accept the check result. */
-	if ((queued_check_result->check_options & CHECK_OPTION_FRESHNESS_CHECK) && is_service_result_fresh(temp_service, current_time, FALSE) == TRUE) {
+	if ((queued_check_result->check_options & CHECK_OPTION_FRESHNESS_CHECK) && is_service_result_fresh(temp_service, current_time.tv_sec, FALSE) == TRUE) {
 		log_debug_info(DEBUGL_CHECKS, 0, "Discarding service freshness check result because the service is currently fresh (race condition avoided).\n");
 		return OK;
 	}
@@ -658,11 +659,11 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 
 		/* if the host has never been checked before, verify its status */
 		/* only do this if 1) the initial state was set to non-UP or 2) the host is not scheduled to be checked soon (next 5 minutes) */
-		if (temp_host->has_been_checked == FALSE && (temp_host->initial_state != STATE_UP || (unsigned long)temp_host->next_check == 0L || (unsigned long)(temp_host->next_check - current_time) > 300)) {
+		if (temp_host->has_been_checked == FALSE && (temp_host->initial_state != STATE_UP || (unsigned long)temp_host->next_check == 0L || (unsigned long)(temp_host->next_check - current_time.tv_sec) > 300)) {
 
 			/* set a flag to remember that we launched a check */
 			first_host_check_initiated = TRUE;
-			schedule_host_check(temp_host, current_time, CHECK_OPTION_DEPENDENCY_CHECK);
+			schedule_host_check(temp_host, current_time.tv_sec, CHECK_OPTION_DEPENDENCY_CHECK);
 		}
 	}
 
@@ -758,7 +759,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 			/* don't reset last problem id, or it will be zero the next time a problem is encountered */
 			nm_free(temp_service->current_problem_id);
 			temp_service->current_problem_id = (char*)g_uuid_string_random();
-			temp_service->problem_start = current_time;
+			temp_service->problem_start = current_time.tv_sec;
 			temp_service->problem_end = 0L;
 		}
 
@@ -768,7 +769,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 			temp_service->last_problem_id = temp_service->current_problem_id;
 			temp_service->current_problem_id = NULL;
 			if(temp_service->problem_start > 0)
-				temp_service->problem_end = current_time;
+				temp_service->problem_end = current_time.tv_sec;
 		}
 	}
 
@@ -797,15 +798,15 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 			else {
 				/* can we use the last cached host state? */
 				/* usually only use cached host state if no service state change has occurred */
-				if ((state_change == FALSE || state_changes_use_cached_state == TRUE) && temp_host->has_been_checked == TRUE && (temp_host->last_check + cached_host_check_horizon > current_time && temp_host->last_check <= current_time)) {
+				if ((state_change == FALSE || state_changes_use_cached_state == TRUE) && temp_host->has_been_checked == TRUE && (temp_host->last_check + cached_host_check_horizon > current_time.tv_sec && temp_host->last_check <= current_time.tv_sec)) {
 					log_debug_info(DEBUGL_CHECKS, 1, "* Using cached host state: %d\n", temp_host->current_state);
-					update_check_stats(ACTIVE_ONDEMAND_HOST_CHECK_STATS, current_time);
-					update_check_stats(ACTIVE_CACHED_HOST_CHECK_STATS, current_time);
+					update_check_stats(ACTIVE_ONDEMAND_HOST_CHECK_STATS, current_time.tv_sec);
+					update_check_stats(ACTIVE_CACHED_HOST_CHECK_STATS, current_time.tv_sec);
 				}
 
 				/* else launch an async (parallel) check of the host */
 				else
-					schedule_host_check(temp_host, current_time, CHECK_OPTION_DEPENDENCY_CHECK);
+					schedule_host_check(temp_host, current_time.tv_sec, CHECK_OPTION_DEPENDENCY_CHECK);
 			}
 		}
 
@@ -897,10 +898,10 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 			log_debug_info(DEBUGL_CHECKS, 1, "Host is currently UP, so we'll recheck its state to make sure...\n");
 
 			/* only run a new check if we can and have to */
-			if (!execute_host_checks || (temp_host->last_check + cached_host_check_horizon > current_time && temp_host->last_check <= current_time)) {
+			if (!execute_host_checks || (temp_host->last_check + cached_host_check_horizon > current_time.tv_sec && temp_host->last_check <= current_time.tv_sec)) {
 				log_debug_info(DEBUGL_CHECKS, 1, "* Using cached host state: %d\n", temp_host->current_state);
-				update_check_stats(ACTIVE_ONDEMAND_HOST_CHECK_STATS, current_time);
-				update_check_stats(ACTIVE_CACHED_HOST_CHECK_STATS, current_time);
+				update_check_stats(ACTIVE_ONDEMAND_HOST_CHECK_STATS, current_time.tv_sec);
+				update_check_stats(ACTIVE_CACHED_HOST_CHECK_STATS, current_time.tv_sec);
 			} else if (state_change || temp_service->state_type == SOFT_STATE) {
 				schedule_next_host_check(temp_host, 0, CHECK_OPTION_DEPENDENCY_CHECK);
 			}
@@ -912,7 +913,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 			log_debug_info(DEBUGL_CHECKS, 1, "Host is currently %s.\n", host_state_name(temp_host->current_state));
 
 			if (execute_host_checks && (state_change || temp_service->state_type == SOFT_STATE)) {
-				schedule_host_check(temp_host, current_time, CHECK_OPTION_NONE);
+				schedule_host_check(temp_host, current_time.tv_sec, CHECK_OPTION_NONE);
 			}
 			/* else fake the host check, but (possibly) resend host notifications to contacts... */
 			else {
@@ -1036,7 +1037,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 					if (temp_dependency->dependent_service_ptr == temp_service && temp_dependency->master_service_ptr != NULL) {
 						master_service = (service *)temp_dependency->master_service_ptr;
 						log_debug_info(DEBUGL_CHECKS, 2, "Predictive check of service '%s' on host '%s' queued.\n", master_service->description, master_service->host_name);
-						schedule_service_check(master_service, current_time, CHECK_OPTION_DEPENDENCY_CHECK);
+						schedule_service_check(master_service, current_time.tv_sec, CHECK_OPTION_DEPENDENCY_CHECK);
 					}
 				}
 				for (list = temp_service->notify_deps; list; list = list->next) {
@@ -1044,7 +1045,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 					if (temp_dependency->dependent_service_ptr == temp_service && temp_dependency->master_service_ptr != NULL) {
 						master_service = (service *)temp_dependency->master_service_ptr;
 						log_debug_info(DEBUGL_CHECKS, 2, "Predictive check of service '%s' on host '%s' queued.\n", master_service->description, master_service->host_name);
-						schedule_service_check(master_service, current_time, CHECK_OPTION_DEPENDENCY_CHECK);
+						schedule_service_check(master_service, current_time.tv_sec, CHECK_OPTION_DEPENDENCY_CHECK);
 					}
 				}
 			}
@@ -1167,15 +1168,15 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 static void check_for_orphaned_services_eventhandler(struct nm_event_execution_properties *evprop)
 {
 	service *temp_service = NULL;
-	time_t current_time = 0L;
 	time_t expected_time = 0L;
+	struct timeval current_time;
 
 	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 
 		schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_for_orphaned_services_eventhandler, evprop->user_data);
 
 		/* get the current time */
-		time(&current_time);
+		tv_set(&current_time);
 
 		/* check all services... */
 		for (temp_service = service_list; temp_service != NULL; temp_service = temp_service->next) {
@@ -1188,7 +1189,7 @@ static void check_for_orphaned_services_eventhandler(struct nm_event_execution_p
 			expected_time = (time_t)(temp_service->next_check + temp_service->latency + service_check_timeout + check_reaper_interval + 600);
 
 			/* this service was supposed to have executed a while ago, but for some reason the results haven't come back in... */
-			if (expected_time < current_time) {
+			if (expected_time < current_time.tv_sec) {
 
 				/* log a warning */
 				nm_log(NSLOG_RUNTIME_WARNING,
@@ -1205,7 +1206,7 @@ static void check_for_orphaned_services_eventhandler(struct nm_event_execution_p
 
 				/* disable the executing flag */
 				temp_service->is_executing = FALSE;
-				temp_service->last_update = current_time;
+				tv_set(&temp_service->last_update);
 
 				/* schedule an immediate check of the service */
 				schedule_next_service_check(temp_service, 0, CHECK_OPTION_ORPHAN_CHECK);

@@ -6,6 +6,7 @@
 #endif
 
 #include <sys/types.h>
+#include <sys/time.h>
 #include <fcntl.h>
 
 NAGIOS_BEGIN_DECL
@@ -122,6 +123,43 @@ extern int tv_delta_msec(const struct timeval *start, const struct timeval *stop
  * @return time difference in fractions of seconds
  */
 extern float tv_delta_f(const struct timeval *start, const struct timeval *stop);
+
+/**
+ * clone source timestamp to destination timeval
+ * @param tv1 Destination timeval
+ * @param tv2 Source timeval
+ * @return nothing
+ */
+static inline void tv_clone(struct timeval *dst, struct timeval *src)
+{
+	dst->tv_sec = src->tv_sec;
+	dst->tv_usec = src->tv_usec;
+}
+
+/**
+ * set timestamp to target timeval
+ * @param tv Target timeval
+ * @return nothing
+ */
+static inline void tv_set(struct timeval *timestamp)
+{
+	gettimeofday(timestamp, NULL);
+}
+
+/**
+ * Convert timeval to str
+ * @param tv Source timeval
+ * @return A pointer to the formatted string on success.
+ */
+const char* tv_str(struct timeval *tv);
+
+/**
+ * Convert string to timeval
+ * @param str The timeval string (sec.usec)
+ * @param tv The target timeval
+ * @return 0 on success, -1 on errors
+ */
+extern int str2timeval(char *str, struct timeval *tv);
 
 /**
  * close and reopen stdin, stdout and stderr to /dev/null

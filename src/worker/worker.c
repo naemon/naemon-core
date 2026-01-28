@@ -184,7 +184,7 @@ static int finish_job(child_process *cp, int reason)
 		exit_worker(1, "Failed to init response key/value vector");
 	}
 
-	gettimeofday(&cp->ei->stop, NULL);
+	tv_set(&cp->ei->stop);
 
 	cp->ei->runtime = tv_delta_f(&cp->ei->start, &cp->ei->stop);
 
@@ -561,7 +561,7 @@ static void spawn_job(struct kvvec *kvv)
 		return;
 	}
 
-	gettimeofday(&cp->ei->start, NULL);
+	tv_set(&cp->ei->start);
 	cp->request = kvv;
 	cp->ei->timed_event = schedule_event(cp->timeout, kill_job, cp);
 	cp->outstd.buf = nm_bufferqueue_create();

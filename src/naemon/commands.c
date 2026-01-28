@@ -1832,14 +1832,11 @@ static int host_command_handler(const struct external_command *ext_command, time
 	unsigned long downtime_id = 0L;
 	unsigned long duration = 0L;
 	time_t old_interval = 0L;
-	time_t current_time = 0L;
 
 	if (ext_command->id != CMD_DEL_HOST_COMMENT) {
 		target_host = GV("host_name");
-		if (target_host) {
-			time(&current_time);
-			target_host->last_update = current_time;
-		}
+		if (target_host)
+			tv_set(&target_host->last_update);
 	}
 
 	switch (ext_command->id) {
@@ -2237,15 +2234,12 @@ static int service_command_handler(const struct external_command *ext_command, t
 {
 	struct service *target_service = NULL;
 	time_t old_interval = 0L;
-	time_t current_time = 0L;
 	unsigned long duration = 0L;
 
 	if (ext_command->id != CMD_DEL_SVC_COMMENT) {
 		target_service = GV_SERVICE("service");
-		if (target_service) {
-			time(&current_time);
-			target_service->last_update = current_time;
-		}
+		if (target_service)
+			tv_set(&target_service->last_update);
 	}
 
 	switch (ext_command->id) {
@@ -2558,7 +2552,6 @@ static int contactgroup_command_handler(const struct external_command *ext_comma
 
 static int change_custom_var_handler(const struct external_command *ext_command, time_t entry_time)
 {
-	time_t current_time = 0L;
 	customvariablesmember *customvariablesmember_p = NULL;
 	char *varname;
 	int x = 0;
@@ -2566,18 +2559,16 @@ static int change_custom_var_handler(const struct external_command *ext_command,
 	struct host * target_host = NULL;
 	struct contact * target_contact = NULL;
 
-	time(&current_time);
-
 	switch (ext_command->id) {
 	case CMD_CHANGE_CUSTOM_SVC_VAR:
 		target_service = GV_SERVICE("service");
-		target_service->last_update = current_time;
+		tv_set(&target_service->last_update);
 		customvariablesmember_p = target_service->custom_variables;
 		break;
 
 	case CMD_CHANGE_CUSTOM_HOST_VAR:
 		target_host = GV_HOST("host_name");
-		target_host->last_update = current_time;
+		tv_set(&target_host->last_update);
 		customvariablesmember_p = target_host->custom_variables;
 		break;
 
@@ -3537,7 +3528,7 @@ int process_passive_service_check(time_t check_time, char *host_name, char *svc_
 		cr.return_code = STATE_UNKNOWN;
 
 	/* calculate latency */
-	gettimeofday(&tv, NULL);
+	tv_set(&tv);
 	cr.latency = (double)((double)(tv.tv_sec - check_time) + (double)(tv.tv_usec / 1000.0) / 1000.0);
 	if (cr.latency < 0.0)
 		cr.latency = 0.0;
@@ -3587,7 +3578,7 @@ int process_passive_host_check(time_t check_time, char *host_name, int return_co
 	cr.return_code = return_code;
 
 	/* calculate latency */
-	gettimeofday(&tv, NULL);
+	tv_set(&tv);
 	cr.latency = (double)((double)(tv.tv_sec - check_time) + (double)(tv.tv_usec / 1000.0) / 1000.0);
 	if (cr.latency < 0.0)
 		cr.latency = 0.0;
