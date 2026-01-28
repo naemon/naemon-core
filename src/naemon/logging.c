@@ -323,7 +323,7 @@ int log_debug_info(int level, int verbosity, const char *fmt, ...)
 		return ERROR;
 
 	/* write the timestamp */
-	gettimeofday(&current_time, NULL);
+	tv_set(&current_time);
 	fprintf(debug_file_fp, "[%ld.%06ld] [%03d.%d] [pid=%lu] ", (long)current_time.tv_sec, (long)current_time.tv_usec, level, verbosity, (unsigned long)getpid());
 
 	/* write the data */

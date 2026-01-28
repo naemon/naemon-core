@@ -233,11 +233,10 @@ int xsddefault_save_status_data(void)
 		fprintf(fp, "\tflap_detection_enabled=%d\n", temp_host->flap_detection_enabled);
 		fprintf(fp, "\tprocess_performance_data=%d\n", temp_host->process_performance_data);
 		fprintf(fp, "\tobsess=%d\n", temp_host->obsess);
-		fprintf(fp, "\tlast_update=%lu\n", current_time);
 		fprintf(fp, "\tis_flapping=%d\n", temp_host->is_flapping);
 		fprintf(fp, "\tpercent_state_change=%.2f\n", temp_host->percent_state_change);
 		fprintf(fp, "\tscheduled_downtime_depth=%d\n", temp_host->scheduled_downtime_depth);
-		fprintf(fp, "\tlast_update=%lu\n", temp_host->last_update);
+		fprintf(fp, "\tlast_update=%s\n", tv_str(&temp_host->last_update));
 		/* custom variables */
 		for (temp_customvariablesmember = temp_host->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 			if (temp_customvariablesmember->variable_name)
@@ -303,11 +302,10 @@ int xsddefault_save_status_data(void)
 		fprintf(fp, "\tflap_detection_enabled=%d\n", temp_service->flap_detection_enabled);
 		fprintf(fp, "\tprocess_performance_data=%d\n", temp_service->process_performance_data);
 		fprintf(fp, "\tobsess=%d\n", temp_service->obsess);
-		fprintf(fp, "\tlast_update=%lu\n", current_time);
 		fprintf(fp, "\tis_flapping=%d\n", temp_service->is_flapping);
 		fprintf(fp, "\tpercent_state_change=%.2f\n", temp_service->percent_state_change);
 		fprintf(fp, "\tscheduled_downtime_depth=%d\n", temp_service->scheduled_downtime_depth);
-		fprintf(fp, "\tlast_update=%lu\n", temp_service->last_update);
+		fprintf(fp, "\tlast_update=%s\n", tv_str(&temp_service->last_update));
 		/* custom variables */
 		for (temp_customvariablesmember = temp_service->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 			if (temp_customvariablesmember->variable_name)

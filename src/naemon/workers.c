@@ -163,7 +163,7 @@ static void run_job_callback(struct wproc_job *job, struct wproc_result *wpres, 
 {
 	if (!job || !job->callback)
 		return;
-	
+
 	if (!wpres) {
 		return;
 	}
@@ -288,22 +288,6 @@ void free_worker_memory(int flags)
 	workers.wps = NULL;
 	workers.len = 0;
 	workers.idx = 0;
-}
-
-static int str2timeval(char *str, struct timeval *tv)
-{
-	char *ptr, *ptr2;
-
-	tv->tv_sec = strtoul(str, &ptr, 10);
-	if (ptr == str) {
-		tv->tv_sec = tv->tv_usec = 0;
-		return -1;
-	}
-	if (*ptr == '.' || *ptr == ',') {
-		ptr2 = ptr + 1;
-		tv->tv_usec = strtoul(ptr2, &ptr, 10);
-	}
-	return 0;
 }
 
 /*
