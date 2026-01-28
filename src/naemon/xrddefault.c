@@ -237,7 +237,7 @@ int xrddefault_save_state_information(void)
 		fprintf(fp, "is_flapping=%d\n", temp_host->is_flapping);
 		fprintf(fp, "percent_state_change=%.2f\n", temp_host->percent_state_change);
 		fprintf(fp, "check_flapping_recovery_notification=%d\n", temp_host->check_flapping_recovery_notification);
-		fprintf(fp, "last_update=%lu\n", temp_host->last_update);
+		fprintf(fp, "last_update=%s\n", tv_str(&temp_host->last_update));
 
 		fprintf(fp, "state_history=");
 		for (x = 0; x < MAX_STATE_HISTORY_ENTRIES; x++)
@@ -333,7 +333,7 @@ int xrddefault_save_state_information(void)
 			fprintf(fp, "config:obsess=%d\n", conf_svc->obsess);
 			fprintf(fp, "obsess=%d\n", temp_service->obsess);
 		}
-		fprintf(fp, "last_update=%lu\n", temp_service->last_update);
+		fprintf(fp, "last_update=%s\n", tv_str(&temp_service->last_update));
 		fprintf(fp, "is_flapping=%d\n", temp_service->is_flapping);
 		fprintf(fp, "percent_state_change=%.2f\n", temp_service->percent_state_change);
 		fprintf(fp, "check_flapping_recovery_notification=%d\n", temp_service->check_flapping_recovery_notification);
@@ -1095,7 +1095,7 @@ int xrddefault_read_state_information(void)
 						else if (!strcmp(var, "last_time_unreachable"))
 							temp_host->last_time_unreachable = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "last_update"))
-							temp_host->last_update = strtoul(val, NULL, 10);
+							str2timeval(val, &temp_host->last_update);
 						else if (!strcmp(var, "notified_on_down"))
 							temp_host->notified_on |= (atoi(val) > 0 ? OPT_DOWN : 0);
 						else if (!strcmp(var, "notified_on_unreachable"))
@@ -1350,7 +1350,7 @@ int xrddefault_read_state_information(void)
 						else if (!strcmp(var, "last_time_critical"))
 							temp_service->last_time_critical = strtoul(val, NULL, 10);
 						else if (!strcmp(var, "last_update"))
-							temp_service->last_update = strtoul(val, NULL, 10);
+							str2timeval(val, &temp_service->last_update);
 						else if (!strcmp(var, "plugin_output")) {
 							nm_free(temp_service->plugin_output);
 							temp_service->plugin_output = nm_strdup(val);

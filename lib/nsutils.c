@@ -1,6 +1,7 @@
 #include "lnae-utils.h"
 #include "nsutils.h"
 #include <sys/types.h>
+#include <sys/time.h>
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -65,6 +66,28 @@ float tv_delta_f(const struct timeval *start, const struct timeval *stop)
 
 	ret += (float)((float)usecs / DIVIDER);
 	return ret;
+}
+
+/* format duration seconds into human readable string */
+const char* tv_str(struct timeval *tv) {
+	return (char *)mkstr("%lu.%06lu", tv->tv_sec, tv->tv_usec);
+}
+
+ /* Convert string to timeval */
+int str2timeval(char *str, struct timeval *tv)
+{
+	char *ptr, *ptr2;
+
+	tv->tv_sec = strtoul(str, &ptr, 10);
+	if (ptr == str) {
+		tv->tv_sec = tv->tv_usec = 0;
+		return -1;
+	}
+	if (*ptr == '.' || *ptr == ',') {
+		ptr2 = ptr + 1;
+		tv->tv_usec = strtoul(ptr2, &ptr, 10);
+	}
+	return 0;
 }
 
 #define MKSTR_BUFS 256 /* should be plenty */

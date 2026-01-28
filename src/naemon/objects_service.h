@@ -124,7 +124,7 @@ struct service {
 	struct objectlist *servicegroups_ptr;
 	struct objectlist *exec_deps, *notify_deps;
 	struct objectlist *escalation_list;
-	time_t  last_update /* timestamp when object has been updated the last time */;
+	struct timeval last_update /* timestamp when object has been updated the last time */;
 	struct service *next;
 	struct timed_event *next_check_event;
 };
