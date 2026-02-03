@@ -5,21 +5,21 @@ Breaking changes:
   when upgrading to 1.5.0
 
 Features:
-* use timeval for last_update - this affects the `host` and `service` structs and could be a breaking change for NEB module developers.
-* improve eventloop runtime performance
+* use timeval for last_update - this affects the `host` and `service` structs and could be a breaking change for NEB module developers. (#516)
+* improve eventloop runtime performance (#519)
 
 Changed:
-* During startup, ensure downtimes are loaded before updating status
-* rpm spec: add provides for user / group
-* rpm: fix lto-no-text-in-archive
-* rpm: do not install INSTALL file
+* During startup, ensure downtimes are loaded before updating status (#502)
+* rpm spec: add provides for user / group (#520)
+* rpm: fix lto-no-text-in-archive (#515)
+* rpm: do not install INSTALL file (#515)
 * debian: remove obsolete dependency
 
 Bugfixes:
-* fix memory leak when using service parents
-* fix pending service dependencies
-* skip over dependencies when the current time is not within the time period
-* fix a root privilege escalation (CVE-2016-9566)
+* fix memory leak when using service parents (514)
+* fix pending service dependencies (#509)
+* skip over dependencies when the current time is not within the time period (#511)
+* fix a theoretical root privilege escalation (CVE-2016-9566) as naemon does not start as root user by default (#507)
 
 
 1.4.4 - Jun 03 2025
