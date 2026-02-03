@@ -1,3 +1,27 @@
+1.5.0 - Feb 03 2026
+===================
+Breaking changes:
+* Due to object structure changes, it is recommended to recompile any NEB modules
+  when upgrading to 1.5.0
+
+Features:
+* use timeval for last_update - this affects the `host` and `service` structs and could be a breaking change for NEB module developers.
+* improve eventloop runtime performance
+
+Changed:
+* During startup, ensure downtimes are loaded before updating status
+* rpm spec: add provides for user / group
+* rpm: fix lto-no-text-in-archive
+* rpm: do not install INSTALL file
+* debian: remove obsolete dependency
+
+Bugfixes:
+* fix memory leak when using service parents
+* fix pending service dependencies
+* skip over dependencies when the current time is not within the time period
+* fix a root privilege escalation (CVE-2016-9566)
+
+
 1.4.4 - Jun 03 2025
 ===================
 Features:
