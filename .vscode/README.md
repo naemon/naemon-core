@@ -30,8 +30,15 @@ Naemon itself depends on several libraries. Everything needed can be easily
 installed via the package manager of your distribution.
 
 ### Fedora
+
+Users of Fedora < 41 need to install the development tools like so:
 ```
 sudo dnf group install "Development Tools"
+```
+
+#### Fedora >= 41
+```
+sudo dnf group install development-tools
 sudo dnf install git glib2-devel help2man gperf gcc gcc-c++ gdb cmake3 pkgconfig automake autoconf nagios-plugins-all libtool perl-Test-Simple
 
 sudo ln -s /usr/lib64/nagios /usr/lib/nagios
