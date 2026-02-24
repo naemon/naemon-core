@@ -42,6 +42,36 @@
             //],
 
             "miDebuggerPath": "/usr/bin/gdb",
+          },
+          {
+            "name": "Launch in dgb OMD Dev",
+            "type": "cppdbg",
+            "request": "launch",
+            "preLaunchTask": "make debug",
+            //"program": "su",
+            // "program": "sudo",
+            // "program": "sudo -u dev ${workspaceFolder}/src/naemon/.libs/naemon",
+            "program": "${workspaceFolder}/src/naemon/.libs/lt-naemon",
+            "args": [
+                "--allow-root",
+                "-T",
+                "/omd/sites/dev/tmp/naemon/naemon.cfg",
+                // "${workspaceFolder}/src/naemon/.libs/naemon",
+                // "-c",
+                // "-u",
+                // "dev",
+            ],
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/.libs:/opt/omd/versions/5.61.20260122-labs-edition/lib/"
+                }
+            ],
+            "stopAtEntry": true,
+            "launchCompleteCommand": "exec-run",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
           }
     ]
 }

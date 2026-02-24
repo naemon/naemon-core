@@ -65,3 +65,5 @@ debian/tmp/
 debian/libnaemon/
 debian/files
 build
+.cache/
+compile_commands.json

@@ -88,7 +88,7 @@ service *create_service(host *hst, const char *description)
 	return new_service;
 }
 
-int setup_service_variables(service *new_service, const char *display_name, const char *check_command, const char *check_period, int initial_state, int max_attempts, int accept_passive_checks, double check_interval, double retry_interval, double notification_interval, double first_notification_delay, char *notification_period, int notification_options, int notifications_enabled, int is_volatile, const char *event_handler, int event_handler_enabled, int checks_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
+int setup_service_variables(service *new_service, const char *display_name, const char *check_command, const char *check_period, int initial_state, int check_timeout, int max_attempts, int accept_passive_checks, double check_interval, double retry_interval, double notification_interval, double first_notification_delay, char *notification_period, int notification_options, int notifications_enabled, int is_volatile, const char *event_handler, int event_handler_enabled, int checks_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
 {
 	timeperiod *cp = NULL, *np = NULL;
 	command *cmd;
@@ -121,6 +121,10 @@ int setup_service_variables(service *new_service, const char *display_name, cons
 	}
 	if (check_interval < 0) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: check_interval must be a non-negative integer for service '%s' on host '%s'\n", new_service->description, new_service->host_name);
+		return -1;
+	}
+	if (check_timeout < 0) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: check_timeout must be a non-negative integer for service '%s' on host '%s'\n", new_service->description, new_service->host_name);
 		return -1;
 	}
 	if (retry_interval <= 0) {
@@ -171,6 +175,7 @@ int setup_service_variables(service *new_service, const char *display_name, cons
 	}
 
 	new_service->hourly_value = hourly_value;
+	new_service->check_timeout = check_timeout;
 	new_service->check_interval = check_interval;
 	new_service->retry_interval = retry_interval;
 	new_service->max_attempts = max_attempts;
@@ -484,6 +489,7 @@ void fcache_service(FILE *fp, const service *temp_service)
 		fprintf(fp, "c\n");
 	else
 		fprintf(fp, "o\n");
+	fprintf(fp,"\tcheck_timeout\t%d\n", temp_service->check_timeout);
 	fprintf(fp, "\thourly_value\t%u\n", temp_service->hourly_value);
 	fprintf(fp, "\tcheck_interval\t%f\n", temp_service->check_interval);
 	fprintf(fp, "\tretry_interval\t%f\n", temp_service->retry_interval);

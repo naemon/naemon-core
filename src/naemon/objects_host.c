@@ -81,7 +81,7 @@ host *create_host(const char *name)
 	return new_host;
 }
 
-int setup_host_variables(host *new_host, const char *display_name, const char *alias, const char *address, const char *check_period, int initial_state, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, const char *notification_period, int notifications_enabled, const char *check_command, int checks_enabled, int accept_passive_checks, const char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, const char *vrml_image, const char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
+int setup_host_variables(host *new_host, const char *display_name, const char *alias, const char *address, const char *check_period, int initial_state, int check_timeout, double check_interval, double retry_interval, int max_attempts, int notification_options, double notification_interval, double first_notification_delay, const char *notification_period, int notifications_enabled, const char *check_command, int checks_enabled, int accept_passive_checks, const char *event_handler, int event_handler_enabled, int flap_detection_enabled, double low_flap_threshold, double high_flap_threshold, int flap_detection_options, int stalking_options, int process_perfdata, int check_freshness, int freshness_threshold, const char *notes, const char *notes_url, const char *action_url, const char *icon_image, const char *icon_image_alt, const char *vrml_image, const char *statusmap_image, int x_2d, int y_2d, int have_2d_coords, double x_3d, double y_3d, double z_3d, int have_3d_coords, int retain_status_information, int retain_nonstatus_information, int obsess, unsigned int hourly_value)
 {
 	timeperiod *check_tp = NULL, *notify_tp = NULL;
 
@@ -102,6 +102,10 @@ int setup_host_variables(host *new_host, const char *display_name, const char *a
 	}
 	if (check_interval < 0) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid check_interval value for host '%s'\n", new_host->name);
+		return -1;
+	}
+	if (check_timeout < 0) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: check_timeout must be a non-negative integer host '%s'\n", new_host->name);
 		return -1;
 	}
 	if (notification_interval < 0) {
@@ -157,6 +161,7 @@ int setup_host_variables(host *new_host, const char *display_name, const char *a
 	/* duplicate non-string vars */
 	new_host->hourly_value = hourly_value;
 	new_host->max_attempts = max_attempts;
+	new_host->check_timeout = check_timeout;
 	new_host->check_interval = check_interval;
 	new_host->retry_interval = retry_interval;
 	new_host->notification_interval = notification_interval;
@@ -545,6 +550,7 @@ void fcache_host(FILE *fp, const host *temp_host)
 		fprintf(fp, "u\n");
 	else
 		fprintf(fp, "o\n");
+	fprintf(fp,"\tcheck_timeout\t%d\n", temp_host->check_timeout);
 	fprintf(fp, "\thourly_value\t%u\n", temp_host->hourly_value);
 	fprintf(fp, "\tcheck_interval\t%f\n", temp_host->check_interval);
 	fprintf(fp, "\tretry_interval\t%f\n", temp_host->retry_interval);

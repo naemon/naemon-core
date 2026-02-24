@@ -63,6 +63,7 @@ typedef struct check_result {
 	double latency;
 	struct timeval start_time;			/* time the service check was initiated */
 	struct timeval finish_time;			/* time the service check was completed */
+	int timeout;						/* timeout used in this check */
 	int early_timeout;                              /* did the service check timeout? */
 	int exited_ok;					/* did the plugin check return okay? */
 	int return_code;				/* plugin return code */
