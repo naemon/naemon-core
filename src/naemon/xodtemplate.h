@@ -201,6 +201,7 @@ typedef struct xodtemplate_host_struct {
     char      *check_period;
     unsigned int hourly_value;
     int       initial_state;
+    int       check_timeout;
     double    check_interval;
     double    retry_interval;
     int       max_check_attempts;
@@ -260,6 +261,7 @@ typedef struct xodtemplate_host_struct {
     unsigned have_statusmap_image : 1;
 
     unsigned have_initial_state : 1;
+    unsigned have_check_timeout : 1;
     unsigned have_check_interval : 1;
     unsigned have_retry_interval : 1;
     unsigned have_max_check_attempts : 1;
@@ -340,6 +342,7 @@ typedef struct xodtemplate_service_struct {
     char       *service_groups;
     char       *check_command;
     int        initial_state;
+    int        check_timeout;
     int        max_check_attempts;
     double     check_interval;
     double     retry_interval;
@@ -397,6 +400,7 @@ typedef struct xodtemplate_service_struct {
     unsigned have_icon_image_alt : 1;
 
     unsigned have_initial_state : 1;
+    unsigned have_check_timeout : 1;
     unsigned have_max_check_attempts : 1;
     unsigned have_check_interval : 1;
     unsigned have_retry_interval : 1;
