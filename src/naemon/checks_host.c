@@ -273,7 +273,6 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	}
 
 	/******** GOOD TO GO FOR A REAL HOST CHECK AT THIS POINT ********/
-	printf("Check of host '%s' (id=%u) is going to use %d as timeout\n",hst->name,hst->id,hst->check_timeout);
 
 	/* initialize start/end times */
 	start_time.tv_sec = 0L;
