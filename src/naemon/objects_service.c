@@ -123,8 +123,8 @@ int setup_service_variables(service *new_service, const char *display_name, cons
 		nm_log(NSLOG_CONFIG_ERROR, "Error: check_interval must be a non-negative integer for service '%s' on host '%s'\n", new_service->description, new_service->host_name);
 		return -1;
 	}
-	if (check_timeout < 0) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: check_timeout must be a non-negative integer for service '%s' on host '%s'\n", new_service->description, new_service->host_name);
+	if (check_timeout <= 0) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: check_timeout must be a positive integer for service '%s' on host '%s'\n", new_service->description, new_service->host_name);
 		return -1;
 	}
 	if (retry_interval <= 0) {
