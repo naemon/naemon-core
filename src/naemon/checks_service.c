@@ -330,16 +330,12 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	int runchk_result = OK;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	int neb_result = OK;
-	int timeout;
 
 	/* latency is how long the event lagged behind the event queue */
 	svc->latency = latency;
 	temp_host = svc->host_ptr;
 
 	/******** GOOD TO GO FOR A REAL SERVICE CHECK AT THIS POINT ********/
-
-	/* initialize the timeout to use */
-	timeout = (svc->check_timeout != 0 ? svc->check_timeout : service_check_timeout);
 
 	/* initialize start/end times */
 	start_time.tv_sec = 0L;
@@ -405,7 +401,7 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	cr->latency = latency;
 	cr->start_time = start_time;
 	cr->finish_time = start_time;
-	cr->timeout = timeout;
+	cr->timeout = svc->check_timeout;
 	cr->early_timeout = FALSE;
 	cr->exited_ok = TRUE;
 	cr->return_code = STATE_OK;
@@ -413,7 +409,7 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	cr->host_name = nm_strdup(svc->host_name);
 	cr->service_description = nm_strdup(svc->description);
 
-	neb_result = broker_service_check(NEBTYPE_SERVICECHECK_INITIATE, NEBFLAG_NONE, NEBATTR_NONE, svc, CHECK_TYPE_ACTIVE, start_time, end_time, svc->check_command, svc->latency, 0.0, timeout, FALSE, 0, processed_command, cr);
+	neb_result = broker_service_check(NEBTYPE_SERVICECHECK_INITIATE, NEBFLAG_NONE, NEBATTR_NONE, svc, CHECK_TYPE_ACTIVE, start_time, end_time, svc->check_command, svc->latency, 0.0, svc->check_timeout, FALSE, 0, processed_command, cr);
 
 	/* neb module wants to override the service check - perhaps it will check the service itself */
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE || neb_result == NEBERROR_CALLBACKCANCEL) {
@@ -425,7 +421,7 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	}
 
 	/* paw off the check to a worker to run */
-	runchk_result = wproc_run_callback(processed_command, timeout, handle_worker_service_check, (void *)cr, &mac);
+	runchk_result = wproc_run_callback(processed_command, svc->check_timeout, handle_worker_service_check, (void *)cr, &mac);
 	if (runchk_result == ERROR) {
 		nm_log(NSLOG_RUNTIME_ERROR,
 		       "Unable to send check for service '%s' on host '%s' to worker (ret=%d)\n", svc->description, svc->host_name, runchk_result);
@@ -1174,7 +1170,6 @@ static void check_for_orphaned_services_eventhandler(struct nm_event_execution_p
 	service *temp_service = NULL;
 	time_t expected_time = 0L;
 	struct timeval current_time;
-	int service_timeout;
 
 	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 
@@ -1190,11 +1185,8 @@ static void check_for_orphaned_services_eventhandler(struct nm_event_execution_p
 			if (temp_service->is_executing == FALSE)
 				continue;
 
-			/* determine the timeout used by the service */
-			service_timeout = (temp_service->check_timeout != 0 ? temp_service->check_timeout : service_check_timeout);
-
 			/* determine the time at which the check results should have come in (allow 10 minutes slack time) */
-			expected_time = (time_t)(temp_service->next_check + temp_service->latency + service_timeout + check_reaper_interval + 600);
+			expected_time = (time_t)(temp_service->next_check + temp_service->latency + temp_service->check_timeout + check_reaper_interval + 600);
 
 			/* this service was supposed to have executed a while ago, but for some reason the results haven't come back in... */
 			if (expected_time < current_time.tv_sec) {

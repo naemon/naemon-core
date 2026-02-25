@@ -777,7 +777,7 @@ static int xodtemplate_begin_object_definition(char *input, int cfgfile, int sta
 		xod_begin_def(service);
 		new_service->hourly_value = 1;
 		new_service->initial_state = STATE_OK;
-		new_service->check_timeout = 0;
+		new_service->check_timeout = service_check_timeout;
 		new_service->max_check_attempts = -2;
 		new_service->check_interval = 5.0;
 		new_service->retry_interval = 1.0;
@@ -799,7 +799,7 @@ static int xodtemplate_begin_object_definition(char *input, int cfgfile, int sta
 		xodtemplate_current_object_type = XODTEMPLATE_HOST;
 		xod_begin_def(host);
 		new_host->hourly_value = 1;
-		new_host->check_timeout = 0;
+		new_host->check_timeout = host_check_timeout;
 		new_host->check_interval = 5.0;
 		new_host->retry_interval = 1.0;
 		new_host->active_checks_enabled = TRUE;
