@@ -104,8 +104,8 @@ int setup_host_variables(host *new_host, const char *display_name, const char *a
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid check_interval value for host '%s'\n", new_host->name);
 		return -1;
 	}
-	if (check_timeout < 0) {
-		nm_log(NSLOG_CONFIG_ERROR, "Error: check_timeout must be a non-negative integer host '%s'\n", new_host->name);
+	if (check_timeout <= 0) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: check_timeout must be a positive integer host '%s'\n", new_host->name);
 		return -1;
 	}
 	if (notification_interval < 0) {
