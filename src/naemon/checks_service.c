@@ -333,6 +333,7 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 
 	/* latency is how long the event lagged behind the event queue */
 	svc->latency = latency;
+
 	temp_host = svc->host_ptr;
 
 	/******** GOOD TO GO FOR A REAL SERVICE CHECK AT THIS POINT ********/
