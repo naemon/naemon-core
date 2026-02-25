@@ -209,7 +209,6 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	int runchk_result = OK;
 	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
 	int neb_result = OK;
-	int timeout;
 	struct timeval now;
 	tv_set(&now);
 
@@ -274,7 +273,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	}
 
 	/******** GOOD TO GO FOR A REAL HOST CHECK AT THIS POINT ********/
-	timeout = (hst->check_timeout != 0 ? hst->check_timeout : host_check_timeout);
+	printf("Check of host '%s' (id=%u) is going to use %d as timeout\n",hst->name,hst->id,hst->check_timeout);
 
 	/* initialize start/end times */
 	start_time.tv_sec = 0L;
@@ -283,7 +282,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	end_time.tv_usec = 0L;
 	tv_set(&hst->last_update);
 
-	neb_result = broker_host_check(NEBTYPE_HOSTCHECK_ASYNC_PRECHECK, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, timeout, FALSE, 0, NULL, NULL, NULL, NULL, NULL);
+	neb_result = broker_host_check(NEBTYPE_HOSTCHECK_ASYNC_PRECHECK, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, hst->check_timeout, FALSE, 0, NULL, NULL, NULL, NULL, NULL);
 
 	if (neb_result == NEBERROR_CALLBACKCANCEL || neb_result == NEBERROR_CALLBACKOVERRIDE) {
 		log_debug_info(DEBUGL_CHECKS, 0, "Check of host '%s' (id=%u) was %s by a module\n",
@@ -340,13 +339,13 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	cr->latency = latency;
 	cr->start_time = start_time;
 	cr->finish_time = start_time;
-	cr->timeout = timeout;
+	cr->timeout = hst->check_timeout;
 	cr->early_timeout = FALSE;
 	cr->exited_ok = TRUE;
 	cr->return_code = STATE_OK;
 	cr->output = NULL;
 
-	neb_result = broker_host_check(NEBTYPE_HOSTCHECK_INITIATE, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, timeout, FALSE, 0, processed_command, NULL, NULL, NULL, cr);
+	neb_result = broker_host_check(NEBTYPE_HOSTCHECK_INITIATE, NEBFLAG_NONE, NEBATTR_NONE, hst, CHECK_TYPE_ACTIVE, hst->current_state, hst->state_type, start_time, end_time, hst->check_command, hst->latency, 0.0, hst->check_timeout, FALSE, 0, processed_command, NULL, NULL, NULL, cr);
 
 	/* neb module wants to override the service check - perhaps it will check the service itself */
 	if (neb_result == NEBERROR_CALLBACKOVERRIDE || neb_result == NEBERROR_CALLBACKCANCEL) {
@@ -357,7 +356,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 		return neb_result == NEBERROR_CALLBACKOVERRIDE ? OK : ERROR;
 	}
 
-	runchk_result = wproc_run_callback(processed_command, timeout, handle_worker_host_check, (void *)cr, &mac);
+	runchk_result = wproc_run_callback(processed_command, hst->check_timeout, handle_worker_host_check, (void *)cr, &mac);
 	if (runchk_result == ERROR) {
 		nm_log(NSLOG_RUNTIME_ERROR,
 		       "Unable to send check for host '%s' to worker (ret=%d)\n", hst->name, runchk_result);
@@ -1162,7 +1161,6 @@ static void check_for_orphaned_hosts_eventhandler(struct nm_event_execution_prop
 	host *temp_host = NULL;
 	time_t expected_time = 0L;
 	struct timeval current_time;
-	int host_timeout;
 
 	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
 		schedule_event(DEFAULT_ORPHAN_CHECK_INTERVAL, check_for_orphaned_hosts_eventhandler, evprop->user_data);
@@ -1181,11 +1179,8 @@ static void check_for_orphaned_hosts_eventhandler(struct nm_event_execution_prop
 			if (temp_host->is_executing == FALSE)
 				continue;
 
-			/* determine the timeout used by the service */
-			host_timeout = (temp_host->check_timeout != 0 ? temp_host->check_timeout : service_check_timeout);
-
 			/* determine the time at which the check results should have come in (allow 10 minutes slack time) */
-			expected_time = (time_t)(temp_host->next_check + temp_host->latency + host_timeout + check_reaper_interval + 600);
+			expected_time = (time_t)(temp_host->next_check + temp_host->latency + temp_host->check_timeout + check_reaper_interval + 600);
 
 			/* this host was supposed to have executed a while ago, but for some reason the results haven't come back in... */
 			if (expected_time < current_time.tv_sec) {
