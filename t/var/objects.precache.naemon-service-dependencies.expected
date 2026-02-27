@@ -35,6 +35,7 @@ define host {
 	check_period	never
 	check_command	check-dummy
 	initial_state	o
+	check_timeout	30
 	hourly_value	1
 	check_interval	5.000000
 	retry_interval	1.000000
@@ -66,6 +67,7 @@ define host {
 	check_period	never
 	check_command	check-dummy
 	initial_state	o
+	check_timeout	30
 	hourly_value	1
 	check_interval	5.000000
 	retry_interval	1.000000
@@ -97,6 +99,7 @@ define host {
 	check_period	never
 	check_command	check-dummy
 	initial_state	o
+	check_timeout	30
 	hourly_value	1
 	check_interval	5.000000
 	retry_interval	1.000000
@@ -128,6 +131,7 @@ define host {
 	check_period	never
 	check_command	check-dummy
 	initial_state	o
+	check_timeout	30
 	hourly_value	1
 	check_interval	5.000000
 	retry_interval	1.000000
@@ -158,6 +162,7 @@ define service {
 	check_period	never
 	check_command	check-dummy!0
 	initial_state	o
+	check_timeout	60
 	hourly_value	1
 	check_interval	5.000000
 	retry_interval	1.000000
@@ -189,6 +194,7 @@ define service {
 	check_period	never
 	check_command	check-dummy!0
 	initial_state	o
+	check_timeout	60
 	hourly_value	1
 	check_interval	5.000000
 	retry_interval	1.000000
@@ -220,6 +226,7 @@ define service {
 	check_period	never
 	check_command	check-dummy!0
 	initial_state	o
+	check_timeout	60
 	hourly_value	1
 	check_interval	5.000000
 	retry_interval	1.000000
@@ -251,6 +258,7 @@ define service {
 	check_period	never
 	check_command	check-dummy!0
 	initial_state	o
+	check_timeout	60
 	hourly_value	1
 	check_interval	5.000000
 	retry_interval	1.000000
@@ -282,6 +290,7 @@ define service {
 	check_period	never
 	check_command	check-dummy!0
 	initial_state	o
+	check_timeout	60
 	hourly_value	1
 	check_interval	5.000000
 	retry_interval	1.000000
