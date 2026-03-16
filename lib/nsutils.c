@@ -89,7 +89,7 @@ int str2timeval(char *str, struct timeval *tv)
 const char *mkstr(const char *fmt, ...)
 {
 	static char buf[MKSTR_BUFS][32]; /* 8k statically on the stack */
-	static int slot = 0;
+	static unsigned slot = 0;
 	char *ret;
 
 	va_list ap;
