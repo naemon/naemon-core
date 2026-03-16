@@ -236,7 +236,8 @@ int xsddefault_save_status_data(void)
 		fprintf(fp, "\tis_flapping=%d\n", temp_host->is_flapping);
 		fprintf(fp, "\tpercent_state_change=%.2f\n", temp_host->percent_state_change);
 		fprintf(fp, "\tscheduled_downtime_depth=%d\n", temp_host->scheduled_downtime_depth);
-		fprintf(fp, "\tlast_update=%s\n", tv_str(&temp_host->last_update));
+		// The (unsigned long) cast is to we don't have to worry about 32 vs 64 bit time_t.
+		fprintf(fp, "\tlast_update=%lu.%06lu\n", (unsigned long)temp_host->last_update.tv_sec, (unsigned long)temp_host->last_update.tv_usec);
 		/* custom variables */
 		for (temp_customvariablesmember = temp_host->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 			if (temp_customvariablesmember->variable_name)
@@ -305,7 +306,8 @@ int xsddefault_save_status_data(void)
 		fprintf(fp, "\tis_flapping=%d\n", temp_service->is_flapping);
 		fprintf(fp, "\tpercent_state_change=%.2f\n", temp_service->percent_state_change);
 		fprintf(fp, "\tscheduled_downtime_depth=%d\n", temp_service->scheduled_downtime_depth);
-		fprintf(fp, "\tlast_update=%s\n", tv_str(&temp_service->last_update));
+		// The (unsigned long) cast is to we don't have to worry about 32 vs 64 bit time_t.
+		fprintf(fp, "\tlast_update=%lu.%06lu\n", (unsigned long)temp_service->last_update.tv_sec, (unsigned long)temp_service->last_update.tv_usec);
 		/* custom variables */
 		for (temp_customvariablesmember = temp_service->custom_variables; temp_customvariablesmember != NULL; temp_customvariablesmember = temp_customvariablesmember->next) {
 			if (temp_customvariablesmember->variable_name)

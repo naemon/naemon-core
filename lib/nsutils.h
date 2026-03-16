@@ -147,13 +147,6 @@ static inline void tv_set(struct timeval *timestamp)
 }
 
 /**
- * Convert timeval to str
- * @param tv Source timeval
- * @return A pointer to the formatted string on success.
- */
-const char* tv_str(struct timeval *tv);
-
-/**
  * Convert string to timeval
  * @param str The timeval string (sec.usec)
  * @param tv The target timeval

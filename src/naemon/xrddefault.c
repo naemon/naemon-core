@@ -237,7 +237,9 @@ int xrddefault_save_state_information(void)
 		fprintf(fp, "is_flapping=%d\n", temp_host->is_flapping);
 		fprintf(fp, "percent_state_change=%.2f\n", temp_host->percent_state_change);
 		fprintf(fp, "check_flapping_recovery_notification=%d\n", temp_host->check_flapping_recovery_notification);
-		fprintf(fp, "last_update=%s\n", tv_str(&temp_host->last_update));
+		// The (unsigned long) cast is to we don't have to worry about 32 vs 64 bit time_t.
+		fprintf(fp, "\tlast_update=%lu.%06lu\n", (unsigned long)temp_host->last_update.tv_sec, (unsigned long)temp_host->last_update.tv_usec);
+		
 
 		fprintf(fp, "state_history=");
 		for (x = 0; x < MAX_STATE_HISTORY_ENTRIES; x++)
@@ -333,7 +335,8 @@ int xrddefault_save_state_information(void)
 			fprintf(fp, "config:obsess=%d\n", conf_svc->obsess);
 			fprintf(fp, "obsess=%d\n", temp_service->obsess);
 		}
-		fprintf(fp, "last_update=%s\n", tv_str(&temp_service->last_update));
+		// The (unsigned long) cast is to we don't have to worry about 32 vs 64 bit time_t.
+		fprintf(fp, "\tlast_update=%lu.%06lu\n", (unsigned long)temp_service->last_update.tv_sec, (unsigned long)temp_service->last_update.tv_usec);
 		fprintf(fp, "is_flapping=%d\n", temp_service->is_flapping);
 		fprintf(fp, "percent_state_change=%.2f\n", temp_service->percent_state_change);
 		fprintf(fp, "check_flapping_recovery_notification=%d\n", temp_service->check_flapping_recovery_notification);

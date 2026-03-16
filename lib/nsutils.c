@@ -68,11 +68,6 @@ float tv_delta_f(const struct timeval *start, const struct timeval *stop)
 	return ret;
 }
 
-/* format duration seconds into human readable string */
-const char* tv_str(struct timeval *tv) {
-	return (char *)mkstr("%lu.%06lu", tv->tv_sec, tv->tv_usec);
-}
-
  /* Convert string to timeval */
 int str2timeval(char *str, struct timeval *tv)
 {
