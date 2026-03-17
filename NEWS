@@ -5,6 +5,9 @@ Breaking changes:
 Features:
 * new attribute 'check_timeout' on `host` and `service` structs, overrides the global host / service check timeouts. (#525)
 
+Bugfixes:
+* fix memory corruption in `mkstr` caused by integer overflow (#527)
+
 1.5.0 - Feb 03 2026
 ===================
 Breaking changes:
