@@ -110,7 +110,7 @@ static struct wproc_list *get_wproc_list(const char *cmd)
 		return &workers;
 
 	/* first, look for a specialized worker for this command */
-	if ((space = strchr(cmd, ' ')) != NULL) {
+	if ((space = (char *)strchr(cmd, ' ')) != NULL) {
 		int namelen = (unsigned long)space - (unsigned long)cmd;
 		cmd_name = nm_calloc(1, namelen + 1);
 		memcpy(cmd_name, cmd, namelen);
