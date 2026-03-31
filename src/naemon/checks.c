@@ -111,7 +111,7 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 	perf_data_string = g_string_new(NULL);
 	tmp = strtok_r(tmpbuf, "\n", &saveptr);
 	if (tmp != NULL) {
-		p = strpbrk((const char *) tmp, "|");
+		p = (char *)strpbrk((const char *) tmp, "|");
 	}
 	if (p == NULL) {
 		/* No perfdata in first line of output. */
@@ -138,7 +138,7 @@ struct check_output *parse_output(const char *buf, struct check_output *check_ou
 	if ((tmp = strtok_r(NULL, "", &saveptr))) {
 
 		/* Is there a perf data delimiter somewhere in the long output? */
-		p = strpbrk((const char *) tmp, "|");
+		p = (char *)strpbrk((const char *) tmp, "|");
 		if (p == NULL) {
 			/* No more perfdata, rest is long output*/
 			check_output->long_output = nm_strdup(tmp);

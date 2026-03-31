@@ -97,7 +97,7 @@ command *find_bang_command(const char *name)
 	if (!name)
 		return NULL;
 
-	bang = strchr(name, '!');
+	bang = (char *)strchr(name, '!');
 	if (!bang)
 		return find_command(name);
 	*bang = 0;

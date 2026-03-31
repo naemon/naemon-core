@@ -29,7 +29,7 @@ static inline int path_components(const char *path)
 	int comps = 1;
 	if (!path)
 		return 0;
-	for (slash = strchr(path, '/'); slash; slash = strchr(slash + 1, '/'))
+	for (slash = (char *)strchr(path, '/'); slash; slash = strchr(slash + 1, '/'))
 		comps++;
 	return comps;
 }
