@@ -1,6 +1,6 @@
 #!/bin/sh
 
-VERSION=1.5.1
+VERSION=1.5.2
 if test -e .git; then
     if hash git 2>/dev/null; then
         VERSION=$(git describe --tag --exact-match 2>/dev/null | sed -e 's/^v//')
