@@ -436,7 +436,6 @@ static void sigchld_handler(int sig)
 
 static void reap_jobs(void)
 {
-	int reaped = 0;
 	do {
 		int pid, status;
 		struct rusage ru;
@@ -451,7 +450,6 @@ static void reap_jobs(void)
 			reapable--;
 			cp->ret = status;
 			memcpy(&cp->ei->rusage, &ru, sizeof(ru));
-			reaped++;
 			if (cp->ei->state != ESTALE) {
 				/* We leave any grandchild processes alive, until
 				 * the timeout for this job has expired (at which point they
