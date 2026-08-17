@@ -57,7 +57,14 @@ def config_verification(context):
     context.execute_steps('Given I write config to file')
     args = [context.naemon_exec_path, '--allow-root', '--verify-config',
             context.naemonsysconfig.filename]
-    context.return_code = subprocess.call(args)
+    # Output is captured, rather than inherited, so that steps can assert on
+    # what the verification actually reported.
+    verification = subprocess.run(args, stdout=subprocess.PIPE,
+                                  stderr=subprocess.STDOUT,
+                                  universal_newlines=True)
+    context.return_code = verification.returncode
+    context.verification_output = verification.stdout
+    print(context.verification_output)
 
 
 @given('config verification fail')
@@ -187,6 +194,24 @@ def naemon_error_msg(context):
 @then('naemon should output a retention data saved log message')
 def naemon_retention_msg(context):
     assert 'Retention data successfully saved.' in slurp_file('naemon.log')
+
+
+@then('the configuration error should name (?P<directive>.+)')
+def error_names_directive(context, directive):
+    assert "'%s'" % directive in context.verification_output, (
+        "expected the error to name '%s', got:\n%s" % (
+            directive, context.verification_output
+        )
+    )
+
+
+@then('the configuration error should not name (?P<directive>.+)')
+def error_does_not_name_directive(context, directive):
+    assert "'%s'" % directive not in context.verification_output, (
+        "expected the error not to name '%s', got:\n%s" % (
+            directive, context.verification_output
+        )
+    )
 
 
 @when('I wait for (?P<seconds>[0-9]+) seconds?')

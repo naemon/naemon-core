@@ -1,3 +1,20 @@
+Next:
+Breaking changes:
+* boolean object directives now accept only the exact values 0 and 1. Values carrying excess
+  characters, such as `register 0v` or `register 10`, were previously accepted silently: only the
+  first character was examined, so `0v` was read as 0 and the object was quietly left unregistered
+  and unmonitored. Such values are now a configuration error and Naemon will refuse to start.
+  This affects `register`, `notifications_enabled`, `active_checks_enabled` (alias `checks_enabled`),
+  `passive_checks_enabled`, `event_handler_enabled`, `flap_detection_enabled`, `check_freshness`,
+  `process_perf_data`, `obsess` (aliases `obsess_over_host`, `obsess_over_service`), `is_volatile`,
+  `retain_status_information`, `retain_nonstatus_information`, `inherits_parent`,
+  `can_submit_commands`, `host_notifications_enabled` and `service_notifications_enabled`.
+  Offending lines can be found before upgrading with:
+      grep -rnE '^[[:space:]]*(register|is_volatile|inherits_parent|can_submit_commands|checks_enabled|active_checks_enabled|passive_checks_enabled|event_handler_enabled|flap_detection_enabled|check_freshness|process_perf_data|obsess|obsess_over_host|obsess_over_service|notifications_enabled|host_notifications_enabled|service_notifications_enabled|retain_status_information|retain_nonstatus_information)[[:space:]]' /etc/naemon/ \
+        | grep -vE '[[:space:]][01][[:space:]]*(;.*)?$'
+  Verify with `naemon -v` before upgrading, and also before reloading a running instance: an
+  invalid value aborts a reload just as it aborts a start.
+
 1.5.2 - May 18 2026
 ===================
 Bugfixes:
