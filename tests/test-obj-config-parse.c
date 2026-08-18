@@ -106,16 +106,18 @@ static int read_all_object_data_capture(void)
 
 	fflush(stdout);
 	saved_stdout = dup(STDOUT_FILENO);
-	dup2(fd, STDOUT_FILENO);
+	ck_assert_int_ne(saved_stdout, -1);
+	ck_assert_int_ne(dup2(fd, STDOUT_FILENO), -1);
 
 	result = read_all_object_data("(test config filename)");
 
 	fflush(stdout);
-	dup2(saved_stdout, STDOUT_FILENO);
+	ck_assert_int_ne(dup2(saved_stdout, STDOUT_FILENO), -1);
 	close(saved_stdout);
 
-	lseek(fd, 0, SEEK_SET);
+	ck_assert_msg(lseek(fd, 0, SEEK_SET) != (off_t)-1, "lseek() failed");
 	nread = read(fd, captured_output, sizeof(captured_output) - 1);
+	ck_assert_msg(nread >= 0, "read() failed");
 	captured_output[nread > 0 ? nread : 0] = '\0';
 	close(fd);
 	unlink(tmpl);
