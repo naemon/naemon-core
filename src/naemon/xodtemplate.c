@@ -144,31 +144,21 @@ static bitmap *service_map = NULL, *parent_map = NULL;
 		} \
 	} while(0)
 
-/* parse boolean 0/1 value
- *
- * The value is compared in full: only "0" and "1" are accepted. A value that
- * merely starts with 0 or 1 (e.g. "0v", "10") is a configuration error.
- *
- * NOTE: 'v' arrives already whitespace-trimmed from
- * xodtemplate_add_object_property(), so the comparison below is exact and
- * performs no trimming of its own.
- *
- * NOTE: this macro reads 'variable' from the enclosing scope - the directive
- * name exactly as written in the config file. All call sites are inside
- * xodtemplate_add_object_property(). Using the stringified member name #t
- * instead would report internal names ('register_object') and canonicalise
- * aliases ('checks_enabled' -> 'active_checks_enabled'), naming directives
- * that never appear in the user's config file.
- */
+/* Parse 0/1, warning when trailing characters are ignored.
+ * 'variable' is the directive name as written, including aliases. */
 #define xod_parse_bool(o, t, v) ({ \
 	int result = OK; \
-	if (strcmp(v, "0") == 0) { \
-		o->t = FALSE; \
-	} else if (strcmp(v, "1") == 0) { \
-		o->t = TRUE; \
-	} else { \
-		nm_log(NSLOG_CONFIG_ERROR, "Error: invalid value '%s' for '%s', expected 0 or 1.\n", v, variable); \
-		result = ERROR; \
+	switch (*v) { \
+		case '0': \
+		case '1': \
+			o->t = *v == '1'; \
+			if (v[1] != '\0') \
+				nm_log(NSLOG_CONFIG_WARNING, "Warning: value '%s' for '%s' has trailing characters; using %c.\n", v, variable, *v); \
+			break; \
+		default: \
+			nm_log(NSLOG_CONFIG_ERROR, "Error: invalid value '%s' for '%s', expected 0 or 1.\n", v, variable); \
+			result = ERROR; \
+			break; \
 	} \
 	result; \
 })

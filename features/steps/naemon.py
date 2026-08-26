@@ -57,8 +57,7 @@ def config_verification(context):
     context.execute_steps('Given I write config to file')
     args = [context.naemon_exec_path, '--allow-root', '--verify-config',
             context.naemonsysconfig.filename]
-    # Output is captured, rather than inherited, so that steps can assert on
-    # what the verification actually reported.
+    # Capture output for assertions.
     verification = subprocess.run(args, stdout=subprocess.PIPE,
                                   stderr=subprocess.STDOUT,
                                   universal_newlines=True)
@@ -196,19 +195,19 @@ def naemon_retention_msg(context):
     assert 'Retention data successfully saved.' in slurp_file('naemon.log')
 
 
-@then('the configuration error should name (?P<directive>.+)')
-def error_names_directive(context, directive):
+@then('the configuration warning should name (?P<directive>.+)')
+def warning_names_directive(context, directive):
     assert "'%s'" % directive in context.verification_output, (
-        "expected the error to name '%s', got:\n%s" % (
+        "expected the warning to name '%s', got:\n%s" % (
             directive, context.verification_output
         )
     )
 
 
-@then('the configuration error should not name (?P<directive>.+)')
-def error_does_not_name_directive(context, directive):
+@then('the configuration warning should not name (?P<directive>.+)')
+def warning_does_not_name_directive(context, directive):
     assert "'%s'" % directive not in context.verification_output, (
-        "expected the error not to name '%s', got:\n%s" % (
+        "expected the warning not to name '%s', got:\n%s" % (
             directive, context.verification_output
         )
     )

@@ -72,10 +72,7 @@ static void object_def_end(void)
 	fclose(fp);
 }
 
-/* Append a line verbatim. object_def_var() always separates name and value
- * with spaces, so tests that care about the exact whitespace between a
- * directive and its value - or about a directive with no value at all - need
- * to write the line themselves. */
+/* Append a line without object_def_var() normalizing its whitespace. */
 static void object_def_raw(const char *line)
 {
 	FILE *fp = fopen(cur_config_file, "a");
@@ -85,14 +82,7 @@ static void object_def_raw(const char *line)
 
 static char captured_output[8192];
 
-/**
- * Run read_all_object_data() with stdout redirected to a temporary file, so
- * that the text of any error can be asserted on. nm_log() reaches the console
- * through write_to_console(), which prints to stdout while daemon_mode is
- * FALSE - the case throughout these tests.
- *
- * The captured text is left in captured_output.
- */
+/* Parse while capturing console output in captured_output. */
 static int read_all_object_data_capture(void)
 {
 	char tmpl[] = "/tmp/nmcapture.XXXXXX";
@@ -133,11 +123,7 @@ static int read_all_object_data_capture(void)
 	ck_assert_msg(strstr(captured_output, (needle)) == NULL, \
 	              "expected output not to contain '%s', got:\n%s", (needle), captured_output)
 
-/**
- * Define a single host carrying one extra directive, then parse. A registered
- * host needs host_name, address and max_check_attempts; the directive under
- * test is added on top of those.
- */
+/* Parse a minimal host with one directive under test. */
 static int parse_host_with(const char *directive, const char *value)
 {
 	object_def_start("host");
@@ -240,36 +226,39 @@ START_TEST(test_hostgroup_service_host_override)
 END_TEST
 
 /******************************************************************************
- * Boolean object directives accept only the exact values 0 and 1.
- *
- * The parser used to look at the first character of the value only, so values
- * such as "0v" or "10" were silently accepted - "0v" quietly turning into
- * register 0, leaving the object unmonitored without any warning.
+ * Boolean directives use the first digit and warn about trailing characters.
  *****************************************************************************/
 
-START_TEST(test_register_trailing_char_rejected)
+START_TEST(test_register_zero_with_trailing_char_warned)
 {
-	ck_assert_int_eq(parse_host_with("register", "0v"), ERROR);
+	ck_assert_int_eq(parse_host_with("register", "0v"), OK);
+	ck_assert(host_list == NULL);
+	ck_assert_output_contains("Warning:");
+	ck_assert_output_contains("'0v'");
+	ck_assert_output_contains("'register'");
 	unlink(cur_config_file);
 }
 END_TEST
 
-START_TEST(test_register_ten_rejected)
+START_TEST(test_register_ten_warned)
 {
-	ck_assert_int_eq(parse_host_with("register", "10"), ERROR);
+	ck_assert_int_eq(parse_host_with("register", "10"), OK);
+	ck_assert(host_list != NULL);
+	ck_assert_output_contains("Warning:");
 	unlink(cur_config_file);
 }
 END_TEST
 
-START_TEST(test_register_one_trailing_char_rejected)
+START_TEST(test_register_one_with_trailing_char_warned)
 {
-	ck_assert_int_eq(parse_host_with("register", "1x"), ERROR);
+	ck_assert_int_eq(parse_host_with("register", "1x"), OK);
+	ck_assert(host_list != NULL);
+	ck_assert_output_contains("Warning:");
 	unlink(cur_config_file);
 }
 END_TEST
 
-/* Already rejected before full-value matching was introduced; kept so that a
- * future change cannot start accepting it. */
+/* Values without a leading boolean digit remain errors. */
 START_TEST(test_register_leading_char_rejected)
 {
 	ck_assert_int_eq(parse_host_with("register", "v0"), ERROR);
@@ -277,9 +266,11 @@ START_TEST(test_register_leading_char_rejected)
 }
 END_TEST
 
-START_TEST(test_register_double_zero_rejected)
+START_TEST(test_register_double_zero_warned)
 {
-	ck_assert_int_eq(parse_host_with("register", "00"), ERROR);
+	ck_assert_int_eq(parse_host_with("register", "00"), OK);
+	ck_assert(host_list == NULL);
+	ck_assert_output_contains("Warning:");
 	unlink(cur_config_file);
 }
 END_TEST
@@ -287,6 +278,7 @@ END_TEST
 START_TEST(test_register_zero_accepted)
 {
 	ck_assert_int_eq(parse_host_with("register", "0"), OK);
+	ck_assert_output_lacks("trailing characters");
 	unlink(cur_config_file);
 }
 END_TEST
@@ -294,15 +286,18 @@ END_TEST
 START_TEST(test_register_one_accepted)
 {
 	ck_assert_int_eq(parse_host_with("register", "1"), OK);
+	ck_assert_output_lacks("trailing characters");
 	unlink(cur_config_file);
 }
 END_TEST
 
-/* The fix lives in one macro shared by every boolean directive, so a directive
- * other than register must behave identically. */
-START_TEST(test_notifications_enabled_trailing_char_rejected)
+/* All boolean directives share this behavior. */
+START_TEST(test_notifications_enabled_trailing_char_warned)
 {
-	ck_assert_int_eq(parse_host_with("notifications_enabled", "0v"), ERROR);
+	ck_assert_int_eq(parse_host_with("notifications_enabled", "0v"), OK);
+	ck_assert(host_list != NULL);
+	ck_assert_int_eq(host_list->notifications_enabled, FALSE);
+	ck_assert_output_contains("Warning:");
 	unlink(cur_config_file);
 }
 END_TEST
@@ -327,8 +322,7 @@ START_TEST(test_contact_notification_bools_accepted)
 }
 END_TEST
 
-/* The Nagios documentation defines these directives as 0/1 only - word forms
- * are not an accepted spelling. */
+/* Word forms remain invalid. */
 START_TEST(test_register_true_rejected)
 {
 	ck_assert_int_eq(parse_host_with("register", "true"), ERROR);
@@ -350,7 +344,6 @@ START_TEST(test_register_on_rejected)
 }
 END_TEST
 
-/* Unchanged behaviour, pinned so it stays that way. */
 START_TEST(test_register_without_value_rejected)
 {
 	object_def_start("host");
@@ -366,10 +359,7 @@ START_TEST(test_register_without_value_rejected)
 END_TEST
 
 /******************************************************************************
- * Whitespace around the value is not part of the value.
- *
- * Matching the value in full is only safe because the caller has already run
- * it through trim(). These tests fail loudly if that ever stops being true.
+ * Surrounding whitespace is trimmed before parsing.
  *****************************************************************************/
 
 START_TEST(test_value_tab_separated_accepted)
@@ -415,73 +405,56 @@ START_TEST(test_value_trailing_comment_accepted)
 END_TEST
 
 /******************************************************************************
- * The error names the directive exactly as written in the config file.
- *
- * Several directives do not share a name with the struct member they set, so
- * reporting the member would name something the user never wrote:
- *   register            -> register_object
- *   checks_enabled      -> active_checks_enabled
- *   obsess_over_host    -> obsess
+ * Warnings name the directive as written, including aliases.
  *****************************************************************************/
 
-START_TEST(test_error_names_register_not_member)
+START_TEST(test_warning_names_register_not_member)
 {
-	ck_assert_int_eq(parse_host_with("register", "0v"), ERROR);
+	ck_assert_int_eq(parse_host_with("register", "0v"), OK);
 	ck_assert_output_contains("'register'");
 	ck_assert_output_lacks("register_object");
 	unlink(cur_config_file);
 }
 END_TEST
 
-START_TEST(test_error_quotes_rejected_value)
+START_TEST(test_warning_quotes_value)
 {
-	ck_assert_int_eq(parse_host_with("register", "0v"), ERROR);
+	ck_assert_int_eq(parse_host_with("register", "0v"), OK);
 	ck_assert_output_contains("'0v'");
 	unlink(cur_config_file);
 }
 END_TEST
 
-START_TEST(test_error_names_alias_as_written)
+START_TEST(test_warning_names_alias_as_written)
 {
-	ck_assert_int_eq(parse_host_with("checks_enabled", "0v"), ERROR);
+	ck_assert_int_eq(parse_host_with("checks_enabled", "0v"), OK);
 	ck_assert_output_contains("'checks_enabled'");
 	ck_assert_output_lacks("active_checks_enabled");
 	unlink(cur_config_file);
 }
 END_TEST
 
-START_TEST(test_error_names_canonical_alias_as_written)
+START_TEST(test_warning_names_canonical_alias_as_written)
 {
-	ck_assert_int_eq(parse_host_with("active_checks_enabled", "0v"), ERROR);
+	ck_assert_int_eq(parse_host_with("active_checks_enabled", "0v"), OK);
 	ck_assert_output_contains("'active_checks_enabled'");
 	unlink(cur_config_file);
 }
 END_TEST
 
-START_TEST(test_error_names_obsess_over_host_as_written)
+START_TEST(test_warning_names_obsess_over_host_as_written)
 {
-	ck_assert_int_eq(parse_host_with("obsess_over_host", "0v"), ERROR);
+	ck_assert_int_eq(parse_host_with("obsess_over_host", "0v"), OK);
 	ck_assert_output_contains("'obsess_over_host'");
 	ck_assert_output_lacks("'obsess'");
 	unlink(cur_config_file);
 }
 END_TEST
 
-START_TEST(test_error_names_obsess_as_written)
+START_TEST(test_warning_names_obsess_as_written)
 {
-	ck_assert_int_eq(parse_host_with("obsess", "0v"), ERROR);
+	ck_assert_int_eq(parse_host_with("obsess", "0v"), OK);
 	ck_assert_output_contains("'obsess'");
-	unlink(cur_config_file);
-}
-END_TEST
-
-/* The file and line come from the caller and must still accompany the value
- * error, so an operator can find the offending directive. */
-START_TEST(test_error_reports_file_and_line)
-{
-	ck_assert_int_eq(parse_host_with("register", "0v"), ERROR);
-	ck_assert_output_contains("Could not add object property in file");
-	ck_assert_output_contains(cur_config_file);
 	unlink(cur_config_file);
 }
 END_TEST
@@ -494,14 +467,14 @@ Suite *obj_config_parse_suite(void)
 
 	tcase_add_test(parse, test_hostgroup_service_host_override);
 
-	tcase_add_test(parse, test_register_trailing_char_rejected);
-	tcase_add_test(parse, test_register_ten_rejected);
-	tcase_add_test(parse, test_register_one_trailing_char_rejected);
+	tcase_add_test(parse, test_register_zero_with_trailing_char_warned);
+	tcase_add_test(parse, test_register_ten_warned);
+	tcase_add_test(parse, test_register_one_with_trailing_char_warned);
 	tcase_add_test(parse, test_register_leading_char_rejected);
-	tcase_add_test(parse, test_register_double_zero_rejected);
+	tcase_add_test(parse, test_register_double_zero_warned);
 	tcase_add_test(parse, test_register_zero_accepted);
 	tcase_add_test(parse, test_register_one_accepted);
-	tcase_add_test(parse, test_notifications_enabled_trailing_char_rejected);
+	tcase_add_test(parse, test_notifications_enabled_trailing_char_warned);
 	tcase_add_test(parse, test_contact_notification_bools_accepted);
 	tcase_add_test(parse, test_register_true_rejected);
 	tcase_add_test(parse, test_register_yes_rejected);
@@ -512,13 +485,12 @@ Suite *obj_config_parse_suite(void)
 	tcase_add_test(parse, test_value_trailing_whitespace_accepted);
 	tcase_add_test(parse, test_value_trailing_comment_accepted);
 
-	tcase_add_test(parse, test_error_names_register_not_member);
-	tcase_add_test(parse, test_error_quotes_rejected_value);
-	tcase_add_test(parse, test_error_names_alias_as_written);
-	tcase_add_test(parse, test_error_names_canonical_alias_as_written);
-	tcase_add_test(parse, test_error_names_obsess_over_host_as_written);
-	tcase_add_test(parse, test_error_names_obsess_as_written);
-	tcase_add_test(parse, test_error_reports_file_and_line);
+	tcase_add_test(parse, test_warning_names_register_not_member);
+	tcase_add_test(parse, test_warning_quotes_value);
+	tcase_add_test(parse, test_warning_names_alias_as_written);
+	tcase_add_test(parse, test_warning_names_canonical_alias_as_written);
+	tcase_add_test(parse, test_warning_names_obsess_over_host_as_written);
+	tcase_add_test(parse, test_warning_names_obsess_as_written);
 
 	suite_add_tcase(s, parse);
 	return s;
