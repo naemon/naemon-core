@@ -64,6 +64,8 @@ AX_CHECK_COMPILE_FLAG([-Wall], AM_CFLAGS+=" -Wall")
 AX_CHECK_COMPILE_FLAG([-Werror], AM_CFLAGS+=" -Werror")
 AX_CHECK_COMPILE_FLAG([-fPIC], AM_CFLAGS+=" -fPIC")
 AX_CHECK_COMPILE_FLAG([-Wextra], AM_CFLAGS+=" -Wextra")
+# We really want to enable -Wsign-conversion but this throws a log of warnings at the moment
+#AX_CHECK_COMPILE_FLAG([-Wsign-conversion], AM_CFLAGS+=" -Wsign-conversion")
 AX_CHECK_COMPILE_FLAG([-pipe], AM_CFLAGS+=" -pipe")
 AX_CHECK_COMPILE_FLAG([-ggdb3], AM_CFLAGS+=" -ggdb3")
 AX_CHECK_COMPILE_FLAG([-Wredundant-decls], AM_CFLAGS+=" -Wredundant-decls")
