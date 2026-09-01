@@ -525,6 +525,7 @@ int init_check_result(check_result *info)
 	info->start_time.tv_usec = 0;
 	info->finish_time.tv_sec = 0;
 	info->finish_time.tv_usec = 0;
+	info->timeout = 0;
 	info->early_timeout = FALSE;
 	info->exited_ok = TRUE;
 	info->return_code = 0;
