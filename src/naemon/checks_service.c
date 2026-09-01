@@ -483,6 +483,7 @@ static void handle_worker_service_check(wproc_result *wpres, void *arg, int flag
 int handle_async_service_check_result(service *temp_service, check_result *queued_check_result)
 {
 	host *temp_host = NULL;
+	int effective_timeout;
 	int state_change = FALSE;
 	int hard_state_change = FALSE;
 	int first_host_check_initiated = FALSE;
@@ -1115,6 +1116,12 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 		}
 	}
 
+	/*
+	 * Legacy/passive result sources may not carry timeout in the check_result
+	 * payload. Keep broker callbacks consistent by falling back to object config.
+	 */
+	effective_timeout = queued_check_result->timeout > 0 ? queued_check_result->timeout : temp_service->check_timeout;
+
 	broker_service_check(
 	    NEBTYPE_SERVICECHECK_PROCESSED,
 	    NEBFLAG_NONE,
@@ -1126,7 +1133,7 @@ int handle_async_service_check_result(service *temp_service, check_result *queue
 	    temp_service->check_command,
 	    temp_service->latency,
 	    temp_service->execution_time,
-	    queued_check_result->timeout,
+	    effective_timeout,
 	    queued_check_result->early_timeout,
 	    queued_check_result->return_code,
 	    NULL,
