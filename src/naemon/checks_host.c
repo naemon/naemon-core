@@ -565,6 +565,7 @@ int update_host_state_post_check(struct host *hst, struct check_result *cr)
 int handle_async_host_check_result(host *temp_host, check_result *cr)
 {
 	int alert_recorded = NEBATTR_NONE;
+	int effective_timeout;
 	struct host pre;
 	int first_recorded_state = NEBATTR_NONE;
 
@@ -611,6 +612,9 @@ int handle_async_host_check_result(host *temp_host, check_result *cr)
 
 	log_debug_info(DEBUGL_CHECKS, 1, "** Async check result for host '%s' handled: new state=%d\n", temp_host->name, temp_host->current_state);
 
+	/* Keep timeout meaningful in broker callbacks for passive/legacy records. */
+	effective_timeout = cr->timeout > 0 ? cr->timeout : temp_host->check_timeout;
+
 	broker_host_check(
 	    NEBTYPE_HOSTCHECK_PROCESSED,
 	    NEBFLAG_NONE,
@@ -624,7 +628,7 @@ int handle_async_host_check_result(host *temp_host, check_result *cr)
 	    temp_host->check_command,
 	    temp_host->latency,
 	    temp_host->execution_time,
-	    cr->timeout,
+	    effective_timeout,
 	    cr->early_timeout,
 	    cr->return_code,
 	    NULL,

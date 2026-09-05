@@ -462,6 +462,8 @@ int process_check_result_file(char *fname)
 				cr.early_timeout = atoi(val);
 			else if (!strcmp(var, "exited_ok"))
 				cr.exited_ok = atoi(val);
+			else if (!strcmp(var, "timeout"))
+				cr.timeout = atoi(val);
 			else if (!strcmp(var, "return_code"))
 				cr.return_code = atoi(val);
 			else if (!strcmp(var, "output"))
@@ -525,6 +527,7 @@ int init_check_result(check_result *info)
 	info->start_time.tv_usec = 0;
 	info->finish_time.tv_sec = 0;
 	info->finish_time.tv_usec = 0;
+	info->timeout = 0;
 	info->early_timeout = FALSE;
 	info->exited_ok = TRUE;
 	info->return_code = 0;
