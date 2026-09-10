@@ -46,28 +46,6 @@ void setup(void)
 	init_objects_host(1);
 	init_objects_service(2);
 	init_objects_command(1);
-	initialize_downtime_data();
-	initialize_comment_data();
-	initialize_retention_data();
-	workdir = getcwd(NULL, 0);
-
-	ret = asprintf(&log_file, "%s/active.log", workdir);
-	ck_assert(ret >= 0);
-
-	debug_level = -1;
-	debug_verbosity = 10;
-	debug_file = log_file;
-
-
-	/* Don't check return value, just make -Wno-unused-result happy */
-	workdir = getcwd(NULL, 0);
-
-	ret = asprintf(&log_file, "%s/active.log", workdir);
-	ck_assert(ret >= 0);
-
-	debug_level = -1;
-	debug_verbosity = 10;
-	debug_file = log_file;
 
 	cmd = create_command("my_command", "/bin/true");
 	ck_assert(cmd != NULL);
@@ -76,7 +54,7 @@ void setup(void)
 	hst = create_host(TARGET_HOST_NAME);
 	ck_assert(hst != NULL);
 	hst->check_command_ptr = cmd;
-	hst->check_command = nm_strdup("something or other");;
+	hst->check_command = nm_strdup("something or other");
 	register_host(hst);
 
 	svc = create_service(hst, TARGET_SERVICE_NAME);
@@ -89,17 +67,32 @@ void setup(void)
 	svc1->check_command_ptr = cmd;
 	register_service(svc1);
 
+	initialize_downtime_data();
+	initialize_comment_data();
+	initialize_retention_data();
+
+	workdir = getcwd(NULL, 0);
+	ck_assert(workdir != NULL);
+
+	ret = asprintf(&log_file, "%s/active.log", workdir);
+	ck_assert(ret >= 0);
+	free(workdir);
+
+	debug_level = -1;
+	debug_verbosity = 10;
+	debug_file = log_file;
+
 }
 
 void teardown(void)
 {
 
+	destroy_event_queue();
 	destroy_objects_command();
 	destroy_objects_service(TRUE);
 	destroy_objects_host();
 	cleanup_retention_data();
 	cleanup_downtime_data();
-	destroy_event_queue();
 	free(log_file);
 }
 
@@ -692,7 +685,7 @@ START_TEST(service_flexible_scheduled_downtimes_service_down_notification)
 	scheduled_downtime *dt = NULL;
 	struct check_result cr ;
 	char active_contents[1024];
-	size_t len;
+	ssize_t len;
 
 	/* fill the check_result struct for the service check failure */
 	cr.object_check_type = SERVICE_CHECK;
@@ -734,7 +727,9 @@ START_TEST(service_flexible_scheduled_downtimes_service_down_notification)
 	close_debug_log();
 
 	fd = open(log_file, O_RDONLY);
-	len = read(fd, active_contents, 1024);
+	ck_assert(fd >= 0);
+	len = read(fd, active_contents, sizeof(active_contents) - 1);
+	ck_assert(len >= 0);
 	active_contents[len] = '\0';
 	close(fd);
 	unlink(log_file);
@@ -767,7 +762,7 @@ START_TEST(host_flexible_scheduled_downtimes_service_down_notification)
 	scheduled_downtime *dt = NULL;
 	struct check_result cr ;
 	char active_contents[1024];
-	size_t len;
+	ssize_t len;
 
 	cr.object_check_type = HOST_CHECK;
 	cr.host_name = TARGET_HOST_NAME;
@@ -809,7 +804,9 @@ START_TEST(host_flexible_scheduled_downtimes_service_down_notification)
 	close_debug_log();
 
 	fd = open(log_file, O_RDONLY);
-	len = read(fd, active_contents, 1024);
+	ck_assert(fd >= 0);
+	len = read(fd, active_contents, sizeof(active_contents) - 1);
+	ck_assert(len >= 0);
 	active_contents[len] = '\0';
 	close(fd);
 	unlink(log_file);
