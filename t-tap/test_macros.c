@@ -117,6 +117,7 @@ nagios_macros *setup_macro_object(void)
 		} else { \
 			fail( "process_macros_r returns ERROR for " _STR ); \
 		} \
+		nm_free(output); \
 	} while(0)
 
 #define RUN_MACRO_TEST_EXPECT_SAME(_STR, _OPTS) \
@@ -228,7 +229,6 @@ int main(void)
 
 	reset_variables();
 	init_environment();
-	init_macros();
 
 	mac = setup_macro_object();
 
