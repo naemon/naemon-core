@@ -22,9 +22,25 @@ int found_log_rechecking_host_when_service_wobbles = 0;
 int found_log_run_async_host_check = 0;
 check_result *tmp_check_result;
 
+static void set_check_result_output(const char *output)
+{
+	free(tmp_check_result->output);
+	tmp_check_result->output = strdup(output);
+}
+
+void destroy_check_result(void)
+{
+	if (tmp_check_result == NULL)
+		return;
+	free_check_result(tmp_check_result);
+	free(tmp_check_result);
+	tmp_check_result = NULL;
+}
+
 void setup_check_result(void)
 {
 	struct timeval start_time, finish_time;
+	destroy_check_result();
 	start_time.tv_sec = 1234567890L;
 	start_time.tv_usec = 0L;
 	finish_time.tv_sec = 1234567891L;
@@ -126,7 +142,7 @@ int main(int argc, char **argv)
 	tmp_check_result->early_timeout = 0;
 	tmp_check_result->exited_ok = TRUE;
 	tmp_check_result->return_code = 1;
-	tmp_check_result->output = strdup("Warning - check notified_on OPT_CRITICAL flag reset");
+	set_check_result_output("Warning - check notified_on OPT_CRITICAL flag reset");
 
 	setup_objects(now);
 	svc1->last_state = STATE_CRITICAL;
@@ -197,7 +213,7 @@ int main(int argc, char **argv)
 
 	setup_check_result();
 	tmp_check_result->return_code = STATE_WARNING;
-	tmp_check_result->output = strdup("WARNING failure");
+	set_check_result_output("WARNING failure");
 	handle_async_service_check_result(svc1, tmp_check_result);
 
 	ok(svc1->last_notification == (time_t)0, "last notification reset due to state change");
@@ -210,14 +226,14 @@ int main(int argc, char **argv)
 
 	setup_check_result();
 	tmp_check_result->return_code = STATE_WARNING;
-	tmp_check_result->output = strdup("WARNING failure");
+	set_check_result_output("WARNING failure");
 	handle_async_service_check_result(svc1, tmp_check_result);
 
 	ok(svc1->acknowledgement_type == ACKNOWLEDGEMENT_NORMAL, "Ack left");
 
 	setup_check_result();
 	tmp_check_result->return_code = STATE_OK;
-	tmp_check_result->output = strdup("Back to OK");
+	set_check_result_output("Back to OK");
 	handle_async_service_check_result(svc1, tmp_check_result);
 
 	ok(svc1->acknowledgement_type == ACKNOWLEDGEMENT_NONE, "Ack reset to none");
@@ -241,12 +257,12 @@ int main(int argc, char **argv)
 
 	setup_check_result();
 	tmp_check_result->return_code = STATE_OK;
-	tmp_check_result->output = strdup("Reset to OK");
+	set_check_result_output("Reset to OK");
 	handle_async_service_check_result(svc1, tmp_check_result);
 
 	setup_check_result();
 	tmp_check_result->return_code = STATE_WARNING;
-	tmp_check_result->output = strdup("WARNING failure 1");
+	set_check_result_output("WARNING failure 1");
 	handle_async_service_check_result(svc1, tmp_check_result);
 
 	ok(svc1->state_type == SOFT_STATE, "Soft state");
@@ -256,28 +272,28 @@ int main(int argc, char **argv)
 
 	setup_check_result();
 	tmp_check_result->return_code = STATE_WARNING;
-	tmp_check_result->output = strdup("WARNING failure 2");
+	set_check_result_output("WARNING failure 2");
 	handle_async_service_check_result(svc1, tmp_check_result);
 	ok(svc1->state_type == SOFT_STATE, "Soft state");
 	ok(svc1->acknowledgement_type == ACKNOWLEDGEMENT_NORMAL, "Ack left");
 
 	setup_check_result();
 	tmp_check_result->return_code = STATE_WARNING;
-	tmp_check_result->output = strdup("WARNING failure 3");
+	set_check_result_output("WARNING failure 3");
 	handle_async_service_check_result(svc1, tmp_check_result);
 	ok(svc1->state_type == SOFT_STATE, "Soft state");
 	ok(svc1->acknowledgement_type == ACKNOWLEDGEMENT_NORMAL, "Ack left");
 
 	setup_check_result();
 	tmp_check_result->return_code = STATE_WARNING;
-	tmp_check_result->output = strdup("WARNING failure 4");
+	set_check_result_output("WARNING failure 4");
 	handle_async_service_check_result(svc1, tmp_check_result);
 	ok(svc1->state_type == HARD_STATE, "Hard state");
 	ok(svc1->acknowledgement_type == ACKNOWLEDGEMENT_NORMAL, "Ack left on hard failure");
 
 	setup_check_result();
 	tmp_check_result->return_code = STATE_OK;
-	tmp_check_result->output = strdup("Back to OK");
+	set_check_result_output("Back to OK");
 	handle_async_service_check_result(svc1, tmp_check_result);
 	ok(svc1->acknowledgement_type == ACKNOWLEDGEMENT_NONE, "Ack removed");
 	destroy_objects();
@@ -300,7 +316,7 @@ int main(int argc, char **argv)
 	svc1->max_attempts = 2;
 	setup_check_result();
 	tmp_check_result->return_code = STATE_WARNING;
-	tmp_check_result->output = strdup("WARNING failure 1");
+	set_check_result_output("WARNING failure 1");
 
 	handle_async_service_check_result(svc1, tmp_check_result);
 
@@ -310,13 +326,13 @@ int main(int argc, char **argv)
 
 	setup_check_result();
 	tmp_check_result->return_code = STATE_WARNING;
-	tmp_check_result->output = strdup("WARNING failure 2");
+	set_check_result_output("WARNING failure 2");
 	handle_async_service_check_result(svc1, tmp_check_result);
 	ok(svc1->acknowledgement_type == ACKNOWLEDGEMENT_NORMAL, "Ack left");
 
 	setup_check_result();
 	tmp_check_result->return_code = STATE_OK;
-	tmp_check_result->output = strdup("Back to OK");
+	set_check_result_output("Back to OK");
 	handle_async_service_check_result(svc1, tmp_check_result);
 	ok(svc1->acknowledgement_type == ACKNOWLEDGEMENT_NONE, "Ack removed");
 	destroy_objects();
@@ -337,13 +353,14 @@ int main(int argc, char **argv)
 	host1->plugin_output = strdup("");
 	host1->long_plugin_output = strdup("");
 	host1->perf_data = strdup("");
+	free(host1->check_command);
 	host1->check_command = strdup("Dummy command required");
 	host1->accept_passive_checks = TRUE;
 	passive_host_checks_are_soft = TRUE;
 	setup_check_result();
 
 	tmp_check_result->return_code = STATE_CRITICAL;
-	tmp_check_result->output = strdup("DOWN failure 2");
+	set_check_result_output("DOWN failure 2");
 	tmp_check_result->check_type = HOST_CHECK_PASSIVE;
 	handle_async_host_check_result(host1, tmp_check_result);
 	ok(host1->acknowledgement_type == ACKNOWLEDGEMENT_NONE, "No ack set");
@@ -354,6 +371,7 @@ int main(int argc, char **argv)
 
 	host1->acknowledgement_type = ACKNOWLEDGEMENT_NORMAL;
 
+	free(tmp_check_result->output);
 	tmp_check_result->output = strdup("DOWN failure 3");
 	handle_async_host_check_result(host1, tmp_check_result);
 	ok(host1->acknowledgement_type == ACKNOWLEDGEMENT_NORMAL, "Ack should be retained as in soft state");
@@ -363,6 +381,7 @@ int main(int argc, char **argv)
 		diag("plugin_output=%s", host1->plugin_output);
 
 
+	free(tmp_check_result->output);
 	tmp_check_result->output = strdup("DOWN failure 4");
 	handle_async_host_check_result(host1, tmp_check_result);
 	ok(host1->acknowledgement_type == ACKNOWLEDGEMENT_NORMAL, "Ack should be retained as in soft state");
@@ -373,7 +392,7 @@ int main(int argc, char **argv)
 
 
 	tmp_check_result->return_code = STATE_OK;
-	tmp_check_result->output = strdup("UP again");
+	set_check_result_output("UP again");
 	handle_async_host_check_result(host1, tmp_check_result);
 	ok(host1->acknowledgement_type == ACKNOWLEDGEMENT_NONE, "Ack reset due to state change");
 	if (!ok(host1->current_attempt == 1, "Attempts reset"))
@@ -381,7 +400,7 @@ int main(int argc, char **argv)
 	if (!ok(strcmp(host1->plugin_output, "UP again") == 0, "output set"))
 		diag("plugin_output=%s", host1->plugin_output);
 	destroy_objects();
-
+	destroy_check_result();
 	destroy_event_queue();
 
 	return exit_status();
