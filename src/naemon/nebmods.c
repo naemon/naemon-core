@@ -591,9 +591,9 @@ int neb_deregister_callback(enum NEBCallbackType callback_type, void *callback_f
 		return NEBERROR_CALLBACKNOTFOUND;
 
 	else {
-		/* only one item in the list */
+		/* unlink the callback from the list */
 		if (temp_callback != last_callback->next)
-			neb_callback_list[callback_type] = NULL;
+			neb_callback_list[callback_type] = next_callback;
 		else
 			last_callback->next = next_callback;
 		nm_free(temp_callback);
@@ -730,6 +730,7 @@ int neb_free_callback_list(void)
 	}
 
 	nm_free(neb_callback_list);
+	neb_callback_list = NULL;
 
 	return OK;
 }
