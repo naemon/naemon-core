@@ -893,11 +893,11 @@ static int grab_standard_host_macro_r(nagios_macros *mac, int macro_type, host *
 
 
 /* computes a hostgroup macro */
-static int grab_standard_hostgroup_macro_r(nagios_macros *mac, int macro_type, hostgroup *temp_hostgroup, char **output)
+static int grab_standard_hostgroup_macro_r(nagios_macros *mac, int macro_type, hostgroup *temp_hostgroup, char **output, int *free_macro)
 {
 	char *temp_buffer = NULL;
 
-	if (temp_hostgroup == NULL || output == NULL)
+	if (temp_hostgroup == NULL || output == NULL || free_macro == NULL)
 		return ERROR;
 
 	/* get the macro value */
@@ -936,10 +936,12 @@ static int grab_standard_hostgroup_macro_r(nagios_macros *mac, int macro_type, h
 	switch (macro_type) {
 	case MACRO_HOSTGROUPACTIONURL:
 	case MACRO_HOSTGROUPNOTESURL:
+		*free_macro = TRUE;
 		process_macros_r(mac, *output, &temp_buffer, URL_ENCODE_MACRO_CHARS);
 		*output = temp_buffer;
 		break;
 	case MACRO_HOSTGROUPNOTES:
+		*free_macro = TRUE;
 		process_macros_r(mac, *output, &temp_buffer, 0);
 		*output = temp_buffer;
 		break;
@@ -1147,10 +1149,12 @@ static int grab_standard_service_macro_r(nagios_macros *mac, int macro_type, ser
 	switch (macro_type) {
 	case MACRO_SERVICEACTIONURL:
 	case MACRO_SERVICENOTESURL:
+		*free_macro = TRUE;
 		process_macros_r(mac, *output, &temp_buffer, URL_ENCODE_MACRO_CHARS);
 		*output = temp_buffer;
 		break;
 	case MACRO_SERVICENOTES:
+		*free_macro = TRUE;
 		process_macros_r(mac, *output, &temp_buffer, 0);
 		*output = temp_buffer;
 		break;
@@ -1163,14 +1167,14 @@ static int grab_standard_service_macro_r(nagios_macros *mac, int macro_type, ser
 
 
 /* computes a servicegroup macro */
-static int grab_standard_servicegroup_macro_r(nagios_macros *mac, int macro_type, servicegroup *temp_servicegroup, char **output)
+static int grab_standard_servicegroup_macro_r(nagios_macros *mac, int macro_type, servicegroup *temp_servicegroup, char **output, int *free_macro)
 {
 	servicesmember *temp_servicesmember = NULL;
 	char *temp_buffer = NULL;
 	unsigned int temp_len = 0;
 	unsigned int init_len = 0;
 
-	if (temp_servicegroup == NULL || output == NULL)
+	if (temp_servicegroup == NULL || output == NULL || free_macro == NULL)
 		return ERROR;
 
 	/* get the macro value */
@@ -1240,10 +1244,12 @@ static int grab_standard_servicegroup_macro_r(nagios_macros *mac, int macro_type
 	switch (macro_type) {
 	case MACRO_SERVICEGROUPACTIONURL:
 	case MACRO_SERVICEGROUPNOTESURL:
+		*free_macro = TRUE;
 		process_macros_r(mac, *output, &temp_buffer, URL_ENCODE_MACRO_CHARS);
 		*output = temp_buffer;
 		break;
 	case MACRO_SERVICEGROUPNOTES:
+		*free_macro = TRUE;
 		process_macros_r(mac, *output, &temp_buffer, 0);
 		*output = temp_buffer;
 		break;
@@ -1625,6 +1631,7 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 
 			g_tree_foreach(temp_hostgroup->members, concat_macrox_value, &params);
 			*output = nm_malloc(params.buffer->len + 1);
+			*free_macro = TRUE;
 			strncpy(*output, params.buffer->str, params.buffer->len);
 			(*output)[params.buffer->len] = 0;
 			g_string_free(params.buffer, TRUE);
@@ -1657,7 +1664,7 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		}
 
 		/* get the hostgroup macro value */
-		result = grab_standard_hostgroup_macro_r(mac, macro_type, temp_hostgroup, output);
+		result = grab_standard_hostgroup_macro_r(mac, macro_type, temp_hostgroup, output, free_macro);
 		break;
 
 	/******************/
@@ -1804,7 +1811,7 @@ static int grab_macrox_value_r(nagios_macros *mac, int macro_type, char *arg1, c
 		}
 
 		/* get the servicegroup macro value */
-		result = grab_standard_servicegroup_macro_r(mac, macro_type, temp_servicegroup, output);
+		result = grab_standard_servicegroup_macro_r(mac, macro_type, temp_servicegroup, output, free_macro);
 		break;
 
 	/******************/
