@@ -359,6 +359,8 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	if (runchk_result == ERROR) {
 		nm_log(NSLOG_RUNTIME_ERROR,
 		       "Unable to send check for host '%s' to worker (ret=%d)\n", hst->name, runchk_result);
+		free_check_result(cr);
+		nm_free(cr);
 	} else {
 		/* do the book-keeping */
 		currently_running_host_checks++;

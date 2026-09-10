@@ -426,6 +426,8 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	if (runchk_result == ERROR) {
 		nm_log(NSLOG_RUNTIME_ERROR,
 		       "Unable to send check for service '%s' on host '%s' to worker (ret=%d)\n", svc->description, svc->host_name, runchk_result);
+		free_check_result(cr);
+		nm_free(cr);
 	} else {
 		/* do the book-keeping */
 		currently_running_service_checks++;
