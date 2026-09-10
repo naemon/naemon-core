@@ -164,6 +164,8 @@ void destroy_contact(contact *this_contact)
 	nm_free(this_contact->pager);
 	for (j = 0; j < MAX_CONTACT_ADDRESSES; j++)
 		nm_free(this_contact->address[j]);
+	nm_free(this_contact->host_notification_period);
+	nm_free(this_contact->service_notification_period);
 
 	free_objectlist(&this_contact->contactgroups_ptr);
 	nm_free(this_contact);
