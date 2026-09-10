@@ -8,6 +8,7 @@
 #include "lib/libnaemon.h"
 #include <check.h>
 #include <string.h>
+#include <unistd.h>
 
 /*
  * A note about worker tests:
@@ -279,6 +280,7 @@ void worker_test_setup(void)
 	open_debug_log();
 
 	init_iobroker();
+	nagios_pid = (int)getpid();
 	enable_timing_point = 1;
 	qh_socket_path = "/tmp/qh-socket";
 	qh_init(qh_socket_path);
@@ -312,6 +314,7 @@ void worker_test_teardown(void)
 	wproc_num_workers_online = 0;
 	wproc_num_workers_spawned = 0;
 	wproc_num_workers_desired = 0;
+	nagios_pid = 0;
 }
 
 Suite *worker_suite(void)
