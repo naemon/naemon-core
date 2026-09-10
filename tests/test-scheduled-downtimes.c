@@ -93,6 +93,7 @@ void teardown(void)
 	destroy_objects_host();
 	cleanup_retention_data();
 	cleanup_downtime_data();
+	free_comment_data();
 	free(log_file);
 }
 
