@@ -435,6 +435,7 @@ static void xodtemplate_free_memory(void)
 		nm_free(this_service->contact_groups);
 		nm_free(this_service->contacts);
 		nm_free(this_service->service_groups);
+		nm_free(this_service->host_name);
 
 		if (this_service->is_copy == FALSE) {
 			/* free custom variables */
@@ -2352,7 +2353,7 @@ static int xodtemplate_duplicate_service(xodtemplate_service *temp_service, char
 	memcpy(new_service, temp_service, sizeof(*new_service));
 	new_service->is_copy = TRUE;
 	new_service->id = xodcount.services++;
-	new_service->host_name = host_name;
+	new_service->host_name = nm_strdup(host_name);
 
 	/* tag service apply on host group */
 	new_service->is_from_hostgroup = from_hg;
@@ -2435,6 +2436,7 @@ static int xodtemplate_duplicate_services(void)
 			}
 			/* we don't need this anymore now that we have the hlist */
 			nm_free(temp_service->host_name);
+			temp_service->host_name = NULL;
 		}
 
 		/*
@@ -2474,7 +2476,7 @@ static int xodtemplate_duplicate_services(void)
 				/* if this is the last duplication, use the existing entry */
 				if (!next && !hlist->next) {
 					temp_service->id = xodcount.services++;
-					temp_service->host_name = h->host_name;
+					temp_service->host_name = nm_strdup(h->host_name);
 					temp_service->is_from_hostgroup = (hg != &fake_hg);
 				} else {
 					/* duplicate service definition */
