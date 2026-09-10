@@ -1147,6 +1147,11 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 	/* handle errors */
 	if (error == TRUE) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error in configuration file '%s' - Line %d (%s)", main_config_file, current_line, (error_message == NULL) ? "NULL" : error_message);
+		mmap_fclose(thefile);
+		nm_free(input);
+		nm_free(variable);
+		nm_free(value);
+		nm_free(error_message);
 		return ERROR;
 	}
 
