@@ -101,24 +101,22 @@ START_TEST(kvvec_tests)
 {
 	int i, j;
 	struct kvvec *kvv, *kvv2, *kvv3;
-	struct kvvec_buf *kvvb, *kvvb2;
-	struct kvvec k = KVVEC_INITIALIZER;
+	struct kvvec_buf *kvvb, *kvvb2, *kvvb1;
 
 	kvv = kvvec_create(1);
 	ck_assert_int_eq(kvvec_capacity(kvv), 1);
 	kvv2 = kvvec_create(1);
-	kvv3 = kvvec_create(1);
 	add_vars(kvv, test_data, 1239819);
 
 	kvvec_sort(kvv);
 	kvvec_foreach(kvv, NULL, walker);
 
 	/* kvvec2buf -> buf2kvvec -> kvvec2buf -> buf2kvvec conversion */
-	kvvb = kvvec2buf(kvv, KVSEP, PAIRSEP, OVERALLOC);
-	kvv3 = buf2kvvec(kvvb->buf, kvvb->buflen, KVSEP, PAIRSEP, KVVEC_COPY);
+	kvvb1 = kvvec2buf(kvv, KVSEP, PAIRSEP, OVERALLOC);
+	kvv3 = buf2kvvec(kvvb1->buf, kvvb1->buflen, KVSEP, PAIRSEP, KVVEC_COPY);
 	kvvb2 = kvvec2buf(kvv3, KVSEP, PAIRSEP, OVERALLOC);
 
-	buf2kvvec_prealloc(kvv2, kvvb->buf, kvvb->buflen, KVSEP, PAIRSEP, KVVEC_ASSIGN);
+	buf2kvvec_prealloc(kvv2, kvvb1->buf, kvvb1->buflen, KVSEP, PAIRSEP, KVVEC_ASSIGN);
 	kvvec_foreach(kvv2, kvv, walker);
 
 	kvvb = kvvec2buf(kvv, KVSEP, PAIRSEP, OVERALLOC);
@@ -147,23 +145,32 @@ START_TEST(kvvec_tests)
 	ck_assert(kvvb2->bufsize == kvvb->bufsize);
 	ck_assert(!memcmp(kvvb2->buf, kvvb->buf, kvvb->bufsize));
 
+	free(kvvb1->buf);
+	free(kvvb1);
 	free(kvvb->buf);
 	free(kvvb);
 	free(kvvb2->buf);
 	free(kvvb2);
-	kvvec_destroy(kvv, 1);
+	kvvec_destroy(kvv2, 0);
+	kvvec_destroy(kvv, KVVEC_FREE_ALL);
 	kvvec_destroy(kvv3, KVVEC_FREE_ALL);
 
 	for (j = 0; pair_term_missing[j]; j++) {
-		buf2kvvec_prealloc(&k, strdup(pair_term_missing[j]), strlen(pair_term_missing[j]), '=', ';', KVVEC_COPY);
-		for (i = 0; i < k.kv_pairs; i++) {
-			struct key_value *kv = &k.kv[i];
+		char *str = strdup(pair_term_missing[j]);
+		struct kvvec *k = kvvec_create(0);
+
+		buf2kvvec_prealloc(k, str, strlen(str), '=', ';', KVVEC_COPY);
+		free(str);
+
+		for (i = 0; i < k->kv_pairs; i++) {
+			struct key_value *kv = &k->kv[i];
 			ck_assert_msg(kv->key_len == kv->value_len, "%d.%d; key_len=%d; value_len=%d (%s = %s)",
 			              j, i, kv->key_len, kv->value_len, kv->key, kv->value);
 			ck_assert_msg(kv->value_len == (int)strlen(kv->value),
 			              "%d.%d; kv->value_len(%d) == strlen(%s)(%d)",
 			              j, i, kv->value_len, kv->value, (int)strlen(kv->value));
 		}
+		kvvec_destroy(k, KVVEC_FREE_ALL);
 	}
 
 }
