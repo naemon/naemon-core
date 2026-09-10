@@ -87,6 +87,13 @@ int main(int argc, char **argv)
 	ok_int(bitmap_count_unset_bits(a), bitmap_cardinality(a), "bitmap_clear() must clear all");
 	ok_int(bitmap_count_set_bits(a), 0, "bitmap_clear() must clear all (part 2)");
 
+	bitmap_destroy(r_union);
+	bitmap_destroy(r_diff);
+	bitmap_destroy(r_symdiff);
+	bitmap_destroy(r_intersect);
+	bitmap_destroy(a);
+	bitmap_destroy(b);
+
 	t_end();
 	return 0;
 }
