@@ -27,7 +27,7 @@
  *****************************************************************************/
 #include <string.h>
 
-#include "naemon/objects_timeperiod.c"
+#include "naemon/objects_timeperiod.h"
 #include "naemon/utils.h"
 #include "naemon/configuration.h"
 #include "naemon/defaults.h"

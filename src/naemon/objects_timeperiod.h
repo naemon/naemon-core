@@ -91,5 +91,8 @@ int check_time_against_period(time_t, const timeperiod *);	/* check to see if a 
 void get_next_valid_time(time_t, time_t *, const timeperiod *);	/* get the next valid time in a time period */
 void get_next_invalid_time(time_t, time_t *, const timeperiod *);	/* get the next invalid time in a time period (aka end of the period) */
 
+timerange *_get_matching_timerange(time_t, const timeperiod *);	/* internal, exported for testing */
+void _get_next_valid_time(time_t, time_t *, const timeperiod *);	/* internal, exported for testing */
+
 NAGIOS_END_DECL
 #endif

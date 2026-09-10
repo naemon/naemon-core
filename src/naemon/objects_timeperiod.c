@@ -411,7 +411,7 @@ static int get_dst_shift(time_t *start, time_t *end)
 
 
 /*#define TEST_TIMEPERIODS_A 1*/
-static timerange *_get_matching_timerange(time_t test_time, const timeperiod *tperiod)
+timerange *_get_matching_timerange(time_t test_time, const timeperiod *tperiod)
 {
 	daterange *temp_daterange = NULL;
 	time_t start_time = (time_t)0L;
@@ -677,9 +677,6 @@ int check_time_against_period(time_t test_time, const timeperiod *tperiod)
 }
 
 
-/*#define TEST_TIMEPERIODS_B 1*/
-static void _get_next_valid_time(time_t pref_time, time_t *valid_time, const timeperiod *tperiod);
-
 /* calculate the next time this period ends */
 void get_next_invalid_time(time_t pref_time, time_t *invalid_time, const timeperiod *tperiod)
 {
@@ -796,7 +793,7 @@ void get_next_invalid_time(time_t pref_time, time_t *invalid_time, const timeper
 
 
 /* Separate this out from public get_next_valid_time for testing */
-static void _get_next_valid_time(time_t pref_time, time_t *valid_time, const timeperiod *tperiod)
+void _get_next_valid_time(time_t pref_time, time_t *valid_time, const timeperiod *tperiod)
 {
 	timeperiodexclusion *temp_timeperiodexclusion = NULL;
 	int depth = 0;
