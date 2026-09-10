@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "nsutils.c"
 #include "t-utils.h"
 #include <sys/time.h>
@@ -34,6 +35,7 @@ int main(int argc, char **argv)
 	}
 	s2 = mkstr("arg varg foo %d", 12);
 	ok_str(s1, s2, "mkstr() must build proper strings");
+	free(s1);
 	if (real_online_cpus() > 0) {
 		t_pass("%d online cpus detected", real_online_cpus());
 	} else {
