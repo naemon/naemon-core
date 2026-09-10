@@ -87,6 +87,7 @@ int log_debug_info(int, int, const char *, ...)
 __attribute__((__format__(__printf__, 3, 4)));
 
 int rotate_log_file(time_t);            /* rotates the main log file */
+int write_to_log(char *, unsigned long, time_t *); /* writes a line to the main log file */
 int write_log_file_info(time_t *);      /* records log file/version info */
 int open_debug_log(void);
 int close_debug_log(void);

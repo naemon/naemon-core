@@ -4,7 +4,8 @@
 #include <unistd.h>
 
 #include <check.h>
-#include "naemon/logging.c"
+#include "naemon/logging.h"
+#include "naemon/globals.h"
 
 
 START_TEST(common_case)
@@ -20,7 +21,7 @@ START_TEST(common_case)
 	workdir = getcwd(NULL, 0);
 	ret = asprintf(&rotated_file, "%s/old.log", workdir);
 	ret = asprintf(&log_file, "%s/active.log", workdir);
-	free(workdir);
+	nm_free(workdir);
 
 	// please fail if the files already exist:
 	ck_assert_msg(access(log_file, F_OK) == -1,
@@ -51,6 +52,8 @@ START_TEST(common_case)
 	ck_assert_str_eq("[5678] Log information\n", rotated_contents);
 	unlink(rotated_file);
 	unlink(log_file);
+	nm_free(rotated_file);
+	nm_free(log_file);
 }
 END_TEST
 

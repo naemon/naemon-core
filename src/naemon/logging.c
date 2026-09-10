@@ -95,7 +95,7 @@ static int write_to_syslog(char *buffer, unsigned long data_type)
 }
 
 /* write something to the naemon log file */
-static int write_to_log(char *buffer, unsigned long data_type, time_t *timestamp)
+int write_to_log(char *buffer, unsigned long data_type, time_t *timestamp)
 {
 	FILE *fp;
 	time_t log_time = 0L;
