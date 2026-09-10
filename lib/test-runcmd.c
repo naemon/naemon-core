@@ -115,13 +115,17 @@ int main(int argc, char **argv)
 			fd = runcmd_open(cmd, pfd, pfderr);
 			if (read(pfd[0], out, BUF_SIZE) < 0) {
 				t_fail("read returned failure: %s", strerror(errno));
+				close(fd);
+				free(cmd);
 				continue;
 			}
 			ok_str(cases[i].output, out, "Echoing a command should give expected output");
 			close(pfd[0]);
 			close(pfderr[0]);
 			close(fd);
+			free(cmd);
 		}
+		free(out);
 	}
 	ret = t_end();
 	t_reset();
@@ -134,6 +138,8 @@ int main(int argc, char **argv)
 			char *out_env[256];
 			int result = runcmd_cmd2strv(anomaly[i].cmd, &out_argc, out_argv, &out_envc, out_env);
 			ok_int(result, anomaly[i].ret, anomaly[i].cmd);
+			free(out_argv[0]);
+			free(out_env[0]);
 		}
 	}
 	r2 = t_end();
@@ -157,6 +163,8 @@ int main(int argc, char **argv)
 			for (x = 0; x < parse_case[x].envc_exp; x++) {
 				ok_str(parse_case[i].env_exp[x], out_env[x], "env comparison test");
 			}
+			free(out_argv[0]);
+			free(out_env[0]);
 		}
 	}
 
