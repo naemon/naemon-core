@@ -67,6 +67,9 @@ START_TEST(host_soft_to_hard)
 	ck_assert(cur.current_state == STATE_DOWN);
 	ck_assert(cur.has_been_checked == 1);
 	ck_assert(cur.state_type == HARD_STATE);
+	free(cur.plugin_output);
+	free(cur.long_plugin_output);
+	free(cur.perf_data);
 }
 END_TEST
 
