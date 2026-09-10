@@ -14,7 +14,6 @@
 #include "naemon/perfdata.h"
 #include "tap.h"
 
-int date_format;
 
 /* Test specific functions + variables */
 service *svc1 = NULL, *svc2 = NULL;
@@ -45,6 +44,7 @@ void setup_check_result(void)
 
 void destroy_objects(void)
 {
+	clear_event_queue();
 	destroy_objects_host();
 	destroy_objects_service(TRUE);
 }
