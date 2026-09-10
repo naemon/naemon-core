@@ -75,7 +75,7 @@ void teardown(void)
 START_TEST(retention_data_for_hosts_long_output)
 {
 
-	const char *long_output = g_strescape("This is a long \n plugin output \n of some sort \n and such \n", "");
+	char *long_output = g_strescape("This is a long \n plugin output \n of some sort \n and such \n", "");
 
 	hst->long_plugin_output = strdup(long_output);
 
@@ -87,13 +87,15 @@ START_TEST(retention_data_for_hosts_long_output)
 	ck_assert(OK == read_initial_state_information());
 	ck_assert_str_eq(hst->long_plugin_output, long_output);
 
+	g_free(long_output);
+
 }
 END_TEST
 
 START_TEST(retention_data_for_services_long_output)
 {
 
-	const char *long_output = g_strescape("This is a long \n plugin output \n of some sort \n and such \n", "");
+	char *long_output = g_strescape("This is a long \n plugin output \n of some sort \n and such \n", "");
 
 	svc->long_plugin_output = strdup(long_output);
 
@@ -104,6 +106,8 @@ START_TEST(retention_data_for_services_long_output)
 
 	ck_assert(OK == read_initial_state_information());
 	ck_assert_str_eq(svc->long_plugin_output, long_output);
+
+	g_free(long_output);
 
 }
 END_TEST
