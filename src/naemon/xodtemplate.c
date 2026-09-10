@@ -2565,6 +2565,9 @@ static int xodtemplate_duplicate_hostescalation(xodtemplate_hostescalation *temp
 
 	new_hostescalation->host_name = host_name;
 
+	if (temp_hostescalation->escalation_period != NULL)
+		new_hostescalation->escalation_period = nm_strdup(temp_hostescalation->escalation_period);
+
 	if (temp_hostescalation->contact_groups != NULL)
 		new_hostescalation->contact_groups = nm_strdup(temp_hostescalation->contact_groups);
 
@@ -2591,6 +2594,9 @@ static int xodtemplate_duplicate_serviceescalation(xodtemplate_serviceescalation
 	new_serviceescalation->is_copy = TRUE;
 	new_serviceescalation->host_name = host_name;
 	new_serviceescalation->service_description = svc_description;
+
+	if (temp_serviceescalation->escalation_period != NULL)
+		new_serviceescalation->escalation_period = nm_strdup(temp_serviceescalation->escalation_period);
 
 	if (temp_serviceescalation->contact_groups != NULL)
 		new_serviceescalation->contact_groups = nm_strdup(temp_serviceescalation->contact_groups);
@@ -6016,9 +6022,7 @@ static int xodtemplate_register_and_destroy_hostescalation(void *he_)
 	int result;
 
 	result = xodtemplate_register_hostescalation(he);
-	if (he->is_copy == FALSE) {
-		nm_free(he->escalation_period);
-	}
+	nm_free(he->escalation_period);
 	nm_free(he->contact_groups);
 	nm_free(he->contacts);
 	nm_free(he);
@@ -6487,9 +6491,7 @@ static int xodtemplate_register_and_destroy_serviceescalation(void *se_)
 	int result;
 	result = xodtemplate_register_serviceescalation(se);
 
-	if (se->is_copy == FALSE)
-		nm_free(se->escalation_period);
-
+	nm_free(se->escalation_period);
 	nm_free(se->contact_groups);
 	nm_free(se->contacts);
 	nm_free(se);
