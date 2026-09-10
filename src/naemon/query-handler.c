@@ -26,7 +26,7 @@ struct query_handler {
 static struct query_handler *qhandlers;
 static int qh_listen_sock = -1; /* the listening socket */
 static unsigned int qh_running;
-unsigned int qh_max_running = 0; /* defaults to unlimited */
+static unsigned int qh_max_running = 0; /* defaults to unlimited */
 static GHashTable *qh_table;
 
 /* the echo service. stupid, but useful for testing */
