@@ -20,7 +20,6 @@
 
 
 static char *main_config_file = NULL;
-char *status_file = NULL;
 static char *mrtg_variables = NULL;
 static const char *mrtg_delimiter = "\n";
 char *mrtg_delimiter_save = NULL;
@@ -29,10 +28,8 @@ static int mrtg_mode = FALSE;
 
 static time_t status_creation_date = 0L;
 static char *status_version = NULL;
-time_t program_start = 0L;
 static int status_service_entries = 0;
 static int status_host_entries = 0;
-int nagios_pid = 0;
 
 static double min_service_state_change = 0.0;
 static int have_min_service_state_change = FALSE;
