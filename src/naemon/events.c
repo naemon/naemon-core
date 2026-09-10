@@ -23,8 +23,7 @@ struct timed_event_queue {
 	size_t size;
 };
 
-struct timed_event_queue *event_queue = NULL; /* our scheduling queue */
-iobroker_set *nagios_iobs = NULL;
+static struct timed_event_queue *event_queue = NULL; /* our scheduling queue */
 
 /******************************************************************/
 /************************** TIME HELPERS *************************/

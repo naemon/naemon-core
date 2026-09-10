@@ -47,6 +47,8 @@ objectlist *objcfg_files = NULL;
 objectlist *objcfg_dirs = NULL;
 int upipe_fd[2];
 
+iobroker_set *nagios_iobs = NULL;
+
 int num_check_workers = 0; /* auto-decide */
 char *qh_socket_path = NULL; /* disabled */
 
