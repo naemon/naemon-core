@@ -2436,7 +2436,6 @@ static int xodtemplate_duplicate_services(void)
 			}
 			/* we don't need this anymore now that we have the hlist */
 			nm_free(temp_service->host_name);
-			temp_service->host_name = NULL;
 		}
 
 		/*
