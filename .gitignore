@@ -65,3 +65,5 @@ debian/tmp/
 debian/libnaemon/
 debian/files
 build
+# VS Code dev container: local overrides
+.devcontainer/.env

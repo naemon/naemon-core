@@ -78,6 +78,62 @@
             "dependsOn":[
                 "autogen"
             ]
+        },
+        {
+            // --- Event broker modules ------------------------------------
+            // These tasks expect the module sources next to your naemon-core
+            // checkout. In the dev container they are mounted at
+            // /workspaces/modules, see ../.devcontainer/docker-compose.yml.
+            // Run the "initial" task first: both modules locate naemon
+            // through build/lib/pkgconfig/naemon.pc, which "make install"
+            // creates.
+            //
+            // Note that neither task installs the module. It is loaded
+            // straight from its build directory, which keeps the debug
+            // symbols and avoids juggling install prefixes.
+            "label": "broker module: build (mod_gearman)",
+            "type": "shell",
+            // autogen.sh passes its arguments on to ./configure, just like
+            // the one shipped with naemon does.
+            "command": "PKG_CONFIG_PATH=${workspaceFolder}/build/lib/pkgconfig ./autogen.sh --enable-debug --with-user=$(id -un) && make",
+            "options": {
+                "cwd": "/workspaces/modules/mod_gearman"
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "broker module: build (statusengine)",
+            "type": "shell",
+            // RabbitMQ is not part of this dev setup, only a gearman job server.
+            "command": "PKG_CONFIG_PATH=${workspaceFolder}/build/lib/pkgconfig sh -c 'meson setup --buildtype=debug -Drabbitmq=false -Dgearman=true build || meson setup --reconfigure --buildtype=debug -Drabbitmq=false -Dgearman=true build' && ninja -C build",
+            "options": {
+                "cwd": "/workspaces/modules/broker"
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            // Copies the example broker configuration from
+            // .devcontainer/examples into the build tree. Existing files are
+            // never overwritten, so your own changes survive a re-run.
+            "label": "broker modules: install config drop-ins",
+            "type": "shell",
+            "command": "${workspaceFolder}/.devcontainer/install-module-config.sh",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "dependsOn": [
+                "mkdir"
+            ]
         }
     ]
 }

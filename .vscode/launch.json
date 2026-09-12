@@ -42,6 +42,45 @@
             //],
 
             "miDebuggerPath": "/usr/bin/gdb",
+          },
+          // Same as above, but prepared for developing event broker modules,
+          // for example mod_gearman or the statusengine broker. Works both in
+          // the dev container (see ../.devcontainer) and on native Linux.
+          {
+            "name": "Launch in gdb (with broker modules)",
+            "type": "cppdbg",
+            "request": "launch",
+            "preLaunchTask": "make all",
+            "program": "${workspaceFolder}/src/naemon/.libs/naemon",
+            "args": [
+                "${workspaceFolder}/build/etc/naemon/naemon.cfg"
+            ],
+            "cwd": "${workspaceFolder}",
+            // Deliberately only .libs, not build/lib: broker modules are loaded
+            // by absolute path and their "NEEDED libnaemon.so.0" is resolved
+            // through this variable. Adding build/lib could pick up the stale
+            // copy from the last "make install" and you would debug against
+            // sources that no longer match the library.
+            "environment": [
+                { "name": "LD_LIBRARY_PATH", "value": "${workspaceFolder}/.libs" }
+            ],
+            // Stopping at the entry point would just mean stepping all the way
+            // to neb_load_all_modules() before anything module related happens.
+            "stopAtEntry": false,
+            "launchCompleteCommand": "exec-run",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                // Breakpoints in module sources cannot be resolved before the
+                // module has been dlopen()ed in neb_load_module().
+                { "description": "Allow breakpoints in modules that are not loaded yet",
+                  "text": "set breakpoint pending on" },
+                { "description": "Do not stop every time module symbols are loaded",
+                  "text": "set stop-on-solib-events 0" },
+                // Broker modules talk to sockets, just like the Query Handler.
+                { "description": "Ignore SIGPIPE",
+                  "text": "handle SIGPIPE nostop noprint pass" }
+            ]
           }
     ]
 }

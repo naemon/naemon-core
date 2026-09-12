@@ -1,0 +1,33 @@
+# Statusengine broker configuration for the naemon dev container.
+#
+# Trimmed down version of statusengine.toml from
+# https://github.com/statusengine/broker -- see that file for every option.
+#
+# The RabbitMQ backend is intentionally not used here; the build task passes
+# -Drabbitmq=false and docker-compose.yml only provides a gearman job server.
+
+[[Gearman]]
+# The gearmand service from .devcontainer/docker-compose.yml.
+URL = "gearmand:4730"
+
+HostStatus = "statusngin_hoststatus"
+HostCheck = "statusngin_hostchecks"
+ServiceStatus = "statusngin_servicestatus"
+ServiceCheck = "statusngin_servicechecks"
+ServicePerfData = "statusngin_service_perfdata"
+StateChange = "statusngin_statechanges"
+AcknowledgementData = "statusngin_acknowledgements"
+FlappingData = "statusngin_flappings"
+DowntimeData = "statusngin_downtimes"
+ContactNotificationMethodData = "statusngin_contactnotificationmethod"
+RestartData = "statusngin_core_restart"
+WorkerCommand = "statusngin_cmd"
+
+[Scheduler]
+StartupScheduleMax = 30
+
+[Bulk]
+Queues = ["HostStatus", "HostCheck", "ServiceStatus", "ServiceCheck", "ServicePerfData", "StateChange"]
+
+[Log]
+#Level = Warning

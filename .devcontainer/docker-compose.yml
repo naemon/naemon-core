@@ -1,0 +1,30 @@
+services:
+  naemon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # gdb needs ptrace(). Without these two settings breakpoints will not work.
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+    init: true
+    command: sleep infinity
+    volumes:
+      # Relative to this compose file, so the mount works no matter what the
+      # checkout directory is called locally.
+      - ..:/workspaces/naemon-core:cached
+      # Source of event broker modules you want to build and debug alongside
+      # naemon. Defaults to the parent directory of naemon-core, so a sibling
+      # clone of mod_gearman or statusengine/broker is picked up automatically.
+      # Override NAEMON_MODULES_DIR in .devcontainer/.env to point somewhere else.
+      - ${NAEMON_MODULES_DIR:-../..}:/workspaces/modules:cached
+
+  gearmand:
+    build:
+      context: .
+      dockerfile: gearmand.Dockerfile
+    # Reachable as "gearmand:4730" from the naemon container. The published
+    # port is only needed if you want to run gearadmin from macOS directly.
+    ports:
+      - "4730:4730"

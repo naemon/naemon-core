@@ -1,0 +1,32 @@
+// Development container for naemon-core, see ../.vscode/README.md.
+//
+// Lets you build, run and debug naemon on hosts that cannot do so natively,
+// for example macOS. The existing launch configuration and tasks work
+// unchanged inside the container.
+{
+    "name": "Naemon Core (Ubuntu 26.04)",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "naemon",
+    // Also start the gearman job server, which both mod_gearman and the
+    // statusengine broker module need at runtime.
+    "runServices": [
+        "naemon",
+        "gearmand"
+    ],
+    "workspaceFolder": "/workspaces/naemon-core",
+    // Naemon refuses to start as root, see src/naemon/naemon.c.
+    "remoteUser": "ubuntu",
+    "updateRemoteUserUID": true,
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                // Required for the "cppdbg" debug type used in launch.json.
+                "ms-vscode.cpptools"
+            ],
+            "settings": {
+                "C_Cpp.default.compilerPath": "/usr/bin/gcc"
+            }
+        }
+    },
+    "postCreateCommand": "bash .devcontainer/postCreate.sh"
+}

@@ -1,0 +1,12 @@
+// Extensions VS Code offers to install when this folder is opened,
+// see ./README.md.
+{
+    "recommendations": [
+        // Required for the "cppdbg" debug type used in launch.json and for
+        // IntelliSense, see c_cpp_properties.json.
+        "ms-vscode.cpptools",
+        // Only needed to develop in the dev container described in
+        // ../.devcontainer/, for example on macOS.
+        "ms-vscode-remote.remote-containers"
+    ]
+}
