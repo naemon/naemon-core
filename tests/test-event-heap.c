@@ -10,7 +10,7 @@ static void print_heap(struct timed_event_queue *q, size_t i) {
 	if(i >= q->count)
 		return;
 	if(i==0) printf("\n");
-	ev = q->queue[i];
+	ev = q->queue[i].ev;
 	printf("%3lu %3lu ", i, ev->pos);
 	for(depth = i; depth>0; depth = ((depth-1)>>1))
 		printf("  ");
@@ -32,13 +32,15 @@ static void verify_queue_heap(struct timed_event_queue *q)
 	_ck_assert_int(q->size, >=, q->count);
 
 	for (i = 0; i < q->count; i++) {
+		/* the inline key must never go stale against the event it sorts */
+		_ck_assert_int(q->queue[i].key, ==, evheap_key(&q->queue[i].ev->event_time));
 		child = i * 2 + 1;
 		if (child < q->count) {
-			_ck_assert_int(evheap_compare(q->queue[i], q->queue[child]), <=, 0);
+			_ck_assert_int(q->queue[i].key, <=, q->queue[child].key);
 		}
 		child = i * 2 + 2;
 		if (child < q->count) {
-			_ck_assert_int(evheap_compare(q->queue[i], q->queue[child]), <=, 0);
+			_ck_assert_int(q->queue[i].key, <=, q->queue[child].key);
 		}
 	}
 
@@ -181,7 +183,7 @@ START_TEST(event_heap_count_random_removal)
 		ck_assert_int_ne(q->count, 0);
 
 		/* Pick an event at random */
-		ev = q->queue[rand() % q->count];
+		ev = q->queue[rand() % q->count].ev;
 		evheap_remove(q, ev);
 		free(ev);
 
@@ -299,6 +301,60 @@ START_TEST(event_heap_removal_equal_keys)
 }
 END_TEST
 
+/*
+ * The inline key is tv_sec * 1e9 + tv_nsec, and tv_sec can come from user
+ * input: an acknowledgement or a downtime may be given an end time centuries
+ * away. Such an event must still sort after one that is due in a minute. The
+ * polling tests further down already use delays like these, but each puts a
+ * single event in the queue, where the key never decides anything -- so a
+ * key that wrapped went unnoticed there.
+ */
+START_TEST(event_heap_extreme_times_in_one_heap)
+{
+	/*
+	 * At most one value saturates per direction, so the order is exact.
+	 * Values that do not fit this platform's time_t are skipped: with a
+	 * 32 bit time_t no key can overflow, and the 32 bit limits themselves
+	 * are what gets checked instead.
+	 */
+	static const long long secs[] = {
+		100, 9999999999LL, 0, -9999999999LL, 60, 1,
+		9223372035LL, -9223372035LL, 2147483647LL, -2147483647LL - 1,
+	};
+	static const long long sorted[] = {
+		-9999999999LL, -9223372035LL, -2147483647LL - 1, 0, 1, 60, 100,
+		2147483647LL, 9223372035LL, 9999999999LL,
+	};
+	struct timed_event_queue *q = evheap_create();
+	struct timed_event *ev;
+	size_t i;
+
+	for (i = 0; i < ARRAY_SIZE(secs); i++) {
+		if ((long long)(time_t)secs[i] != secs[i])
+			continue;
+		ev = nm_calloc(1, sizeof(*ev));
+		ev->callback = func_a;
+		ev->event_time.tv_sec = (time_t)secs[i];
+		evheap_add(q, ev);
+	}
+	verify_queue_heap(q);
+
+	for (i = 0; i < ARRAY_SIZE(sorted); i++) {
+		if ((long long)(time_t)sorted[i] != sorted[i])
+			continue;
+		ev = evheap_head(q);
+		ck_assert(ev != NULL);
+		ck_assert_msg((long long)ev->event_time.tv_sec == sorted[i],
+		              "position %zu: expected tv_sec %lld, got %lld", i,
+		              sorted[i], (long long)ev->event_time.tv_sec);
+		evheap_remove(q, ev);
+		nm_free(ev);
+	}
+	ck_assert(evheap_head(q) == NULL);
+	evheap_destroy(q);
+}
+END_TEST
+
 static struct nm_event_execution_properties *cb_props_param;
 static iobroker_set *iobs;
 void test_event_callback(struct nm_event_execution_properties *props)
@@ -410,6 +466,7 @@ Suite *event_heap_suite(void)
 	tcase_add_test(tc_event_heap, event_heap_count_random_removal);
 	tcase_add_test(tc_event_heap, event_heap_remove_last_equal_key);
 	tcase_add_test(tc_event_heap, event_heap_removal_equal_keys);
+	tcase_add_test(tc_event_heap, event_heap_extreme_times_in_one_heap);
 	tcase_add_test(tc_event_heap, event_timespec_msdiff);
 	suite_add_tcase(s, tc_event_heap);
 
