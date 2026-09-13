@@ -8,6 +8,17 @@ on:
 jobs:
   citest:
     runs-on: ubuntu-26.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: optimized
+            cflags: "-O2"
+          - name: debug
+            cflags: "-g -O0"
+          - name: address-sanitizer
+            cflags: "-g -O0 -fsanitize=address -fno-omit-frame-pointer"
+    name: CI (${{ matrix.name }})
     steps:
       - uses: actions/checkout@main
       #- name: Setup tmate session, see https://github.com/marketplace/actions/debugging-with-tmate
@@ -29,7 +40,7 @@ jobs:
 
       - name: run build
         run: |
-          CFLAGS='-g -O0 -fsanitize=address -fno-omit-frame-pointer' ./autogen.sh
+          CFLAGS='${{ matrix.cflags }}' ./autogen.sh
           make
 
       - name: run tests
