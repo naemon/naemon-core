@@ -22,3 +22,4 @@
 /test-scheduled-downtimes
 /test-timeperiod-daycache
 /test-worker
+/test-nm-writebuf

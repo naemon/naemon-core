@@ -132,6 +132,11 @@ tests_test_event_heap_LDADD = $(TESTSLDADD)
 tests_test_event_heap_LDFLAGS = $(TESTSLDFLAGS)
 tests_test_event_heap_CPPFLAGS = $(TESTSCPPFLAGS)
 
+tests_test_nm_writebuf_SOURCES = tests/test-nm-writebuf.c
+tests_test_nm_writebuf_LDADD = $(TESTSLDADD)
+tests_test_nm_writebuf_LDFLAGS = $(TESTSLDFLAGS)
+tests_test_nm_writebuf_CPPFLAGS = $(TESTSCPPFLAGS)
+
 tests_test_timeperiod_daycache_SOURCES = tests/test-timeperiod-daycache.c
 tests_test_timeperiod_daycache_LDADD = $(TESTSLDADD)
 tests_test_timeperiod_daycache_LDFLAGS = $(TESTSLDFLAGS)
@@ -185,6 +190,7 @@ check_PROGRAMS += \
 	tests/test-log \
 	tests/test-config \
 	tests/test-event-heap \
+	tests/test-nm-writebuf \
 	tests/test-timeperiod-daycache \
 	tests/test-external-command-nebcallback \
 	tests/test-kv-command \
