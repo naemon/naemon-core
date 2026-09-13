@@ -676,12 +676,30 @@ neb_cb_resultset *neb_make_callbacks_full(enum NEBCallbackType callback_type, vo
 	return resultset;
 }
 
+int neb_callbacks_registered(enum NEBCallbackType callback_type)
+{
+	if (neb_callback_list == NULL)
+		return 0;
+	return neb_callback_list[callback_type] != NULL;
+}
+
 int neb_make_callbacks(enum NEBCallbackType callback_type, void *data)
 {
 	neb_cb_resultset_iter iter;
 	int rc = 0;
 	neb_cb_result *cb_result = NULL;
-	neb_cb_resultset *resultset = neb_make_callbacks_full(callback_type, data);
+	neb_cb_resultset *resultset;
+
+	/*
+	 * Nothing subscribed to this callback type: the result set would be
+	 * empty and the return code 0. Building and tearing it down costs two
+	 * allocations per call, which is measurable in the check pipeline on
+	 * installations without event broker modules.
+	 */
+	if (neb_callback_list != NULL && neb_callback_list[callback_type] == NULL)
+		return 0;
+
+	resultset = neb_make_callbacks_full(callback_type, data);
 
 	neb_cb_resultset_iter_init(&iter, resultset);
 	while (neb_cb_resultset_iter_next(&iter, &cb_result)) {
