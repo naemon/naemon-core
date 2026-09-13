@@ -330,6 +330,8 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 
 	/* save check info */
 	cr->object_check_type = HOST_CHECK;
+	/* saves the worker callback a lookup by name when the result comes back */
+	cr->object_ptr = hst;
 	cr->host_name = nm_strdup(hst->name);
 	cr->service_description = NULL;
 	cr->check_type = CHECK_TYPE_ACTIVE;
@@ -653,7 +655,7 @@ static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags)
 		currently_running_host_checks--;
 
 	if (wpres) {
-		hst = find_host(cr->host_name);
+		hst = (struct host *)cr->object_ptr;
 		if (hst) {
 			hst->is_executing = FALSE;
 			tv_set(&hst->last_update);

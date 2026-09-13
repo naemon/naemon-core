@@ -1,4 +1,5 @@
 #include <check.h>
+#include <string.h>
 #include "naemon/checks.h"
 #include "naemon/checks_host.h"
 #include "naemon/checks_service.h"
@@ -115,6 +116,101 @@ START_TEST(spool_file_processing)
 }
 END_TEST
 
+/*
+ * process_check_result() can find the object either from cr->object_ptr or,
+ * when that is NULL, by looking host_name/service_description up. Both routes
+ * have to end on the same object, and an unknown name still has to fail.
+ */
+START_TEST(result_routed_by_object_ptr)
+{
+	check_result cr;
+
+	init_check_result(&cr);
+	cr.object_check_type = SERVICE_CHECK;
+	cr.check_type = CHECK_TYPE_PASSIVE;
+	cr.object_ptr = svc;
+	/* deliberately no host_name or service_description: the pointer is enough */
+	cr.return_code = STATE_WARNING;
+	cr.output = nm_strdup("routed by pointer");
+	cr.exited_ok = TRUE;
+
+	ck_assert(OK == process_check_result(&cr));
+	ck_assert_str_eq(svc->plugin_output, "routed by pointer");
+	free_check_result(&cr);
+}
+END_TEST
+
+START_TEST(result_routed_by_name)
+{
+	check_result cr;
+
+	init_check_result(&cr);
+	cr.object_check_type = SERVICE_CHECK;
+	cr.check_type = CHECK_TYPE_PASSIVE;
+	/* object_ptr left NULL by init_check_result(), so the name is used */
+	cr.host_name = nm_strdup(TARGET_HOST_NAME);
+	cr.service_description = nm_strdup(TARGET_SERVICE_NAME);
+	cr.return_code = STATE_CRITICAL;
+	cr.output = nm_strdup("routed by name");
+	cr.exited_ok = TRUE;
+
+	ck_assert(OK == process_check_result(&cr));
+	ck_assert_str_eq(svc->plugin_output, "routed by name");
+	free_check_result(&cr);
+}
+END_TEST
+
+START_TEST(result_with_unknown_name_still_fails)
+{
+	check_result cr;
+
+	init_check_result(&cr);
+	cr.object_check_type = SERVICE_CHECK;
+	cr.check_type = CHECK_TYPE_PASSIVE;
+	cr.host_name = nm_strdup("no such host");
+	cr.service_description = nm_strdup("no such service");
+	cr.return_code = STATE_CRITICAL;
+	cr.output = nm_strdup("should not be stored anywhere");
+	cr.exited_ok = TRUE;
+
+	ck_assert(ERROR == process_check_result(&cr));
+	free_check_result(&cr);
+}
+END_TEST
+
+/*
+ * init_check_result() used to assign fields one by one and missed output_file,
+ * timeout and rusage, which stayed whatever was on the caller's stack. Pin
+ * that it now clears the whole struct, since the object_ptr above is only safe
+ * to dereference because of it.
+ */
+START_TEST(init_check_result_clears_everything)
+{
+	check_result cr;
+
+	memset(&cr, 0xa5, sizeof(cr));
+	init_check_result(&cr);
+
+	ck_assert(cr.object_ptr == NULL);
+	ck_assert(cr.output_file == NULL);
+	ck_assert(cr.output_file_fp == NULL);
+	ck_assert(cr.output == NULL);
+	ck_assert(cr.host_name == NULL);
+	ck_assert(cr.service_description == NULL);
+	ck_assert(cr.engine == NULL);
+	ck_assert(cr.source == NULL);
+	ck_assert(cr.timeout == 0);
+	ck_assert(cr.latency == 0.0);
+	ck_assert(cr.rusage.ru_utime.tv_sec == 0);
+	ck_assert(cr.rusage.ru_stime.tv_sec == 0);
+
+	/* and the defaults that are deliberately not zero */
+	ck_assert(cr.object_check_type == HOST_CHECK);
+	ck_assert(cr.check_type == CHECK_TYPE_ACTIVE);
+	ck_assert(cr.exited_ok == TRUE);
+}
+END_TEST
+
 int main(int argc, char **argv)
 {
 	int number_failed = 0;
@@ -132,6 +228,10 @@ int main(int argc, char **argv)
 	s = suite_create("Check results");
 	tcase_add_test(tc_process, host_soft_to_hard);
 	tcase_add_test(tc_process, spool_file_processing);
+	tcase_add_test(tc_process, result_routed_by_object_ptr);
+	tcase_add_test(tc_process, result_routed_by_name);
+	tcase_add_test(tc_process, result_with_unknown_name_still_fails);
+	tcase_add_test(tc_process, init_check_result_clears_everything);
 	suite_add_tcase(s, tc_process);
 
 	sr = srunner_create(s);

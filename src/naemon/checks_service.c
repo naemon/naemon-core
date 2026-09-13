@@ -396,6 +396,8 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 
 	/* save check info */
 	cr->object_check_type = SERVICE_CHECK;
+	/* saves the worker callback a lookup by name when the result comes back */
+	cr->object_ptr = svc;
 	cr->check_type = CHECK_TYPE_ACTIVE;
 	cr->check_options = check_options;
 	cr->scheduled_check = TRUE;
@@ -474,6 +476,7 @@ static void handle_worker_service_check(wproc_result *wpres, void *arg, int flag
 		cr->exited_ok = wpres->exited_ok;
 		cr->engine = NULL;
 		cr->source = wpres->source;
+		/* finds the service through cr->object_ptr, set in run_scheduled_service_check() */
 		process_check_result(cr);
 	}
 	free_check_result(cr);

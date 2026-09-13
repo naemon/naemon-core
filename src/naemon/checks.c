@@ -322,7 +322,9 @@ int process_check_result(check_result *cr)
 
 	if (cr->object_check_type == SERVICE_CHECK) {
 		service *svc;
-		svc = find_service(cr->host_name, cr->service_description);
+		/* naemon's own checks fill object_ptr in; everything else falls back */
+		svc = cr->object_ptr ? (service *)cr->object_ptr
+		                     : find_service(cr->host_name, cr->service_description);
 		if (!svc) {
 			nm_log(NSLOG_RUNTIME_ERROR,
 			       "Error: Got check result for service '%s' on host '%s'. Unable to find service\n", cr->service_description, cr->host_name);
@@ -335,7 +337,9 @@ int process_check_result(check_result *cr)
 	}
 	if (cr->object_check_type == HOST_CHECK) {
 		host *hst;
-		hst = find_host(cr->host_name);
+		/* see the service branch above */
+		hst = cr->object_ptr ? (host *)cr->object_ptr
+		                     : find_host(cr->host_name);
 		if (!hst) {
 			nm_log(NSLOG_RUNTIME_ERROR,
 			       "Error: Got host checkresult for '%s', but no such host can be found\n", cr->host_name);
@@ -514,26 +518,19 @@ int init_check_result(check_result *info)
 	if (info == NULL)
 		return ERROR;
 
-	/* reset vars */
+	/*
+	 * Zero everything rather than assigning field by field: the old version
+	 * listed the fields individually and missed output_file, timeout and
+	 * rusage, which kept whatever was on the caller's stack. This also covers
+	 * fields added later without having to remember this function.
+	 */
+	memset(info, 0, sizeof(*info));
+
+	/* now only the defaults that are not zero */
 	info->object_check_type = HOST_CHECK;
-	info->host_name = NULL;
-	info->service_description = NULL;
 	info->check_type = CHECK_TYPE_ACTIVE;
 	info->check_options = CHECK_OPTION_NONE;
-	info->scheduled_check = FALSE;
-	info->output_file_fp = NULL;
-	info->latency = 0.0;
-	info->start_time.tv_sec = 0;
-	info->start_time.tv_usec = 0;
-	info->finish_time.tv_sec = 0;
-	info->finish_time.tv_usec = 0;
-	info->timeout = 0;
-	info->early_timeout = FALSE;
 	info->exited_ok = TRUE;
-	info->return_code = 0;
-	info->output = NULL;
-	info->source = NULL;
-	info->engine = NULL;
 
 	return OK;
 }
