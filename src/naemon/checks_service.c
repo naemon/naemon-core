@@ -129,8 +129,12 @@ void schedule_next_service_check(service *svc, time_t delay, int options)
 	tv_set(&svc->last_update);
 	svc->next_check_event = schedule_event(delay, handle_service_check_event, (void *)svc);
 
-	/* update the status log, since next_check and check_options is updated */
-	update_service_status(svc, FALSE);
+	/*
+	 * Deliberately not update_service_status(): only the schedule moved, and
+	 * NEBTYPE_SERVICESTATUS_SCHEDULE lets a module tell that apart from a real
+	 * status change.
+	 */
+	broker_service_status(NEBTYPE_SERVICESTATUS_SCHEDULE, NEBFLAG_NONE, NEBATTR_NONE, svc);
 }
 
 /* schedules an immediate or delayed service check */

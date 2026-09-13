@@ -127,8 +127,12 @@ void schedule_next_host_check(host *hst, time_t delay, int options)
 	tv_set(&hst->last_update);
 	hst->next_check_event = schedule_event(delay, handle_host_check_event, (void *)hst);
 
-	/* update the status log, since next_check and check_options is updated */
-	update_host_status(hst, FALSE);
+	/*
+	 * Deliberately not update_host_status(): only the schedule moved, and
+	 * NEBTYPE_HOSTSTATUS_SCHEDULE lets a module tell that apart from a real
+	 * status change.
+	 */
+	broker_host_status(NEBTYPE_HOSTSTATUS_SCHEDULE, NEBFLAG_NONE, NEBATTR_NONE, hst);
 }
 
 /* schedules an immediate or delayed host check, DEPRECATED */
