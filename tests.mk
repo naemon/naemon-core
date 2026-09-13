@@ -132,6 +132,11 @@ tests_test_event_heap_LDADD = $(TESTSLDADD)
 tests_test_event_heap_LDFLAGS = $(TESTSLDFLAGS)
 tests_test_event_heap_CPPFLAGS = $(TESTSCPPFLAGS)
 
+tests_test_timeperiod_daycache_SOURCES = tests/test-timeperiod-daycache.c
+tests_test_timeperiod_daycache_LDADD = $(TESTSLDADD)
+tests_test_timeperiod_daycache_LDFLAGS = $(TESTSLDFLAGS)
+tests_test_timeperiod_daycache_CPPFLAGS = $(TESTSCPPFLAGS)
+
 tests_test_external_command_nebcallback_SOURCES = tests/test-external-command-nebcallback.c
 tests_test_external_command_nebcallback_LDADD = $(TESTSLDADD)
 tests_test_external_command_nebcallback_LDFLAGS = $(TESTSLDFLAGS)
@@ -180,6 +185,7 @@ check_PROGRAMS += \
 	tests/test-log \
 	tests/test-config \
 	tests/test-event-heap \
+	tests/test-timeperiod-daycache \
 	tests/test-external-command-nebcallback \
 	tests/test-kv-command \
 	tests/test-kvvec \
