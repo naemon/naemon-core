@@ -75,7 +75,7 @@ trouble.
 #### Development environment ####
 
 We provide an official pre-configured environment for Visual Studio Code in a
-separate repository [here](https://github.com/naemon/naemon-vscode)
+separate repository [here](https://github.com/naemon/naemon-vscode).
 
 This will help you to start Naemon with an attached debugger on
 Linux, macOS and Windows systems.
