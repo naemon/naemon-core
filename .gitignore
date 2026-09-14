@@ -65,5 +65,5 @@ debian/tmp/
 debian/libnaemon/
 debian/files
 build
-.devcontainers/
+.devcontainer/
 .vscode/
