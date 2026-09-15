@@ -73,8 +73,13 @@ trouble.
 
 
 #### Development environment ####
-We provide a predefined configuration for Visual Studio Code [here](/.vscode/README.md).
-These will help you to start Naemon inside an IDE within a few steps. 
+
+We provide an official pre-configured environment for Visual Studio Code in a
+separate repository [here](https://github.com/naemon/naemon-vscode).
+
+This will help you to start Naemon with an attached debugger on
+Linux, macOS and Windows systems.
+
 In case you are not a huge fan of VS Code, there is also an
 [external documentation](https://statusengine.org/tutorials/setup-naemon-development-environment/)
 available explaining the whole process for the _Eclipse IDE_.
