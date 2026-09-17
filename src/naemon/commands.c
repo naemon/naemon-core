@@ -288,6 +288,7 @@ static int command_file_worker(int sd)
 			 * which breaks livestatus. So make this a debug log entry only.
 			 */
 			log_debug_info(DEBUGL_IPC, 1, "Command file worker: Naemon main process is dead (%m)\n");
+			nm_bufferqueue_destroy(bq);
 			return EXIT_SUCCESS;
 		}
 
@@ -311,6 +312,7 @@ static int command_file_worker(int sd)
 				continue;
 
 			nm_log(NSLOG_RUNTIME_ERROR, "Command file worker: Failed to poll (%m)");
+			nm_bufferqueue_destroy(bq);
 			return EXIT_FAILURE;
 		}
 
@@ -320,12 +322,14 @@ static int command_file_worker(int sd)
 			if (errno == EINTR)
 				continue;
 			nm_log(NSLOG_RUNTIME_ERROR, "Command file worker: Failed to read from bufferqueue (%m)");
+			nm_bufferqueue_destroy(bq);
 			return EXIT_FAILURE;
 		}
 
 		ret = nm_bufferqueue_write(bq, sd);
 		if (ret < 0 && ret != EAGAIN && ret != EWOULDBLOCK) {
 			nm_log(NSLOG_RUNTIME_ERROR, "Command file worker: Failed to write to bufferqueue (%m)");
+			nm_bufferqueue_destroy(bq);
 			return EXIT_FAILURE;
 		}
 	} /* while(1) */
