@@ -297,20 +297,28 @@ int neb_unload_module(nebmodule *mod, int flags, int reason)
 	neb_deregister_module_callbacks(mod);
 
 	if (mod->core_module == FALSE) {
+		if (reason != NEBMODULE_NEB_SHUTDOWN) {
+			/* unload the module */
+			result = dlclose(mod->module_handle);
 
-		/* unload the module */
-		result = dlclose(mod->module_handle);
-
-		if (result != 0) {
-			nm_log(NSLOG_RUNTIME_ERROR, "Error: Could not unload module '%s' -> %s\n", mod->filename, dlerror());
-			return ERROR;
+			if (result != 0) {
+				nm_log(NSLOG_RUNTIME_ERROR, "Error: Could not unload module '%s' -> %s\n", mod->filename, dlerror());
+				return ERROR;
+			}
+		} else {
+			/* on final shutdown the process is about to exit anyway, so
+			 * keep the module (and its dependencies) mapped: unloading
+			 * them here makes memory reports at exit impossible to
+			 * attribute (their code is unmapped already) and is a
+			 * use-after-unload hazard for threads still finishing up */
+			log_debug_info(DEBUGL_EVENTBROKER, 0, "Keeping module '%s' mapped until process exit.\n", mod->filename);
 		}
 	}
 
 	/* mark the module as being unloaded */
 	mod->is_currently_loaded = FALSE;
 
-	log_debug_info(DEBUGL_EVENTBROKER, 0, "Module '%s' unloaded successfully.\n", mod->filename);
+	log_debug_info(DEBUGL_EVENTBROKER, 0, "Module '%s' deinitialized successfully.\n", mod->filename);
 
 	nm_log(NSLOG_INFO_MESSAGE, "Event broker module '%s' deinitialized successfully.\n", mod->filename);
 
