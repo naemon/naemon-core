@@ -907,11 +907,15 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 				event_broker_options = strtoul(value, NULL, 0);
 		}
 
-		else if (!strcmp(variable, "illegal_object_name_chars"))
+		else if (!strcmp(variable, "illegal_object_name_chars")) {
+			nm_free(illegal_object_chars);
 			illegal_object_chars = nm_strdup(value);
+		}
 
-		else if (!strcmp(variable, "illegal_macro_output_chars"))
+		else if (!strcmp(variable, "illegal_macro_output_chars")) {
+			nm_free(illegal_output_chars);
 			illegal_output_chars = nm_strdup(value);
+		}
 
 
 		else if (!strcmp(variable, "broker_module")) {
@@ -966,28 +970,37 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			obsoleted_warning(variable, "Update checks allow spying and have been removed");
 
 		/* BEGIN status data variables */
-		else if (!strcmp(variable, "status_file"))
+		else if (!strcmp(variable, "status_file")) {
+			nm_free(status_file);
 			status_file = nspath_absolute(value, config_rel_path);
-		else if (strstr(input, "state_retention_file=") == input)
+		} else if (strstr(input, "state_retention_file=") == input) {
+			nm_free(retention_file);
 			retention_file = nspath_absolute(value, config_rel_path);
+		}
 		/* END status data variables */
 
 		/*** BEGIN perfdata variables ***/
 		else if (!strcmp(variable, "perfdata_timeout")) {
 			perfdata_timeout = atoi(value);
-		} else if (!strcmp(variable, "host_perfdata_command"))
+		} else if (!strcmp(variable, "host_perfdata_command")) {
+			nm_free(host_perfdata_command);
 			host_perfdata_command = nm_strdup(value);
-		else if (!strcmp(variable, "service_perfdata_command"))
+		} else if (!strcmp(variable, "service_perfdata_command")) {
+			nm_free(service_perfdata_command);
 			service_perfdata_command = nm_strdup(value);
-		else if (!strcmp(variable, "host_perfdata_file_template"))
+		} else if (!strcmp(variable, "host_perfdata_file_template")) {
+			nm_free(host_perfdata_file_template);
 			host_perfdata_file_template = nm_strdup(value);
-		else if (!strcmp(variable, "service_perfdata_file_template"))
+		} else if (!strcmp(variable, "service_perfdata_file_template")) {
+			nm_free(service_perfdata_file_template);
 			service_perfdata_file_template = nm_strdup(value);
-		else if (!strcmp(variable, "host_perfdata_file"))
+		} else if (!strcmp(variable, "host_perfdata_file")) {
+			nm_free(host_perfdata_file);
 			host_perfdata_file = nspath_absolute(value, config_rel_path);
-		else if (!strcmp(variable, "service_perfdata_file"))
+		} else if (!strcmp(variable, "service_perfdata_file")) {
+			nm_free(service_perfdata_file);
 			service_perfdata_file = nspath_absolute(value, config_rel_path);
-		else if (!strcmp(variable, "host_perfdata_file_mode")) {
+		} else if (!strcmp(variable, "host_perfdata_file_mode")) {
 			host_perfdata_file_pipe = FALSE;
 			if (strstr(value, "p") != NULL)
 				host_perfdata_file_pipe = TRUE;
@@ -1007,11 +1020,13 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			host_perfdata_file_processing_interval = strtoul(value, NULL, 0);
 		else if (!strcmp(variable, "service_perfdata_file_processing_interval"))
 			service_perfdata_file_processing_interval = strtoul(value, NULL, 0);
-		else if (!strcmp(variable, "host_perfdata_file_processing_command"))
+		else if (!strcmp(variable, "host_perfdata_file_processing_command")) {
+			nm_free(host_perfdata_file_processing_command);
 			host_perfdata_file_processing_command = nm_strdup(value);
-		else if (!strcmp(variable, "service_perfdata_file_processing_command"))
+		} else if (!strcmp(variable, "service_perfdata_file_processing_command")) {
+			nm_free(service_perfdata_file_processing_command);
 			service_perfdata_file_processing_command = nm_strdup(value);
-		else if (!strcmp(variable, "host_perfdata_process_empty_results"))
+		} else if (!strcmp(variable, "host_perfdata_process_empty_results"))
 			host_perfdata_process_empty_results = (atoi(value) > 0) ? TRUE : FALSE;
 		else if (!strcmp(variable, "service_perfdata_process_empty_results"))
 			service_perfdata_process_empty_results = (atoi(value) > 0) ? TRUE : FALSE;
