@@ -167,8 +167,14 @@ static void evheap_remove(struct timed_event_queue *q, struct timed_event *ev)
 	q->count--;
 	evheap_set_size(q, q->count);
 
-	/* If it wasn't the last node, bubble */
-	if (ev->pos <= q->count) {
+	/*
+	 * If it wasn't the last node, the former last node now fills the hole
+	 * and has to be sifted into place. If it was the last node there is no
+	 * hole: ev->pos equals the new count, one past the end, and sifting from
+	 * there compares the removed entry with its parent -- which swaps it back
+	 * into the heap whenever the two keys are equal.
+	 */
+	if (ev->pos < q->count) {
 		evheap_bubble_down(q, ev->pos);
 		evheap_bubble_up(q, ev->pos);
 	}

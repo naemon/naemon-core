@@ -196,6 +196,109 @@ START_TEST(event_heap_count_random_removal)
 }
 END_TEST
 
+/*
+ * Removing the event in the last heap slot leaves no hole to fill. Sifting
+ * anyway started one past the end and compared the removed entry with its
+ * parent; with equal keys it was swapped back in as the head, while a live
+ * event fell out of the heap -- and the caller then freed the one now at the
+ * head. These only use ev->pos, so they hold whatever the queue stores.
+ */
+START_TEST(event_heap_remove_last_equal_key)
+{
+	struct timed_event_queue *q = evheap_create();
+	struct timed_event *a = nm_calloc(1, sizeof(*a));
+	struct timed_event *b = nm_calloc(1, sizeof(*b));
+	struct timed_event *last, *other;
+
+	a->callback = b->callback = func_a;
+	a->event_time.tv_sec = b->event_time.tv_sec = 5;
+	evheap_add(q, a);
+	evheap_add(q, b);
+
+	last = (a->pos == q->count - 1) ? a : b;
+	other = (last == a) ? b : a;
+	evheap_remove(q, last);
+
+	ck_assert_int_eq(q->count, 1);
+	ck_assert(evheap_head(q) == other);
+	ck_assert_int_eq(other->pos, 0);
+
+	evheap_remove(q, other);
+	ck_assert(evheap_head(q) == NULL);
+	nm_free(a);
+	nm_free(b);
+	evheap_destroy(q);
+}
+END_TEST
+
+START_TEST(event_heap_removal_equal_keys)
+{
+	/*
+	 * Only three distinct times, so a node and its parent usually tie.
+	 * Every other removal takes whatever sits in the last slot -- the case
+	 * that went wrong -- and the rest take a random event, so the general
+	 * path is covered as well.
+	 */
+	const size_t n = 1000;
+	struct timed_event_queue *q = evheap_create();
+	struct timed_event **evs = nm_calloc(n, sizeof(*evs));
+	char *present = nm_calloc(n, 1);
+	char *seen;
+	size_t i, j, bad, left = n;
+
+	for (i = 0; i < n; i++) {
+		evs[i] = nm_calloc(1, sizeof(struct timed_event));
+		evs[i]->callback = func_a;
+		evs[i]->event_time.tv_sec = i % 3;
+		evheap_add(q, evs[i]);
+		present[i] = 1;
+	}
+
+	while (left > 0) {
+		if (left % 2) {
+			for (j = 0; j < n; j++)
+				if (present[j] && evs[j]->pos == q->count - 1)
+					break;
+			ck_assert_msg(j < n, "no event claims the last heap slot");
+		} else {
+			do {
+				j = rand() % n;
+			} while (!present[j]);
+		}
+		evheap_remove(q, evs[j]);
+		present[j] = 0;
+		left--;
+
+		/*
+		 * Every remaining event must hold its own slot, so none that was
+		 * removed can still be in the heap. Checked in plain C: under
+		 * CK_FORK every passing ck_assert reports back to the parent, and
+		 * doing that n^2 times runs into the test timeout.
+		 */
+		ck_assert_int_eq(q->count, left);
+		seen = nm_calloc(left + 1, 1);
+		bad = n;
+		for (i = 0; i < n && bad == n; i++) {
+			if (!present[i])
+				continue;
+			if (evs[i]->pos >= q->count || seen[evs[i]->pos])
+				bad = i;
+			else
+				seen[evs[i]->pos] = 1;
+		}
+		nm_free(seen);
+		ck_assert_msg(bad == n, "event %zu lost its heap slot (pos %zu, count %zu)",
+		              bad, bad < n ? evs[bad]->pos : 0, q->count);
+	}
+
+	for (i = 0; i < n; i++)
+		nm_free(evs[i]);
+	nm_free(evs);
+	nm_free(present);
+	evheap_destroy(q);
+}
+END_TEST
+
 static struct nm_event_execution_properties *cb_props_param;
 static iobroker_set *iobs;
 void test_event_callback(struct nm_event_execution_properties *props)
@@ -305,6 +408,8 @@ Suite *event_heap_suite(void)
 	tcase_add_test(tc_event_heap, event_heap_count_ordered);
 	tcase_add_test(tc_event_heap, event_heap_count_random_order);
 	tcase_add_test(tc_event_heap, event_heap_count_random_removal);
+	tcase_add_test(tc_event_heap, event_heap_remove_last_equal_key);
+	tcase_add_test(tc_event_heap, event_heap_removal_equal_keys);
 	tcase_add_test(tc_event_heap, event_timespec_msdiff);
 	suite_add_tcase(s, tc_event_heap);
 
