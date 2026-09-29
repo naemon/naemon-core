@@ -104,13 +104,10 @@ void checks_init_hosts(void)
  ********************************  SCHEDULING  ********************************
  ******************************************************************************/
 
-void schedule_next_host_check(host *hst, time_t delay, int options)
+static void schedule_next_host_check_at(host *hst, time_t delay, time_t now, int options)
 {
-	struct timeval current_time;
-	tv_set(&current_time);
-
 	/* A closer check is already scheduled, skip this scheduling */
-	if (hst->next_check_event != NULL && hst->next_check < delay + current_time.tv_sec) {
+	if (hst->next_check_event != NULL && hst->next_check < delay + now) {
 		/*... unless this is a forced check or postponement is allowed*/
 		if (!(options & (CHECK_OPTION_FORCE_EXECUTION | CHECK_OPTION_ALLOW_POSTPONE)))
 			return;
@@ -123,7 +120,7 @@ void schedule_next_host_check(host *hst, time_t delay, int options)
 
 	/* Schedule the event */
 	hst->check_options = options;
-	hst->next_check = delay + current_time.tv_sec;
+	hst->next_check = delay + now;
 	tv_set(&hst->last_update);
 	hst->next_check_event = schedule_event(delay, handle_host_check_event, (void *)hst);
 
@@ -131,10 +128,24 @@ void schedule_next_host_check(host *hst, time_t delay, int options)
 	update_host_status(hst, FALSE);
 }
 
+void schedule_next_host_check(host *hst, time_t delay, int options)
+{
+	struct timeval current_time;
+	tv_set(&current_time);
+	schedule_next_host_check_at(hst, delay, current_time.tv_sec, options);
+}
+
 /* schedules an immediate or delayed host check, DEPRECATED */
 void schedule_host_check(host *hst, time_t check_time, int options)
 {
-	schedule_next_host_check(hst, check_time - time(NULL), options);
+	/*
+	 * Read the clock once: time() can still show the previous second
+	 * for a few milliseconds after gettimeofday() has moved on, which
+	 * put the check a second later than asked for.
+	 */
+	struct timeval current_time;
+	tv_set(&current_time);
+	schedule_next_host_check_at(hst, check_time - current_time.tv_sec, current_time.tv_sec, options);
 }
 
 static void handle_host_check_event(struct nm_event_execution_properties *evprop)
