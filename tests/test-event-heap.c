@@ -218,7 +218,8 @@ void event_polling_teardown(void)
 	nm_free(cb_props_param);
 }
 
-static time_t runnable_delays[] = {
+/* values that do not fit this platform's time_t are skipped */
+static const long long runnable_delays[] = {
 	-14, /*a few seconds in the past*/
 	    0, /*right now*/
 	    -1462143350, /*a couple of years in the past*/
@@ -238,9 +239,13 @@ static int64_t unrunnable_delays[] = {
 
 START_TEST(event_polling_scheduling_past)
 {
-	int *user_data = malloc(sizeof(int));
+	int *user_data;
+
+	if ((long long)(time_t)runnable_delays[_i] != runnable_delays[_i])
+		return;
+	user_data = malloc(sizeof(int));
 	*user_data = _i;
-	ck_assert(schedule_event(runnable_delays[_i], test_event_callback, user_data) != NULL);
+	ck_assert(schedule_event((time_t)runnable_delays[_i], test_event_callback, user_data) != NULL);
 	ck_assert_int_eq(0, event_poll_full(iobs, EVENT_MAX_POLL_TIME_MS));
 	ck_assert_msg(cb_props_param != NULL, "Event scheduled with delay %llu was never executed", (long long int)runnable_delays[_i]);
 	ck_assert_int_eq(*(int *)user_data, *(int *)(cb_props_param->user_data));
@@ -274,7 +279,10 @@ START_TEST(event_timespec_msdiff)
 	diff_s = timespec_msdiff(&ts1, &ts2) / 1000;
 	ck_assert_int_eq(expected, diff_s);
 
+	/* with a 32 bit long, 2^31 seconds in milliseconds saturate */
 	ts1.tv_sec = expected = -(1LL << 31);
+	if (LONG_MIN / 1000 > -(1LL << 31))
+		expected = LONG_MIN / 1000;
 	diff_s = timespec_msdiff(&ts1, &ts2) / 1000;
 	ck_assert_int_eq(expected, diff_s);
 
