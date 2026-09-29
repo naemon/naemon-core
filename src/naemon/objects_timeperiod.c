@@ -2,9 +2,15 @@
 #include "nm_alloc.h"
 #include "logging.h"
 #include <string.h>
+#include <limits.h>
 #include <glib.h>
 
 #define SECS_PER_DAY 86400
+/*
+ * Searches for the next (in)valid time step a day at a time and must stop
+ * before midnight + SECS_PER_DAY overflows. time_t is signed everywhere we run.
+ */
+#define NM_TIME_T_MAX ((time_t)((((time_t)1 << (sizeof(time_t) * CHAR_BIT - 2)) - 1) * 2 + 1))
 
 static int is_daterange_single_day(daterange *);
 static time_t calculate_time_from_weekday_of_month(int, int, int, int);	/* calculates midnight time of specific (3rd, last, etc.) weekday of a particular month */
@@ -723,6 +729,11 @@ void get_next_invalid_time(time_t pref_time, time_t *invalid_time, const timeper
 		t->tm_min = 0;
 		t->tm_hour = 0;
 		midnight = mktime(t);
+		if (midnight > NM_TIME_T_MAX - SECS_PER_DAY) {
+			/* still valid where a 32 bit time_t runs out, in 2038 */
+			earliest_time = NM_TIME_T_MAX;
+			break;
+		}
 
 		temp_timerange = _get_matching_timerange(earliest_time, tperiod);
 
@@ -824,6 +835,11 @@ void _get_next_valid_time(time_t pref_time, time_t *valid_time, const timeperiod
 		t->tm_min = 0;
 		t->tm_hour = 0;
 		midnight = mktime(t);
+		if (midnight > NM_TIME_T_MAX - SECS_PER_DAY) {
+			/* nothing valid before a 32 bit time_t runs out, in 2038 */
+			depth = max_depth;
+			break;
+		}
 
 		temp_timerange = _get_matching_timerange(earliest_time, tperiod);
 #ifdef TEST_TIMEPERIODS_B
