@@ -105,13 +105,10 @@ void checks_init_services(void)
  ******************************************************************************/
 
 
-void schedule_next_service_check(service *svc, time_t delay, int options)
+static void schedule_next_service_check_at(service *svc, time_t delay, time_t now, int options)
 {
-	struct timeval current_time;
-	tv_set(&current_time);
-
 	/* A closer check is already scheduled, skip this scheduling */
-	if (svc->next_check_event != NULL && svc->next_check < delay + current_time.tv_sec) {
+	if (svc->next_check_event != NULL && svc->next_check < delay + now) {
 		/*... unless this is a forced check or postponement is allowed*/
 		if (!(options & (CHECK_OPTION_FORCE_EXECUTION | CHECK_OPTION_ALLOW_POSTPONE))) {
 			return;
@@ -125,7 +122,7 @@ void schedule_next_service_check(service *svc, time_t delay, int options)
 
 	/* Schedule the event */
 	svc->check_options = options;
-	svc->next_check = delay + current_time.tv_sec;
+	svc->next_check = delay + now;
 	tv_set(&svc->last_update);
 	svc->next_check_event = schedule_event(delay, handle_service_check_event, (void *)svc);
 
@@ -133,10 +130,24 @@ void schedule_next_service_check(service *svc, time_t delay, int options)
 	update_service_status(svc, FALSE);
 }
 
+void schedule_next_service_check(service *svc, time_t delay, int options)
+{
+	struct timeval current_time;
+	tv_set(&current_time);
+	schedule_next_service_check_at(svc, delay, current_time.tv_sec, options);
+}
+
 /* schedules an immediate or delayed service check */
 void schedule_service_check(service *svc, time_t check_time, int options)
 {
-	schedule_next_service_check(svc, check_time - time(NULL), options);
+	/*
+	 * Read the clock once: time() can still show the previous second
+	 * for a few milliseconds after gettimeofday() has moved on, which
+	 * put the check a second later than asked for.
+	 */
+	struct timeval current_time;
+	tv_set(&current_time);
+	schedule_next_service_check_at(svc, check_time - current_time.tv_sec, current_time.tv_sec, options);
 }
 
 static void handle_service_check_event(struct nm_event_execution_properties *evprop)
