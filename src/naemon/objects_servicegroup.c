@@ -2,6 +2,7 @@
 #include "objectlist.h"
 #include "nm_alloc.h"
 #include "logging.h"
+#include "objects_fcache.h"
 #include "globals.h"
 #include <string.h>
 #include <glib.h>
@@ -214,25 +215,37 @@ int is_service_member_of_servicegroup(servicegroup *group, service *svc)
 	return FALSE;
 }
 
-void fcache_servicegroup(FILE *fp, const servicegroup *temp_servicegroup)
+void nm_fcache_servicegroup(struct nm_writebuf *wb, const servicegroup *temp_servicegroup)
 {
-	fprintf(fp, "define servicegroup {\n");
-	fprintf(fp, "\tservicegroup_name\t%s\n", temp_servicegroup->group_name);
+	nm_wb_lit(wb, "define servicegroup {\n");
+	fc_str(wb, "servicegroup_name", temp_servicegroup->group_name);
 	if (temp_servicegroup->alias)
-		fprintf(fp, "\talias\t%s\n", temp_servicegroup->alias);
+		fc_str(wb, "alias", temp_servicegroup->alias);
 	if (temp_servicegroup->members) {
 		servicesmember *list;
-		fprintf(fp, "\tmembers\t");
+		nm_wb_lit(wb, "\tmembers\t");
 		for (list = temp_servicegroup->members; list; list = list->next) {
 			service const *s = list->service_ptr;
-			fprintf(fp, "%s,%s%c", s->host_name, s->description, list->next ? ',' : '\n');
+			fc_s(wb, s->host_name);
+			nm_wb_lit(wb, ",");
+			fc_s(wb, s->description);
+			fc_sep(wb, list->next != NULL);
 		}
 	}
 	if (temp_servicegroup->notes)
-		fprintf(fp, "\tnotes\t%s\n", temp_servicegroup->notes);
+		fc_str(wb, "notes", temp_servicegroup->notes);
 	if (temp_servicegroup->notes_url)
-		fprintf(fp, "\tnotes_url\t%s\n", temp_servicegroup->notes_url);
+		fc_str(wb, "notes_url", temp_servicegroup->notes_url);
 	if (temp_servicegroup->action_url)
-		fprintf(fp, "\taction_url\t%s\n", temp_servicegroup->action_url);
-	fprintf(fp, "\t}\n\n");
+		fc_str(wb, "action_url", temp_servicegroup->action_url);
+	nm_wb_lit(wb, "\t}\n\n");
+}
+
+void fcache_servicegroup(FILE *fp, const servicegroup *temp_servicegroup)
+{
+	struct nm_writebuf wb;
+
+	fc_file_begin(&wb, fp);
+	nm_fcache_servicegroup(&wb, temp_servicegroup);
+	nm_writebuf_done(&wb);
 }

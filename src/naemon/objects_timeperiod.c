@@ -1,6 +1,7 @@
 #include "objects_timeperiod.h"
 #include "nm_alloc.h"
 #include "logging.h"
+#include "objects_fcache.h"
 #include <string.h>
 #include <glib.h>
 
@@ -275,22 +276,33 @@ timeperiod *find_timeperiod(const char *name)
 	return name ? g_hash_table_lookup(timeperiod_hash_table, name) : NULL;
 }
 
-static const char *timerange2str(const timerange *tr)
+static void fc_timerange(struct nm_writebuf *wb, const timerange *tr)
 {
-	static char str[12];
 	short sh, sm, eh, em;
 
-	if (!tr)
-		return "";
 	sh = tr->range_start / 3600;
 	sm = (tr->range_start / 60) % 60;
 	eh = tr->range_end / 3600;
 	em = (tr->range_end / 60) % 60;
-	sprintf(str, "%02hd:%02hd-%02hd:%02hd", sh, sm, eh, em);
-	return str;
+	fc_02d(wb, sh);
+	nm_wb_lit(wb, ":");
+	fc_02d(wb, sm);
+	nm_wb_lit(wb, "-");
+	fc_02d(wb, eh);
+	nm_wb_lit(wb, ":");
+	fc_02d(wb, em);
 }
 
-void fcache_timeperiod(FILE *fp, const timeperiod *temp_timeperiod)
+/* " / <n>" for a skip interval, if there is one */
+static void fc_skip(struct nm_writebuf *wb, const daterange *dr)
+{
+	if (dr->skip_interval > 1) {
+		nm_wb_lit(wb, " / ");
+		nm_wb_int(wb, dr->skip_interval);
+	}
+}
+
+void nm_fcache_timeperiod(struct nm_writebuf *wb, const timeperiod *temp_timeperiod)
 {
 	const char *days[7] = {"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"};
 	const char *months[12] = {"january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"};
@@ -298,16 +310,17 @@ void fcache_timeperiod(FILE *fp, const timeperiod *temp_timeperiod)
 	timerange *tr;
 	register int x;
 
-	fprintf(fp, "define timeperiod {\n");
-	fprintf(fp, "\ttimeperiod_name\t%s\n", temp_timeperiod->name);
+	nm_wb_lit(wb, "define timeperiod {\n");
+	fc_str(wb, "timeperiod_name", temp_timeperiod->name);
 	if (temp_timeperiod->alias)
-		fprintf(fp, "\talias\t%s\n", temp_timeperiod->alias);
+		fc_str(wb, "alias", temp_timeperiod->alias);
 
 	if (temp_timeperiod->exclusions) {
 		timeperiodexclusion *exclude;
-		fprintf(fp, "\texclude\t");
+		nm_wb_lit(wb, "\texclude\t");
 		for (exclude = temp_timeperiod->exclusions; exclude; exclude = exclude->next) {
-			fprintf(fp, "%s%c", exclude->timeperiod_name, exclude->next ? ',' : '\n');
+			fc_s(wb, exclude->timeperiod_name);
+			fc_sep(wb, exclude->next != NULL);
 		}
 	}
 
@@ -320,51 +333,82 @@ void fcache_timeperiod(FILE *fp, const timeperiod *temp_timeperiod)
 
 			switch (temp_daterange->type) {
 			case DATERANGE_CALENDAR_DATE:
-				fprintf(fp, "\t%d-%02d-%02d", temp_daterange->syear, temp_daterange->smon + 1, temp_daterange->smday);
-				if ((temp_daterange->smday != temp_daterange->emday) || (temp_daterange->smon != temp_daterange->emon) || (temp_daterange->syear != temp_daterange->eyear))
-					fprintf(fp, " - %d-%02d-%02d", temp_daterange->eyear, temp_daterange->emon + 1, temp_daterange->emday);
-				if (temp_daterange->skip_interval > 1)
-					fprintf(fp, " / %d", temp_daterange->skip_interval);
+				nm_wb_lit(wb, "\t");
+				nm_wb_int(wb, temp_daterange->syear);
+				nm_wb_lit(wb, "-");
+				fc_02d(wb, temp_daterange->smon + 1);
+				nm_wb_lit(wb, "-");
+				fc_02d(wb, temp_daterange->smday);
+				if ((temp_daterange->smday != temp_daterange->emday) || (temp_daterange->smon != temp_daterange->emon) || (temp_daterange->syear != temp_daterange->eyear)) {
+					nm_wb_lit(wb, " - ");
+					nm_wb_int(wb, temp_daterange->eyear);
+					nm_wb_lit(wb, "-");
+					fc_02d(wb, temp_daterange->emon + 1);
+					nm_wb_lit(wb, "-");
+					fc_02d(wb, temp_daterange->emday);
+				}
+				fc_skip(wb, temp_daterange);
 				break;
 			case DATERANGE_MONTH_DATE:
-				fprintf(fp, "\t%s %d", months[temp_daterange->smon], temp_daterange->smday);
+				nm_wb_lit(wb, "\t");
+				nm_wb_str(wb, months[temp_daterange->smon]);
+				nm_wb_lit(wb, " ");
+				nm_wb_int(wb, temp_daterange->smday);
 				if ((temp_daterange->smon != temp_daterange->emon) || (temp_daterange->smday != temp_daterange->emday)) {
-					fprintf(fp, " - %s %d", months[temp_daterange->emon], temp_daterange->emday);
-					if (temp_daterange->skip_interval > 1)
-						fprintf(fp, " / %d", temp_daterange->skip_interval);
+					nm_wb_lit(wb, " - ");
+					nm_wb_str(wb, months[temp_daterange->emon]);
+					nm_wb_lit(wb, " ");
+					nm_wb_int(wb, temp_daterange->emday);
+					fc_skip(wb, temp_daterange);
 				}
 				break;
 			case DATERANGE_MONTH_DAY:
-				fprintf(fp, "\tday %d", temp_daterange->smday);
+				nm_wb_lit(wb, "\tday ");
+				nm_wb_int(wb, temp_daterange->smday);
 				if (temp_daterange->smday != temp_daterange->emday) {
-					fprintf(fp, " - %d", temp_daterange->emday);
-					if (temp_daterange->skip_interval > 1)
-						fprintf(fp, " / %d", temp_daterange->skip_interval);
+					nm_wb_lit(wb, " - ");
+					nm_wb_int(wb, temp_daterange->emday);
+					fc_skip(wb, temp_daterange);
 				}
 				break;
 			case DATERANGE_MONTH_WEEK_DAY:
-				fprintf(fp, "\t%s %d %s", days[temp_daterange->swday], temp_daterange->swday_offset, months[temp_daterange->smon]);
+				nm_wb_lit(wb, "\t");
+				nm_wb_str(wb, days[temp_daterange->swday]);
+				nm_wb_lit(wb, " ");
+				nm_wb_int(wb, temp_daterange->swday_offset);
+				nm_wb_lit(wb, " ");
+				nm_wb_str(wb, months[temp_daterange->smon]);
 				if ((temp_daterange->smon != temp_daterange->emon) || (temp_daterange->swday != temp_daterange->ewday) || (temp_daterange->swday_offset != temp_daterange->ewday_offset)) {
-					fprintf(fp, " - %s %d %s", days[temp_daterange->ewday], temp_daterange->ewday_offset, months[temp_daterange->emon]);
-					if (temp_daterange->skip_interval > 1)
-						fprintf(fp, " / %d", temp_daterange->skip_interval);
+					nm_wb_lit(wb, " - ");
+					nm_wb_str(wb, days[temp_daterange->ewday]);
+					nm_wb_lit(wb, " ");
+					nm_wb_int(wb, temp_daterange->ewday_offset);
+					nm_wb_lit(wb, " ");
+					nm_wb_str(wb, months[temp_daterange->emon]);
+					fc_skip(wb, temp_daterange);
 				}
 				break;
 			case DATERANGE_WEEK_DAY:
-				fprintf(fp, "\t%s %d", days[temp_daterange->swday], temp_daterange->swday_offset);
+				nm_wb_lit(wb, "\t");
+				nm_wb_str(wb, days[temp_daterange->swday]);
+				nm_wb_lit(wb, " ");
+				nm_wb_int(wb, temp_daterange->swday_offset);
 				if ((temp_daterange->swday != temp_daterange->ewday) || (temp_daterange->swday_offset != temp_daterange->ewday_offset)) {
-					fprintf(fp, " - %s %d", days[temp_daterange->ewday], temp_daterange->ewday_offset);
-					if (temp_daterange->skip_interval > 1)
-						fprintf(fp, " / %d", temp_daterange->skip_interval);
+					nm_wb_lit(wb, " - ");
+					nm_wb_str(wb, days[temp_daterange->ewday]);
+					nm_wb_lit(wb, " ");
+					nm_wb_int(wb, temp_daterange->ewday_offset);
+					fc_skip(wb, temp_daterange);
 				}
 				break;
 			default:
 				break;
 			}
 
-			fputc('\t', fp);
+			nm_wb_lit(wb, "\t");
 			for (tr = temp_daterange->times; tr; tr = tr->next) {
-				fprintf(fp, "%s%c", timerange2str(tr), tr->next ? ',' : '\n');
+				fc_timerange(wb, tr);
+				fc_sep(wb, tr->next != NULL);
 			}
 		}
 	}
@@ -373,12 +417,24 @@ void fcache_timeperiod(FILE *fp, const timeperiod *temp_timeperiod)
 		if (temp_timeperiod->days[x] == NULL)
 			continue;
 
-		fprintf(fp, "\t%s\t", days[x]);
+		nm_wb_lit(wb, "\t");
+		nm_wb_str(wb, days[x]);
+		nm_wb_lit(wb, "\t");
 		for (tr = temp_timeperiod->days[x]; tr; tr = tr->next) {
-			fprintf(fp, "%s%c", timerange2str(tr), tr->next ? ',' : '\n');
+			fc_timerange(wb, tr);
+			fc_sep(wb, tr->next != NULL);
 		}
 	}
-	fprintf(fp, "\t}\n\n");
+	nm_wb_lit(wb, "\t}\n\n");
+}
+
+void fcache_timeperiod(FILE *fp, const timeperiod *temp_timeperiod)
+{
+	struct nm_writebuf wb;
+
+	fc_file_begin(&wb, fp);
+	nm_fcache_timeperiod(&wb, temp_timeperiod);
+	nm_writebuf_done(&wb);
 }
 
 

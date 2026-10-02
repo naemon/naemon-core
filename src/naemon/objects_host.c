@@ -6,6 +6,7 @@
 #include "objects_hostescalation.h"
 #include "objectlist.h"
 #include "logging.h"
+#include "objects_fcache.h"
 #include "nm_alloc.h"
 #include "utils.h"
 
@@ -517,84 +518,104 @@ char *implode_hosttree(GTree *tree, char *delimiter)
 	return result;
 }
 
-void fcache_host(FILE *fp, const host *temp_host)
+void nm_fcache_host(struct nm_writebuf *wb, const host *temp_host)
 {
-	fprintf(fp, "define host {\n");
-	fprintf(fp, "\thost_name\t%s\n", temp_host->name);
+	nm_wb_lit(wb, "define host {\n");
+	fc_str(wb, "host_name", temp_host->name);
 	if (temp_host->display_name != temp_host->name)
-		fprintf(fp, "\tdisplay_name\t%s\n", temp_host->display_name);
+		fc_str(wb, "display_name", temp_host->display_name);
 	if (temp_host->alias)
-		fprintf(fp, "\talias\t%s\n", temp_host->alias);
+		fc_str(wb, "alias", temp_host->alias);
 	if (temp_host->address)
-		fprintf(fp, "\taddress\t%s\n", temp_host->address);
+		fc_str(wb, "address", temp_host->address);
 	if (g_tree_nnodes(temp_host->parent_hosts) > 0) {
 		char *parents;
 		parents = implode_hosttree(temp_host->parent_hosts, ",");
-		fprintf(fp, "\tparents\t%s\n", parents);
+		fc_str(wb, "parents", parents);
 		nm_free(parents);
 	}
 	if (temp_host->check_period)
-		fprintf(fp, "\tcheck_period\t%s\n", temp_host->check_period);
+		fc_str(wb, "check_period", temp_host->check_period);
 	if (temp_host->check_command)
-		fprintf(fp, "\tcheck_command\t%s\n", temp_host->check_command);
+		fc_str(wb, "check_command", temp_host->check_command);
 	if (temp_host->event_handler)
-		fprintf(fp, "\tevent_handler\t%s\n", temp_host->event_handler);
-	fcache_contactlist(fp, "\tcontacts\t", temp_host->contacts);
-	fcache_contactgrouplist(fp, "\tcontact_groups\t", temp_host->contact_groups);
+		fc_str(wb, "event_handler", temp_host->event_handler);
+	nm_fcache_contactlist(wb, "\tcontacts\t", temp_host->contacts);
+	nm_fcache_contactgrouplist(wb, "\tcontact_groups\t", temp_host->contact_groups);
 	if (temp_host->notification_period)
-		fprintf(fp, "\tnotification_period\t%s\n", temp_host->notification_period);
-	fprintf(fp, "\tinitial_state\t");
+		fc_str(wb, "notification_period", temp_host->notification_period);
 	if (temp_host->initial_state == STATE_DOWN)
-		fprintf(fp, "d\n");
+		nm_wb_lit(wb, "\tinitial_state\td\n");
 	else if (temp_host->initial_state == STATE_UNREACHABLE)
-		fprintf(fp, "u\n");
+		nm_wb_lit(wb, "\tinitial_state\tu\n");
 	else
-		fprintf(fp, "o\n");
-	fprintf(fp,"\tcheck_timeout\t%d\n", temp_host->check_timeout);
-	fprintf(fp, "\thourly_value\t%u\n", temp_host->hourly_value);
-	fprintf(fp, "\tcheck_interval\t%f\n", temp_host->check_interval);
-	fprintf(fp, "\tretry_interval\t%f\n", temp_host->retry_interval);
-	fprintf(fp, "\tmax_check_attempts\t%d\n", temp_host->max_attempts);
-	fprintf(fp, "\tactive_checks_enabled\t%d\n", temp_host->checks_enabled);
-	fprintf(fp, "\tpassive_checks_enabled\t%d\n", temp_host->accept_passive_checks);
-	fprintf(fp, "\tobsess\t%d\n", temp_host->obsess);
-	fprintf(fp, "\tevent_handler_enabled\t%d\n", temp_host->event_handler_enabled);
-	fprintf(fp, "\tlow_flap_threshold\t%f\n", temp_host->low_flap_threshold);
-	fprintf(fp, "\thigh_flap_threshold\t%f\n", temp_host->high_flap_threshold);
-	fprintf(fp, "\tflap_detection_enabled\t%d\n", temp_host->flap_detection_enabled);
-	fprintf(fp, "\tflap_detection_options\t%s\n", opts2str(temp_host->flap_detection_options, host_flag_map, 'o'));
-	fprintf(fp, "\tfreshness_threshold\t%d\n", temp_host->freshness_threshold);
-	fprintf(fp, "\tcheck_freshness\t%d\n", temp_host->check_freshness);
-	fprintf(fp, "\tnotification_options\t%s\n", opts2str(temp_host->notification_options, host_flag_map, 'r'));
-	fprintf(fp, "\tnotifications_enabled\t%d\n", temp_host->notifications_enabled);
-	fprintf(fp, "\tnotification_interval\t%f\n", temp_host->notification_interval);
-	fprintf(fp, "\tfirst_notification_delay\t%f\n", temp_host->first_notification_delay);
-	fprintf(fp, "\tstalking_options\t%s\n", opts2str(temp_host->stalking_options, host_flag_map, 'o'));
-	fprintf(fp, "\tprocess_perf_data\t%d\n", temp_host->process_performance_data);
+		nm_wb_lit(wb, "\tinitial_state\to\n");
+	fc_int(wb, "check_timeout", temp_host->check_timeout);
+	fc_uint(wb, "hourly_value", temp_host->hourly_value);
+	fc_dbl(wb, "check_interval", temp_host->check_interval);
+	fc_dbl(wb, "retry_interval", temp_host->retry_interval);
+	fc_int(wb, "max_check_attempts", temp_host->max_attempts);
+	fc_int(wb, "active_checks_enabled", temp_host->checks_enabled);
+	fc_int(wb, "passive_checks_enabled", temp_host->accept_passive_checks);
+	fc_int(wb, "obsess", temp_host->obsess);
+	fc_int(wb, "event_handler_enabled", temp_host->event_handler_enabled);
+	fc_dbl(wb, "low_flap_threshold", temp_host->low_flap_threshold);
+	fc_dbl(wb, "high_flap_threshold", temp_host->high_flap_threshold);
+	fc_int(wb, "flap_detection_enabled", temp_host->flap_detection_enabled);
+	fc_str(wb, "flap_detection_options", opts2str(temp_host->flap_detection_options, host_flag_map, 'o'));
+	fc_int(wb, "freshness_threshold", temp_host->freshness_threshold);
+	fc_int(wb, "check_freshness", temp_host->check_freshness);
+	fc_str(wb, "notification_options", opts2str(temp_host->notification_options, host_flag_map, 'r'));
+	fc_int(wb, "notifications_enabled", temp_host->notifications_enabled);
+	fc_dbl(wb, "notification_interval", temp_host->notification_interval);
+	fc_dbl(wb, "first_notification_delay", temp_host->first_notification_delay);
+	fc_str(wb, "stalking_options", opts2str(temp_host->stalking_options, host_flag_map, 'o'));
+	fc_int(wb, "process_perf_data", temp_host->process_performance_data);
 	if (temp_host->icon_image)
-		fprintf(fp, "\ticon_image\t%s\n", temp_host->icon_image);
+		fc_str(wb, "icon_image", temp_host->icon_image);
 	if (temp_host->icon_image_alt)
-		fprintf(fp, "\ticon_image_alt\t%s\n", temp_host->icon_image_alt);
+		fc_str(wb, "icon_image_alt", temp_host->icon_image_alt);
 	if (temp_host->vrml_image)
-		fprintf(fp, "\tvrml_image\t%s\n", temp_host->vrml_image);
+		fc_str(wb, "vrml_image", temp_host->vrml_image);
 	if (temp_host->statusmap_image)
-		fprintf(fp, "\tstatusmap_image\t%s\n", temp_host->statusmap_image);
-	if (temp_host->have_2d_coords == TRUE)
-		fprintf(fp, "\t2d_coords\t%d,%d\n", temp_host->x_2d, temp_host->y_2d);
-	if (temp_host->have_3d_coords == TRUE)
-		fprintf(fp, "\t3d_coords\t%f,%f,%f\n", temp_host->x_3d, temp_host->y_3d, temp_host->z_3d);
+		fc_str(wb, "statusmap_image", temp_host->statusmap_image);
+	if (temp_host->have_2d_coords == TRUE) {
+		nm_wb_lit(wb, "\t2d_coords\t");
+		nm_wb_int(wb, temp_host->x_2d);
+		nm_wb_lit(wb, ",");
+		nm_wb_int(wb, temp_host->y_2d);
+		nm_wb_lit(wb, "\n");
+	}
+	if (temp_host->have_3d_coords == TRUE) {
+		nm_wb_lit(wb, "\t3d_coords\t");
+		nm_wb_dbl(wb, "%f", temp_host->x_3d);
+		nm_wb_lit(wb, ",");
+		nm_wb_dbl(wb, "%f", temp_host->y_3d);
+		nm_wb_lit(wb, ",");
+		nm_wb_dbl(wb, "%f", temp_host->z_3d);
+		nm_wb_lit(wb, "\n");
+	}
 	if (temp_host->notes)
-		fprintf(fp, "\tnotes\t%s\n", temp_host->notes);
+		fc_str(wb, "notes", temp_host->notes);
 	if (temp_host->notes_url)
-		fprintf(fp, "\tnotes_url\t%s\n", temp_host->notes_url);
+		fc_str(wb, "notes_url", temp_host->notes_url);
 	if (temp_host->action_url)
-		fprintf(fp, "\taction_url\t%s\n", temp_host->action_url);
-	fprintf(fp, "\tretain_status_information\t%d\n", temp_host->retain_status_information);
-	fprintf(fp, "\tretain_nonstatus_information\t%d\n", temp_host->retain_nonstatus_information);
+		fc_str(wb, "action_url", temp_host->action_url);
+	fc_int(wb, "retain_status_information", temp_host->retain_status_information);
+	fc_int(wb, "retain_nonstatus_information", temp_host->retain_nonstatus_information);
 
 	/* custom variables */
-	fcache_customvars(fp, temp_host->custom_variables);
-	fprintf(fp, "\t}\n\n");
+	nm_fcache_customvars(wb, temp_host->custom_variables);
+	nm_wb_lit(wb, "\t}\n\n");
+}
+
+void fcache_host(FILE *fp, const host *temp_host)
+{
+	struct nm_writebuf wb;
+
+	fc_file_begin(&wb, fp);
+	nm_fcache_host(&wb, temp_host);
+	nm_writebuf_done(&wb);
 }
 
 /* write a host problem/recovery to the log file */

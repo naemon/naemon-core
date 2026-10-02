@@ -13,12 +13,12 @@
 NAGIOS_BEGIN_DECL
 
 /*
- * Buffered writer for status.dat and retention.dat.
+ * Buffered writer for status.dat, retention.dat and objects.cache.
  *
- * Both files used to be written with one fprintf() per field -- about 57 per
+ * These files used to be written with one fprintf() per field -- about 57 per
  * object in status.dat. Each of those parses its format string at runtime,
  * which made glibc's printf implementation half of the event loop's CPU time
- * once the object count got large. But both files are almost entirely
+ * once the object count got large. But they are almost entirely
  * integers and strings, and rendering those needs no format interpreter: when
  * the call site knows a field is an integer, it can convert it and append the
  * bytes directly.
