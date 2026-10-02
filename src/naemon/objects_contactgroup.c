@@ -3,6 +3,7 @@
 #include "objectlist.h"
 #include "nm_alloc.h"
 #include "logging.h"
+#include "objects_fcache.h"
 #include <string.h>
 #include <glib.h>
 
@@ -178,22 +179,43 @@ int is_contact_member_of_contactgroup(contactgroup *group, contact *cntct)
 	return FALSE;
 }
 
+void nm_fcache_contactgrouplist(struct nm_writebuf *wb, const char *prefix, const contactgroupsmember *list)
+{
+	contactgroupsmember const *l;
+
+	if (!list)
+		return;
+	fc_s(wb, prefix);
+	for (l = list; l; l = l->next) {
+		fc_s(wb, l->group_name);
+		fc_sep(wb, l->next != NULL);
+	}
+}
+
 void fcache_contactgrouplist(FILE *fp, const char *prefix, const contactgroupsmember *list)
 {
-	if (list) {
-		contactgroupsmember const *l;
-		fprintf(fp, "%s", prefix);
-		for (l = list; l; l = l->next)
-			fprintf(fp, "%s%c", l->group_name, l->next ? ',' : '\n');
-	}
+	struct nm_writebuf wb;
+
+	fc_file_begin(&wb, fp);
+	nm_fcache_contactgrouplist(&wb, prefix, list);
+	nm_writebuf_done(&wb);
+}
+
+void nm_fcache_contactgroup(struct nm_writebuf *wb, const contactgroup *temp_contactgroup)
+{
+	nm_wb_lit(wb, "define contactgroup {\n");
+	fc_str(wb, "contactgroup_name", temp_contactgroup->group_name);
+	if (temp_contactgroup->alias)
+		fc_str(wb, "alias", temp_contactgroup->alias);
+	nm_fcache_contactlist(wb, "\tmembers\t", temp_contactgroup->members);
+	nm_wb_lit(wb, "\t}\n\n");
 }
 
 void fcache_contactgroup(FILE *fp, const contactgroup *temp_contactgroup)
 {
-	fprintf(fp, "define contactgroup {\n");
-	fprintf(fp, "\tcontactgroup_name\t%s\n", temp_contactgroup->group_name);
-	if (temp_contactgroup->alias)
-		fprintf(fp, "\talias\t%s\n", temp_contactgroup->alias);
-	fcache_contactlist(fp, "\tmembers\t", temp_contactgroup->members);
-	fprintf(fp, "\t}\n\n");
+	struct nm_writebuf wb;
+
+	fc_file_begin(&wb, fp);
+	nm_fcache_contactgroup(&wb, temp_contactgroup);
+	nm_writebuf_done(&wb);
 }

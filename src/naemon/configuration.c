@@ -3,6 +3,7 @@
 #include "objects.h"
 #include "objectlist.h"
 #include "objects_command.h"
+#include "objects_timeperiod.h"
 #include "objects_hostdependency.h"
 #include "objects_servicedependency.h"
 #include "xodtemplate.h"
@@ -1248,6 +1249,8 @@ int read_main_config_file(const char *main_config_file)
 	if (use_timezone != NULL)
 		set_environment_var("TZ", use_timezone, 1);
 	tzset();
+	/* zones with different DST rules can look alike to the day cache */
+	_reset_day_cache();
 
 	/* make sure a log file has been specified */
 	strip(log_file);

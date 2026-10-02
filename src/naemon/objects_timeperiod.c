@@ -1,6 +1,7 @@
 #include "objects_timeperiod.h"
 #include "nm_alloc.h"
 #include "logging.h"
+#include "objects_fcache.h"
 #include <string.h>
 #include <limits.h>
 #include <glib.h>
@@ -281,22 +282,33 @@ timeperiod *find_timeperiod(const char *name)
 	return name ? g_hash_table_lookup(timeperiod_hash_table, name) : NULL;
 }
 
-static const char *timerange2str(const timerange *tr)
+static void fc_timerange(struct nm_writebuf *wb, const timerange *tr)
 {
-	static char str[12];
 	short sh, sm, eh, em;
 
-	if (!tr)
-		return "";
 	sh = tr->range_start / 3600;
 	sm = (tr->range_start / 60) % 60;
 	eh = tr->range_end / 3600;
 	em = (tr->range_end / 60) % 60;
-	sprintf(str, "%02hd:%02hd-%02hd:%02hd", sh, sm, eh, em);
-	return str;
+	fc_02d(wb, sh);
+	nm_wb_lit(wb, ":");
+	fc_02d(wb, sm);
+	nm_wb_lit(wb, "-");
+	fc_02d(wb, eh);
+	nm_wb_lit(wb, ":");
+	fc_02d(wb, em);
 }
 
-void fcache_timeperiod(FILE *fp, const timeperiod *temp_timeperiod)
+/* " / <n>" for a skip interval, if there is one */
+static void fc_skip(struct nm_writebuf *wb, const daterange *dr)
+{
+	if (dr->skip_interval > 1) {
+		nm_wb_lit(wb, " / ");
+		nm_wb_int(wb, dr->skip_interval);
+	}
+}
+
+void nm_fcache_timeperiod(struct nm_writebuf *wb, const timeperiod *temp_timeperiod)
 {
 	const char *days[7] = {"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"};
 	const char *months[12] = {"january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"};
@@ -304,16 +316,17 @@ void fcache_timeperiod(FILE *fp, const timeperiod *temp_timeperiod)
 	timerange *tr;
 	register int x;
 
-	fprintf(fp, "define timeperiod {\n");
-	fprintf(fp, "\ttimeperiod_name\t%s\n", temp_timeperiod->name);
+	nm_wb_lit(wb, "define timeperiod {\n");
+	fc_str(wb, "timeperiod_name", temp_timeperiod->name);
 	if (temp_timeperiod->alias)
-		fprintf(fp, "\talias\t%s\n", temp_timeperiod->alias);
+		fc_str(wb, "alias", temp_timeperiod->alias);
 
 	if (temp_timeperiod->exclusions) {
 		timeperiodexclusion *exclude;
-		fprintf(fp, "\texclude\t");
+		nm_wb_lit(wb, "\texclude\t");
 		for (exclude = temp_timeperiod->exclusions; exclude; exclude = exclude->next) {
-			fprintf(fp, "%s%c", exclude->timeperiod_name, exclude->next ? ',' : '\n');
+			fc_s(wb, exclude->timeperiod_name);
+			fc_sep(wb, exclude->next != NULL);
 		}
 	}
 
@@ -326,51 +339,82 @@ void fcache_timeperiod(FILE *fp, const timeperiod *temp_timeperiod)
 
 			switch (temp_daterange->type) {
 			case DATERANGE_CALENDAR_DATE:
-				fprintf(fp, "\t%d-%02d-%02d", temp_daterange->syear, temp_daterange->smon + 1, temp_daterange->smday);
-				if ((temp_daterange->smday != temp_daterange->emday) || (temp_daterange->smon != temp_daterange->emon) || (temp_daterange->syear != temp_daterange->eyear))
-					fprintf(fp, " - %d-%02d-%02d", temp_daterange->eyear, temp_daterange->emon + 1, temp_daterange->emday);
-				if (temp_daterange->skip_interval > 1)
-					fprintf(fp, " / %d", temp_daterange->skip_interval);
+				nm_wb_lit(wb, "\t");
+				nm_wb_int(wb, temp_daterange->syear);
+				nm_wb_lit(wb, "-");
+				fc_02d(wb, temp_daterange->smon + 1);
+				nm_wb_lit(wb, "-");
+				fc_02d(wb, temp_daterange->smday);
+				if ((temp_daterange->smday != temp_daterange->emday) || (temp_daterange->smon != temp_daterange->emon) || (temp_daterange->syear != temp_daterange->eyear)) {
+					nm_wb_lit(wb, " - ");
+					nm_wb_int(wb, temp_daterange->eyear);
+					nm_wb_lit(wb, "-");
+					fc_02d(wb, temp_daterange->emon + 1);
+					nm_wb_lit(wb, "-");
+					fc_02d(wb, temp_daterange->emday);
+				}
+				fc_skip(wb, temp_daterange);
 				break;
 			case DATERANGE_MONTH_DATE:
-				fprintf(fp, "\t%s %d", months[temp_daterange->smon], temp_daterange->smday);
+				nm_wb_lit(wb, "\t");
+				nm_wb_str(wb, months[temp_daterange->smon]);
+				nm_wb_lit(wb, " ");
+				nm_wb_int(wb, temp_daterange->smday);
 				if ((temp_daterange->smon != temp_daterange->emon) || (temp_daterange->smday != temp_daterange->emday)) {
-					fprintf(fp, " - %s %d", months[temp_daterange->emon], temp_daterange->emday);
-					if (temp_daterange->skip_interval > 1)
-						fprintf(fp, " / %d", temp_daterange->skip_interval);
+					nm_wb_lit(wb, " - ");
+					nm_wb_str(wb, months[temp_daterange->emon]);
+					nm_wb_lit(wb, " ");
+					nm_wb_int(wb, temp_daterange->emday);
+					fc_skip(wb, temp_daterange);
 				}
 				break;
 			case DATERANGE_MONTH_DAY:
-				fprintf(fp, "\tday %d", temp_daterange->smday);
+				nm_wb_lit(wb, "\tday ");
+				nm_wb_int(wb, temp_daterange->smday);
 				if (temp_daterange->smday != temp_daterange->emday) {
-					fprintf(fp, " - %d", temp_daterange->emday);
-					if (temp_daterange->skip_interval > 1)
-						fprintf(fp, " / %d", temp_daterange->skip_interval);
+					nm_wb_lit(wb, " - ");
+					nm_wb_int(wb, temp_daterange->emday);
+					fc_skip(wb, temp_daterange);
 				}
 				break;
 			case DATERANGE_MONTH_WEEK_DAY:
-				fprintf(fp, "\t%s %d %s", days[temp_daterange->swday], temp_daterange->swday_offset, months[temp_daterange->smon]);
+				nm_wb_lit(wb, "\t");
+				nm_wb_str(wb, days[temp_daterange->swday]);
+				nm_wb_lit(wb, " ");
+				nm_wb_int(wb, temp_daterange->swday_offset);
+				nm_wb_lit(wb, " ");
+				nm_wb_str(wb, months[temp_daterange->smon]);
 				if ((temp_daterange->smon != temp_daterange->emon) || (temp_daterange->swday != temp_daterange->ewday) || (temp_daterange->swday_offset != temp_daterange->ewday_offset)) {
-					fprintf(fp, " - %s %d %s", days[temp_daterange->ewday], temp_daterange->ewday_offset, months[temp_daterange->emon]);
-					if (temp_daterange->skip_interval > 1)
-						fprintf(fp, " / %d", temp_daterange->skip_interval);
+					nm_wb_lit(wb, " - ");
+					nm_wb_str(wb, days[temp_daterange->ewday]);
+					nm_wb_lit(wb, " ");
+					nm_wb_int(wb, temp_daterange->ewday_offset);
+					nm_wb_lit(wb, " ");
+					nm_wb_str(wb, months[temp_daterange->emon]);
+					fc_skip(wb, temp_daterange);
 				}
 				break;
 			case DATERANGE_WEEK_DAY:
-				fprintf(fp, "\t%s %d", days[temp_daterange->swday], temp_daterange->swday_offset);
+				nm_wb_lit(wb, "\t");
+				nm_wb_str(wb, days[temp_daterange->swday]);
+				nm_wb_lit(wb, " ");
+				nm_wb_int(wb, temp_daterange->swday_offset);
 				if ((temp_daterange->swday != temp_daterange->ewday) || (temp_daterange->swday_offset != temp_daterange->ewday_offset)) {
-					fprintf(fp, " - %s %d", days[temp_daterange->ewday], temp_daterange->ewday_offset);
-					if (temp_daterange->skip_interval > 1)
-						fprintf(fp, " / %d", temp_daterange->skip_interval);
+					nm_wb_lit(wb, " - ");
+					nm_wb_str(wb, days[temp_daterange->ewday]);
+					nm_wb_lit(wb, " ");
+					nm_wb_int(wb, temp_daterange->ewday_offset);
+					fc_skip(wb, temp_daterange);
 				}
 				break;
 			default:
 				break;
 			}
 
-			fputc('\t', fp);
+			nm_wb_lit(wb, "\t");
 			for (tr = temp_daterange->times; tr; tr = tr->next) {
-				fprintf(fp, "%s%c", timerange2str(tr), tr->next ? ',' : '\n');
+				fc_timerange(wb, tr);
+				fc_sep(wb, tr->next != NULL);
 			}
 		}
 	}
@@ -379,12 +423,24 @@ void fcache_timeperiod(FILE *fp, const timeperiod *temp_timeperiod)
 		if (temp_timeperiod->days[x] == NULL)
 			continue;
 
-		fprintf(fp, "\t%s\t", days[x]);
+		nm_wb_lit(wb, "\t");
+		nm_wb_str(wb, days[x]);
+		nm_wb_lit(wb, "\t");
 		for (tr = temp_timeperiod->days[x]; tr; tr = tr->next) {
-			fprintf(fp, "%s%c", timerange2str(tr), tr->next ? ',' : '\n');
+			fc_timerange(wb, tr);
+			fc_sep(wb, tr->next != NULL);
 		}
 	}
-	fprintf(fp, "\t}\n\n");
+	nm_wb_lit(wb, "\t}\n\n");
+}
+
+void fcache_timeperiod(FILE *fp, const timeperiod *temp_timeperiod)
+{
+	struct nm_writebuf wb;
+
+	fc_file_begin(&wb, fp);
+	nm_fcache_timeperiod(&wb, temp_timeperiod);
+	nm_writebuf_done(&wb);
 }
 
 
@@ -417,6 +473,179 @@ static int get_dst_shift(time_t *start, time_t *end)
 
 
 /*#define TEST_TIMEPERIODS_A 1*/
+/*
+ * Cache of the local day a timeperiod lookup falls into.
+ *
+ * Timeperiods are ranges within a day ("09:00-17:00"), so testing a timestamp
+ * against one first needs to know when that day started locally. That is what
+ * get_midnight() answers: localtime_r() to break the timestamp into local
+ * calendar fields, zero the time of day, mktime() back to a time_t. mktime()
+ * has to consult the timezone rules and is not cheap, and
+ * check_time_against_period() and _get_matching_timerange() were each doing
+ * it independently for every dispatched check. Since every caller is asking
+ * about "now", the answer is nearly always the same as last time.
+ *
+ * Why this is not simply "midnight + 86400": a local day is not always 86400
+ * seconds long, and its midnight is not always unambiguous. A DST shift makes
+ * the day 23 or 25 hours (30 minutes either way on Lord Howe Island), and in
+ * zones that transition at midnight -- America/Havana, America/Santiago,
+ * Asia/Beirut -- local 00:00 does not exist at all on that day. There the
+ * answer genuinely depends on the tm_isdst that localtime_r() reported for
+ * the specific timestamp being tested, so such days are never cached:
+ * get_day_cache() detects them and falls through to the full computation.
+ *
+ * The detection has one subtlety, and getting it wrong is the bug this code
+ * went through once already. The day length must not be measured starting
+ * from the midnight computed for the timestamp under test, because on a
+ * transition day that midnight is itself shifted -- a shifted start plus a
+ * normal next midnight measures exactly 86400 and makes the day look
+ * ordinary. Both ends of the probe must be resolved with tm_isdst = -1, which
+ * asks the C library to work the offset out itself.
+ *
+ * A system clock jump needs no handling, because the cache is keyed on the
+ * timestamp passed in rather than on wall clock time: a jump simply lands
+ * outside the cached window. A timezone switch does need handling, since it
+ * changes the answer for timestamps already inside the window. Naemon
+ * itself only switches zones in read_main_config_file(), which resets the
+ * cache. Behind that, the cache fingerprints the timezone/daylight/tzname
+ * globals tzset() maintains and discards itself when they change -- but
+ * zones with different DST rules can share a fingerprint (Europe/Amsterdam
+ * and Africa/Tunis), so the fingerprint alone is not enough.
+ *
+ * tests/test-timeperiod-daycache.c stresses all of the above.
+ */
+/*
+ * Shared, unlocked state: check_time_against_period() and friends must only be
+ * called from the main loop. Livestatus, for one, keeps to that and calls them
+ * from a timed event rather than from its query threads.
+ */
+struct day_cache {
+	time_t midnight;
+	time_t valid_until; /* 0 when this day must not be cached */
+	int year;           /* tm_year/tm_mon/tm_wday as localtime_r() reported */
+	int mon;            /* them for the tested timestamp, before mktime() */
+	int wday;
+	struct tm tm;       /* mktime()-normalized tm of midnight, used as scratch base */
+	/* fingerprint of the timezone the cached values were computed in */
+	long tz_offset;
+	int tz_daylight;
+	char tz_name[2][32];
+};
+static struct day_cache day_cache;
+
+/*
+ * A cached day is only meaningful for the timezone it was computed in, and
+ * the timezone can be switched underneath us by a tzset(). These globals are
+ * what tzset() updates, and comparing them is far cheaper than the
+ * localtime_r()/mktime() pair they guard. They catch most switches, not all:
+ * see above.
+ */
+static int day_cache_tz_matches(void)
+{
+	return day_cache.tz_offset == timezone &&
+	       day_cache.tz_daylight == daylight &&
+	       !strcmp(day_cache.tz_name[0], tzname[0] ? tzname[0] : "") &&
+	       !strcmp(day_cache.tz_name[1], tzname[1] ? tzname[1] : "");
+}
+
+static void day_cache_store_tz(void)
+{
+	day_cache.tz_offset = timezone;
+	day_cache.tz_daylight = daylight;
+	strncpy(day_cache.tz_name[0], tzname[0] ? tzname[0] : "", sizeof(day_cache.tz_name[0]) - 1);
+	day_cache.tz_name[0][sizeof(day_cache.tz_name[0]) - 1] = '\0';
+	strncpy(day_cache.tz_name[1], tzname[1] ? tzname[1] : "", sizeof(day_cache.tz_name[1]) - 1);
+	day_cache.tz_name[1][sizeof(day_cache.tz_name[1]) - 1] = '\0';
+}
+
+static const struct day_cache *get_day_cache(time_t when)
+{
+	struct tm *t, tm_s, next, probe;
+	time_t next_midnight, probe_midnight;
+
+	if (day_cache.valid_until != 0 &&
+	    when >= day_cache.midnight && when < day_cache.valid_until &&
+	    day_cache_tz_matches())
+		return &day_cache;
+
+	t = localtime_r((time_t *)&when, &tm_s);
+	if (t == NULL)
+		return NULL;
+
+	day_cache.year = t->tm_year;
+	day_cache.mon = t->tm_mon;
+	day_cache.wday = t->tm_wday;
+
+	t->tm_sec = 0;
+	t->tm_min = 0;
+	t->tm_hour = 0;
+
+	/*
+	 * Probe for a DST transition: a local day that is not exactly 86400
+	 * seconds long is not safe to cache. Both ends of the probe are
+	 * resolved with tm_isdst = -1, because the midnight computed below
+	 * inherits its tm_isdst from the timestamp being tested and is
+	 * therefore itself shifted on a transition day -- measuring from it
+	 * would make such a day look 86400 seconds long.
+	 */
+	probe = *t;
+	probe.tm_isdst = -1;
+	probe_midnight = mktime(&probe);
+
+	next = *t;
+	next.tm_mday += 1;
+	next.tm_isdst = -1;
+	next_midnight = mktime(&next);
+
+	day_cache.tm = *t;
+	day_cache.midnight = mktime(&day_cache.tm);
+
+	if (probe_midnight != (time_t) -1 && next_midnight != (time_t) -1 &&
+	    next_midnight - probe_midnight == 86400 &&
+	    day_cache.midnight == probe_midnight)
+		day_cache.valid_until = next_midnight;
+	else
+		day_cache.valid_until = 0;
+
+	day_cache_store_tz();
+
+	return &day_cache;
+}
+
+static inline time_t get_midnight(time_t when)
+{
+	const struct day_cache *dc = get_day_cache(when);
+
+	if (dc == NULL)
+		return (time_t)0L;
+	return dc->midnight;
+}
+
+/*
+ * Internal, exported for testing. The day cache is private to this file, and
+ * tests cannot include it without defining its globals a second time next to
+ * the ones in libnaemon, so they look at it through these two instead.
+ */
+int _get_day_cache_entry(time_t when, time_t *midnight, int *year, int *mon,
+                         int *wday, int *cacheable)
+{
+	const struct day_cache *dc = get_day_cache(when);
+
+	if (dc == NULL)
+		return -1;
+	*midnight = dc->midnight;
+	*year = dc->year;
+	*mon = dc->mon;
+	*wday = dc->wday;
+	*cacheable = dc->valid_until != 0;
+	return 0;
+}
+
+void _reset_day_cache(void)
+{
+	memset(&day_cache, 0, sizeof(day_cache));
+}
+
 timerange *_get_matching_timerange(time_t test_time, const timeperiod *tperiod)
 {
 	daterange *temp_daterange = NULL;
@@ -431,20 +660,22 @@ timerange *_get_matching_timerange(time_t test_time, const timeperiod *tperiod)
 	int test_time_year = 0;
 	int test_time_mon = 0;
 	int test_time_wday = 0;
+	const struct day_cache *dc;
 
 	if (tperiod == NULL)
 		return NULL;
 
-	t = localtime_r((time_t *)&test_time, &tm_s);
-	test_time_year = t->tm_year;
-	test_time_mon = t->tm_mon;
-	test_time_wday = t->tm_wday;
+	dc = get_day_cache(test_time);
+	if (dc == NULL)
+		return NULL;
 
-	/* calculate the start of the day (midnight, 00:00 hours) when the specified test time occurs */
-	t->tm_sec = 0;
-	t->tm_min = 0;
-	t->tm_hour = 0;
-	midnight = mktime(t);
+	/* tm_s is used as scratch space below, so work on a copy */
+	tm_s = dc->tm;
+	t = &tm_s;
+	test_time_year = dc->year;
+	test_time_mon = dc->mon;
+	test_time_wday = dc->wday;
+	midnight = dc->midnight;
 
 	/**** check exceptions first ****/
 	for (daterange_type = 0; daterange_type < DATERANGE_TYPES; daterange_type++) {
@@ -643,17 +874,6 @@ static int is_time_excluded(time_t when, const struct timeperiod *tp)
 		}
 	}
 	return 0;
-}
-
-static inline time_t get_midnight(time_t when)
-{
-	struct tm *t, tm_s;
-
-	t = localtime_r((time_t *)&when, &tm_s);
-	t->tm_sec = 0;
-	t->tm_min = 0;
-	t->tm_hour = 0;
-	return mktime(t);
 }
 
 static inline int timerange_includes_time(struct timerange *range, time_t when)

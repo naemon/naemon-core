@@ -462,6 +462,18 @@ int iobroker_poll(iobroker_set *iobs, int timeout)
 	return ret;
 }
 
+/* flush pending output for a single descriptor */
+static int iobroker_push_one(iobroker_fd *s)
+{
+	if (s && s->fd > 0 && nm_bufferqueue_get_available(s->bq_out)) {
+		if (nm_bufferqueue_write(s->bq_out, s->fd) < 0) {
+			/* TODO: can't log() in lib */
+		}
+		return 0;
+	}
+	return 1;
+}
+
 int iobroker_push(iobroker_set *iobs)
 {
 	int i, result = 1;
@@ -481,14 +493,8 @@ int iobroker_push(iobroker_set *iobs)
 
 		num_fds++;
 		s = iobs->iobroker_fds[i];
-		if (s->fd > 0 && nm_bufferqueue_get_available(s->bq_out)) {
-			int ret;
+		if (!iobroker_push_one(s))
 			result = 0;
-			ret = nm_bufferqueue_write(s->bq_out, s->fd);
-			if (ret < 0) {
-				/* TODO: can't log() in lib */
-			}
-		}
 	}
 	return result;
 }
@@ -498,6 +504,11 @@ int iobroker_write_packet(iobroker_set *iobs, int fd, char *buf, size_t len)
 	int ret = 0;
 	if ((ret = nm_bufferqueue_push(iobs->iobroker_fds[fd]->bq_out, buf, len)))
 		return ret;
-	/* horrible idea? */
-	return iobroker_push(iobs);
+	/*
+	 * Only flush the descriptor we just queued data for. Flushing the whole
+	 * set here means walking every registered descriptor on every dispatched
+	 * check; any backlog on the other descriptors is picked up by the
+	 * iobroker_push() call in the event loop anyway.
+	 */
+	return iobroker_push_one(iobs->iobroker_fds[fd]);
 }

@@ -3,6 +3,7 @@
 #include "objectlist.h"
 #include "nm_alloc.h"
 #include "logging.h"
+#include "objects_fcache.h"
 
 hostdependency *add_host_dependency(char *dependent_host_name, char *host_name, int dependency_type, int inherits_parent, int failure_options, char *dependency_period)
 {
@@ -69,16 +70,26 @@ void destroy_hostdependency(hostdependency *this_hostdependency)
 	num_objects.hostdependencies--;
 }
 
+void nm_fcache_hostdependency(struct nm_writebuf *wb, const hostdependency *temp_hostdependency)
+{
+	nm_wb_lit(wb, "define hostdependency {\n");
+	fc_str(wb, "host_name", temp_hostdependency->host_name);
+	fc_str(wb, "dependent_host_name", temp_hostdependency->dependent_host_name);
+	if (temp_hostdependency->dependency_period)
+		fc_str(wb, "dependency_period", temp_hostdependency->dependency_period);
+	fc_int(wb, "inherits_parent", temp_hostdependency->inherits_parent);
+	if (temp_hostdependency->dependency_type == NOTIFICATION_DEPENDENCY)
+		fc_str(wb, "notification_failure_options", opts2str(temp_hostdependency->failure_options, host_flag_map, 'o'));
+	else
+		fc_str(wb, "execution_failure_options", opts2str(temp_hostdependency->failure_options, host_flag_map, 'o'));
+	nm_wb_lit(wb, "\t}\n\n");
+}
+
 void fcache_hostdependency(FILE *fp, const hostdependency *temp_hostdependency)
 {
-	fprintf(fp, "define hostdependency {\n");
-	fprintf(fp, "\thost_name\t%s\n", temp_hostdependency->host_name);
-	fprintf(fp, "\tdependent_host_name\t%s\n", temp_hostdependency->dependent_host_name);
-	if (temp_hostdependency->dependency_period)
-		fprintf(fp, "\tdependency_period\t%s\n", temp_hostdependency->dependency_period);
-	fprintf(fp, "\tinherits_parent\t%d\n", temp_hostdependency->inherits_parent);
-	fprintf(fp, "\t%s_failure_options\t%s\n",
-	        temp_hostdependency->dependency_type == NOTIFICATION_DEPENDENCY ? "notification" : "execution",
-	        opts2str(temp_hostdependency->failure_options, host_flag_map, 'o'));
-	fprintf(fp, "\t}\n\n");
+	struct nm_writebuf wb;
+
+	fc_file_begin(&wb, fp);
+	nm_fcache_hostdependency(&wb, temp_hostdependency);
+	nm_writebuf_done(&wb);
 }

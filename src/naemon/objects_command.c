@@ -1,6 +1,7 @@
 #include "objects_command.h"
 #include "nm_alloc.h"
 #include "logging.h"
+#include "objects_fcache.h"
 #include <string.h>
 #include <glib.h>
 
@@ -111,8 +112,19 @@ command *find_command(const char *name)
 	return name ? g_hash_table_lookup(command_hash_table, name) : NULL;
 }
 
+void nm_fcache_command(struct nm_writebuf *wb, const command *temp_command)
+{
+	nm_wb_lit(wb, "define command {\n");
+	fc_str(wb, "command_name", temp_command->name);
+	fc_str(wb, "command_line", temp_command->command_line);
+	nm_wb_lit(wb, "\t}\n\n");
+}
+
 void fcache_command(FILE *fp, const command *temp_command)
 {
-	fprintf(fp, "define command {\n\tcommand_name\t%s\n\tcommand_line\t%s\n\t}\n\n",
-	        temp_command->name, temp_command->command_line);
+	struct nm_writebuf wb;
+
+	fc_file_begin(&wb, fp);
+	nm_fcache_command(&wb, temp_command);
+	nm_writebuf_done(&wb);
 }

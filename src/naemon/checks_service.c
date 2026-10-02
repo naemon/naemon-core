@@ -126,8 +126,12 @@ static void schedule_next_service_check_at(service *svc, time_t delay, time_t no
 	tv_set(&svc->last_update);
 	svc->next_check_event = schedule_event(delay, handle_service_check_event, (void *)svc);
 
-	/* update the status log, since next_check and check_options is updated */
-	update_service_status(svc, FALSE);
+	/*
+	 * Deliberately not update_service_status(): only the schedule moved, and
+	 * NEBTYPE_SERVICESTATUS_SCHEDULE lets a module tell that apart from a real
+	 * status change.
+	 */
+	broker_service_status(NEBTYPE_SERVICESTATUS_SCHEDULE, NEBFLAG_NONE, NEBATTR_NONE, svc);
 }
 
 void schedule_next_service_check(service *svc, time_t delay, int options)
@@ -407,6 +411,8 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 
 	/* save check info */
 	cr->object_check_type = SERVICE_CHECK;
+	/* saves the worker callback a lookup by name when the result comes back */
+	cr->object_ptr = svc;
 	cr->check_type = CHECK_TYPE_ACTIVE;
 	cr->check_options = check_options;
 	cr->scheduled_check = TRUE;
@@ -485,6 +491,7 @@ static void handle_worker_service_check(wproc_result *wpres, void *arg, int flag
 		cr->exited_ok = wpres->exited_ok;
 		cr->engine = NULL;
 		cr->source = wpres->source;
+		/* finds the service through cr->object_ptr, set in run_scheduled_service_check() */
 		process_check_result(cr);
 	}
 	free_check_result(cr);

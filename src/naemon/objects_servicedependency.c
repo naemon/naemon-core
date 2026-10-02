@@ -3,6 +3,7 @@
 #include "objectlist.h"
 #include "nm_alloc.h"
 #include "logging.h"
+#include "objects_fcache.h"
 
 servicedependency *add_service_dependency(char *dependent_host_name, char *dependent_service_description, char *host_name, char *service_description, int dependency_type, int inherits_parent, int failure_options, char *dependency_period)
 {
@@ -79,18 +80,28 @@ void destroy_servicedependency(servicedependency *this_servicedependency)
 	num_objects.servicedependencies--;
 }
 
+void nm_fcache_servicedependency(struct nm_writebuf *wb, const servicedependency *temp_servicedependency)
+{
+	nm_wb_lit(wb, "define servicedependency {\n");
+	fc_str(wb, "host_name", temp_servicedependency->host_name);
+	fc_str(wb, "service_description", temp_servicedependency->service_description);
+	fc_str(wb, "dependent_host_name", temp_servicedependency->dependent_host_name);
+	fc_str(wb, "dependent_service_description", temp_servicedependency->dependent_service_description);
+	if (temp_servicedependency->dependency_period)
+		fc_str(wb, "dependency_period", temp_servicedependency->dependency_period);
+	fc_int(wb, "inherits_parent", temp_servicedependency->inherits_parent);
+	if (temp_servicedependency->dependency_type == NOTIFICATION_DEPENDENCY)
+		fc_str(wb, "notification_failure_options", opts2str(temp_servicedependency->failure_options, service_flag_map, 'o'));
+	else
+		fc_str(wb, "execution_failure_options", opts2str(temp_servicedependency->failure_options, service_flag_map, 'o'));
+	nm_wb_lit(wb, "\t}\n\n");
+}
+
 void fcache_servicedependency(FILE *fp, const servicedependency *temp_servicedependency)
 {
-	fprintf(fp, "define servicedependency {\n");
-	fprintf(fp, "\thost_name\t%s\n", temp_servicedependency->host_name);
-	fprintf(fp, "\tservice_description\t%s\n", temp_servicedependency->service_description);
-	fprintf(fp, "\tdependent_host_name\t%s\n", temp_servicedependency->dependent_host_name);
-	fprintf(fp, "\tdependent_service_description\t%s\n", temp_servicedependency->dependent_service_description);
-	if (temp_servicedependency->dependency_period)
-		fprintf(fp, "\tdependency_period\t%s\n", temp_servicedependency->dependency_period);
-	fprintf(fp, "\tinherits_parent\t%d\n", temp_servicedependency->inherits_parent);
-	fprintf(fp, "\t%s_failure_options\t%s\n",
-	        temp_servicedependency->dependency_type == NOTIFICATION_DEPENDENCY ? "notification" : "execution",
-	        opts2str(temp_servicedependency->failure_options, service_flag_map, 'o'));
-	fprintf(fp, "\t}\n\n");
+	struct nm_writebuf wb;
+
+	fc_file_begin(&wb, fp);
+	nm_fcache_servicedependency(&wb, temp_servicedependency);
+	nm_writebuf_done(&wb);
 }

@@ -8,6 +8,7 @@
 #include "objects_common.h"
 #include "nm_alloc.h"
 #include "logging.h"
+#include "objects_fcache.h"
 #include "globals.h"
 #include <glib.h>
 #include "lib/libnaemon.h"
@@ -451,82 +452,94 @@ int is_escalated_contact_for_service(service *svc, contact *cntct)
 	return FALSE;
 }
 
-void fcache_service(FILE *fp, const service *temp_service)
+void nm_fcache_service(struct nm_writebuf *wb, const service *temp_service)
 {
-	fprintf(fp, "define service {\n");
-	fprintf(fp, "\thost_name\t%s\n", temp_service->host_name);
-	fprintf(fp, "\tservice_description\t%s\n", temp_service->description);
+	nm_wb_lit(wb, "define service {\n");
+	fc_str(wb, "host_name", temp_service->host_name);
+	fc_str(wb, "service_description", temp_service->description);
 	if (temp_service->display_name != temp_service->description)
-		fprintf(fp, "\tdisplay_name\t%s\n", temp_service->display_name);
+		fc_str(wb, "display_name", temp_service->display_name);
 	if (temp_service->parents) {
-		fprintf(fp, "\tparents\t");
+		nm_wb_lit(wb, "\tparents\t");
 		/* same-host, single-parent? */
-		if (!temp_service->parents->next && temp_service->parents->service_ptr->host_ptr == temp_service->host_ptr)
-			fprintf(fp, "%s\n", temp_service->parents->service_ptr->description);
-		else {
+		if (!temp_service->parents->next && temp_service->parents->service_ptr->host_ptr == temp_service->host_ptr) {
+			fc_s(wb, temp_service->parents->service_ptr->description);
+			nm_wb_lit(wb, "\n");
+		} else {
 			servicesmember *sm;
 			for (sm = temp_service->parents; sm; sm = sm->next) {
-				fprintf(fp, "%s,%s%c", sm->host_name, sm->service_description, sm->next ? ',' : '\n');
+				fc_s(wb, sm->host_name);
+				nm_wb_lit(wb, ",");
+				fc_s(wb, sm->service_description);
+				fc_sep(wb, sm->next != NULL);
 			}
 		}
 	}
 	if (temp_service->check_period)
-		fprintf(fp, "\tcheck_period\t%s\n", temp_service->check_period);
+		fc_str(wb, "check_period", temp_service->check_period);
 	if (temp_service->check_command)
-		fprintf(fp, "\tcheck_command\t%s\n", temp_service->check_command);
+		fc_str(wb, "check_command", temp_service->check_command);
 	if (temp_service->event_handler)
-		fprintf(fp, "\tevent_handler\t%s\n", temp_service->event_handler);
-	fcache_contactlist(fp, "\tcontacts\t", temp_service->contacts);
-	fcache_contactgrouplist(fp, "\tcontact_groups\t", temp_service->contact_groups);
+		fc_str(wb, "event_handler", temp_service->event_handler);
+	nm_fcache_contactlist(wb, "\tcontacts\t", temp_service->contacts);
+	nm_fcache_contactgrouplist(wb, "\tcontact_groups\t", temp_service->contact_groups);
 	if (temp_service->notification_period)
-		fprintf(fp, "\tnotification_period\t%s\n", temp_service->notification_period);
-	fprintf(fp, "\tinitial_state\t");
+		fc_str(wb, "notification_period", temp_service->notification_period);
 	if (temp_service->initial_state == STATE_WARNING)
-		fprintf(fp, "w\n");
+		nm_wb_lit(wb, "\tinitial_state\tw\n");
 	else if (temp_service->initial_state == STATE_UNKNOWN)
-		fprintf(fp, "u\n");
+		nm_wb_lit(wb, "\tinitial_state\tu\n");
 	else if (temp_service->initial_state == STATE_CRITICAL)
-		fprintf(fp, "c\n");
+		nm_wb_lit(wb, "\tinitial_state\tc\n");
 	else
-		fprintf(fp, "o\n");
-	fprintf(fp,"\tcheck_timeout\t%d\n", temp_service->check_timeout);
-	fprintf(fp, "\thourly_value\t%u\n", temp_service->hourly_value);
-	fprintf(fp, "\tcheck_interval\t%f\n", temp_service->check_interval);
-	fprintf(fp, "\tretry_interval\t%f\n", temp_service->retry_interval);
-	fprintf(fp, "\tmax_check_attempts\t%d\n", temp_service->max_attempts);
-	fprintf(fp, "\tis_volatile\t%d\n", temp_service->is_volatile);
-	fprintf(fp, "\tactive_checks_enabled\t%d\n", temp_service->checks_enabled);
-	fprintf(fp, "\tpassive_checks_enabled\t%d\n", temp_service->accept_passive_checks);
-	fprintf(fp, "\tobsess\t%d\n", temp_service->obsess);
-	fprintf(fp, "\tevent_handler_enabled\t%d\n", temp_service->event_handler_enabled);
-	fprintf(fp, "\tlow_flap_threshold\t%f\n", temp_service->low_flap_threshold);
-	fprintf(fp, "\thigh_flap_threshold\t%f\n", temp_service->high_flap_threshold);
-	fprintf(fp, "\tflap_detection_enabled\t%d\n", temp_service->flap_detection_enabled);
-	fprintf(fp, "\tflap_detection_options\t%s\n", opts2str(temp_service->flap_detection_options, service_flag_map, 'o'));
-	fprintf(fp, "\tfreshness_threshold\t%d\n", temp_service->freshness_threshold);
-	fprintf(fp, "\tcheck_freshness\t%d\n", temp_service->check_freshness);
-	fprintf(fp, "\tnotification_options\t%s\n", opts2str(temp_service->notification_options, service_flag_map, 'r'));
-	fprintf(fp, "\tnotifications_enabled\t%d\n", temp_service->notifications_enabled);
-	fprintf(fp, "\tnotification_interval\t%f\n", temp_service->notification_interval);
-	fprintf(fp, "\tfirst_notification_delay\t%f\n", temp_service->first_notification_delay);
-	fprintf(fp, "\tstalking_options\t%s\n", opts2str(temp_service->stalking_options, service_flag_map, 'o'));
-	fprintf(fp, "\tprocess_perf_data\t%d\n", temp_service->process_performance_data);
+		nm_wb_lit(wb, "\tinitial_state\to\n");
+	fc_int(wb, "check_timeout", temp_service->check_timeout);
+	fc_uint(wb, "hourly_value", temp_service->hourly_value);
+	fc_dbl(wb, "check_interval", temp_service->check_interval);
+	fc_dbl(wb, "retry_interval", temp_service->retry_interval);
+	fc_int(wb, "max_check_attempts", temp_service->max_attempts);
+	fc_int(wb, "is_volatile", temp_service->is_volatile);
+	fc_int(wb, "active_checks_enabled", temp_service->checks_enabled);
+	fc_int(wb, "passive_checks_enabled", temp_service->accept_passive_checks);
+	fc_int(wb, "obsess", temp_service->obsess);
+	fc_int(wb, "event_handler_enabled", temp_service->event_handler_enabled);
+	fc_dbl(wb, "low_flap_threshold", temp_service->low_flap_threshold);
+	fc_dbl(wb, "high_flap_threshold", temp_service->high_flap_threshold);
+	fc_int(wb, "flap_detection_enabled", temp_service->flap_detection_enabled);
+	fc_str(wb, "flap_detection_options", opts2str(temp_service->flap_detection_options, service_flag_map, 'o'));
+	fc_int(wb, "freshness_threshold", temp_service->freshness_threshold);
+	fc_int(wb, "check_freshness", temp_service->check_freshness);
+	fc_str(wb, "notification_options", opts2str(temp_service->notification_options, service_flag_map, 'r'));
+	fc_int(wb, "notifications_enabled", temp_service->notifications_enabled);
+	fc_dbl(wb, "notification_interval", temp_service->notification_interval);
+	fc_dbl(wb, "first_notification_delay", temp_service->first_notification_delay);
+	fc_str(wb, "stalking_options", opts2str(temp_service->stalking_options, service_flag_map, 'o'));
+	fc_int(wb, "process_perf_data", temp_service->process_performance_data);
 	if (temp_service->icon_image)
-		fprintf(fp, "\ticon_image\t%s\n", temp_service->icon_image);
+		fc_str(wb, "icon_image", temp_service->icon_image);
 	if (temp_service->icon_image_alt)
-		fprintf(fp, "\ticon_image_alt\t%s\n", temp_service->icon_image_alt);
+		fc_str(wb, "icon_image_alt", temp_service->icon_image_alt);
 	if (temp_service->notes)
-		fprintf(fp, "\tnotes\t%s\n", temp_service->notes);
+		fc_str(wb, "notes", temp_service->notes);
 	if (temp_service->notes_url)
-		fprintf(fp, "\tnotes_url\t%s\n", temp_service->notes_url);
+		fc_str(wb, "notes_url", temp_service->notes_url);
 	if (temp_service->action_url)
-		fprintf(fp, "\taction_url\t%s\n", temp_service->action_url);
-	fprintf(fp, "\tretain_status_information\t%d\n", temp_service->retain_status_information);
-	fprintf(fp, "\tretain_nonstatus_information\t%d\n", temp_service->retain_nonstatus_information);
+		fc_str(wb, "action_url", temp_service->action_url);
+	fc_int(wb, "retain_status_information", temp_service->retain_status_information);
+	fc_int(wb, "retain_nonstatus_information", temp_service->retain_nonstatus_information);
 
 	/* custom variables */
-	fcache_customvars(fp, temp_service->custom_variables);
-	fprintf(fp, "\t}\n\n");
+	nm_fcache_customvars(wb, temp_service->custom_variables);
+	nm_wb_lit(wb, "\t}\n\n");
+}
+
+void fcache_service(FILE *fp, const service *temp_service)
+{
+	struct nm_writebuf wb;
+
+	fc_file_begin(&wb, fp);
+	nm_fcache_service(&wb, temp_service);
+	nm_writebuf_done(&wb);
 }
 
 /* write a service problem/recovery to the naemon log file */

@@ -2,6 +2,7 @@
 #include "logging.h"
 #include "nm_alloc.h"
 #include "xodtemplate.h"
+#include "objects_fcache.h"
 #include <string.h>
 #include <ctype.h>
 
@@ -80,13 +81,26 @@ const char *check_type_name(int check_type)
 	return check_type == CHECK_TYPE_PASSIVE ? "PASSIVE" : "ACTIVE";
 }
 
+void nm_fcache_customvars(struct nm_writebuf *wb, const customvariablesmember *cvlist)
+{
+	const customvariablesmember *l;
+
+	for (l = cvlist; l; l = l->next) {
+		nm_wb_lit(wb, "\t_");
+		fc_s(wb, l->variable_name);
+		nm_wb_lit(wb, "\t");
+		fc_s(wb, (l->variable_value == NULL) ? XODTEMPLATE_NULL : l->variable_value);
+		nm_wb_lit(wb, "\n");
+	}
+}
+
 void fcache_customvars(FILE *fp, const customvariablesmember *cvlist)
 {
-	if (cvlist) {
-		const customvariablesmember *l;
-		for (l = cvlist; l; l = l->next)
-			fprintf(fp, "\t_%s\t%s\n", l->variable_name, (l->variable_value == NULL) ? XODTEMPLATE_NULL : l->variable_value);
-	}
+	struct nm_writebuf wb;
+
+	fc_file_begin(&wb, fp);
+	nm_fcache_customvars(&wb, cvlist);
+	nm_writebuf_done(&wb);
 }
 
 /* determines whether or not an object name (host, service, etc) contains illegal characters */

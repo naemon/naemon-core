@@ -242,6 +242,10 @@ int broker_service_check(int type, int flags, int attr, service *svc, int check_
 	if (svc == NULL)
 		return ERROR;
 
+	/* no module is listening, don't bother assembling the event data */
+	if (!neb_callbacks_registered(NEBCALLBACK_SERVICE_CHECK_DATA))
+		return OK;
+
 	/* get command name/args */
 	if (cmd != NULL) {
 		command_buf = nm_strdup(cmd);

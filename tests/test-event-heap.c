@@ -10,7 +10,7 @@ static void print_heap(struct timed_event_queue *q, size_t i) {
 	if(i >= q->count)
 		return;
 	if(i==0) printf("\n");
-	ev = q->queue[i];
+	ev = q->queue[i].ev;
 	printf("%3lu %3lu ", i, ev->pos);
 	for(depth = i; depth>0; depth = ((depth-1)>>1))
 		printf("  ");
@@ -32,13 +32,15 @@ static void verify_queue_heap(struct timed_event_queue *q)
 	_ck_assert_int(q->size, >=, q->count);
 
 	for (i = 0; i < q->count; i++) {
+		/* the inline key must never go stale against the event it sorts */
+		_ck_assert_int(q->queue[i].key, ==, evheap_key(&q->queue[i].ev->event_time));
 		child = i * 2 + 1;
 		if (child < q->count) {
-			_ck_assert_int(evheap_compare(q->queue[i], q->queue[child]), <=, 0);
+			_ck_assert_int(q->queue[i].key, <=, q->queue[child].key);
 		}
 		child = i * 2 + 2;
 		if (child < q->count) {
-			_ck_assert_int(evheap_compare(q->queue[i], q->queue[child]), <=, 0);
+			_ck_assert_int(q->queue[i].key, <=, q->queue[child].key);
 		}
 	}
 
@@ -181,7 +183,7 @@ START_TEST(event_heap_count_random_removal)
 		ck_assert_int_ne(q->count, 0);
 
 		/* Pick an event at random */
-		ev = q->queue[rand() % q->count];
+		ev = q->queue[rand() % q->count].ev;
 		evheap_remove(q, ev);
 		free(ev);
 
@@ -192,6 +194,163 @@ START_TEST(event_heap_count_random_removal)
 	ck_assert_int_eq(q->count, 0);
 	ck_assert(evheap_head(q) == NULL);
 
+	evheap_destroy(q);
+}
+END_TEST
+
+/*
+ * Removing the event in the last heap slot leaves no hole to fill. Sifting
+ * anyway started one past the end and compared the removed entry with its
+ * parent; with equal keys it was swapped back in as the head, while a live
+ * event fell out of the heap -- and the caller then freed the one now at the
+ * head. These only use ev->pos, so they hold whatever the queue stores.
+ */
+START_TEST(event_heap_remove_last_equal_key)
+{
+	struct timed_event_queue *q = evheap_create();
+	struct timed_event *a = nm_calloc(1, sizeof(*a));
+	struct timed_event *b = nm_calloc(1, sizeof(*b));
+	struct timed_event *last, *other;
+
+	a->callback = b->callback = func_a;
+	a->event_time.tv_sec = b->event_time.tv_sec = 5;
+	evheap_add(q, a);
+	evheap_add(q, b);
+
+	last = (a->pos == q->count - 1) ? a : b;
+	other = (last == a) ? b : a;
+	evheap_remove(q, last);
+
+	ck_assert_int_eq(q->count, 1);
+	ck_assert(evheap_head(q) == other);
+	ck_assert_int_eq(other->pos, 0);
+
+	evheap_remove(q, other);
+	ck_assert(evheap_head(q) == NULL);
+	nm_free(a);
+	nm_free(b);
+	evheap_destroy(q);
+}
+END_TEST
+
+START_TEST(event_heap_removal_equal_keys)
+{
+	/*
+	 * Only three distinct times, so a node and its parent usually tie.
+	 * Every other removal takes whatever sits in the last slot -- the case
+	 * that went wrong -- and the rest take a random event, so the general
+	 * path is covered as well.
+	 */
+	const size_t n = 1000;
+	struct timed_event_queue *q = evheap_create();
+	struct timed_event **evs = nm_calloc(n, sizeof(*evs));
+	char *present = nm_calloc(n, 1);
+	char *seen;
+	size_t i, j, bad, left = n;
+
+	for (i = 0; i < n; i++) {
+		evs[i] = nm_calloc(1, sizeof(struct timed_event));
+		evs[i]->callback = func_a;
+		evs[i]->event_time.tv_sec = i % 3;
+		evheap_add(q, evs[i]);
+		present[i] = 1;
+	}
+
+	while (left > 0) {
+		if (left % 2) {
+			for (j = 0; j < n; j++)
+				if (present[j] && evs[j]->pos == q->count - 1)
+					break;
+			ck_assert_msg(j < n, "no event claims the last heap slot");
+		} else {
+			do {
+				j = rand() % n;
+			} while (!present[j]);
+		}
+		evheap_remove(q, evs[j]);
+		present[j] = 0;
+		left--;
+
+		/*
+		 * Every remaining event must hold its own slot, so none that was
+		 * removed can still be in the heap. Checked in plain C: under
+		 * CK_FORK every passing ck_assert reports back to the parent, and
+		 * doing that n^2 times runs into the test timeout.
+		 */
+		ck_assert_int_eq(q->count, left);
+		seen = nm_calloc(left + 1, 1);
+		bad = n;
+		for (i = 0; i < n && bad == n; i++) {
+			if (!present[i])
+				continue;
+			if (evs[i]->pos >= q->count || seen[evs[i]->pos])
+				bad = i;
+			else
+				seen[evs[i]->pos] = 1;
+		}
+		nm_free(seen);
+		ck_assert_msg(bad == n, "event %zu lost its heap slot (pos %zu, count %zu)",
+		              bad, bad < n ? evs[bad]->pos : 0, q->count);
+	}
+
+	for (i = 0; i < n; i++)
+		nm_free(evs[i]);
+	nm_free(evs);
+	nm_free(present);
+	evheap_destroy(q);
+}
+END_TEST
+
+/*
+ * The inline key is tv_sec * 1e9 + tv_nsec, and tv_sec can come from user
+ * input: an acknowledgement or a downtime may be given an end time centuries
+ * away. Such an event must still sort after one that is due in a minute. The
+ * polling tests further down already use delays like these, but each puts a
+ * single event in the queue, where the key never decides anything -- so a
+ * key that wrapped went unnoticed there.
+ */
+START_TEST(event_heap_extreme_times_in_one_heap)
+{
+	/*
+	 * At most one value saturates per direction, so the order is exact.
+	 * Values that do not fit this platform's time_t are skipped: with a
+	 * 32 bit time_t no key can overflow, and the 32 bit limits themselves
+	 * are what gets checked instead.
+	 */
+	static const long long secs[] = {
+		100, 9999999999LL, 0, -9999999999LL, 60, 1,
+		9223372035LL, -9223372035LL, 2147483647LL, -2147483647LL - 1,
+	};
+	static const long long sorted[] = {
+		-9999999999LL, -9223372035LL, -2147483647LL - 1, 0, 1, 60, 100,
+		2147483647LL, 9223372035LL, 9999999999LL,
+	};
+	struct timed_event_queue *q = evheap_create();
+	struct timed_event *ev;
+	size_t i;
+
+	for (i = 0; i < ARRAY_SIZE(secs); i++) {
+		if ((long long)(time_t)secs[i] != secs[i])
+			continue;
+		ev = nm_calloc(1, sizeof(*ev));
+		ev->callback = func_a;
+		ev->event_time.tv_sec = (time_t)secs[i];
+		evheap_add(q, ev);
+	}
+	verify_queue_heap(q);
+
+	for (i = 0; i < ARRAY_SIZE(sorted); i++) {
+		if ((long long)(time_t)sorted[i] != sorted[i])
+			continue;
+		ev = evheap_head(q);
+		ck_assert(ev != NULL);
+		ck_assert_msg((long long)ev->event_time.tv_sec == sorted[i],
+		              "position %zu: expected tv_sec %lld, got %lld", i,
+		              sorted[i], (long long)ev->event_time.tv_sec);
+		evheap_remove(q, ev);
+		nm_free(ev);
+	}
+	ck_assert(evheap_head(q) == NULL);
 	evheap_destroy(q);
 }
 END_TEST
@@ -305,6 +464,9 @@ Suite *event_heap_suite(void)
 	tcase_add_test(tc_event_heap, event_heap_count_ordered);
 	tcase_add_test(tc_event_heap, event_heap_count_random_order);
 	tcase_add_test(tc_event_heap, event_heap_count_random_removal);
+	tcase_add_test(tc_event_heap, event_heap_remove_last_equal_key);
+	tcase_add_test(tc_event_heap, event_heap_removal_equal_keys);
+	tcase_add_test(tc_event_heap, event_heap_extreme_times_in_one_heap);
 	tcase_add_test(tc_event_heap, event_timespec_msdiff);
 	suite_add_tcase(s, tc_event_heap);
 

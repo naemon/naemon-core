@@ -1,5 +1,31 @@
 Next:
+Breaking changes:
+* increased CURRENT_NEB_API_VERSION, this means you have to recompile your NEB modules.
+  check_result gained an object_ptr member; a module that submits check results may
+  set it to the host/service the result belongs to, or leave it NULL to have naemon
+  look the object up by name as before.
+
+Features:
+* new NEBTYPE_HOSTSTATUS_SCHEDULE / NEBTYPE_SERVICESTATUS_SCHEDULE, sent when only
+  the next check time changed, so modules can tell them apart from real status
+  updates (#162)
+
+Changed:
+* status.dat, retention.dat and objects.cache are written through a buffered writer
+  instead of one fprintf() call per field. The output is unchanged, byte for byte.
+* processing a check result no longer looks the object up by name
+* event heap entries keep their sort key inline instead of dereferencing the event
+* timeperiod lookups cache the current local day
+* iobroker_write_packet() flushes only the descriptor it wrote to, not the whole set
+* NEB callbacks return early when no module is subscribed to that callback type
+
 Bugfixes:
+* removing the last event from the scheduling queue while its parent had the same
+  event time put the removed event back in as the head and dropped a live one; the
+  caller then freed the head, and the dropped event never ran
+* nsock_unix() rejects socket paths that do not fit in sockaddr_un.sun_path instead
+  of overrunning the caller's stack; a query_socket path of 108 characters or more
+  crashed naemon during startup
 * Warn when trailing characters in boolean object directives are ignored. The
   leading 0 or 1 remains authoritative for compatibility.
 
