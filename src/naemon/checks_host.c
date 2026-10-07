@@ -28,6 +28,7 @@
 /* Scheduling (before worker job is started) */
 static void handle_host_check_event(struct nm_event_execution_properties *evprop);
 static int run_async_host_check(host *hst, int check_options, double latency);
+static void schedule_next_host_check_at(host *hst, time_t delay, time_t now, int options);
 
 /* Result handling (After worker job is executed) */
 static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags);
@@ -50,7 +51,12 @@ void checks_init_hosts(void)
 {
 	host *temp_host = NULL;
 	time_t delay;
-	time_t current_time = time(NULL);
+	struct timeval now;
+	time_t current_time;
+
+	/* one clock for the delays below and for the next_check they turn back into */
+	tv_set(&now);
+	current_time = now.tv_sec;
 
 	/******** SCHEDULE HOST CHECKS  ********/
 
@@ -87,7 +93,7 @@ void checks_init_hosts(void)
 		}
 
 		/* schedule a new host check event */
-		schedule_next_host_check(temp_host, delay, CHECK_OPTION_NONE);
+		schedule_next_host_check_at(temp_host, delay, current_time, CHECK_OPTION_NONE);
 	}
 
 	/* add a host result "freshness" check event */

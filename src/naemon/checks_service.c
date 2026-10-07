@@ -30,6 +30,7 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 
 /* Check exeuction */
 static int run_scheduled_service_check(service *, int, double);
+static void schedule_next_service_check_at(service *svc, time_t delay, time_t now, int options);
 
 /* Result handling (After worker job is executed) */
 static void handle_worker_service_check(wproc_result *wpres, void *arg, int flags);
@@ -50,7 +51,12 @@ void checks_init_services(void)
 {
 	service *temp_service = NULL;
 	time_t delay;
-	time_t current_time = time(NULL);
+	struct timeval now;
+	time_t current_time;
+
+	/* one clock for the delays below and for the next_check they turn back into */
+	tv_set(&now);
+	current_time = now.tv_sec;
 
 	log_debug_info(DEBUGL_EVENTS, 2, "Scheduling service checks...\n");
 
@@ -86,7 +92,7 @@ void checks_init_services(void)
 
 		/* create a new service check event */
 		if (temp_service->check_interval != 0.0)
-			schedule_next_service_check(temp_service, delay, 0);
+			schedule_next_service_check_at(temp_service, delay, current_time, 0);
 	}
 
 	/* add a service result "freshness" check event */
