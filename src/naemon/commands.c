@@ -4003,6 +4003,11 @@ void handle_host_acknowledgement_expire_event(struct nm_event_execution_properti
 				log_debug_info(DEBUGL_EVENTS, 2, "Removing host acknowledgement for host '%s'\n", hst->name);
 				remove_host_acknowledgement(hst);
 			}
+			/* run before time() reached the end time: try again then */
+			else if (hst->problem_has_been_acknowledged &&
+			         hst->acknowledgement_end_time > current_time) {
+				schedule_event(hst->acknowledgement_end_time - current_time, handle_host_acknowledgement_expire_event, evprop->user_data);
+			}
 		}
 	}
 }
@@ -4028,6 +4033,11 @@ void handle_service_acknowledgement_expire_event(struct nm_event_execution_prope
 	                    svc->acknowledgement_end_time <= current_time) {
 				log_debug_info(DEBUGL_EVENTS, 2, "Removing service acknowledgement for service '%s' on host '%s'\n", svc->description, svc->host_name);
 				remove_service_acknowledgement(svc);
+			}
+			/* run before time() reached the end time: try again then */
+			else if (svc->problem_has_been_acknowledged &&
+			         svc->acknowledgement_end_time > current_time) {
+				schedule_event(svc->acknowledgement_end_time - current_time, handle_service_acknowledgement_expire_event, evprop->user_data);
 			}
 		}
 	}
