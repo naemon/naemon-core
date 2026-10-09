@@ -215,7 +215,7 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 			}
 
 			/* make sure this is a valid time to check the service */
-			if (check_time_against_period(time(NULL), temp_service->check_period_ptr) == ERROR) {
+			if (check_time_against_period(tv.tv_sec, temp_service->check_period_ptr) == ERROR) {
 				delay_service_check_till_next_timeperiod_slot(temp_service);
 				return;
 			}

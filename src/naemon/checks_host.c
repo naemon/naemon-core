@@ -259,7 +259,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 		}
 
 		/* make sure this is a valid time to check the host */
-		if (check_time_against_period(time(NULL), hst->check_period_ptr) != OK) {
+		if (check_time_against_period(now.tv_sec, hst->check_period_ptr) != OK) {
 			delay_host_check_till_next_timeperiod_slot(hst);
 			return ERROR;
 		}
