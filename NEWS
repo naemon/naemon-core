@@ -1,4 +1,9 @@
 Next:
+Changed:
+* The command file worker no longer runs as a separate process. The external
+  command file is now polled directly by the main process event loop, so there
+  is only one Naemon daemon process instead of an extra command worker.
+
 Bugfixes:
 * Warn when trailing characters in boolean object directives are ignored. The
   leading 0 or 1 remains authoritative for compatibility.

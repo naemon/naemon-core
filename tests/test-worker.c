@@ -9,6 +9,7 @@
 #include <check.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 /*
  * A note about worker tests:
@@ -233,22 +234,64 @@ END_TEST
 
 
 /*
- * Make sure that the lifecycle of the command worker is deterministic w.r.t
- * its controlling functions:
- * E.g the command worker should be terminated on return of shutdown_command_file_worker()
- * and a PID should be available on return of launch_command_file_worker()
+ * Make sure that the lifecycle of the command file handler is
+ * deterministic w.r.t its controlling functions:
+ * The command file FIFO should be registered with the I/O broker on
+ * return of launch_command_file_worker() and unregistered again on
+ * return of shutdown_command_file_worker().
  */
+static char *cmdfile_test_path = NULL;
+
+static void cmdfile_test_setup(void)
+{
+	int fd;
+
+	ck_assert(NULL != (nagios_iobs = iobroker_create()));
+	cmdfile_test_path = strdup("/tmp/naemon-cmdfile-test-XXXXXX");
+	close(mkstemp(cmdfile_test_path));
+	unlink(cmdfile_test_path);
+	fd = mkfifo(cmdfile_test_path, S_IRUSR | S_IWUSR);
+	ck_assert_int_ge(fd, 0);
+	close(fd);
+	command_file = cmdfile_test_path;
+	check_external_commands = TRUE;
+}
+
+static void cmdfile_test_teardown(void)
+{
+	unlink(cmdfile_test_path);
+	nm_free(cmdfile_test_path);
+	cmdfile_test_path = NULL;
+	command_file = NULL;
+	iobroker_destroy(nagios_iobs, IOBROKER_CLOSE_SOCKETS);
+	nagios_iobs = NULL;
+}
+
 START_TEST(command_worker_launch_shutdown_test)
 {
-	pid_t worker_pid;
-	ck_assert_int_eq(0, command_worker_get_pid());
-	ck_assert_int_eq(0, launch_command_file_worker());
-	worker_pid = command_worker_get_pid();
-	ck_assert_int_ne(0, worker_pid);
-	sleep(1); /* results in race condition on slow boxes otherwise */
+	int fd;
+
+	/* launch opens the FIFO and registers it with the I/O broker */
+	ck_assert_int_eq(OK, launch_command_file_worker());
+	fd = command_file_fd_get();
+	ck_assert_int_ge(fd, 3);
+	ck_assert_int_eq(1, iobroker_is_registered(nagios_iobs, fd));
+
+	/* launch is a no-op when already registered */
+	ck_assert_int_eq(OK, launch_command_file_worker());
+	ck_assert_int_eq(1, iobroker_is_registered(nagios_iobs, fd));
+
+	/* shutdown unregisters (and closes) the FIFO */
 	ck_assert_int_eq(0, shutdown_command_file_worker());
-	ck_assert_int_eq(-1, kill(worker_pid, 0));
-	ck_assert_int_eq(0, command_worker_get_pid());
+	ck_assert_int_eq(0, iobroker_is_registered(nagios_iobs, fd));
+
+	/* a fresh launch re-opens and re-registers */
+	ck_assert_int_eq(OK, launch_command_file_worker());
+	fd = command_file_fd_get();
+	ck_assert_int_ge(fd, 3);
+	ck_assert_int_eq(1, iobroker_is_registered(nagios_iobs, fd));
+	ck_assert_int_eq(0, shutdown_command_file_worker());
+	ck_assert_int_eq(0, iobroker_is_registered(nagios_iobs, fd));
 }
 END_TEST
 
@@ -338,7 +381,7 @@ Suite *worker_suite(void)
 	suite_add_tcase(s, tc_worker_output);
 
 	tc_command_worker = tcase_create("command worker tests");
-	tcase_add_checked_fixture(tc_command_worker, init_iobroker, deinit_iobroker);
+	tcase_add_checked_fixture(tc_command_worker, cmdfile_test_setup, cmdfile_test_teardown);
 	tcase_add_test(tc_command_worker, command_worker_launch_shutdown_test);
 	suite_add_tcase(s, tc_command_worker);
 

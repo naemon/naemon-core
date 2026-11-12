@@ -206,7 +206,7 @@ const char *command_name(const struct external_command * command);
 
 
 int open_command_file(void);					/* creates the external command file as a named pipe (FIFO) and opens it for reading */
-int close_command_file(void);					/* closes and deletes the external command file (FIFO) */
+int command_file_fd_get(void);					/* returns the fd the command file is opened with, or -1 if not open */
 
 int process_external_command(char *cmd, int mode, GError **error); /* processes an external command given mode flags */
 int process_external_command1(char *cmd); /* DEPRECATED: top-level external old style command processor */
@@ -219,7 +219,6 @@ int process_passive_host_check(time_t, char *, int, char *);
 int launch_command_file_worker(void);
 int shutdown_command_file_worker(void);
 int disconnect_command_file_worker(void);
-int command_worker_get_pid(void);
 
 void handle_host_acknowledgement_expire_event(struct nm_event_execution_properties *evprop); /* removes an expired host acknowledgement */
 void handle_service_acknowledgement_expire_event(struct nm_event_execution_properties *evprop); /* removes an expired service acknowledgement */
