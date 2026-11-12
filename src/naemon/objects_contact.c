@@ -6,6 +6,7 @@
 #include "objectlist.h"
 #include "xodtemplate.h"
 #include "logging.h"
+#include "objects_fcache.h"
 #include "nm_alloc.h"
 #include <string.h>
 #include <glib.h>
@@ -284,59 +285,87 @@ contact *find_contact(const char *name)
 	return name ? g_hash_table_lookup(contact_hash_table, name) : NULL;
 }
 
-void fcache_contactlist(FILE *fp, const char *prefix, const contactsmember *list)
+void nm_fcache_contactlist(struct nm_writebuf *wb, const char *prefix, const contactsmember *list)
 {
-	if (list) {
-		contactsmember const *l;
-		fprintf(fp, "%s", prefix);
-		for (l = list; l; l = l->next)
-			fprintf(fp, "%s%c", l->contact_name, l->next ? ',' : '\n');
+	contactsmember const *l;
+
+	if (!list)
+		return;
+	fc_s(wb, prefix);
+	for (l = list; l; l = l->next) {
+		fc_s(wb, l->contact_name);
+		fc_sep(wb, l->next != NULL);
 	}
 }
 
-void fcache_contact(FILE *fp, const contact *temp_contact)
+void fcache_contactlist(FILE *fp, const char *prefix, const contactsmember *list)
+{
+	struct nm_writebuf wb;
+
+	fc_file_begin(&wb, fp);
+	nm_fcache_contactlist(&wb, prefix, list);
+	nm_writebuf_done(&wb);
+}
+
+void nm_fcache_contact(struct nm_writebuf *wb, const contact *temp_contact)
 {
 	commandsmember *list;
 	int x;
 
-	fprintf(fp, "define contact {\n");
-	fprintf(fp, "\tcontact_name\t%s\n", temp_contact->name);
+	nm_wb_lit(wb, "define contact {\n");
+	fc_str(wb, "contact_name", temp_contact->name);
 	if (temp_contact->alias)
-		fprintf(fp, "\talias\t%s\n", temp_contact->alias);
+		fc_str(wb, "alias", temp_contact->alias);
 	if (temp_contact->service_notification_period)
-		fprintf(fp, "\tservice_notification_period\t%s\n", temp_contact->service_notification_period);
+		fc_str(wb, "service_notification_period", temp_contact->service_notification_period);
 	if (temp_contact->host_notification_period)
-		fprintf(fp, "\thost_notification_period\t%s\n", temp_contact->host_notification_period);
-	fprintf(fp, "\tservice_notification_options\t%s\n", opts2str(temp_contact->service_notification_options, service_flag_map, 'r'));
-	fprintf(fp, "\thost_notification_options\t%s\n", opts2str(temp_contact->host_notification_options, host_flag_map, 'r'));
+		fc_str(wb, "host_notification_period", temp_contact->host_notification_period);
+	fc_str(wb, "service_notification_options", opts2str(temp_contact->service_notification_options, service_flag_map, 'r'));
+	fc_str(wb, "host_notification_options", opts2str(temp_contact->host_notification_options, host_flag_map, 'r'));
 	if (temp_contact->service_notification_commands) {
-		fprintf(fp, "\tservice_notification_commands\t");
+		nm_wb_lit(wb, "\tservice_notification_commands\t");
 		for (list = temp_contact->service_notification_commands; list; list = list->next) {
-			fprintf(fp, "%s%c", list->command, list->next ? ',' : '\n');
+			fc_s(wb, list->command);
+			fc_sep(wb, list->next != NULL);
 		}
 	}
 	if (temp_contact->host_notification_commands) {
-		fprintf(fp, "\thost_notification_commands\t");
+		nm_wb_lit(wb, "\thost_notification_commands\t");
 		for (list = temp_contact->host_notification_commands; list; list = list->next) {
-			fprintf(fp, "%s%c", list->command, list->next ? ',' : '\n');
+			fc_s(wb, list->command);
+			fc_sep(wb, list->next != NULL);
 		}
 	}
 	if (temp_contact->email)
-		fprintf(fp, "\temail\t%s\n", temp_contact->email);
+		fc_str(wb, "email", temp_contact->email);
 	if (temp_contact->pager)
-		fprintf(fp, "\tpager\t%s\n", temp_contact->pager);
+		fc_str(wb, "pager", temp_contact->pager);
 	for (x = 0; x < MAX_CONTACT_ADDRESSES; x++) {
-		if (temp_contact->address[x])
-			fprintf(fp, "\taddress%d\t%s\n", x + 1, temp_contact->address[x]);
+		if (temp_contact->address[x]) {
+			nm_wb_lit(wb, "\taddress");
+			nm_wb_int(wb, x + 1);
+			nm_wb_lit(wb, "\t");
+			fc_s(wb, temp_contact->address[x]);
+			nm_wb_lit(wb, "\n");
+		}
 	}
-	fprintf(fp, "\tminimum_value\t%u\n", temp_contact->minimum_value);
-	fprintf(fp, "\thost_notifications_enabled\t%d\n", temp_contact->host_notifications_enabled);
-	fprintf(fp, "\tservice_notifications_enabled\t%d\n", temp_contact->service_notifications_enabled);
-	fprintf(fp, "\tcan_submit_commands\t%d\n", temp_contact->can_submit_commands);
-	fprintf(fp, "\tretain_status_information\t%d\n", temp_contact->retain_status_information);
-	fprintf(fp, "\tretain_nonstatus_information\t%d\n", temp_contact->retain_nonstatus_information);
+	fc_uint(wb, "minimum_value", temp_contact->minimum_value);
+	fc_int(wb, "host_notifications_enabled", temp_contact->host_notifications_enabled);
+	fc_int(wb, "service_notifications_enabled", temp_contact->service_notifications_enabled);
+	fc_int(wb, "can_submit_commands", temp_contact->can_submit_commands);
+	fc_int(wb, "retain_status_information", temp_contact->retain_status_information);
+	fc_int(wb, "retain_nonstatus_information", temp_contact->retain_nonstatus_information);
 
 	/* custom variables */
-	fcache_customvars(fp, temp_contact->custom_variables);
-	fprintf(fp, "\t}\n\n");
+	nm_fcache_customvars(wb, temp_contact->custom_variables);
+	nm_wb_lit(wb, "\t}\n\n");
+}
+
+void fcache_contact(FILE *fp, const contact *temp_contact)
+{
+	struct nm_writebuf wb;
+
+	fc_file_begin(&wb, fp);
+	nm_fcache_contact(&wb, temp_contact);
+	nm_writebuf_done(&wb);
 }

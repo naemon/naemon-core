@@ -3,6 +3,7 @@
 #include "objectlist.h"
 #include "nm_alloc.h"
 #include "logging.h"
+#include "objects_fcache.h"
 #include "globals.h"
 #include "utils.h"
 #include <string.h>
@@ -169,22 +170,31 @@ int is_host_member_of_hostgroup(hostgroup *group, host *hst)
 	return g_tree_lookup_extended(group->members, hst->name, NULL, NULL);
 }
 
-void fcache_hostgroup(FILE *fp, const hostgroup *temp_hostgroup)
+void nm_fcache_hostgroup(struct nm_writebuf *wb, const hostgroup *temp_hostgroup)
 {
-	fprintf(fp, "define hostgroup {\n");
-	fprintf(fp, "\thostgroup_name\t%s\n", temp_hostgroup->group_name);
+	nm_wb_lit(wb, "define hostgroup {\n");
+	fc_str(wb, "hostgroup_name", temp_hostgroup->group_name);
 	if (temp_hostgroup->alias)
-		fprintf(fp, "\talias\t%s\n", temp_hostgroup->alias);
+		fc_str(wb, "alias", temp_hostgroup->alias);
 	if (g_tree_nnodes(temp_hostgroup->members)) {
 		char *members = implode_hosttree(temp_hostgroup->members, ",");
-		fprintf(fp, "\tmembers\t%s\n", members);
+		fc_str(wb, "members", members);
 		nm_free(members);
 	}
 	if (temp_hostgroup->notes)
-		fprintf(fp, "\tnotes\t%s\n", temp_hostgroup->notes);
+		fc_str(wb, "notes", temp_hostgroup->notes);
 	if (temp_hostgroup->notes_url)
-		fprintf(fp, "\tnotes_url\t%s\n", temp_hostgroup->notes_url);
+		fc_str(wb, "notes_url", temp_hostgroup->notes_url);
 	if (temp_hostgroup->action_url)
-		fprintf(fp, "\taction_url\t%s\n", temp_hostgroup->action_url);
-	fprintf(fp, "\t}\n\n");
+		fc_str(wb, "action_url", temp_hostgroup->action_url);
+	nm_wb_lit(wb, "\t}\n\n");
+}
+
+void fcache_hostgroup(FILE *fp, const hostgroup *temp_hostgroup)
+{
+	struct nm_writebuf wb;
+
+	fc_file_begin(&wb, fp);
+	nm_fcache_hostgroup(&wb, temp_hostgroup);
+	nm_writebuf_done(&wb);
 }

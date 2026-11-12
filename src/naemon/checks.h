@@ -71,6 +71,22 @@ typedef struct check_result {
 	struct rusage rusage;			/* resource usage by this check */
 	struct check_engine *engine;	/* where did we get this check from? */
 	void *source;					/* engine handles this */
+
+	/*
+	 * The host or service this result belongs to, or NULL if the submitter
+	 * does not know it. When set it saves process_check_result() a lookup by
+	 * name; NULL means "look it up from host_name and service_description",
+	 * which is what naemon did before this field existed.
+	 *
+	 * It must match object_check_type -- a host * for HOST_CHECK, a service *
+	 * for SERVICE_CHECK, with nothing verifying it -- and it must point at a
+	 * live object, so do not cache one across a config reload.
+	 *
+	 * Zero the struct or call init_check_result() first: a check_result whose
+	 * fields are assigned one by one leaves this holding stack garbage, which
+	 * is not NULL and will be dereferenced.
+	 */
+	void *object_ptr;
 } check_result;
 
 struct check_output {

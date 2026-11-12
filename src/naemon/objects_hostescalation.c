@@ -4,6 +4,7 @@
 #include "objectlist.h"
 #include "nm_alloc.h"
 #include "logging.h"
+#include "objects_fcache.h"
 
 hostescalation *add_hostescalation(char *host_name, int first_notification, int last_notification, double notification_interval, char *escalation_period, int escalation_options)
 {
@@ -85,18 +86,27 @@ contactsmember *add_contact_to_hostescalation(hostescalation *he, char *contact_
 	return add_contact_to_object(&he->contacts, contact_name);
 }
 
+void nm_fcache_hostescalation(struct nm_writebuf *wb, const hostescalation *temp_hostescalation)
+{
+	nm_wb_lit(wb, "define hostescalation {\n");
+	fc_str(wb, "host_name", temp_hostescalation->host_name);
+	fc_int(wb, "first_notification", temp_hostescalation->first_notification);
+	fc_int(wb, "last_notification", temp_hostescalation->last_notification);
+	fc_dbl(wb, "notification_interval", temp_hostescalation->notification_interval);
+	if (temp_hostescalation->escalation_period)
+		fc_str(wb, "escalation_period", temp_hostescalation->escalation_period);
+	fc_str(wb, "escalation_options", opts2str(temp_hostescalation->escalation_options, host_flag_map, 'r'));
+
+	nm_fcache_contactlist(wb, "\tcontacts\t", temp_hostescalation->contacts);
+	nm_fcache_contactgrouplist(wb, "\tcontact_groups\t", temp_hostescalation->contact_groups);
+	nm_wb_lit(wb, "\t}\n\n");
+}
+
 void fcache_hostescalation(FILE *fp, const hostescalation *temp_hostescalation)
 {
-	fprintf(fp, "define hostescalation {\n");
-	fprintf(fp, "\thost_name\t%s\n", temp_hostescalation->host_name);
-	fprintf(fp, "\tfirst_notification\t%d\n", temp_hostescalation->first_notification);
-	fprintf(fp, "\tlast_notification\t%d\n", temp_hostescalation->last_notification);
-	fprintf(fp, "\tnotification_interval\t%f\n", temp_hostescalation->notification_interval);
-	if (temp_hostescalation->escalation_period)
-		fprintf(fp, "\tescalation_period\t%s\n", temp_hostescalation->escalation_period);
-	fprintf(fp, "\tescalation_options\t%s\n", opts2str(temp_hostescalation->escalation_options, host_flag_map, 'r'));
+	struct nm_writebuf wb;
 
-	fcache_contactlist(fp, "\tcontacts\t", temp_hostescalation->contacts);
-	fcache_contactgrouplist(fp, "\tcontact_groups\t", temp_hostescalation->contact_groups);
-	fprintf(fp, "\t}\n\n");
+	fc_file_begin(&wb, fp);
+	nm_fcache_hostescalation(&wb, temp_hostescalation);
+	nm_writebuf_done(&wb);
 }

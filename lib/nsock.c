@@ -44,6 +44,14 @@ int nsock_unix(const char *path, unsigned int flags)
 	else
 		return NSOCK_EINVAL;
 
+	/*
+	 * sun_path is a fixed size array (108 bytes on Linux), so a longer path
+	 * has to be rejected rather than copied -- doing otherwise smashes the
+	 * stack of the caller.
+	 */
+	if (strlen(path) >= sizeof(saun.sun_path))
+		return NSOCK_EINVAL;
+
 	if ((sock = socket(AF_UNIX, mode, 0)) < 0) {
 		return NSOCK_ESOCKET;
 	}

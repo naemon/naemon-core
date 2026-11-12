@@ -4,6 +4,7 @@
 #include "objectlist.h"
 #include "nm_alloc.h"
 #include "logging.h"
+#include "objects_fcache.h"
 
 serviceescalation *add_serviceescalation(char *host_name, char *description, int first_notification, int last_notification, double notification_interval, char *escalation_period, int escalation_options)
 {
@@ -87,29 +88,42 @@ contactsmember *add_contact_to_serviceescalation(serviceescalation *se, char *co
 	return add_contact_to_object(&se->contacts, contact_name);
 }
 
-void fcache_serviceescalation(FILE *fp, const serviceescalation *temp_serviceescalation)
+void nm_fcache_serviceescalation(struct nm_writebuf *wb, const serviceescalation *temp_serviceescalation)
 {
-	fprintf(fp, "define serviceescalation {\n");
-	fprintf(fp, "\thost_name\t%s\n", temp_serviceescalation->host_name);
-	fprintf(fp, "\tservice_description\t%s\n", temp_serviceescalation->description);
-	fprintf(fp, "\tfirst_notification\t%d\n", temp_serviceescalation->first_notification);
-	fprintf(fp, "\tlast_notification\t%d\n", temp_serviceescalation->last_notification);
-	fprintf(fp, "\tnotification_interval\t%f\n", temp_serviceescalation->notification_interval);
+	nm_wb_lit(wb, "define serviceescalation {\n");
+	fc_str(wb, "host_name", temp_serviceescalation->host_name);
+	fc_str(wb, "service_description", temp_serviceescalation->description);
+	fc_int(wb, "first_notification", temp_serviceescalation->first_notification);
+	fc_int(wb, "last_notification", temp_serviceescalation->last_notification);
+	fc_dbl(wb, "notification_interval", temp_serviceescalation->notification_interval);
 	if (temp_serviceescalation->escalation_period)
-		fprintf(fp, "\tescalation_period\t%s\n", temp_serviceescalation->escalation_period);
-	fprintf(fp, "\tescalation_options\t%s\n", opts2str(temp_serviceescalation->escalation_options, service_flag_map, 'r'));
+		fc_str(wb, "escalation_period", temp_serviceescalation->escalation_period);
+	fc_str(wb, "escalation_options", opts2str(temp_serviceescalation->escalation_options, service_flag_map, 'r'));
 
 	if (temp_serviceescalation->contacts) {
 		contactsmember *cl;
-		fprintf(fp, "\tcontacts\t");
-		for (cl = temp_serviceescalation->contacts; cl; cl = cl->next)
-			fprintf(fp, "%s%c", cl->contact_ptr->name, cl->next ? ',' : '\n');
+		nm_wb_lit(wb, "\tcontacts\t");
+		for (cl = temp_serviceescalation->contacts; cl; cl = cl->next) {
+			fc_s(wb, cl->contact_ptr->name);
+			fc_sep(wb, cl->next != NULL);
+		}
 	}
 	if (temp_serviceescalation->contact_groups) {
 		contactgroupsmember *cgl;
-		fprintf(fp, "\tcontact_groups\t");
-		for (cgl = temp_serviceescalation->contact_groups; cgl; cgl = cgl->next)
-			fprintf(fp, "%s%c", cgl->group_name, cgl->next ? ',' : '\n');
+		nm_wb_lit(wb, "\tcontact_groups\t");
+		for (cgl = temp_serviceescalation->contact_groups; cgl; cgl = cgl->next) {
+			fc_s(wb, cgl->group_name);
+			fc_sep(wb, cgl->next != NULL);
+		}
 	}
-	fprintf(fp, "\t}\n\n");
+	nm_wb_lit(wb, "\t}\n\n");
+}
+
+void fcache_serviceescalation(FILE *fp, const serviceescalation *temp_serviceescalation)
+{
+	struct nm_writebuf wb;
+
+	fc_file_begin(&wb, fp);
+	nm_fcache_serviceescalation(&wb, temp_serviceescalation);
+	nm_writebuf_done(&wb);
 }

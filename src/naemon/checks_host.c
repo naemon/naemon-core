@@ -124,8 +124,12 @@ static void schedule_next_host_check_at(host *hst, time_t delay, time_t now, int
 	tv_set(&hst->last_update);
 	hst->next_check_event = schedule_event(delay, handle_host_check_event, (void *)hst);
 
-	/* update the status log, since next_check and check_options is updated */
-	update_host_status(hst, FALSE);
+	/*
+	 * Deliberately not update_host_status(): only the schedule moved, and
+	 * NEBTYPE_HOSTSTATUS_SCHEDULE lets a module tell that apart from a real
+	 * status change.
+	 */
+	broker_host_status(NEBTYPE_HOSTSTATUS_SCHEDULE, NEBFLAG_NONE, NEBATTR_NONE, hst);
 }
 
 void schedule_next_host_check(host *hst, time_t delay, int options)
@@ -341,6 +345,8 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 
 	/* save check info */
 	cr->object_check_type = HOST_CHECK;
+	/* saves the worker callback a lookup by name when the result comes back */
+	cr->object_ptr = hst;
 	cr->host_name = nm_strdup(hst->name);
 	cr->service_description = NULL;
 	cr->check_type = CHECK_TYPE_ACTIVE;
@@ -664,7 +670,7 @@ static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags)
 		currently_running_host_checks--;
 
 	if (wpres) {
-		hst = find_host(cr->host_name);
+		hst = (struct host *)cr->object_ptr;
 		if (hst) {
 			hst->is_executing = FALSE;
 			tv_set(&hst->last_update);
