@@ -1,6 +1,8 @@
 #include <check.h>
 #include <glib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include "naemon/objects_service.h"
 #include "naemon/objects_command.h"
 #include "naemon/objects_host.h"
@@ -112,6 +114,28 @@ START_TEST(retention_data_for_services_long_output)
 }
 END_TEST
 
+START_TEST(retention_missing_file_is_ok)
+{
+	nm_free(retention_file);
+	retention_file = nm_strdup("/nonexistent/naemon-retention.dat");
+	ck_assert(OK == read_initial_state_information());
+}
+END_TEST
+
+/* a file that cannot be read completely must not count as loaded */
+START_TEST(retention_read_error_is_reported)
+{
+	char dir[] = "/tmp/naemon-retention-XXXXXX";
+
+	/* a directory opens fine, but every read fails with EISDIR */
+	ck_assert(mkdtemp(dir) != NULL);
+	nm_free(retention_file);
+	retention_file = nm_strdup(dir);
+	ck_assert(ERROR == read_initial_state_information());
+	rmdir(dir);
+}
+END_TEST
+
 Suite *
 retention_suite(void)
 {
@@ -128,6 +152,14 @@ retention_suite(void)
 
 	suite_add_tcase(s, tc_retention_data_for_hosts_long_output);
 	suite_add_tcase(s, tc_retention_data_for_services_long_output);
+
+	{
+		TCase *tc_loading = tcase_create("Loading retention data");
+		tcase_add_checked_fixture(tc_loading, setup, teardown);
+		tcase_add_test(tc_loading, retention_missing_file_is_ok);
+		tcase_add_test(tc_loading, retention_read_error_is_reported);
+		suite_add_tcase(s, tc_loading);
+	}
 	return s;
 }
 

@@ -217,3 +217,22 @@ def warning_does_not_name_directive(context, directive):
 def asdf(context, seconds):
     print('Waiting for %s seconds' % seconds)
     time.sleep(int(seconds))
+
+
+@given('the retention file cannot be read')
+def unreadable_retention_file(context):
+    # a directory opens fine but cannot be read, even by root
+    path = context.naemonsysconfig.current_config['state_retention_file']
+    os.mkdir(path)
+
+
+@then('the retention file should still be there')
+def retention_file_kept(context):
+    path = context.naemonsysconfig.current_config['state_retention_file']
+    assert os.path.isdir(path), 'The retention file was replaced'
+
+
+@then('the naemon log should contain (?P<text>.+)')
+def naemon_log_contains(context, text):
+    log = slurp_file('naemon.log')
+    assert text in log, 'Did not find "%s" in naemon.log:\n%s' % (text, log)

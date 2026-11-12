@@ -18,6 +18,7 @@
 #include "events.h"
 #include "commands.h"
 #include <string.h>
+#include <errno.h>
 
 /******************************************************************/
 /********************* INIT/CLEANUP FUNCTIONS *********************/
@@ -491,10 +492,11 @@ int xrddefault_save_state_information(void)
 
 int xrddefault_read_state_information(void)
 {
+	int read_error;
 	char *input = NULL;
 	char *inputbuf = NULL;
 	char *temp_ptr = NULL;
-	mmapfile *thefile;
+	nm_rfile *thefile;
 	char *host_name = NULL;
 	char *service_description = NULL;
 	char *contact_name = NULL;
@@ -554,8 +556,13 @@ int xrddefault_read_state_information(void)
 	}
 
 	/* open the retention file for reading */
-	if ((thefile = mmap_fopen(retention_file)) == NULL)
+	if ((thefile = nm_fopen_ro(retention_file)) == NULL) {
+		/* a missing file is normal on the first start: nothing to restore */
+		if (errno == ENOENT)
+			return OK;
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Cannot open retention data file '%s' for reading: %s\n", retention_file, strerror(errno));
 		return ERROR;
+	}
 
 	/* what attributes should be masked out? */
 	/* NOTE: host/service/contact-specific values may be added in the future, but for now we only have global masks */
@@ -574,7 +581,7 @@ int xrddefault_read_state_information(void)
 		nm_free(inputbuf);
 
 		/* read the next line */
-		if ((inputbuf = mmap_fgets(thefile)) == NULL)
+		if ((inputbuf = nm_fgets(thefile)) == NULL)
 			break;
 
 		input = trim(inputbuf);
@@ -1721,11 +1728,15 @@ int xrddefault_read_state_information(void)
 		}
 	}
 
+	read_error = nm_ferror(thefile);
+	if (read_error)
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Could not read all of retention data file '%s': %s\n", retention_file, nm_ferror_str(thefile));
+
 	nm_free(inputbuf);
-	mmap_fclose(thefile);
+	nm_fclose(thefile);
 
 	if (sort_downtime() != OK)
 		return ERROR;
 
-	return OK;
+	return read_error ? ERROR : OK;
 }

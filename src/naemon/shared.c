@@ -3,6 +3,7 @@
 #include "defaults.h"
 #include "nm_alloc.h"
 #include <string.h>
+#include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -11,9 +12,6 @@
 #include <fcntl.h>
 #include <glib.h>
 #include <ctype.h>
-#ifdef HAVE_SYS_MMAN_H
-# include <sys/mman.h>
-#endif
 
 /*
  * This file holds random utility functions shared by cgi's and
@@ -159,135 +157,101 @@ char *my_strsep(char **stringp, const char *delim)
 }
 
 
-/* open a file read-only via mmap() */
-mmapfile *mmap_fopen(const char *filename)
+/* open a file for reading line by line */
+nm_rfile *nm_fopen_ro(const char *filename)
 {
-	mmapfile *new_mmapfile = NULL;
-	int fd = 0;
-	void *mmap_buf = NULL;
-	struct stat statbuf;
-	int mode = O_RDONLY;
-	unsigned long file_size = 0L;
+	nm_rfile *file;
+	struct stat st;
+	FILE *fp;
 
 	if (filename == NULL)
 		return NULL;
 
-	/* allocate memory */
-	new_mmapfile = nm_malloc(sizeof(mmapfile));
+	if ((fp = fopen(filename, "r")) == NULL)
+		return NULL;
 
-	/* open the file */
-	if ((fd = open(filename, mode)) == -1) {
-		nm_free(new_mmapfile);
+	if (fstat(fileno(fp), &st) == -1) {
+		int err = errno;
+		fclose(fp);
+		errno = err;
 		return NULL;
 	}
 
-	/* get file info */
-	if ((fstat(fd, &statbuf)) == -1) {
-		close(fd);
-		nm_free(new_mmapfile);
-		return NULL;
-	}
+	file = nm_calloc(1, sizeof(nm_rfile));
+	file->path = nm_strdup(filename);
+	file->fp = fp;
+	/* only a regular file has a size to compare against */
+	file->size = S_ISREG(st.st_mode) ? st.st_size : -1;
 
-	/* get file size */
-	file_size = (unsigned long)statbuf.st_size;
-
-	/* only mmap() if we have a file greater than 0 bytes */
-	if (file_size > 0) {
-
-		/* mmap() the file - allocate one extra byte for processing zero-byte files */
-		if ((mmap_buf =
-		         (void *)mmap(0, file_size, PROT_READ, MAP_PRIVATE, fd,
-		                      0)) == MAP_FAILED) {
-			close(fd);
-			nm_free(new_mmapfile);
-			return NULL;
-		}
-	} else
-		mmap_buf = NULL;
-
-	/* populate struct info for later use */
-	new_mmapfile->path = nm_strdup(filename);
-	new_mmapfile->fd = fd;
-	new_mmapfile->file_size = (unsigned long)file_size;
-	new_mmapfile->current_position = 0L;
-	new_mmapfile->current_line = 0L;
-	new_mmapfile->mmap_buf = mmap_buf;
-
-	return new_mmapfile;
+	return file;
 }
 
 
-/* close a file originally opened via mmap() */
-int mmap_fclose(mmapfile *temp_mmapfile)
+/* close a file opened with nm_fopen_ro(), ERROR if it was not read completely */
+int nm_fclose(nm_rfile *file)
 {
+	int result;
 
-	if (temp_mmapfile == NULL)
+	if (file == NULL)
 		return ERROR;
 
-	/* un-mmap() the file */
-	if (temp_mmapfile->file_size > 0L)
-		munmap(temp_mmapfile->mmap_buf, temp_mmapfile->file_size);
+	result = nm_ferror(file) ? ERROR : OK;
+	fclose(file->fp);
+	nm_free(file->path);
+	nm_free(file);
 
-	/* close the file */
-	close(temp_mmapfile->fd);
-
-	nm_free(temp_mmapfile->path);
-	nm_free(temp_mmapfile);
-
-	return OK;
+	return result;
 }
 
 
-/* gets one line of input from an mmap()'ed file */
-char *mmap_fgets(mmapfile *temp_mmapfile)
+/* gets one line of input, including its newline */
+char *nm_fgets(nm_rfile *file)
 {
 	char *buf = NULL;
-	unsigned long x = 0L;
-	int len = 0;
+	size_t size = 0;
+	ssize_t len;
 
-	if (temp_mmapfile == NULL)
+	if (file == NULL)
 		return NULL;
 
-	/* size of file is 0 bytes */
-	if (temp_mmapfile->file_size == 0L)
+	if ((len = getline(&buf, &size, file->fp)) <= 0) {
+		free(buf);
+		if (ferror(file->fp))
+			file->error = errno ? errno : EIO;
+		else if (file->size >= 0 && file->bytes_read != file->size)
+			file->changed = TRUE;
 		return NULL;
-
-	/* we've reached the end of the file */
-	if (temp_mmapfile->current_position >= temp_mmapfile->file_size)
-		return NULL;
-
-	/* find the end of the string (or buffer) */
-	for (x = temp_mmapfile->current_position; x < temp_mmapfile->file_size;
-	     x++) {
-		if (*((char *)(temp_mmapfile->mmap_buf) + x) == '\n') {
-			x++;
-			break;
-		}
 	}
 
-	/* calculate length of line we just read */
-	len = (int)(x - temp_mmapfile->current_position);
-
-	/* allocate memory for the new line */
-	buf = nm_malloc(len + 1);
-	/* copy string to newly allocated memory and terminate the string */
-	memcpy(buf,
-	       ((char *)(temp_mmapfile->mmap_buf) +
-	        temp_mmapfile->current_position), len);
-	buf[len] = '\x0';
-
-	/* update the current position */
-	temp_mmapfile->current_position = x;
-
-	/* increment the current line */
-	temp_mmapfile->current_line++;
+	file->bytes_read += len;
+	file->current_line++;
 
 	return buf;
 }
 
 
-/* gets one line of input from an mmap()'ed file (may be contained on more than one line in the source file) */
-char *mmap_fgets_multiline(mmapfile *temp_mmapfile)
+/* TRUE if reading stopped at a read error or the file changed size meanwhile */
+int nm_ferror(const nm_rfile *file)
+{
+	return file == NULL || file->error || file->changed;
+}
+
+
+/* describes what nm_ferror() found */
+const char *nm_ferror_str(const nm_rfile *file)
+{
+	if (file == NULL)
+		return "no file";
+	if (file->error)
+		return strerror(file->error);
+	if (file->changed)
+		return "the file changed size while it was being read";
+	return "no error";
+}
+
+
+/* gets one line of input (may be contained on more than one line in the source file) */
+char *nm_fgets_multiline(nm_rfile *file)
 {
 	char *buf = NULL;
 	char *tempbuf = NULL;
@@ -296,14 +260,14 @@ char *mmap_fgets_multiline(mmapfile *temp_mmapfile)
 	int len2 = 0;
 	int end = 0;
 
-	if (temp_mmapfile == NULL)
+	if (file == NULL)
 		return NULL;
 
 	while (1) {
 
 		nm_free(tempbuf);
 
-		if ((tempbuf = mmap_fgets(temp_mmapfile)) == NULL)
+		if ((tempbuf = nm_fgets(file)) == NULL)
 			break;
 
 		if (buf == NULL) {

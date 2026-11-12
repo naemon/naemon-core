@@ -65,6 +65,11 @@ tests_test_objects_LDADD =  $(TESTSLDADD)
 tests_test_objects_LDFLAGS = $(TESTSLDFLAGS)
 tests_test_objects_CPPFLAGS = $(TESTSCPPFLAGS)
 
+tests_test_check_result_spool_SOURCES = tests/test-check-result-spool.c
+tests_test_check_result_spool_LDADD =  $(TESTSLDADD)
+tests_test_check_result_spool_LDFLAGS = $(TESTSLDFLAGS)
+tests_test_check_result_spool_CPPFLAGS = $(TESTSCPPFLAGS)
+
 tests_test_checks_SOURCES = tests/test-checks.c
 tests_test_checks_LDADD =  $(TESTSLDADD)
 tests_test_checks_LDFLAGS = $(TESTSLDFLAGS)
@@ -200,7 +205,8 @@ check_PROGRAMS += \
 	tests/test-worker \
 	tests/test-retention \
 	tests/test-arith \
-	tests/test-arith-builtins
+	tests/test-arith-builtins \
+	tests/test-check-result-spool
 
 LIBTEST_UTILS = lib/t-utils.c lib/t-utils.h
 test_bitmap_SOURCES = lib/test-bitmap.c $(LIBTEST_UTILS)

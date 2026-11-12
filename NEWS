@@ -22,6 +22,10 @@ Changed:
 * The command file worker no longer runs as a separate process. The external
   command file is now polled directly by the main process event loop, so there
   is only one Naemon daemon process instead of an extra command worker.
+* Naemon refuses to start or reload when the retention file exists but cannot be read
+  completely (read error, the file changed while being read, or it cannot be opened).
+  Before, it restored part of it, or nothing, and overwrote the file at the next save.
+  A missing retention file is still fine.
 
 Bugfixes:
 * removing the last event from the scheduling queue while its parent had the same
@@ -32,6 +36,9 @@ Bugfixes:
   crashed naemon during startup
 * Warn when trailing characters in boolean object directives are ignored. The
   leading 0 or 1 remains authoritative for compatibility.
+* reading a file that shrank or failed while being read crashed Naemon with a bus
+  error, for example a check result spool file rewritten by another program
+* expired check result files were not removed from check_result_path
 
 1.5.2 - May 18 2026
 ===================

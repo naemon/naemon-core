@@ -3175,7 +3175,7 @@ static host *find_host_by_name_or_address(const char *name)
 /* processes all external commands in a (regular) file */
 int process_external_commands_from_file(char *fname, int delete_file)
 {
-	mmapfile *thefile = NULL;
+	nm_rfile *thefile = NULL;
 	char *input = NULL;
 
 	if (fname == NULL)
@@ -3184,7 +3184,7 @@ int process_external_commands_from_file(char *fname, int delete_file)
 	log_debug_info(DEBUGL_EXTERNALCOMMANDS, 1, "Processing commands from file '%s'.  File will %s deleted after processing.\n", fname, (delete_file == TRUE) ? "be" : "NOT be");
 
 	/* open the config file for reading */
-	if ((thefile = mmap_fopen(fname)) == NULL) {
+	if ((thefile = nm_fopen_ro(fname)) == NULL) {
 		nm_log(NSLOG_INFO_MESSAGE, "Error: Cannot open file '%s' to process external commands!", fname);
 		return ERROR;
 	}
@@ -3196,7 +3196,7 @@ int process_external_commands_from_file(char *fname, int delete_file)
 		nm_free(input);
 
 		/* read the next line */
-		if ((input = mmap_fgets(thefile)) == NULL)
+		if ((input = nm_fgets(thefile)) == NULL)
 			break;
 
 		/* process the command */
@@ -3205,8 +3205,15 @@ int process_external_commands_from_file(char *fname, int delete_file)
 		}
 	}
 
+	/* keep a file that was not read completely, for someone to look at */
+	if (nm_ferror(thefile)) {
+		nm_log(NSLOG_RUNTIME_ERROR, "Error: Could not read all of external command file '%s': %s", fname, nm_ferror_str(thefile));
+		nm_fclose(thefile);
+		return ERROR;
+	}
+
 	/* close the file */
-	mmap_fclose(thefile);
+	nm_fclose(thefile);
 
 	/* delete the file */
 	if (delete_file == TRUE)

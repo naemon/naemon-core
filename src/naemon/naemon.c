@@ -678,7 +678,15 @@ int main(int argc, char **argv)
 		timing_point("Initialized retention data\n");
 
 		timing_point("Reading initial state information\n");
-		read_initial_state_information();
+		/* a partly restored state would overwrite the file at the next save */
+		if (read_initial_state_information() != OK) {
+			nm_log(NSLOG_PROCESS_INFO | NSLOG_RUNTIME_ERROR, "Bailing out because the retention data could not be loaded completely. Check or remove '%s' before restarting. (PID=%d)\n", retention_file, (int)getpid());
+			cleanup_status_data(TRUE);
+			broker_program_state(NEBTYPE_PROCESS_SHUTDOWN, NEBFLAG_PROCESS_INITIATED, NEBATTR_SHUTDOWN_ABNORMAL);
+			cleanup();
+			shutdown_command_file_worker();
+			exit(ERROR);
+		}
 		timing_point("Read initial state information\n");
 		timing_point("Restored %d downtimes\n", number_of_downtimes());
 		timing_point("Restored %d comments\n", number_of_comments());

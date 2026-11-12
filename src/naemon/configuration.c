@@ -58,11 +58,11 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 	char *variable = NULL;
 	char *modptr = NULL;
 	char *argptr = NULL;
-	mmapfile *thefile = NULL;
+	nm_rfile *thefile = NULL;
 	DIR *tmpdir = NULL;
 
 	/* open the config file for reading */
-	if ((thefile = mmap_fopen(main_config_file)) == NULL) {
+	if ((thefile = nm_fopen_ro(main_config_file)) == NULL) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Cannot open main configuration file '%s' for reading!", main_config_file);
 		return ERROR;
 	}
@@ -75,7 +75,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		nm_free(value);
 
 		/* read the next line */
-		if ((input = mmap_fgets_multiline(thefile)) == NULL)
+		if ((input = nm_fgets_multiline(thefile)) == NULL)
 			break;
 
 		current_line = thefile->current_line;
@@ -1145,10 +1145,15 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		}
 	}
 
+	if (error == FALSE && nm_ferror(thefile)) {
+		nm_asprintf(&error_message, "Could not read the whole file: %s", nm_ferror_str(thefile));
+		error = TRUE;
+	}
+
 	/* handle errors */
 	if (error == TRUE) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error in configuration file '%s' - Line %d (%s)", main_config_file, current_line, (error_message == NULL) ? "NULL" : error_message);
-		mmap_fclose(thefile);
+		nm_fclose(thefile);
 		nm_free(input);
 		nm_free(variable);
 		nm_free(value);
@@ -1166,7 +1171,7 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 		deprecated = NULL;
 	}
 
-	mmap_fclose(thefile);
+	nm_fclose(thefile);
 	nm_free(input);
 	nm_free(variable);
 	nm_free(value);
@@ -1271,12 +1276,12 @@ int read_resource_file(const char *resource_file)
 	char *variable = NULL;
 	char *value = NULL;
 	char *temp_ptr = NULL;
-	mmapfile *thefile = NULL;
+	nm_rfile *thefile = NULL;
 	int current_line = 1;
 	int error = FALSE;
 	int user_index = 0;
 
-	if ((thefile = mmap_fopen(resource_file)) == NULL) {
+	if ((thefile = nm_fopen_ro(resource_file)) == NULL) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Cannot open resource file '%s' for reading!", resource_file);
 		return ERROR;
 	}
@@ -1289,7 +1294,7 @@ int read_resource_file(const char *resource_file)
 		nm_free(value);
 
 		/* read the next line */
-		if ((input = mmap_fgets_multiline(thefile)) == NULL)
+		if ((input = nm_fgets_multiline(thefile)) == NULL)
 			break;
 
 		current_line = thefile->current_line;
@@ -1331,9 +1336,14 @@ int read_resource_file(const char *resource_file)
 		}
 	}
 
+	if (nm_ferror(thefile)) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not read all of resource file '%s': %s", resource_file, nm_ferror_str(thefile));
+		error = TRUE;
+	}
+
 	/* free leftover memory and close the file */
 	nm_free(input);
-	mmap_fclose(thefile);
+	nm_fclose(thefile);
 
 	nm_free(variable);
 	nm_free(value);

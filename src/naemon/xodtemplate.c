@@ -8339,7 +8339,7 @@ static int xodtemplate_process_config_dir(char *dir_name);
 /* process data in a specific config file */
 static int xodtemplate_process_config_file(char *filename)
 {
-	mmapfile *thefile = NULL;
+	nm_rfile *thefile = NULL;
 	char *input = NULL;
 	char *inputbuf = NULL;
 	register int in_definition = FALSE;
@@ -8363,7 +8363,7 @@ static int xodtemplate_process_config_file(char *filename)
 	}
 
 	/* open the config file for reading */
-	if ((thefile = mmap_fopen(filename)) == NULL) {
+	if ((thefile = nm_fopen_ro(filename)) == NULL) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Cannot open config file '%s' for reading: %s\n", filename, strerror(errno));
 		return ERROR;
 	}
@@ -8377,10 +8377,10 @@ static int xodtemplate_process_config_file(char *filename)
 		/* read the next line */
 		if(use_precached_objects) {
 			/* no multilines on precached file */
-			if ((inputbuf = mmap_fgets(thefile)) == NULL)
+			if ((inputbuf = nm_fgets(thefile)) == NULL)
 				break;
 		} else {
-			if ((inputbuf = mmap_fgets_multiline(thefile)) == NULL)
+			if ((inputbuf = nm_fgets_multiline(thefile)) == NULL)
 				break;
 			/* grab data before comment delimiter - faster than a strtok() and strncpy()... */
 			for (x = 0; inputbuf[x] != '\x0'; x++) {
@@ -8516,8 +8516,13 @@ static int xodtemplate_process_config_file(char *filename)
 		}
 	}
 
+	if (result == OK && nm_ferror(thefile)) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Could not read all of config file '%s': %s\n", filename, nm_ferror_str(thefile));
+		result = ERROR;
+	}
+
 	nm_free(inputbuf);
-	mmap_fclose(thefile);
+	nm_fclose(thefile);
 
 	/* whoops - EOF while we were in the middle of an object definition... */
 	if (in_definition == TRUE && result == OK) {
