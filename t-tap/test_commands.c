@@ -533,6 +533,24 @@ void test_host_commands(void)
 	ok(!target_host->problem_has_been_acknowledged, "ACKNOWLEDGE_HOST_PROBLEM_EXPIRE acknowledgement gone after event");
 	free(cmdstr);
 
+	/* the expiry event can run just before time() reaches the end time */
+	clear_event_queue();
+	nm_asprintf(&cmdstr, "[1234567890] ACKNOWLEDGE_HOST_PROBLEM_EXPIRE;host1;2;0;0;%llu;myself;expiry event runs early", (unsigned long long int)time(NULL)+2);
+	ok(CMD_ERROR_OK == process_external_command1(cmdstr), "core command: ACKNOWLEDGE_HOST_PROBLEM_EXPIRE");
+	clear_event_queue();
+	{
+		struct nm_event_execution_properties early = { 0 };
+		early.event_type = EVENT_TYPE_TIMED;
+		early.execution_type = EVENT_EXEC_NORMAL;
+		early.user_data = target_host;
+		handle_host_acknowledgement_expire_event(&early);
+	}
+	ok(target_host->problem_has_been_acknowledged, "acknowledgement kept when its expiry event runs early");
+	sleep(3);
+	event_poll();
+	ok(!target_host->problem_has_been_acknowledged, "acknowledgement still expires after its expiry event ran early");
+	free(cmdstr);
+
 	ok(CMD_ERROR_OK == process_external_command1("[1234567890] DISABLE_HOST_EVENT_HANDLER;host1"), "core command: DISABLE_HOST_EVENT_HANDLER");
 	ok(!target_host->event_handler_enabled, "DISABLE_HOST_EVENT_HANDLER disables event handler for a host");
 
@@ -719,7 +737,7 @@ void test_core_commands(void)
 int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 {
 	const char *test_config_file = TESTDIR "naemon.cfg";
-	plan_tests(522);
+	plan_tests(525);
 	init_event_queue();
 
 	config_file_dir = nspath_absolute_dirname(test_config_file, NULL);

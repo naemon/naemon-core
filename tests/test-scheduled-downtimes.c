@@ -615,6 +615,7 @@ START_TEST(service_triggered_scheduled_downtime)
 	struct timespec event_time_stop_triggered;
 	struct check_result cr ;
 
+	init_check_result(&cr);
 	cr.object_check_type = SERVICE_CHECK;
 	cr.host_name = TARGET_HOST_NAME;
 	cr.service_description = TARGET_SERVICE_NAME;
@@ -689,6 +690,7 @@ START_TEST(service_flexible_scheduled_downtimes_service_down_notification)
 	ssize_t len;
 
 	/* fill the check_result struct for the service check failure */
+	init_check_result(&cr);
 	cr.object_check_type = SERVICE_CHECK;
 	cr.host_name = TARGET_HOST_NAME;
 	cr.service_description = TARGET_SERVICE_NAME;
@@ -765,6 +767,7 @@ START_TEST(host_flexible_scheduled_downtimes_service_down_notification)
 	char active_contents[1024];
 	ssize_t len;
 
+	init_check_result(&cr);
 	cr.object_check_type = HOST_CHECK;
 	cr.host_name = TARGET_HOST_NAME;
 	cr.service_description = NULL;

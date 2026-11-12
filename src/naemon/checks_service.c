@@ -30,6 +30,7 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 
 /* Check exeuction */
 static int run_scheduled_service_check(service *, int, double);
+static void schedule_next_service_check_at(service *svc, time_t delay, time_t now, int options);
 
 /* Result handling (After worker job is executed) */
 static void handle_worker_service_check(wproc_result *wpres, void *arg, int flags);
@@ -50,7 +51,12 @@ void checks_init_services(void)
 {
 	service *temp_service = NULL;
 	time_t delay;
-	time_t current_time = time(NULL);
+	struct timeval now;
+	time_t current_time;
+
+	/* one clock for the delays below and for the next_check they turn back into */
+	tv_set(&now);
+	current_time = now.tv_sec;
 
 	log_debug_info(DEBUGL_EVENTS, 2, "Scheduling service checks...\n");
 
@@ -86,7 +92,7 @@ void checks_init_services(void)
 
 		/* create a new service check event */
 		if (temp_service->check_interval != 0.0)
-			schedule_next_service_check(temp_service, delay, 0);
+			schedule_next_service_check_at(temp_service, delay, current_time, 0);
 	}
 
 	/* add a service result "freshness" check event */
@@ -126,8 +132,12 @@ static void schedule_next_service_check_at(service *svc, time_t delay, time_t no
 	tv_set(&svc->last_update);
 	svc->next_check_event = schedule_event(delay, handle_service_check_event, (void *)svc);
 
-	/* update the status log, since next_check and check_options is updated */
-	update_service_status(svc, FALSE);
+	/*
+	 * Deliberately not update_service_status(): only the schedule moved, and
+	 * NEBTYPE_SERVICESTATUS_SCHEDULE lets a module tell that apart from a real
+	 * status change.
+	 */
+	broker_service_status(NEBTYPE_SERVICESTATUS_SCHEDULE, NEBFLAG_NONE, NEBATTR_NONE, svc);
 }
 
 void schedule_next_service_check(service *svc, time_t delay, int options)
@@ -205,7 +215,7 @@ static void handle_service_check_event(struct nm_event_execution_properties *evp
 			}
 
 			/* make sure this is a valid time to check the service */
-			if (check_time_against_period(time(NULL), temp_service->check_period_ptr) == ERROR) {
+			if (check_time_against_period(tv.tv_sec, temp_service->check_period_ptr) == ERROR) {
 				delay_service_check_till_next_timeperiod_slot(temp_service);
 				return;
 			}
@@ -407,6 +417,8 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 
 	/* save check info */
 	cr->object_check_type = SERVICE_CHECK;
+	/* saves the worker callback a lookup by name when the result comes back */
+	cr->object_ptr = svc;
 	cr->check_type = CHECK_TYPE_ACTIVE;
 	cr->check_options = check_options;
 	cr->scheduled_check = TRUE;
@@ -485,6 +497,7 @@ static void handle_worker_service_check(wproc_result *wpres, void *arg, int flag
 		cr->exited_ok = wpres->exited_ok;
 		cr->engine = NULL;
 		cr->source = wpres->source;
+		/* finds the service through cr->object_ptr, set in run_scheduled_service_check() */
 		process_check_result(cr);
 	}
 	free_check_result(cr);

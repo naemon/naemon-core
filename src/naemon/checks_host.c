@@ -28,6 +28,7 @@
 /* Scheduling (before worker job is started) */
 static void handle_host_check_event(struct nm_event_execution_properties *evprop);
 static int run_async_host_check(host *hst, int check_options, double latency);
+static void schedule_next_host_check_at(host *hst, time_t delay, time_t now, int options);
 
 /* Result handling (After worker job is executed) */
 static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags);
@@ -50,7 +51,12 @@ void checks_init_hosts(void)
 {
 	host *temp_host = NULL;
 	time_t delay;
-	time_t current_time = time(NULL);
+	struct timeval now;
+	time_t current_time;
+
+	/* one clock for the delays below and for the next_check they turn back into */
+	tv_set(&now);
+	current_time = now.tv_sec;
 
 	/******** SCHEDULE HOST CHECKS  ********/
 
@@ -87,7 +93,7 @@ void checks_init_hosts(void)
 		}
 
 		/* schedule a new host check event */
-		schedule_next_host_check(temp_host, delay, CHECK_OPTION_NONE);
+		schedule_next_host_check_at(temp_host, delay, current_time, CHECK_OPTION_NONE);
 	}
 
 	/* add a host result "freshness" check event */
@@ -124,8 +130,12 @@ static void schedule_next_host_check_at(host *hst, time_t delay, time_t now, int
 	tv_set(&hst->last_update);
 	hst->next_check_event = schedule_event(delay, handle_host_check_event, (void *)hst);
 
-	/* update the status log, since next_check and check_options is updated */
-	update_host_status(hst, FALSE);
+	/*
+	 * Deliberately not update_host_status(): only the schedule moved, and
+	 * NEBTYPE_HOSTSTATUS_SCHEDULE lets a module tell that apart from a real
+	 * status change.
+	 */
+	broker_host_status(NEBTYPE_HOSTSTATUS_SCHEDULE, NEBFLAG_NONE, NEBATTR_NONE, hst);
 }
 
 void schedule_next_host_check(host *hst, time_t delay, int options)
@@ -249,7 +259,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 		}
 
 		/* make sure this is a valid time to check the host */
-		if (check_time_against_period(time(NULL), hst->check_period_ptr) != OK) {
+		if (check_time_against_period(now.tv_sec, hst->check_period_ptr) != OK) {
 			delay_host_check_till_next_timeperiod_slot(hst);
 			return ERROR;
 		}
@@ -341,6 +351,8 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 
 	/* save check info */
 	cr->object_check_type = HOST_CHECK;
+	/* saves the worker callback a lookup by name when the result comes back */
+	cr->object_ptr = hst;
 	cr->host_name = nm_strdup(hst->name);
 	cr->service_description = NULL;
 	cr->check_type = CHECK_TYPE_ACTIVE;
@@ -664,7 +676,7 @@ static void handle_worker_host_check(wproc_result *wpres, void *arg, int flags)
 		currently_running_host_checks--;
 
 	if (wpres) {
-		hst = find_host(cr->host_name);
+		hst = (struct host *)cr->object_ptr;
 		if (hst) {
 			hst->is_executing = FALSE;
 			tv_set(&hst->last_update);

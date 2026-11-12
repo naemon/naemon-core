@@ -99,9 +99,10 @@ common_sources = \
 	src/naemon/nebmodules.h src/naemon/nebstructs.h \
 	src/naemon/nerd.c src/naemon/nerd.h \
 	src/naemon/nm_alloc.c src/naemon/nm_alloc.h \
+	src/naemon/nm_writebuf.c src/naemon/nm_writebuf.h \
 	src/naemon/notifications.c src/naemon/notifications.h \
 	src/naemon/objectlist.c src/naemon/objectlist.h \
-	src/naemon/objects.c src/naemon/objects.h \
+	src/naemon/objects.c src/naemon/objects.h src/naemon/objects_fcache.h \
 	src/naemon/objects_common.c src/naemon/objects_common.h \
 	src/naemon/objects_command.c src/naemon/objects_command.h \
 	src/naemon/objects_contact.c src/naemon/objects_contact.h \

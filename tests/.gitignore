@@ -20,4 +20,6 @@
 /test-query-handler
 /test-retention
 /test-scheduled-downtimes
+/test-timeperiod-daycache
 /test-worker
+/test-nm-writebuf

@@ -568,19 +568,22 @@ int main(int argc, char **argv)
 
 		registered_commands_init(200);
 		register_core_commands();
-		/* fire up command file worker */
-		timing_point("Launching command file worker\n");
-		launch_command_file_worker();
-		timing_point("Launched command file worker\n");
 
-		/* read in all object config data after launching the command worker
-		 * to keep the memory footprint of the command worker smaller
-		 */
 		if (result == OK) {
 			nm_log(NSLOG_INFO_MESSAGE, "Reading all config object data\n");
 			timing_point("Reading all object data\n");
 			result = read_all_object_data(config_file);
 			timing_point("Read all object data\n");
+		}
+
+		/* only start processing external commands after the objects have
+		 * been read, so commands arriving during startup cannot be
+		 * overwritten by the retention data
+		 */
+		if (result == OK) {
+			timing_point("Launching command file worker\n");
+			launch_command_file_worker();
+			timing_point("Launched command file worker\n");
 		}
 
 		/* initialize check workers */

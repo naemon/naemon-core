@@ -69,6 +69,14 @@ neb_cb_resultset * neb_make_callbacks_full(enum NEBCallbackType callback_type, v
  */
 int neb_make_callbacks(enum NEBCallbackType callback_type, void * user_data);
 
+/**
+ * Check whether any module is registered for a callback type
+ * Lets a caller skip assembling event data that nobody will receive.
+ * @param callback_type The callback type to look up
+ * @return Nonzero if at least one callback is registered, 0 otherwise
+ */
+int neb_callbacks_registered(enum NEBCallbackType callback_type);
+
 /***** CALLBACK RESULT *****/
 /**
  * Create a new \p neb_cb_result with the given \p rc and a description formatted with

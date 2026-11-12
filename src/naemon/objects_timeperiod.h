@@ -93,6 +93,8 @@ void get_next_invalid_time(time_t, time_t *, const timeperiod *);	/* get the nex
 
 timerange *_get_matching_timerange(time_t, const timeperiod *);	/* internal, exported for testing */
 void _get_next_valid_time(time_t, time_t *, const timeperiod *);	/* internal, exported for testing */
+int _get_day_cache_entry(time_t, time_t *, int *, int *, int *, int *);	/* internal, exported for testing */
+void _reset_day_cache(void);	/* internal: call after changing the timezone */
 
 NAGIOS_END_DECL
 #endif
