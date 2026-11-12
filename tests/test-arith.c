@@ -7,6 +7,7 @@
 START_TEST(addition_overflow)
 {
 	long dest;
+	long long expected;
 	int i;
 	ck_assert(!nm_arith_saddl_overflow(LONG_MAX, LONG_MAX, &dest));
 	ck_assert(!nm_arith_saddl_overflow(14, LONG_MAX, &dest));
@@ -41,11 +42,11 @@ START_TEST(addition_overflow)
 			b *= -1;
 		}
 
+		expected = (long long)a + b;
 		bool success = nm_arith_saddl_overflow(a, b, &dest);
+		ck_assert(success == ((long)expected == expected));
 		if (success)
-			ck_assert_int_eq(dest, a + b);
-		else
-			ck_assert_int_ne(dest, a + b);
+			ck_assert(dest == expected);
 	}
 }
 END_TEST
@@ -53,6 +54,7 @@ END_TEST
 START_TEST(subtraction_overflow)
 {
 	long dest;
+	long long expected;
 	int i;
 	ck_assert(!nm_arith_ssubl_overflow(0, LONG_MIN, &dest));
 	ck_assert(nm_arith_ssubl_overflow(0, LONG_MAX, &dest));
@@ -75,11 +77,11 @@ START_TEST(subtraction_overflow)
 			b *= -1;
 		}
 
+		expected = (long long)a - b;
 		bool success = nm_arith_ssubl_overflow(a, b, &dest);
+		ck_assert(success == ((long)expected == expected));
 		if (success)
-			ck_assert_int_eq(dest, a - b);
-		else
-			ck_assert_int_ne(dest, a - b);
+			ck_assert(dest == expected);
 	}
 }
 END_TEST
@@ -87,6 +89,7 @@ END_TEST
 START_TEST(multiplication_overflow)
 {
 	long a, b, dest = 0;
+	long long expected;
 	int i;
 	ck_assert(nm_arith_smull_overflow(0, 0, &dest));
 	ck_assert_int_eq(0, dest);
@@ -112,11 +115,11 @@ START_TEST(multiplication_overflow)
 		if (random() % 2 == 0) {
 			b *= -1;
 		}
+		expected = (long long)a * b;
 		bool success = nm_arith_smull_overflow(a, b, &dest);
+		ck_assert(success == ((long)expected == expected));
 		if (success)
-			ck_assert_int_eq(dest, a * b);
-		else
-			ck_assert_int_ne(dest, a * b);
+			ck_assert(dest == expected);
 	}
 }
 END_TEST
