@@ -225,6 +225,50 @@ START_TEST(test_hostgroup_service_host_override)
 }
 END_TEST
 
+START_TEST(test_service_hostgroup_boolean_expression)
+{
+	host *hst;
+	int selected = 0;
+	object_def_start("command"); object_def_var("command_name", "cmd"); object_def_var("command_line", "cmd"); object_def_end();
+	object_def_start("hostgroup"); object_def_var("hostgroup_name", "linux"); object_def_end();
+	object_def_start("hostgroup"); object_def_var("hostgroup_name", "production"); object_def_end();
+	object_def_start("hostgroup"); object_def_var("hostgroup_name", "staging"); object_def_end();
+	object_def_start("hostgroup"); object_def_var("hostgroup_name", "excluded"); object_def_end();
+	object_def_start("service"); object_def_var("hostgroup_name", "linux&production,staging,!excluded");
+	object_def_var("service_description", "and-check"); object_def_var("check_command", "cmd"); object_def_var("max_check_attempts", "1"); object_def_end();
+	object_def_start("host"); object_def_var("host_name", "both"); object_def_var("address", "127.0.0.1"); object_def_var("max_check_attempts", "1"); object_def_var("hostgroups", "linux,production"); object_def_end();
+	object_def_start("host"); object_def_var("host_name", "linux-only"); object_def_var("address", "127.0.0.1"); object_def_var("max_check_attempts", "1"); object_def_var("hostgroups", "linux"); object_def_end();
+	object_def_start("host"); object_def_var("host_name", "production-only"); object_def_var("address", "127.0.0.1"); object_def_var("max_check_attempts", "1"); object_def_var("hostgroups", "production"); object_def_end();
+	object_def_start("host"); object_def_var("host_name", "staging-only"); object_def_var("address", "127.0.0.1"); object_def_var("max_check_attempts", "1"); object_def_var("hostgroups", "staging"); object_def_end();
+	object_def_start("host"); object_def_var("host_name", "excluded-staging"); object_def_var("address", "127.0.0.1"); object_def_var("max_check_attempts", "1"); object_def_var("hostgroups", "staging,excluded"); object_def_end();
+	ck_assert_msg(read_all_object_data_capture() == OK, "config parse failed:\n%s", captured_output);
+	for (hst = host_list; hst; hst = hst->next) {
+		if (!strcmp(hst->name, "both") || !strcmp(hst->name, "staging-only")) { ck_assert_ptr_nonnull(hst->services); selected++; }
+		else ck_assert_ptr_null(hst->services);
+	}
+	ck_assert_int_eq(selected, 2);
+}
+END_TEST
+
+START_TEST(test_service_hostgroup_and_unknown_group_rejected)
+{
+	object_def_start("command"); object_def_var("command_name", "cmd"); object_def_var("command_line", "cmd"); object_def_end();
+	object_def_start("hostgroup"); object_def_var("hostgroup_name", "known"); object_def_end();
+	object_def_start("service"); object_def_var("hostgroup_name", "known&missing"); object_def_var("service_description", "bad"); object_def_var("check_command", "cmd"); object_def_end();
+	ck_assert_int_eq(read_all_object_data_capture(), ERROR);
+	ck_assert_output_contains("Could not find hostgroup 'missing'");
+}
+END_TEST
+
+START_TEST(test_service_hostgroup_and_malformed_expression_rejected)
+{
+	object_def_start("command"); object_def_var("command_name", "cmd"); object_def_var("command_line", "cmd"); object_def_end();
+	object_def_start("hostgroup"); object_def_var("hostgroup_name", "known"); object_def_end();
+	object_def_start("service"); object_def_var("hostgroup_name", "known&&known"); object_def_var("service_description", "bad"); object_def_var("check_command", "cmd"); object_def_end();
+	ck_assert_int_eq(read_all_object_data_capture(), ERROR);
+}
+END_TEST
+
 /******************************************************************************
  * Boolean directives use the first digit and warn about trailing characters.
  *****************************************************************************/
@@ -466,6 +510,9 @@ Suite *obj_config_parse_suite(void)
 	tcase_add_checked_fixture(parse, init_configuration, free_configuration);
 
 	tcase_add_test(parse, test_hostgroup_service_host_override);
+	tcase_add_test(parse, test_service_hostgroup_boolean_expression);
+	tcase_add_test(parse, test_service_hostgroup_and_unknown_group_rejected);
+	tcase_add_test(parse, test_service_hostgroup_and_malformed_expression_rejected);
 
 	tcase_add_test(parse, test_register_zero_with_trailing_char_warned);
 	tcase_add_test(parse, test_register_ten_warned);
