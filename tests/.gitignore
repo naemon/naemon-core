@@ -5,6 +5,7 @@
 /test-event-heap
 /test-external-command-nebcallback
 /test-kv-command
+/test-check-result-spool
 /test-config
 /test-kvvec
 /test-kvvec-ekvstr
