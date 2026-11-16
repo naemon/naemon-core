@@ -269,6 +269,171 @@ START_TEST(test_service_hostgroup_and_malformed_expression_rejected)
 }
 END_TEST
 
+START_TEST(test_service_hostgroup_empty_intersection_errors_when_disabled)
+{
+	host *hst;
+	allow_empty_hostgroup_assignment = FALSE;
+	object_def_start("command");
+	object_def_var("command_name", "cmd");
+	object_def_var("command_line", "cmd");
+	object_def_end();
+	object_def_start("hostgroup"); object_def_var("hostgroup_name", "linux"); object_def_end();
+	object_def_start("service");
+	object_def_var("hostgroup_name", "linux&!linux");
+	object_def_var("service_description", "empty-and");
+	object_def_var("check_command", "cmd");
+	object_def_end();
+	object_def_start("host");
+	object_def_var("host_name", "linux-host");
+	object_def_var("address", "127.0.0.1");
+	object_def_var("max_check_attempts", "1");
+	object_def_var("hostgroups", "linux");
+	object_def_end();
+	ck_assert_int_eq(read_all_object_data_capture(), ERROR);
+	for (hst = host_list; hst; hst = hst->next)
+		ck_assert_ptr_null(hst->services);
+}
+END_TEST
+
+START_TEST(test_service_hostgroup_negative_and_positive_terms)
+{
+	host *hst;
+	int selected = 0;
+	object_def_start("command");
+	object_def_var("command_name", "cmd");
+	object_def_var("command_line", "cmd");
+	object_def_end();
+	object_def_start("hostgroup"); object_def_var("hostgroup_name", "linux"); object_def_end();
+	object_def_start("hostgroup"); object_def_var("hostgroup_name", "production"); object_def_end();
+	object_def_start("service");
+	object_def_var("hostgroup_name", "!linux&production");
+	object_def_var("service_description", "not-linux-production");
+	object_def_var("check_command", "cmd");
+	object_def_var("max_check_attempts", "1");
+	object_def_end();
+	object_def_start("host");
+	object_def_var("host_name", "linux-prod");
+	object_def_var("address", "127.0.0.1");
+	object_def_var("max_check_attempts", "1");
+	object_def_var("hostgroups", "linux,production");
+	object_def_end();
+	object_def_start("host");
+	object_def_var("host_name", "prod-only");
+	object_def_var("address", "127.0.0.1");
+	object_def_var("max_check_attempts", "1");
+	object_def_var("hostgroups", "production");
+	object_def_end();
+	ck_assert_int_eq(read_all_object_data_capture(), OK);
+	for (hst = host_list; hst; hst = hst->next) {
+		if (!strcmp(hst->name, "prod-only")) {
+			ck_assert_ptr_nonnull(hst->services);
+			selected++;
+		} else {
+			ck_assert_ptr_null(hst->services);
+		}
+	}
+	ck_assert_int_eq(selected, 1);
+}
+END_TEST
+
+START_TEST(test_service_hostgroup_negative_term_with_disjoint_groups)
+{
+	host *hst;
+	allow_empty_hostgroup_assignment = FALSE;
+	object_def_start("command");
+	object_def_var("command_name", "cmd");
+	object_def_var("command_line", "cmd");
+	object_def_end();
+	object_def_start("hostgroup"); object_def_var("hostgroup_name", "linux"); object_def_end();
+	object_def_start("hostgroup"); object_def_var("hostgroup_name", "production"); object_def_end();
+	object_def_start("service");
+	object_def_var("hostgroup_name", "linux&!production");
+	object_def_var("service_description", "linux-not-production");
+	object_def_var("check_command", "cmd");
+	object_def_var("max_check_attempts", "1");
+	object_def_end();
+	object_def_start("host");
+	object_def_var("host_name", "linux-only");
+	object_def_var("address", "127.0.0.1");
+	object_def_var("max_check_attempts", "1");
+	object_def_var("hostgroups", "linux");
+	object_def_end();
+	object_def_start("host");
+	object_def_var("host_name", "prod-only");
+	object_def_var("address", "127.0.0.1");
+	object_def_var("max_check_attempts", "1");
+	object_def_var("hostgroups", "production");
+	object_def_end();
+	ck_assert_int_eq(read_all_object_data_capture(), OK);
+	for (hst = host_list; hst; hst = hst->next) {
+		if (!strcmp(hst->name, "linux-only"))
+			ck_assert_ptr_nonnull(hst->services);
+		else
+			ck_assert_ptr_null(hst->services);
+	}
+}
+END_TEST
+
+START_TEST(test_service_hostgroup_empty_intersection_with_host_name)
+{
+	host *hst;
+	allow_empty_hostgroup_assignment = FALSE;
+	object_def_start("command");
+	object_def_var("command_name", "cmd");
+	object_def_var("command_line", "cmd");
+	object_def_end();
+	object_def_start("hostgroup"); object_def_var("hostgroup_name", "linux"); object_def_end();
+	object_def_start("hostgroup"); object_def_var("hostgroup_name", "production"); object_def_end();
+	object_def_start("service");
+	object_def_var("host_name", "explicit-host");
+	object_def_var("hostgroup_name", "linux&production");
+	object_def_var("service_description", "explicit-host-service");
+	object_def_var("check_command", "cmd");
+	object_def_var("max_check_attempts", "1");
+	object_def_end();
+	object_def_start("host");
+	object_def_var("host_name", "explicit-host");
+	object_def_var("address", "127.0.0.1");
+	object_def_var("max_check_attempts", "1");
+	object_def_end();
+	object_def_start("host");
+	object_def_var("host_name", "linux-only");
+	object_def_var("address", "127.0.0.1");
+	object_def_var("max_check_attempts", "1");
+	object_def_var("hostgroups", "linux");
+	object_def_end();
+	object_def_start("host");
+	object_def_var("host_name", "prod-only");
+	object_def_var("address", "127.0.0.1");
+	object_def_var("max_check_attempts", "1");
+	object_def_var("hostgroups", "production");
+	object_def_end();
+	ck_assert_int_eq(read_all_object_data_capture(), OK);
+	for (hst = host_list; hst; hst = hst->next) {
+		if (!strcmp(hst->name, "explicit-host"))
+			ck_assert_ptr_nonnull(hst->services);
+		else
+			ck_assert_ptr_null(hst->services);
+	}
+}
+END_TEST
+
+START_TEST(test_service_hostgroup_missing_exclusion_rejected)
+{
+	object_def_start("command");
+	object_def_var("command_name", "cmd");
+	object_def_var("command_line", "cmd");
+	object_def_end();
+	object_def_start("hostgroup"); object_def_var("hostgroup_name", "known"); object_def_end();
+	object_def_start("service");
+	object_def_var("hostgroup_name", "known&!");
+	object_def_var("service_description", "bad");
+	object_def_var("check_command", "cmd");
+	object_def_end();
+	ck_assert_int_eq(read_all_object_data_capture(), ERROR);
+}
+END_TEST
+
 /******************************************************************************
  * Boolean directives use the first digit and warn about trailing characters.
  *****************************************************************************/
@@ -513,6 +678,11 @@ Suite *obj_config_parse_suite(void)
 	tcase_add_test(parse, test_service_hostgroup_boolean_expression);
 	tcase_add_test(parse, test_service_hostgroup_and_unknown_group_rejected);
 	tcase_add_test(parse, test_service_hostgroup_and_malformed_expression_rejected);
+	tcase_add_test(parse, test_service_hostgroup_empty_intersection_errors_when_disabled);
+	tcase_add_test(parse, test_service_hostgroup_negative_and_positive_terms);
+	tcase_add_test(parse, test_service_hostgroup_negative_term_with_disjoint_groups);
+	tcase_add_test(parse, test_service_hostgroup_empty_intersection_with_host_name);
+	tcase_add_test(parse, test_service_hostgroup_missing_exclusion_rejected);
 
 	tcase_add_test(parse, test_register_zero_with_trailing_char_warned);
 	tcase_add_test(parse, test_register_ten_warned);
