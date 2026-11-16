@@ -85,23 +85,28 @@ int initialize_performance_data(const char *cfgfile)
 	xpddefault_preprocess_file_templates(host_perfdata_file_template);
 	xpddefault_preprocess_file_templates(service_perfdata_file_template);
 
-	/* open the performance data caches */
-	host_perfdata_fd = xpddefault_open_perfdata_file(
-	                       host_perfdata_file,
-	                       host_perfdata_file_pipe,
-	                       host_perfdata_file_append);
-	if(host_perfdata_fd > 0) {
-		nm_log(NSLOG_RUNTIME_WARNING, "Warning: host perfdata file %s could not be opened - host performance data will not be processed!\n", host_perfdata_file);
+	/* open the performance data caches only when a file is configured,
+	 * otherwise buffered data would pile up with no fd to flush it to */
+	if (host_perfdata_file != NULL) {
+		host_perfdata_fd = xpddefault_open_perfdata_file(
+			                   host_perfdata_file,
+			                   host_perfdata_file_pipe,
+			                   host_perfdata_file_append);
 		host_perfdata_bq = nm_bufferqueue_create();
+		if (host_perfdata_fd <= 0) {
+			nm_log(NSLOG_RUNTIME_WARNING, "Warning: host perfdata file %s could not be opened (%s) - host performance data will not be processed!\n", host_perfdata_file, strerror(errno));
+		}
 	}
 
-	service_perfdata_fd = xpddefault_open_perfdata_file(
-	                          service_perfdata_file,
-	                          service_perfdata_file_pipe,
-	                          service_perfdata_file_append);
-	if (service_perfdata_fd > 0) {
-		nm_log(NSLOG_RUNTIME_WARNING, "Warning: service perfdata file %s could not be opened - service performance data will not be processed!\n", service_perfdata_file);
+	if (service_perfdata_file != NULL) {
+		service_perfdata_fd = xpddefault_open_perfdata_file(
+		                          service_perfdata_file,
+		                          service_perfdata_file_pipe,
+		                          service_perfdata_file_append);
 		service_perfdata_bq = nm_bufferqueue_create();
+		if (service_perfdata_fd <= 0) {
+			nm_log(NSLOG_RUNTIME_WARNING, "Warning: service perfdata file %s could not be opened (%s) - service performance data will not be processed!\n", service_perfdata_file, strerror(errno));
+		}
 	}
 
 	/* verify that performance data commands are valid */
