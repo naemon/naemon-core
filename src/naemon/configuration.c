@@ -1104,7 +1104,12 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			nm_free(object_precache_file);
 			object_precache_file = nspath_absolute(value, config_rel_path);
 		} else if (!strcmp(variable, "allow_empty_hostgroup_assignment")) {
-			allow_empty_hostgroup_assignment = (atoi(value) > 0) ? TRUE : FALSE;
+			allow_empty_hostgroup_assignment = atoi(value);
+			if (allow_empty_hostgroup_assignment < 0 || allow_empty_hostgroup_assignment > 2) {
+				nm_asprintf(&error_message, "Illegal value for allow_empty_hostgroup_assignment, valid from 0-2.");
+				error = TRUE;
+				break;
+			}
 		} else if (!strcmp(variable, "allow_circular_dependencies")) {
 			allow_circular_dependencies = atoi(value);
 		} else if (!strcmp(variable, "host_down_disable_service_checks")) {

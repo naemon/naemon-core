@@ -2417,10 +2417,10 @@ static int xodtemplate_duplicate_services(void)
 			/* empty result is only bad if allow_empty_hostgroup_assignment is off */
 			if (!glist && !bitmap_count_set_bits(host_map)) {
 				if (!allow_empty_hostgroup_assignment) {
-					nm_log(NSLOG_CONFIG_ERROR, "Error: Could not expand hostgroups and/or hosts specified in service (config file '%s', starting on line %d)\n", xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
+					nm_log(NSLOG_CONFIG_ERROR, "Error: Could not expand hostgroups and/or hosts specified in service (config file '%s', starting on line %d) (hint: ignore this with allow_empty_hostgroup_assignment)\n", xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
 					return ERROR;
 				} else if (allow_empty_hostgroup_assignment == 2) {
-					nm_log(NSLOG_CONFIG_WARNING, "Warning: Could not expand hostgroups and/or hosts specified in service (config file '%s', starting on line %d)\n", xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
+					nm_log(NSLOG_CONFIG_WARNING, "Warning: Could not expand hostgroups and/or hosts specified in service (config file '%s', starting on line %d) (hint: hide this warning with allow_empty_hostgroup_assignment)\n", xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
 				}
 			}
 		}
