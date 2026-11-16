@@ -1604,75 +1604,125 @@ static int xodtemplate_expand_hostgroups(objectlist **list, bitmap *reject_map, 
 /* Hostgroup selectors use commas for OR and ampersands for AND. */
 static int xodtemplate_expand_hostgroup_expression(objectlist **list, bitmap *reject_map, char *expression, int config_file_idx, int start_line)
 {
-	char *copy = NULL, *clause, *save_clause = NULL;
-	unsigned char *matches;
-	unsigned int *clause_matches;
-	bitmap *excluded;
+	char *copy, *clause, *save_clause = NULL;
+	bitmap *matches, *clause_matches = NULL, *term_matches = NULL;
 	xodtemplate_host *matched_host;
 	int have_positive = 0;
+	int result = OK;
 	size_t i;
 
 	if (!list || !expression)
 		return ERROR;
 	*list = NULL;
-	matches = calloc(xodcount.hosts, sizeof(*matches));
-	clause_matches = calloc(xodcount.hosts, sizeof(*clause_matches));
-	excluded = bitmap_create(xodcount.hosts);
-	if (!matches || !clause_matches || !excluded)
-		goto invalid;
 	if (!*expression) {
 		nm_log(NSLOG_CONFIG_ERROR, "Error: Empty service hostgroup expression (config file '%s', starting on line %d)\n", xodtemplate_config_file_name(config_file_idx), start_line);
-		goto invalid;
+		return ERROR;
 	}
 	for (i = 0; expression[i]; i++) {
 		if (expression[i] == '&') {
 			size_t left = i, right = i + 1;
-			while (left && isspace((unsigned char)expression[left - 1])) left--;
-			while (expression[right] && isspace((unsigned char)expression[right])) right++;
+			while (left && isspace((unsigned char)expression[left - 1]))
+				left--;
+			while (expression[right] && isspace((unsigned char)expression[right]))
+				right++;
 			if (!left || !expression[right] || expression[left - 1] == ',' || expression[right] == ',' || expression[left - 1] == '&' || expression[right] == '&') {
 				nm_log(NSLOG_CONFIG_ERROR, "Error: Invalid '&' in service hostgroup expression '%s' (config file '%s', starting on line %d)\n", expression, xodtemplate_config_file_name(config_file_idx), start_line);
-				goto invalid;
+				return ERROR;
 			}
 		}
 	}
+	matches = bitmap_create(xodcount.hosts);
+	if (!matches)
+		return ERROR;
 	copy = nm_strdup(expression);
+	if (!copy) {
+		bitmap_destroy(matches);
+		return ERROR;
+	}
 	for (clause = strtok_r(copy, ",", &save_clause); clause; clause = strtok_r(NULL, ",", &save_clause)) {
 		char *term, *save_term = NULL;
-		int positive_terms = 0;
+		int have_term = 0;
 		for (term = strtok_r(trim(clause), "&", &save_term); term; term = strtok_r(NULL, "&", &save_term)) {
-			xodtemplate_hostgroup *group;
+			objectlist *groups = NULL, *group_item;
 			int is_negative;
 			term = trim(term);
-			if (!*term) goto invalid;
+			if (!*term) {
+				result = ERROR;
+				break;
+			}
 			is_negative = (*term == '!');
-			if (is_negative) { term++; term = trim(term); }
-			group = xodtemplate_find_real_hostgroup(term);
-			if (!group) {
+			if (is_negative) {
+				term++;
+				term = trim(term);
+				if (!*term || *term == '!') {
+					result = ERROR;
+					break;
+				}
+			}
+			if (xodtemplate_expand_hostgroups(&groups, NULL, term, config_file_idx, start_line) != OK) {
 				nm_log(NSLOG_CONFIG_ERROR, "Error: Could not find hostgroup '%s' in service expression (config file '%s', starting on line %d)\n", term, xodtemplate_config_file_name(config_file_idx), start_line);
-				goto invalid;
+				free_objectlist(&groups);
+				result = ERROR;
+				break;
 			}
-			if (is_negative) { if (group->member_map) bitmap_unite(excluded, group->member_map); continue; }
-			for (matched_host = xodtemplate_host_list; matched_host; matched_host = matched_host->next)
-				if (bitmap_isset(group->member_map, matched_host->id)) clause_matches[matched_host->id]++;
-			positive_terms++;
+			if (is_negative) {
+				for (group_item = groups; group_item; group_item = group_item->next) {
+					xodtemplate_hostgroup *group = group_item->object_ptr;
+					bitmap_unite(reject_map, group->member_map);
+				}
+				free_objectlist(&groups);
+				continue;
+			}
+			term_matches = bitmap_create(xodcount.hosts);
+			if (!term_matches) {
+				free_objectlist(&groups);
+				result = ERROR;
+				break;
+			}
+			for (group_item = groups; group_item; group_item = group_item->next) {
+				xodtemplate_hostgroup *group = group_item->object_ptr;
+				bitmap_unite(term_matches, group->member_map);
+			}
+			free_objectlist(&groups);
+			if (clause_matches) {
+				bitmap *intersection = bitmap_intersect(clause_matches, term_matches);
+				bitmap_destroy(clause_matches);
+				clause_matches = intersection;
+			} else {
+				clause_matches = term_matches;
+				term_matches = NULL;
+			}
+			bitmap_destroy(term_matches);
+			term_matches = NULL;
+			if (!clause_matches) {
+				result = ERROR;
+				break;
+			}
+			have_term = 1;
 		}
-		if (positive_terms) {
-			for (matched_host = xodtemplate_host_list; matched_host; matched_host = matched_host->next) {
-				if (clause_matches[matched_host->id] == (unsigned int)positive_terms) matches[matched_host->id] = 1;
-				clause_matches[matched_host->id] = 0;
-			}
+		if (result != OK) break;
+		if (have_term) {
+			bitmap_unite(matches, clause_matches);
 			have_positive = 1;
 		}
+		bitmap_destroy(clause_matches);
+		clause_matches = NULL;
 	}
-	if (!have_positive) { nm_log(NSLOG_CONFIG_ERROR, "Error: Service hostgroup expression must contain a positive hostgroup\n"); goto invalid; }
-	for (matched_host = xodtemplate_host_list; matched_host; matched_host = matched_host->next) {
-		if (bitmap_isset(excluded, matched_host->id)) bitmap_set(reject_map, matched_host->id);
-		if (matches[matched_host->id] && !bitmap_isset(excluded, matched_host->id) && prepend_object_to_objectlist(list, matched_host) != OK)
-			goto invalid;
+	if (!have_positive) {
+		nm_log(NSLOG_CONFIG_ERROR, "Error: Service hostgroup expression must contain a positive hostgroup\n");
+		result = ERROR;
 	}
-	nm_free(copy); free(matches); free(clause_matches); bitmap_destroy(excluded); return OK;
-invalid:
-	nm_free(copy); free(matches); free(clause_matches); bitmap_destroy(excluded); free_objectlist(list); return ERROR;
+	for (matched_host = xodtemplate_host_list; result == OK && matched_host; matched_host = matched_host->next) {
+		if (bitmap_isset(matches, matched_host->id) && !bitmap_isset(reject_map, matched_host->id) && prepend_object_to_objectlist(list, matched_host) != OK)
+			result = ERROR;
+	}
+	if (result != OK)
+		free_objectlist(list);
+	nm_free(copy);
+	bitmap_destroy(matches);
+	bitmap_destroy(clause_matches);
+	bitmap_destroy(term_matches);
+	return result;
 }
 
 /* Resolve a hostgroup selector to hosts for all object types that target hosts. */
@@ -2317,14 +2367,20 @@ static int xodtemplate_create_service_list(objectlist **ret, bitmap *reject_map,
 	 */
 	if (host_name && xodtemplate_expand_hosts(&hlist, host_map, host_name, _config_file, _start_line) != OK)
 		return ERROR;
-	if (hostgroup_name && xodtemplate_expand_hostgroup_hosts(&hg_hosts, host_map, hostgroup_name, _config_file, _start_line) != OK) {
-		free_objectlist(&hlist);
-		return ERROR;
-	}
-	if (hg_hosts) {
-		expression_hg.member_list = hg_hosts;
-		if (prepend_object_to_objectlist(&hglist, &expression_hg) != OK) {
-			free_objectlist(&hg_hosts);
+	if (hostgroup_name) {
+		if (strchr(hostgroup_name, '&')) {
+			if (xodtemplate_expand_hostgroup_hosts(&hg_hosts, host_map, hostgroup_name, _config_file, _start_line) != OK) {
+				free_objectlist(&hlist);
+				return ERROR;
+			}
+			expression_hg.member_list = hg_hosts;
+			if (hg_hosts && prepend_object_to_objectlist(&hglist, &expression_hg) != OK) {
+				free_objectlist(&hg_hosts);
+				free_objectlist(&hlist);
+				return ERROR;
+			}
+		} else if (xodtemplate_expand_hostgroups(&hglist, host_map, hostgroup_name, _config_file, _start_line) != OK) {
+			free_objectlist(&hlist);
 			return ERROR;
 		}
 	}
@@ -2501,6 +2557,7 @@ static int xodtemplate_duplicate_services(void)
 	for (temp_service = xodtemplate_service_list; temp_service != NULL; temp_service = temp_service->next) {
 		objectlist *hlist = NULL, *list = NULL, *glist = NULL, *next;
 		xodtemplate_hostgroup fake_hg, service_hg;
+		int is_hostgroup_expression = 0;
 
 		/* clear for each round */
 		bitmap_clear(host_map);
@@ -2519,21 +2576,28 @@ static int xodtemplate_duplicate_services(void)
 		}
 
 		if (temp_service->hostgroup_name != NULL) {
-			if (xodtemplate_expand_hostgroup_hosts(&hlist, host_map, temp_service->hostgroup_name, temp_service->_config_file, temp_service->_start_line) != OK) {
+			is_hostgroup_expression = (strchr(temp_service->hostgroup_name, '&') != NULL);
+			if (is_hostgroup_expression) {
+				if (xodtemplate_expand_hostgroup_hosts(&hlist, host_map, temp_service->hostgroup_name, temp_service->_config_file, temp_service->_start_line) != OK) {
+					return ERROR;
+				}
+				service_hg.hostgroup_name = "!!SERVICE HOSTGROUPS";
+				service_hg.member_list = hlist;
+				if (hlist && prepend_object_to_objectlist(&glist, &service_hg) != OK) {
+					free_objectlist(&hlist);
+					return ERROR;
+				}
+				hlist = NULL;
+			} else if (xodtemplate_expand_hostgroups(&glist, host_map, temp_service->hostgroup_name, temp_service->_config_file, temp_service->_start_line) != OK) {
 				return ERROR;
 			}
-			service_hg.hostgroup_name = "!!SERVICE HOSTGROUPS";
-			service_hg.member_list = hlist;
-			if (hlist && prepend_object_to_objectlist(&glist, &service_hg) != OK) {
-				free_objectlist(&hlist);
-				return ERROR;
-			}
-			hlist = NULL;
 			/* no longer needed */
 			nm_free(temp_service->hostgroup_name);
 
-			/* empty result is only bad if allow_empty_hostgroup_assignment is off */
-			if (!glist && !bitmap_count_set_bits(host_map)) {
+			/* An empty AND expression is only bad if empty assignments are disabled. */
+			if (!temp_service->host_name &&
+			    ((!glist && !bitmap_count_set_bits(host_map)) ||
+			     (is_hostgroup_expression && !glist))) {
 				if (!allow_empty_hostgroup_assignment) {
 					nm_log(NSLOG_CONFIG_ERROR, "Error: Could not expand hostgroups and/or hosts specified in service (config file '%s', starting on line %d)\n", xodtemplate_config_file_name(temp_service->_config_file), temp_service->_start_line);
 					return ERROR;
