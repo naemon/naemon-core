@@ -2304,6 +2304,10 @@ static int grab_macro_value_r(nagios_macros *mac, char *macro_buffer, char **out
 
 		/* get the macro value */
 		result = grab_custom_macro_value_r(mac, macro_name, arg[0], arg[1], output);
+
+		/* always strip illegal characters from custom macros */
+		if (clean_options)
+			*clean_options |= STRIP_ILLEGAL_MACRO_CHARS;
 	}
 
 	/* no macro matched... */
