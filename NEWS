@@ -1,3 +1,9 @@
+next
+====
+Bugfixes:
+* custom variable macros were not stripped of illegal macro output characters
+  when the caller requested sanitization
+
 1.6.0 - Nov 16 2026
 ===================
 Breaking changes:
