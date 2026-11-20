@@ -121,6 +121,31 @@ START_TEST(str_accepts_null)
 }
 END_TEST
 
+/*
+ * A line break inside a value must not become a second line in the state
+ * files: a "}" line forged into retention.dat would terminate the previous
+ * block and the next block header would be read as a new object. CR and LF
+ * come out as single spaces, and the caller's string is untouched.
+ */
+START_TEST(kv_str_flattens_line_breaks)
+{
+	static const char value[] = "begin\n}\nhost {\ncheck_command=evil;id>0\r}";
+
+	wb_reset();
+	nm_wb_kv_str(&wb, "comment_data", value);
+	wb.buf[wb.len] = '\0';
+	ck_assert_str_eq(wb.buf, "comment_data=begin } host { check_command=evil;id>0 }\n");
+	ck_assert_str_eq(value, "begin\n}\nhost {\ncheck_command=evil;id>0\r}");
+
+	/* NULL and the no-break cases must behave like nm_wb_str() */
+	wb_reset();
+	nm_wb_kv_str(&wb, "a", "plain value");
+	nm_wb_kv_str(&wb, "b", NULL);
+	wb.buf[wb.len] = '\0';
+	ck_assert_str_eq(wb.buf, "a=plain value\nb=\n");
+}
+END_TEST
+
 int main(void)
 {
 	int number_failed;
@@ -134,6 +159,7 @@ int main(void)
 	tcase_add_test(tc, int_writers_match_printf);
 	tcase_add_test(tc, kv_macros_produce_key_value_lines);
 	tcase_add_test(tc, str_accepts_null);
+	tcase_add_test(tc, kv_str_flattens_line_breaks);
 	suite_add_tcase(s, tc);
 
 	sr = srunner_create(s);
