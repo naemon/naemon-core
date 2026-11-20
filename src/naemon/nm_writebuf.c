@@ -91,6 +91,6 @@ void nm_wb_customvar(struct nm_writebuf *wb, const char *prefix,
 	nm_wb_lit(wb, "=");
 	nm_wb_int(wb, cv->has_been_modified);
 	nm_wb_lit(wb, ";");
-	nm_wb_str(wb, cv->variable_value);
+	nm_wb_str_flat(wb, cv->variable_value);
 	nm_wb_lit(wb, "\n");
 }

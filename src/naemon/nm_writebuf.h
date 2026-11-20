@@ -116,6 +116,32 @@ static inline void nm_wb_str(struct nm_writebuf *wb, const char *s)
 }
 
 /*
+ * Appends a C string for one of the line-oriented state files. A line break in
+ * a value would end the line, and a "}" line followed by a block header would
+ * forge a block on the next read, so CR and LF are written as a space. The
+ * caller's string is not modified.
+ */
+static inline void nm_wb_str_flat(struct nm_writebuf *wb, const char *s)
+{
+	const char *start;
+
+	if (s == NULL)
+		return;
+	start = s;
+	while (*s != '\0') {
+		if (*s == '\n' || *s == '\r') {
+			if (s > start)
+				nm_wb_mem(wb, start, (size_t)(s - start));
+			nm_wb_mem(wb, " ", 1);
+			start = s + 1;
+		}
+		s++;
+	}
+	if (s > start)
+		nm_wb_mem(wb, start, (size_t)(s - start));
+}
+
+/*
  * Appends an unsigned integer in decimal, no padding. Digits come out least
  * significant first, so they are written backwards into a scratch buffer and
  * the filled tail is appended. The do/while runs at least once, so 0 produces
@@ -166,7 +192,7 @@ __attribute__((format(printf, 2, 3)));
  * indentation where the file format has any -- status.dat indents its fields
  * with a tab, retention.dat does not.
  */
-#define nm_wb_kv_str(wb, key, val)   do { nm_wb_lit((wb), key "="); nm_wb_str((wb), (val)); nm_wb_lit((wb), "\n"); } while (0)
+#define nm_wb_kv_str(wb, key, val)   do { nm_wb_lit((wb), key "="); nm_wb_str_flat((wb), (val)); nm_wb_lit((wb), "\n"); } while (0)
 #define nm_wb_kv_int(wb, key, val)   do { nm_wb_lit((wb), key "="); nm_wb_int((wb), (long long)(val)); nm_wb_lit((wb), "\n"); } while (0)
 #define nm_wb_kv_uint(wb, key, val)  do { nm_wb_lit((wb), key "="); nm_wb_uint((wb), (unsigned long long)(val)); nm_wb_lit((wb), "\n"); } while (0)
 #define nm_wb_kv_dbl(wb, key, fmt, val) do { nm_wb_lit((wb), key "="); nm_wb_dbl((wb), (fmt), (double)(val)); nm_wb_lit((wb), "\n"); } while (0)
