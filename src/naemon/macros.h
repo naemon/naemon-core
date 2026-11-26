@@ -229,6 +229,7 @@ nagios_macros *get_global_macros(void);
 int process_macros(char *, char **, int);
 
 /* thread-safe version of the above */
+void strip_illegal_macro_chars(char *value);
 int process_macros_r(nagios_macros *mac, char *, char **, int);
 
 /* given a raw command line, determine the actual command to run */

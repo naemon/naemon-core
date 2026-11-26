@@ -451,6 +451,11 @@ void test_host_commands(void)
 	scheduled_downtime *downtime = NULL;
 	unsigned long downtime_id = 0;
 	target_host = find_host(host_name);
+	process_macros_r(get_global_macros(), "$_HOSTLABEL:host1$", &cmdstr, STRIP_ILLEGAL_MACRO_CHARS);
+	ok(!strcmp(cmdstr, "left|right"), "Configured custom variable keeps its pipe during expansion");
+	free(cmdstr);
+	ok(CMD_ERROR_OK == process_external_command1("[1234567890] CHANGE_CUSTOM_HOST_VAR;host1;LABEL;new|value"), "core command: CHANGE_CUSTOM_HOST_VAR");
+	ok(!strcmp(target_host->custom_variables->variable_value, "newvalue"), "External command strips the pipe before storing the value");
 	target_host->obsess = FALSE;
 	pre = number_of_host_comments(host_name);
 	ok(CMD_ERROR_OK == process_external_command2(CMD_ADD_HOST_COMMENT, check_time, "host1;0;myself;my comment"), "process_external_command2: ADD_HOST_COMMENT");
@@ -737,7 +742,8 @@ void test_core_commands(void)
 int main(int /*@unused@*/ argc, char /*@unused@*/ **arv)
 {
 	const char *test_config_file = TESTDIR "naemon.cfg";
-	plan_tests(525);
+	plan_tests(528);
+	init_macros();
 	init_event_queue();
 
 	config_file_dir = nspath_absolute_dirname(test_config_file, NULL);

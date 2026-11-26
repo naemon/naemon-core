@@ -2446,6 +2446,7 @@ static int change_custom_var_handler(const struct external_command *ext_command,
 			if (customvariablesmember_p->variable_value)
 				nm_free(customvariablesmember_p->variable_value);
 			customvariablesmember_p->variable_value = nm_strdup(GV("varvalue"));
+			strip_illegal_macro_chars(customvariablesmember_p->variable_value);
 
 			/* mark the variable value as having been changed */
 			customvariablesmember_p->has_been_modified = TRUE;
