@@ -213,6 +213,9 @@ typedef struct nagios_macros nagios_macros;
 
 /************* MACRO CLEANING OPTIONS *****************/
 #define STRIP_ILLEGAL_MACRO_CHARS       1
+/* Deprecated: ESCAPE_MACRO_CHARS never did anything on its own, it was
+ * always paired with STRIP_ILLEGAL_MACRO_CHARS. Kept only for API compat
+ * with old modules. */
 #define ESCAPE_MACRO_CHARS              2
 #define URL_ENCODE_MACRO_CHARS		4
 

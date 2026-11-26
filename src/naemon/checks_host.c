@@ -228,7 +228,7 @@ static int run_async_host_check(host *hst, int check_options, double latency)
 	struct timeval start_time, end_time;
 	check_result *cr;
 	int runchk_result = OK;
-	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS;
 	int neb_result = OK;
 	struct timeval now;
 	tv_set(&now);

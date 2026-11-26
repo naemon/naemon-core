@@ -53,7 +53,7 @@ int obsessive_compulsive_service_check_processor(service *svc)
 {
 	char *raw_command = NULL;
 	char *processed_command = NULL;
-	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS;
 	nagios_macros mac;
 	struct obsessive_compulsive_job *ocj;
 
@@ -111,7 +111,7 @@ int obsessive_compulsive_host_check_processor(host *hst)
 {
 	char *raw_command = NULL;
 	char *processed_command = NULL;
-	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS;
 	nagios_macros mac;
 	struct obsessive_compulsive_job *ocj;
 
@@ -226,7 +226,7 @@ static int run_global_service_event_handler(nagios_macros *mac, service *svc)
 	struct timeval start_time;
 	struct timeval end_time;
 	int neb_result = OK;
-	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS;
 
 	if (svc == NULL)
 		return ERROR;
@@ -312,7 +312,7 @@ static int run_service_event_handler(nagios_macros *mac, service *svc)
 	struct timeval start_time;
 	struct timeval end_time;
 	int neb_result = OK;
-	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS;
 
 	if (svc == NULL)
 		return ERROR;
@@ -428,7 +428,7 @@ static int run_global_host_event_handler(nagios_macros *mac, const host *const h
 	struct timeval start_time;
 	struct timeval end_time;
 	int neb_result = OK;
-	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS;
 
 	if (hst == NULL)
 		return ERROR;
@@ -513,7 +513,7 @@ static int run_host_event_handler(nagios_macros *mac, const host *const hst)
 	struct timeval start_time;
 	struct timeval end_time;
 	int neb_result = OK;
-	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS;
 
 	if (hst == NULL)
 		return ERROR;

@@ -2510,7 +2510,7 @@ int init_macros(void)
 		case MACRO_NOTIFICATIONAUTHORNAME:
 		case MACRO_NOTIFICATIONAUTHORALIAS:
 		case MACRO_NOTIFICATIONCOMMENT:
-			macro_keys[x].options |= STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+			macro_keys[x].options |= STRIP_ILLEGAL_MACRO_CHARS;
 			break;
 		}
 	}
