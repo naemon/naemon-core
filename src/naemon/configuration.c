@@ -93,15 +93,19 @@ read_config_file(const char *main_config_file, nagios_macros *mac)
 			break;
 		}
 		variable = nm_strdup(temp_ptr);
+		strip(variable);
 
 		/* get the value */
 		if ((temp_ptr = my_strtok(NULL, "\n")) == NULL) {
-			nm_asprintf(&error_message, "NULL value");
-			error = TRUE;
-			break;
+			if (!strcmp(variable, "illegal_macro_output_chars") && strchr(input, '='))
+				temp_ptr = "";
+			else {
+				nm_asprintf(&error_message, "NULL value");
+				error = TRUE;
+				break;
+			}
 		}
 		value = (char *)nm_strdup(temp_ptr);
-		strip(variable);
 		strip(value);
 
 		/* process the variable/value */
@@ -1483,7 +1487,7 @@ int pre_flight_check(void)
 	} else {
 		char *p;
 		for (p = illegal_output_chars; *p; p++) {
-			illegal_output_char_map[(int)*p] = 1;
+			illegal_output_char_map[(unsigned char)*p] = 1;
 		}
 	}
 

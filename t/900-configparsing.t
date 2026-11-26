@@ -5,6 +5,7 @@
 use warnings;
 use strict;
 use Test::More;
+use File::Temp qw(tempfile);
 
 my $buildroot=".";
 if (defined $ENV{builddir}) {
@@ -16,7 +17,7 @@ my $etc = "$buildroot/t/etc";
 my $precache = "$buildroot/t/var/objects.precache";
 
 my $options = $> == 0 ? '--allow-root' : '';
-plan tests => 12;
+plan tests => 17;
 
 my $output = `$naemon $options -v "$etc/naemon.cfg"`;
 if ($? == 0) {
@@ -72,3 +73,30 @@ like($out, "/Service has no hosts and/or service_description/", "output contains
 
 $out = `$naemon $options -v "$etc/no-objects.cfg"`;
 is($?, 0, "Naemon does not need any objects to start");
+
+open(my $original, '<', "$etc/naemon.cfg") or die $!;
+my $config = do { local $/; <$original> };
+close($original);
+my ($tmp, $tmpname) = tempfile('macro-config-XXXXXX', DIR => $etc, UNLINK => 1);
+for my $case (
+	['empty', 'illegal_macro_output_chars='],
+	['whitespace', "illegal_macro_output_chars=  \t"],
+	['high bytes', "illegal_macro_output_chars=\x80\xff"],
+	['missing equals', 'illegal_macro_output_chars'],
+	['other empty option', 'use_syslog='],
+) {
+	my ($name, $line) = @$case;
+	my $test_config = $config;
+	$test_config =~ s/^illegal_macro_output_chars=.*$/$line/m;
+	seek($tmp, 0, 0) or die $!;
+	truncate($tmp, 0) or die $!;
+	print $tmp $test_config;
+	$tmp->flush;
+	my $output = `$naemon $options -v "$tmpname" 2>&1`;
+	if ($name eq 'missing equals' || $name eq 'other empty option') {
+		isnt($?, 0, "$name is rejected");
+	} else {
+		ok($? == 0 && $output !~ /Nothing specified for illegal_macro_output_chars/,
+		   "$name is accepted without a missing-value warning");
+	}
+}

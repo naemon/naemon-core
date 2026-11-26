@@ -2498,6 +2498,8 @@ int init_macros(void)
 	int x;
 	init_macrox_names();
 
+	/* Clear the previous configuration, then mark ASCII control bytes (0–31 and DEL) for stripping. */
+	memset(illegal_output_char_map, 0, sizeof(illegal_output_char_map));
 	for (x = 0; x < 32; x++)
 		illegal_output_char_map[x] = 1;
 	illegal_output_char_map[127] = 1;
