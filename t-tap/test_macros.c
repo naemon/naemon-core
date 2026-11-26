@@ -158,13 +158,6 @@ void test_escaping(nagios_macros *mac)
 	 */
 	RUN_MACRO_TEST("$HOSTOUTPUT$ '&%", "name% '&%", STRIP_ILLEGAL_MACRO_CHARS);
 
-	/* ESCAPE_MACRO_CHARS doesn't seem to do anything... exist always in pair
-	 * with STRIP_ILLEGAL_MACRO_CHARS
-	 */
-	RUN_MACRO_TEST("$HOSTOUTPUT$ '&%", "name'&% '&%", ESCAPE_MACRO_CHARS);
-	RUN_MACRO_TEST("$HOSTOUTPUT$ '&%", "name% '&%",
-	               STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS);
-
 	/* $HOSTNAME$ should be url-encoded, but not the tailing chars */
 	RUN_MACRO_TEST("$HOSTNAME$ '&%", "name%27%26%25 '&%",
 	               URL_ENCODE_MACRO_CHARS);
@@ -225,7 +218,7 @@ int main(void)
 {
 	nagios_macros *mac;
 
-	plan_tests(26);
+	plan_tests(24);
 
 	reset_variables();
 	init_environment();

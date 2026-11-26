@@ -341,7 +341,7 @@ static int xpddefault_run_service_performance_data_command(nagios_macros *mac, s
 	char *raw_command_line = NULL;
 	char *processed_command_line = NULL;
 	int result = OK;
-	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS;
 
 	if (svc == NULL)
 		return ERROR;
@@ -377,7 +377,7 @@ static int xpddefault_run_host_performance_data_command(nagios_macros *mac, host
 	char *raw_command_line = NULL;
 	char *processed_command_line = NULL;
 	int result = OK;
-	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS;
 
 	if (hst == NULL)
 		return ERROR;
@@ -583,7 +583,7 @@ static void xpddefault_process_host_perfdata_file(struct nm_event_execution_prop
 {
 	char *raw_command_line = NULL;
 	char *processed_command_line = NULL;
-	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS;
 	nagios_macros mac;
 
 	if (evprop->execution_type == EVENT_EXEC_NORMAL) {
@@ -652,7 +652,7 @@ static void xpddefault_process_service_perfdata_file(struct nm_event_execution_p
 {
 	char *raw_command_line = NULL;
 	char *processed_command_line = NULL;
-	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS;
 	nagios_macros mac;
 
 	if (evprop->execution_type == EVENT_EXEC_NORMAL) {

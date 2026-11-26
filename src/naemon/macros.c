@@ -1374,34 +1374,17 @@ static int grab_standard_contactgroup_macro(int macro_type, contactgroup *temp_c
 /******************************************************************/
 
 /* cleans illegal characters in macros before output */
-static char *clean_macro_chars(char *macro, int options)
+void strip_illegal_macro_chars(char *value)
 {
-	register int x = 0;
-	register int y = 0;
-	register int ch = 0;
-	register int len = 0;
-	char *ret = NULL;
+	char *dst = value;
+	if (value == NULL)
+		return;
 
-	if (macro == NULL || !*macro)
-		return "";
-
-	len = (int)strlen(macro);
-	ret = nm_strdup(macro);
-
-	/* strip illegal characters out of macro */
-	if (options & STRIP_ILLEGAL_MACRO_CHARS) {
-		for (y = 0, x = 0; x < len; x++) {
-			ch = macro[x] & 0xff;
-
-			/* illegal chars are skipped */
-			if (!illegal_output_char_map[ch])
-				ret[y++] = ret[x];
-		}
-
-		ret[y++] = '\x0';
+	for (; *value; value++) {
+		if (!illegal_output_char_map[(unsigned char)*value])
+			*dst++ = *value;
 	}
-
-	return ret;
+	*dst = '\0';
 }
 
 
@@ -2304,10 +2287,6 @@ static int grab_macro_value_r(nagios_macros *mac, char *macro_buffer, char **out
 
 		/* get the macro value */
 		result = grab_custom_macro_value_r(mac, macro_name, arg[0], arg[1], output);
-
-		/* always strip illegal characters from custom macros */
-		if (clean_options)
-			*clean_options |= STRIP_ILLEGAL_MACRO_CHARS;
 	}
 
 	/* no macro matched... */
@@ -2417,6 +2396,7 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 
 		/* insert macro */
 		if (selected_macro != NULL) {
+			size_t offset = strlen(*output_buffer);
 			log_debug_info(DEBUGL_MACROS, 2, "  Processed '%s', Free: %d,  Cleaning options: %d\n", temp_buffer, free_macro, options);
 
 			/* URL encode the macro if requested - this allocates new memory */
@@ -2429,31 +2409,10 @@ int process_macros_r(nagios_macros *mac, char *input_buffer, char **output_buffe
 				free_macro = TRUE;
 			}
 
-			/* some macros should sometimes be cleaned */
-			if (macro_options & options & (STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS)) {
-				char *cleaned_macro = NULL;
-
-				/* add the (cleaned) processed macro to the end of the already processed buffer */
-				if (selected_macro != NULL && (cleaned_macro = clean_macro_chars(selected_macro, options)) != NULL) {
-					*output_buffer = nm_realloc(*output_buffer, strlen(*output_buffer) + strlen(cleaned_macro) + 1);
-					strcat(*output_buffer, cleaned_macro);
-					if (*cleaned_macro)
-						free(cleaned_macro);
-
-					log_debug_info(DEBUGL_MACROS, 2, "  Cleaned macro.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
-				}
-			}
-
-			/* others are not cleaned */
-			else {
-				/* add the processed macro to the end of the already processed buffer */
-				if (selected_macro != NULL) {
-					*output_buffer = nm_realloc(*output_buffer, strlen(*output_buffer) + strlen(selected_macro) + 1);
-					strcat(*output_buffer, selected_macro);
-
-					log_debug_info(DEBUGL_MACROS, 2, "  Uncleaned macro.  Running output (%lu): '%s'\n", (unsigned long)strlen(*output_buffer), *output_buffer);
-				}
-			}
+			*output_buffer = nm_realloc(*output_buffer, offset + strlen(selected_macro) + 1);
+			strcpy(*output_buffer + offset, selected_macro);
+			if (macro_options & options & STRIP_ILLEGAL_MACRO_CHARS)
+				strip_illegal_macro_chars(*output_buffer + offset);
 
 			/* free memory if necessary (if we URL encoded the macro or we were told to do so by grab_macro_value()) */
 			if (free_macro == TRUE)
@@ -2498,6 +2457,8 @@ int init_macros(void)
 	int x;
 	init_macrox_names();
 
+	/* Clear the previous configuration, then mark ASCII control bytes (0–31 and DEL) for stripping. */
+	memset(illegal_output_char_map, 0, sizeof(illegal_output_char_map));
 	for (x = 0; x < 32; x++)
 		illegal_output_char_map[x] = 1;
 	illegal_output_char_map[127] = 1;
@@ -2549,7 +2510,7 @@ int init_macros(void)
 		case MACRO_NOTIFICATIONAUTHORNAME:
 		case MACRO_NOTIFICATIONAUTHORALIAS:
 		case MACRO_NOTIFICATIONCOMMENT:
-			macro_keys[x].options |= STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+			macro_keys[x].options |= STRIP_ILLEGAL_MACRO_CHARS;
 			break;
 		}
 	}

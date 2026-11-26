@@ -39,12 +39,18 @@ int main(int argc, char **argv)
 	int result;
 	int c = 0;
 	struct host *host1, *host2;
+	struct host macro_host = { .plugin_output = "A\x80\xff" "B" };
+	nagios_macros mac = { .host_ptr = &macro_host };
+	char *output = NULL;
 	hostgroup *temp_hostgroup = NULL;
 
-	plan_tests(19);
+	plan_tests(23);
 
 	/* reset program variables */
+	illegal_output_char_map[0xff] = 1;
 	reset_variables();
+	ok(!illegal_output_char_map[0xff], "Reload clears configured illegal characters");
+	ok(illegal_output_char_map[1] && illegal_output_char_map[127], "Reload keeps control characters illegal");
 
 	/*
 	 * avoid updating the checked-in retention data
@@ -64,8 +70,14 @@ int main(int argc, char **argv)
 	result = read_all_object_data(config_file);
 	ok(result == OK, "Read all object config files");
 
+	nm_free(illegal_output_chars);
+	illegal_output_chars = nm_strdup("\x80\xff");
 	result = pre_flight_check();
 	ok(result == OK, "Preflight check okay");
+	ok(illegal_output_char_map[0x80] && illegal_output_char_map[0xff], "High bytes are marked illegal");
+	result = process_macros_r(&mac, "$HOSTOUTPUT$", &output, STRIP_ILLEGAL_MACRO_CHARS);
+	ok(result == OK && output && !strcmp(output, "AB"), "High bytes are stripped from macro output");
+	nm_free(output);
 
 	for (temp_hostgroup = hostgroup_list; temp_hostgroup != NULL; temp_hostgroup = temp_hostgroup->next) {
 		c++;

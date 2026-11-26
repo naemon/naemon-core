@@ -213,6 +213,9 @@ typedef struct nagios_macros nagios_macros;
 
 /************* MACRO CLEANING OPTIONS *****************/
 #define STRIP_ILLEGAL_MACRO_CHARS       1
+/* Deprecated: ESCAPE_MACRO_CHARS never did anything on its own, it was
+ * always paired with STRIP_ILLEGAL_MACRO_CHARS. Kept only for API compat
+ * with old modules. */
 #define ESCAPE_MACRO_CHARS              2
 #define URL_ENCODE_MACRO_CHARS		4
 
@@ -229,6 +232,7 @@ nagios_macros *get_global_macros(void);
 int process_macros(char *, char **, int);
 
 /* thread-safe version of the above */
+void strip_illegal_macro_chars(char *value);
 int process_macros_r(nagios_macros *mac, char *, char **, int);
 
 /* given a raw command line, determine the actual command to run */

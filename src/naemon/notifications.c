@@ -952,7 +952,7 @@ int notify_contact_of_service(nagios_macros *mac, contact *cntct, service *svc, 
 	char *processed_buffer = NULL;
 	struct timeval start_time, end_time;
 	struct timeval method_start_time, method_end_time;
-	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS;
 	int neb_result;
 	struct notification_job *nj;
 
@@ -1796,7 +1796,7 @@ int notify_contact_of_host(nagios_macros *mac, contact *cntct, host *hst, int ty
 	struct timeval end_time;
 	struct timeval method_start_time;
 	struct timeval method_end_time;
-	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS;
 	int neb_result;
 	struct notification_job *nj;
 
@@ -2257,7 +2257,7 @@ int run_global_service_notification_handler(nagios_macros *mac, service *svc, in
 	char *temp_buffer = NULL;
 	char *processed_buffer = NULL;
 	struct timeval start_time, end_time;
-	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS;
 	int neb_result;
 	struct notification_job *nj;
 
@@ -2349,7 +2349,7 @@ int run_global_host_notification_handler(nagios_macros *mac, host *hst, int type
 	char *processed_command = NULL;
 	struct timeval start_time;
 	struct timeval end_time;
-	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS;
 	int neb_result;
 	struct notification_job *nj;
 

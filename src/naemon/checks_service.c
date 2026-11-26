@@ -349,7 +349,7 @@ static int run_scheduled_service_check(service *svc, int check_options, double l
 	host *temp_host = NULL;
 	check_result *cr;
 	int runchk_result = OK;
-	int macro_options = STRIP_ILLEGAL_MACRO_CHARS | ESCAPE_MACRO_CHARS;
+	int macro_options = STRIP_ILLEGAL_MACRO_CHARS;
 	int neb_result = OK;
 
 	/* latency is how long the event lagged behind the event queue */
